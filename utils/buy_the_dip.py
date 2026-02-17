@@ -170,6 +170,13 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                 if not idf.empty:
                     if idf.index.tz is None:
                         idf.index = idf.index.tz_localize('UTC')
+                    # Filter to market hours only when not using extended hours
+                    if not extended_hours:
+                        et = pytz.timezone('US/Eastern')
+                        idf_et = idf.index.tz_convert(et)
+                        mask = (idf_et.hour * 60 + idf_et.minute >= 9 * 60 + 30) & \
+                               (idf_et.hour * 60 + idf_et.minute < 16 * 60)
+                        idf = idf[mask]
                     intraday_data[symbol] = idf
             except Exception:
                 pass

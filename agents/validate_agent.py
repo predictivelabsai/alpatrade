@@ -356,11 +356,11 @@ class ValidateAgent:
 
                 if self.extended_hours:
                     # Extended: 4:00 AM - 8:00 PM ET
-                    in_window = 4.0 <= hour_float < 20.0
+                    in_window = 4.0 <= hour_float <= 20.0
                     window_label = "4AM-8PM"
                 else:
-                    # Regular: 9:30 AM - 4:00 PM ET
-                    in_window = 9.5 <= hour_float < 16.0
+                    # Regular: 9:30 AM - 4:00 PM ET (inclusive of close)
+                    in_window = 9.5 <= hour_float <= 16.0
                     window_label = "9:30AM-4PM"
 
                 if not in_window:
