@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "alpatrade"
+version = "0.1.0"
+description = "Trading strategy backtester, paper trader, and research CLI powered by Alpaca Markets"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "AlpaTrade", email = "info@alpatrade.dev" },
+]
+keywords = ["trading", "backtesting", "alpaca", "paper-trading", "stocks", "cli"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "plotly>=5.0",
+    "yfinance>=0.2",
+    "python-dotenv>=1.0",
+    "requests>=2.31",
+    "openai>=1.0",
+    "alpaca-py>=0.20",
+    "sqlalchemy>=2.0",
+    "psycopg2-binary>=2.9",
+    "pyyaml>=6.0",
+    "rich>=13.0",
+    "httpx>=0.25",
+]
+
+[project.optional-dependencies]
+web = [
+    "python-fasthtml>=0.6",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+]
+agents = [
+    "langchain-openai>=0.1",
+    "langgraph>=0.1",
+    "langchain-core>=0.2",
+]
+all = ["alpatrade[web,agents]"]
+
+[project.urls]
+Homepage = "https://alpatrade.dev"
+Repository = "https://github.com/predictivelabsai/alpatrade"
+
+[project.scripts]
+alpatrade = "alpaca_code:main"
+
+[tool.setuptools]
+py-modules = ["alpaca_code", "web_app"]
+
+[tool.setuptools.packages.find]
+include = [
+    "tui",
+    "tui.*",
+    "utils",
+    "utils.*",
+    "agents",
+    "agents.*",
+    "tasks",
+    "config",
+]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.png", "*.sh"]

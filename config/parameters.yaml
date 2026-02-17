@@ -1,0 +1,23 @@
+# Trading Strategy Parameters
+# Configuration file for CLI trader strategies
+
+buy_the_dip:
+  symbols: "AAPL,MSFT,GOOGL,AMZN,META,TSLA,NVDA"  # Comma-separated list of stock symbols to trade
+  dip_threshold: 5.0  # Percentage dip to trigger buy (e.g., 5.0 = 5%)
+  take_profit_threshold: 1.0  # Percentage gain to take profit (e.g., 1.0 = 1%)
+  stop_loss_threshold: 0.5  # Percentage loss to stop out (e.g., 0.5 = 0.5%)
+  hold_days: 2  # Minimum days to hold position (Mandatory for PDT if <$25k)
+  capital_per_trade: 1000.0  # Capital to allocate per trade in dollars
+  max_position_pct: 5.0  # Maximum position size as percentage of buying power (e.g., 5.0 = 5%)
+
+vix:
+  symbols: "AAPL,MSFT,GOOGL,AMZN,META,TSLA,NVDA"  # Comma-separated list of stock symbols to trade
+  vix_threshold: 20.0  # VIX level to trigger trades
+  capital_per_trade: 1000.0  # Capital to allocate per trade in dollars
+
+general:
+  market_data_source: "massive"  # Options: massive, alpaca, yfinance
+  check_order_status_interval: 60  # Seconds between order status checks
+  polling_interval: 300  # Seconds between strategy execution checks
+  storage_backend: "db"  # Options: file, db  (file stores JSON locally, db uses PostgreSQL)
+
