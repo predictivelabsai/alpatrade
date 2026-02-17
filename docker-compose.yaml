@@ -5,13 +5,23 @@ services:
       dockerfile: Dockerfile.api
     ports:
       - "5001:5001"
-    env_file: .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - ALPACA_PAPER_API_KEY=${ALPACA_PAPER_API_KEY}
+      - ALPACA_PAPER_SECRET_KEY=${ALPACA_PAPER_SECRET_KEY}
+      - MASSIVE_API_KEY=${MASSIVE_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY:-}
+      - EODHD_API_KEY=${EODHD_API_KEY:-}
+      - POSTMARK_API_KEY=${POSTMARK_API_KEY:-}
+      - TO_EMAIL=${TO_EMAIL:-}
+      - FROM_EMAIL=${FROM_EMAIL:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5001/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
+    restart: unless-stopped
 
   web:
     build:
@@ -19,7 +29,13 @@ services:
       dockerfile: Dockerfile.fasthtml
     ports:
       - "5002:5002"
-    env_file: .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - ALPACA_PAPER_API_KEY=${ALPACA_PAPER_API_KEY}
+      - ALPACA_PAPER_SECRET_KEY=${ALPACA_PAPER_SECRET_KEY}
+      - MASSIVE_API_KEY=${MASSIVE_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY:-}
+      - EODHD_API_KEY=${EODHD_API_KEY:-}
     depends_on:
       api:
         condition: service_healthy
@@ -28,4 +44,5 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
+    restart: unless-stopped
