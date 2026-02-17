@@ -36,6 +36,7 @@ dependencies = [
     "psycopg2-binary>=2.9",
     "pyyaml>=6.0",
     "rich>=13.0",
+    "prompt_toolkit>=3.0",
     "httpx>=0.25",
 ]
 
@@ -57,10 +58,10 @@ Homepage = "https://alpatrade.dev"
 Repository = "https://github.com/predictivelabsai/alpatrade"
 
 [project.scripts]
-alpatrade = "alpaca_code:main"
+alpatrade = "alpatrade:main"
 
 [tool.setuptools]
-py-modules = ["alpaca_code", "web_app"]
+py-modules = ["alpatrade", "web_app"]
 
 [tool.setuptools.packages.find]
 include = [

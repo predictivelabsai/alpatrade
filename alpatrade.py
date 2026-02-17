@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AlpaTrade CLI - prompt_toolkit Entry Point
-Dropdown auto-completion variant. Use alpaca_code.py for the readline variant.
+AlpaTrade CLI - Main Entry Point
+Interactive CLI with prompt_toolkit dropdown auto-completion.
 """
 import os
 import logging

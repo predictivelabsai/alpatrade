@@ -7,7 +7,7 @@ Trading strategy simulator, backtester, and paper trader.
 - **Python 3.13**, virtualenv at `.venv/`
 - **FastHTML** web UI (`web_app.py`)
 - **FastAPI** REST server (`api_app.py`)
-- **Rich CLI** (`tui/strategy_cli.py`, entry point: `alpaca_code.py`)
+- **Rich CLI** (`tui/strategy_cli.py`, entry point: `alpatrade.py`)
 - **Config**: `config/parameters.yaml` (strategy params), `.env` (API keys)
 
 ## Key Directories
@@ -80,7 +80,7 @@ Five agents collaborate to backtest, paper trade, validate, and reconcile strate
 
 ```bash
 # Rich CLI (primary interface)
-python alpaca_code.py
+python alpatrade.py
 
 # CLI commands:
 #   trades                                    Show trades from DB
