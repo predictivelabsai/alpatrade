@@ -4,6 +4,8 @@
 
 Trading strategy backtester, paper trader, and research CLI powered by [Alpaca Markets](https://alpaca.markets/).
 
+![AlpaTrade CLI](screenshots/cli-welcome.png)
+
 ## Install
 
 ```bash
@@ -32,7 +34,7 @@ alpatrade
 - **Market research** — news, company profiles, financials, technicals, analyst ratings, and valuation comparisons
 - **Multi-agent system** — backtest, validate, paper trade, reconcile, and report via an orchestrated agent pipeline
 - **Extended hours & intraday exits** — pre/after-market trading (4AM-8PM ET) and 5-minute bar TP/SL timing
-- **Interactive CLI** — Rich-powered terminal with streaming log output and Plotly equity curve charts
+- **Interactive CLI** — prompt_toolkit-powered terminal with dropdown auto-completion, streaming log output, and Plotly equity curve charts
 
 ## Commands
 
