@@ -6,6 +6,20 @@ Trading strategy backtester, paper trader, and research CLI powered by [Alpaca M
 
 ![AlpaTrade CLI](screenshots/cli-welcome.png)
 
+## Screenshots
+
+### Web UI — Backtest Streaming
+![Backtest Streaming](static/backtest-streaming.png)
+
+### Web UI — News Research
+![News Research](static/news.png)
+
+### Web UI — Trade History
+![Trade History](static/trades.png)
+
+### Web UI — Command Reference
+![Command Reference](static/help.png)
+
 ## Install
 
 ```bash
