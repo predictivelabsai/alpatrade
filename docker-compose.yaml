@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile.api
     ports:
-      - "5001:5001"
+      - "9001:5001"
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - ALPACA_PAPER_API_KEY=${ALPACA_PAPER_API_KEY}
