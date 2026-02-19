@@ -28,7 +28,7 @@ services:
       context: .
       dockerfile: Dockerfile.fasthtml
     ports:
-      - "5002:5002"
+      - "9002:5002"
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - ALPACA_PAPER_API_KEY=${ALPACA_PAPER_API_KEY}
