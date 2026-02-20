@@ -590,6 +590,10 @@ class CommandProcessor:
 
         self.app._bg_task = asyncio.create_task(_run_paper())
 
+        hours_label = "Extended (4AM-8PM ET)" if config["extended_hours"] else "Regular (9:30AM-4PM ET)"
+        pdt_label = "Off" if pdt_protection is False else "On" if pdt_protection else "Auto"
+        email_label = "On" if config["email_notifications"] else "Off"
+
         return (
             f"# Paper Trading Started\n\n"
             f"- **Run ID**: `{run_id}`\n"
@@ -597,6 +601,9 @@ class CommandProcessor:
             f"- **Strategy**: {config['strategy']}\n"
             f"- **Symbols**: {', '.join(symbols)}\n"
             f"- **Poll Interval**: {config['poll_interval_seconds']}s\n"
+            f"- **Hours**: {hours_label}\n"
+            f"- **PDT Protection**: {pdt_label}\n"
+            f"- **Email Reports**: {email_label}\n"
             f"- **Log**: `{log_path}`\n\n"
             f"Running in background. Use `agent:status` to monitor, "
             f"`agent:stop` to cancel."
