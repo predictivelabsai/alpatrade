@@ -281,16 +281,20 @@ You are AlpaTrade Assistant — an AI trading and market research assistant.
 # ---------------------------------------------------------------------------
 # Lazy model + graph
 # ---------------------------------------------------------------------------
+_model = None
 _graph = None
 
-def _build_model():
-    return ChatOpenAI(
-        model=os.getenv("GROK_MODEL", "grok-4"),
-        temperature=0.7,
-        streaming=True,
-        api_key=os.getenv("XAI_API_KEY"),
-        base_url="https://api.x.ai/v1",
-    ).bind_tools(tools)
+def _get_model():
+    global _model
+    if _model is None:
+        _model = ChatOpenAI(
+            model=os.getenv("GROK_MODEL", "grok-4"),
+            temperature=0.7,
+            streaming=False,
+            api_key=os.getenv("XAI_API_KEY"),
+            base_url="https://api.x.ai/v1",
+        ).bind_tools(tools)
+    return _model
 
 def get_graph():
     global _graph
@@ -314,8 +318,7 @@ def call_model(state: AlpacaState):
     messages = state['messages']
     if not messages or not isinstance(messages[0], SystemMessage):
         messages = [SystemMessage(content=system_prompt)] + list(messages)
-    model = _build_model()
-    response = model.invoke(messages)
+    response = _get_model().invoke(messages)
     return {"messages": [response]}
 
 def _create_graph():
