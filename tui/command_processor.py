@@ -1098,6 +1098,7 @@ class CommandProcessor:
         col2.add_row("agent:top", "rank strategies by Avg Ann Return")
         col2.add_row("  strategy:btd", "filter by slug prefix")
         col2.add_row("agent:status", "agent states")
+        col2.add_row("agent:stop", "stop background task")
 
         # --- Column 3: Research & Options ---
         col3 = Table(show_header=False, box=None, padding=(0, 1), expand=True)
@@ -1121,6 +1122,10 @@ class CommandProcessor:
         col3.add_row("", "")
         col3.add_row("[bold white]General[/bold white]", "")
         col3.add_row("help / guide / status / q", "")
+        col3.add_row("", "")
+        col3.add_row("[bold white]Tips[/bold white]", "")
+        col3.add_row("Tab", "autocomplete commands")
+        col3.add_row("agent:stop", "stop any background task")
 
         c.print(Columns([col1, col2, col3], equal=True, expand=True))
         c.print()
