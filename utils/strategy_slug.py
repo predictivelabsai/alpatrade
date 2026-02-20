@@ -2,7 +2,7 @@
 Strategy Slug Builder
 
 Generates human-readable slugs that encode strategy + parameters + lookback.
-E.g. `btd-3dp-05sl-1tp-1h-1m` = buy_the_dip with 3% dip, 0.5% SL, 1% TP, 1-day hold, 1m lookback.
+E.g. `btd-3dp-05sl-1tp-1d-1m` = buy_the_dip with 3% dip, 0.5% SL, 1% TP, 1-day hold, 1m lookback.
 """
 
 
@@ -40,7 +40,7 @@ def build_slug(strategy: str, params: dict, lookback: str = "") -> str:
         lookback: Lookback period string (e.g. "1m", "3m").
 
     Returns:
-        Slug string like "btd-3dp-05sl-1tp-1h-1m".
+        Slug string like "btd-3dp-05sl-1tp-1d-1m".
     """
     prefix = _PREFIXES.get(strategy, strategy[:3])
     tokens = [prefix]
@@ -53,7 +53,7 @@ def build_slug(strategy: str, params: dict, lookback: str = "") -> str:
         if "take_profit" in params:
             tokens.append(f"{_fmt_pct(params['take_profit'])}tp")
         if "hold_days" in params:
-            tokens.append(f"{int(params['hold_days'])}h")
+            tokens.append(f"{int(params['hold_days'])}d")
 
     elif strategy == "momentum":
         if "lookback_period" in params:
@@ -61,7 +61,7 @@ def build_slug(strategy: str, params: dict, lookback: str = "") -> str:
         if "momentum_threshold" in params:
             tokens.append(f"{_fmt_pct(params['momentum_threshold'])}mt")
         if "hold_days" in params:
-            tokens.append(f"{int(params['hold_days'])}h")
+            tokens.append(f"{int(params['hold_days'])}d")
         if "take_profit" in params:
             tokens.append(f"{_fmt_pct(params['take_profit'])}tp")
         if "stop_loss" in params:

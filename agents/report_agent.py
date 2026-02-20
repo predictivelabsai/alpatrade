@@ -197,7 +197,7 @@ class ReportAgent:
     def top_strategies(self, strategy: Optional[str] = None,
                         limit: int = 20) -> List[Dict[str, Any]]:
         """
-        Rank strategy slugs by average Sharpe ratio across all runs.
+        Rank strategy slugs by average annualized return across all runs.
 
         Args:
             strategy: Optional prefix filter (e.g. "btd" to show only buy-the-dip).
@@ -235,7 +235,7 @@ class ReportAgent:
                     FROM alpatrade.backtest_summaries bs
                     {where_sql}
                     GROUP BY bs.strategy_slug
-                    ORDER BY avg_sharpe DESC
+                    ORDER BY avg_ann_return DESC
                     LIMIT :lim
                 """),
                 bind,

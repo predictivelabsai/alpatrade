@@ -68,8 +68,66 @@ movers                              Top market gainers and losers
 
 trades                              Recent trades from DB
 runs                                Recent backtest/paper runs
-agent:top                           Rank strategies by Sharpe ratio
+agent:top                           Rank strategies by Avg Annual Return
+agent:top strategy:btd              Filter by slug prefix
 ```
+
+## Strategy Slugs
+
+Each backtest variation gets a human-readable **slug** that encodes the strategy type, parameters, and lookback period into a compact identifier. Slugs let you compare configurations at a glance and filter results with `agent:top` or `agent:report`.
+
+### Format
+
+```
+{strategy}-{param1}-{param2}-...-{lookback}
+```
+
+### Buy the Dip (`btd`)
+
+| Token | Meaning |
+|-------|---------|
+| `btd` | Strategy: buy_the_dip |
+| `{n}dp` | Dip threshold % |
+| `{n}sl` | Stop loss % |
+| `{n}tp` | Take profit % |
+| `{n}d` | Hold (days) |
+| `{period}` | Lookback (e.g. `1m`, `3m`) |
+
+Example: `btd-7dp-05sl-1tp-1d-3m` = 7% dip, 0.5% stop loss, 1% take profit, 1 day hold, 3-month lookback
+
+### Momentum (`mom`)
+
+| Token | Meaning |
+|-------|---------|
+| `mom` | Strategy: momentum |
+| `{n}lb` | Lookback period (days) |
+| `{n}mt` | Momentum threshold % |
+| `{n}d` | Hold (days) |
+| `{n}tp` | Take profit % |
+| `{n}sl` | Stop loss % |
+| `{period}` | Lookback |
+
+Example: `mom-20lb-5mt-5d-10tp-5sl-1m`
+
+### VIX Fear Index (`vix`)
+
+| Token | Meaning |
+|-------|---------|
+| `vix` | Strategy: vix |
+| `{n}t` | VIX threshold |
+| `{type}` | Hold type (e.g. `on` = overnight) |
+
+Example: `vix-20t-on`
+
+### Box-Wedge (`bwg`)
+
+| Token | Meaning |
+|-------|---------|
+| `bwg` | Strategy: box_wedge |
+| `{n}r` | Risk % |
+| `{n}ct` | Contraction threshold % |
+
+Example: `bwg-2r-5ct`
 
 ## Environment Variables
 

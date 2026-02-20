@@ -924,7 +924,7 @@ class CommandProcessor:
     # ------------------------------------------------------------------
 
     def _agent_top(self, params: Dict) -> str:
-        """Rank strategy slugs by average Sharpe ratio."""
+        """Rank strategy slugs by average annualized return."""
         try:
             from agents.report_agent import ReportAgent
 
@@ -1036,7 +1036,7 @@ class CommandProcessor:
         col2.add_row("agent:report", "performance summary")
         col2.add_row("  type:backtest run-id:<uuid>", "filter / detail")
         col2.add_row("  strategy:btd", "filter by slug prefix")
-        col2.add_row("agent:top", "rank strategies by Sharpe")
+        col2.add_row("agent:top", "rank strategies by Avg Ann Return")
         col2.add_row("  strategy:btd", "filter by slug prefix")
         col2.add_row("agent:status", "agent states")
 

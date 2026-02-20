@@ -244,7 +244,7 @@ def _help_html():
             ("agent:report", "performance summary"),
             ("  type:backtest run-id:<uuid>", "filter / detail"),
             ("  strategy:btd", "filter by slug prefix"),
-            ("agent:top", "rank strategies by Sharpe"),
+            ("agent:top", "rank strategies by Avg Annual Return"),
             ("  strategy:btd", "filter by slug prefix"),
             ("agent:status", "agent states"),
             ("agent:stop", "stop background task"),
@@ -609,6 +609,14 @@ def _guide_toc():
                 Li(A("Performance Reports", href="#q-report")),
                 Li(A("Top Strategies", href="#q-top")),
             ),
+            Li(A("Strategy Slugs", href="#slugs")),
+            Ul(
+                Li(A("Format", href="#s-format")),
+                Li(A("Buy the Dip", href="#s-btd")),
+                Li(A("Momentum", href="#s-mom")),
+                Li(A("VIX Fear Index", href="#s-vix")),
+                Li(A("Box-Wedge", href="#s-bwg")),
+            ),
             Li(A("Options & Flags", href="#options")),
             Ul(
                 Li(A("Extended Hours", href="#o-hours")),
@@ -895,12 +903,96 @@ def _guide_query():
 
         H3("Top Strategies", id="q-top"),
         Pre(Code(
-            "agent:top                    # rank all strategy slugs by avg Sharpe\n"
+            "agent:top                    # rank all strategy slugs by avg annual return\n"
             "agent:top strategy:btd       # filter by slug prefix"
         )),
-        P("Aggregates across all runs to rank strategy configurations. Shows average "
-          "Sharpe ratio, return, win rate, drawdown, and how many times each config "
-          "has been tested."),
+        P("Aggregates across all runs to rank strategy configurations by average "
+          "annualized return. Shows Sharpe ratio, return, win rate, drawdown, and "
+          "how many times each config has been tested."),
+    )
+
+
+def _guide_slugs():
+    """Strategy slugs section."""
+    return (
+        H2("Strategy Slugs", id="slugs"),
+        P("Each backtest variation gets a human-readable ", Strong("slug"),
+          " that encodes the strategy type, parameters, and lookback period "
+          "into a compact identifier. Slugs let you compare configurations at "
+          "a glance and filter results with ", Code("agent:top"), " or ",
+          Code("agent:report"), "."),
+
+        H3("Format", id="s-format"),
+        Pre(Code("{strategy}-{param1}-{param2}-...-{lookback}")),
+        P("Units use consistent suffixes: ", Code("d"), " = days, ",
+          Code("m"), " = months. Percentages drop the decimal point for "
+          "fractional values (0.5% becomes ", Code("05"), ")."),
+
+        H3("Buy the Dip", id="s-btd"),
+        P("Prefix: ", Code("btd")),
+        Pre(Code("btd-7dp-05sl-1tp-1d-3m")),
+        Table(
+            Thead(Tr(Th("Token"), Th("Meaning"))),
+            Tbody(
+                Tr(Td(Code("btd")), Td("Strategy: buy_the_dip")),
+                Tr(Td(Code("{n}dp")), Td("Dip threshold %")),
+                Tr(Td(Code("{n}sl")), Td("Stop loss %")),
+                Tr(Td(Code("{n}tp")), Td("Take profit %")),
+                Tr(Td(Code("{n}d")), Td("Hold (days)")),
+                Tr(Td(Code("{period}")), Td("Lookback (e.g. 1m, 3m)")),
+            ),
+        ),
+        P("Example: ", Code("btd-7dp-05sl-1tp-1d-3m"),
+          " = 7% dip, 0.5% stop loss, 1% take profit, 1 day hold, 3-month lookback"),
+
+        H3("Momentum", id="s-mom"),
+        P("Prefix: ", Code("mom")),
+        Pre(Code("mom-20lb-5mt-5d-10tp-5sl-1m")),
+        Table(
+            Thead(Tr(Th("Token"), Th("Meaning"))),
+            Tbody(
+                Tr(Td(Code("mom")), Td("Strategy: momentum")),
+                Tr(Td(Code("{n}lb")), Td("Lookback period (days)")),
+                Tr(Td(Code("{n}mt")), Td("Momentum threshold %")),
+                Tr(Td(Code("{n}d")), Td("Hold (days)")),
+                Tr(Td(Code("{n}tp")), Td("Take profit %")),
+                Tr(Td(Code("{n}sl")), Td("Stop loss %")),
+                Tr(Td(Code("{period}")), Td("Lookback")),
+            ),
+        ),
+
+        H3("VIX Fear Index", id="s-vix"),
+        P("Prefix: ", Code("vix")),
+        Pre(Code("vix-20t-on")),
+        Table(
+            Thead(Tr(Th("Token"), Th("Meaning"))),
+            Tbody(
+                Tr(Td(Code("vix")), Td("Strategy: vix")),
+                Tr(Td(Code("{n}t")), Td("VIX threshold")),
+                Tr(Td(Code("{type}")), Td("Hold type (e.g. on = overnight)")),
+            ),
+        ),
+
+        H3("Box-Wedge", id="s-bwg"),
+        P("Prefix: ", Code("bwg")),
+        Pre(Code("bwg-2r-5ct")),
+        Table(
+            Thead(Tr(Th("Token"), Th("Meaning"))),
+            Tbody(
+                Tr(Td(Code("bwg")), Td("Strategy: box_wedge")),
+                Tr(Td(Code("{n}r")), Td("Risk %")),
+                Tr(Td(Code("{n}ct")), Td("Contraction threshold %")),
+            ),
+        ),
+
+        Div(
+            "The ", Strong("PDT (Pattern Day Trader)"), " rule is enforced by default "
+            "for accounts under $25k: max 3 day trades per rolling 5-business-day window. "
+            "PDT status does not affect the slug itself — two backtests with identical "
+            "parameters but different PDT settings share the same slug. Use ",
+            Code("pdt:false"), " to disable for accounts with $25k+ equity.",
+            cls="tip",
+        ),
     )
 
 
@@ -954,6 +1046,7 @@ def guide_get(session):
                 *_guide_reconcile(),
                 *_guide_research(),
                 *_guide_query(),
+                *_guide_slugs(),
                 *_guide_options(),
                 Hr(),
                 P("Need quick help? Type ", Code("help"), " in the terminal for a "
