@@ -1102,7 +1102,7 @@ class CommandProcessor:
         c.print("[bold cyan]AlpaTrade CLI — Help[/bold cyan]")
         c.print()
 
-        # --- Column 1: Agent commands ---
+        # --- Column 1: Backtest / Validate / Reconcile ---
         col1 = Table(show_header=False, box=None, padding=(0, 1), expand=True)
         col1.add_column(style="bold yellow", no_wrap=True)
         col1.add_column(style="dim")
@@ -1142,13 +1142,10 @@ class CommandProcessor:
         col2.add_row("trades / runs", "DB tables")
         col2.add_row("agent:report", "performance summary")
         col2.add_row("  type:backtest run-id:<uuid>", "filter / detail")
-        col2.add_row("  strategy:btd", "filter by slug prefix")
         col2.add_row("agent:top", "rank strategies by Avg Ann Return")
-        col2.add_row("  strategy:btd", "filter by slug prefix")
-        col2.add_row("agent:status", "agent states")
-        col2.add_row("agent:stop", "stop background task")
+        col2.add_row("agent:status / agent:stop", "monitor / cancel")
 
-        # --- Column 3: Research & Options ---
+        # --- Column 3: Research / Options / General ---
         col3 = Table(show_header=False, box=None, padding=(0, 1), expand=True)
         col3.add_column(style="bold yellow", no_wrap=True)
         col3.add_column(style="dim")
@@ -1170,10 +1167,7 @@ class CommandProcessor:
         col3.add_row("", "")
         col3.add_row("[bold white]General[/bold white]", "")
         col3.add_row("help / guide / status / q", "")
-        col3.add_row("", "")
-        col3.add_row("[bold white]Tips[/bold white]", "")
         col3.add_row("Tab", "autocomplete commands")
-        col3.add_row("agent:stop", "stop any background task")
         col3.add_row("(any question)", "ask AI about stocks, portfolio")
 
         c.print(Columns([col1, col2, col3], equal=True, expand=True))
