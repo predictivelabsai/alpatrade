@@ -526,6 +526,13 @@ class CommandProcessor:
                     self.app.notify(
                         f"Paper trading done: {trades} trades, P&L: ${pnl:.2f}"
                     )
+            except asyncio.CancelledError:
+                # Update agent state so agent:status reflects the stop
+                agent_state = orch.state.get_agent("paper_trader")
+                agent_state.set_idle()
+                orch.state.save()
+                from utils.agent_storage import update_run
+                update_run(orch.run_id, "cancelled")
             finally:
                 # Restore original console handlers
                 root.removeHandler(file_handler)
