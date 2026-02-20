@@ -131,6 +131,16 @@ class StrategyCLI:
         except Exception as e:
             self.console.print(f"\n[red]Error loading runs:[/red] {e}\n")
 
+    async def _cleanup_background(self):
+        """Cancel any running background task and wait for it to finish."""
+        if hasattr(self, '_bg_task') and self._bg_task and not self._bg_task.done():
+            self._bg_stop.set()
+            self._bg_task.cancel()
+            try:
+                await self._bg_task
+            except (asyncio.CancelledError, Exception):
+                pass
+
     async def process_command(self, command: str):
         """Process a user command and display results."""
         cmd_lower = command.strip().lower()
@@ -226,6 +236,7 @@ help                                      Full reference
 
                 if user_input.lower() in ['exit', 'quit', 'q']:
                     self.console.print("\n[yellow]Goodbye![/yellow]\n")
+                    await self._cleanup_background()
                     break
 
                 self.command_history.append(user_input)
@@ -233,9 +244,11 @@ help                                      Full reference
 
             except KeyboardInterrupt:
                 self.console.print("\n\n[yellow]Goodbye![/yellow]\n")
+                await self._cleanup_background()
                 break
             except EOFError:
                 self.console.print("\n\n[yellow]Goodbye![/yellow]\n")
+                await self._cleanup_background()
                 break
             except Exception as e:
                 self.console.print(f"\n[red]Unexpected error:[/red] {str(e)}\n")

@@ -245,12 +245,15 @@ class CommandProcessor:
             return self._agent_top(params)
         elif subcmd == "agent:stop":
             return self._agent_stop()
+        elif subcmd == "agent:logs":
+            return self._agent_logs(params)
         else:
             return (
                 f"# Unknown Agent Command\n\n`{subcmd}` is not recognized.\n\n"
                 "Available: `agent:backtest`, `agent:validate`, `agent:paper`, "
                 "`agent:full`, `agent:reconcile`, `agent:report`, `agent:top`, "
-                "`agent:status`, `agent:runs`, `agent:trades`, `agent:stop`"
+                "`agent:status`, `agent:runs`, `agent:trades`, `agent:stop`, "
+                "`agent:logs`"
             )
 
     def _parse_kv_params(self, parts: list) -> Dict[str, str]:
@@ -845,7 +848,12 @@ class CommandProcessor:
             log_path = Path("data/paper_trade.log")
             if log_path.exists():
                 try:
-                    lines = log_path.read_text().splitlines()
+                    raw = log_path.read_text(errors="replace")
+                    # Filter out lines with non-printable / garbage bytes
+                    lines = [
+                        ln for ln in raw.splitlines()
+                        if ln.strip() and ln.isprintable()
+                    ]
                     tail = lines[-10:] if len(lines) > 10 else lines
                     if tail:
                         md += "\n## Recent Logs\n```\n"
@@ -1113,6 +1121,33 @@ class CommandProcessor:
         return "# No Background Task\n\nNo paper trading session is currently running."
 
     # ------------------------------------------------------------------
+    # agent:logs
+    # ------------------------------------------------------------------
+
+    def _agent_logs(self, params: Dict) -> str:
+        """Show paper trading log tail."""
+        log_path = Path("data/paper_trade.log")
+        if not log_path.exists():
+            return "# Logs\n\nNo log file found. Start paper trading first."
+
+        n = int(params.get("lines", params.get("n", "30")))
+
+        try:
+            raw = log_path.read_text(errors="replace")
+            lines = [ln for ln in raw.splitlines() if ln.strip() and ln.isprintable()]
+
+            if not lines:
+                return "# Logs\n\nLog file is empty."
+
+            tail = lines[-n:]
+            md = f"# Paper Trade Logs (last {len(tail)} lines)\n\n```\n"
+            md += "\n".join(tail)
+            md += "\n```"
+            return md
+        except Exception as e:
+            return f"# Error\n\n```\n{e}\n```"
+
+    # ------------------------------------------------------------------
     # Help
     # ------------------------------------------------------------------
 
@@ -1129,7 +1164,7 @@ class CommandProcessor:
         c.print("[bold cyan]AlpaTrade CLI — Help[/bold cyan]")
         c.print()
 
-        # --- Column 1: Backtest / Validate / Reconcile ---
+        # --- Column 1: Backtest / Validate / Reconcile / Research ---
         col1 = Table(show_header=False, box=None, padding=(0, 1), expand=True)
         col1.add_column(style="bold yellow", no_wrap=True)
         col1.add_column(style="dim")
@@ -1148,8 +1183,17 @@ class CommandProcessor:
         col1.add_row("[bold white]Reconcile[/bold white]", "")
         col1.add_row("agent:reconcile", "DB vs Alpaca (7d)")
         col1.add_row("  window:14d", "custom window")
+        col1.add_row("", "")
+        col1.add_row("[bold white]Research[/bold white]", "")
+        col1.add_row("news:TSLA", "company news")
+        col1.add_row("profile:TSLA", "company profile")
+        col1.add_row("financials:AAPL", "income & balance sheet")
+        col1.add_row("price:TSLA", "quote & technicals")
+        col1.add_row("movers", "top gainers & losers")
+        col1.add_row("analysts:AAPL", "ratings & targets")
+        col1.add_row("valuation:AAPL,MSFT", "valuation comparison")
 
-        # --- Column 2: Paper / Full / Query ---
+        # --- Column 2: Paper / Full ---
         col2 = Table(show_header=False, box=None, padding=(0, 1), expand=True)
         col2.add_column(style="bold yellow", no_wrap=True)
         col2.add_column(style="dim")
@@ -1164,28 +1208,21 @@ class CommandProcessor:
         col2.add_row("[bold white]Full Cycle[/bold white]", "BT > Val > PT > Val")
         col2.add_row("agent:full lookback:1m duration:1m", "")
         col2.add_row("  hours:extended", "extended hours")
-        col2.add_row("", "")
-        col2.add_row("[bold white]Query & Monitor[/bold white]", "")
-        col2.add_row("trades / runs", "DB tables")
-        col2.add_row("agent:report", "performance summary")
-        col2.add_row("  type:backtest run-id:<uuid>", "filter / detail")
-        col2.add_row("agent:top", "rank strategies by Avg Ann Return")
-        col2.add_row("agent:status / agent:stop", "monitor / cancel")
 
-        # --- Column 3: Research / Options / General ---
+        # --- Column 3: Query / Options / General ---
         col3 = Table(show_header=False, box=None, padding=(0, 1), expand=True)
         col3.add_column(style="bold yellow", no_wrap=True)
         col3.add_column(style="dim")
 
-        col3.add_row("[bold white]Research[/bold white]", "")
-        col3.add_row("news:TSLA", "company news")
-        col3.add_row("  provider:xai|tavily", "force provider")
-        col3.add_row("profile:TSLA", "company profile")
-        col3.add_row("financials:AAPL", "income & balance sheet")
-        col3.add_row("price:TSLA", "quote & technicals")
-        col3.add_row("movers", "top gainers & losers")
-        col3.add_row("analysts:AAPL", "ratings & targets")
-        col3.add_row("valuation:AAPL,MSFT", "valuation comparison")
+        col3.add_row("[bold white]Query & Monitor[/bold white]", "")
+        col3.add_row("trades / runs", "DB tables")
+        col3.add_row("agent:report", "performance summary")
+        col3.add_row("  type:backtest run-id:<uuid>", "filter / detail")
+        col3.add_row("  strategy:btd", "filter by slug prefix")
+        col3.add_row("agent:top", "rank strategies")
+        col3.add_row("agent:status", "agent states")
+        col3.add_row("agent:logs", "paper trade log tail")
+        col3.add_row("agent:stop", "stop background task")
         col3.add_row("", "")
         col3.add_row("[bold white]Options[/bold white]", "")
         col3.add_row("hours:extended", "4AM-8PM ET")
