@@ -465,6 +465,7 @@ class CommandProcessor:
 
     async def _agent_paper(self, params: Dict) -> str:
         """Start paper trading in the background."""
+        import logging
         from agents.orchestrator import parse_duration
 
         if self.app._bg_task and not self.app._bg_task.done():
@@ -498,16 +499,39 @@ class CommandProcessor:
         }
 
         run_id = orch.run_id
+        log_path = Path("data/paper_trade.log")
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        stop_event = self.app._bg_stop
 
         async def _run_paper():
-            result = await asyncio.to_thread(orch.run_paper_trade, config)
-            # Notify TUI when done
-            if hasattr(self.app, 'notify'):
-                trades = result.get("total_trades", 0)
-                pnl = result.get("total_pnl", 0)
-                self.app.notify(
-                    f"Paper trading done: {trades} trades, P&L: ${pnl:.2f}"
+            # Redirect logs to file so they don't flood the console
+            root = logging.getLogger()
+            original_handlers = root.handlers[:]
+            file_handler = logging.FileHandler(str(log_path), mode="w")
+            file_handler.setFormatter(
+                logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
+            )
+            # Swap: remove console handlers, add file handler
+            for h in original_handlers:
+                root.removeHandler(h)
+            root.addHandler(file_handler)
+            try:
+                result = await asyncio.to_thread(
+                    orch.run_paper_trade, config, stop_event=stop_event
                 )
+                # Notify TUI when done
+                if hasattr(self.app, 'notify'):
+                    trades = result.get("total_trades", 0)
+                    pnl = result.get("total_pnl", 0)
+                    self.app.notify(
+                        f"Paper trading done: {trades} trades, P&L: ${pnl:.2f}"
+                    )
+            finally:
+                # Restore original console handlers
+                root.removeHandler(file_handler)
+                file_handler.close()
+                for h in original_handlers:
+                    root.addHandler(h)
 
         self.app._bg_task = asyncio.create_task(_run_paper())
 
@@ -517,7 +541,8 @@ class CommandProcessor:
             f"- **Duration**: {duration}\n"
             f"- **Strategy**: {config['strategy']}\n"
             f"- **Symbols**: {', '.join(symbols)}\n"
-            f"- **Poll Interval**: {config['poll_interval_seconds']}s\n\n"
+            f"- **Poll Interval**: {config['poll_interval_seconds']}s\n"
+            f"- **Log**: `{log_path}`\n\n"
             f"Running in background. Use `agent:status` to monitor, "
             f"`agent:stop` to cancel."
         )
@@ -719,6 +744,33 @@ class CommandProcessor:
                 f"- Status: {last.get('status')}\n"
                 f"- Anomalies: {last.get('anomalies_found', 0)}\n"
             )
+
+        # Show elapsed time for paper trading
+        if mode == 'paper' and started != 'n/a':
+            try:
+                from datetime import timezone as tz
+                started_dt = orch.state.started_at
+                if started_dt:
+                    elapsed = datetime.now(tz.utc) - started_dt
+                    hours, remainder = divmod(int(elapsed.total_seconds()), 3600)
+                    mins, secs = divmod(remainder, 60)
+                    md += f"\n**Elapsed**: {hours}h {mins}m {secs}s\n"
+            except Exception:
+                pass
+
+        # Show recent log lines for paper trading
+        if mode == 'paper' and (bg_running or bg_done):
+            log_path = Path("data/paper_trade.log")
+            if log_path.exists():
+                try:
+                    lines = log_path.read_text().splitlines()
+                    tail = lines[-10:] if len(lines) > 10 else lines
+                    if tail:
+                        md += "\n## Recent Logs\n```\n"
+                        md += "\n".join(tail)
+                        md += "\n```\n"
+                except Exception:
+                    pass
 
         return md
 

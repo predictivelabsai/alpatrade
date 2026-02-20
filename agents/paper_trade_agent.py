@@ -41,7 +41,7 @@ class PaperTradeAgent:
         self._tracked_positions: Dict[str, Dict] = {}
         self.pdt_tracker = PDTTracker()
 
-    def run(self, request: Dict[str, Any]) -> Dict[str, Any]:
+    def run(self, request: Dict[str, Any], stop_event=None) -> Dict[str, Any]:
         """
         Run paper trading session.
 
@@ -52,6 +52,7 @@ class PaperTradeAgent:
                 - params: dict with strategy parameters
                 - duration_seconds: int (default 604800 = 1 week)
                 - poll_interval_seconds: int (default 300 = 5 min)
+            stop_event: optional threading.Event checked each loop iteration
 
         Returns:
             Dict with session summary
@@ -102,6 +103,11 @@ class PaperTradeAgent:
 
         try:
             while datetime.now(timezone.utc) < end_time:
+                # Check for external stop request
+                if stop_event and stop_event.is_set():
+                    logger.info("Paper trading stopped via stop event")
+                    break
+
                 now = datetime.now(timezone.utc)
 
                 # Check if market is open

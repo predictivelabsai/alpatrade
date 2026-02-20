@@ -204,7 +204,7 @@ class Orchestrator:
             logger.error(f"Validation failed: {e}")
             return {"error": str(e)}
 
-    def run_paper_trade(self, config: Dict[str, Any] = None) -> Dict[str, Any]:
+    def run_paper_trade(self, config: Dict[str, Any] = None, stop_event=None) -> Dict[str, Any]:
         """Run paper trading phase."""
         config = config or {}
         self._config = config
@@ -261,7 +261,7 @@ class Orchestrator:
         )
 
         try:
-            result = self.paper_trader.run(request)
+            result = self.paper_trader.run(request, stop_event=stop_event)
             agent_state.set_completed()
             self.state.paper_trade_session = result
             self.state.save()
