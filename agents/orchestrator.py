@@ -28,6 +28,7 @@ if str(project_root) not in sys.path:
 
 from agents.shared.message_bus import MessageBus
 from agents.shared.state import PortfolioState
+from utils.config import load_parameters
 from agents.backtest_agent import BacktestAgent
 from agents.paper_trade_agent import PaperTradeAgent
 from agents.validate_agent import ValidateAgent
@@ -235,19 +236,25 @@ class Orchestrator:
         best = self.state.best_config or {}
         params = best.get("params", {})
 
+        # Load defaults from parameters.yaml
+        yaml_params = load_parameters()
+        yaml_cfg = yaml_params.get("buy_the_dip", {})
+        yaml_general = yaml_params.get("general", {})
+        yaml_symbols = [s.strip() for s in yaml_cfg.get("symbols", "").split(",") if s.strip()]
+
         request = {
             "strategy": config.get("strategy", "buy_the_dip"),
             "symbols": params.get("symbols", config.get("symbols",
-                       ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"])),
+                       yaml_symbols or ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"])),
             "params": {
-                "dip_threshold": params.get("dip_threshold", 5.0) * 100 if params.get("dip_threshold", 1) < 1 else params.get("dip_threshold", 5.0),
-                "take_profit_threshold": params.get("take_profit", 1.0) * 100 if params.get("take_profit", 1) < 1 else params.get("take_profit", 1.0),
-                "stop_loss_threshold": params.get("stop_loss", 0.5) * 100 if params.get("stop_loss", 1) < 1 else params.get("stop_loss", 0.5),
-                "hold_days": params.get("hold_days", 2),
-                "capital_per_trade": config.get("capital_per_trade", 1000.0),
+                "dip_threshold": params.get("dip_threshold", yaml_cfg.get("dip_threshold", 5.0)) * 100 if params.get("dip_threshold", 1) < 1 else params.get("dip_threshold", yaml_cfg.get("dip_threshold", 5.0)),
+                "take_profit_threshold": params.get("take_profit", yaml_cfg.get("take_profit_threshold", 1.0)) * 100 if params.get("take_profit", 1) < 1 else params.get("take_profit", yaml_cfg.get("take_profit_threshold", 1.0)),
+                "stop_loss_threshold": params.get("stop_loss", yaml_cfg.get("stop_loss_threshold", 0.5)) * 100 if params.get("stop_loss", 1) < 1 else params.get("stop_loss", yaml_cfg.get("stop_loss_threshold", 0.5)),
+                "hold_days": params.get("hold_days", yaml_cfg.get("hold_days", 2)),
+                "capital_per_trade": config.get("capital_per_trade", yaml_cfg.get("capital_per_trade", 1000.0)),
             },
             "duration_seconds": config.get("duration_seconds", 604800),
-            "poll_interval_seconds": config.get("poll_interval_seconds", 300),
+            "poll_interval_seconds": config.get("poll_interval_seconds", yaml_general.get("polling_interval", 300)),
             "extended_hours": config.get("extended_hours", False),
             "email_notifications": config.get("email_notifications", True),
             "pdt_protection": config.get("pdt_protection"),

@@ -23,6 +23,7 @@ if str(project_root) not in sys.path:
 from utils.alpaca_util import AlpacaAPI
 from utils.massive_util import get_historical_data, get_intraday_prices, is_market_open
 from utils.agent_storage import store_paper_trade
+from utils.config import load_parameters
 from utils.pdt_tracker import PDTTracker
 
 logger = logging.getLogger(__name__)
@@ -57,11 +58,17 @@ class PaperTradeAgent:
         Returns:
             Dict with session summary
         """
+        # Load defaults from parameters.yaml
+        yaml_params = load_parameters()
+        yaml_cfg = yaml_params.get("buy_the_dip", {})
+        yaml_general = yaml_params.get("general", {})
+        yaml_symbols = [s.strip() for s in yaml_cfg.get("symbols", "").split(",") if s.strip()]
+
         strategy = request.get("strategy", "buy_the_dip")
-        symbols = request.get("symbols", ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"])
+        symbols = request.get("symbols", yaml_symbols or ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"])
         params = request.get("params", {})
         duration = request.get("duration_seconds", 604800)
-        poll_interval = request.get("poll_interval_seconds", 300)
+        poll_interval = request.get("poll_interval_seconds", yaml_general.get("polling_interval", 300))
         extended_hours = request.get("extended_hours", False)
         email_notifications = request.get("email_notifications", True)
 
@@ -72,12 +79,12 @@ class PaperTradeAgent:
         else:
             self.pdt_tracker = PDTTracker()
 
-        # Strategy parameters with defaults
-        dip_threshold = params.get("dip_threshold", 5.0)
-        take_profit = params.get("take_profit_threshold", 1.0)
-        stop_loss = params.get("stop_loss_threshold", 0.5)
-        hold_days = params.get("hold_days", 2)
-        capital_per_trade = params.get("capital_per_trade", 1000.0)
+        # Strategy parameters — fall back to parameters.yaml, then hardcoded defaults
+        dip_threshold = params.get("dip_threshold", yaml_cfg.get("dip_threshold", 5.0))
+        take_profit = params.get("take_profit_threshold", yaml_cfg.get("take_profit_threshold", 1.0))
+        stop_loss = params.get("stop_loss_threshold", yaml_cfg.get("stop_loss_threshold", 0.5))
+        hold_days = params.get("hold_days", yaml_cfg.get("hold_days", 2))
+        capital_per_trade = params.get("capital_per_trade", yaml_cfg.get("capital_per_trade", 1000.0))
 
         logger.info(f"Paper trade agent starting session {self.session_id}")
         logger.info(f"Strategy: {strategy}, Symbols: {symbols}")
