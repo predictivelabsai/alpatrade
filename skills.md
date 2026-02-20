@@ -6,7 +6,7 @@ Master index of all agent skills in the multi-agent trading system.
 
 ### 1. Portfolio Manager (Orchestrator)
 
-- **Skill**: `agents/portfolio-manager/SKILL.md`
+- **Skill**: `agents/portfolio_manager/SKILL.md`
 - **Role**: Orchestrator — dispatches work, tracks overall portfolio state
 - **Triggers**: Session start, agent completion, error escalation
 - **Capabilities**:
@@ -28,7 +28,7 @@ Master index of all agent skills in the multi-agent trading system.
 
 ### 3. Paper Trader
 
-- **Skill**: `agents/paper-trader/SKILL.md`
+- **Skill**: `agents/paper_trader/SKILL.md`
 - **Role**: Continuous paper trading via Alpaca paper API
 - **Triggers**: Portfolio Manager starts session after backtest validates
 - **Capabilities**:
@@ -49,6 +49,28 @@ Master index of all agent skills in the multi-agent trading system.
   - Self-correction loop (max n=10 iterations)
   - Human-readable error reports when self-correction fails
 
+### 5. Reconciler
+
+- **Skill**: `agents/reconciler/SKILL.md`
+- **Role**: Compare DB state against actual Alpaca holdings
+- **Triggers**: Portfolio Manager dispatches reconciliation request
+- **Capabilities**:
+  - Position match: DB open trades vs Alpaca positions
+  - Trade match: DB paper trades vs Alpaca filled orders (by order_id)
+  - P&L comparison: DB total P&L vs Alpaca portfolio equity
+  - Configurable time window (default 7 days)
+
+### 6. Reporter
+
+- **Skill**: `agents/reporter/SKILL.md`
+- **Role**: Read-only performance reporting from DB
+- **Triggers**: Report requests from Portfolio Manager or CLI
+- **Capabilities**:
+  - Summary mode: list recent runs with key metrics
+  - Detail mode: full performance report for a single run
+  - Top strategies: rank strategy slugs by average annualized return
+  - Supports prefix matching on run_id
+
 ## Interaction Flow
 
 ```
@@ -66,7 +88,10 @@ Portfolio Manager
     +--> Validator (validate paper trading results)
     |        |
     |        v
-    +--> Final Report
+    +--> Reconciler (compare DB vs Alpaca holdings)
+    |        |
+    |        v
+    +--> Reporter (generate final performance report)
 ```
 
 ## Message Types
@@ -80,5 +105,8 @@ Portfolio Manager
 | `paper_trade_start` | PM | Paper Trader | Begin paper trading session |
 | `trade_update` | Paper Trader | PM | Trade executed / position change |
 | `paper_trade_result` | Paper Trader | PM | Session complete + summary |
+| `reconciliation_request` | PM | Reconciler | Compare DB vs Alpaca for time window |
+| `reconciliation_result` | Reconciler | PM | Reconciliation outcome + discrepancies |
+| `report_request` | PM | Reporter | Generate performance report |
 | `error` | Any | PM | Error requiring escalation |
 | `correction` | Validator | Validator | Self-correction attempt |

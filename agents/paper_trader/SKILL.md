@@ -1,5 +1,5 @@
 ---
-name: paper-trader
+name: paper_trader
 description: Continuous paper trading agent using real Alpaca paper API with position tracking and P&L reporting
 metadata:
   version: "1.0"

@@ -1,5 +1,5 @@
 ---
-name: portfolio-manager
+name: portfolio_manager
 description: Orchestrator agent that coordinates backtesting, paper trading, and validation workflows
 metadata:
   version: "1.0"
