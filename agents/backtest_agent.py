@@ -78,7 +78,7 @@ class BacktestAgent:
         initial_capital = request.get("initial_capital", 10000.0)
         data_source = request.get("data_source", "massive")
         variations = request.get("variations") or DEFAULT_VARIATIONS.get(strategy, {})
-        extended_hours = request.get("extended_hours", False)
+        extended_hours = request.get("extended_hours", True)
         intraday_exit = request.get("intraday_exit", False)
         pdt_protection = request.get("pdt_protection")
 
@@ -185,7 +185,7 @@ class BacktestAgent:
         data_source: str,
         variations: Dict,
         run_id: str,
-        extended_hours: bool = False,
+        extended_hours: bool = True,
         intraday_exit: bool = False,
         pdt_protection: Optional[bool] = None,
     ) -> List[Dict]:

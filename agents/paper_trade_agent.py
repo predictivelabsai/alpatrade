@@ -69,7 +69,7 @@ class PaperTradeAgent:
         params = request.get("params", {})
         duration = request.get("duration_seconds", 604800)
         poll_interval = request.get("poll_interval_seconds", yaml_general.get("polling_interval", 300))
-        extended_hours = request.get("extended_hours", False)
+        extended_hours = request.get("extended_hours", True)
         email_notifications = request.get("email_notifications", True)
 
         # PDT protection: default True, disable with pdt:false for accounts >$25k

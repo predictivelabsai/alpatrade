@@ -69,7 +69,7 @@ class ValidateAgent:
         self.max_iterations = max_iterations
         self.price_tolerance = price_tolerance
         self.massive = MassiveUtil()
-        self.extended_hours = False
+        self.extended_hours = True
 
     def run(self, request: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -91,7 +91,7 @@ class ValidateAgent:
         max_iter = request.get("max_iterations", self.max_iterations)
         tolerance = request.get("price_tolerance", self.price_tolerance)
         trades = request.get("trades")
-        self.extended_hours = request.get("extended_hours", False)
+        self.extended_hours = request.get("extended_hours", True)
 
         logger.info(f"Validation agent starting for run {run_id} (source={source})")
 
