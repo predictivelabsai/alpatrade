@@ -594,12 +594,32 @@ class CommandProcessor:
         pdt_label = "Off" if pdt_protection is False else "On" if pdt_protection else "Auto"
         email_label = "On" if config["email_notifications"] else "Off"
 
+        # Load strategy params from parameters.yaml (same source as paper_trade_agent)
+        import yaml
+        yaml_path = Path("config/parameters.yaml")
+        yaml_cfg = {}
+        if yaml_path.exists():
+            with open(yaml_path) as f:
+                all_cfg = yaml.safe_load(f) or {}
+            yaml_cfg = all_cfg.get(config["strategy"], {})
+
+        dip = params.get("dip_threshold", yaml_cfg.get("dip_threshold", 5.0))
+        tp = params.get("take_profit_threshold", yaml_cfg.get("take_profit_threshold", 1.0))
+        sl = params.get("stop_loss_threshold", yaml_cfg.get("stop_loss_threshold", 0.5))
+        hold = params.get("hold_days", yaml_cfg.get("hold_days", 2))
+        cpt = params.get("capital_per_trade", yaml_cfg.get("capital_per_trade", 1000.0))
+
         return (
             f"# Paper Trading Started\n\n"
             f"- **Run ID**: `{run_id}`\n"
             f"- **Duration**: {duration}\n"
             f"- **Strategy**: {config['strategy']}\n"
             f"- **Symbols**: {', '.join(symbols)}\n"
+            f"- **Dip Threshold**: {dip}%\n"
+            f"- **Take Profit**: {tp}%\n"
+            f"- **Stop Loss**: {sl}%\n"
+            f"- **Hold Days**: {hold}\n"
+            f"- **Capital/Trade**: ${float(cpt):,.0f}\n"
             f"- **Poll Interval**: {config['poll_interval_seconds']}s\n"
             f"- **Hours**: {hours_label}\n"
             f"- **PDT Protection**: {pdt_label}\n"
