@@ -90,22 +90,41 @@ class CommandProcessor:
     # Free-form AI chat (fallback for unrecognized input)
     # ------------------------------------------------------------------
 
+    # Broker-related keywords → alpaca_agent
+    _BROKER_KEYWORDS = {
+        "buy", "sell", "order", "orders", "position", "positions",
+        "holdings", "holding", "portfolio", "account", "balance",
+        "buying power", "equity", "assets", "tradable",
+    }
+
+    def _is_broker_query(self, text: str) -> bool:
+        """Return True if the input looks like a broker / trading interaction."""
+        lower = text.lower()
+        return any(kw in lower for kw in self._BROKER_KEYWORDS)
+
     async def _chat_agent(self, user_input: str) -> str:
-        """Send free-form text to the LangGraph trading/research agent."""
+        """Route free-form text to the appropriate LangGraph agent."""
         import uuid
 
-        # Lazy thread id — one per CLI session for conversation continuity
-        if not hasattr(self.app, '_chat_thread_id'):
-            self.app._chat_thread_id = str(uuid.uuid4())
+        # Separate thread ids per agent so conversation context doesn't bleed
+        if not hasattr(self.app, '_broker_thread_id'):
+            self.app._broker_thread_id = str(uuid.uuid4())
+        if not hasattr(self.app, '_research_thread_id'):
+            self.app._research_thread_id = str(uuid.uuid4())
 
-        self.console.print("[dim]Thinking...[/dim]")
+        is_broker = self._is_broker_query(user_input)
+
+        if is_broker:
+            self.console.print("[dim]Asking broker...[/dim]")
+            from utils.alpaca_agent import get_response
+            thread_id = self.app._broker_thread_id
+        else:
+            self.console.print("[dim]Researching...[/dim]")
+            from utils.research_agent import get_response
+            thread_id = self.app._research_thread_id
 
         try:
-            from utils.alpaca_agent import get_response
-
-            state = await asyncio.to_thread(
-                get_response, user_input, self.app._chat_thread_id
-            )
+            state = await asyncio.to_thread(get_response, user_input, thread_id)
 
             # Walk backwards to find the last AI message without tool_calls
             for msg in reversed(state.get("messages", [])):
