@@ -1,19 +1,13 @@
 from typing import Literal, Optional, TypedDict, Annotated
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
+from langchain_core.messages import SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph, MessagesState
 from langgraph.prebuilt import ToolNode
 from langgraph.graph.message import add_messages
 from dotenv import load_dotenv
 import os
-from alpaca.trading.client import TradingClient
-from alpaca.trading.requests import (
-    MarketOrderRequest,
-    GetAssetsRequest,
-    GetOrdersRequest
-)
-from alpaca.trading.enums import OrderSide, TimeInForce, AssetClass, QueryOrderStatus
 
 # https://github.com/langchain-ai/langgraph/blob/main/docs/docs/concepts/low_level.md
 # Load environment variables
@@ -24,18 +18,31 @@ class AlpacaState(TypedDict):
     messages: Annotated[list, add_messages]
     thread_id: Optional[str]
 
-# Initialize Alpaca client
-trading_client = TradingClient(
-    os.getenv("ALPACA_PAPER_API_KEY"),
-    os.getenv("ALPACA_PAPER_SECRET_KEY"),
-    paper=True  # Use paper trading for safety
-)
+# ---------------------------------------------------------------------------
+# Lazy Alpaca client — avoids requiring API keys at import time
+# ---------------------------------------------------------------------------
+_trading_client = None
+
+def _get_trading_client():
+    global _trading_client
+    if _trading_client is None:
+        from alpaca.trading.client import TradingClient
+        _trading_client = TradingClient(
+            os.getenv("ALPACA_PAPER_API_KEY"),
+            os.getenv("ALPACA_PAPER_SECRET_KEY"),
+            paper=True,
+        )
+    return _trading_client
+
+# ---------------------------------------------------------------------------
+# Trading tools (Alpaca)
+# ---------------------------------------------------------------------------
 
 @tool
 def get_account_info() -> str:
     """Get the current account information including buying power and equity."""
     try:
-        account = trading_client.get_account()
+        account = _get_trading_client().get_account()
         return (
             f"Account Information:\n"
             f"- Buying Power: ${float(account.buying_power):,.2f}\n"
@@ -53,12 +60,14 @@ def get_assets(asset_class: Optional[str] = None) -> str:
     Get available assets for trading. Optionally filter by asset class (CRYPTO or US_EQUITY).
     """
     try:
+        from alpaca.trading.requests import GetAssetsRequest
+        from alpaca.trading.enums import AssetClass
         params = GetAssetsRequest()
         if asset_class:
             params.asset_class = AssetClass(asset_class.upper())
-        
-        assets = trading_client.get_all_assets(params)
-        
+
+        assets = _get_trading_client().get_all_assets(params)
+
         response = "Available Assets:\n"
         for asset in assets[:10]:  # Limit to first 10 for readability
             response += (
@@ -81,17 +90,18 @@ def place_market_order(symbol: str, qty: float, side: str) -> str:
         side: 'buy' or 'sell'
     """
     try:
-        # Map the side string to the correct OrderSide enum
+        from alpaca.trading.requests import MarketOrderRequest
+        from alpaca.trading.enums import OrderSide, TimeInForce
         order_side = OrderSide.BUY if side.lower() == 'buy' else OrderSide.SELL
-        
+
         order_data = MarketOrderRequest(
             symbol=symbol,
             qty=qty,
             side=order_side,
             time_in_force=TimeInForce.DAY
         )
-        
-        order = trading_client.submit_order(order_data)
+
+        order = _get_trading_client().submit_order(order_data)
         return (
             f"Order placed successfully:\n"
             f"- Symbol: {order.symbol}\n"
@@ -107,10 +117,10 @@ def place_market_order(symbol: str, qty: float, side: str) -> str:
 def get_positions() -> str:
     """Get all current positions in the portfolio."""
     try:
-        positions = trading_client.get_all_positions()
+        positions = _get_trading_client().get_all_positions()
         if not positions:
             return "No open positions."
-            
+
         response = "Current Positions:\n"
         for pos in positions:
             response += (
@@ -130,6 +140,8 @@ def get_orders(status: Optional[str] = None) -> str:
     Get orders. Optionally filter by status (open, closed, all).
     """
     try:
+        from alpaca.trading.requests import GetOrdersRequest
+        from alpaca.trading.enums import QueryOrderStatus
         params = GetOrdersRequest()
         if status:
             if status.lower() == 'open':
@@ -138,12 +150,12 @@ def get_orders(status: Optional[str] = None) -> str:
                 params.status = QueryOrderStatus.CLOSED
             else:
                 params.status = QueryOrderStatus.ALL
-        
-        orders = trading_client.get_orders(params)
-        
+
+        orders = _get_trading_client().get_orders(params)
+
         if not orders:
             return f"No {status or 'recent'} orders found."
-        
+
         response = f"{status.capitalize() if status else 'Recent'} Orders:\n"
         for order in orders[:10]:  # Limit to 10 most recent
             response += (
@@ -158,42 +170,133 @@ def get_orders(status: Optional[str] = None) -> str:
     except Exception as e:
         return f"Error getting orders: {str(e)}"
 
-# Initialize tools
-tools = [get_account_info, get_assets, place_market_order, get_positions, get_orders]
+# ---------------------------------------------------------------------------
+# Market research tools (wrap MarketResearch)
+# ---------------------------------------------------------------------------
 
-# Initialize the model with a specific prompt
-system_prompt = """You are a professional trading assistant for Alpaca Markets. Your task is to help users manage their 
-Alpaca trading account by providing information about assets, placing orders, and checking positions.
+def _get_research():
+    from utils.market_research_util import MarketResearch
+    return MarketResearch()
 
-You have access to the following tools:
-1. get_account_info: Check account balance and status
-2. get_assets: View available assets for trading
-3. place_market_order: Place market orders
-4. get_positions: View current positions
-5. get_orders: View recent or filtered orders
+@tool
+def get_stock_news(ticker: Optional[str] = None, limit: int = 5) -> str:
+    """Get recent news for a stock ticker, or general market news if no ticker given."""
+    try:
+        return _get_research().news(ticker, limit)
+    except Exception as e:
+        return f"Error getting news: {e}"
 
-When placing orders:
-1. Always confirm the details before executing
-2. Use market orders with caution
-3. Provide clear feedback about the order status
-4. Remind users this is paper trading
+@tool
+def get_company_profile(ticker: str) -> str:
+    """Get company profile including sector, description, market cap, and key stats."""
+    try:
+        return _get_research().profile(ticker)
+    except Exception as e:
+        return f"Error getting profile: {e}"
 
-Remember to:
-1. Be precise with numbers and symbols
-2. Warn about potential risks
-3. Maintain a professional tone
-4. Explain any errors clearly
-5. Use natural, conversational language
+@tool
+def get_financials(ticker: str, period: str = "annual") -> str:
+    """Get financial statements (income, balance sheet, cash flow). Period: 'annual' or 'quarterly'."""
+    try:
+        return _get_research().financials(ticker, period)
+    except Exception as e:
+        return f"Error getting financials: {e}"
+
+@tool
+def get_stock_price(ticker: str) -> str:
+    """Get current stock price, quote data, and technical indicators."""
+    try:
+        return _get_research().price(ticker)
+    except Exception as e:
+        return f"Error getting price: {e}"
+
+@tool
+def get_market_movers(direction: str = "both") -> str:
+    """Get top market movers. Direction: 'gainers', 'losers', or 'both'."""
+    try:
+        return _get_research().movers(direction)
+    except Exception as e:
+        return f"Error getting movers: {e}"
+
+@tool
+def get_analyst_ratings(ticker: str) -> str:
+    """Get analyst ratings, price targets, and consensus for a stock."""
+    try:
+        return _get_research().analysts(ticker)
+    except Exception as e:
+        return f"Error getting analyst ratings: {e}"
+
+@tool
+def get_valuation(tickers: str) -> str:
+    """Get valuation comparison for one or more tickers (comma-separated, e.g. 'AAPL,MSFT,GOOGL')."""
+    try:
+        ticker_list = [t.strip().upper() for t in tickers.split(",")]
+        return _get_research().valuation(ticker_list)
+    except Exception as e:
+        return f"Error getting valuation: {e}"
+
+# ---------------------------------------------------------------------------
+# All tools
+# ---------------------------------------------------------------------------
+tools = [
+    # Trading
+    get_account_info, get_assets, place_market_order, get_positions, get_orders,
+    # Research
+    get_stock_news, get_company_profile, get_financials, get_stock_price,
+    get_market_movers, get_analyst_ratings, get_valuation,
+]
+
+# ---------------------------------------------------------------------------
+# System prompt
+# ---------------------------------------------------------------------------
+system_prompt = """\
+You are AlpaTrade Assistant — an AI trading and market research assistant.
+
+## Capabilities
+
+**Portfolio & Trading** (Alpaca paper account):
+- get_account_info — account balance, buying power, equity
+- get_assets — browse tradable assets
+- place_market_order — place buy/sell market orders
+- get_positions — view open positions
+- get_orders — view order history
+
+**Market Research**:
+- get_stock_news — recent news for a ticker or the broad market
+- get_company_profile — company overview, sector, market cap
+- get_financials — income statement, balance sheet, cash flow (annual/quarterly)
+- get_stock_price — current quote and technical indicators
+- get_market_movers — top gainers and losers
+- get_analyst_ratings — analyst consensus, price targets
+- get_valuation — comparative valuation metrics across tickers
+
+## Guidelines
+- **Order safety**: Always confirm symbol, quantity, and side before executing a trade. Remind the user this is a paper trading account.
+- **Data precision**: Use exact numbers from tool results. Do not fabricate financial data.
+- **Formatting**: Use markdown tables and bullet points for readability.
+- **Tone**: Professional but conversational. Explain financial terms when helpful.
+- When asked about financials, call get_financials with the appropriate period and synthesize a focused answer.
 """
 
-# Initialize the model with XAI API
-model = ChatOpenAI(
-    model=os.getenv("GROK_MODEL", "grok-4"),
-    temperature=0.7,
-    streaming=True,
-    api_key=os.getenv("XAI_API_KEY"),
-    base_url="https://api.x.ai/v1"
-).bind_tools(tools)
+# ---------------------------------------------------------------------------
+# Lazy model + graph
+# ---------------------------------------------------------------------------
+_graph = None
+
+def _build_model():
+    return ChatOpenAI(
+        model=os.getenv("GROK_MODEL", "grok-4"),
+        temperature=0.7,
+        streaming=True,
+        api_key=os.getenv("XAI_API_KEY"),
+        base_url="https://api.x.ai/v1",
+    ).bind_tools(tools)
+
+def get_graph():
+    global _graph
+    if _graph is None:
+        _graph = _create_graph()
+    return _graph
 
 # Create tool node
 tool_node = ToolNode(tools)
@@ -207,22 +310,21 @@ def should_continue(state: MessagesState) -> Literal["tools", END]:
     return END
 
 def call_model(state: AlpacaState):
-    """Call the model with the current state."""
+    """Call the model with the current state, injecting the system prompt."""
     messages = state['messages']
+    if not messages or not isinstance(messages[0], SystemMessage):
+        messages = [SystemMessage(content=system_prompt)] + list(messages)
+    model = _build_model()
     response = model.invoke(messages)
     return {"messages": [response]}
 
-# Create and configure the graph
-def create_graph():
+def _create_graph():
     """Create and configure the LangGraph for the Alpaca agent."""
-    # Create the graph
     workflow = StateGraph(AlpacaState)
-    
-    # Add nodes
+
     workflow.add_node("agent", call_model)
     workflow.add_node("tools", tool_node)
-    
-    # Add edges
+
     workflow.add_edge(START, "agent")
     workflow.add_conditional_edges(
         "agent",
@@ -233,15 +335,9 @@ def create_graph():
         }
     )
     workflow.add_edge("tools", "agent")
-    
-    # Initialize memory
-    checkpointer = MemorySaver()
-    
-    # Compile the graph
-    return workflow.compile(checkpointer=checkpointer)
 
-# Create the graph
-graph = create_graph()
+    checkpointer = MemorySaver()
+    return workflow.compile(checkpointer=checkpointer)
 
 # Define the output nodes
 output_nodes = ["agent"]
@@ -252,11 +348,11 @@ def get_response(
 ) -> dict:
     """
     Get a response from the trading agent for a given question.
-    
+
     Args:
         question (str): The user's trading-related question
         thread_id (str): Thread identifier for the conversation
-        
+
     Returns:
         dict: The final state containing the conversation
     """
@@ -267,8 +363,8 @@ def get_response(
         }],
         "thread_id": thread_id
     }
-    
-    return graph.invoke(
+
+    return get_graph().invoke(
         initial_message,
         config={"configurable": {"thread_id": thread_id}}
     )
@@ -277,7 +373,7 @@ if __name__ == "__main__":
     # Test the agent directly
     question = "What's my current account status?"
     final_state = get_response(question)
-    
+
     # Print the conversation
     for message in final_state["messages"]:
         print(f"\n{message.type.upper()}: {message.content}")

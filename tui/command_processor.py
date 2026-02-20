@@ -83,10 +83,39 @@ class CommandProcessor:
         if cmd_lower.startswith("agent:"):
             return await self._handle_agent_command(user_input)
 
-        return (
-            f"# Unknown Command\n\nCommand not recognized: `{user_input}`\n\n"
-            "Type 'help' for available commands."
-        )
+        # No structured command matched — send to AI chat agent
+        return await self._chat_agent(user_input)
+
+    # ------------------------------------------------------------------
+    # Free-form AI chat (fallback for unrecognized input)
+    # ------------------------------------------------------------------
+
+    async def _chat_agent(self, user_input: str) -> str:
+        """Send free-form text to the LangGraph trading/research agent."""
+        import uuid
+
+        # Lazy thread id — one per CLI session for conversation continuity
+        if not hasattr(self.app, '_chat_thread_id'):
+            self.app._chat_thread_id = str(uuid.uuid4())
+
+        self.console.print("[dim]Thinking...[/dim]")
+
+        try:
+            from utils.alpaca_agent import get_response
+
+            state = await asyncio.to_thread(
+                get_response, user_input, self.app._chat_thread_id
+            )
+
+            # Walk backwards to find the last AI message without tool_calls
+            for msg in reversed(state.get("messages", [])):
+                if getattr(msg, "type", None) == "ai" and not getattr(msg, "tool_calls", None):
+                    return msg.content or "(no response)"
+
+            return "(no response from agent)"
+
+        except Exception as e:
+            return f"# Chat Error\n\n```\n{e}\n```"
 
     # ------------------------------------------------------------------
     # Market research command dispatcher
@@ -1126,6 +1155,7 @@ class CommandProcessor:
         col3.add_row("[bold white]Tips[/bold white]", "")
         col3.add_row("Tab", "autocomplete commands")
         col3.add_row("agent:stop", "stop any background task")
+        col3.add_row("(any question)", "ask AI about stocks, portfolio")
 
         c.print(Columns([col1, col2, col3], equal=True, expand=True))
         c.print()
