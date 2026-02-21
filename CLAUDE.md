@@ -31,6 +31,14 @@ Trading strategy simulator, backtester, and paper trader.
 - **Momentum**: Buys on strong upward momentum over lookback period
 - **Box-Wedge**: Pattern-based strategy
 
+## Secrets Policy
+
+**NEVER copy, persist, log, or document actual secret values.** API keys, tokens, passwords, and connection strings from `.env` must only be used transiently during runtime. Specifically:
+- Do not write secret values into source files, docs, markdown, YAML, or memory files
+- Do not include secrets in commit messages, comments, or debug output
+- Reference secrets by variable name only (e.g. `ALPACA_PAPER_API_KEY=...`)
+- If a secret is accidentally committed, immediately purge it from git history with `git-filter-repo`
+
 ## Required Environment Variables (.env)
 
 ```
