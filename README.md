@@ -1,24 +1,25 @@
 # AlpaTrade
 
+[![PyPI](https://img.shields.io/pypi/v/alpatrade)](https://pypi.org/project/alpatrade/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Trading strategy backtester, paper trader, and research CLI powered by [Alpaca Markets](https://alpaca.markets/).
 
-![AlpaTrade CLI](screenshots/cli-welcome.png)
+![AlpaTrade CLI](https://raw.githubusercontent.com/predictivelabsai/alpatrade/main/screenshots/cli-welcome.png)
 
 ## Screenshots
 
 ### Web UI — Backtest Streaming
-![Backtest Streaming](static/backtest-streaming.png)
+![Backtest Streaming](https://raw.githubusercontent.com/predictivelabsai/alpatrade/main/static/backtest-streaming.png)
 
 ### Web UI — News Research
-![News Research](static/news.png)
+![News Research](https://raw.githubusercontent.com/predictivelabsai/alpatrade/main/static/news.png)
 
 ### Web UI — Trade History
-![Trade History](static/trades.png)
+![Trade History](https://raw.githubusercontent.com/predictivelabsai/alpatrade/main/static/trades.png)
 
 ### Web UI — Command Reference
-![Command Reference](static/help.png)
+![Command Reference](https://raw.githubusercontent.com/predictivelabsai/alpatrade/main/static/help.png)
 
 ## Install
 
