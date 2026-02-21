@@ -1065,7 +1065,7 @@ def guide_get(session):
 
 @rt("/download")
 def download_get(session):
-    pip_cmd = "pip install alpatrade"
+    uv_cmd = "uv tool install alpatrade"
     curl_cmd = "curl -fsSL https://alpatrade.chat/install.sh | bash"
     return (
         Title("Download — AlpaTrade"),
@@ -1073,11 +1073,11 @@ def download_get(session):
             _nav(session),
             Div(
                 H2("Install AlpaTrade"),
-                H4("pip (recommended)"),
-                P("Install from PyPI (requires Python 3.11+):", style="color: var(--pico-muted-color);"),
+                H4("uv (recommended)"),
+                P("Install with uv (requires Python 3.11+):", style="color: var(--pico-muted-color);"),
                 Div(
-                    Pre(Code(pip_cmd), id="pip-cmd"),
-                    Button("Copy", cls="copy-btn", onclick="navigator.clipboard.writeText(document.getElementById('pip-cmd').textContent)"),
+                    Pre(Code(uv_cmd), id="uv-cmd"),
+                    Button("Copy", cls="copy-btn", onclick="navigator.clipboard.writeText(document.getElementById('uv-cmd').textContent)"),
                     style="position: relative;",
                 ),
                 P("After install, create a ", Code(".env"), " file with your API keys, then run:",
@@ -1085,6 +1085,7 @@ def download_get(session):
                 Pre(Code("alpatrade")),
                 Hr(),
                 H4("One-line install (alternative)"),
+                P("Installs uv automatically if needed:", style="color: var(--pico-muted-color);"),
                 Div(
                     Pre(Code(curl_cmd), id="curl-cmd"),
                     Button("Copy", cls="copy-btn", onclick="navigator.clipboard.writeText(document.getElementById('curl-cmd').textContent)"),

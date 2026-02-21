@@ -24,7 +24,7 @@ Trading strategy backtester, paper trader, and research CLI powered by [Alpaca M
 ## Install
 
 ```bash
-pip install alpatrade
+uv tool install alpatrade
 ```
 
 ## Quick Start

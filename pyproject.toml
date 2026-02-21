@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "alpatrade"
-version = "0.1.2"
+version = "0.1.3"
 description = "Trading strategy backtester, paper trader, and research CLI powered by Alpaca Markets"
 readme = "README.md"
 license = "MIT"
