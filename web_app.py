@@ -346,7 +346,7 @@ def get(session):
             Div(_help_html(), id="output"),
             Form(
                 Input(type="text", name="command",
-                      placeholder="Type a command...",
+                      placeholder="agent:backtest lookback:1m — or ask anything about a ticker",
                       autofocus=True, autocomplete="off"),
                 Button("Run", type="submit"),
                 Span(" Running...", cls="htmx-indicator",
@@ -1066,7 +1066,7 @@ def guide_get(session):
 @rt("/download")
 def download_get(session):
     pip_cmd = "pip install alpatrade"
-    curl_cmd = "curl -fsSL https://alpatrade.dev/install.sh | bash"
+    curl_cmd = "curl -fsSL https://alpatrade.chat/install.sh | bash"
     return (
         Title("Download — AlpaTrade"),
         Main(
