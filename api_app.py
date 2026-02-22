@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.absolute()))
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 
@@ -188,6 +188,38 @@ async def profile(ticker: str):
 async def movers(direction: Optional[str] = None):
     cmd = f"movers:{direction}" if direction else "movers"
     return await _run_command(cmd)
+
+# ---------------------------------------------------------------------------
+# Streaming chat SSE endpoint
+# ---------------------------------------------------------------------------
+
+_BROKER_KEYWORDS = {
+    "buy", "sell", "order", "orders", "position", "positions",
+    "holdings", "holding", "portfolio", "account", "balance",
+    "buying power", "equity", "assets", "tradable",
+}
+
+def _is_broker_query(text: str) -> bool:
+    """Return True if the input looks like a broker / trading interaction."""
+    lower = text.lower()
+    return any(kw in lower for kw in _BROKER_KEYWORDS)
+
+@app.get("/chat")
+async def chat_stream(question: str, thread_id: str = "api_default"):
+    """SSE endpoint for streaming chat responses."""
+    import json
+
+    async def event_generator():
+        is_broker = _is_broker_query(question)
+        if is_broker:
+            from utils.alpaca_agent import async_stream_response
+        else:
+            from utils.research_agent import async_stream_response
+
+        async for event in async_stream_response(question, thread_id):
+            yield f"data: {json.dumps(event)}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 # ---------------------------------------------------------------------------
 # Serve install.sh

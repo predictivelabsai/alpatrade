@@ -199,7 +199,9 @@ Remember to:
 """
 
 _model = None
+_streaming_model = None
 _graph = None
+_streaming_graph = None
 
 def _get_model():
     global _model
@@ -212,6 +214,18 @@ def _get_model():
             base_url="https://api.x.ai/v1",
         ).bind_tools(tools)
     return _model
+
+def _get_streaming_model():
+    global _streaming_model
+    if _streaming_model is None:
+        _streaming_model = ChatOpenAI(
+            model=os.getenv("GROK_MODEL", "grok-4"),
+            temperature=0.7,
+            streaming=True,
+            api_key=os.getenv("XAI_API_KEY"),
+            base_url="https://api.x.ai/v1",
+        ).bind_tools(tools)
+    return _streaming_model
 
 def get_graph():
     global _graph
@@ -244,6 +258,57 @@ def _create_graph():
     workflow.add_edge("tools", "agent")
     checkpointer = MemorySaver()
     return workflow.compile(checkpointer=checkpointer)
+
+
+def _call_streaming_model(state: AlpacaState):
+    messages = state['messages']
+    if not messages or not isinstance(messages[0], SystemMessage):
+        messages = [SystemMessage(content=system_prompt)] + list(messages)
+    response = _get_streaming_model().invoke(messages)
+    return {"messages": [response]}
+
+
+def _get_streaming_graph():
+    global _streaming_graph
+    if _streaming_graph is None:
+        workflow = StateGraph(AlpacaState)
+        workflow.add_node("agent", _call_streaming_model)
+        workflow.add_node("tools", tool_node)
+        workflow.add_edge(START, "agent")
+        workflow.add_conditional_edges("agent", should_continue, {"tools": "tools", END: END})
+        workflow.add_edge("tools", "agent")
+        checkpointer = MemorySaver()
+        _streaming_graph = workflow.compile(checkpointer=checkpointer)
+    return _streaming_graph
+
+
+async def async_stream_response(question: str, thread_id: str = "trading_demo"):
+    """Async generator yielding streaming events from the broker agent."""
+    graph = _get_streaming_graph()
+    input_msg = {"messages": [{"role": "user", "content": question}]}
+    config = {"configurable": {"thread_id": thread_id}}
+
+    final_content = ""
+    async for event in graph.astream_events(input_msg, config=config, version="v2"):
+        evt = event.get("event", "")
+
+        if evt == "on_tool_start":
+            tool_name = event.get("name", "")
+            tool_input = event.get("data", {}).get("input", {})
+            yield {"type": "tool_call", "tool": tool_name, "args": tool_input}
+
+        elif evt == "on_tool_end":
+            output = str(event.get("data", {}).get("output", ""))[:500]
+            yield {"type": "tool_result", "tool": event.get("name", ""), "result": output}
+
+        elif evt == "on_chat_model_stream":
+            chunk = event.get("data", {}).get("chunk")
+            if chunk and hasattr(chunk, "content") and chunk.content:
+                final_content += chunk.content
+                yield {"type": "token", "content": chunk.content}
+
+    yield {"type": "done", "content": final_content}
+
 
 output_nodes = ["agent"]
 

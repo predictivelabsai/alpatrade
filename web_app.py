@@ -55,8 +55,51 @@ cli._cmd_result = None    # markdown result when command completes
 cli._last_chart_json = None  # Plotly JSON for equity curve chart
 cli._cmd_286_html = None  # cached 286 response to handle HTMX race condition
 
+# Chat streaming state
+cli._chat_events = collections.deque(maxlen=200)
+cli._chat_task = None       # asyncio.Task for current chat
+cli._chat_done = False      # completion flag
+cli._chat_final = ""        # final markdown content
+cli._chat_286_html = None   # cached 286 response for HTMX race
+
 # Commands that trigger background streaming
 _STREAMING_COMMANDS = {"agent:backtest", "agent:paper", "agent:full", "agent:validate", "agent:reconcile"}
+
+# Structured command prefixes — anything not matching these is free-form chat
+_STRUCTURED_PREFIXES = {
+    "news", "price", "profile", "financials", "analysts", "valuation", "movers",
+    "trades", "runs", "agent:backtest", "agent:paper", "agent:full", "agent:validate",
+    "agent:reconcile", "agent:status", "agent:stop", "agent:report", "agent:top",
+    "agent:runs", "agent:trades", "agent:logs",
+    "alpaca:backtest",
+    "help", "h", "?", "guide", "status", "clear", "cls", "exit", "quit", "q",
+}
+
+# Broker-related keywords (mirrors CommandProcessor._BROKER_KEYWORDS)
+_BROKER_KEYWORDS = {
+    "buy", "sell", "order", "orders", "position", "positions",
+    "holdings", "holding", "portfolio", "account", "balance",
+    "buying power", "equity", "assets", "tradable",
+}
+
+
+def _is_structured_command(cmd_lower: str) -> bool:
+    """Return True if the input matches a known structured command prefix."""
+    first_word = cmd_lower.split()[0] if cmd_lower.split() else ""
+    # Check exact match (e.g. "trades", "runs", "help")
+    if first_word in _STRUCTURED_PREFIXES:
+        return True
+    # Check colon prefix (e.g. "news:TSLA" → "news")
+    base = first_word.split(":")[0]
+    if base in _STRUCTURED_PREFIXES:
+        return True
+    return False
+
+
+def _is_broker_query(text: str) -> bool:
+    """Return True if the input looks like a broker / trading interaction."""
+    lower = text.lower()
+    return any(kw in lower for kw in _BROKER_KEYWORDS)
 
 # ---------------------------------------------------------------------------
 # Google OAuth setup (optional — gracefully skip if no creds)
@@ -180,10 +223,12 @@ document.addEventListener('htmx:afterRequest', function(evt) {
 document.addEventListener('htmx:configRequest', function(evt) {
     evt.detail.timeout = 300000;  // 5 minutes
 });
-// Auto-scroll log console when new content arrives
+// Auto-scroll log console and chat console when new content arrives
 document.addEventListener('htmx:afterSwap', function(evt) {
     var lc = document.getElementById('log-console');
     if (lc) lc.scrollTop = lc.scrollHeight;
+    var cc = document.getElementById('chat-console');
+    if (cc) cc.scrollTop = cc.scrollHeight;
 });
 """)
 
@@ -406,6 +451,10 @@ async def post(command: str, session):
         if first_word in _STREAMING_COMMANDS:
             return _start_streaming_command(command)
 
+        # Free-form chat — route to streaming chat console
+        if not _is_structured_command(cmd_lower):
+            return _start_chat_stream(command)
+
         processor = CommandProcessor(cli)
         result_md = await processor.process_command(command) or ""
 
@@ -522,6 +571,105 @@ def logs_get():
 
     # Still running — return log lines
     return Pre(log_text, cls="log-pre")
+
+
+# ---------------------------------------------------------------------------
+# Streaming chat console for free-form AI queries
+# ---------------------------------------------------------------------------
+
+
+def _start_chat_stream(command: str):
+    """Launch a chat agent query with streaming trace console."""
+    import uuid
+
+    # Cancel any existing chat task
+    if cli._chat_task and not cli._chat_task.done():
+        cli._chat_task.cancel()
+
+    # Reset state
+    cli._chat_events.clear()
+    cli._chat_done = False
+    cli._chat_final = ""
+    cli._chat_286_html = None
+
+    is_broker = _is_broker_query(command)
+
+    # Ensure thread IDs exist
+    if not hasattr(cli, '_broker_thread_id'):
+        cli._broker_thread_id = str(uuid.uuid4())
+    if not hasattr(cli, '_research_thread_id'):
+        cli._research_thread_id = str(uuid.uuid4())
+
+    async def _run():
+        try:
+            if is_broker:
+                from utils.alpaca_agent import async_stream_response
+                thread_id = cli._broker_thread_id
+            else:
+                from utils.research_agent import async_stream_response
+                thread_id = cli._research_thread_id
+
+            async for event in async_stream_response(command, thread_id):
+                cli._chat_events.append(event)
+                if event["type"] == "done":
+                    cli._chat_final = event["content"]
+
+        except Exception as e:
+            cli._chat_events.append({"type": "error", "content": str(e)})
+        finally:
+            cli._chat_done = True
+
+    cli._chat_task = asyncio.create_task(_run())
+
+    agent_label = "broker" if is_broker else "research"
+    return Div(
+        P(B(f"> {command}"), cls="cmd-echo"),
+        Div(
+            Pre(f"Asking {agent_label} agent...", cls="log-pre"),
+            id="chat-console", cls="log-console",
+            hx_get="/chat-stream", hx_trigger="every 500ms", hx_swap="innerHTML",
+        ),
+        cls="cmd-entry",
+    )
+
+
+@rt("/chat-stream")
+def chat_stream_get():
+    """Return streaming chat trace; HTTP 286 stops HTMX polling when done."""
+    events = list(cli._chat_events)
+    lines = []
+    for ev in events:
+        if ev["type"] == "tool_call":
+            lines.append(f">> Calling {ev['tool']}...")
+        elif ev["type"] == "tool_result":
+            lines.append(f"<< {ev['tool']} returned data")
+        elif ev["type"] == "error":
+            lines.append(f"!! Error: {ev['content']}")
+        # tokens accumulate in final content, not shown in trace
+
+    trace_text = "\n".join(lines) if lines else "Thinking..."
+
+    if cli._chat_done:
+        # Build final response with trace + rendered markdown
+        parts = []
+        if lines:
+            parts.append(Pre("\n".join(lines), cls="log-pre"))
+            parts.append(Hr())
+        parts.append(Div(cli._chat_final, cls="marked"))
+        result_html = Div(*parts)
+        cli._chat_286_html = to_xml(result_html)
+        cli._chat_done = False
+        cli._chat_final = ""
+        return Response(cli._chat_286_html, status_code=286,
+                        headers={"Content-Type": "text/html"})
+
+    # Handle HTMX race (same pattern as /logs)
+    if cli._chat_286_html is not None:
+        html = cli._chat_286_html
+        cli._chat_286_html = None
+        return Response(html, status_code=286, headers={"Content-Type": "text/html"})
+
+    return Pre(trace_text, cls="log-pre")
 
 
 # ---------------------------------------------------------------------------
