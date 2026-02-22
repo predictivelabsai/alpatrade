@@ -54,7 +54,11 @@ agents = [
     "langgraph>=0.1",
     "langchain-core>=0.2",
 ]
-all = ["alpatrade[web,agents]"]
+agui = [
+    "pydantic-ai>=1.34",
+    "ag-ui-protocol>=0.1",
+]
+all = ["alpatrade[web,agents,agui]"]
 
 [project.urls]
 Homepage = "https://alpatrade.dev"
@@ -64,7 +68,7 @@ Repository = "https://github.com/predictivelabsai/alpatrade"
 alpatrade = "alpatrade:main"
 
 [tool.setuptools]
-py-modules = ["alpatrade", "web_app"]
+py-modules = ["alpatrade", "web_app", "agui_app"]
 
 [tool.setuptools.packages.find]
 include = [

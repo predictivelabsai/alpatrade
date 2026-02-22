@@ -22,3 +22,5 @@ uvicorn[standard]
 bcrypt
 cryptography
 PyJWT
+pydantic-ai
+ag-ui-protocol
