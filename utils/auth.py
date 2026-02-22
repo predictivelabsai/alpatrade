@@ -10,8 +10,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional, Dict, Tuple
 
+import bcrypt as _bcrypt
 from cryptography.fernet import Fernet
-from passlib.hash import bcrypt
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +44,12 @@ def decrypt_key(ciphertext: bytes) -> str:
 
 def hash_password(password: str) -> str:
     """Hash a password with bcrypt."""
-    return bcrypt.hash(password)
+    return _bcrypt.hashpw(password.encode(), _bcrypt.gensalt()).decode()
 
 
 def verify_password(password: str, password_hash: str) -> bool:
     """Verify a password against its bcrypt hash."""
-    return bcrypt.verify(password, password_hash)
+    return _bcrypt.checkpw(password.encode(), password_hash.encode())
 
 
 # ---------------------------------------------------------------------------

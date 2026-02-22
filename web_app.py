@@ -794,9 +794,20 @@ def _session_login(session, user: Dict):
 
 
 @rt("/register")
-def register_get(session, error: str = ""):
-    user = session.get("user")
-    if user:
+def register(session, email: str = "", password: str = "", display_name: str = "", error: str = ""):
+    # Handle POST submission (form data present)
+    if email and password:
+        if len(password) < 8:
+            return RedirectResponse("/register?error=Password+must+be+at+least+8+characters", status_code=303)
+        from utils.auth import create_user
+        user = create_user(email=email, password=password, display_name=display_name or None)
+        if not user:
+            return RedirectResponse("/register?error=Email+already+registered", status_code=303)
+        _session_login(session, user)
+        return RedirectResponse("/", status_code=303)
+
+    # Show form (GET or empty POST)
+    if session.get("user"):
         return RedirectResponse("/")
     parts = [H2("Create Account")]
     if error:
@@ -820,26 +831,19 @@ def register_get(session, error: str = ""):
     )
 
 
-@rt("/register")
-def register_post(session, email: str = "", password: str = "", display_name: str = ""):
-    if not email or not password:
-        return RedirectResponse("/register?error=Email+and+password+required", status_code=303)
-    if len(password) < 8:
-        return RedirectResponse("/register?error=Password+must+be+at+least+8+characters", status_code=303)
-
-    from utils.auth import create_user
-    user = create_user(email=email, password=password, display_name=display_name or None)
-    if not user:
-        return RedirectResponse("/register?error=Email+already+registered", status_code=303)
-
-    _session_login(session, user)
-    return RedirectResponse("/", status_code=303)
-
-
 @rt("/signin")
-def signin_get(session, error: str = ""):
-    user = session.get("user")
-    if user:
+def signin(session, email: str = "", password: str = "", error: str = ""):
+    # Handle POST submission (form data present)
+    if email and password:
+        from utils.auth import authenticate
+        user = authenticate(email, password)
+        if not user:
+            return RedirectResponse("/signin?error=Invalid+email+or+password", status_code=303)
+        _session_login(session, user)
+        return RedirectResponse("/", status_code=303)
+
+    # Show form (GET or empty POST)
+    if session.get("user"):
         return RedirectResponse("/")
     parts = [H2("Sign In")]
     if error:
@@ -862,22 +866,8 @@ def signin_get(session, error: str = ""):
     )
 
 
-@rt("/signin")
-def signin_post(session, email: str = "", password: str = ""):
-    if not email or not password:
-        return RedirectResponse("/signin?error=Email+and+password+required", status_code=303)
-
-    from utils.auth import authenticate
-    user = authenticate(email, password)
-    if not user:
-        return RedirectResponse("/signin?error=Invalid+email+or+password", status_code=303)
-
-    _session_login(session, user)
-    return RedirectResponse("/", status_code=303)
-
-
 @rt("/profile")
-def profile_get(session, msg: str = ""):
+def profile(session, msg: str = ""):
     user = session.get("user")
     if not user:
         return RedirectResponse("/signin")
@@ -931,7 +921,7 @@ def profile_get(session, msg: str = ""):
 
 
 @rt("/profile/keys")
-def profile_keys_post(session, api_key: str = "", secret_key: str = ""):
+def profile_keys(session, api_key: str = "", secret_key: str = ""):
     user = session.get("user")
     if not user:
         return RedirectResponse("/signin")
