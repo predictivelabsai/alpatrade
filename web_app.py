@@ -429,7 +429,7 @@ def _nav(session):
         links.append(A("Logout", href="/logout"))
     else:
         links.append(A("Sign up", href="/register"))
-        links.append(A("Sign in", href="/signin"))
+        links.append(A("Login", href="/signin"))
     return Nav(
         A("AlpaTrade", href="/", cls="nav-brand"),
         Div(*links, cls="nav-links"),
@@ -452,8 +452,8 @@ def _signin_prompt():
     parts = [
         H4("Free query limit reached"),
         P(f"You've used all {FREE_QUERY_LIMIT} free queries."),
-        P("Sign in or create an account for unlimited access."),
-        A("Sign in", href="/signin", style="margin-right: 1rem;"),
+        P("Login or create an account for unlimited access."),
+        A("Login", href="/signin", style="margin-right: 1rem;"),
         A("Sign up", href="/register"),
     ]
     return Div(*parts, cls="signin-card")
@@ -824,7 +824,7 @@ def register(session, email: str = "", password: str = "", display_name: str = "
     if _oauth_enabled:
         parts.append(Div("or", cls="divider"))
         parts.append(A("Sign in with Google", href="/login", cls="google-btn"))
-    parts.append(Div("Already have an account? ", A("Sign in", href="/signin"), cls="alt-link"))
+    parts.append(Div("Already have an account? ", A("Login", href="/signin"), cls="alt-link"))
     return (
         Title("Register — AlpaTrade"),
         Main(_nav(session), Div(*parts, cls="auth-page"), style="height: auto;"),
@@ -845,23 +845,23 @@ def signin(session, email: str = "", password: str = "", error: str = ""):
     # Show form (GET or empty POST)
     if session.get("user"):
         return RedirectResponse("/")
-    parts = [H2("Sign In")]
+    parts = [H2("Login")]
     if error:
         parts.append(P(error, cls="error-msg"))
     parts.append(
         Form(
             Input(type="email", name="email", placeholder="Email", required=True, autofocus=True),
             Input(type="password", name="password", placeholder="Password", required=True),
-            Button("Sign In", type="submit"),
+            Button("Login", type="submit"),
             method="post", action="/signin",
         )
     )
     if _oauth_enabled:
         parts.append(Div("or", cls="divider"))
-        parts.append(A("Sign in with Google", href="/login", cls="google-btn"))
+        parts.append(A("Login with Google", href="/login", cls="google-btn"))
     parts.append(Div("Don't have an account? ", A("Sign up", href="/register"), cls="alt-link"))
     return (
-        Title("Sign In — AlpaTrade"),
+        Title("Login — AlpaTrade"),
         Main(_nav(session), Div(*parts, cls="auth-page"), style="height: auto;"),
     )
 
