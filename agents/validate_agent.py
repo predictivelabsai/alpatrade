@@ -163,9 +163,9 @@ class ValidateAgent:
         """Fetch trades using the configured backend (file or DB)."""
         try:
             if source == "backtest":
-                return fetch_backtest_trades(run_id)
+                return fetch_backtest_trades(run_id, user_id=self.user_id)
             else:
-                return fetch_paper_trades(run_id)
+                return fetch_paper_trades(run_id, user_id=self.user_id)
         except Exception as e:
             logger.error(f"Failed to fetch trades: {e}")
             return []

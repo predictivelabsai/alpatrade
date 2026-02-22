@@ -1,8 +1,7 @@
 """
 Chat UI styles using CSS custom properties for theming.
 
-Based on ft-agui styles.py — adapted with AlpaTrade dark theme defaults
-and 3-pane layout support.
+Based on py-agui styles.py — light theme with dark mode via prefers-color-scheme.
 """
 
 from fasthtml.common import Style
@@ -26,7 +25,7 @@ CHAT_UI_STYLES = """
   --chat-message-padding: 0.75rem 1rem;
   --chat-border-radius: 0.75rem;
   --chat-message-radius: 1.125rem;
-  --chat-font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+  --chat-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --chat-font-size: 0.875rem;
   --chat-line-height: 1.5;
   --chat-transition: all 0.2s ease;

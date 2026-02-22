@@ -272,15 +272,21 @@ class ReconcileAgent:
 
             pool = DatabasePool()
             with pool.get_session() as session:
-                result = session.execute(text("""
+                params = {}
+                user_filter = ""
+                if self.user_id:
+                    user_filter = "AND user_id = :user_id"
+                    params["user_id"] = self.user_id
+                result = session.execute(text(f"""
                     SELECT symbol, SUM(shares) as qty
                     FROM alpatrade.trades
                     WHERE trade_type = 'paper'
                       AND direction = 'long'
                       AND exit_price IS NULL
+                      {user_filter}
                     GROUP BY symbol
                     HAVING SUM(shares) > 0
-                """))
+                """), params)
                 return [{"symbol": r[0], "qty": float(r[1])} for r in result.fetchall()]
         except Exception as e:
             logger.warning(f"Could not fetch DB positions: {e}")
@@ -295,17 +301,23 @@ class ReconcileAgent:
 
             pool = DatabasePool()
             with pool.get_session() as session:
+                params = {"start": window_start, "end": window_end}
+                user_filter = ""
+                if self.user_id:
+                    user_filter = "AND user_id = :user_id"
+                    params["user_id"] = self.user_id
                 result = session.execute(
-                    text("""
+                    text(f"""
                         SELECT symbol, direction, shares, entry_price, exit_price,
                                pnl, trade_type, created_at, order_id
                         FROM alpatrade.trades
                         WHERE trade_type = 'paper'
                           AND created_at >= :start
                           AND created_at <= :end
+                          {user_filter}
                         ORDER BY created_at
                     """),
-                    {"start": window_start, "end": window_end},
+                    params,
                 )
                 rows = result.fetchall()
                 return [
@@ -334,12 +346,18 @@ class ReconcileAgent:
 
             pool = DatabasePool()
             with pool.get_session() as session:
-                result = session.execute(text("""
+                params = {}
+                user_filter = ""
+                if self.user_id:
+                    user_filter = "AND user_id = :user_id"
+                    params["user_id"] = self.user_id
+                result = session.execute(text(f"""
                     SELECT COALESCE(SUM(pnl), 0)
                     FROM alpatrade.trades
                     WHERE trade_type = 'paper'
                       AND pnl IS NOT NULL
-                """))
+                      {user_filter}
+                """), params)
                 row = result.fetchone()
                 return float(row[0]) if row else 0.0
         except Exception as e:
