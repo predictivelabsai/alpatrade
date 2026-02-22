@@ -9,6 +9,15 @@ Trading strategy backtester, paper trader, and research CLI powered by [Alpaca M
 
 ## Screenshots
 
+### AG-UI Chat — AI Research
+![AI Chat](https://raw.githubusercontent.com/predictivelabsai/alpatrade/main/static/agui-chat.png)
+
+### AG-UI Chat — News
+![News](https://raw.githubusercontent.com/predictivelabsai/alpatrade/main/static/agui-landing.png)
+
+### AG-UI Chat — Command Reference
+![Help](https://raw.githubusercontent.com/predictivelabsai/alpatrade/main/static/agui-help.png)
+
 ### Web UI — Backtest Streaming
 ![Backtest Streaming](https://raw.githubusercontent.com/predictivelabsai/alpatrade/main/static/backtest-streaming.png)
 
@@ -141,6 +150,51 @@ Example: `bwg-2r-5ct`
 | `XAI_API_KEY` | No | XAI Grok for AI research commands |
 | `EODHD_API_KEY` | No | EOD Historical Data (intraday prices) |
 | `POSTMARK_API_KEY` | No | Email notifications for paper trading |
+
+## Running Locally
+
+### Prerequisites
+
+- Python 3.13+
+- PostgreSQL with an `alpatrade` schema
+- API keys (see [Environment Variables](#environment-variables))
+
+### Setup
+
+```bash
+git clone https://github.com/predictivelabsai/alpatrade.git
+cd alpatrade
+uv sync
+cp .env.example .env   # then fill in your API keys
+```
+
+### Run the CLI
+
+```bash
+uv run python alpatrade.py
+```
+
+### Run the AG-UI Chat (port 5003)
+
+The AG-UI app is a chat interface built on the [AG-UI protocol](https://docs.ag-ui.com) with FastHTML. It supports CLI commands, AI research queries, and real-time streaming via WebSocket.
+
+```bash
+uv run uvicorn agui_app:app --host 0.0.0.0 --port 5003 --reload
+```
+
+Open [http://localhost:5003](http://localhost:5003) in your browser.
+
+### Run the Web UI (port 5002)
+
+```bash
+uv run python web_app.py
+```
+
+### Run the API Server (port 5001)
+
+```bash
+uv run uvicorn api_app:app --host 0.0.0.0 --port 5001 --reload
+```
 
 ## License
 
