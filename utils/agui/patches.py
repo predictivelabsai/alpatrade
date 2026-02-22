@@ -66,10 +66,11 @@ def setup_ft_patches():
     def __ft__(self: TextMessageStartEvent):
         return (
             # Append message bubble to #chat-messages
+            # NOTE: no "marked" class during streaming — added by TextMessageEndEvent
             Div(
                 Div(
                     Div(
-                        Span("", id=f"message-content-{self.message_id}", cls="marked"),
+                        Span("", id=f"message-content-{self.message_id}"),
                         Span("", cls="chat-streaming", id=f"streaming-{self.message_id}"),
                         cls="chat-message-content",
                     ),
@@ -111,12 +112,16 @@ def setup_ft_patches():
     def __ft__(self: TextMessageEndEvent):
         content_id = f"message-content-{self.message_id}"
         return (
-            # Remove streaming cursor
-            Span("", id=f"streaming-{self.message_id}", hx_swap_oob="innerHTML"),
-            # Update trace + trigger markdown render
+            # Remove streaming cursor (outerHTML replaces the span, removing ::after)
+            Span("", id=f"streaming-{self.message_id}", hx_swap_oob="outerHTML"),
+            # Update trace + add marked class + trigger markdown render
             Div(
                 Span("Response complete", cls="trace-label"),
-                Script(f"renderMarkdown('{content_id}');"),
+                Script(
+                    f"var el=document.getElementById('{content_id}');"
+                    f"if(el)el.classList.add('marked');"
+                    f"renderMarkdown('{content_id}');"
+                ),
                 cls="trace-entry trace-done",
                 id=f"trace-msg-{self.message_id}",
                 hx_swap_oob="outerHTML",

@@ -220,6 +220,7 @@ class AGUIThread(Generic[T]):
         self._connections: Dict[str, Any] = {}
         self.ui = UI[T](self.thread_id, autoscroll=True)
         self._suggestions: List[str] = []
+        self._command_interceptor = None  # async callable(msg, session) -> str|None
 
     def subscribe(self, connection_id, send):
         self._connections[connection_id] = send
@@ -253,6 +254,13 @@ class AGUIThread(Generic[T]):
         await self.send(el)
 
     async def _handle_message(self, msg: str, session):
+        # CLI command interception — bypass AI agent for known commands
+        if self._command_interceptor:
+            result = await self._command_interceptor(msg, session)
+            if result is not None:
+                await self._handle_command_result(msg, result, session)
+                return
+
         run_id = str(uuid.uuid4())
         message = UserMessage(
             id=str(uuid.uuid4()),
@@ -277,6 +285,55 @@ class AGUIThread(Generic[T]):
         await self.send(self.ui._trigger_run(run_id))
         await self.send(self.ui._clear_input())
 
+    async def _handle_command_result(self, msg: str, result: str, session):
+        """Display a CLI command result directly in chat (no AI agent)."""
+        from fasthtml.common import Script
+
+        # Append user message
+        user_msg = UserMessage(
+            id=str(uuid.uuid4()),
+            role="user",
+            content=msg,
+            name=session.get("username", "User"),
+        )
+        self._messages.append(user_msg)
+
+        # Send user message (append to chat)
+        await self.send(Div(
+            Div(
+                Div(msg, cls="chat-message-content"),
+                cls="chat-message chat-user",
+                id=user_msg.id,
+            ),
+            id="chat-messages",
+            hx_swap_oob="beforeend",
+        ))
+
+        # Append assistant message with result
+        asst_id = str(uuid.uuid4())
+        content_id = f"content-{asst_id}"
+        asst_msg = AssistantMessage(
+            id=asst_id,
+            role="assistant",
+            content=result,
+            name=self._agent.name or "AlpaTrade",
+        )
+        self._messages.append(asst_msg)
+
+        await self.send(Div(
+            Div(
+                Div(result, cls="chat-message-content marked", id=content_id),
+                cls="chat-message chat-assistant",
+                id=f"message-{asst_id}",
+            ),
+            id="chat-messages",
+            hx_swap_oob="beforeend",
+        ))
+        await self.send(Script(f"renderMarkdown('{content_id}');"))
+
+        # Clear input form
+        await self.send(self.ui._clear_input())
+
     async def _handle_run(self, run_id: str):
         if run_id not in self._runs:
             return Div("Run not found")
@@ -290,6 +347,7 @@ class AGUIThread(Generic[T]):
             name=self._agent.name or "AlpaTrade",
         )
         deps = StateDeps[T](state=self._state)
+        streamed = False  # Track whether TextMessageStart fired
 
         async for event in adapter.run_stream(
             message_history=self._messages or [],
@@ -307,24 +365,30 @@ class AGUIThread(Generic[T]):
             if event.type == EventType.TEXT_MESSAGE_START:
                 response.id = event.message_id
                 response.content = ""  # Reset for each new text message
+                streamed = True
             elif event.type == EventType.TEXT_MESSAGE_CONTENT:
                 response.content += event.delta
             elif event.type == EventType.RUN_FINISHED:
                 self._messages.append(response)
-                content_id = f"content-{response.id}"
-                await self.send(
-                    Div(
+                if not streamed and response.content:
+                    # Fallback: show final content only if streaming didn't happen
+                    content_id = f"content-{response.id}"
+                    await self.send(
                         Div(
-                            response.content,
-                            cls="chat-message-content marked",
-                            id=content_id,
-                        ),
-                        cls="chat-message chat-assistant",
-                        id=f"message-{response.id}",
-                        hx_swap_oob="outerHTML",
+                            Div(
+                                Div(
+                                    response.content,
+                                    cls="chat-message-content marked",
+                                    id=content_id,
+                                ),
+                                cls="chat-message chat-assistant",
+                                id=f"message-{response.id}",
+                            ),
+                            id="chat-messages",
+                            hx_swap_oob="beforeend",
+                        )
                     )
-                )
-                await self.send(Script(f"renderMarkdown('{content_id}');"))
+                    await self.send(Script(f"renderMarkdown('{content_id}');"))
                 await self.send(Div(id="chat-status", hx_swap_oob="innerHTML"))
             elif event.type == EventType.STATE_SNAPSHOT:
                 self._state = event.snapshot
@@ -339,11 +403,12 @@ class AGUIThread(Generic[T]):
 class AGUISetup(Generic[T]):
     """Wire AG-UI routes into a FastHTML app."""
 
-    def __init__(self, app, agent: Agent, state: T):
+    def __init__(self, app, agent: Agent, state: T, command_interceptor=None):
         self.app = app
         self.agent = agent
         self._state: T = state
         self._threads: Dict[str, AGUIThread[T]] = {}
+        self._command_interceptor = command_interceptor
         setup_ft_patches()
         self._setup_routes()
 
@@ -380,10 +445,11 @@ class AGUISetup(Generic[T]):
             return Div(id="chat-messages", cls="chat-messages")
 
     def thread(self, thread_id: str) -> AGUIThread[T]:
-        self._threads.setdefault(
-            thread_id,
-            AGUIThread[T](thread_id=thread_id, state=self._state, agent=self.agent),
-        )
+        if thread_id not in self._threads:
+            t = AGUIThread[T](thread_id=thread_id, state=self._state, agent=self.agent)
+            if self._command_interceptor:
+                t._command_interceptor = self._command_interceptor
+            self._threads[thread_id] = t
         return self._threads[thread_id]
 
     def _on_conn(self, ws, send, session):
@@ -413,7 +479,8 @@ class AGUISetup(Generic[T]):
         await self.thread(thread_id).set_suggestions(suggestions)
 
 
-def setup_agui(app, agent: Agent, initial_state: T, state_type: type) -> AGUISetup:
+def setup_agui(app, agent: Agent, initial_state: T, state_type: type,
+               command_interceptor=None) -> AGUISetup:
     """One-line setup: wire AG-UI into a FastHTML app."""
     state = state_type.model_validate_json(initial_state.model_dump_json())
-    return AGUISetup(app, agent, state)
+    return AGUISetup(app, agent, state, command_interceptor=command_interceptor)

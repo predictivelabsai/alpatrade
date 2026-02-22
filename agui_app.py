@@ -27,6 +27,7 @@ from pydantic_ai.ui import StateDeps
 from fasthtml.common import *
 
 from utils.agui import setup_agui, get_chat_styles
+import threading
 
 # ---------------------------------------------------------------------------
 # pydantic-ai Agent with real tools
@@ -54,8 +55,8 @@ agent = Agent(
         "You have tools to look up real stock data, news, and analyst ratings. "
         "Use your tools when users ask about specific stocks or market data. "
         "Be concise and use markdown formatting with tables where appropriate. "
-        "When users mention CLI commands like 'agent:backtest lookback:1m', "
-        "explain that backtesting runs are available in the full CLI. "
+        "Users can type CLI commands directly in chat (e.g. agent:backtest lookback:1m, "
+        "news:TSLA, trades, runs) and they will be executed automatically. "
         "For stock queries, always use the appropriate tool to get real data."
     ),
 )
@@ -253,7 +254,100 @@ app, rt = fast_app(
     ],
 )
 
-agui = setup_agui(app, agent, AlpaTradeState(), AlpaTradeState)
+# ---------------------------------------------------------------------------
+# CLI command interceptor — routes agent:*, trades, runs, news:* etc. to
+# the existing CommandProcessor instead of the AI agent
+# ---------------------------------------------------------------------------
+
+class _AppState:
+    """Lightweight namespace used by CommandProcessor for shared state."""
+    _orch = None
+    _bg_task = None
+    _bg_stop = threading.Event()
+    command_history: list = []
+
+_app_state = _AppState()
+
+# Commands that should bypass the AI agent and go to CommandProcessor
+_CLI_BASES = {"news", "profile", "financials", "price", "movers", "analysts", "valuation"}
+_CLI_EXACT = {"trades", "runs", "status", "help", "guide"}
+
+
+async def _command_interceptor(msg: str, session):
+    """Detect CLI commands and route to CommandProcessor. Returns markdown or None."""
+    cmd_lower = msg.strip().lower()
+    first_word = cmd_lower.split()[0] if cmd_lower.split() else ""
+    base = first_word.split(":")[0]
+
+    is_command = (
+        first_word.startswith("agent:") or
+        first_word.startswith("alpaca:") or
+        cmd_lower in _CLI_EXACT or
+        base in _CLI_BASES
+    )
+
+    if not is_command:
+        return None
+
+    # Special case: "help" returns chat-friendly markdown (Rich tables don't work here)
+    if cmd_lower in ("help", "h", "?"):
+        return _AGUI_HELP
+
+    from tui.command_processor import CommandProcessor
+    user_id = session.get("user", {}).get("user_id") if session.get("user") else None
+    cp = CommandProcessor(_app_state, user_id=user_id)
+    try:
+        result = await cp.process_command(msg)
+    except Exception as e:
+        result = f"# Error\n\n```\n{e}\n```"
+    return result or "Command executed."
+
+
+_AGUI_HELP = """# AlpaTrade Commands
+
+## Backtest
+- `agent:backtest lookback:1m` — 1-month backtest
+- `agent:backtest lookback:3m symbols:AAPL,TSLA` — custom symbols
+- `agent:backtest hours:extended` — extended hours (4AM-8PM ET)
+- `agent:backtest intraday_exit:true` — 5-min TP/SL bars
+- `agent:backtest pdt:false` — disable PDT rule (>$25k)
+
+## Paper Trading
+- `agent:paper duration:7d` — paper trade for 7 days
+- `agent:paper symbols:AAPL,MSFT poll:60` — custom config
+- `agent:stop` — stop background paper trading
+
+## Full Cycle
+- `agent:full lookback:1m duration:1m` — backtest → validate → paper → validate
+
+## Validate & Reconcile
+- `agent:validate run-id:<uuid>` — validate a run
+- `agent:reconcile window:14d` — DB vs Alpaca
+
+## Query & Monitor
+- `trades` — recent trades from DB
+- `runs` — recent runs from DB
+- `agent:report` — performance summary
+- `agent:report run-id:<uuid>` — single run detail
+- `agent:top` — rank strategies
+- `agent:status` — agent states
+- `agent:logs` — paper trade log tail
+
+## Market Research
+- `news:TSLA` — company news
+- `price:AAPL` — stock quote
+- `profile:MSFT` — company profile
+- `analysts:GOOGL` — analyst ratings
+- `financials:AAPL` — income & balance sheet
+- `valuation:AAPL,MSFT` — valuation comparison
+- `movers` — top gainers & losers
+
+## AI Chat
+Type any question to chat with AI about stocks & trading.
+"""
+
+agui = setup_agui(app, agent, AlpaTradeState(), AlpaTradeState,
+                  command_interceptor=_command_interceptor)
 
 
 # ---------------------------------------------------------------------------
@@ -685,6 +779,61 @@ body {
   padding: 0.2rem 0.5rem;
 }
 
+/* === Help Expander === */
+.help-expander { border: none; }
+
+.help-summary {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.help-summary::before {
+  content: '\\25B6';
+  font-size: 0.5rem;
+  transition: transform 0.2s;
+}
+
+details[open] > .help-summary::before {
+  transform: rotate(90deg);
+}
+
+.help-summary::-webkit-details-marker { display: none; }
+
+.help-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.help-group {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.help-group p {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.7rem;
+  color: #64748b;
+  padding-left: 0.25rem;
+}
+
+.help-cat {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
 /* === Responsive === */
 @media (max-width: 768px) {
   .app-layout {
@@ -782,6 +931,45 @@ def _left_pane(session):
         nav_links.append(A("Logout", href="/logout", cls="logout-btn"))
 
     sections.append(Div(H4("Navigation"), *nav_links, cls="sidebar-section"))
+
+    # Help expander — collapsible command reference
+    sections.append(
+        Details(
+            Summary("Quick Reference", cls="help-summary"),
+            Div(
+                Div(
+                    Span("Backtest", cls="help-cat"),
+                    P("agent:backtest lookback:1m"),
+                    P("  symbols:AAPL,TSLA hours:extended"),
+                    P("  intraday_exit:true pdt:false"),
+                    cls="help-group",
+                ),
+                Div(
+                    Span("Paper Trade", cls="help-cat"),
+                    P("agent:paper duration:7d"),
+                    P("agent:stop"),
+                    cls="help-group",
+                ),
+                Div(
+                    Span("Research", cls="help-cat"),
+                    P("news:TSLA  price:AAPL"),
+                    P("analysts:GOOGL  profile:MSFT"),
+                    P("financials:AAPL  movers"),
+                    P("valuation:AAPL,MSFT"),
+                    cls="help-group",
+                ),
+                Div(
+                    Span("Query", cls="help-cat"),
+                    P("trades  runs  agent:status"),
+                    P("agent:report  agent:top"),
+                    P("agent:logs"),
+                    cls="help-group",
+                ),
+                cls="help-content",
+            ),
+            cls="sidebar-section help-expander",
+        )
+    )
 
     # Query status
     if not user:
