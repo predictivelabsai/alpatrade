@@ -1452,11 +1452,32 @@ def screenshots():
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    import socket
     import uvicorn
+
+    DEFAULT_PORT = 5003
+    MAX_TRIES = 10
+
+    def _port_free(port: int) -> bool:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("0.0.0.0", port))
+                return True
+            except OSError:
+                return False
+
+    port = DEFAULT_PORT
+    for p in range(DEFAULT_PORT, DEFAULT_PORT + MAX_TRIES):
+        if _port_free(p):
+            port = p
+            break
+
+    if port != DEFAULT_PORT:
+        print(f"Port {DEFAULT_PORT} in use, using port {port}")
 
     uvicorn.run(
         "agui_app:app",
         host="0.0.0.0",
-        port=5003,
+        port=port,
         reload=True,
     )
