@@ -513,9 +513,12 @@ class AGUIThread(Generic[T]):
             "if(ta){ta.disabled=true;ta.placeholder='Running command...';}"
         ))
 
-        # 6. Attach LogCapture to root logger
+        # 6. Attach LogCapture to root logger and ensure INFO level
         log_capture = LogCapture(maxlen=1000)
         root_logger = logging.getLogger()
+        prev_level = root_logger.level
+        if root_logger.level > logging.INFO:
+            root_logger.setLevel(logging.INFO)
         root_logger.addHandler(log_capture)
 
         # 7. Launch command in background
@@ -528,7 +531,8 @@ class AGUIThread(Generic[T]):
                 cp = CommandProcessor(sc.app_state, user_id=user_id)
                 result_holder["value"] = await cp.process_command(sc.raw_command)
             except Exception as e:
-                result_holder["error"] = str(e)
+                import traceback
+                result_holder["error"] = traceback.format_exc()
             finally:
                 result_holder["done"] = True
 
@@ -564,8 +568,9 @@ class AGUIThread(Generic[T]):
                 except Exception:
                     break  # WS disconnected
 
-        # 9. Cleanup: remove log handler
+        # 9. Cleanup: remove log handler, restore level
         root_logger.removeHandler(log_capture)
+        root_logger.setLevel(prev_level)
 
         # 10. Final result
         if result_holder["error"]:
