@@ -29,7 +29,7 @@ from fasthtml.common import *
 from utils.agui import setup_agui, get_chat_styles
 
 # ---------------------------------------------------------------------------
-# pydantic-ai Agent
+# pydantic-ai Agent with real tools
 # ---------------------------------------------------------------------------
 
 class AlpaTradeState(BaseModel):
@@ -51,14 +51,193 @@ agent = Agent(
     name="AlpaTrade",
     instructions=(
         "You are AlpaTrade, an AI trading assistant. "
-        "You help users with stock research, backtesting strategies, "
-        "paper trading, and portfolio management. "
-        "Be concise and use markdown formatting. "
-        "When users type CLI-style commands like 'agent:backtest lookback:1m' "
-        "or 'price AAPL', help them understand how to use those in the full AlpaTrade CLI. "
-        "For now, answer questions about trading, stocks, and market analysis."
+        "You have tools to look up real stock data, news, and analyst ratings. "
+        "Use your tools when users ask about specific stocks or market data. "
+        "Be concise and use markdown formatting with tables where appropriate. "
+        "When users mention CLI commands like 'agent:backtest lookback:1m', "
+        "explain that backtesting runs are available in the full CLI. "
+        "For stock queries, always use the appropriate tool to get real data."
     ),
 )
+
+
+@agent.tool_plain
+def get_stock_price(ticker: str) -> str:
+    """Get current stock price and recent performance for a ticker symbol."""
+    try:
+        from utils.data_loader import get_intraday_data
+        df = get_intraday_data(ticker.upper(), interval="1d", period="5d")
+        if df.empty:
+            return f"No price data found for {ticker.upper()}"
+        last = df.iloc[-1]
+        prev = df.iloc[-2] if len(df) > 1 else last
+        change = last["Close"] - prev["Close"]
+        pct = (change / prev["Close"]) * 100
+        sign = "+" if change >= 0 else ""
+        return (
+            f"**{ticker.upper()}** — ${last['Close']:.2f} "
+            f"({sign}{change:.2f}, {sign}{pct:.2f}%)\n"
+            f"Open: ${last['Open']:.2f} | High: ${last['High']:.2f} | "
+            f"Low: ${last['Low']:.2f} | Vol: {int(last['Volume']):,}"
+        )
+    except Exception as e:
+        return f"Error fetching price for {ticker}: {e}"
+
+
+@agent.tool_plain
+def get_stock_news(ticker: str, limit: int = 5) -> str:
+    """Get latest news headlines for a stock ticker."""
+    try:
+        from utils.market_research_util import MarketResearch
+        mr = MarketResearch()
+        return mr.news(ticker=ticker.upper(), limit=limit)
+    except Exception as e:
+        return f"Error fetching news for {ticker}: {e}"
+
+
+@agent.tool_plain
+def get_analyst_ratings(ticker: str) -> str:
+    """Get analyst ratings and price targets for a stock."""
+    try:
+        from utils.market_research_util import MarketResearch
+        mr = MarketResearch()
+        return mr.analysts(ticker=ticker.upper())
+    except Exception as e:
+        return f"Error fetching ratings for {ticker}: {e}"
+
+
+@agent.tool_plain
+def get_company_profile(ticker: str) -> str:
+    """Get company profile, sector, and key details for a stock."""
+    try:
+        from utils.market_research_util import MarketResearch
+        mr = MarketResearch()
+        return mr.profile(ticker=ticker.upper())
+    except Exception as e:
+        return f"Error fetching profile for {ticker}: {e}"
+
+
+@agent.tool_plain
+def get_financials(ticker: str, period: str = "annual") -> str:
+    """Get financial data (revenue, earnings, margins) for a stock. Period: 'annual' or 'quarterly'."""
+    try:
+        from utils.market_research_util import MarketResearch
+        mr = MarketResearch()
+        return mr.financials(ticker=ticker.upper(), period=period)
+    except Exception as e:
+        return f"Error fetching financials for {ticker}: {e}"
+
+
+@agent.tool_plain
+def get_market_movers(direction: str = "both") -> str:
+    """Get today's top market movers (gainers and losers). Direction: 'gainers', 'losers', or 'both'."""
+    try:
+        from utils.market_research_util import MarketResearch
+        mr = MarketResearch()
+        return mr.movers(direction=direction)
+    except Exception as e:
+        return f"Error fetching market movers: {e}"
+
+
+@agent.tool_plain
+def get_valuation(tickers: str) -> str:
+    """Compare valuation metrics (P/E, P/B, EV/EBITDA) for multiple stocks. Pass comma-separated tickers like 'AAPL,MSFT,GOOGL'."""
+    try:
+        from utils.market_research_util import MarketResearch
+        mr = MarketResearch()
+        return mr.valuation(tickers=tickers.upper())
+    except Exception as e:
+        return f"Error fetching valuation: {e}"
+
+
+@agent.tool_plain
+def show_recent_trades(limit: int = 20) -> str:
+    """Show recent trades from the AlpaTrade database."""
+    try:
+        from utils.db.db_pool import DatabasePool
+        from sqlalchemy import text
+        pool = DatabasePool()
+        with pool.get_session() as session:
+            result = session.execute(
+                text("""
+                    SELECT symbol, direction, shares, entry_price, exit_price,
+                           pnl, pnl_pct, trade_type
+                    FROM alpatrade.trades
+                    ORDER BY created_at DESC LIMIT :lim
+                """),
+                {"lim": limit},
+            )
+            rows = result.fetchall()
+        if not rows:
+            return "No trades found in database."
+        md = "| Symbol | Dir | Shares | Entry | Exit | P&L | P&L% | Type |\n"
+        md += "|--------|-----|--------|-------|------|-----|------|------|\n"
+        for r in rows:
+            md += (
+                f"| {r[0]} | {r[1]} | {float(r[2] or 0):.0f} | "
+                f"${float(r[3] or 0):.2f} | ${float(r[4] or 0):.2f} | "
+                f"${float(r[5] or 0):.2f} | {float(r[6] or 0):.2f}% | {r[7]} |\n"
+            )
+        return md + f"\n*{len(rows)} trades shown*"
+    except Exception as e:
+        return f"Error fetching trades: {e}"
+
+
+@agent.tool_plain
+def show_stock_chart(ticker: str, period: str = "3mo") -> str:
+    """Show a price chart for a stock. Period: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y."""
+    try:
+        from utils.data_loader import get_intraday_data
+        interval = "1d" if period not in ("1d", "5d") else "5m"
+        df = get_intraday_data(ticker.upper(), interval=interval, period=period)
+        if df.empty:
+            return f"No chart data for {ticker.upper()}"
+        dates = [d.isoformat() if hasattr(d, 'isoformat') else str(d) for d in df.index]
+        closes = [round(float(c), 2) for c in df["Close"]]
+        highs = [round(float(h), 2) for h in df["High"]]
+        lows = [round(float(l), 2) for l in df["Low"]]
+        import json
+        chart_data = json.dumps({
+            "ticker": ticker.upper(),
+            "period": period,
+            "dates": dates,
+            "close": closes,
+            "high": highs,
+            "low": lows,
+        })
+        return f"__CHART_DATA__{chart_data}__END_CHART__"
+    except Exception as e:
+        return f"Error generating chart for {ticker}: {e}"
+
+
+@agent.tool_plain
+def show_recent_runs(limit: int = 20) -> str:
+    """Show recent backtest/paper trade runs from the AlpaTrade database."""
+    try:
+        from utils.db.db_pool import DatabasePool
+        from sqlalchemy import text
+        pool = DatabasePool()
+        with pool.get_session() as session:
+            result = session.execute(
+                text("""
+                    SELECT run_id, mode, strategy, status, started_at
+                    FROM alpatrade.runs
+                    ORDER BY created_at DESC LIMIT :lim
+                """),
+                {"lim": limit},
+            )
+            rows = result.fetchall()
+        if not rows:
+            return "No runs found in database."
+        md = "| Run ID | Mode | Strategy | Status | Started |\n"
+        md += "|--------|------|----------|--------|---------|\n"
+        for r in rows:
+            short_id = str(r[0])[:8]
+            started = str(r[4])[:19] if r[4] else "-"
+            md += f"| `{short_id}` | {r[1]} | {r[2] or '-'} | {r[3]} | {started} |\n"
+        return md + f"\n*{len(rows)} runs shown*"
+    except Exception as e:
+        return f"Error fetching runs: {e}"
 
 
 # ---------------------------------------------------------------------------
@@ -418,15 +597,85 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
+  display: flex;
+  flex-direction: column;
 }
+
+/* === Trace Entries === */
+.trace-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+  border-left: 3px solid #334155;
+  border-radius: 0 0.25rem 0.25rem 0;
+  background: #0f172a;
+  font-size: 0.8rem;
+  animation: trace-in 0.2s ease-out;
+}
+
+@keyframes trace-in {
+  from { opacity: 0; transform: translateX(-0.5rem); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.trace-label {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.trace-detail {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-family: ui-monospace, monospace;
+  word-break: break-all;
+}
+
+.trace-run-start { border-left-color: #3b82f6; }
+.trace-run-start .trace-label { color: #60a5fa; }
+
+.trace-run-end { border-left-color: #22c55e; }
+.trace-run-end .trace-label { color: #4ade80; }
+
+.trace-streaming { border-left-color: #a78bfa; }
+.trace-streaming .trace-label { color: #a78bfa; }
+
+.trace-tool-active { border-left-color: #f59e0b; }
+.trace-tool-active .trace-label { color: #fbbf24; }
+
+.trace-tool-done { border-left-color: #22c55e; }
+.trace-tool-done .trace-label { color: #4ade80; }
+
+.trace-done { border-left-color: #22c55e; }
+.trace-done .trace-label { color: #4ade80; }
+
+.trace-error { border-left-color: #ef4444; }
+.trace-error .trace-label { color: #f87171; }
 
 #trace-content {
   font-size: 0.8rem;
   color: #94a3b8;
+  overflow-y: auto;
+  flex: 1;
 }
 
+/* === Artifact Pane === */
 #artifact-content {
   display: none;
+}
+
+#artifact-content .artifact-chart {
+  width: 100%;
+  min-height: 300px;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+#artifact-content .artifact-table {
+  width: 100%;
+  overflow-x: auto;
+  font-size: 0.8rem;
 }
 
 /* === Query Badge === */
@@ -558,7 +807,18 @@ def _right_pane():
     return Div(
         Div(
             H3("Trace"),
-            Button("x", cls="close-trace-btn", onclick="toggleRightPane()"),
+            Div(
+                Button(
+                    "Clear",
+                    cls="close-trace-btn",
+                    onclick="document.getElementById('trace-content').innerHTML="
+                    "'<div style=\"color:#475569;font-style:italic\">"
+                    "Tool calls and reasoning will appear here.</div>';",
+                    style="margin-right: 0.5rem; font-size: 0.7rem;",
+                ),
+                Button("x", cls="close-trace-btn", onclick="toggleRightPane()"),
+                style="display: flex; align-items: center;",
+            ),
             cls="right-header",
         ),
         Div(
@@ -572,7 +832,11 @@ def _right_pane():
                     style="color: #475569; font-style: italic;"),
                 id="trace-content",
             ),
-            Div(id="artifact-content"),
+            Div(
+                Div("Charts and data will appear here when tools generate visual output.",
+                    style="color: #475569; font-style: italic;"),
+                id="artifact-content",
+            ),
             cls="right-content",
         ),
         cls="right-pane",
@@ -597,7 +861,7 @@ function showTab(tab) {
     tabs.forEach(function(t) { t.classList.remove('active'); });
 
     if (tab === 'trace') {
-        trace.style.display = 'block';
+        trace.style.display = 'flex';
         artifact.style.display = 'none';
         tabs[0].classList.add('active');
     } else {
@@ -606,6 +870,93 @@ function showTab(tab) {
         tabs[1].classList.add('active');
     }
 }
+
+/* Chart rendering — detect __CHART_DATA__ markers in assistant messages */
+function renderChart(chartJson) {
+    try {
+        var data = JSON.parse(chartJson);
+        var container = document.getElementById('artifact-content');
+        if (!container || !window.Plotly) return;
+
+        container.innerHTML = '';
+        var chartDiv = document.createElement('div');
+        chartDiv.id = 'plotly-chart';
+        chartDiv.className = 'artifact-chart';
+        container.appendChild(chartDiv);
+
+        var trace = {
+            x: data.dates,
+            y: data.close,
+            type: 'scatter',
+            mode: 'lines',
+            name: data.ticker,
+            line: { color: '#3b82f6', width: 2 },
+            fill: 'tozeroy',
+            fillcolor: 'rgba(59, 130, 246, 0.1)',
+        };
+
+        var rangeLine = {
+            x: data.dates,
+            y: data.high,
+            type: 'scatter',
+            mode: 'lines',
+            name: 'High',
+            line: { color: '#22c55e', width: 1, dash: 'dot' },
+            opacity: 0.5,
+        };
+
+        var lowLine = {
+            x: data.dates,
+            y: data.low,
+            type: 'scatter',
+            mode: 'lines',
+            name: 'Low',
+            line: { color: '#ef4444', width: 1, dash: 'dot' },
+            opacity: 0.5,
+        };
+
+        var layout = {
+            title: { text: data.ticker + ' — ' + data.period, font: { color: '#f1f5f9', size: 14 } },
+            paper_bgcolor: '#1e293b',
+            plot_bgcolor: '#0f172a',
+            font: { color: '#94a3b8', family: 'ui-monospace, monospace', size: 11 },
+            xaxis: { gridcolor: '#1e293b', linecolor: '#334155' },
+            yaxis: { gridcolor: '#1e293b', linecolor: '#334155', tickprefix: '$' },
+            legend: { orientation: 'h', y: -0.15 },
+            margin: { t: 40, r: 20, b: 40, l: 60 },
+            showlegend: true,
+        };
+
+        Plotly.newPlot(chartDiv, [trace, rangeLine, lowLine], layout, {
+            responsive: true,
+            displayModeBar: false,
+        });
+
+        // Switch to artifacts tab
+        showTab('artifact');
+    } catch(e) {
+        console.error('Chart render error:', e);
+    }
+}
+
+/* Watch for chart data markers in messages */
+(function() {
+    var chartObs = new MutationObserver(function() {
+        document.querySelectorAll('.marked, .marked-done').forEach(function(el) {
+            var text = el.textContent || '';
+            var match = text.match(/__CHART_DATA__(.+?)__END_CHART__/);
+            if (match) {
+                renderChart(match[1]);
+                // Clean up the marker from the message
+                el.innerHTML = el.innerHTML.replace(/__CHART_DATA__.*?__END_CHART__/, '');
+            }
+        });
+    });
+    setTimeout(function() {
+        var body = document.body;
+        if (body) chartObs.observe(body, {childList: true, subtree: true, characterData: true});
+    }, 500);
+})();
 """
 
 

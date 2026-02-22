@@ -63,14 +63,16 @@ class UI(Generic[T]):
     def _clear_input(self):
         return self._render_input_form(oob_swap=True)
 
-    def _render_messages(self, messages: List[BaseMessage]):
+    def _render_messages(self, messages: List[BaseMessage], oob: bool = False):
+        attrs = {"id": "chat-messages", "cls": "chat-messages"}
+        if oob:
+            attrs["hx_swap_oob"] = "outerHTML"
         return Div(
             *[
                 m.__ft__() if hasattr(m, "__ft__") else self._render_message(m)
                 for m in messages
             ],
-            id="chat-messages",
-            cls="chat-messages",
+            **attrs,
         )
 
     def _render_message(self, message: BaseMessage):
@@ -141,26 +143,39 @@ class UI(Generic[T]):
                 function renderMarkdown(elementId) {
                     setTimeout(function() {
                         var el = document.getElementById(elementId);
-                        if (el && window.marked && el.classList.contains('marked')) {
+                        if (el && window.marked) {
                             var txt = el.textContent || el.innerText;
-                            if (txt.trim()) el.innerHTML = marked.parse(txt);
-                            el.classList.remove('marked');
-                            el.classList.add('marked-done');
+                            if (txt.trim()) {
+                                el.innerHTML = marked.parse(txt);
+                                el.classList.remove('marked');
+                                el.classList.add('marked-done');
+                                delete el.dataset.rendering;
+                            }
                         }
-                    }, 50);
+                    }, 100);
                 }
                 // Auto-render .marked elements on DOM changes
+                // Skip elements that are still streaming (have a .chat-streaming sibling)
                 if (window.marked) {
                     new MutationObserver(function() {
                         document.querySelectorAll('.marked').forEach(function(el) {
+                            var parent = el.parentElement;
+                            if (parent) {
+                                var cursor = parent.querySelector('.chat-streaming');
+                                if (cursor && cursor.textContent) return;
+                            }
                             var txt = el.textContent || el.innerText;
                             if (txt.trim() && !el.dataset.rendering) {
                                 el.dataset.rendering = '1';
                                 setTimeout(function() {
-                                    el.innerHTML = marked.parse(txt);
-                                    el.classList.remove('marked');
-                                    el.classList.add('marked-done');
-                                }, 100);
+                                    var finalTxt = el.textContent || el.innerText;
+                                    if (finalTxt.trim()) {
+                                        el.innerHTML = marked.parse(finalTxt);
+                                        el.classList.remove('marked');
+                                        el.classList.add('marked-done');
+                                    }
+                                    delete el.dataset.rendering;
+                                }, 150);
                             }
                         });
                     }).observe(document.body, {childList: true, subtree: true});
@@ -258,15 +273,8 @@ class AGUIThread(Generic[T]):
         )
         self._runs[run_id] = run_input
 
-        await self.send(self.ui._render_messages(self._messages))
+        await self.send(self.ui._render_messages(self._messages, oob=True))
         await self.send(self.ui._trigger_run(run_id))
-        await self.send(
-            Div(
-                Div(Span(cls="loading"), id="run-start"),
-                id="agui-messages",
-                hx_swap_oob="beforeend",
-            )
-        )
         await self.send(self.ui._clear_input())
 
     async def _handle_run(self, run_id: str):
@@ -288,10 +296,17 @@ class AGUIThread(Generic[T]):
             deps=deps,
         ):
             if hasattr(event, "__ft__"):
-                await self.send(event.__ft__())
+                result = event.__ft__()
+                # Support tuple/list returns for multi-target OOB swaps
+                if isinstance(result, (tuple, list)):
+                    for el in result:
+                        await self.send(el)
+                else:
+                    await self.send(result)
 
             if event.type == EventType.TEXT_MESSAGE_START:
                 response.id = event.message_id
+                response.content = ""  # Reset for each new text message
             elif event.type == EventType.TEXT_MESSAGE_CONTENT:
                 response.content += event.delta
             elif event.type == EventType.RUN_FINISHED:

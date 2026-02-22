@@ -1,7 +1,11 @@
 """
 FastHTML rendering patches (__ft__) for AG-UI protocol event types.
 
-Based on ft-agui patches.py — extended with thinking trace event support.
+Based on ft-agui patches.py — extended with thinking trace + artifact pane support.
+Events render in both the chat area and the right-pane trace panel via OOB swaps.
+
+Returns tuples when multiple OOB targets are needed — core.py sends each element
+separately via WebSocket so HTMX processes them independently.
 """
 
 from fasthtml.common import Div, Span, Pre, Script, patch
@@ -23,6 +27,14 @@ from ag_ui.core.events import (
 )
 
 
+_OPEN_TRACE_JS = (
+    "var l=document.querySelector('.app-layout');"
+    "if(l&&!l.classList.contains('right-open'))l.classList.add('right-open');"
+    "setTimeout(function(){var tc=document.getElementById('trace-content');"
+    "if(tc)tc.scrollTop=tc.scrollHeight;},100);"
+)
+
+
 def setup_ft_patches():
     """Monkey-patch __ft__() onto AG-UI event types for FastHTML rendering."""
 
@@ -37,26 +49,46 @@ def setup_ft_patches():
 
     @patch
     def __ft__(self: RunStartedEvent):
-        return Div(
-            Div(id=f"run-{self.run_id}"),
-            id="agui-messages",
-            hx_swap_oob="beforeend",
+        return (
+            Div(
+                Div(
+                    Span("Run started", cls="trace-label"),
+                    cls="trace-entry trace-run-start",
+                    id=f"trace-run-{self.run_id}",
+                ),
+                Script(_OPEN_TRACE_JS),
+                id="trace-content",
+                hx_swap_oob="beforeend",
+            ),
         )
 
     @patch
     def __ft__(self: TextMessageStartEvent):
-        return Div(
+        return (
+            # Append message bubble to #chat-messages
             Div(
                 Div(
-                    Span("", id=f"message-content-{self.message_id}", cls="marked"),
-                    Span("", cls="chat-streaming", id=f"streaming-{self.message_id}"),
-                    cls="chat-message-content",
+                    Div(
+                        Span("", id=f"message-content-{self.message_id}", cls="marked"),
+                        Span("", cls="chat-streaming", id=f"streaming-{self.message_id}"),
+                        cls="chat-message-content",
+                    ),
+                    cls="chat-message chat-assistant",
+                    id=f"message-{self.message_id}",
                 ),
-                cls="chat-message chat-assistant",
-                id=f"message-{self.message_id}",
+                id="chat-messages",
+                hx_swap_oob="beforeend",
             ),
-            id="chat-messages",
-            hx_swap_oob="beforeend",
+            # Append trace entry to #trace-content
+            Div(
+                Div(
+                    Span("Generating response...", cls="trace-label"),
+                    cls="trace-entry trace-streaming",
+                    id=f"trace-msg-{self.message_id}",
+                ),
+                id="trace-content",
+                hx_swap_oob="beforeend",
+            ),
         )
 
     @patch
@@ -77,7 +109,19 @@ def setup_ft_patches():
 
     @patch
     def __ft__(self: TextMessageEndEvent):
-        return Span("", id=f"streaming-{self.message_id}")
+        content_id = f"message-content-{self.message_id}"
+        return (
+            # Remove streaming cursor
+            Span("", id=f"streaming-{self.message_id}", hx_swap_oob="innerHTML"),
+            # Update trace + trigger markdown render
+            Div(
+                Span("Response complete", cls="trace-label"),
+                Script(f"renderMarkdown('{content_id}');"),
+                cls="trace-entry trace-done",
+                id=f"trace-msg-{self.message_id}",
+                hx_swap_oob="outerHTML",
+            ),
+        )
 
     @patch
     def __ft__(self: StateSnapshotEvent):
@@ -87,39 +131,94 @@ def setup_ft_patches():
 
     @patch
     def __ft__(self: ToolCallStartEvent):
-        # Render in both chat (compact) and trace pane (detailed)
-        return Div(
-            # Chat inline indicator
+        return (
+            # Append tool indicator to #chat-messages
             Div(
-                Div(f"Running {self.tool_call_name}...", cls="chat-message-content"),
-                cls="chat-message chat-tool",
-                id=f"tool-{self.tool_call_id}",
+                Div(
+                    Div(f"Running {self.tool_call_name}...", cls="chat-message-content"),
+                    cls="chat-message chat-tool",
+                    id=f"tool-{self.tool_call_id}",
+                ),
+                id="chat-messages",
+                hx_swap_oob="beforeend",
             ),
-            id="chat-messages",
-            hx_swap_oob="beforeend",
+            # Append trace entry to #trace-content (with auto-open script)
+            Div(
+                Div(
+                    Span(f"Tool: {self.tool_call_name}", cls="trace-label"),
+                    Span("running...", cls="trace-detail"),
+                    cls="trace-entry trace-tool-active",
+                    id=f"trace-tool-{self.tool_call_id}",
+                ),
+                Script(_OPEN_TRACE_JS),
+                id="trace-content",
+                hx_swap_oob="beforeend",
+            ),
         )
 
     @patch
+    def __ft__(self: ToolCallArgsEvent):
+        args_str = self.delta if hasattr(self, 'delta') else ""
+        if args_str:
+            return Span(
+                args_str,
+                cls="trace-detail",
+                id=f"trace-tool-{self.tool_call_id}",
+                hx_swap_oob="beforeend",
+            )
+        return Span()
+
+    @patch
     def __ft__(self: ToolCallEndEvent):
-        return Div(
+        return (
             Div(
-                "Done",
-                cls="chat-message-content",
+                Div("Done", cls="chat-message-content"),
+                cls="chat-message chat-tool",
+                id=f"tool-{self.tool_call_id}",
+                hx_swap_oob="outerHTML",
             ),
-            cls="chat-message chat-tool",
-            id=f"tool-{self.tool_call_id}",
-            hx_swap_oob="outerHTML",
+            Div(
+                Span("Tool complete", cls="trace-label"),
+                cls="trace-entry trace-tool-done",
+                id=f"trace-tool-{self.tool_call_id}",
+                hx_swap_oob="outerHTML",
+            ),
+        )
+
+    @patch
+    def __ft__(self: RunFinishedEvent):
+        return (
+            Div(
+                Div(
+                    Span("Run finished", cls="trace-label"),
+                    cls="trace-entry trace-run-end",
+                ),
+                id="trace-content",
+                hx_swap_oob="beforeend",
+            ),
+            Div(id="chat-status", hx_swap_oob="innerHTML"),
         )
 
     @patch
     def __ft__(self: RunErrorEvent):
-        return Div(
+        return (
             Div(
-                Div("Error:", cls="agui-error-title"),
-                Div(self.message, cls="agui-error-details"),
-                cls="chat-message-content",
+                Div(
+                    Div("Error:", cls="agui-error-title"),
+                    Div(self.message, cls="agui-error-details"),
+                    cls="chat-message-content",
+                ),
+                cls="chat-message chat-error",
+                id="chat-messages",
+                hx_swap_oob="beforeend",
             ),
-            cls="chat-message chat-error",
-            id="agui-messages",
-            hx_swap_oob="beforeend",
+            Div(
+                Div(
+                    Span("Error", cls="trace-label"),
+                    Span(self.message, cls="trace-detail"),
+                    cls="trace-entry trace-error",
+                ),
+                id="trace-content",
+                hx_swap_oob="beforeend",
+            ),
         )
