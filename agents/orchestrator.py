@@ -57,18 +57,39 @@ def parse_duration(s: str) -> int:
 class Orchestrator:
     """Portfolio Manager that coordinates all agents."""
 
-    def __init__(self):
+    def __init__(self, user_id: Optional[str] = None):
         self.run_id = str(uuid.uuid4())
+        self.user_id = user_id
         self.bus = MessageBus()
         self.state = PortfolioState.load()
         self.state.run_id = self.run_id
         self.state.started_at = datetime.now(timezone.utc).isoformat()
 
+        # Resolve per-user Alpaca keys (None = fall back to env vars)
+        self._alpaca_api_key = None
+        self._alpaca_secret_key = None
+        if user_id:
+            try:
+                from utils.auth import get_alpaca_keys
+                keys = get_alpaca_keys(user_id)
+                if keys:
+                    self._alpaca_api_key, self._alpaca_secret_key = keys
+            except Exception:
+                pass
+
         # Initialize agents
-        self.backtester = BacktestAgent(message_bus=self.bus, state=self.state)
-        self.paper_trader = PaperTradeAgent(message_bus=self.bus, state=self.state)
-        self.validator = ValidateAgent(message_bus=self.bus, state=self.state)
-        self.reconciler = ReconcileAgent(message_bus=self.bus, state=self.state)
+        self.backtester = BacktestAgent(message_bus=self.bus, state=self.state,
+                                        user_id=user_id)
+        self.paper_trader = PaperTradeAgent(message_bus=self.bus, state=self.state,
+                                             user_id=user_id,
+                                             alpaca_api_key=self._alpaca_api_key,
+                                             alpaca_secret_key=self._alpaca_secret_key)
+        self.validator = ValidateAgent(message_bus=self.bus, state=self.state,
+                                       user_id=user_id)
+        self.reconciler = ReconcileAgent(message_bus=self.bus, state=self.state,
+                                          user_id=user_id,
+                                          alpaca_api_key=self._alpaca_api_key,
+                                          alpaca_secret_key=self._alpaca_secret_key)
 
         # Initialize agent states
         for name in ["backtester", "paper_trader", "validator", "reconciler"]:
@@ -87,7 +108,7 @@ class Orchestrator:
             self.state.mode = "backtest"
             store_run(self.run_id, "backtest",
                       strategy=config.get("strategy", "buy_the_dip"),
-                      config=config)
+                      config=config, user_id=self.user_id)
         agent_state = self.state.get_agent("backtester")
         agent_state.set_running("parameterized_backtest")
         self.state.save()
@@ -148,7 +169,8 @@ class Orchestrator:
         if self._mode is None:
             self._mode = "validate"
             self.state.mode = "validate"
-            store_run(self.run_id, "validate", config={"source_run_id": run_id})
+            store_run(self.run_id, "validate", config={"source_run_id": run_id},
+                      user_id=self.user_id)
         agent_state = self.state.get_agent("validator")
         agent_state.set_running("trade_validation")
         self.state.save()
@@ -182,7 +204,8 @@ class Orchestrator:
             agent_state.iteration_count = result.get("iterations_used", 0)
             self.state.validation_results.append(result)
             self.state.save()
-            store_validation(request.get("run_id", self.run_id), result)
+            store_validation(request.get("run_id", self.run_id), result,
+                                 user_id=self.user_id)
 
             status = result.get("status", "unknown")
             anomalies = result.get("anomalies_found", 0)
@@ -223,7 +246,8 @@ class Orchestrator:
             store_run(self.run_id, "paper",
                       strategy=config.get("strategy", "buy_the_dip"),
                       config=config,
-                      strategy_slug=paper_slug)
+                      strategy_slug=paper_slug,
+                      user_id=self.user_id)
         agent_state = self.state.get_agent("paper_trader")
         agent_state.set_running("paper_trading")
         self.state.save()
@@ -298,7 +322,7 @@ class Orchestrator:
         self._config = config
         store_run(self.run_id, "full",
                   strategy=config.get("strategy", "buy_the_dip"),
-                  config=config)
+                  config=config, user_id=self.user_id)
         self.state.mode = "full"
         self.state.save()
 
@@ -356,7 +380,8 @@ class Orchestrator:
         if self._mode is None:
             self._mode = "reconcile"
             self.state.mode = "reconcile"
-            store_run(self.run_id, "reconcile", config=config)
+            store_run(self.run_id, "reconcile", config=config,
+                      user_id=self.user_id)
         agent_state = self.state.get_agent("reconciler")
         agent_state.set_running("reconciliation")
         self.state.save()

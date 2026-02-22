@@ -8,11 +8,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.absolute()))
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, StreamingResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
-from typing import Optional
+from typing import Dict, Optional
 
 from tui.command_processor import CommandProcessor
 
@@ -31,7 +32,33 @@ class _AppState:
         self._bg_stop = threading.Event()
         self._suggested_command: str = ""
 
-app_state = _AppState()
+# Per-user state keyed by user_id (None key = anonymous)
+_user_states: Dict[Optional[str], _AppState] = {}
+
+def _get_app_state(user_id: Optional[str] = None) -> _AppState:
+    """Get or create an _AppState for the given user."""
+    if user_id not in _user_states:
+        _user_states[user_id] = _AppState()
+    return _user_states[user_id]
+
+# ---------------------------------------------------------------------------
+# Auth dependency
+# ---------------------------------------------------------------------------
+
+_bearer = HTTPBearer(auto_error=False)
+
+async def get_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
+) -> Optional[Dict]:
+    """
+    Decode JWT from Authorization header.
+    Returns user payload dict or None (optional auth — unauthenticated requests pass through).
+    """
+    if not credentials:
+        return None
+    from utils.auth import decode_jwt_token
+    payload = decode_jwt_token(credentials.credentials)
+    return payload  # {"user_id": ..., "email": ..., ...} or None
 
 # ---------------------------------------------------------------------------
 # FastAPI app
@@ -75,16 +102,31 @@ class ApiResponse(BaseModel):
     result: str
     status: str
 
+class AuthRequest(BaseModel):
+    email: str
+    password: str
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    display_name: Optional[str] = None
+
+class AuthResponse(BaseModel):
+    token: str
+    user_id: str
+    email: str
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-async def _run_command(command: str) -> ApiResponse:
+async def _run_command(command: str, user_id: Optional[str] = None) -> ApiResponse:
     """Execute a command through CommandProcessor and return ApiResponse."""
-    processor = CommandProcessor(app_state)
+    state = _get_app_state(user_id)
+    processor = CommandProcessor(state, user_id=user_id)
     try:
         result = await processor.process_command(command) or ""
-        app_state.command_history.append(command)
+        state.command_history.append(command)
         return ApiResponse(result=result, status="ok")
     except Exception as e:
         return ApiResponse(result=f"# Error\n\n```\n{e}\n```", status="error")
@@ -102,42 +144,79 @@ def _build_cmd(base: str, params: dict) -> str:
     return " ".join(parts)
 
 # ---------------------------------------------------------------------------
+# Auth endpoints
+# ---------------------------------------------------------------------------
+
+@app.post("/auth/register", response_model=AuthResponse)
+async def auth_register(req: RegisterRequest):
+    from utils.auth import create_user, create_jwt_token
+    if len(req.password) < 8:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    user = create_user(email=req.email, password=req.password, display_name=req.display_name)
+    if not user:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=409, detail="Email already registered")
+    token = create_jwt_token(user["user_id"], user["email"])
+    return AuthResponse(token=token, user_id=user["user_id"], email=user["email"])
+
+
+@app.post("/auth/login", response_model=AuthResponse)
+async def auth_login(req: AuthRequest):
+    from utils.auth import authenticate, create_jwt_token
+    user = authenticate(req.email, req.password)
+    if not user:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    token = create_jwt_token(user["user_id"], user["email"])
+    return AuthResponse(token=token, user_id=user["user_id"], email=user["email"])
+
+
+# ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
+
+def _uid(user: Optional[Dict]) -> Optional[str]:
+    """Extract user_id from auth payload."""
+    return user.get("user_id") if user else None
+
 
 @app.get("/health")
 async def health():
     return {"status": "ok"}
 
 @app.post("/cmd", response_model=ApiResponse)
-async def cmd(req: CmdRequest):
-    return await _run_command(req.command.strip())
+async def cmd(req: CmdRequest, user: Optional[Dict] = Depends(get_current_user)):
+    return await _run_command(req.command.strip(), user_id=_uid(user))
 
 @app.get("/runs", response_model=ApiResponse)
-async def runs(limit: int = 20):
-    return await _run_command("runs")
+async def runs(limit: int = 20, user: Optional[Dict] = Depends(get_current_user)):
+    return await _run_command("runs", user_id=_uid(user))
 
 @app.get("/trades", response_model=ApiResponse)
-async def trades(run_id: Optional[str] = None, type: Optional[str] = None, limit: int = 20):
+async def trades(run_id: Optional[str] = None, type: Optional[str] = None,
+                 limit: int = 20, user: Optional[Dict] = Depends(get_current_user)):
     parts = {"run-id": run_id, "type": type, "limit": limit}
     cmd = _build_cmd("agent:trades", parts)
-    return await _run_command(cmd)
+    return await _run_command(cmd, user_id=_uid(user))
 
 @app.get("/report", response_model=ApiResponse)
 async def report(run_id: Optional[str] = None, type: Optional[str] = None,
-                 strategy: Optional[str] = None, limit: int = 10):
+                 strategy: Optional[str] = None, limit: int = 10,
+                 user: Optional[Dict] = Depends(get_current_user)):
     parts = {"run-id": run_id, "type": type, "strategy": strategy, "limit": limit}
     cmd = _build_cmd("agent:report", parts)
-    return await _run_command(cmd)
+    return await _run_command(cmd, user_id=_uid(user))
 
 @app.get("/top", response_model=ApiResponse)
-async def top(strategy: Optional[str] = None, limit: int = 20):
+async def top(strategy: Optional[str] = None, limit: int = 20,
+              user: Optional[Dict] = Depends(get_current_user)):
     parts = {"strategy": strategy, "limit": limit}
     cmd = _build_cmd("agent:top", parts)
-    return await _run_command(cmd)
+    return await _run_command(cmd, user_id=_uid(user))
 
 @app.post("/backtest", response_model=ApiResponse)
-async def backtest(req: BacktestRequest):
+async def backtest(req: BacktestRequest, user: Optional[Dict] = Depends(get_current_user)):
     parts = {
         "lookback": req.lookback,
         "symbols": req.symbols,
@@ -148,10 +227,10 @@ async def backtest(req: BacktestRequest):
         "pdt": req.pdt,
     }
     cmd = _build_cmd("agent:backtest", parts)
-    return await _run_command(cmd)
+    return await _run_command(cmd, user_id=_uid(user))
 
 @app.post("/paper", response_model=ApiResponse)
-async def paper(req: PaperRequest):
+async def paper(req: PaperRequest, user: Optional[Dict] = Depends(get_current_user)):
     parts = {
         "duration": req.duration,
         "symbols": req.symbols,
@@ -162,32 +241,32 @@ async def paper(req: PaperRequest):
         "pdt": req.pdt,
     }
     cmd = _build_cmd("agent:paper", parts)
-    return await _run_command(cmd)
+    return await _run_command(cmd, user_id=_uid(user))
 
 @app.get("/status", response_model=ApiResponse)
-async def status():
-    return await _run_command("agent:status")
+async def status(user: Optional[Dict] = Depends(get_current_user)):
+    return await _run_command("agent:status", user_id=_uid(user))
 
 @app.get("/news", response_model=ApiResponse)
 async def news(ticker: Optional[str] = None, provider: Optional[str] = None,
-               limit: int = 10):
+               limit: int = 10, user: Optional[Dict] = Depends(get_current_user)):
     cmd = f"news:{ticker}" if ticker else "news"
     parts = {"provider": provider, "limit": limit}
     cmd = _build_cmd(cmd, parts)
-    return await _run_command(cmd)
+    return await _run_command(cmd, user_id=_uid(user))
 
 @app.get("/price", response_model=ApiResponse)
-async def price(ticker: str):
-    return await _run_command(f"price:{ticker}")
+async def price(ticker: str, user: Optional[Dict] = Depends(get_current_user)):
+    return await _run_command(f"price:{ticker}", user_id=_uid(user))
 
 @app.get("/profile", response_model=ApiResponse)
-async def profile(ticker: str):
-    return await _run_command(f"profile:{ticker}")
+async def profile(ticker: str, user: Optional[Dict] = Depends(get_current_user)):
+    return await _run_command(f"profile:{ticker}", user_id=_uid(user))
 
 @app.get("/movers", response_model=ApiResponse)
-async def movers(direction: Optional[str] = None):
+async def movers(direction: Optional[str] = None, user: Optional[Dict] = Depends(get_current_user)):
     cmd = f"movers:{direction}" if direction else "movers"
-    return await _run_command(cmd)
+    return await _run_command(cmd, user_id=_uid(user))
 
 # ---------------------------------------------------------------------------
 # Streaming chat SSE endpoint

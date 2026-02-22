@@ -63,9 +63,10 @@ class ValidateAgent:
     """Agent that validates trades against market data with self-correction."""
 
     def __init__(self, message_bus=None, state=None, max_iterations: int = 10,
-                 price_tolerance: float = 0.01):
+                 price_tolerance: float = 0.01, user_id=None):
         self.message_bus = message_bus
         self.state = state
+        self.user_id = user_id
         self.max_iterations = max_iterations
         self.price_tolerance = price_tolerance
         self.massive = MassiveUtil()

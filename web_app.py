@@ -4,8 +4,11 @@ import collections
 import logging
 import os
 import sys
+import time
 import threading
+import uuid as _uuid
 from pathlib import Path
+from typing import Dict, Optional
 
 # Ensure project root is importable
 sys.path.insert(0, str(Path(__file__).parent.absolute()))
@@ -47,20 +50,68 @@ class LogCapture(logging.Handler):
         with self._lock:
             self.lines.clear()
 
-# Singleton state container (persists across requests)
-cli = StrategyCLI()
-cli._log_capture = LogCapture()
-cli._cmd_task = None      # asyncio.Task for current long-running command
-cli._cmd_result = None    # markdown result when command completes
-cli._last_chart_json = None  # Plotly JSON for equity curve chart
-cli._cmd_286_html = None  # cached 286 response to handle HTMX race condition
 
-# Chat streaming state
-cli._chat_events = collections.deque(maxlen=200)
-cli._chat_task = None       # asyncio.Task for current chat
-cli._chat_done = False      # completion flag
-cli._chat_final = ""        # final markdown content
-cli._chat_286_html = None   # cached 286 response for HTMX race
+# ---------------------------------------------------------------------------
+# Per-user session state (replaces global cli singleton)
+# ---------------------------------------------------------------------------
+
+class UserSessionState:
+    """Holds all per-user mutable state for the web UI."""
+
+    SESSION_TTL = 7200  # 2 hours
+
+    def __init__(self):
+        self.cli = StrategyCLI()
+        self.cli._log_capture = LogCapture()
+        self.cli._cmd_task = None
+        self.cli._cmd_result = None
+        self.cli._last_chart_json = None
+        self.cli._cmd_286_html = None
+        self.cli._chat_events = collections.deque(maxlen=200)
+        self.cli._chat_task = None
+        self.cli._chat_done = False
+        self.cli._chat_final = ""
+        self.cli._chat_286_html = None
+        self.last_accessed = time.time()
+        self.user_id: Optional[str] = None  # set after login
+
+
+_user_sessions: Dict[str, UserSessionState] = {}
+_SESSION_CLEANUP_INTERVAL = 600  # seconds
+
+
+def _get_user_session(session) -> UserSessionState:
+    """Get or create a UserSessionState for this browser session."""
+    sid = session.get("session_id")
+    if not sid:
+        sid = str(_uuid.uuid4())
+        session["session_id"] = sid
+
+    if sid not in _user_sessions:
+        _user_sessions[sid] = UserSessionState()
+
+    uss = _user_sessions[sid]
+    uss.last_accessed = time.time()
+
+    # Sync user_id from session auth
+    user = session.get("user")
+    if user:
+        uss.user_id = user.get("user_id")
+    else:
+        uss.user_id = None
+
+    return uss
+
+
+def _evict_stale_sessions():
+    """Remove sessions that haven't been accessed in TTL seconds."""
+    now = time.time()
+    stale = [
+        sid for sid, uss in _user_sessions.items()
+        if now - uss.last_accessed > UserSessionState.SESSION_TTL
+    ]
+    for sid in stale:
+        del _user_sessions[sid]
 
 # Commands that trigger background streaming
 _STREAMING_COMMANDS = {"agent:backtest", "agent:paper", "agent:full", "agent:validate", "agent:reconcile"}
@@ -186,6 +237,41 @@ nav.top-nav .nav-links a:hover { color: var(--pico-primary); }
                border-radius: 0.5rem; padding: 0.5rem; margin-top: 0.5rem; }
 .log-pre { color: #8b949e; font-size: 0.8em; margin: 0; white-space: pre-wrap; word-break: break-word; }
 .backtest-chart { margin-top: 1rem; border-radius: 0.5rem; }
+
+/* Auth forms */
+.auth-page { max-width: 420px; margin: 2rem auto; }
+.auth-page h2 { text-align: center; margin-bottom: 1.5rem; }
+.auth-page form { display: flex; flex-direction: column; gap: 0.75rem; }
+.auth-page input { width: 100%; }
+.auth-page button { width: 100%; margin-top: 0.5rem; }
+.auth-page .alt-link { text-align: center; margin-top: 1rem; font-size: 0.85em; color: var(--pico-muted-color); }
+.auth-page .alt-link a { color: var(--pico-primary); }
+.auth-page .error-msg { color: #e06c75; font-size: 0.85em; text-align: center; margin-bottom: 0.5rem; }
+.auth-page .success-msg { color: #2ea043; font-size: 0.85em; text-align: center; margin-bottom: 0.5rem; }
+.auth-page .divider { text-align: center; color: var(--pico-muted-color); margin: 1rem 0;
+                       font-size: 0.85em; position: relative; }
+.auth-page .divider::before, .auth-page .divider::after {
+    content: ""; position: absolute; top: 50%; width: 40%; height: 1px;
+    background: var(--pico-muted-border-color); }
+.auth-page .divider::before { left: 0; }
+.auth-page .divider::after { right: 0; }
+.auth-page .google-btn { background: #4285f4; color: #fff; text-align: center;
+                          text-decoration: none; display: block; padding: 0.5rem;
+                          border-radius: 0.25rem; font-weight: 600; }
+.auth-page .google-btn:hover { opacity: 0.9; }
+
+/* Profile page */
+.profile-page { max-width: 600px; margin: 2rem auto; }
+.profile-page .info-grid { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1rem;
+                            font-size: 0.9em; margin-bottom: 1.5rem; }
+.profile-page .info-grid dt { color: var(--pico-muted-color); }
+.profile-page .info-grid dd { margin: 0; }
+.profile-page .keys-form { display: flex; flex-direction: column; gap: 0.75rem; }
+.profile-page .keys-form input { width: 100%; }
+.profile-page .keys-form button { width: auto; align-self: flex-start; }
+.profile-page .key-status { font-size: 0.85em; padding: 0.3rem 0.6rem; border-radius: 0.25rem; }
+.profile-page .key-status.configured { color: #2ea043; background: rgba(46, 160, 67, 0.1); }
+.profile-page .key-status.not-configured { color: #e06c75; background: rgba(224, 108, 117, 0.1); }
 
 /* User guide page */
 .guide { max-width: 760px; margin: 0 auto; font-size: 0.9em; line-height: 1.6; }
@@ -338,10 +424,12 @@ def _nav(session):
         A("Screenshots", href="/screenshots"),
     ]
     if user:
-        links.append(Span(user.get("email", "user"), style="color: var(--pico-color);"))
+        name = user.get("display_name") or user.get("email", "user")
+        links.append(A(name, href="/profile", style="color: var(--pico-color); font-weight: 600;"))
         links.append(A("Logout", href="/logout"))
-    elif _oauth_enabled:
-        links.append(A("Sign in", href="/login"))
+    else:
+        links.append(A("Sign up", href="/register"))
+        links.append(A("Sign in", href="/signin"))
     return Nav(
         A("AlpaTrade", href="/", cls="nav-brand"),
         Div(*links, cls="nav-links"),
@@ -364,12 +452,10 @@ def _signin_prompt():
     parts = [
         H4("Free query limit reached"),
         P(f"You've used all {FREE_QUERY_LIMIT} free queries."),
+        P("Sign in or create an account for unlimited access."),
+        A("Sign in", href="/signin", style="margin-right: 1rem;"),
+        A("Sign up", href="/register"),
     ]
-    if _oauth_enabled:
-        parts.append(P("Sign in with Google for unlimited access."))
-        parts.append(A("Sign in with Google", href="/login"))
-    else:
-        parts.append(P("Authentication is not configured on this instance."))
     return Div(*parts, cls="signin-card")
 
 
@@ -446,16 +532,18 @@ async def post(command: str, session):
                     )
                 session["query_count"] = count + 1
 
+        uss = _get_user_session(session)
+
         # Check if this is a long-running agent command
         first_word = cmd_lower.split()[0] if cmd_lower.split() else ""
         if first_word in _STREAMING_COMMANDS:
-            return _start_streaming_command(command)
+            return _start_streaming_command(command, uss)
 
         # Free-form chat — route to streaming chat console
         if not _is_structured_command(cmd_lower):
-            return _start_chat_stream(command)
+            return _start_chat_stream(command, uss)
 
-        processor = CommandProcessor(cli)
+        processor = CommandProcessor(uss.cli, user_id=uss.user_id)
         result_md = await processor.process_command(command) or ""
 
     return Div(
@@ -470,8 +558,10 @@ async def post(command: str, session):
 # ---------------------------------------------------------------------------
 
 
-def _start_streaming_command(command: str):
+def _start_streaming_command(command: str, uss: UserSessionState):
     """Launch a long-running command as a background task and return log console HTML."""
+    cli = uss.cli
+
     # Cancel any existing running command task
     if cli._cmd_task and not cli._cmd_task.done():
         cli._cmd_task.cancel()
@@ -491,7 +581,7 @@ def _start_streaming_command(command: str):
 
     async def _run():
         try:
-            processor = CommandProcessor(cli)
+            processor = CommandProcessor(cli, user_id=uss.user_id)
             result = await processor.process_command(command) or ""
             cli._cmd_result = result
         except Exception as e:
@@ -516,8 +606,11 @@ def _start_streaming_command(command: str):
 
 
 @rt("/logs")
-def logs_get():
+def logs_get(session):
     """Return current log lines; HTTP 286 stops HTMX polling when done."""
+    uss = _get_user_session(session)
+    cli = uss.cli
+
     lines = cli._log_capture.get_lines()
     log_text = "\n".join(lines) if lines else "Waiting for output..."
 
@@ -578,9 +671,10 @@ def logs_get():
 # ---------------------------------------------------------------------------
 
 
-def _start_chat_stream(command: str):
+def _start_chat_stream(command: str, uss: UserSessionState):
     """Launch a chat agent query with streaming trace console."""
     import uuid
+    cli = uss.cli
 
     # Cancel any existing chat task
     if cli._chat_task and not cli._chat_task.done():
@@ -600,6 +694,15 @@ def _start_chat_stream(command: str):
     if not hasattr(cli, '_research_thread_id'):
         cli._research_thread_id = str(uuid.uuid4())
 
+    # Resolve per-user Alpaca keys for broker queries
+    alpaca_keys = None
+    if is_broker and uss.user_id:
+        try:
+            from utils.auth import get_alpaca_keys
+            alpaca_keys = get_alpaca_keys(uss.user_id)
+        except Exception:
+            pass
+
     async def _run():
         try:
             if is_broker:
@@ -609,7 +712,8 @@ def _start_chat_stream(command: str):
                 from utils.research_agent import async_stream_response
                 thread_id = cli._research_thread_id
 
-            async for event in async_stream_response(command, thread_id):
+            kwargs = {"alpaca_keys": alpaca_keys} if is_broker and alpaca_keys else {}
+            async for event in async_stream_response(command, thread_id, **kwargs):
                 cli._chat_events.append(event)
                 if event["type"] == "done":
                     cli._chat_final = event["content"]
@@ -634,8 +738,10 @@ def _start_chat_stream(command: str):
 
 
 @rt("/chat-stream")
-def chat_stream_get():
+def chat_stream_get(session):
     """Return streaming chat trace; HTTP 286 stops HTMX polling when done."""
+    uss = _get_user_session(session)
+    cli = uss.cli
     events = list(cli._chat_events)
     lines = []
     for ev in events:
@@ -673,6 +779,175 @@ def chat_stream_get():
 
 
 # ---------------------------------------------------------------------------
+# Registration & login routes
+# ---------------------------------------------------------------------------
+
+
+def _session_login(session, user: Dict):
+    """Set session state after successful login."""
+    session["user"] = {
+        "user_id": str(user["user_id"]),
+        "email": user["email"],
+        "display_name": user.get("display_name") or user["email"].split("@")[0],
+    }
+    session["query_count"] = 0
+
+
+@rt("/register")
+def register_get(session, error: str = ""):
+    user = session.get("user")
+    if user:
+        return RedirectResponse("/")
+    parts = [H2("Create Account")]
+    if error:
+        parts.append(P(error, cls="error-msg"))
+    parts.append(
+        Form(
+            Input(type="email", name="email", placeholder="Email", required=True, autofocus=True),
+            Input(type="password", name="password", placeholder="Password (min 8 characters)", required=True, minlength="8"),
+            Input(type="text", name="display_name", placeholder="Display name (optional)"),
+            Button("Create Account", type="submit"),
+            method="post", action="/register",
+        )
+    )
+    if _oauth_enabled:
+        parts.append(Div("or", cls="divider"))
+        parts.append(A("Sign in with Google", href="/login", cls="google-btn"))
+    parts.append(Div("Already have an account? ", A("Sign in", href="/signin"), cls="alt-link"))
+    return (
+        Title("Register — AlpaTrade"),
+        Main(_nav(session), Div(*parts, cls="auth-page"), style="height: auto;"),
+    )
+
+
+@rt("/register")
+def register_post(session, email: str = "", password: str = "", display_name: str = ""):
+    if not email or not password:
+        return RedirectResponse("/register?error=Email+and+password+required", status_code=303)
+    if len(password) < 8:
+        return RedirectResponse("/register?error=Password+must+be+at+least+8+characters", status_code=303)
+
+    from utils.auth import create_user
+    user = create_user(email=email, password=password, display_name=display_name or None)
+    if not user:
+        return RedirectResponse("/register?error=Email+already+registered", status_code=303)
+
+    _session_login(session, user)
+    return RedirectResponse("/", status_code=303)
+
+
+@rt("/signin")
+def signin_get(session, error: str = ""):
+    user = session.get("user")
+    if user:
+        return RedirectResponse("/")
+    parts = [H2("Sign In")]
+    if error:
+        parts.append(P(error, cls="error-msg"))
+    parts.append(
+        Form(
+            Input(type="email", name="email", placeholder="Email", required=True, autofocus=True),
+            Input(type="password", name="password", placeholder="Password", required=True),
+            Button("Sign In", type="submit"),
+            method="post", action="/signin",
+        )
+    )
+    if _oauth_enabled:
+        parts.append(Div("or", cls="divider"))
+        parts.append(A("Sign in with Google", href="/login", cls="google-btn"))
+    parts.append(Div("Don't have an account? ", A("Sign up", href="/register"), cls="alt-link"))
+    return (
+        Title("Sign In — AlpaTrade"),
+        Main(_nav(session), Div(*parts, cls="auth-page"), style="height: auto;"),
+    )
+
+
+@rt("/signin")
+def signin_post(session, email: str = "", password: str = ""):
+    if not email or not password:
+        return RedirectResponse("/signin?error=Email+and+password+required", status_code=303)
+
+    from utils.auth import authenticate
+    user = authenticate(email, password)
+    if not user:
+        return RedirectResponse("/signin?error=Invalid+email+or+password", status_code=303)
+
+    _session_login(session, user)
+    return RedirectResponse("/", status_code=303)
+
+
+@rt("/profile")
+def profile_get(session, msg: str = ""):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+
+    # Check if Alpaca keys are configured
+    keys_configured = False
+    try:
+        from utils.auth import get_alpaca_keys
+        keys = get_alpaca_keys(user["user_id"])
+        keys_configured = keys is not None
+    except Exception:
+        pass
+
+    key_badge = (
+        Span("Configured", cls="key-status configured")
+        if keys_configured
+        else Span("Not configured", cls="key-status not-configured")
+    )
+
+    parts = [
+        H2("Profile"),
+        Dl(
+            Dt("Email"), Dd(user.get("email", "")),
+            Dt("Display Name"), Dd(user.get("display_name", "")),
+            Dt("Alpaca Keys"), Dd(key_badge),
+            cls="info-grid",
+        ),
+    ]
+
+    if msg:
+        parts.append(P(msg, cls="success-msg"))
+
+    parts.extend([
+        H3("Alpaca Paper Trading Keys"),
+        P("Your keys are encrypted at rest. They are used for paper trading and reconciliation.",
+          style="color: var(--pico-muted-color); font-size: 0.85em;"),
+        Form(
+            Input(type="password", name="api_key",
+                  placeholder="Alpaca Paper API Key", required=True),
+            Input(type="password", name="secret_key",
+                  placeholder="Alpaca Paper Secret Key", required=True),
+            Button("Save Keys", type="submit"),
+            method="post", action="/profile/keys", cls="keys-form",
+        ),
+    ])
+
+    return (
+        Title("Profile — AlpaTrade"),
+        Main(_nav(session), Div(*parts, cls="profile-page"), style="height: auto;"),
+    )
+
+
+@rt("/profile/keys")
+def profile_keys_post(session, api_key: str = "", secret_key: str = ""):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+    if not api_key or not secret_key:
+        return RedirectResponse("/profile?msg=Both+keys+are+required", status_code=303)
+
+    try:
+        from utils.auth import store_alpaca_keys
+        store_alpaca_keys(user["user_id"], api_key, secret_key)
+        return RedirectResponse("/profile?msg=Alpaca+keys+saved+successfully", status_code=303)
+    except Exception as e:
+        logger.error(f"Failed to store Alpaca keys: {e}")
+        return RedirectResponse("/profile?msg=Error+saving+keys", status_code=303)
+
+
+# ---------------------------------------------------------------------------
 # Google OAuth routes
 # ---------------------------------------------------------------------------
 
@@ -692,26 +967,50 @@ if _oauth_enabled:
         client = GoogleAppClient(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
         redirect_uri = redir_url(request, "/auth/callback")
         info = await client.retr_info_async(code, redirect_uri)
-        session["user"] = {"email": info.get("email", ""), "name": info.get("name", "")}
-        session["query_count"] = 0
+
+        google_id = info.get("sub") or info.get("id", "")
+        email = info.get("email", "")
+        name = info.get("name", "")
+
+        if not email:
+            return RedirectResponse("/signin?error=Google+did+not+provide+email")
+
+        from utils.auth import get_user_by_google_id, get_user_by_email, create_user, link_google_id
+
+        # Try to find by Google ID first
+        user = get_user_by_google_id(google_id) if google_id else None
+
+        if not user:
+            # Check if email already registered (link Google ID to existing account)
+            user = get_user_by_email(email)
+            if user and google_id:
+                link_google_id(email, google_id)
+            elif not user:
+                # Create new user
+                user = create_user(email=email, google_id=google_id, display_name=name)
+
+        if user:
+            _session_login(session, user)
+        else:
+            return RedirectResponse("/signin?error=Could+not+create+account")
+
         return RedirectResponse("/")
 
-    @rt("/logout")
-    def logout_get(session):
-        session.pop("user", None)
-        session["query_count"] = 0
-        return RedirectResponse("/")
-else:
-    # Stub routes when OAuth is not configured
+@rt("/logout")
+def logout_get(session):
+    session.pop("user", None)
+    session["query_count"] = 0
+    # Clear per-user session state
+    sid = session.get("session_id")
+    if sid and sid in _user_sessions:
+        _user_sessions[sid].user_id = None
+    return RedirectResponse("/")
+
+if not _oauth_enabled:
+    # Stub Google login when OAuth is not configured
     @rt("/login")
     def login_get():
-        return RedirectResponse("/")
-
-    @rt("/logout")
-    def logout_get(session):
-        session.pop("user", None)
-        session["query_count"] = 0
-        return RedirectResponse("/")
+        return RedirectResponse("/signin")
 
 
 # ---------------------------------------------------------------------------

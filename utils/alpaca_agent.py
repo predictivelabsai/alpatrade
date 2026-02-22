@@ -1,4 +1,4 @@
-from typing import Literal, Optional, TypedDict, Annotated
+from typing import Literal, Optional, Tuple, TypedDict, Annotated
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from langchain_core.messages import SystemMessage
@@ -7,6 +7,8 @@ from langgraph.graph import END, START, StateGraph, MessagesState
 from langgraph.prebuilt import ToolNode
 from langgraph.graph.message import add_messages
 from dotenv import load_dotenv
+import contextvars
+import functools
 import os
 
 # https://github.com/langchain-ai/langgraph/blob/main/docs/docs/concepts/low_level.md
@@ -18,20 +20,32 @@ class AlpacaState(TypedDict):
     thread_id: Optional[str]
 
 # ---------------------------------------------------------------------------
-# Lazy Alpaca client
+# Per-user Alpaca client via contextvars
 # ---------------------------------------------------------------------------
-_trading_client = None
+
+_user_alpaca_keys: contextvars.ContextVar[Optional[Tuple[str, str]]] = contextvars.ContextVar(
+    "alpaca_keys", default=None
+)
+
+
+@functools.lru_cache(maxsize=16)
+def _make_trading_client(api_key: str, secret_key: str):
+    """Create and cache a TradingClient by key pair."""
+    from alpaca.trading.client import TradingClient
+    return TradingClient(api_key, secret_key, paper=True)
+
 
 def _get_trading_client():
-    global _trading_client
-    if _trading_client is None:
-        from alpaca.trading.client import TradingClient
-        _trading_client = TradingClient(
-            os.getenv("ALPACA_PAPER_API_KEY"),
-            os.getenv("ALPACA_PAPER_SECRET_KEY"),
-            paper=True,
+    """Return a TradingClient using per-user keys (from contextvars) or env fallback."""
+    keys = _user_alpaca_keys.get()
+    api_key = keys[0] if keys else os.getenv("ALPACA_PAPER_API_KEY")
+    secret_key = keys[1] if keys else os.getenv("ALPACA_PAPER_SECRET_KEY")
+    if not api_key or not secret_key:
+        raise RuntimeError(
+            "No Alpaca API keys configured. "
+            "Set them in your profile or in .env (ALPACA_PAPER_API_KEY, ALPACA_PAPER_SECRET_KEY)."
         )
-    return _trading_client
+    return _make_trading_client(api_key, secret_key)
 
 # ---------------------------------------------------------------------------
 # Trading tools
@@ -282,46 +296,64 @@ def _get_streaming_graph():
     return _streaming_graph
 
 
-async def async_stream_response(question: str, thread_id: str = "trading_demo"):
+async def async_stream_response(
+    question: str,
+    thread_id: str = "trading_demo",
+    alpaca_keys: Optional[Tuple[str, str]] = None,
+):
     """Async generator yielding streaming events from the broker agent."""
-    graph = _get_streaming_graph()
-    input_msg = {"messages": [{"role": "user", "content": question}]}
-    config = {"configurable": {"thread_id": thread_id}}
+    token = _user_alpaca_keys.set(alpaca_keys) if alpaca_keys else None
+    try:
+        graph = _get_streaming_graph()
+        input_msg = {"messages": [{"role": "user", "content": question}]}
+        config = {"configurable": {"thread_id": thread_id}}
 
-    final_content = ""
-    async for event in graph.astream_events(input_msg, config=config, version="v2"):
-        evt = event.get("event", "")
+        final_content = ""
+        async for event in graph.astream_events(input_msg, config=config, version="v2"):
+            evt = event.get("event", "")
 
-        if evt == "on_tool_start":
-            tool_name = event.get("name", "")
-            tool_input = event.get("data", {}).get("input", {})
-            yield {"type": "tool_call", "tool": tool_name, "args": tool_input}
+            if evt == "on_tool_start":
+                tool_name = event.get("name", "")
+                tool_input = event.get("data", {}).get("input", {})
+                yield {"type": "tool_call", "tool": tool_name, "args": tool_input}
 
-        elif evt == "on_tool_end":
-            output = str(event.get("data", {}).get("output", ""))[:500]
-            yield {"type": "tool_result", "tool": event.get("name", ""), "result": output}
+            elif evt == "on_tool_end":
+                output = str(event.get("data", {}).get("output", ""))[:500]
+                yield {"type": "tool_result", "tool": event.get("name", ""), "result": output}
 
-        elif evt == "on_chat_model_stream":
-            chunk = event.get("data", {}).get("chunk")
-            if chunk and hasattr(chunk, "content") and chunk.content:
-                final_content += chunk.content
-                yield {"type": "token", "content": chunk.content}
+            elif evt == "on_chat_model_stream":
+                chunk = event.get("data", {}).get("chunk")
+                if chunk and hasattr(chunk, "content") and chunk.content:
+                    final_content += chunk.content
+                    yield {"type": "token", "content": chunk.content}
 
-    yield {"type": "done", "content": final_content}
+        yield {"type": "done", "content": final_content}
+    finally:
+        if token is not None:
+            _user_alpaca_keys.reset(token)
 
 
 output_nodes = ["agent"]
 
-def get_response(question: str, thread_id: str = "trading_demo") -> dict:
+def get_response(
+    question: str,
+    thread_id: str = "trading_demo",
+    alpaca_keys: Optional[Tuple[str, str]] = None,
+) -> dict:
     """Get a response from the trading agent."""
-    initial_message = {
-        "messages": [{"role": "user", "content": question}],
-        "thread_id": thread_id,
-    }
-    return get_graph().invoke(
-        initial_message,
-        config={"configurable": {"thread_id": thread_id}},
-    )
+    token = _user_alpaca_keys.set(alpaca_keys) if alpaca_keys else None
+    try:
+        initial_message = {
+            "messages": [{"role": "user", "content": question}],
+            "thread_id": thread_id,
+        }
+        return get_graph().invoke(
+            initial_message,
+            config={"configurable": {"thread_id": thread_id}},
+        )
+    finally:
+        if token is not None:
+            _user_alpaca_keys.reset(token)
 
 if __name__ == "__main__":
     question = "What's my current account status?"

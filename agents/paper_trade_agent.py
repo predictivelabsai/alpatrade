@@ -32,9 +32,13 @@ logger = logging.getLogger(__name__)
 class PaperTradeAgent:
     """Agent that runs continuous paper trading via Alpaca paper API."""
 
-    def __init__(self, message_bus=None, state=None):
+    def __init__(self, message_bus=None, state=None, user_id=None,
+                 alpaca_api_key=None, alpaca_secret_key=None):
         self.message_bus = message_bus
         self.state = state
+        self.user_id = user_id
+        self._alpaca_api_key = alpaca_api_key
+        self._alpaca_secret_key = alpaca_secret_key
         self.client: Optional[AlpacaAPI] = None
         self.session_id = str(uuid.uuid4())
         self.trades: List[Dict[str, Any]] = []
@@ -91,9 +95,13 @@ class PaperTradeAgent:
         logger.info(f"Duration: {duration}s, Poll interval: {poll_interval}s")
         logger.info(f"Params: dip={dip_threshold}%, tp={take_profit}%, sl={stop_loss}%, hold={hold_days}d")
 
-        # Initialize Alpaca client
+        # Initialize Alpaca client (use injected per-user keys or fall back to env)
         try:
-            self.client = AlpacaAPI(paper=True)
+            self.client = AlpacaAPI(
+                paper=True,
+                api_key=self._alpaca_api_key,
+                secret_key=self._alpaca_secret_key,
+            )
             account = self.client.get_account()
             if "error" in account:
                 raise RuntimeError(f"Alpaca API error: {account['error']}")
@@ -350,7 +358,7 @@ class PaperTradeAgent:
     def _store_trade(self, trade: Dict):
         """Store trade using the configured backend (file or DB)."""
         try:
-            store_paper_trade(self.session_id, trade)
+            store_paper_trade(self.session_id, trade, user_id=self.user_id)
         except Exception as e:
             logger.warning(f"Could not store trade: {e}")
 

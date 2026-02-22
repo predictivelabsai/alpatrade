@@ -21,7 +21,8 @@ logger = logging.getLogger(__name__)
 class ReportAgent:
     """Agent that generates trading performance reports from DB data."""
 
-    def summary(self, trade_type: Optional[str] = None, limit: int = 10) -> List[Dict[str, Any]]:
+    def summary(self, trade_type: Optional[str] = None, limit: int = 10,
+                user_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         List recent runs with key metrics.
 
@@ -31,6 +32,7 @@ class ReportAgent:
         Args:
             trade_type: Filter by mode ('backtest' or 'paper'). None = all.
             limit: Max rows to return.
+            user_id: Filter by user. None = no filtering (CLI).
 
         Returns:
             List of dicts with run_id, mode, strategy, status, total_pnl,
@@ -44,6 +46,9 @@ class ReportAgent:
         if trade_type:
             where_clauses.append("r.mode = :mode")
             bind["mode"] = trade_type
+        if user_id:
+            where_clauses.append("r.user_id = :user_id")
+            bind["user_id"] = user_id
 
         where_sql = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
 
@@ -149,7 +154,7 @@ class ReportAgent:
 
         return results
 
-    def detail(self, run_id: str) -> Optional[Dict[str, Any]]:
+    def detail(self, run_id: str, user_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
         Full performance report for a single run.
 
@@ -165,17 +170,18 @@ class ReportAgent:
         pool = DatabasePool()
         with pool.get_session() as session:
             # Support prefix matching (e.g. short IDs like "5acc08ba")
-            run_row = session.execute(
-                text("""
-                    SELECT run_id, mode, strategy, status,
-                           config, started_at, completed_at
-                    FROM alpatrade.runs
-                    WHERE run_id LIKE :prefix
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                """),
-                {"prefix": run_id + "%"},
-            ).fetchone()
+            sql = """
+                SELECT run_id, mode, strategy, status,
+                       config, started_at, completed_at
+                FROM alpatrade.runs
+                WHERE run_id LIKE :prefix
+            """
+            bind = {"prefix": run_id + "%"}
+            if user_id:
+                sql += " AND user_id = :user_id"
+                bind["user_id"] = user_id
+            sql += " ORDER BY created_at DESC LIMIT 1"
+            run_row = session.execute(text(sql), bind).fetchone()
 
             if not run_row:
                 return None
@@ -195,13 +201,15 @@ class ReportAgent:
                 )
 
     def top_strategies(self, strategy: Optional[str] = None,
-                        limit: int = 20) -> List[Dict[str, Any]]:
+                        limit: int = 20,
+                        user_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Rank strategy slugs by average annualized return across all runs.
 
         Args:
             strategy: Optional prefix filter (e.g. "btd" to show only buy-the-dip).
             limit: Max rows to return.
+            user_id: Filter by user. None = no filtering (CLI).
 
         Returns:
             List of dicts with strategy_slug, avg_sharpe, avg_return, avg_win_rate,
@@ -215,6 +223,9 @@ class ReportAgent:
         if strategy:
             where_clauses.append("bs.strategy_slug LIKE :prefix")
             bind["prefix"] = strategy + "%"
+        if user_id:
+            where_clauses.append("bs.user_id = :user_id")
+            bind["user_id"] = user_id
 
         where_sql = " WHERE " + " AND ".join(where_clauses)
 

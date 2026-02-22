@@ -22,8 +22,9 @@ if str(project_root) not in sys.path:
 class CommandProcessor:
     """Processes commands for the Strategy Simulator TUI."""
 
-    def __init__(self, app_instance):
+    def __init__(self, app_instance, user_id=None):
         self.app = app_instance
+        self.user_id = user_id
         self.console = Console()
 
         # Default parameters
@@ -269,13 +270,13 @@ class CommandProcessor:
         """Get or create an Orchestrator instance."""
         from agents.orchestrator import Orchestrator
         if self.app._orch is None:
-            self.app._orch = Orchestrator()
+            self.app._orch = Orchestrator(user_id=self.user_id)
         return self.app._orch
 
     def _new_orchestrator(self) -> "Orchestrator":
         """Create a fresh Orchestrator (new run_id, clean state)."""
         from agents.orchestrator import Orchestrator
-        orch = Orchestrator()
+        orch = Orchestrator(user_id=self.user_id)
         # Clear stale state loaded from disk so status shows current run only
         orch.state.mode = None
         orch.state.best_config = None
@@ -876,14 +877,16 @@ class CommandProcessor:
 
             pool = DatabasePool()
             with pool.get_session() as session:
-                result = session.execute(
-                    text("""
-                        SELECT run_id, mode, strategy, status, started_at, completed_at
-                        FROM alpatrade.runs
-                        ORDER BY created_at DESC
-                        LIMIT 20
-                    """)
-                )
+                sql = """
+                    SELECT run_id, mode, strategy, status, started_at, completed_at
+                    FROM alpatrade.runs
+                """
+                bind = {}
+                if self.user_id:
+                    sql += " WHERE user_id = :user_id"
+                    bind["user_id"] = self.user_id
+                sql += " ORDER BY created_at DESC LIMIT 20"
+                result = session.execute(text(sql), bind)
                 rows = result.fetchall()
 
             if not rows:
@@ -928,6 +931,9 @@ class CommandProcessor:
                 if trade_type:
                     where_clauses.append("trade_type = :trade_type")
                     bind["trade_type"] = trade_type
+                if self.user_id:
+                    where_clauses.append("user_id = :user_id")
+                    bind["user_id"] = self.user_id
 
                 where_sql = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
 
@@ -980,7 +986,7 @@ class CommandProcessor:
 
             # Detail mode: single run
             if run_id:
-                data = agent.detail(run_id)
+                data = agent.detail(run_id, user_id=self.user_id)
                 if not data:
                     return f"# Report\n\nRun `{run_id}` not found."
 
@@ -1015,7 +1021,8 @@ class CommandProcessor:
             trade_type = params.get("type")
             strategy_filter = params.get("strategy")
             limit = int(params.get("limit", "10"))
-            rows = agent.summary(trade_type=trade_type, limit=limit)
+            rows = agent.summary(trade_type=trade_type, limit=limit,
+                                 user_id=self.user_id)
 
             # Filter by strategy slug prefix if provided
             if strategy_filter:
@@ -1073,7 +1080,8 @@ class CommandProcessor:
             agent = ReportAgent()
             strategy = params.get("strategy")
             limit = int(params.get("limit", "20"))
-            rows = agent.top_strategies(strategy=strategy, limit=limit)
+            rows = agent.top_strategies(strategy=strategy, limit=limit,
+                                       user_id=self.user_id)
 
             if not rows:
                 msg = "# Top Strategies\n\nNo strategy slugs found."

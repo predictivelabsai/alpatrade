@@ -45,6 +45,9 @@ web = [
     "python-fasthtml>=0.6",
     "fastapi>=0.110",
     "uvicorn[standard]>=0.27",
+    "passlib[bcrypt]>=1.7",
+    "cryptography>=41.0",
+    "PyJWT>=2.8",
 ]
 agents = [
     "langchain-openai>=0.1",
@@ -73,6 +76,7 @@ include = [
     "agents.*",
     "tasks",
     "config",
+    "scripts",
 ]
 
 [tool.setuptools.package-data]

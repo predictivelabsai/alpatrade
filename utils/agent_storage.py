@@ -56,7 +56,8 @@ def _py(val):
 # ---------------------------------------------------------------------------
 
 def store_run(run_id: str, mode: str, strategy: str = None,
-              config: Dict = None, strategy_slug: str = None):
+              config: Dict = None, strategy_slug: str = None,
+              user_id: Optional[str] = None):
     """Insert a new row into alpatrade.runs."""
     backend = get_storage_backend()
     if backend != "db":
@@ -67,9 +68,9 @@ def store_run(run_id: str, mode: str, strategy: str = None,
         session.execute(
             text("""
                 INSERT INTO alpatrade.runs
-                    (run_id, mode, strategy, status, config, started_at, strategy_slug)
+                    (run_id, mode, strategy, status, config, started_at, strategy_slug, user_id)
                 VALUES
-                    (:run_id, :mode, :strategy, 'running', :config, :started_at, :strategy_slug)
+                    (:run_id, :mode, :strategy, 'running', :config, :started_at, :strategy_slug, :user_id)
                 ON CONFLICT (run_id) DO NOTHING
             """),
             {
@@ -79,6 +80,7 @@ def store_run(run_id: str, mode: str, strategy: str = None,
                 "config": json.dumps(config or {}, default=str),
                 "started_at": datetime.now(timezone.utc),
                 "strategy_slug": strategy_slug,
+                "user_id": user_id,
             },
         )
     logger.info(f"Run {run_id} stored (mode={mode})")
@@ -116,12 +118,14 @@ def update_run(run_id: str, status: str, results: Dict = None):
 
 def store_backtest_results(run_id: str, best: Dict, all_results: List[Dict],
                            trades: Optional[List[Dict]] = None,
-                           strategy: str = None, lookback: str = None):
+                           strategy: str = None, lookback: str = None,
+                           user_id: Optional[str] = None):
     """Store backtest results using the configured backend."""
     backend = get_storage_backend()
     if backend == "db":
         _store_backtest_db(run_id, best, all_results, trades,
-                           strategy=strategy, lookback=lookback)
+                           strategy=strategy, lookback=lookback,
+                           user_id=user_id)
     else:
         _store_backtest_file(run_id, best, all_results, trades)
 
@@ -143,7 +147,8 @@ def _store_backtest_file(run_id: str, best: Dict, all_results: List[Dict],
 
 def _store_backtest_db(run_id: str, best: Dict, all_results: List[Dict],
                        trades: Optional[List[Dict]] = None,
-                       strategy: str = None, lookback: str = None):
+                       strategy: str = None, lookback: str = None,
+                       user_id: Optional[str] = None):
     """Write backtest summaries + trades into the alpatrade schema."""
     from sqlalchemy import text
     pool = _get_pool()
@@ -171,11 +176,11 @@ def _store_backtest_db(run_id: str, best: Dict, all_results: List[Dict],
                     INSERT INTO alpatrade.backtest_summaries
                         (run_id, variation_index, params, total_return, total_pnl,
                          win_rate, total_trades, sharpe_ratio, max_drawdown,
-                         annualized_return, is_best, strategy_slug)
+                         annualized_return, is_best, strategy_slug, user_id)
                     VALUES
                         (:run_id, :idx, :params, :total_return, :total_pnl,
                          :win_rate, :total_trades, :sharpe_ratio, :max_drawdown,
-                         :annualized_return, :is_best, :strategy_slug)
+                         :annualized_return, :is_best, :strategy_slug, :user_id)
                 """),
                 {
                     "run_id": run_id,
@@ -190,6 +195,7 @@ def _store_backtest_db(run_id: str, best: Dict, all_results: List[Dict],
                     "annualized_return": _py(variation.get("annualized_return")),
                     "is_best": is_best,
                     "strategy_slug": slug,
+                    "user_id": user_id,
                 },
             )
 
@@ -213,13 +219,13 @@ def _store_backtest_db(run_id: str, best: Dict, all_results: List[Dict],
                          entry_time, exit_time, entry_price, exit_price,
                          target_price, stop_price, hit_target, hit_stop,
                          pnl, pnl_pct, capital_after, total_fees, dip_pct,
-                         reason)
+                         reason, user_id)
                     VALUES
                         (:run_id, 'backtest', :symbol, :direction, :shares,
                          :entry_time, :exit_time, :entry_price, :exit_price,
                          :target_price, :stop_price, :hit_target, :hit_stop,
                          :pnl, :pnl_pct, :capital_after, :total_fees, :dip_pct,
-                         :reason)
+                         :reason, :user_id)
                 """),
                 {
                     "run_id": run_id,
@@ -240,6 +246,7 @@ def _store_backtest_db(run_id: str, best: Dict, all_results: List[Dict],
                     "total_fees": _py(t.get("total_fees", 0)),
                     "dip_pct": _py(t.get("dip_pct")),
                     "reason": t.get("reason"),
+                    "user_id": user_id,
                 },
             )
 
@@ -249,11 +256,11 @@ def _store_backtest_db(run_id: str, best: Dict, all_results: List[Dict],
     )
 
 
-def fetch_backtest_trades(run_id: str) -> List[Dict]:
+def fetch_backtest_trades(run_id: str, user_id: Optional[str] = None) -> List[Dict]:
     """Fetch backtest trades using the configured backend."""
     backend = get_storage_backend()
     if backend == "db":
-        return _fetch_backtest_trades_db(run_id)
+        return _fetch_backtest_trades_db(run_id, user_id=user_id)
     return _fetch_backtest_trades_file(run_id)
 
 
@@ -266,18 +273,20 @@ def _fetch_backtest_trades_file(run_id: str) -> List[Dict]:
     return data.get("trades", [])
 
 
-def _fetch_backtest_trades_db(run_id: str) -> List[Dict]:
+def _fetch_backtest_trades_db(run_id: str, user_id: Optional[str] = None) -> List[Dict]:
     from sqlalchemy import text
     pool = _get_pool()
     with pool.get_session() as session:
-        result = session.execute(
-            text("""
-                SELECT * FROM alpatrade.trades
-                WHERE trade_type = 'backtest' AND run_id = :run_id
-                ORDER BY entry_time
-            """),
-            {"run_id": run_id},
-        )
+        sql = """
+            SELECT * FROM alpatrade.trades
+            WHERE trade_type = 'backtest' AND run_id = :run_id
+        """
+        bind = {"run_id": run_id}
+        if user_id:
+            sql += " AND user_id = :user_id"
+            bind["user_id"] = user_id
+        sql += " ORDER BY entry_time"
+        result = session.execute(text(sql), bind)
         columns = result.keys()
         return [dict(zip(columns, row)) for row in result.fetchall()]
 
@@ -286,11 +295,12 @@ def _fetch_backtest_trades_db(run_id: str) -> List[Dict]:
 # Paper trades
 # ---------------------------------------------------------------------------
 
-def store_paper_trade(session_id: str, trade: Dict):
+def store_paper_trade(session_id: str, trade: Dict,
+                      user_id: Optional[str] = None):
     """Store a single paper trade using the configured backend."""
     backend = get_storage_backend()
     if backend == "db":
-        _store_paper_trade_db(session_id, trade)
+        _store_paper_trade_db(session_id, trade, user_id=user_id)
     else:
         _store_paper_trade_file(session_id, trade)
 
@@ -303,7 +313,8 @@ def _store_paper_trade_file(session_id: str, trade: Dict):
     logger.debug(f"Paper trade appended to {path}")
 
 
-def _store_paper_trade_db(session_id: str, trade: Dict):
+def _store_paper_trade_db(session_id: str, trade: Dict,
+                          user_id: Optional[str] = None):
     from sqlalchemy import text
     pool = _get_pool()
     with pool.get_session() as session:
@@ -314,13 +325,13 @@ def _store_paper_trade_db(session_id: str, trade: Dict):
                      entry_time, exit_time, entry_price, exit_price,
                      target_price, stop_price, hit_target, hit_stop,
                      pnl, pnl_pct, capital_after, total_fees, dip_pct,
-                     order_id, reason)
+                     order_id, reason, user_id)
                 VALUES
                     (:run_id, 'paper', :symbol, :direction, :shares,
                      :entry_time, :exit_time, :entry_price, :exit_price,
                      :target_price, :stop_price, :hit_target, :hit_stop,
                      :pnl, :pnl_pct, :capital_after, :total_fees, :dip_pct,
-                     :order_id, :reason)
+                     :order_id, :reason, :user_id)
             """),
             {
                 "run_id": session_id,
@@ -342,16 +353,17 @@ def _store_paper_trade_db(session_id: str, trade: Dict):
                 "dip_pct": _py(trade.get("dip_pct")),
                 "order_id": trade.get("order_id"),
                 "reason": trade.get("reason") or trade.get("notes"),
+                "user_id": user_id,
             },
         )
     logger.debug(f"Paper trade stored to DB for session {session_id}")
 
 
-def fetch_paper_trades(run_id: str) -> List[Dict]:
+def fetch_paper_trades(run_id: str, user_id: Optional[str] = None) -> List[Dict]:
     """Fetch paper trades using the configured backend."""
     backend = get_storage_backend()
     if backend == "db":
-        return _fetch_paper_trades_db(run_id)
+        return _fetch_paper_trades_db(run_id, user_id=user_id)
     return _fetch_paper_trades_file(run_id)
 
 
@@ -368,18 +380,20 @@ def _fetch_paper_trades_file(run_id: str) -> List[Dict]:
     return trades
 
 
-def _fetch_paper_trades_db(run_id: str) -> List[Dict]:
+def _fetch_paper_trades_db(run_id: str, user_id: Optional[str] = None) -> List[Dict]:
     from sqlalchemy import text
     pool = _get_pool()
     with pool.get_session() as session:
-        result = session.execute(
-            text("""
-                SELECT * FROM alpatrade.trades
-                WHERE trade_type = 'paper' AND run_id = :run_id
-                ORDER BY entry_time
-            """),
-            {"run_id": run_id},
-        )
+        sql = """
+            SELECT * FROM alpatrade.trades
+            WHERE trade_type = 'paper' AND run_id = :run_id
+        """
+        bind = {"run_id": run_id}
+        if user_id:
+            sql += " AND user_id = :user_id"
+            bind["user_id"] = user_id
+        sql += " ORDER BY entry_time"
+        result = session.execute(text(sql), bind)
         columns = result.keys()
         return [dict(zip(columns, row)) for row in result.fetchall()]
 
@@ -388,7 +402,8 @@ def _fetch_paper_trades_db(run_id: str) -> List[Dict]:
 # Validations (DB only)
 # ---------------------------------------------------------------------------
 
-def store_validation(run_id: str, result: Dict):
+def store_validation(run_id: str, result: Dict,
+                     user_id: Optional[str] = None):
     """Store a validation result into alpatrade.validations."""
     backend = get_storage_backend()
     if backend != "db":
@@ -400,10 +415,12 @@ def store_validation(run_id: str, result: Dict):
             text("""
                 INSERT INTO alpatrade.validations
                     (run_id, source, status, total_checked, anomalies_found,
-                     anomalies_corrected, iterations_used, corrections, suggestions)
+                     anomalies_corrected, iterations_used, corrections, suggestions,
+                     user_id)
                 VALUES
                     (:run_id, :source, :status, :total_checked, :anomalies_found,
-                     :anomalies_corrected, :iterations_used, :corrections, :suggestions)
+                     :anomalies_corrected, :iterations_used, :corrections, :suggestions,
+                     :user_id)
             """),
             {
                 "run_id": run_id,
@@ -419,6 +436,7 @@ def store_validation(run_id: str, result: Dict):
                 "suggestions": json.dumps(
                     result.get("suggestions", []), default=str
                 ),
+                "user_id": user_id,
             },
         )
     logger.info(f"Validation stored for run {run_id}: {result.get('status')}")

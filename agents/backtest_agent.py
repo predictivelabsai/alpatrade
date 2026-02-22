@@ -52,9 +52,10 @@ LOOKBACK_PERIODS = {
 class BacktestAgent:
     """Agent that runs parameterized backtests and finds optimal configurations."""
 
-    def __init__(self, message_bus=None, state=None):
+    def __init__(self, message_bus=None, state=None, user_id=None):
         self.message_bus = message_bus
         self.state = state
+        self.user_id = user_id
         self.results: List[Dict[str, Any]] = []
 
     def run(self, request: Dict[str, Any]) -> Dict[str, Any]:
@@ -334,6 +335,7 @@ class BacktestAgent:
         try:
             best_trades = best.get("trades", [])
             store_backtest_results(run_id, best, all_results, best_trades,
-                                   strategy=strategy, lookback=lookback)
+                                   strategy=strategy, lookback=lookback,
+                                   user_id=self.user_id)
         except Exception as e:
             logger.warning(f"Could not store results: {e}")

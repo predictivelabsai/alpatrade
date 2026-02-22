@@ -48,7 +48,20 @@ MASSIVE_API_KEY=...        # Polygon.io compatible
 EODHD_API_KEY=...
 XAI_API_KEY=...
 DATABASE_URL=...           # PostgreSQL connection string
+ENCRYPTION_KEY=...         # Fernet key for encrypting user Alpaca keys (generate: python scripts/generate_keys.py)
+JWT_SECRET=...             # Secret for API JWT tokens (generate: python scripts/generate_keys.py)
 ```
+
+## Authentication & User Management
+
+- **Web UI**: Email/password registration + Google OAuth login
+- **API**: JWT bearer token auth (`POST /auth/login`, `POST /auth/register`)
+- **CLI**: No auth — `user_id=None`, keys from `.env`
+- **Per-user Alpaca keys**: Fernet-encrypted in `alpatrade.users` table
+- **Data isolation**: All DB tables have `user_id` column; web/API queries filter by user
+- **Auth module**: `utils/auth.py` — password hashing (bcrypt), key encryption (Fernet), JWT, user CRUD
+- **Migrations**: `sql/07_create_users_table.sql`, `sql/08_add_user_id_columns.sql`, `sql/09_migrate_existing_data.sql`
+- See `docs/auth_readme.md` for full setup instructions
 
 ## Multi-Agent System
 

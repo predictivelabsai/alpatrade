@@ -60,9 +60,13 @@ class ReconciliationResult:
 class ReconcileAgent:
     """Agent that reconciles DB state against Alpaca actual holdings."""
 
-    def __init__(self, message_bus=None, state=None):
+    def __init__(self, message_bus=None, state=None, user_id=None,
+                 alpaca_api_key=None, alpaca_secret_key=None):
         self.message_bus = message_bus
         self.state = state
+        self.user_id = user_id
+        self._alpaca_api_key = alpaca_api_key
+        self._alpaca_secret_key = alpaca_secret_key
         self.client: Optional[AlpacaAPI] = None
 
     def run(self, request: Dict[str, Any]) -> Dict[str, Any]:
@@ -82,9 +86,13 @@ class ReconcileAgent:
 
         logger.info(f"Reconciliation agent starting for run {run_id} (window={window_days}d)")
 
-        # Initialize Alpaca client
+        # Initialize Alpaca client (use injected per-user keys or fall back to env)
         try:
-            self.client = AlpacaAPI(paper=True)
+            self.client = AlpacaAPI(
+                paper=True,
+                api_key=self._alpaca_api_key,
+                secret_key=self._alpaca_secret_key,
+            )
             account = self.client.get_account()
             if "error" in account:
                 raise RuntimeError(f"Alpaca API error: {account['error']}")
