@@ -12,6 +12,8 @@ services:
       - MASSIVE_API_KEY=${MASSIVE_API_KEY}
       - XAI_API_KEY=${XAI_API_KEY:-}
       - EODHD_API_KEY=${EODHD_API_KEY:-}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+      - JWT_SECRET=${JWT_SECRET:-}
       - POSTMARK_API_KEY=${POSTMARK_API_KEY:-}
       - TO_EMAIL=${TO_EMAIL:-}
       - FROM_EMAIL=${FROM_EMAIL:-}
@@ -36,6 +38,10 @@ services:
       - MASSIVE_API_KEY=${MASSIVE_API_KEY}
       - XAI_API_KEY=${XAI_API_KEY:-}
       - EODHD_API_KEY=${EODHD_API_KEY:-}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+      - JWT_SECRET=${JWT_SECRET:-}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
     depends_on:
       api:
         condition: service_healthy
