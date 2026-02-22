@@ -26,12 +26,60 @@ from ag_ui.core.events import (
     StateSnapshotEvent,
 )
 from fasthtml.common import (
-    Div, Form, Hidden, Textarea, Button, Span, Script, Style,
+    Div, Form, Hidden, Textarea, Button, Span, Script, Style, Pre,
 )
+import asyncio
+import collections
+import logging
+import threading
 import uuid
 
 from .patches import setup_ft_patches
 from .styles import get_chat_styles
+
+
+# ---------------------------------------------------------------------------
+# StreamingCommand sentinel — returned by command interceptor for long-running
+# commands so the WS handler can fire-and-forget a background task.
+# ---------------------------------------------------------------------------
+
+class StreamingCommand:
+    """Sentinel returned by the command interceptor for long-running commands."""
+
+    def __init__(self, raw_command: str, session: dict, app_state: Any):
+        self.raw_command = raw_command
+        self.session = session
+        self.app_state = app_state
+
+
+# ---------------------------------------------------------------------------
+# LogCapture — thread-safe logging handler that buffers lines for streaming
+# ---------------------------------------------------------------------------
+
+class LogCapture(logging.Handler):
+    """Captures log records into a deque for streaming to the browser."""
+
+    def __init__(self, maxlen=500):
+        super().__init__()
+        self.lines: collections.deque = collections.deque(maxlen=maxlen)
+        self._lock = threading.Lock()
+        self.setFormatter(logging.Formatter("%(asctime)s %(message)s", datefmt="%H:%M:%S"))
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            with self._lock:
+                self.lines.append(msg)
+        except Exception:
+            self.handleError(record)
+
+    def get_lines(self) -> list:
+        with self._lock:
+            return list(self.lines)
+
+    def clear(self):
+        with self._lock:
+            self.lines.clear()
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -258,7 +306,12 @@ class AGUIThread(Generic[T]):
         if self._command_interceptor:
             result = await self._command_interceptor(msg, session)
             if result is not None:
-                await self._handle_command_result(msg, result, session)
+                if isinstance(result, StreamingCommand):
+                    asyncio.create_task(
+                        self._handle_streaming_command(msg, result, session)
+                    )
+                else:
+                    await self._handle_command_result(msg, result, session)
                 return
 
         run_id = str(uuid.uuid4())
@@ -379,6 +432,189 @@ class AGUIThread(Generic[T]):
 
         # Clear input form
         await self.send(self.ui._clear_input())
+
+    async def _handle_streaming_command(self, msg: str, sc: StreamingCommand, session):
+        """Run a long-running command in background, streaming logs via WS."""
+        _open_trace = (
+            "var l=document.querySelector('.app-layout');"
+            "if(l&&!l.classList.contains('right-open'))l.classList.add('right-open');"
+            "setTimeout(function(){var tc=document.getElementById('trace-content');"
+            "if(tc)tc.scrollTop=tc.scrollHeight;},100);"
+        )
+        cmd_id = str(uuid.uuid4())
+        asst_id = str(uuid.uuid4())
+        log_pre_id = f"log-pre-{asst_id}"
+        log_console_id = f"log-console-{asst_id}"
+        content_id = f"content-{asst_id}"
+        trace_progress_id = f"trace-progress-{cmd_id}"
+
+        # 1. Append + send user message
+        user_msg = UserMessage(
+            id=str(uuid.uuid4()),
+            role="user",
+            content=msg,
+            name=session.get("username", "User"),
+        )
+        self._messages.append(user_msg)
+
+        await self.send(Div(
+            Div(
+                Div(msg, cls="chat-message-content"),
+                cls="chat-message chat-user",
+                id=user_msg.id,
+            ),
+            id="chat-messages",
+            hx_swap_oob="beforeend",
+        ))
+
+        # 2. Open trace pane with command label
+        await self.send(Div(
+            Div(
+                Span(f"Command: {msg}", cls="trace-label"),
+                cls="trace-entry trace-run-start",
+                id=f"trace-cmd-{cmd_id}",
+            ),
+            Script(_open_trace),
+            id="trace-content",
+            hx_swap_oob="beforeend",
+        ))
+
+        # 3. Send log console bubble
+        await self.send(Div(
+            Div(
+                Div(
+                    Pre("Starting...", id=log_pre_id, cls="agui-log-pre"),
+                    cls="agui-log-console",
+                    id=log_console_id,
+                ),
+                cls="chat-message chat-assistant",
+                id=f"message-{asst_id}",
+            ),
+            id="chat-messages",
+            hx_swap_oob="beforeend",
+        ))
+
+        # 4. Add trace progress entry (updated in-place during polling)
+        await self.send(Div(
+            Div(
+                Span("Running...", cls="trace-label"),
+                Span("0 log lines", cls="trace-detail", id=f"trace-detail-{cmd_id}"),
+                cls="trace-entry trace-streaming",
+                id=trace_progress_id,
+            ),
+            id="trace-content",
+            hx_swap_oob="beforeend",
+        ))
+
+        # 5. Clear input + disable textarea
+        await self.send(self.ui._clear_input())
+        await self.send(Script(
+            "var ta=document.getElementById('chat-input');"
+            "if(ta){ta.disabled=true;ta.placeholder='Running command...';}"
+        ))
+
+        # 6. Attach LogCapture to root logger
+        log_capture = LogCapture(maxlen=1000)
+        root_logger = logging.getLogger()
+        root_logger.addHandler(log_capture)
+
+        # 7. Launch command in background
+        result_holder = {"value": None, "error": None, "done": False}
+
+        async def _run_command():
+            try:
+                from tui.command_processor import CommandProcessor
+                user_id = session.get("user", {}).get("user_id") if session.get("user") else None
+                cp = CommandProcessor(sc.app_state, user_id=user_id)
+                result_holder["value"] = await cp.process_command(sc.raw_command)
+            except Exception as e:
+                result_holder["error"] = str(e)
+            finally:
+                result_holder["done"] = True
+
+        asyncio.create_task(_run_command())
+
+        # 8. Poll loop — push log updates every 0.5s
+        prev_line_count = 0
+        while not result_holder["done"]:
+            await asyncio.sleep(0.5)
+            lines = log_capture.get_lines()
+            if len(lines) != prev_line_count:
+                prev_line_count = len(lines)
+                log_text = "\n".join(lines[-100:])  # Show last 100 lines
+                try:
+                    await self.send(Pre(
+                        log_text,
+                        id=log_pre_id,
+                        cls="agui-log-pre",
+                        hx_swap_oob="outerHTML",
+                    ))
+                    # Update trace detail
+                    await self.send(Span(
+                        f"{len(lines)} log lines",
+                        cls="trace-detail",
+                        id=f"trace-detail-{cmd_id}",
+                        hx_swap_oob="outerHTML",
+                    ))
+                    # Auto-scroll log console
+                    await self.send(Script(
+                        f"var lc=document.getElementById('{log_console_id}');"
+                        "if(lc)lc.scrollTop=lc.scrollHeight;"
+                    ))
+                except Exception:
+                    break  # WS disconnected
+
+        # 9. Cleanup: remove log handler
+        root_logger.removeHandler(log_capture)
+
+        # 10. Final result
+        if result_holder["error"]:
+            final_result = f"# Error\n\n```\n{result_holder['error']}\n```"
+        else:
+            final_result = result_holder["value"] or "Command executed."
+
+        # Replace log console with final markdown result
+        try:
+            await self.send(Div(
+                Div(final_result, cls="chat-message-content marked", id=content_id),
+                cls="chat-message chat-assistant",
+                id=f"message-{asst_id}",
+                hx_swap_oob="outerHTML",
+            ))
+            await self.send(Script(f"renderMarkdown('{content_id}');"))
+
+            # Trace: command complete
+            await self.send(Div(
+                Div(
+                    Span("Command complete", cls="trace-label"),
+                    Span(
+                        f"{prev_line_count} log lines total",
+                        cls="trace-detail",
+                    ),
+                    cls="trace-entry trace-done",
+                ),
+                id="trace-content",
+                hx_swap_oob="beforeend",
+            ))
+
+            # Re-enable input
+            await self.send(Script(
+                "var ta=document.getElementById('chat-input');"
+                "if(ta){ta.disabled=false;"
+                "ta.placeholder='Type a command or ask a question...';"
+                "ta.focus();}"
+            ))
+        except Exception:
+            pass  # WS disconnected — no-op
+
+        # Store message in history
+        asst_msg = AssistantMessage(
+            id=asst_id,
+            role="assistant",
+            content=final_result,
+            name=self._agent.name or "AlpaTrade",
+        )
+        self._messages.append(asst_msg)
 
     async def _handle_run(self, run_id: str):
         if run_id not in self._runs:

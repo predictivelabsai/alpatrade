@@ -283,6 +283,23 @@ CHAT_UI_STYLES = """
   border: 1px solid #fecaca;
 }
 
+/* === Log Console (streaming command output) === */
+.agui-log-console {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.agui-log-pre {
+  color: #8b949e;
+  font-size: 0.8em;
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: ui-monospace, monospace;
+  background: #1a1a2e;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+}
+
 /* === Responsive === */
 @media (max-width: 768px) {
   .chat-message { max-width: 95%; }

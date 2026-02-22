@@ -8,7 +8,7 @@ Adapted for AlpaTrade: 3-pane layout, custom patches, no external
 ft-agui dependency.
 """
 
-from .core import setup_agui, AGUISetup, AGUIThread, UI
+from .core import setup_agui, AGUISetup, AGUIThread, UI, StreamingCommand
 from .styles import get_chat_styles, get_custom_theme, CHAT_UI_STYLES
 from .patches import setup_ft_patches
 
@@ -17,6 +17,7 @@ __all__ = [
     "AGUISetup",
     "AGUIThread",
     "UI",
+    "StreamingCommand",
     "get_chat_styles",
     "get_custom_theme",
     "CHAT_UI_STYLES",

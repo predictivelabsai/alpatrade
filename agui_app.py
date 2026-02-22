@@ -26,7 +26,7 @@ from pydantic_ai import Agent
 from pydantic_ai.ui import StateDeps
 from fasthtml.common import *
 
-from utils.agui import setup_agui, get_chat_styles
+from utils.agui import setup_agui, get_chat_styles, StreamingCommand
 import threading
 
 # ---------------------------------------------------------------------------
@@ -272,6 +272,12 @@ _app_state = _AppState()
 _CLI_BASES = {"news", "profile", "financials", "price", "movers", "analysts", "valuation"}
 _CLI_EXACT = {"trades", "runs", "status", "help", "guide"}
 
+# Long-running commands that get streamed with log console instead of blocking
+_STREAMING_COMMANDS = {
+    "agent:backtest", "agent:paper", "agent:full",
+    "agent:validate", "agent:reconcile",
+}
+
 
 async def _command_interceptor(msg: str, session):
     """Detect CLI commands and route to CommandProcessor. Returns markdown or None."""
@@ -292,6 +298,10 @@ async def _command_interceptor(msg: str, session):
     # Special case: "help" returns chat-friendly markdown (Rich tables don't work here)
     if cmd_lower in ("help", "h", "?"):
         return _AGUI_HELP
+
+    # Long-running commands → return StreamingCommand sentinel
+    if first_word in _STREAMING_COMMANDS:
+        return StreamingCommand(msg, session, _app_state)
 
     from tui.command_processor import CommandProcessor
     user_id = session.get("user", {}).get("user_id") if session.get("user") else None
