@@ -211,3 +211,5 @@ data/
 backtest-results/
 test-results/
 reports/
+.sesskey
+.playwright-mcp/
