@@ -418,6 +418,7 @@ def _nav(session):
     """Build the top navigation bar."""
     user = session.get("user") if session else None
     links = [
+        A("Home", href="/"),
         A("Guide", href="/guide"),
         A("Dashboard", href="https://alpatrade.dev", target="_blank"),
         A("Download", href="/download"),
@@ -785,10 +786,15 @@ def chat_stream_get(session):
 
 def _session_login(session, user: Dict):
     """Set session state after successful login."""
+    # Only store safe fields — never password_hash or other sensitive data
+    display = user.get("display_name") or ""
+    # Guard: if display_name somehow contains a hash (starts with $2), fall back to email
+    if display.startswith("$2") or not display.strip():
+        display = user.get("email", "user").split("@")[0]
     session["user"] = {
         "user_id": str(user["user_id"]),
         "email": user["email"],
-        "display_name": user.get("display_name") or user["email"].split("@")[0],
+        "display_name": display,
     }
     session["query_count"] = 0
 

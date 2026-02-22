@@ -162,15 +162,17 @@ def get_user_by_google_id(google_id: str) -> Optional[Dict]:
 def authenticate(email: str, password: str) -> Optional[Dict]:
     """
     Authenticate by email + password.
-    Returns user dict on success, None on failure.
+    Returns user dict on success (without password_hash), None on failure.
     """
     user = get_user_by_email(email)
     if not user:
         return None
-    if not user.get("password_hash"):
+    pw_hash = user.get("password_hash")
+    if not pw_hash:
         return None  # Google-only account
-    if not verify_password(password, user["password_hash"]):
+    if not verify_password(password, pw_hash):
         return None
+    user.pop("password_hash", None)
     return user
 
 
