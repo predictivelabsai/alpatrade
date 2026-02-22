@@ -286,8 +286,17 @@ class AGUIThread(Generic[T]):
         await self.send(self.ui._clear_input())
 
     async def _handle_command_result(self, msg: str, result: str, session):
-        """Display a CLI command result directly in chat (no AI agent)."""
+        """Display a CLI command result in chat with trace pane integration."""
+        import asyncio
         from fasthtml.common import Script
+
+        _open_trace = (
+            "var l=document.querySelector('.app-layout');"
+            "if(l&&!l.classList.contains('right-open'))l.classList.add('right-open');"
+            "setTimeout(function(){var tc=document.getElementById('trace-content');"
+            "if(tc)tc.scrollTop=tc.scrollHeight;},100);"
+        )
+        cmd_id = str(uuid.uuid4())
 
         # Append user message
         user_msg = UserMessage(
@@ -298,7 +307,7 @@ class AGUIThread(Generic[T]):
         )
         self._messages.append(user_msg)
 
-        # Send user message (append to chat)
+        # Send user message + open trace with "Command started"
         await self.send(Div(
             Div(
                 Div(msg, cls="chat-message-content"),
@@ -308,10 +317,58 @@ class AGUIThread(Generic[T]):
             id="chat-messages",
             hx_swap_oob="beforeend",
         ))
+        await self.send(Div(
+            Div(
+                Span(f"Command: {msg}", cls="trace-label"),
+                cls="trace-entry trace-run-start",
+                id=f"trace-cmd-{cmd_id}",
+            ),
+            Script(_open_trace),
+            id="trace-content",
+            hx_swap_oob="beforeend",
+        ))
 
-        # Append assistant message with result
+        # Show streaming cursor while "processing"
         asst_id = str(uuid.uuid4())
         content_id = f"content-{asst_id}"
+        await self.send(Div(
+            Div(
+                Div(
+                    Span("", id=f"message-content-{asst_id}"),
+                    Span("", cls="chat-streaming", id=f"streaming-{asst_id}"),
+                    cls="chat-message-content",
+                ),
+                cls="chat-message chat-assistant",
+                id=f"message-{asst_id}",
+            ),
+            id="chat-messages",
+            hx_swap_oob="beforeend",
+        ))
+
+        # Brief pause to show the streaming state
+        await asyncio.sleep(0.15)
+
+        # Remove streaming cursor and inject final content
+        await self.send(Span("", id=f"streaming-{asst_id}", hx_swap_oob="outerHTML"))
+        await self.send(Div(
+            Div(result, cls="chat-message-content marked", id=content_id),
+            cls="chat-message chat-assistant",
+            id=f"message-{asst_id}",
+            hx_swap_oob="outerHTML",
+        ))
+        await self.send(Script(f"renderMarkdown('{content_id}');"))
+
+        # Trace: command complete
+        await self.send(Div(
+            Div(
+                Span("Command complete", cls="trace-label"),
+                cls="trace-entry trace-done",
+            ),
+            id="trace-content",
+            hx_swap_oob="beforeend",
+        ))
+
+        # Store message
         asst_msg = AssistantMessage(
             id=asst_id,
             role="assistant",
@@ -319,17 +376,6 @@ class AGUIThread(Generic[T]):
             name=self._agent.name or "AlpaTrade",
         )
         self._messages.append(asst_msg)
-
-        await self.send(Div(
-            Div(
-                Div(result, cls="chat-message-content marked", id=content_id),
-                cls="chat-message chat-assistant",
-                id=f"message-{asst_id}",
-            ),
-            id="chat-messages",
-            hx_swap_oob="beforeend",
-        ))
-        await self.send(Script(f"renderMarkdown('{content_id}');"))
 
         # Clear input form
         await self.send(self.ui._clear_input())
