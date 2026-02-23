@@ -1,84 +1,53 @@
 """
-Chat UI styles using CSS custom properties for theming.
-
-Based on py-agui styles.py — light theme with dark mode via prefers-color-scheme.
+Chat UI styles — light theme only, simplified.
 """
 
 from fasthtml.common import Style
 
 CHAT_UI_STYLES = """
-/* === Chat UI CSS Custom Properties === */
-:root {
-  --chat-bg: #f8fafc;
-  --chat-surface: #ffffff;
-  --chat-border: #e2e8f0;
-  --chat-text: #1e293b;
-  --chat-text-muted: #64748b;
-  --chat-primary: #3b82f6;
-  --chat-primary-hover: #2563eb;
-  --chat-user-bg: #3b82f6;
-  --chat-user-text: #ffffff;
-  --chat-assistant-bg: #f1f5f9;
-  --chat-assistant-text: #1e293b;
-  --chat-padding: 1rem;
-  --chat-gap: 0.75rem;
-  --chat-message-padding: 0.75rem 1rem;
-  --chat-border-radius: 0.75rem;
-  --chat-message-radius: 1.125rem;
-  --chat-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --chat-font-size: 0.875rem;
-  --chat-line-height: 1.5;
-  --chat-transition: all 0.2s ease;
-  --chat-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --chat-shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --chat-bg: #0f172a;
-    --chat-surface: #1e293b;
-    --chat-border: #334155;
-    --chat-text: #f1f5f9;
-    --chat-text-muted: #94a3b8;
-    --chat-assistant-bg: #334155;
-    --chat-assistant-text: #f1f5f9;
-  }
-}
-
-/* === Chat Layout === */
+/* === Chat UI — Light Only === */
 .chat-container {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--chat-bg);
-  font-family: var(--chat-font-family);
+  background: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
 }
 
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: var(--chat-padding);
-  background: var(--chat-surface);
+  padding: 1rem;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
-  gap: var(--chat-gap);
+  gap: 0.75rem;
 }
 
 .chat-messages:empty::before {
   content: "Type a command or ask a question...";
-  color: var(--chat-text-muted);
+  color: #94a3b8;
   text-align: center;
   padding: 2rem;
   font-style: italic;
 }
 
-/* === Message Styles === */
+/* === Messages === */
 .chat-message {
   display: flex;
   flex-direction: column;
   max-width: 85%;
   animation: chat-message-in 0.3s ease-out;
+}
+
+.chat-message-content {
+  padding: 0.75rem 1rem;
+  border-radius: 1.125rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  word-wrap: break-word;
+  position: relative;
 }
 
 .chat-message-content p { margin: 0 0 0.5rem 0; }
@@ -87,51 +56,57 @@ CHAT_UI_STYLES = """
 .chat-message-content li { margin: 0.25rem 0; }
 
 .chat-message-content code {
-  background: rgba(0, 0, 0, 0.1);
+  background: #f1f5f9;
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
   font-size: 0.875em;
 }
 
-.chat-assistant .chat-message-content code { background: rgba(0, 0, 0, 0.05); }
-
 .chat-message-content pre {
-  background: #1e293b;
-  color: #e2e8f0;
-  padding: 1rem;
+  background: #f8fafc;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem;
   border-radius: 0.5rem;
   overflow-x: auto;
-  margin: 0.75rem 0;
-  font-size: 0.875rem;
+  margin: 0.5rem 0;
+  font-size: 0.8rem;
   line-height: 1.5;
 }
 
 .chat-message-content pre code { background: none; padding: 0; color: inherit; }
 
-@media (prefers-color-scheme: dark) {
-  .chat-message-content pre { background: #0f172a; border: 1px solid var(--chat-border); }
-}
-
 .chat-message-content blockquote {
-  border-left: 3px solid var(--chat-border);
+  border-left: 3px solid #e2e8f0;
   padding-left: 1rem;
   margin: 0.5rem 0;
-  color: var(--chat-text-muted);
+  color: #64748b;
 }
 
 .chat-message-content h1, .chat-message-content h2,
 .chat-message-content h3, .chat-message-content h4 {
-  margin: 0.75rem 0 0.5rem 0; font-weight: 600;
+  margin: 0.75rem 0 0.5rem 0; font-weight: 600; color: #1e293b;
 }
 .chat-message-content h1 { font-size: 1.25rem; }
 .chat-message-content h2 { font-size: 1.125rem; }
 .chat-message-content h3 { font-size: 1rem; }
 
-.chat-message-content table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; }
-.chat-message-content th, .chat-message-content td {
-  border: 1px solid var(--chat-border); padding: 0.5rem; text-align: left;
+.chat-message-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5rem 0;
+  background: #ffffff;
 }
-.chat-message-content th { background: rgba(0, 0, 0, 0.05); font-weight: 600; }
+.chat-message-content th, .chat-message-content td {
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem;
+  text-align: left;
+  color: #1e293b;
+}
+.chat-message-content th {
+  background: #f8fafc;
+  font-weight: 600;
+}
 
 @keyframes chat-message-in {
   from { opacity: 0; transform: translateY(0.5rem); }
@@ -141,24 +116,16 @@ CHAT_UI_STYLES = """
 .chat-user { align-self: flex-end; }
 .chat-assistant { align-self: flex-start; }
 
-.chat-message-content {
-  padding: var(--chat-message-padding);
-  border-radius: var(--chat-message-radius);
-  font-size: var(--chat-font-size);
-  line-height: var(--chat-line-height);
-  word-wrap: break-word;
-  position: relative;
-}
-
 .chat-user .chat-message-content {
-  background: var(--chat-user-bg);
-  color: var(--chat-user-text);
+  background: #3b82f6;
+  color: #ffffff;
   border-bottom-right-radius: 0.375rem;
 }
 
 .chat-assistant .chat-message-content {
-  background: var(--chat-assistant-bg);
-  color: var(--chat-assistant-text);
+  background: #f8fafc;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
   border-bottom-left-radius: 0.375rem;
 }
 
@@ -176,15 +143,15 @@ CHAT_UI_STYLES = """
 
 /* === Input Form === */
 .chat-input {
-  padding: var(--chat-padding);
-  background: var(--chat-surface);
-  border-top: 1px solid var(--chat-border);
+  padding: 1rem;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
 }
 
 .chat-status {
   min-height: 1rem;
   padding: 0.25rem 0;
-  color: var(--chat-text-muted);
+  color: #64748b;
   font-size: 0.8rem;
   text-align: center;
 }
@@ -199,19 +166,17 @@ CHAT_UI_STYLES = """
 
 .suggestion-btn {
   padding: 0.4rem 0.8rem;
-  background: var(--chat-surface);
-  border: 1px solid var(--chat-border);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 1rem;
-  color: var(--chat-primary);
+  color: #3b82f6;
   font-size: 0.8rem;
-  font-family: var(--chat-font-family);
   cursor: pointer;
-  transition: var(--chat-transition);
   white-space: nowrap;
 }
 
 .suggestion-btn:hover {
-  background: var(--chat-primary);
+  background: #3b82f6;
   color: white;
 }
 
@@ -226,11 +191,11 @@ CHAT_UI_STYLES = """
 .chat-input-field {
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 1px solid var(--chat-border);
-  border-radius: var(--chat-border-radius);
-  background: var(--chat-bg);
-  color: var(--chat-text);
-  font-family: var(--chat-font-family);
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  color: #1e293b;
+  font-family: inherit;
   font-size: 0.9rem;
   line-height: 1.5;
   resize: none;
@@ -242,37 +207,34 @@ CHAT_UI_STYLES = """
 
 .chat-input-field:focus {
   outline: none;
-  border-color: var(--chat-primary);
+  border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
 }
 
 .chat-input-button {
   padding: 0.75rem 1.25rem;
-  background: var(--chat-primary);
+  background: #3b82f6;
   color: white;
   border: none;
-  border-radius: var(--chat-border-radius);
-  font-family: var(--chat-font-family);
-  font-size: var(--chat-font-size);
+  border-radius: 0.75rem;
+  font-family: inherit;
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   min-height: 2.75rem;
 }
 
-.chat-input-button:hover { background: var(--chat-primary-hover); }
+.chat-input-button:hover { background: #2563eb; }
 
 /* === Tool/System Messages === */
-.chat-tool {
-  align-self: center;
-  max-width: 70%;
-}
+.chat-tool { align-self: center; max-width: 70%; }
 
 .chat-tool .chat-message-content {
-  background: var(--chat-border);
-  color: var(--chat-text-muted);
+  background: #f1f5f9;
+  color: #64748b;
   font-size: 0.8rem;
   text-align: center;
-  border-radius: var(--chat-border-radius);
+  border-radius: 0.75rem;
   padding: 0.4rem 0.8rem;
 }
 
@@ -290,12 +252,13 @@ CHAT_UI_STYLES = """
 }
 
 .agui-log-pre {
-  color: #8b949e;
+  color: #475569;
   font-size: 0.8em;
   margin: 0;
   white-space: pre-wrap;
   font-family: ui-monospace, monospace;
-  background: #1a1a2e;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   padding: 0.75rem;
   border-radius: 0.5rem;
 }
