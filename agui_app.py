@@ -650,11 +650,6 @@ body {
   color: #64748b;
 }
 
-.center-chat .chat-messages:empty::before {
-  content: "Ask anything about stocks, trading, or type a CLI command...";
-  color: #94a3b8;
-}
-
 /* === Right Pane (Trace / Artifacts) === */
 .right-pane {
   background: #ffffff;
@@ -780,6 +775,10 @@ body {
   display: none;
 }
 
+#detail-content {
+  display: none;
+}
+
 #artifact-content .artifact-chart {
   width: 100%;
   min-height: 300px;
@@ -800,59 +799,128 @@ body {
   padding: 0.2rem 0.5rem;
 }
 
-/* === Help Expander === */
-.help-expander { border: none; }
+/* === Sidebar Header === */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
 
-.help-summary {
+.sidebar-header .brand {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.chat-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: #3b82f6;
+  color: white;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+}
+
+/* === New Chat Button === */
+.new-chat-btn {
+  width: 100%;
+  padding: 0.5rem;
+  background: transparent;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.5rem;
+  color: #3b82f6;
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.new-chat-btn:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+/* === Conversation List === */
+.conv-section {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.conv-section h4 {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: #64748b;
-  cursor: pointer;
-  padding: 0.25rem 0;
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  margin-bottom: 0.25rem;
 }
 
-.help-summary::before {
-  content: '\\25B6';
-  font-size: 0.5rem;
-  transition: transform 0.2s;
+.conv-item {
+  display: block;
+  font-size: 0.8rem;
+  padding: 0.5rem 0.6rem;
+  color: #475569;
+  text-decoration: none;
+  border-radius: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.15s;
 }
 
-details[open] > .help-summary::before {
-  transform: rotate(90deg);
-}
+.conv-item:hover { background: #f1f5f9; color: #1e293b; }
+.conv-active { background: #eff6ff; border-left: 2px solid #3b82f6; color: #1e293b; }
+.conv-empty { font-style: italic; color: #94a3b8; font-size: 0.75rem; padding: 0.5rem; }
 
-.help-summary::-webkit-details-marker { display: none; }
-
-.help-content {
+/* === Sidebar Nav === */
+.sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  gap: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e2e8f0;
 }
 
-.help-group {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  line-height: 1.5;
+.sidebar-nav a {
+  color: #64748b;
+  text-decoration: none;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.375rem;
+  transition: all 0.15s;
 }
 
-.help-group p {
-  margin: 0;
-  font-family: ui-monospace, monospace;
+.sidebar-nav a:hover { background: #f1f5f9; color: #1e293b; }
+
+/* === Sidebar User Compact === */
+.sidebar-user-compact {
+  margin-top: auto;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.75rem;
+}
+
+.sidebar-user-compact .name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.sidebar-user-compact .email {
   font-size: 0.7rem;
   color: #64748b;
-  padding-left: 0.25rem;
 }
 
-.help-cat {
+/* === Sidebar Footer === */
+.sidebar-footer {
   font-size: 0.7rem;
-  font-weight: 600;
   color: #94a3b8;
+  text-align: center;
+  padding-top: 0.5rem;
 }
 
 /* === Responsive === */
@@ -890,17 +958,58 @@ def _session_login(session, user: Dict):
 # ---------------------------------------------------------------------------
 
 def _left_pane(session):
-    """Build the left sidebar: auth + navigation + status."""
+    """Build the left sidebar: brand, new chat, conversations, nav, auth/user."""
     user = session.get("user")
+    thread_id = session.get("thread_id", "")
 
-    sections = [A("AlpaTrade", href="/", cls="brand")]
+    parts = []
 
-    # Auth section
+    # Header: Brand + CHAT badge
+    parts.append(
+        Div(
+            A("AlpaTrade", href="/", cls="brand"),
+            Span("CHAT", cls="chat-badge"),
+            cls="sidebar-header",
+        )
+    )
+
+    # New Chat button
+    parts.append(
+        Button(
+            "+ New Chat",
+            cls="new-chat-btn",
+            onclick="window.location.href='/?new=1'",
+        )
+    )
+
+    # Conversation list
+    parts.append(
+        Div(
+            H4("Recent"),
+            Div(
+                id="conv-list",
+                hx_get="/agui-conv/list",
+                hx_trigger="load",
+                hx_swap="innerHTML",
+            ),
+            cls="conv-section",
+        )
+    )
+
+    # Navigation
+    nav = Div(cls="sidebar-nav")
+    nav_links = [A("Dashboard", href="https://alpatrade.dev", target="_blank")]
+    if user:
+        nav_links.append(A("Profile", href="/profile"))
+        nav_links.append(A("Logout", href="/logout", cls="logout-btn"))
+    nav = Div(*nav_links, cls="sidebar-nav")
+    parts.append(nav)
+
+    # Auth section (compact, at bottom) or user info
     if user:
         name = user.get("display_name") or user.get("email", "user")
         email = user.get("email", "")
 
-        # Check Alpaca key status
         keys_configured = False
         try:
             from utils.auth import get_alpaca_keys
@@ -915,21 +1024,17 @@ def _left_pane(session):
             else Span("No keys", cls="key-status not-configured")
         )
 
-        sections.append(
+        parts.append(
             Div(
-                Div(
-                    Div(name, cls="name"),
-                    Div(email, cls="email"),
-                    Div(key_badge, style="margin-top: 0.5rem;"),
-                    cls="user-info",
-                ),
-                cls="sidebar-section",
+                Div(name, cls="name"),
+                Div(email, cls="email"),
+                Div(key_badge, style="margin-top: 0.35rem;"),
+                cls="sidebar-user-compact",
             )
         )
     else:
-        sections.append(
+        parts.append(
             Div(
-                H4("Account"),
                 Div(
                     id="auth-forms",
                     hx_get="/agui-auth/login-form",
@@ -937,74 +1042,14 @@ def _left_pane(session):
                     hx_swap="innerHTML",
                 ),
                 cls="sidebar-section",
+                style="margin-top: auto;",
             )
         )
 
-    # Navigation
-    nav_links = [
-        A("Home", href="/"),
-        A("Guide", href="/guide", target="_blank"),
-        A("Dashboard", href="https://alpatrade.dev", target="_blank"),
-        A("Screenshots", href="/screenshots", target="_blank"),
-    ]
-    if user:
-        nav_links.append(A("Profile", href="/profile"))
-        nav_links.append(A("Logout", href="/logout", cls="logout-btn"))
+    # Footer
+    parts.append(Div("Powered by AlpaTrade", cls="sidebar-footer"))
 
-    sections.append(Div(H4("Navigation"), *nav_links, cls="sidebar-section"))
-
-    # Help expander — collapsible command reference
-    sections.append(
-        Details(
-            Summary("Quick Reference", cls="help-summary"),
-            Div(
-                Div(
-                    Span("Backtest", cls="help-cat"),
-                    P("agent:backtest lookback:1m"),
-                    P("  symbols:AAPL,TSLA hours:extended"),
-                    P("  intraday_exit:true pdt:false"),
-                    cls="help-group",
-                ),
-                Div(
-                    Span("Paper Trade", cls="help-cat"),
-                    P("agent:paper duration:7d"),
-                    P("agent:stop"),
-                    cls="help-group",
-                ),
-                Div(
-                    Span("Research", cls="help-cat"),
-                    P("news:TSLA  price:AAPL"),
-                    P("analysts:GOOGL  profile:MSFT"),
-                    P("financials:AAPL  movers"),
-                    P("valuation:AAPL,MSFT"),
-                    cls="help-group",
-                ),
-                Div(
-                    Span("Query", cls="help-cat"),
-                    P("trades  runs  agent:status"),
-                    P("agent:report  agent:top"),
-                    P("agent:logs"),
-                    cls="help-group",
-                ),
-                cls="help-content",
-            ),
-            cls="sidebar-section help-expander",
-        )
-    )
-
-    # Query status
-    if not user:
-        count = session.get("query_count", 0)
-        remaining = max(0, FREE_QUERY_LIMIT - count)
-        sections.append(
-            Div(
-                H4("Status"),
-                Span(f"{remaining}/{FREE_QUERY_LIMIT} free queries", cls="query-badge"),
-                cls="sidebar-section",
-            )
-        )
-
-    return Div(*sections, cls="left-pane", id="left-pane")
+    return Div(*parts, cls="left-pane", id="left-pane")
 
 
 # ---------------------------------------------------------------------------
@@ -1012,7 +1057,7 @@ def _left_pane(session):
 # ---------------------------------------------------------------------------
 
 def _right_pane():
-    """Build the right pane: thinking trace + artifacts."""
+    """Build the right pane: thinking trace + artifacts + details."""
     return Div(
         Div(
             H3("Trace"),
@@ -1033,6 +1078,7 @@ def _right_pane():
         Div(
             Button("Thinking", cls="right-tab active", onclick="showTab('trace')"),
             Button("Artifacts", cls="right-tab", onclick="showTab('artifact')"),
+            Button("Details", cls="right-tab", onclick="showTab('detail')"),
             cls="right-tabs",
         ),
         Div(
@@ -1045,6 +1091,11 @@ def _right_pane():
                 Div("Charts and data will appear here when tools generate visual output.",
                     style="color: #475569; font-style: italic;"),
                 id="artifact-content",
+            ),
+            Div(
+                Div("Select a run ID from the chat to view details.",
+                    style="color: #475569; font-style: italic;"),
+                id="detail-content",
             ),
             cls="right-content",
         ),
@@ -1065,18 +1116,23 @@ function toggleRightPane() {
 function showTab(tab) {
     var trace = document.getElementById('trace-content');
     var artifact = document.getElementById('artifact-content');
+    var detail = document.getElementById('detail-content');
     var tabs = document.querySelectorAll('.right-tab');
 
     tabs.forEach(function(t) { t.classList.remove('active'); });
+    if (trace) trace.style.display = 'none';
+    if (artifact) artifact.style.display = 'none';
+    if (detail) detail.style.display = 'none';
 
     if (tab === 'trace') {
-        trace.style.display = 'flex';
-        artifact.style.display = 'none';
+        if (trace) trace.style.display = 'flex';
         tabs[0].classList.add('active');
-    } else {
-        trace.style.display = 'none';
-        artifact.style.display = 'block';
+    } else if (tab === 'artifact') {
+        if (artifact) artifact.style.display = 'block';
         tabs[1].classList.add('active');
+    } else if (tab === 'detail') {
+        if (detail) detail.style.display = 'block';
+        tabs[2].classList.add('active');
     }
 }
 
@@ -1174,11 +1230,20 @@ function renderChart(chartJson) {
 # ---------------------------------------------------------------------------
 
 @rt("/")
-def get(session):
-    thread_id = session.get("thread_id")
-    if not thread_id:
+def get(session, new: str = "", thread: str = ""):
+    # Force new thread
+    if new == "1":
         thread_id = str(_uuid.uuid4())
         session["thread_id"] = thread_id
+    elif thread:
+        # Resume a specific thread
+        thread_id = thread
+        session["thread_id"] = thread_id
+    else:
+        thread_id = session.get("thread_id")
+        if not thread_id:
+            thread_id = str(_uuid.uuid4())
+            session["thread_id"] = thread_id
 
     return (
         Title("AlpaTrade"),
@@ -1203,6 +1268,133 @@ def get(session):
         ),
         Script(LAYOUT_JS),
     )
+
+
+# ---------------------------------------------------------------------------
+# Conversation list route
+# ---------------------------------------------------------------------------
+
+@rt("/agui-conv/list")
+def get(session):
+    """Return the conversation list for the sidebar."""
+    current_tid = session.get("thread_id", "")
+    threads = agui._threads  # Dict[str, AGUIThread]
+
+    if not threads:
+        return Div(Span("No conversations yet", cls="conv-empty"))
+
+    items = []
+    for tid, thread in threads.items():
+        # Use first user message as title, or fallback
+        title = "New chat"
+        for m in thread._messages:
+            if m.role == "user":
+                title = m.content[:40]
+                if len(m.content) > 40:
+                    title += "..."
+                break
+        cls = "conv-item conv-active" if tid == current_tid else "conv-item"
+        items.append(A(title, href=f"/?thread={tid}", cls=cls))
+
+    return Div(*items)
+
+
+# ---------------------------------------------------------------------------
+# Detail panel route — shows run + backtest summary + trades
+# ---------------------------------------------------------------------------
+
+@rt("/agui/detail/{run_id}")
+def get(run_id: str, session):
+    """Fetch run details for the right-pane detail panel."""
+    try:
+        from utils.db.db_pool import DatabasePool
+        from sqlalchemy import text
+        pool = DatabasePool()
+
+        with pool.get_session() as db:
+            # Fetch run info
+            run = db.execute(
+                text("SELECT run_id, mode, strategy, status, started_at, completed_at FROM alpatrade.runs WHERE run_id = :rid"),
+                {"rid": run_id},
+            ).fetchone()
+
+            if not run:
+                return Div(P(f"Run {run_id[:8]}... not found.", style="color: #dc2626;"))
+
+            # Fetch backtest summary
+            summary = db.execute(
+                text("""SELECT sharpe_ratio, total_return, annualized_return, total_pnl,
+                               win_rate, total_trades, max_drawdown
+                        FROM alpatrade.backtest_summaries WHERE run_id = :rid LIMIT 1"""),
+                {"rid": run_id},
+            ).fetchone()
+
+            # Fetch trades count
+            trade_count = db.execute(
+                text("SELECT count(*) FROM alpatrade.trades WHERE run_id = :rid"),
+                {"rid": run_id},
+            ).scalar() or 0
+
+        # Build detail HTML
+        sections = []
+
+        # Key info
+        sections.append(Div(
+            H4("Run Info", style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem;"),
+            Div(
+                Div(Span("ID: ", style="color: #64748b;"), Span(str(run[0])[:8], style="font-family: monospace;")),
+                Div(Span("Mode: ", style="color: #64748b;"), Span(str(run[1]))),
+                Div(Span("Strategy: ", style="color: #64748b;"), Span(str(run[2] or "-"))),
+                Div(Span("Status: ", style="color: #64748b;"), Span(str(run[3]))),
+                Div(Span("Started: ", style="color: #64748b;"), Span(str(run[4])[:19] if run[4] else "-")),
+                style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem;",
+            ),
+            style="margin-bottom: 1rem;",
+        ))
+
+        # Metrics (if backtest)
+        if summary:
+            metrics = [
+                ("Sharpe", f"{float(summary[0] or 0):.2f}"),
+                ("Return", f"{float(summary[1] or 0):.2f}%"),
+                ("Ann. Return", f"{float(summary[2] or 0):.2f}%"),
+                ("P&L", f"${float(summary[3] or 0):,.2f}"),
+                ("Win Rate", f"{float(summary[4] or 0):.1f}%"),
+                ("Trades", str(summary[5] or 0)),
+                ("Max DD", f"{float(summary[6] or 0):.2f}%"),
+            ]
+            metric_els = []
+            for label, value in metrics:
+                val_style = "font-weight: 600; font-size: 0.85rem;"
+                try:
+                    num = float(value.replace('%', '').replace(',', '').replace('$', ''))
+                    if label in ('Sharpe', 'Return', 'Ann. Return', 'P&L'):
+                        val_style += f" color: {'#16a34a' if num >= 0 else '#dc2626'};"
+                except ValueError:
+                    pass
+                metric_els.append(Div(
+                    Div(label, style="font-size: 0.65rem; color: #64748b; text-transform: uppercase;"),
+                    Div(value, style=val_style),
+                ))
+
+            sections.append(Div(
+                H4("Metrics", style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem;"),
+                Div(
+                    *metric_els,
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;",
+                ),
+                style="margin-bottom: 1rem;",
+            ))
+
+        # Trade count
+        sections.append(Div(
+            Span(f"{trade_count} trades", style="font-size: 0.8rem; color: #64748b;"),
+        ))
+
+        return Div(*sections, id="detail-content", hx_swap_oob="innerHTML")
+
+    except Exception as e:
+        return Div(P(f"Error loading details: {e}", style="color: #dc2626; font-size: 0.8rem;"))
 
 
 # ---------------------------------------------------------------------------

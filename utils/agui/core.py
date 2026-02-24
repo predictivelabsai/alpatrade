@@ -26,16 +26,166 @@ from ag_ui.core.events import (
     StateSnapshotEvent,
 )
 from fasthtml.common import (
-    Div, Form, Hidden, Textarea, Button, Span, Script, Style, Pre,
+    Div, Form, Hidden, Textarea, Button, Span, Script, Style, Pre, NotStr,
 )
 import asyncio
 import collections
 import logging
+import re
 import threading
 import uuid
 
 from .patches import setup_ft_patches
 from .styles import get_chat_styles
+
+
+# ---------------------------------------------------------------------------
+# Follow-up suggestions — contextual pills shown after command results
+# ---------------------------------------------------------------------------
+
+def _get_followup_suggestions(msg: str, result: str = None) -> list:
+    """Return contextual follow-up suggestions based on the command and its result."""
+    cmd = msg.strip().lower()
+    first = cmd.split()[0] if cmd.split() else ""
+
+    # Extract run_id from result text
+    run_id = None
+    if result:
+        m = re.search(r'Run ID:?\s*`?([a-f0-9-]+)', result)
+        if m:
+            run_id = m.group(1)
+
+    # Extract ticker from colon-commands like news:TSLA
+    ticker = None
+    if ":" in first:
+        parts = first.split(":")
+        base = parts[0]
+        if base in ("news", "price", "analysts", "profile", "financials") and len(parts) > 1 and parts[1]:
+            ticker = parts[1].upper()
+
+    if first.startswith("agent:backtest"):
+        suggestions = []
+        if run_id:
+            suggestions.append(f"agent:validate run-id:{run_id}")
+        suggestions.extend(["agent:report", "agent:top"])
+        return suggestions[:3]
+
+    if first.startswith("agent:paper"):
+        return ["agent:status", "agent:logs", "agent:stop"]
+
+    if first.startswith("agent:validate"):
+        return ["agent:report", "trades", "agent:top"]
+
+    if first in ("agent:report",):
+        return ["agent:top", "trades", "runs"]
+
+    if first in ("agent:top",):
+        return ["agent:backtest lookback:1m", "agent:report"]
+
+    if cmd == "trades":
+        return ["agent:report", "runs", "agent:top"]
+
+    if cmd == "runs":
+        return ["trades", "agent:report", "agent:status"]
+
+    if first.startswith("news:") and ticker:
+        return [f"price:{ticker}", f"analysts:{ticker}", f"profile:{ticker}"]
+
+    if first.startswith("price:") and ticker:
+        return [f"news:{ticker}", f"analysts:{ticker}", f"financials:{ticker}"]
+
+    if cmd == "movers":
+        return ["price:AAPL", "news:TSLA", "agent:backtest lookback:1m"]
+
+    # Default
+    return ["help", "trades", "agent:backtest lookback:1m"]
+
+
+# ---------------------------------------------------------------------------
+# Result enrichment — wrap certain command outputs in structured cards
+# ---------------------------------------------------------------------------
+
+def _enrich_result(command: str, result: str):
+    """Extract metrics from results and return a card HTML string, or None."""
+    cmd = command.strip().lower()
+    first = cmd.split()[0] if cmd.split() else ""
+
+    # Backtest results — extract key metrics
+    if first.startswith("agent:backtest") and result:
+        metrics = {}
+        for pattern, label in [
+            (r'Sharpe(?:\s+Ratio)?[:\s|]+\*?\*?([0-9.-]+)', 'Sharpe'),
+            (r'Total Return[:\s|]+\*?\*?([0-9.+-]+%?)', 'Return'),
+            (r'(?:Net |Total )?P&?L[:\s|]+\*?\*?\$?([0-9.,+-]+)', 'P&L'),
+            (r'Win Rate[:\s|]+\*?\*?([0-9.]+%?)', 'Win Rate'),
+            (r'(?:Total )?Trades[:\s|]+\*?\*?([0-9]+)', 'Trades'),
+        ]:
+            m = re.search(pattern, result, re.IGNORECASE)
+            if m:
+                metrics[label] = m.group(1)
+
+        if not metrics:
+            return None
+
+        metric_divs = []
+        for label, value in metrics.items():
+            val_class = "metric-value"
+            if label in ('Sharpe', 'Return', 'P&L'):
+                try:
+                    num = float(value.replace('%', '').replace(',', '').replace('$', ''))
+                    val_class += " positive" if num >= 0 else " negative"
+                except ValueError:
+                    pass
+            metric_divs.append(
+                f'<div class="metric"><div class="metric-label">{label}</div>'
+                f'<div class="{val_class}">{value}</div></div>'
+            )
+
+        # Extract run_id for detail link
+        run_id_match = re.search(r'Run ID:?\s*`?([a-f0-9-]+)', result)
+        run_id_html = ""
+        if run_id_match:
+            rid = run_id_match.group(1)
+            run_id_html = (
+                f'<a href="#" style="font-size:0.7rem;color:#3b82f6;text-decoration:none" '
+                f'hx-get="/agui/detail/{rid}" hx-target="#detail-content" hx-swap="innerHTML" '
+                f'onclick="showTab(\'detail\');var l=document.querySelector(\'.app-layout\');'
+                f'if(l&&!l.classList.contains(\'right-open\'))l.classList.add(\'right-open\');"'
+                f'>{rid[:8]}...</a>'
+            )
+
+        return (
+            '<div class="result-card backtest-card">'
+            f'<div class="card-header"><h3>Backtest Results</h3>{run_id_html}</div>'
+            f'<div class="card-metrics">{"".join(metric_divs)}</div>'
+            '</div>'
+        )
+
+    # Validation results
+    if first.startswith("agent:validate") and result:
+        status_match = re.search(r'Status[:\s|]+\*?\*?(PASS|FAIL|ERROR)', result, re.IGNORECASE)
+        if status_match:
+            status = status_match.group(1).upper()
+            badge_cls = "badge-green" if status == "PASS" else "badge-red"
+            return (
+                '<div class="result-card">'
+                f'<div class="card-header"><h3>Validation</h3>'
+                f'<span class="{badge_cls}">{status}</span></div>'
+                '</div>'
+            )
+
+    # News results
+    if first.startswith("news:") and result and ("# News" in result or "## News" in result):
+        ticker_part = first.split(":")[1].upper() if ":" in first else ""
+        if ticker_part:
+            return (
+                '<div class="result-card news-card">'
+                f'<div class="card-header"><h3>Latest News</h3>'
+                f'<span class="badge-blue">{ticker_part}</span></div>'
+                '</div>'
+            )
+
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -157,7 +307,51 @@ class UI(Generic[T]):
                 id="chat-form",
                 ws_send=True,
             ),
+            Div(Span("Enter", cls="kbd"), " to send", cls="input-hint"),
             **container_attrs,
+        )
+
+    def _render_welcome(self):
+        """Render the welcome hero with suggestion cards."""
+        _ICON_CHAT = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>'
+        _ICON_CHART = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>'
+        _ICON_PLAY = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>'
+        _ICON_NEWS = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg>'
+        _ICON_SEARCH = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>'
+
+        cards = [
+            ("Run a Backtest", "Test strategies over the last month", "agent:backtest lookback:1m", "#3b82f6", _ICON_CHART),
+            ("Start Paper Trading", "Trade with virtual money in real-time", "agent:paper duration:1d", "#8b5cf6", _ICON_PLAY),
+            ("Market News", "Latest headlines and top movers", "news:TSLA", "#f59e0b", _ICON_NEWS),
+            ("Research a Stock", "Price, analysts, and financials", "price:AAPL", "#10b981", _ICON_SEARCH),
+        ]
+
+        card_els = []
+        for title, desc, cmd, color, icon_svg in cards:
+            card_els.append(
+                Div(
+                    Div(NotStr(icon_svg), cls="welcome-card-icon",
+                        style=f"background:{color}15;color:{color}"),
+                    Div(title, cls="welcome-card-title"),
+                    Div(desc, cls="welcome-card-desc"),
+                    cls="welcome-card",
+                    onclick=(
+                        f"var ta=document.getElementById('chat-input');"
+                        f"var fm=document.getElementById('chat-form');"
+                        f"if(ta&&fm){{ta.value={repr(cmd)};fm.requestSubmit();}}"
+                    ),
+                )
+            )
+
+        return Div(
+            Div(
+                Div(NotStr(_ICON_CHAT), cls="welcome-icon"),
+                Div("AlpaTrade", cls="welcome-title"),
+                Div("Your AI-powered trading assistant", cls="welcome-subtitle"),
+                Div(*card_els, cls="welcome-grid"),
+                cls="welcome-hero",
+            ),
+            id="welcome-screen",
         )
 
     def chat(self, **kwargs):
@@ -165,6 +359,7 @@ class UI(Generic[T]):
         components = [
             get_chat_styles(),
             Div(
+                self._render_welcome(),
                 id="chat-messages",
                 cls="chat-messages",
                 hx_get=f"/agui/messages/{self.thread_id}",
@@ -286,7 +481,7 @@ class AGUIThread(Generic[T]):
             el = Div(
                 *[
                     Button(
-                        s,
+                        Span(s), Span("\u2192", cls="arrow"),
                         onclick=f"var ta=document.getElementById('chat-input');"
                         f"var fm=document.getElementById('chat-form');"
                         f"if(ta&&fm){{ta.value={repr(s)};fm.requestSubmit();}}",
@@ -302,6 +497,10 @@ class AGUIThread(Generic[T]):
         await self.send(el)
 
     async def _handle_message(self, msg: str, session):
+        # Hide welcome screen + clear previous suggestions
+        await self.send(Div(id="welcome-screen", style="display:none", hx_swap_oob="outerHTML"))
+        await self.set_suggestions([])
+
         # CLI command interception — bypass AI agent for known commands
         if self._command_interceptor:
             result = await self._command_interceptor(msg, session)
@@ -342,6 +541,13 @@ class AGUIThread(Generic[T]):
         """Display a CLI command result in chat with trace pane integration."""
         import asyncio
         from fasthtml.common import Script
+
+        # Disable input during processing
+        await self.send(Script(
+            "var b=document.querySelector('.chat-input-button'),t=document.getElementById('chat-input');"
+            "if(b){b.disabled=true;b.classList.add('sending')}"
+            "if(t){t.disabled=true;t.placeholder='Thinking...'}"
+        ))
 
         _open_trace = (
             "var l=document.querySelector('.app-layout');"
@@ -403,13 +609,30 @@ class AGUIThread(Generic[T]):
 
         # Remove streaming cursor and inject final content
         await self.send(Span("", id=f"streaming-{asst_id}", hx_swap_oob="outerHTML"))
-        await self.send(Div(
-            Div(result, cls="chat-message-content marked", id=content_id),
-            cls="chat-message chat-assistant",
-            id=f"message-{asst_id}",
-            hx_swap_oob="outerHTML",
-        ))
-        await self.send(Script(f"renderMarkdown('{content_id}');"))
+
+        # Result enrichment — prepend card if available
+        card_html = _enrich_result(msg, result)
+        md_id = f"md-{content_id}"
+        if card_html:
+            await self.send(Div(
+                Div(
+                    NotStr(card_html),
+                    Div(result, cls="marked", id=md_id),
+                    cls="chat-message-content result-enriched", id=content_id,
+                ),
+                cls="chat-message chat-assistant",
+                id=f"message-{asst_id}",
+                hx_swap_oob="outerHTML",
+            ))
+            await self.send(Script(f"renderMarkdown('{md_id}');"))
+        else:
+            await self.send(Div(
+                Div(result, cls="chat-message-content marked", id=content_id),
+                cls="chat-message chat-assistant",
+                id=f"message-{asst_id}",
+                hx_swap_oob="outerHTML",
+            ))
+            await self.send(Script(f"renderMarkdown('{content_id}');"))
 
         # Trace: command complete
         await self.send(Div(
@@ -430,8 +653,16 @@ class AGUIThread(Generic[T]):
         )
         self._messages.append(asst_msg)
 
-        # Clear input form
+        # Re-enable input
+        await self.send(Script(
+            "var b=document.querySelector('.chat-input-button'),t=document.getElementById('chat-input');"
+            "if(b){b.disabled=false;b.classList.remove('sending')}"
+            "if(t){t.disabled=false;t.placeholder='Type a command or ask a question...';t.focus()}"
+        ))
+
+        # Clear input form + show follow-up suggestions
         await self.send(self.ui._clear_input())
+        await self.set_suggestions(_get_followup_suggestions(msg, result))
 
     async def _handle_streaming_command(self, msg: str, sc: StreamingCommand, session):
         """Run a long-running command in background, streaming logs via WS."""
@@ -506,11 +737,14 @@ class AGUIThread(Generic[T]):
             hx_swap_oob="beforeend",
         ))
 
-        # 5. Clear input + disable textarea
+        # 5. Clear input form then disable textarea + button after OOB swap
         await self.send(self.ui._clear_input())
         await self.send(Script(
-            "var ta=document.getElementById('chat-input');"
+            "setTimeout(function(){"
+            "var b=document.querySelector('.chat-input-button'),ta=document.getElementById('chat-input');"
+            "if(b){b.disabled=true;b.classList.add('sending')}"
             "if(ta){ta.disabled=true;ta.placeholder='Running command...';}"
+            "}, 100);"
         ))
 
         # 6. Attach LogCapture to root logger and ensure INFO level
@@ -578,15 +812,30 @@ class AGUIThread(Generic[T]):
         else:
             final_result = result_holder["value"] or "Command executed."
 
-        # Replace log console with final markdown result
+        # Replace log console with final markdown result (with enrichment)
         try:
-            await self.send(Div(
-                Div(final_result, cls="chat-message-content marked", id=content_id),
-                cls="chat-message chat-assistant",
-                id=f"message-{asst_id}",
-                hx_swap_oob="outerHTML",
-            ))
-            await self.send(Script(f"renderMarkdown('{content_id}');"))
+            card_html = _enrich_result(msg, final_result)
+            md_id = f"md-{content_id}"
+            if card_html:
+                await self.send(Div(
+                    Div(
+                        NotStr(card_html),
+                        Div(final_result, cls="marked", id=md_id),
+                        cls="chat-message-content result-enriched", id=content_id,
+                    ),
+                    cls="chat-message chat-assistant",
+                    id=f"message-{asst_id}",
+                    hx_swap_oob="outerHTML",
+                ))
+                await self.send(Script(f"renderMarkdown('{md_id}');"))
+            else:
+                await self.send(Div(
+                    Div(final_result, cls="chat-message-content marked", id=content_id),
+                    cls="chat-message chat-assistant",
+                    id=f"message-{asst_id}",
+                    hx_swap_oob="outerHTML",
+                ))
+                await self.send(Script(f"renderMarkdown('{content_id}');"))
 
             # Trace: command complete
             await self.send(Div(
@@ -602,13 +851,15 @@ class AGUIThread(Generic[T]):
                 hx_swap_oob="beforeend",
             ))
 
-            # Re-enable input
+            # Re-enable input by sending a fresh form + focus
+            await self.send(self.ui._clear_input())
             await self.send(Script(
-                "var ta=document.getElementById('chat-input');"
-                "if(ta){ta.disabled=false;"
-                "ta.placeholder='Type a command or ask a question...';"
-                "ta.focus();}"
+                "setTimeout(function(){var ta=document.getElementById('chat-input');"
+                "if(ta)ta.focus();}, 100);"
             ))
+
+            # Follow-up suggestions
+            await self.set_suggestions(_get_followup_suggestions(msg, final_result))
         except Exception:
             pass  # WS disconnected — no-op
 
@@ -729,7 +980,7 @@ class AGUISetup(Generic[T]):
             thread = self.thread(thread_id)
             if thread._messages:
                 return thread.ui._render_messages(thread._messages)
-            return Div(id="chat-messages", cls="chat-messages")
+            return Div(thread.ui._render_welcome(), id="chat-messages", cls="chat-messages")
 
     def thread(self, thread_id: str) -> AGUIThread[T]:
         if thread_id not in self._threads:
