@@ -1449,9 +1449,10 @@ if __name__ == "__main__":
     if port != DEFAULT_PORT:
         print(f"Port {DEFAULT_PORT} in use, using port {port}")
 
+    reload = os.environ.get("AGUI_RELOAD", "true").lower() == "true"
     uvicorn.run(
         "agui_app:app",
         host="0.0.0.0",
         port=port,
-        reload=True,
+        reload=reload,
     )
