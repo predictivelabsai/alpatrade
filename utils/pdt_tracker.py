@@ -53,6 +53,54 @@ class PDTTracker:
             trade_date = trade_date.date()
         self._day_trades.append({"date": trade_date, "symbol": symbol})
 
+    def bootstrap(self, day_trades: List[Dict]):
+        """Load historical day trades from DB/Alpaca on startup.
+
+        Args:
+            day_trades: List of {"date": date, "symbol": str} dicts
+        """
+        self._day_trades = []
+        for dt in day_trades:
+            d = dt["date"]
+            if hasattr(d, 'date'):
+                d = d.date()
+            elif isinstance(d, str):
+                d = date.fromisoformat(d)
+            self._day_trades.append({"date": d, "symbol": dt["symbol"]})
+
+    @staticmethod
+    def check_account_pdt_status(account: Dict) -> Dict:
+        """Check Alpaca account for PDT flags.
+
+        Returns dict with:
+            - blocked: bool (True = cannot trade at all)
+            - reason: str (human-readable explanation)
+            - equity: float
+            - daytrade_count: int
+            - pattern_day_trader: bool
+        """
+        blocked = False
+        reason = ""
+        equity = float(account.get("equity", 0))
+        pdt_flagged = account.get("pattern_day_trader", False)
+        trading_blocked = account.get("trading_blocked", False)
+        daytrade_count = int(account.get("daytrade_count", 0))
+
+        if trading_blocked:
+            blocked = True
+            reason = "Account trading is blocked by Alpaca"
+        elif pdt_flagged and equity < 25000:
+            blocked = True
+            reason = f"PDT-flagged account with equity ${equity:,.2f} < $25k"
+
+        return {
+            "blocked": blocked,
+            "reason": reason,
+            "equity": equity,
+            "daytrade_count": daytrade_count,
+            "pattern_day_trader": pdt_flagged,
+        }
+
     def reset(self):
         """Clear all tracked day trades."""
         self._day_trades.clear()

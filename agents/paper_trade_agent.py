@@ -22,7 +22,7 @@ if str(project_root) not in sys.path:
 
 from utils.alpaca_util import AlpacaAPI
 from utils.massive_util import get_historical_data, get_intraday_prices, is_market_open
-from utils.agent_storage import store_paper_trade
+from utils.agent_storage import store_paper_trade, fetch_recent_day_trades
 from utils.config import load_parameters
 from utils.pdt_tracker import PDTTracker
 
@@ -110,9 +110,29 @@ class PaperTradeAgent:
             logger.error(f"Failed to initialize Alpaca client: {e}")
             return {"error": str(e), "session_id": self.session_id}
 
+        # --- PDT bootstrap ---
+        if self.pdt_tracker:
+            # 1. Check account-level PDT status
+            pdt_status = PDTTracker.check_account_pdt_status(account)
+            if pdt_status["blocked"]:
+                logger.error(f"PDT BLOCKED: {pdt_status['reason']}")
+                return {"error": f"PDT blocked: {pdt_status['reason']}",
+                        "session_id": self.session_id}
+
+            # 2. Bootstrap from DB (recent same-day round-trips)
+            db_day_trades = fetch_recent_day_trades(window_days=7, user_id=self.user_id)
+            if db_day_trades:
+                self.pdt_tracker.bootstrap(db_day_trades)
+                logger.info(f"PDT tracker bootstrapped with {len(db_day_trades)} DB day trades")
+
+            count = self.pdt_tracker.get_day_trade_count(datetime.now(timezone.utc))
+            logger.info(f"PDT status: {count}/3 day trades in window, "
+                        f"Alpaca daytrade_count={pdt_status['daytrade_count']}")
+
         start_time = datetime.now(timezone.utc)
         end_time = start_time + timedelta(seconds=duration)
         last_daily_report = start_time.date()
+        cycle_count = 0
 
         logger.info(f"Trading until {end_time.isoformat()}")
 
@@ -130,6 +150,19 @@ class PaperTradeAgent:
                     logger.debug("Market closed, sleeping...")
                     time.sleep(min(poll_interval, 60))
                     continue
+
+                # Periodic PDT re-check (every ~10 cycles)
+                cycle_count += 1
+                if self.pdt_tracker and cycle_count % 10 == 0:
+                    try:
+                        acct = self.client.get_account()
+                        if "error" not in acct:
+                            status = PDTTracker.check_account_pdt_status(acct)
+                            if status["blocked"]:
+                                logger.error(f"PDT BLOCKED mid-session: {status['reason']}")
+                                break
+                    except Exception:
+                        pass
 
                 # Execute one trading cycle
                 try:
@@ -176,6 +209,24 @@ class PaperTradeAgent:
         # 2. Process entries
         self._process_entries(symbols, dip_threshold, capital_per_trade)
 
+    def _is_pdt_blocked(self) -> bool:
+        """Check if account is PDT-blocked right now."""
+        if not self.pdt_tracker:
+            return False
+        try:
+            account = self.client.get_account()
+            if "error" in account:
+                logger.warning("Cannot check PDT status — Alpaca error, blocking trade")
+                return True
+            status = PDTTracker.check_account_pdt_status(account)
+            if status["blocked"]:
+                logger.warning(f"PDT blocked: {status['reason']}")
+                return True
+        except Exception as e:
+            logger.warning(f"PDT check failed: {e}, blocking trade as precaution")
+            return True
+        return False
+
     def _process_exits(self, take_profit, stop_loss, hold_days):
         """Check existing positions for exit signals."""
         try:
@@ -221,6 +272,11 @@ class PaperTradeAgent:
                     exit_reason = f"HOLD_EXPIRED ({days_held}d)"
 
                 if exit_reason:
+                    # Account-level PDT check before closing
+                    if self._is_pdt_blocked():
+                        logger.warning(f"PDT blocked: cannot exit {symbol}, skipping")
+                        continue
+
                     logger.info(f"EXIT {symbol}: {exit_reason}")
                     result = self.client.close_position(symbol)
                     if "error" not in result:
@@ -254,6 +310,11 @@ class PaperTradeAgent:
 
     def _process_entries(self, symbols, dip_threshold, capital_per_trade):
         """Check for dip entry signals."""
+        # PDT guard: skip new entries if we can't exit same-day
+        if self.pdt_tracker and not self.pdt_tracker.can_day_trade(datetime.now(timezone.utc)):
+            logger.info("PDT: at day-trade limit, skipping new entries (could not exit same-day)")
+            return
+
         try:
             # Get existing positions to skip
             positions = self.client.get_positions()

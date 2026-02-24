@@ -399,6 +399,39 @@ def _fetch_paper_trades_db(run_id: str, user_id: Optional[str] = None) -> List[D
 
 
 # ---------------------------------------------------------------------------
+# PDT bootstrap (DB only)
+# ---------------------------------------------------------------------------
+
+def fetch_recent_day_trades(window_days: int = 7,
+                            user_id: Optional[str] = None) -> List[Dict]:
+    """Fetch recent same-day round-trips from alpatrade.trades for PDT bootstrap.
+
+    Returns list of {"date": date, "symbol": str} for trades where entry
+    and exit occurred on the same calendar day within the last N days.
+    """
+    backend = get_storage_backend()
+    if backend != "db":
+        return []
+    from sqlalchemy import text
+    pool = _get_pool()
+    with pool.get_session() as session:
+        sql = """
+            SELECT symbol, DATE(exit_time) as trade_date
+            FROM alpatrade.trades
+            WHERE trade_type = 'paper'
+              AND exit_time IS NOT NULL
+              AND DATE(entry_time) = DATE(exit_time)
+              AND exit_time >= NOW() - INTERVAL :days
+        """
+        bind: Dict[str, Any] = {"days": f"{window_days} days"}
+        if user_id:
+            sql += " AND user_id = :user_id"
+            bind["user_id"] = user_id
+        result = session.execute(text(sql), bind)
+        return [{"date": row[1], "symbol": row[0]} for row in result.fetchall()]
+
+
+# ---------------------------------------------------------------------------
 # Validations (DB only)
 # ---------------------------------------------------------------------------
 
