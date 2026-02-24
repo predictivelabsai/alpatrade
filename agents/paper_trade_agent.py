@@ -129,6 +129,9 @@ class PaperTradeAgent:
             logger.info(f"PDT status: {count}/3 day trades in window, "
                         f"Alpaca daytrade_count={pdt_status['daytrade_count']}")
 
+        # --- Sync open orders and positions from Alpaca ---
+        self._sync_orders_and_positions()
+
         start_time = datetime.now(timezone.utc)
         end_time = start_time + timedelta(seconds=duration)
         last_daily_report = start_time.date()
@@ -227,6 +230,52 @@ class PaperTradeAgent:
             return True
         return False
 
+    def _sync_orders_and_positions(self):
+        """Sync open orders and positions from Alpaca on startup.
+
+        Cancels stale open orders and reconciles in-memory tracked positions
+        with actual Alpaca positions so exits use correct qty_available.
+        """
+        # 1. Cancel all open orders to clear held_for_orders locks
+        try:
+            open_orders = self.client.get_orders(status='open')
+            if isinstance(open_orders, list) and open_orders:
+                logger.info(f"Found {len(open_orders)} open orders on startup — cancelling stale orders")
+                for order in open_orders:
+                    oid = order.get("id") or str(order.get("id", ""))
+                    symbol = order.get("symbol", "?")
+                    side = order.get("side", "?")
+                    logger.info(f"Cancelling stale {side} order for {symbol} (order {str(oid)[:8]})")
+                    self.client.cancel_order(str(oid))
+                logger.info("All stale open orders cancelled")
+            else:
+                logger.info("No open orders found on startup")
+        except Exception as e:
+            logger.warning(f"Could not sync open orders: {e}")
+
+        # 2. Reconcile positions — populate _tracked_positions from Alpaca
+        try:
+            positions = self.client.get_positions()
+            if isinstance(positions, list) and positions:
+                for pos in positions:
+                    symbol = pos.get("symbol")
+                    if symbol and symbol not in self._tracked_positions:
+                        # Position exists in Alpaca but not tracked locally —
+                        # likely from a prior session. Track it with unknown entry time
+                        # so hold_days triggers HOLD_EXPIRED exit.
+                        self._tracked_positions[symbol] = {
+                            "entry_time": None,
+                            "entry_price": float(pos.get("avg_entry_price", 0)),
+                            "qty": float(pos.get("qty", 0)),
+                        }
+                        logger.info(
+                            f"Synced existing position: {symbol} "
+                            f"qty={pos.get('qty')} @ ${float(pos.get('avg_entry_price', 0)):.2f}"
+                        )
+                logger.info(f"Position sync complete: {len(self._tracked_positions)} positions tracked")
+        except Exception as e:
+            logger.warning(f"Could not sync positions: {e}")
+
     def _process_exits(self, take_profit, stop_loss, hold_days):
         """Check existing positions for exit signals."""
         try:
@@ -235,13 +284,35 @@ class PaperTradeAgent:
                 logger.error(f"Error getting positions: {positions['error']}")
                 return
 
+            # Get open sell orders to skip symbols with pending exits
+            pending_sell_symbols = set()
+            try:
+                open_orders = self.client.get_orders(status='open')
+                if isinstance(open_orders, list):
+                    for o in open_orders:
+                        if str(o.get("side", "")).lower() == "sell":
+                            pending_sell_symbols.add(o.get("symbol"))
+            except Exception:
+                pass
+
             for pos in positions:
                 symbol = pos.get("symbol")
                 qty = float(pos.get("qty", 0))
+                qty_available = float(pos.get("qty_available", qty))
                 entry_price = float(pos.get("avg_entry_price", 0))
                 current_price = float(pos.get("current_price", 0))
 
                 if entry_price <= 0:
+                    continue
+
+                # Skip if there's already a pending sell order for this symbol
+                if symbol in pending_sell_symbols:
+                    logger.debug(f"Skipping {symbol}: pending sell order exists")
+                    continue
+
+                # Skip if no shares available to sell
+                if qty_available <= 0:
+                    logger.debug(f"Skipping {symbol}: no qty available (held for orders)")
                     continue
 
                 unrealized_pct = ((current_price - entry_price) / entry_price) * 100
@@ -278,13 +349,15 @@ class PaperTradeAgent:
                         continue
 
                     logger.info(f"EXIT {symbol}: {exit_reason}")
-                    result = self.client.close_position(symbol)
+                    # Close only available qty to avoid held_for_orders errors
+                    close_qty = int(qty_available) if qty_available < qty else None
+                    result = self.client.close_position(symbol, qty=close_qty)
                     if "error" not in result:
-                        pnl = (current_price - entry_price) * qty
+                        pnl = (current_price - entry_price) * qty_available
                         trade = {
                             "symbol": symbol,
                             "side": "sell",
-                            "qty": qty,
+                            "qty": qty_available,
                             "entry_price": entry_price,
                             "exit_price": current_price,
                             "pnl": pnl,
@@ -316,11 +389,21 @@ class PaperTradeAgent:
             return
 
         try:
-            # Get existing positions to skip
+            # Get existing positions and pending buy orders to skip
             positions = self.client.get_positions()
             existing = set()
             if isinstance(positions, list):
                 existing = {p.get("symbol") for p in positions}
+
+            # Also skip symbols with pending buy orders
+            try:
+                open_orders = self.client.get_orders(status='open')
+                if isinstance(open_orders, list):
+                    for o in open_orders:
+                        if str(o.get("side", "")).lower() == "buy":
+                            existing.add(o.get("symbol"))
+            except Exception:
+                pass
 
             account = self.client.get_account()
             if "error" in account:

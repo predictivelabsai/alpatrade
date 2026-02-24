@@ -67,14 +67,19 @@ def _get_followup_suggestions(msg: str, result: str = None) -> list:
         suggestions = []
         if run_id:
             suggestions.append(f"agent:validate run-id:{run_id}")
+            suggestions.append(f"equity:{run_id[:8]}")
         suggestions.extend(["agent:report", "agent:top"])
-        return suggestions[:3]
+        return suggestions[:4]
 
     if first.startswith("agent:paper"):
         return ["agent:status", "agent:logs", "agent:stop"]
 
     if first.startswith("agent:validate"):
-        return ["agent:report", "trades", "agent:top"]
+        suggestions = []
+        if run_id:
+            suggestions.append(f"equity:{run_id[:8]}")
+        suggestions.extend(["agent:report", "trades", "agent:top"])
+        return suggestions[:4]
 
     if first in ("agent:report",):
         return ["agent:top", "trades", "runs"]
@@ -89,10 +94,19 @@ def _get_followup_suggestions(msg: str, result: str = None) -> list:
         return ["trades", "agent:report", "agent:status"]
 
     if first.startswith("news:") and ticker:
-        return [f"price:{ticker}", f"analysts:{ticker}", f"profile:{ticker}"]
+        return [f"chart:{ticker}", f"price:{ticker}", f"analysts:{ticker}", f"profile:{ticker}"]
 
     if first.startswith("price:") and ticker:
-        return [f"news:{ticker}", f"analysts:{ticker}", f"financials:{ticker}"]
+        return [f"chart:{ticker}", f"news:{ticker}", f"analysts:{ticker}", f"financials:{ticker}"]
+
+    if first.startswith("analysts:") and ticker:
+        return [f"chart:{ticker}", f"price:{ticker}", f"news:{ticker}", f"financials:{ticker}"]
+
+    if first.startswith("profile:") and ticker:
+        return [f"chart:{ticker}", f"price:{ticker}", f"news:{ticker}", f"analysts:{ticker}"]
+
+    if first.startswith("financials:") and ticker:
+        return [f"chart:{ticker}", f"price:{ticker}", f"news:{ticker}", f"analysts:{ticker}"]
 
     if cmd == "movers":
         return ["price:AAPL", "news:TSLA", "agent:backtest lookback:1m"]

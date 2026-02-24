@@ -57,7 +57,9 @@ agent = Agent(
         "Be concise and use markdown formatting with tables where appropriate. "
         "Users can type CLI commands directly in chat (e.g. agent:backtest lookback:1m, "
         "news:TSLA, trades, runs) and they will be executed automatically. "
-        "For stock queries, always use the appropriate tool to get real data."
+        "For stock queries, always use the appropriate tool to get real data. "
+        "When users ask for a graph or chart of a backtest run, use the show_equity_curve tool with the run_id. "
+        "For stock price charts, use show_stock_chart."
     ),
 )
 
@@ -241,6 +243,66 @@ def show_recent_runs(limit: int = 20) -> str:
         return f"Error fetching runs: {e}"
 
 
+@agent.tool_plain
+def show_equity_curve(run_id: str) -> str:
+    """Show the equity curve chart for a backtest run. Accepts full or partial (prefix) run IDs."""
+    try:
+        from utils.db.db_pool import DatabasePool
+        from sqlalchemy import text
+        import json
+
+        pool = DatabasePool()
+        with pool.get_session() as session:
+            # Prefix matching — find full run_id from partial
+            rid = run_id.strip()
+            if len(rid) < 36:
+                row = session.execute(
+                    text("SELECT run_id FROM alpatrade.runs WHERE CAST(run_id AS TEXT) LIKE :prefix ORDER BY created_at DESC LIMIT 1"),
+                    {"prefix": f"{rid}%"},
+                ).fetchone()
+                if not row:
+                    return f"No run found matching prefix `{rid}`"
+                rid = str(row[0])
+
+            # Get initial_capital from runs.config JSONB
+            run_row = session.execute(
+                text("SELECT config FROM alpatrade.runs WHERE run_id = :rid"),
+                {"rid": rid},
+            ).fetchone()
+            initial_capital = 10000.0
+            if run_row and run_row[0]:
+                cfg = run_row[0] if isinstance(run_row[0], dict) else json.loads(run_row[0])
+                initial_capital = float(cfg.get("initial_capital", 10000))
+
+            # Get equity data from trades — exit_time + capital_after
+            trades = session.execute(
+                text("""
+                    SELECT exit_time, capital_after
+                    FROM alpatrade.trades
+                    WHERE run_id = :rid AND exit_time IS NOT NULL AND capital_after IS NOT NULL
+                    ORDER BY exit_time ASC
+                """),
+                {"rid": rid},
+            ).fetchall()
+
+        if not trades:
+            return f"No trade data with equity info for run `{rid[:8]}`"
+
+        dates = [t[0].isoformat() if hasattr(t[0], 'isoformat') else str(t[0]) for t in trades]
+        equity = [round(float(t[1]), 2) for t in trades]
+
+        chart_data = json.dumps({
+            "type": "equity_curve",
+            "run_id": rid,
+            "dates": dates,
+            "equity": equity,
+            "initial_capital": initial_capital,
+        })
+        return f"__CHART_DATA__{chart_data}__END_CHART__"
+    except Exception as e:
+        return f"Error generating equity curve: {e}"
+
+
 # ---------------------------------------------------------------------------
 # FastHTML app
 # ---------------------------------------------------------------------------
@@ -269,7 +331,7 @@ class _AppState:
 _app_state = _AppState()
 
 # Commands that should bypass the AI agent and go to CommandProcessor
-_CLI_BASES = {"news", "profile", "financials", "price", "movers", "analysts", "valuation"}
+_CLI_BASES = {"news", "profile", "financials", "price", "movers", "analysts", "valuation", "chart", "equity"}
 _CLI_EXACT = {"trades", "runs", "status", "help", "guide"}
 
 # Long-running commands that get streamed with log console instead of blocking
@@ -298,6 +360,25 @@ async def _command_interceptor(msg: str, session):
     # Special case: "help" returns chat-friendly markdown (Rich tables don't work here)
     if cmd_lower in ("help", "h", "?"):
         return _AGUI_HELP
+
+    # chart:<TICKER> — stock price chart (bypass CommandProcessor)
+    if base == "chart":
+        ticker = first_word.split(":", 1)[1].upper() if ":" in first_word else None
+        if ticker:
+            period = "3mo"
+            import re as _re
+            pm = _re.search(r'period:(\S+)', msg.strip().lower())
+            if pm:
+                period = pm.group(1)
+            return show_stock_chart(ticker, period)
+        return "Usage: `chart:AAPL` or `chart:AAPL period:1y`"
+
+    # equity:<RUN_ID> — equity curve chart (bypass CommandProcessor)
+    if base == "equity":
+        rid = msg.strip().split(":", 1)[1].strip() if ":" in msg.strip() else None
+        if rid:
+            return show_equity_curve(rid)
+        return "Usage: `equity:<run_id>`"
 
     # Long-running commands → return StreamingCommand sentinel
     if first_word in _STREAMING_COMMANDS:
@@ -351,6 +432,11 @@ _AGUI_HELP = """# AlpaTrade Commands
 - `financials:AAPL` — income & balance sheet
 - `valuation:AAPL,MSFT` — valuation comparison
 - `movers` — top gainers & losers
+
+## Charts
+- `chart:AAPL` — stock price chart (3mo default)
+- `chart:TSLA period:1y` — custom period
+- `equity:<run_id>` — equity curve for a backtest run
 
 ## AI Chat
 Type any question to chat with AI about stocks & trading.
@@ -1140,68 +1226,126 @@ function showTab(tab) {
 function renderChart(chartJson) {
     try {
         var data = JSON.parse(chartJson);
-        var container = document.getElementById('artifact-content');
-        if (!container || !window.Plotly) return;
-
-        container.innerHTML = '';
-        var chartDiv = document.createElement('div');
-        chartDiv.id = 'plotly-chart';
-        chartDiv.className = 'artifact-chart';
-        container.appendChild(chartDiv);
-
-        var trace = {
-            x: data.dates,
-            y: data.close,
-            type: 'scatter',
-            mode: 'lines',
-            name: data.ticker,
-            line: { color: '#3b82f6', width: 2 },
-            fill: 'tozeroy',
-            fillcolor: 'rgba(59, 130, 246, 0.1)',
-        };
-
-        var rangeLine = {
-            x: data.dates,
-            y: data.high,
-            type: 'scatter',
-            mode: 'lines',
-            name: 'High',
-            line: { color: '#22c55e', width: 1, dash: 'dot' },
-            opacity: 0.5,
-        };
-
-        var lowLine = {
-            x: data.dates,
-            y: data.low,
-            type: 'scatter',
-            mode: 'lines',
-            name: 'Low',
-            line: { color: '#ef4444', width: 1, dash: 'dot' },
-            opacity: 0.5,
-        };
-
-        var layout = {
-            title: { text: data.ticker + ' — ' + data.period, font: { color: '#f1f5f9', size: 14 } },
-            paper_bgcolor: '#1e293b',
-            plot_bgcolor: '#0f172a',
-            font: { color: '#94a3b8', family: 'ui-monospace, monospace', size: 11 },
-            xaxis: { gridcolor: '#1e293b', linecolor: '#334155' },
-            yaxis: { gridcolor: '#1e293b', linecolor: '#334155', tickprefix: '$' },
-            legend: { orientation: 'h', y: -0.15 },
-            margin: { t: 40, r: 20, b: 40, l: 60 },
-            showlegend: true,
-        };
-
-        Plotly.newPlot(chartDiv, [trace, rangeLine, lowLine], layout, {
-            responsive: true,
-            displayModeBar: false,
-        });
-
-        // Switch to artifacts tab
-        showTab('artifact');
+        if (data.type === 'equity_curve') {
+            renderEquityCurve(data);
+        } else {
+            renderStockChart(data);
+        }
     } catch(e) {
         console.error('Chart render error:', e);
     }
+}
+
+function renderStockChart(data) {
+    var container = document.getElementById('artifact-content');
+    if (!container || !window.Plotly) return;
+
+    container.innerHTML = '';
+    var chartDiv = document.createElement('div');
+    chartDiv.id = 'plotly-chart';
+    chartDiv.className = 'artifact-chart';
+    container.appendChild(chartDiv);
+
+    var trace = {
+        x: data.dates,
+        y: data.close,
+        type: 'scatter',
+        mode: 'lines',
+        name: data.ticker,
+        line: { color: '#3b82f6', width: 2 },
+        fill: 'tozeroy',
+        fillcolor: 'rgba(59, 130, 246, 0.1)',
+    };
+
+    var rangeLine = {
+        x: data.dates,
+        y: data.high,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'High',
+        line: { color: '#22c55e', width: 1, dash: 'dot' },
+        opacity: 0.5,
+    };
+
+    var lowLine = {
+        x: data.dates,
+        y: data.low,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'Low',
+        line: { color: '#ef4444', width: 1, dash: 'dot' },
+        opacity: 0.5,
+    };
+
+    var layout = {
+        title: { text: data.ticker + ' — ' + data.period, font: { color: '#f1f5f9', size: 14 } },
+        paper_bgcolor: '#1e293b',
+        plot_bgcolor: '#0f172a',
+        font: { color: '#94a3b8', family: 'ui-monospace, monospace', size: 11 },
+        xaxis: { gridcolor: '#1e293b', linecolor: '#334155' },
+        yaxis: { gridcolor: '#1e293b', linecolor: '#334155', tickprefix: '$' },
+        legend: { orientation: 'h', y: -0.15 },
+        margin: { t: 40, r: 20, b: 40, l: 60 },
+        showlegend: true,
+    };
+
+    Plotly.newPlot(chartDiv, [trace, rangeLine, lowLine], layout, {
+        responsive: true,
+        displayModeBar: false,
+    });
+
+    showTab('artifact');
+}
+
+function renderEquityCurve(data) {
+    var container = document.getElementById('artifact-content');
+    if (!container || !window.Plotly) return;
+
+    container.innerHTML = '';
+    var chartDiv = document.createElement('div');
+    chartDiv.id = 'plotly-chart';
+    chartDiv.className = 'artifact-chart';
+    container.appendChild(chartDiv);
+
+    var equityTrace = {
+        x: data.dates,
+        y: data.equity,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'Equity',
+        line: { color: '#3b82f6', width: 2 },
+        fill: 'tozeroy',
+        fillcolor: 'rgba(59, 130, 246, 0.1)',
+    };
+
+    var capitalLine = {
+        x: [data.dates[0], data.dates[data.dates.length - 1]],
+        y: [data.initial_capital, data.initial_capital],
+        type: 'scatter',
+        mode: 'lines',
+        name: 'Initial Capital',
+        line: { color: '#94a3b8', width: 1, dash: 'dash' },
+    };
+
+    var shortId = data.run_id ? data.run_id.substring(0, 8) : 'unknown';
+    var layout = {
+        title: { text: 'Equity Curve — ' + shortId, font: { color: '#f1f5f9', size: 14 } },
+        paper_bgcolor: '#1e293b',
+        plot_bgcolor: '#0f172a',
+        font: { color: '#94a3b8', family: 'ui-monospace, monospace', size: 11 },
+        xaxis: { gridcolor: '#1e293b', linecolor: '#334155' },
+        yaxis: { gridcolor: '#1e293b', linecolor: '#334155', tickprefix: '$' },
+        legend: { orientation: 'h', y: -0.15 },
+        margin: { t: 40, r: 20, b: 40, l: 60 },
+        showlegend: true,
+    };
+
+    Plotly.newPlot(chartDiv, [equityTrace, capitalLine], layout, {
+        responsive: true,
+        displayModeBar: false,
+    });
+
+    showTab('artifact');
 }
 
 /* Watch for chart data markers in messages */
