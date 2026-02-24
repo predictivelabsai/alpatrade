@@ -59,7 +59,9 @@ agent = Agent(
         "news:TSLA, trades, runs) and they will be executed automatically. "
         "For stock queries, always use the appropriate tool to get real data. "
         "When users ask for a graph or chart of a backtest run, use the show_equity_curve tool with the run_id. "
-        "For stock price charts, use show_stock_chart."
+        "For stock price charts, use show_stock_chart. "
+        "When users ask about their positions, holdings, or portfolio, use get_alpaca_positions. "
+        "When users ask about their account, balance, buying power, or cash, use get_alpaca_account."
     ),
 )
 
@@ -151,6 +153,62 @@ def get_valuation(tickers: str) -> str:
         return mr.valuation(tickers=tickers.upper())
     except Exception as e:
         return f"Error fetching valuation: {e}"
+
+
+@agent.tool_plain
+def get_alpaca_positions() -> str:
+    """Get current open positions from the Alpaca paper trading account. Shows symbol, qty, entry price, current price, and unrealized P&L."""
+    try:
+        from utils.alpaca_util import AlpacaAPI
+        client = AlpacaAPI(paper=True)
+        positions = client.get_positions()
+        if isinstance(positions, dict) and "error" in positions:
+            return f"Error fetching positions: {positions['error']}"
+        if not positions:
+            return "No open positions."
+        md = "| Symbol | Qty | Entry | Current | Unrealized P&L | P&L% |\n"
+        md += "|--------|-----|-------|---------|----------------|------|\n"
+        for p in positions:
+            symbol = p.get("symbol", "?")
+            qty = p.get("qty", "0")
+            entry = float(p.get("avg_entry_price", 0))
+            current = float(p.get("current_price", 0))
+            pnl = float(p.get("unrealized_pl", 0))
+            pnl_pct = float(p.get("unrealized_plpc", 0)) * 100
+            sign = "+" if pnl >= 0 else ""
+            md += f"| {symbol} | {qty} | ${entry:.2f} | ${current:.2f} | {sign}${pnl:.2f} | {sign}{pnl_pct:.2f}% |\n"
+        return md + f"\n*{len(positions)} open positions*"
+    except Exception as e:
+        return f"Error fetching positions: {e}"
+
+
+@agent.tool_plain
+def get_alpaca_account() -> str:
+    """Get Alpaca paper trading account summary — portfolio value, cash, buying power, and P&L."""
+    try:
+        from utils.alpaca_util import AlpacaAPI
+        client = AlpacaAPI(paper=True)
+        acct = client.get_account()
+        if "error" in acct:
+            return f"Error fetching account: {acct['error']}"
+        equity = float(acct.get("equity", 0))
+        cash = float(acct.get("cash", 0))
+        buying_power = float(acct.get("buying_power", 0))
+        portfolio_value = float(acct.get("portfolio_value", 0))
+        pnl = float(acct.get("unrealized_pl", 0) or 0)
+        daytrade_count = acct.get("daytrade_count", "?")
+        return (
+            f"**Account Summary**\n\n"
+            f"| Metric | Value |\n|--------|-------|\n"
+            f"| Portfolio Value | ${portfolio_value:,.2f} |\n"
+            f"| Equity | ${equity:,.2f} |\n"
+            f"| Cash | ${cash:,.2f} |\n"
+            f"| Buying Power | ${buying_power:,.2f} |\n"
+            f"| Unrealized P&L | ${pnl:,.2f} |\n"
+            f"| Day Trades (5d) | {daytrade_count} |\n"
+        )
+    except Exception as e:
+        return f"Error fetching account: {e}"
 
 
 @agent.tool_plain
@@ -332,7 +390,7 @@ _app_state = _AppState()
 
 # Commands that should bypass the AI agent and go to CommandProcessor
 _CLI_BASES = {"news", "profile", "financials", "price", "movers", "analysts", "valuation", "chart", "equity"}
-_CLI_EXACT = {"trades", "runs", "status", "help", "guide"}
+_CLI_EXACT = {"trades", "runs", "status", "help", "guide", "positions", "account"}
 
 # Long-running commands that get streamed with log console instead of blocking
 _STREAMING_COMMANDS = {
@@ -382,6 +440,12 @@ async def _command_interceptor(msg: str, session):
         if rid:
             return show_equity_curve(rid)
         return "Usage: `equity:<run_id>`"
+
+    # Alpaca account/positions — direct tool call, bypass CommandProcessor
+    if cmd_lower == "positions":
+        return get_alpaca_positions()
+    if cmd_lower == "account":
+        return get_alpaca_account()
 
     # Long-running commands → return StreamingCommand sentinel
     if first_word in _STREAMING_COMMANDS:
@@ -435,6 +499,10 @@ _AGUI_HELP = """# AlpaTrade Commands
 - `financials:AAPL` — income & balance sheet
 - `valuation:AAPL,MSFT` — valuation comparison
 - `movers` — top gainers & losers
+
+## Alpaca Account
+- `positions` — open positions from Alpaca paper account
+- `account` — account summary (portfolio value, cash, buying power)
 
 ## Charts
 - `chart:AAPL` — stock price chart (3mo default)
