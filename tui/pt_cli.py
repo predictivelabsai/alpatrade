@@ -73,17 +73,17 @@ help                                      Full reference
 
                 if user_input.lower() in ['exit', 'quit', 'q']:
                     self.console.print("\n[yellow]Goodbye![/yellow]\n")
-                    break
+                    self._cleanup_and_exit()
 
                 self.command_history.append(user_input)
                 await self.process_command(user_input)
 
             except KeyboardInterrupt:
                 self.console.print("\n\n[yellow]Goodbye![/yellow]\n")
-                break
+                self._cleanup_and_exit()
             except EOFError:
                 self.console.print("\n\n[yellow]Goodbye![/yellow]\n")
-                break
+                self._cleanup_and_exit()
             except Exception as e:
                 self.console.print(f"\n[red]Unexpected error:[/red] {str(e)}\n")
                 import traceback
