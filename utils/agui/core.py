@@ -203,6 +203,30 @@ class StreamingCommand:
 
 
 # ---------------------------------------------------------------------------
+# Shared JS snippets
+# ---------------------------------------------------------------------------
+
+_SCROLL_CHAT_JS = "var m=document.getElementById('chat-messages');if(m)m.scrollTop=m.scrollHeight;"
+_GUARD_ENABLE_JS = "window._aguiProcessing=true;"
+_GUARD_DISABLE_JS = "window._aguiProcessing=false;"
+
+
+# ---------------------------------------------------------------------------
+# Log line filter — suppress verbose init messages
+# ---------------------------------------------------------------------------
+
+_LOG_SKIP_PATTERNS = frozenset({
+    "Massive API key found", "No Massive API key found",
+    "Database pool initialized", "will use Massive for price data",
+    "will use yfinance for price data",
+})
+
+
+def _filter_log_lines(lines):
+    return [l for l in lines if not any(l.split(" ", 1)[-1].startswith(p) for p in _LOG_SKIP_PATTERNS)]
+
+
+# ---------------------------------------------------------------------------
 # LogCapture — thread-safe logging handler that buffers lines for streaming
 # ---------------------------------------------------------------------------
 
@@ -302,7 +326,8 @@ class UI(Generic[T]):
                     onkeydown="handleKeyDown(this, event)",
                     oninput="autoResize(this)",
                 ),
-                Button("Send", type="submit", cls="chat-input-button"),
+                Button("Send", type="submit", cls="chat-input-button",
+                       onclick="if(window._aguiProcessing){event.preventDefault();return false;}"),
                 cls="chat-input-form",
                 id="chat-form",
                 ws_send=True,
@@ -336,6 +361,7 @@ class UI(Generic[T]):
                     Div(desc, cls="welcome-card-desc"),
                     cls="welcome-card",
                     onclick=(
+                        f"if(window._aguiProcessing)return;"
                         f"var ta=document.getElementById('chat-input');"
                         f"var fm=document.getElementById('chat-form');"
                         f"if(ta&&fm){{ta.value={repr(cmd)};fm.requestSubmit();}}"
@@ -379,6 +405,7 @@ class UI(Generic[T]):
                     autoResize(textarea);
                     if (event.key === 'Enter' && !event.shiftKey) {
                         event.preventDefault();
+                        if (window._aguiProcessing) return;
                         var form = textarea.closest('form');
                         if (form && textarea.value.trim()) form.requestSubmit();
                     }
@@ -386,7 +413,7 @@ class UI(Generic[T]):
                 function renderMarkdown(elementId) {
                     setTimeout(function() {
                         var el = document.getElementById(elementId);
-                        if (el && window.marked) {
+                        if (el && window.marked && el.classList.contains('marked')) {
                             var txt = el.textContent || el.innerText;
                             if (txt.trim()) {
                                 el.innerHTML = marked.parse(txt);
@@ -411,6 +438,7 @@ class UI(Generic[T]):
                             if (txt.trim() && !el.dataset.rendering) {
                                 el.dataset.rendering = '1';
                                 setTimeout(function() {
+                                    if (!el.classList.contains('marked')) { delete el.dataset.rendering; return; }
                                     var finalTxt = el.textContent || el.innerText;
                                     if (finalTxt.trim()) {
                                         el.innerHTML = marked.parse(finalTxt);
@@ -437,6 +465,11 @@ class UI(Generic[T]):
                     if (t) obs.observe(t, {childList: true, subtree: true});
                 })();
             """))
+
+        # Hidden div used as OOB swap target for executing JS via WebSocket.
+        # Bare <script> tags sent via WS are NOT executed by HTMX — scripts
+        # must be children of an element that is OOB-swapped into the DOM.
+        components.append(Div(id="agui-js", style="display:none"))
 
         return Div(
             *components,
@@ -475,6 +508,14 @@ class AGUIThread(Generic[T]):
         for _, send_fn in self._connections.items():
             await send_fn(element)
 
+    async def _send_js(self, js_code: str):
+        """Execute JS in the browser via OOB swap into the hidden agui-js div.
+
+        Bare <script> tags sent via HTMX WebSocket are silently ignored.
+        Wrapping the script inside an OOB-swapped element ensures execution.
+        """
+        await self.send(Div(Script(js_code), id="agui-js", hx_swap_oob="innerHTML"))
+
     async def set_suggestions(self, suggestions: List[str]):
         self._suggestions = suggestions[:4]
         if self._suggestions:
@@ -482,7 +523,8 @@ class AGUIThread(Generic[T]):
                 *[
                     Button(
                         Span(s), Span("\u2192", cls="arrow"),
-                        onclick=f"var ta=document.getElementById('chat-input');"
+                        onclick=f"if(window._aguiProcessing)return;"
+                        f"var ta=document.getElementById('chat-input');"
                         f"var fm=document.getElementById('chat-form');"
                         f"if(ta&&fm){{ta.value={repr(s)};fm.requestSubmit();}}",
                         cls="suggestion-btn",
@@ -496,7 +538,15 @@ class AGUIThread(Generic[T]):
             el = Div(id="suggestion-buttons", hx_swap_oob="outerHTML")
         await self.send(el)
 
+    async def _refresh_conv_list(self):
+        """Push an OOB swap to refresh the sidebar conversation list."""
+        await self.send(Div(id="conv-list", hx_get="/agui-conv/list",
+                            hx_trigger="load", hx_swap="innerHTML", hx_swap_oob="outerHTML"))
+
     async def _handle_message(self, msg: str, session):
+        # Block double-submit immediately
+        await self._send_js(_GUARD_ENABLE_JS)
+
         # Hide welcome screen + clear previous suggestions
         await self.send(Div(id="welcome-screen", style="display:none", hx_swap_oob="outerHTML"))
         await self.set_suggestions([])
@@ -543,11 +593,11 @@ class AGUIThread(Generic[T]):
         from fasthtml.common import Script
 
         # Disable input during processing
-        await self.send(Script(
+        await self._send_js(
             "var b=document.querySelector('.chat-input-button'),t=document.getElementById('chat-input');"
             "if(b){b.disabled=true;b.classList.add('sending')}"
             "if(t){t.disabled=true;t.placeholder='Thinking...'}"
-        ))
+        )
 
         _open_trace = (
             "var l=document.querySelector('.app-layout');"
@@ -624,7 +674,7 @@ class AGUIThread(Generic[T]):
                 id=f"message-{asst_id}",
                 hx_swap_oob="outerHTML",
             ))
-            await self.send(Script(f"renderMarkdown('{md_id}');"))
+            await self._send_js(f"renderMarkdown('{md_id}');")
         else:
             await self.send(Div(
                 Div(result, cls="chat-message-content marked", id=content_id),
@@ -632,7 +682,10 @@ class AGUIThread(Generic[T]):
                 id=f"message-{asst_id}",
                 hx_swap_oob="outerHTML",
             ))
-            await self.send(Script(f"renderMarkdown('{content_id}');"))
+            await self._send_js(f"renderMarkdown('{content_id}');")
+
+        # Auto-scroll to bottom after result swap
+        await self._send_js(_SCROLL_CHAT_JS)
 
         # Trace: command complete
         await self.send(Div(
@@ -653,12 +706,16 @@ class AGUIThread(Generic[T]):
         )
         self._messages.append(asst_msg)
 
-        # Re-enable input
-        await self.send(Script(
+        # Refresh sidebar conversation list
+        await self._refresh_conv_list()
+
+        # Re-enable input + release guard
+        await self._send_js(
+            _GUARD_DISABLE_JS +
             "var b=document.querySelector('.chat-input-button'),t=document.getElementById('chat-input');"
             "if(b){b.disabled=false;b.classList.remove('sending')}"
             "if(t){t.disabled=false;t.placeholder='Type a command or ask a question...';t.focus()}"
-        ))
+        )
 
         # Clear input form + show follow-up suggestions
         await self.send(self.ui._clear_input())
@@ -710,10 +767,16 @@ class AGUIThread(Generic[T]):
             hx_swap_oob="beforeend",
         ))
 
-        # 3. Send log console bubble
+        # 3. Send log console bubble with progress bar
+        progress_bar_id = f"progress-{asst_id}"
         await self.send(Div(
             Div(
                 Div(
+                    Div(
+                        Div(Div(cls="progress-bar-fill", id=f"progress-fill-{asst_id}"), cls="progress-bar-outer"),
+                        Div("", cls="progress-bar-label", id=f"progress-label-{asst_id}"),
+                        cls="progress-bar-container", id=progress_bar_id,
+                    ),
                     Pre("Starting...", id=log_pre_id, cls="agui-log-pre"),
                     cls="agui-log-console",
                     id=log_console_id,
@@ -739,13 +802,13 @@ class AGUIThread(Generic[T]):
 
         # 5. Clear input form then disable textarea + button after OOB swap
         await self.send(self.ui._clear_input())
-        await self.send(Script(
+        await self._send_js(
             "setTimeout(function(){"
             "var b=document.querySelector('.chat-input-button'),ta=document.getElementById('chat-input');"
             "if(b){b.disabled=true;b.classList.add('sending')}"
             "if(ta){ta.disabled=true;ta.placeholder='Running command...';}"
             "}, 100);"
-        ))
+        )
 
         # 6. Attach LogCapture to root logger and ensure INFO level
         log_capture = LogCapture(maxlen=1000)
@@ -779,7 +842,9 @@ class AGUIThread(Generic[T]):
             lines = log_capture.get_lines()
             if len(lines) != prev_line_count:
                 prev_line_count = len(lines)
-                log_text = "\n".join(lines[-100:])  # Show last 100 lines
+                # Filter verbose init lines for display only
+                display_lines = _filter_log_lines(lines[-100:])
+                log_text = "\n".join(display_lines) if display_lines else "Initializing..."
                 try:
                     await self.send(Pre(
                         log_text,
@@ -794,11 +859,29 @@ class AGUIThread(Generic[T]):
                         id=f"trace-detail-{cmd_id}",
                         hx_swap_oob="outerHTML",
                     ))
-                    # Auto-scroll log console
-                    await self.send(Script(
-                        f"var lc=document.getElementById('{log_console_id}');"
+                    # Progress bar — detect [N/M] pattern in recent lines
+                    progress_js = ""
+                    for raw_line in reversed(lines[-20:]):
+                        pm = re.search(r'\[(\d+)/(\d+)\]', raw_line)
+                        if pm:
+                            current, total = int(pm.group(1)), int(pm.group(2))
+                            pct = min(100, int(current / total * 100)) if total else 0
+                            progress_js = (
+                                f"var c=document.getElementById('{progress_bar_id}');"
+                                f"if(c)c.classList.add('active');"
+                                f"var f=document.getElementById('progress-fill-{asst_id}');"
+                                f"if(f)f.style.width='{pct}%';"
+                                f"var lb=document.getElementById('progress-label-{asst_id}');"
+                                f"if(lb)lb.textContent='{current}/{total}';"
+                            )
+                            break
+                    # Auto-scroll log console + chat + progress bar update
+                    await self._send_js(
+                        progress_js
+                        + f"var lc=document.getElementById('{log_console_id}');"
                         "if(lc)lc.scrollTop=lc.scrollHeight;"
-                    ))
+                        + _SCROLL_CHAT_JS
+                    )
                 except Exception:
                     break  # WS disconnected
 
@@ -827,7 +910,7 @@ class AGUIThread(Generic[T]):
                     id=f"message-{asst_id}",
                     hx_swap_oob="outerHTML",
                 ))
-                await self.send(Script(f"renderMarkdown('{md_id}');"))
+                await self._send_js(f"renderMarkdown('{md_id}');")
             else:
                 await self.send(Div(
                     Div(final_result, cls="chat-message-content marked", id=content_id),
@@ -835,7 +918,10 @@ class AGUIThread(Generic[T]):
                     id=f"message-{asst_id}",
                     hx_swap_oob="outerHTML",
                 ))
-                await self.send(Script(f"renderMarkdown('{content_id}');"))
+                await self._send_js(f"renderMarkdown('{content_id}');")
+
+            # Auto-scroll to bottom after result swap
+            await self._send_js(_SCROLL_CHAT_JS)
 
             # Trace: command complete
             await self.send(Div(
@@ -851,26 +937,35 @@ class AGUIThread(Generic[T]):
                 hx_swap_oob="beforeend",
             ))
 
-            # Re-enable input by sending a fresh form + focus
+            # Store message in history (before conv refresh so title updates)
+            asst_msg = AssistantMessage(
+                id=asst_id,
+                role="assistant",
+                content=final_result,
+                name=self._agent.name or "AlpaTrade",
+            )
+            self._messages.append(asst_msg)
+
+            # Refresh sidebar conversation list
+            await self._refresh_conv_list()
+
+            # Re-enable input + release guard
             await self.send(self.ui._clear_input())
-            await self.send(Script(
+            await self._send_js(
+                _GUARD_DISABLE_JS +
                 "setTimeout(function(){var ta=document.getElementById('chat-input');"
                 "if(ta)ta.focus();}, 100);"
-            ))
+            )
 
             # Follow-up suggestions
             await self.set_suggestions(_get_followup_suggestions(msg, final_result))
         except Exception:
             pass  # WS disconnected — no-op
-
-        # Store message in history
-        asst_msg = AssistantMessage(
-            id=asst_id,
-            role="assistant",
-            content=final_result,
-            name=self._agent.name or "AlpaTrade",
-        )
-        self._messages.append(asst_msg)
+            # Ensure guard is released even on error
+            try:
+                await self._send_js(_GUARD_DISABLE_JS)
+            except Exception:
+                pass
 
     async def _handle_run(self, run_id: str):
         if run_id not in self._runs:
@@ -926,8 +1021,9 @@ class AGUIThread(Generic[T]):
                             hx_swap_oob="beforeend",
                         )
                     )
-                    await self.send(Script(f"renderMarkdown('{content_id}');"))
+                    await self._send_js(f"renderMarkdown('{content_id}');")
                 await self.send(Div(id="chat-status", hx_swap_oob="innerHTML"))
+                await self._send_js(_GUARD_DISABLE_JS)
             elif event.type == EventType.STATE_SNAPSHOT:
                 self._state = event.snapshot
 

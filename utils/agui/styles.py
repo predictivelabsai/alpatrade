@@ -88,6 +88,9 @@ CHAT_UI_STYLES = """
   width: 100%;
   margin: 0.5rem 0;
   background: #ffffff;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .chat-message-content th, .chat-message-content td {
   border: 1px solid #e2e8f0;
@@ -481,7 +484,21 @@ CHAT_UI_STYLES = """
 .chat-messages::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 .chat-messages::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
+/* === Progress Bar (streaming commands) === */
+.progress-bar-container { display: none; margin-bottom: 0.5rem; }
+.progress-bar-container.active { display: block; }
+.progress-bar-outer { background: #e2e8f0; border-radius: 4px; height: 6px; overflow: hidden; }
+.progress-bar-fill { background: linear-gradient(90deg, #3b82f6, #2563eb); height: 100%; border-radius: 4px; transition: width 0.4s ease; width: 0%; }
+.progress-bar-label { font-size: 0.7rem; color: #64748b; margin-top: 0.25rem; font-family: monospace; }
+
+/* === Table column constraints (news results) === */
+.chat-message-content td:nth-child(3) { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* === Responsive === */
+@media (max-width: 900px) {
+  .chat-message-content th:nth-child(5), .chat-message-content td:nth-child(5) { display: none; }
+}
+
 @media (max-width: 768px) {
   .chat-message { max-width: 95%; }
   .welcome-grid { grid-template-columns: 1fr; }
