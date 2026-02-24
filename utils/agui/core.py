@@ -424,13 +424,24 @@ class UI(Generic[T]):
                         if (form && textarea.value.trim()) form.requestSubmit();
                     }
                 }
+                // Extract __CHART_DATA__...__END_CHART__ before markdown
+                // (marked.parse converts __ to <strong>, destroying the marker)
+                function extractAndRenderCharts(txt, el) {
+                    var chartMatch = txt.match(/__CHART_DATA__(.+?)__END_CHART__/);
+                    if (chartMatch && window.renderChart) {
+                        window.renderChart(chartMatch[1]);
+                        txt = txt.replace(/__CHART_DATA__.*?__END_CHART__/, '');
+                    }
+                    return txt;
+                }
                 function renderMarkdown(elementId) {
                     setTimeout(function() {
                         var el = document.getElementById(elementId);
                         if (el && window.marked && el.classList.contains('marked')) {
                             var txt = el.textContent || el.innerText;
                             if (txt.trim()) {
-                                el.innerHTML = marked.parse(txt);
+                                txt = extractAndRenderCharts(txt, el);
+                                el.innerHTML = txt.trim() ? marked.parse(txt) : '';
                                 el.classList.remove('marked');
                                 el.classList.add('marked-done');
                                 delete el.dataset.rendering;
@@ -455,7 +466,8 @@ class UI(Generic[T]):
                                     if (!el.classList.contains('marked')) { delete el.dataset.rendering; return; }
                                     var finalTxt = el.textContent || el.innerText;
                                     if (finalTxt.trim()) {
-                                        el.innerHTML = marked.parse(finalTxt);
+                                        finalTxt = extractAndRenderCharts(finalTxt, el);
+                                        el.innerHTML = finalTxt.trim() ? marked.parse(finalTxt) : '';
                                         el.classList.remove('marked');
                                         el.classList.add('marked-done');
                                     }

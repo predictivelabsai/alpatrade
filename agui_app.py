@@ -365,6 +365,9 @@ async def _command_interceptor(msg: str, session):
     if base == "chart":
         ticker = first_word.split(":", 1)[1].upper() if ":" in first_word else None
         if ticker:
+            # Catch common mistake: "chart:equity" should be "equity:<run_id>"
+            if ticker.lower() == "equity":
+                return "Did you mean `equity:<run_id>`? Use `runs` to see recent run IDs, then `equity:abc12345`."
             period = "3mo"
             import re as _re
             pm = _re.search(r'period:(\S+)', msg.strip().lower())
