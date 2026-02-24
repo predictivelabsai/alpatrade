@@ -77,12 +77,14 @@ The interceptor detects CLI commands before they reach the AI agent:
 
 ```python
 # Commands that bypass AI and go to CommandProcessor
-_CLI_BASES = {"news", "profile", "financials", "price", "movers", "analysts", "valuation"}
-_CLI_EXACT = {"trades", "runs", "status", "help", "guide"}
+_CLI_BASES = {"news", "profile", "financials", "price", "movers", "analysts", "valuation", "chart", "equity"}
+_CLI_EXACT = {"trades", "runs", "status", "help", "guide", "positions", "account"}
 ```
 
 Pattern matching:
-- `agent:*` and `alpaca:*` prefixes → CommandProcessor
+- `agent:*` and `alpaca:*` prefixes → CommandProcessor (streaming for long-running)
+- `chart:TICKER` and `equity:RUN_ID` → direct tool call (bypass CommandProcessor)
+- `positions` and `account` → direct Alpaca API call
 - Exact matches (`trades`, `runs`, `help`, etc.) → CommandProcessor
 - Base matches (`news:TSLA`, `price:AAPL`, etc.) → CommandProcessor
 - Everything else → AI agent (XAI Grok-3-mini)
@@ -100,33 +102,49 @@ The pydantic-ai agent has these tools registered:
 | `get_financials(ticker, period)` | Revenue, earnings, margins |
 | `get_market_movers(direction)` | Top gainers/losers |
 | `get_valuation(tickers)` | P/E, P/B, EV/EBITDA comparison |
+| `get_alpaca_positions()` | Open positions from Alpaca paper account |
+| `get_alpaca_account()` | Account summary — portfolio value, cash, buying power |
 | `show_recent_trades(limit)` | Trades from DB |
 | `show_recent_runs(limit)` | Backtest/paper runs from DB |
-| `show_stock_chart(ticker, period)` | Price chart data for Plotly rendering |
+| `show_stock_chart(ticker, period)` | Price chart via `__CHART_DATA__` marker → Plotly |
+| `show_equity_curve(run_id)` | Equity curve from backtest trades → Plotly (supports prefix matching) |
+
+### Chart Rendering
+
+Charts use a marker-based protocol: tools return `__CHART_DATA__{json}__END_CHART__` which the frontend detects and renders with Plotly.js.
+
+```mermaid
+flowchart LR
+    TOOL["Agent Tool<br/>show_stock_chart()"] -->|"__CHART_DATA__{json}__END_CHART__"| MSG["Chat Message"]
+    MSG -->|MutationObserver| EXTRACT["extractAndRenderCharts()"]
+    EXTRACT -->|parse JSON| DISPATCH["renderChart()"]
+    DISPATCH -->|type: stock| STOCK["renderStockChart()<br/>close + high/low lines"]
+    DISPATCH -->|type: equity_curve| EQUITY["renderEquityCurve()<br/>equity + initial capital"]
+    STOCK --> PLOTLY["Plotly.newPlot()<br/>Artifacts tab"]
+    EQUITY --> PLOTLY
+```
+
+Chart data is extracted from raw text **before** markdown parsing to prevent `marked.parse()` from converting double underscores to `<strong>` tags.
+
+Two chart types:
+- **Stock chart** — close price (blue fill), high (green dotted), low (red dotted)
+- **Equity curve** — equity line (blue fill) + initial capital dashed line (gray)
+
+### Follow-up Suggestion Pills
+
+After commands complete, contextual suggestion pills appear below the input. These include chart suggestions:
+
+| Command | Suggestions |
+|---------|------------|
+| `agent:backtest` (with run_id) | validate, `equity:{id}`, report, top |
+| `agent:validate` (with run_id) | `equity:{id}`, report, trades, top |
+| `price:AAPL` | `chart:AAPL`, news, analysts, financials |
+| `news:TSLA` | `chart:TSLA`, price, analysts, profile |
+| `analysts:GOOGL` | `chart:GOOGL`, price, news, financials |
 
 ## Theming
 
-The layout uses CSS custom properties with a light default and dark mode via `prefers-color-scheme`:
-
-```css
-:root {
-  --layout-bg: #f8fafc;        /* page background */
-  --layout-surface: #ffffff;    /* pane backgrounds */
-  --layout-border: #e2e8f0;    /* borders */
-  --layout-text: #1e293b;      /* primary text */
-  --layout-primary: #3b82f6;   /* accent blue */
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --layout-bg: #0f172a;
-    --layout-surface: #1e293b;
-    /* ... */
-  }
-}
-```
-
-Two CSS layers:
+Light-only theme. Two CSS layers:
 - **Layout CSS** (`LAYOUT_CSS` in `agui_app.py`) — 3-pane grid, sidebar, trace entries, auth forms
 - **Chat CSS** (`CHAT_UI_STYLES` in `utils/agui/styles.py`) — message bubbles, input form, streaming cursor
 

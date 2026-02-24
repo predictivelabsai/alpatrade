@@ -51,13 +51,100 @@ EOF
 alpatrade
 ```
 
+## Architecture
+
+```mermaid
+graph TB
+    subgraph Clients
+        CLI["Rich CLI<br/><code>alpatrade.py</code><br/>prompt_toolkit"]
+        AGUI["AG-UI Chat<br/><code>agui_app.py</code><br/>port 5003"]
+        WEB["Web UI<br/><code>web_app.py</code><br/>port 5002"]
+        API["REST API<br/><code>api_app.py</code><br/>port 5001"]
+    end
+
+    subgraph AI
+        AGENT["pydantic-ai Agent<br/>XAI Grok-3-mini"]
+        TOOLS["Agent Tools<br/>positions, charts,<br/>news, prices"]
+    end
+
+    subgraph Agents["Multi-Agent System"]
+        ORCH["Orchestrator"]
+        BT["Backtester"]
+        PT["Paper Trader"]
+        VAL["Validator"]
+        REC["Reconciler"]
+    end
+
+    subgraph External
+        ALPACA["Alpaca Paper API"]
+        MARKET["Market Data<br/>Polygon / yfinance"]
+        DB[("PostgreSQL<br/><code>alpatrade</code> schema")]
+    end
+
+    CLI -->|commands| ORCH
+    AGUI -->|WebSocket| AGENT
+    AGUI -->|CLI commands| ORCH
+    AGENT --> TOOLS
+    WEB --> ORCH
+    API --> ORCH
+
+    ORCH --> BT
+    ORCH --> PT
+    ORCH --> VAL
+    ORCH --> REC
+
+    BT --> MARKET
+    BT --> DB
+    PT --> ALPACA
+    PT --> DB
+    VAL --> MARKET
+    VAL --> DB
+    REC --> ALPACA
+    REC --> DB
+    TOOLS --> ALPACA
+    TOOLS --> MARKET
+    TOOLS --> DB
+```
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant C as AG-UI Chat
+    participant I as Command Interceptor
+    participant A as AI Agent
+    participant O as Orchestrator
+    participant DB as PostgreSQL
+
+    U->>C: "agent:backtest lookback:1m"
+    C->>I: detect CLI command
+    I->>O: process_command()
+    O-->>DB: store results
+    O-->>C: streaming logs + result
+    C-->>U: backtest card + equity pill
+
+    U->>C: "equity:592beaec"
+    C->>I: detect equity: command
+    I-->>DB: query trades
+    I-->>C: __CHART_DATA__ marker
+    C-->>U: Plotly equity curve
+
+    U->>C: "show me AAPL analysis"
+    C->>A: free-form → AI agent
+    A->>A: call tools (price, news)
+    A-->>C: streamed markdown
+    C-->>U: formatted response
+```
+
 ## Features
 
 - **Parameterized backtesting** — grid search over dip threshold, take profit, hold days, and stop loss to find optimal strategy parameters ranked by Sharpe ratio
-- **Paper trading** — continuous background trading on Alpaca's paper API with daily P&L email reports
+- **Paper trading** — continuous background trading on Alpaca's paper API with daily P&L email reports, startup order sync, and PDT protection
 - **Market research** — news, company profiles, financials, technicals, analyst ratings, and valuation comparisons
+- **Charts** — stock price charts and backtest equity curves rendered with Plotly in the artifacts pane
+- **Alpaca integration** — live positions, account summary, and order management via Alpaca paper API
 - **Multi-agent system** — backtest, validate, paper trade, reconcile, and report via an orchestrated agent pipeline
 - **Extended hours & intraday exits** — pre/after-market trading (4AM-8PM ET) and 5-minute bar TP/SL timing
+- **AI chat** — AG-UI protocol chat with pydantic-ai agent (XAI Grok-3-mini) for free-form stock research
 - **Interactive CLI** — prompt_toolkit-powered terminal with dropdown auto-completion, streaming log output, and Plotly equity curve charts
 
 ## Commands
@@ -75,6 +162,13 @@ financials:AAPL                     Income and balance sheet
 analysts:AAPL                       Ratings and price targets
 valuation:AAPL,MSFT                 Side-by-side valuation comparison
 movers                              Top market gainers and losers
+
+chart:AAPL                          Stock price chart (3mo default)
+chart:TSLA period:1y                Custom period chart
+equity:<run_id>                     Equity curve for a backtest run
+
+positions                           Open positions from Alpaca
+account                             Account summary (value, cash, buying power)
 
 trades                              Recent trades from DB
 runs                                Recent backtest/paper runs
