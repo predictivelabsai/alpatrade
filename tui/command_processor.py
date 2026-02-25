@@ -69,10 +69,21 @@ class CommandProcessor:
         elif cmd_lower == "runs":
             return self._agent_runs()
 
+        # Chart commands (open Plotly chart in browser)
+        first_word = cmd_lower.split()[0]
+        base = first_word.split(":")[0]
+        if base == "chart":
+            return await self._handle_chart_command(user_input)
+        elif base == "equity":
+            return await self._handle_equity_command(user_input)
+
+        # Alpaca account commands
+        if cmd_lower in ("positions", "account"):
+            return await self._handle_alpaca_command(cmd_lower)
+
         # Market research commands (colon syntax: news:TSLA, profile:AAPL)
         research_cmds = ("news", "profile", "financials", "price", "movers", "analysts", "valuation")
-        first_word = cmd_lower.split()[0]
-        research_base = first_word.split(":")[0]
+        research_base = base
         if research_base in research_cmds:
             return await self._handle_research_command(user_input)
 
@@ -213,6 +224,273 @@ class CommandProcessor:
                 return f"# Error\n\nUnknown research command: `{cmd}`"
         except Exception as e:
             return f"# Error\n\n```\n{e}\n```"
+
+    # ------------------------------------------------------------------
+    # Chart commands (open Plotly in browser)
+    # ------------------------------------------------------------------
+
+    async def _handle_chart_command(self, user_input: str) -> str:
+        """Handle chart:TICKER [period:3mo] — open stock price chart in browser."""
+        import webbrowser, tempfile, json
+
+        parts = user_input.strip().split()
+        first = parts[0]
+
+        if ":" not in first or not first.split(":", 1)[1]:
+            return "# Error\n\nUsage: `chart:AAPL` or `chart:AAPL period:1y`"
+
+        ticker = first.split(":", 1)[1].upper()
+
+        if ticker == "EQUITY":
+            return "# Did you mean `equity:<run_id>`?\n\nUse `equity:<run_id>` to view a backtest equity curve."
+
+        # Parse optional period param
+        period = "3mo"
+        for part in parts[1:]:
+            if part.lower().startswith("period:"):
+                period = part.split(":", 1)[1]
+
+        self.console.print(f"[dim]Fetching chart data for {ticker}...[/dim]")
+
+        try:
+            from utils.data_loader import get_intraday_data
+            interval = "1d" if period not in ("1d", "5d") else "5m"
+            df = await asyncio.to_thread(get_intraday_data, ticker, interval=interval, period=period)
+
+            if df.empty:
+                return f"# Error\n\nNo chart data for `{ticker}`"
+
+            dates = [d.isoformat() if hasattr(d, 'isoformat') else str(d) for d in df.index]
+            closes = [round(float(c), 2) for c in df["Close"]]
+            highs = [round(float(h), 2) for h in df["High"]]
+            lows = [round(float(l), 2) for l in df["Low"]]
+
+            chart_json = json.dumps({
+                "ticker": ticker,
+                "period": period,
+                "dates": dates,
+                "close": closes,
+                "high": highs,
+                "low": lows,
+            })
+
+            html = self._build_stock_chart_html(ticker, period, chart_json)
+            path = Path(tempfile.mktemp(suffix=".html", prefix=f"chart_{ticker}_"))
+            path.write_text(html)
+            webbrowser.open(f"file://{path}")
+
+            return f"# Chart: {ticker}\n\nOpened {period} price chart in your browser."
+
+        except Exception as e:
+            return f"# Error\n\n```\n{e}\n```"
+
+    async def _handle_equity_command(self, user_input: str) -> str:
+        """Handle equity:<run_id> — open equity curve chart in browser."""
+        import webbrowser, tempfile, json
+
+        msg = user_input.strip()
+        if ":" not in msg or not msg.split(":", 1)[1].strip():
+            return "# Error\n\nUsage: `equity:<run_id>`"
+
+        rid = msg.split(":", 1)[1].strip()
+
+        self.console.print(f"[dim]Fetching equity curve for {rid}...[/dim]")
+
+        try:
+            from utils.db.db_pool import DatabasePool
+            from sqlalchemy import text
+
+            pool = DatabasePool()
+            with pool.get_session() as session:
+                # Prefix matching
+                full_rid = rid
+                if len(rid) < 36:
+                    row = session.execute(
+                        text("SELECT run_id FROM alpatrade.runs WHERE CAST(run_id AS TEXT) LIKE :prefix ORDER BY created_at DESC LIMIT 1"),
+                        {"prefix": f"{rid}%"},
+                    ).fetchone()
+                    if not row:
+                        return f"# Error\n\nNo run found matching prefix `{rid}`"
+                    full_rid = str(row[0])
+
+                # Get initial_capital from runs.config JSONB
+                run_row = session.execute(
+                    text("SELECT config FROM alpatrade.runs WHERE run_id = :rid"),
+                    {"rid": full_rid},
+                ).fetchone()
+                initial_capital = 10000.0
+                if run_row and run_row[0]:
+                    cfg = run_row[0] if isinstance(run_row[0], dict) else json.loads(run_row[0])
+                    initial_capital = float(cfg.get("initial_capital", 10000))
+
+                # Get equity data from trades
+                trades = session.execute(
+                    text("""
+                        SELECT exit_time, capital_after
+                        FROM alpatrade.trades
+                        WHERE run_id = :rid AND exit_time IS NOT NULL AND capital_after IS NOT NULL
+                        ORDER BY exit_time ASC
+                    """),
+                    {"rid": full_rid},
+                ).fetchall()
+
+            if not trades:
+                return f"# Error\n\nNo trade data with equity info for run `{full_rid[:8]}`"
+
+            dates = [t[0].isoformat() if hasattr(t[0], 'isoformat') else str(t[0]) for t in trades]
+            equity = [round(float(t[1]), 2) for t in trades]
+
+            chart_json = json.dumps({
+                "type": "equity_curve",
+                "run_id": full_rid,
+                "dates": dates,
+                "equity": equity,
+                "initial_capital": initial_capital,
+            })
+
+            html = self._build_equity_chart_html(full_rid, chart_json)
+            path = Path(tempfile.mktemp(suffix=".html", prefix=f"equity_{full_rid[:8]}_"))
+            path.write_text(html)
+            webbrowser.open(f"file://{path}")
+
+            return f"# Equity Curve: {full_rid[:8]}...\n\nOpened equity curve chart in your browser."
+
+        except Exception as e:
+            return f"# Error\n\n```\n{e}\n```"
+
+    async def _handle_alpaca_command(self, cmd: str) -> str:
+        """Handle positions/account commands via Alpaca API."""
+        try:
+            from utils.alpaca_util import AlpacaAPI
+            client = AlpacaAPI(paper=True)
+
+            if cmd == "positions":
+                self.console.print("[dim]Fetching positions...[/dim]")
+                positions = await asyncio.to_thread(client.get_positions)
+                if not positions:
+                    return "# Positions\n\nNo open positions."
+                if isinstance(positions, dict) and "error" in positions:
+                    return f"# Error\n\n{positions['error']}"
+                md = "# Open Positions\n\n"
+                md += "| Symbol | Qty | Entry | Current | P&L | P&L% |\n"
+                md += "|--------|-----|-------|---------|-----|------|\n"
+                for p in positions:
+                    sym = p.get("symbol", "?")
+                    qty = float(p.get("qty", 0))
+                    entry = float(p.get("avg_entry_price", 0))
+                    current = float(p.get("current_price", 0))
+                    pnl = float(p.get("unrealized_pl", 0))
+                    pct = float(p.get("unrealized_plpc", 0)) * 100
+                    md += f"| {sym} | {qty:.0f} | ${entry:.2f} | ${current:.2f} | ${pnl:.2f} | {pct:.1f}% |\n"
+                return md
+
+            elif cmd == "account":
+                self.console.print("[dim]Fetching account...[/dim]")
+                acct = await asyncio.to_thread(client.get_account)
+                if isinstance(acct, dict) and "error" in acct:
+                    return f"# Error\n\n{acct['error']}"
+                equity = float(acct.get("equity", 0))
+                cash = float(acct.get("cash", 0))
+                buying_power = float(acct.get("buying_power", 0))
+                portfolio_value = float(acct.get("portfolio_value", 0))
+                pnl = float(acct.get("unrealized_pl", 0) or 0)
+                daytrade_count = acct.get("daytrade_count", "?")
+                md = "# Account Summary\n\n"
+                md += "| Metric | Value |\n|--------|-------|\n"
+                md += f"| Portfolio Value | ${portfolio_value:,.2f} |\n"
+                md += f"| Equity | ${equity:,.2f} |\n"
+                md += f"| Cash | ${cash:,.2f} |\n"
+                md += f"| Buying Power | ${buying_power:,.2f} |\n"
+                md += f"| Unrealized P&L | ${pnl:,.2f} |\n"
+                md += f"| Day Trades (5d) | {daytrade_count} |\n"
+                return md
+
+        except Exception as e:
+            return f"# Error\n\n```\n{e}\n```"
+
+    def _build_stock_chart_html(self, ticker: str, period: str, chart_json: str) -> str:
+        """Build a self-contained HTML page with a Plotly stock chart."""
+        return f"""<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>{ticker} — {period} Price Chart</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  body {{ margin: 0; background: #0f172a; font-family: system-ui, sans-serif; }}
+  #chart {{ width: 100vw; height: 100vh; }}
+</style>
+</head><body>
+<div id="chart"></div>
+<script>
+var raw = {chart_json};
+var trace1 = {{
+  x: raw.dates, y: raw.close, type: 'scatter', mode: 'lines',
+  name: 'Close', line: {{ color: '#3b82f6', width: 2 }},
+  fill: 'tozeroy', fillcolor: 'rgba(59,130,246,0.1)'
+}};
+var trace2 = {{
+  x: raw.dates, y: raw.high, type: 'scatter', mode: 'lines',
+  name: 'High', line: {{ color: '#22c55e', width: 1, dash: 'dot' }}
+}};
+var trace3 = {{
+  x: raw.dates, y: raw.low, type: 'scatter', mode: 'lines',
+  name: 'Low', line: {{ color: '#ef4444', width: 1, dash: 'dot' }}
+}};
+Plotly.newPlot('chart', [trace1, trace2, trace3], {{
+  title: raw.ticker + ' — ' + raw.period + ' Price Chart',
+  paper_bgcolor: '#0f172a', plot_bgcolor: '#1e293b',
+  font: {{ color: '#e2e8f0' }},
+  xaxis: {{ gridcolor: '#334155' }},
+  yaxis: {{ gridcolor: '#334155', title: 'Price ($)' }},
+  hovermode: 'x unified',
+  margin: {{ t: 50, b: 50, l: 60, r: 30 }}
+}}, {{ responsive: true }});
+</script>
+</body></html>"""
+
+    def _build_equity_chart_html(self, run_id: str, chart_json: str) -> str:
+        """Build a self-contained HTML page with a Plotly equity curve chart."""
+        return f"""<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>Equity Curve — {run_id[:8]}</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  body {{ margin: 0; background: #0f172a; font-family: system-ui, sans-serif; }}
+  #chart {{ width: 100vw; height: 100vh; }}
+</style>
+</head><body>
+<div id="chart"></div>
+<script>
+var raw = {chart_json};
+var trace1 = {{
+  x: raw.dates, y: raw.equity, type: 'scatter', mode: 'lines',
+  name: 'Equity', line: {{ color: '#3b82f6', width: 2 }},
+  fill: 'tozeroy', fillcolor: 'rgba(59,130,246,0.1)'
+}};
+var shapes = [{{
+  type: 'line', x0: raw.dates[0], x1: raw.dates[raw.dates.length-1],
+  y0: raw.initial_capital, y1: raw.initial_capital,
+  line: {{ color: '#64748b', width: 2, dash: 'dash' }}
+}}];
+Plotly.newPlot('chart', [trace1], {{
+  title: 'Equity Curve — ' + raw.run_id.substring(0, 8),
+  paper_bgcolor: '#0f172a', plot_bgcolor: '#1e293b',
+  font: {{ color: '#e2e8f0' }},
+  xaxis: {{ gridcolor: '#334155' }},
+  yaxis: {{ gridcolor: '#334155', title: 'Portfolio Value ($)' }},
+  shapes: shapes,
+  annotations: [{{
+    x: raw.dates[raw.dates.length-1], y: raw.initial_capital,
+    text: 'Initial Capital ($' + raw.initial_capital.toLocaleString() + ')',
+    showarrow: false, font: {{ color: '#94a3b8', size: 12 }},
+    xanchor: 'right', yshift: 12
+  }}],
+  hovermode: 'x unified',
+  margin: {{ t: 50, b: 50, l: 60, r: 30 }}
+}}, {{ responsive: true }});
+</script>
+</body></html>"""
 
     # ------------------------------------------------------------------
     # Agent command dispatcher
