@@ -92,9 +92,6 @@ class PDTTracker:
         elif pdt_flagged and equity < 25000:
             blocked = True
             reason = f"PDT-flagged account with equity ${equity:,.2f} < $25k"
-        elif daytrade_count >= 3 and equity < 25000:
-            blocked = True
-            reason = f"At {daytrade_count} day trades with equity ${equity:,.2f} < $25k — next day trade would trigger PDT flag"
 
         return {
             "blocked": blocked,

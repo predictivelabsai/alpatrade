@@ -112,7 +112,7 @@ class PaperTradeAgent:
 
         # --- PDT bootstrap ---
         if self.pdt_tracker:
-            # 1. Check account-level PDT status
+            # 1. Check account-level PDT status (hard blocks only)
             pdt_status = PDTTracker.check_account_pdt_status(account)
             if pdt_status["blocked"]:
                 logger.error(f"PDT BLOCKED: {pdt_status['reason']}")
@@ -125,9 +125,21 @@ class PaperTradeAgent:
                 self.pdt_tracker.bootstrap(db_day_trades)
                 logger.info(f"PDT tracker bootstrapped with {len(db_day_trades)} DB day trades")
 
-            count = self.pdt_tracker.get_day_trade_count(datetime.now(timezone.utc))
-            logger.info(f"PDT status: {count}/3 day trades in window, "
-                        f"Alpaca daytrade_count={pdt_status['daytrade_count']}")
+            # 3. Cross-check with Alpaca's count — use the higher of the two
+            alpaca_count = pdt_status["daytrade_count"]
+            tracker_count = self.pdt_tracker.get_day_trade_count(datetime.now(timezone.utc))
+            if alpaca_count > tracker_count:
+                # Alpaca knows about day trades our DB missed — sync up
+                for _ in range(alpaca_count - tracker_count):
+                    self.pdt_tracker.record_day_trade(datetime.now(timezone.utc), "_synced")
+                logger.info(f"PDT tracker synced: added {alpaca_count - tracker_count} missing day trades from Alpaca")
+                tracker_count = alpaca_count
+
+            if tracker_count >= 3:
+                logger.warning(f"PDT: at {tracker_count}/3 day trades — new entries and same-day exits blocked, but multi-day exits still allowed")
+            else:
+                logger.info(f"PDT status: {tracker_count}/3 day trades in window, "
+                            f"Alpaca daytrade_count={alpaca_count}")
 
         # --- Sync open orders and positions from Alpaca ---
         self._sync_orders_and_positions()
