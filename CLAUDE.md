@@ -36,7 +36,10 @@ Trading strategy simulator, backtester, and paper trader.
 **NEVER copy, persist, log, or document actual secret values.** API keys, tokens, passwords, and connection strings from `.env` must only be used transiently during runtime. Specifically:
 - Do not write secret values into source files, docs, markdown, YAML, or memory files
 - Do not include secrets in commit messages, comments, or debug output
+- Do not hardcode API keys in any source file — always read from environment variables
 - Reference secrets by variable name only (e.g. `ALPACA_PAPER_API_KEY=...`)
+- **XAI_API_KEY** is especially sensitive — a prior key was leaked via GitHub and revoked. Never embed xAI keys in code, configs, notebooks, or tool output
+- Before committing, verify no secrets appear in `git diff` output
 - If a secret is accidentally committed, immediately purge it from git history with `git-filter-repo`
 
 ## Required Environment Variables (.env)
