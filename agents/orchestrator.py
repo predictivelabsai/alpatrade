@@ -292,7 +292,7 @@ class Orchestrator:
         )
 
         try:
-            result = self.paper_trader.run(request, stop_event=stop_event)
+            result = self.paper_trader.run(request, stop_event=stop_event, run_id=self.run_id)
             agent_state.set_completed()
             self.state.paper_trade_session = result
             self.state.save()

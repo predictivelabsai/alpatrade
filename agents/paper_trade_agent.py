@@ -46,7 +46,7 @@ class PaperTradeAgent:
         self._tracked_positions: Dict[str, Dict] = {}
         self.pdt_tracker = PDTTracker()
 
-    def run(self, request: Dict[str, Any], stop_event=None) -> Dict[str, Any]:
+    def run(self, request: Dict[str, Any], stop_event=None, run_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Run paper trading session.
 
@@ -58,10 +58,14 @@ class PaperTradeAgent:
                 - duration_seconds: int (default 604800 = 1 week)
                 - poll_interval_seconds: int (default 300 = 5 min)
             stop_event: optional threading.Event checked each loop iteration
+            run_id: optional orchestrator run_id (must exist in alpatrade.runs)
 
         Returns:
             Dict with session summary
         """
+        # Use orchestrator's run_id if provided so trades FK to the runs table
+        if run_id:
+            self.session_id = run_id
         # Load defaults from parameters.yaml
         yaml_params = load_parameters()
         yaml_cfg = yaml_params.get("buy_the_dip", {})
