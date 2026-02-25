@@ -257,24 +257,65 @@ class PaperTradeAgent:
         try:
             positions = self.client.get_positions()
             if isinstance(positions, list) and positions:
+                # Query recent filled buy orders to determine actual entry dates
+                entry_times = self._lookup_entry_times(
+                    [p.get("symbol") for p in positions if p.get("symbol")]
+                )
+
                 for pos in positions:
                     symbol = pos.get("symbol")
                     if symbol and symbol not in self._tracked_positions:
-                        # Position exists in Alpaca but not tracked locally —
-                        # likely from a prior session. Track it with unknown entry time
-                        # so hold_days triggers HOLD_EXPIRED exit.
+                        entry_time = entry_times.get(symbol)
                         self._tracked_positions[symbol] = {
-                            "entry_time": None,
+                            "entry_time": entry_time,
                             "entry_price": float(pos.get("avg_entry_price", 0)),
                             "qty": float(pos.get("qty", 0)),
                         }
+                        et_label = entry_time[:19] if entry_time else "unknown"
                         logger.info(
                             f"Synced existing position: {symbol} "
-                            f"qty={pos.get('qty')} @ ${float(pos.get('avg_entry_price', 0)):.2f}"
+                            f"qty={pos.get('qty')} @ ${float(pos.get('avg_entry_price', 0)):.2f} "
+                            f"(entered: {et_label})"
                         )
                 logger.info(f"Position sync complete: {len(self._tracked_positions)} positions tracked")
         except Exception as e:
             logger.warning(f"Could not sync positions: {e}")
+
+    def _lookup_entry_times(self, symbols: List[str]) -> Dict[str, str]:
+        """Query Alpaca filled buy orders to find actual entry times for positions.
+
+        Returns dict of symbol -> ISO datetime string for the most recent
+        filled buy order per symbol.
+        """
+        entry_times: Dict[str, str] = {}
+        try:
+            # Query filled orders from last 7 days
+            after = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+            orders = self.client.get_orders(status='closed', after=after, limit=200)
+            if not isinstance(orders, list):
+                return entry_times
+
+            # Find most recent filled buy order per symbol
+            for order in orders:
+                sym = order.get("symbol")
+                if sym not in symbols:
+                    continue
+                if str(order.get("side", "")).lower() != "buy":
+                    continue
+                if str(order.get("status", "")).lower() != "filled":
+                    continue
+                filled_at = order.get("filled_at")
+                if filled_at and sym not in entry_times:
+                    # Orders are returned newest-first, so first match is most recent
+                    if hasattr(filled_at, 'isoformat'):
+                        entry_times[sym] = filled_at.isoformat()
+                    else:
+                        entry_times[sym] = str(filled_at)
+
+        except Exception as e:
+            logger.warning(f"Could not look up entry times from Alpaca orders: {e}")
+
+        return entry_times
 
     def _process_exits(self, take_profit, stop_loss, hold_days):
         """Check existing positions for exit signals."""
@@ -326,13 +367,16 @@ class PaperTradeAgent:
                 else:
                     days_held = 99
 
-                # PDT protection using tracker
-                if self.pdt_tracker and entry_time_str:
+                # PDT protection — determine if selling would be a day trade
+                is_same_day = False
+                if entry_time_str:
                     entry_dt = datetime.fromisoformat(entry_time_str)
-                    if entry_dt.date() == datetime.now(timezone.utc).date():
-                        if not self.pdt_tracker.can_day_trade(datetime.now(timezone.utc)):
-                            logger.debug(f"PDT protection: cannot sell {symbol} same day (3 day trades in 5-day window)")
-                            continue
+                    is_same_day = entry_dt.date() == datetime.now(timezone.utc).date()
+
+                if self.pdt_tracker and is_same_day:
+                    if not self.pdt_tracker.can_day_trade(datetime.now(timezone.utc)):
+                        logger.debug(f"PDT protection: cannot sell {symbol} same day (3 day trades in 5-day window)")
+                        continue
 
                 exit_reason = None
                 if unrealized_pct >= take_profit:
@@ -343,9 +387,9 @@ class PaperTradeAgent:
                     exit_reason = f"HOLD_EXPIRED ({days_held}d)"
 
                 if exit_reason:
-                    # Account-level PDT check before closing
-                    if self._is_pdt_blocked():
-                        logger.warning(f"PDT blocked: cannot exit {symbol}, skipping")
+                    # Account-level PDT check — only relevant for same-day exits
+                    if is_same_day and self._is_pdt_blocked():
+                        logger.warning(f"PDT blocked: cannot exit {symbol} (same-day, would be day trade)")
                         continue
 
                     logger.info(f"EXIT {symbol}: {exit_reason}")
