@@ -4,11 +4,8 @@ prompt_toolkit CLI interface for AlpaTrade.
 Dropdown auto-completion variant of the Rich CLI.
 """
 import asyncio
-import threading
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
-from prompt_toolkit.formatted_text import HTML
-from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
@@ -19,6 +16,9 @@ from tui.pt_completer import PTCommandCompleter
 class PTStrategyCLI(StrategyCLI):
     """StrategyCLI with prompt_toolkit dropdown completion instead of readline."""
 
+    def __init__(self, user_id=None, user_email=None, user_display=None):
+        super().__init__(user_id=user_id, user_email=user_email, user_display=user_display)
+
     async def run(self):
         """Run the CLI interactive loop with prompt_toolkit."""
         session = PromptSession(
@@ -27,9 +27,14 @@ class PTStrategyCLI(StrategyCLI):
             complete_while_typing=False,
         )
 
+        if self.user_display:
+            user_line = f"Logged in as [bold green]{self.user_display}[/bold green]"
+        else:
+            user_line = "[yellow]Not logged in[/yellow] — type [bold]login[/bold] to authenticate"
+
         welcome = Panel.fit(
             "[bold cyan]AlpaTrade CLI[/bold cyan] [dim](prompt_toolkit)[/dim]\n"
-            "Backtest, paper trade, and monitor the multi-agent trading system\n\n"
+            f"{user_line}\n\n"
             "Type [yellow]'help'[/yellow] for commands, "
             "[yellow]TAB[/yellow] for dropdown, or [yellow]'q'[/yellow] to quit",
             border_style="cyan"
@@ -58,8 +63,9 @@ help                                      Full reference
                 default = self._suggested_command or ""
                 self._suggested_command = ""
 
+                prompt_prefix = f"{self.user_display} > " if self.user_display else "> "
                 user_input = await session.prompt_async(
-                    "> ",
+                    prompt_prefix,
                     default=default,
                 )
                 user_input = user_input.strip()

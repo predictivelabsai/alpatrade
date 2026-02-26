@@ -4,7 +4,10 @@ Rich CLI interface for AlpaTrade.
 Interactive command loop with Rich formatting and built-in trades/runs views.
 """
 import asyncio
-import readline  # noqa: F401 — enables arrow keys, history in input()
+try:
+    import readline  # noqa: F401 — enables arrow keys, history in input()
+except ModuleNotFoundError:
+    pass  # readline unavailable on Windows; arrow keys still work via prompt_toolkit
 import threading
 from typing import Optional
 from rich.console import Console
@@ -16,8 +19,11 @@ from rich.table import Table
 class StrategyCLI:
     """Rich-based CLI application for AlpaTrade trading system."""
 
-    def __init__(self):
+    def __init__(self, user_id: Optional[str] = None, user_email: Optional[str] = None, user_display: Optional[str] = None):
         self.console = Console()
+        self.user_id = user_id
+        self.user_email = user_email
+        self.user_display = user_display or user_email  # fallback to email if no name
         self.command_history = []
         self.current_strategy = None
         self.current_symbols = []
@@ -35,15 +41,17 @@ class StrategyCLI:
 
             pool = DatabasePool()
             with pool.get_session() as session:
-                result = session.execute(
-                    text("""
-                        SELECT symbol, direction, shares, entry_price, exit_price,
-                               pnl, pnl_pct, trade_type, run_id
-                        FROM alpatrade.trades
-                        ORDER BY created_at DESC
-                        LIMIT 100
-                    """)
-                )
+                sql = """
+                    SELECT symbol, direction, shares, entry_price, exit_price,
+                           pnl, pnl_pct, trade_type, run_id
+                    FROM alpatrade.trades
+                """
+                bind = {}
+                if self.user_id:
+                    sql += " WHERE user_id = :user_id"
+                    bind["user_id"] = self.user_id
+                sql += " ORDER BY created_at DESC LIMIT 100"
+                result = session.execute(text(sql), bind)
                 rows = result.fetchall()
 
             if not rows:
@@ -91,14 +99,16 @@ class StrategyCLI:
 
             pool = DatabasePool()
             with pool.get_session() as session:
-                result = session.execute(
-                    text("""
-                        SELECT run_id, mode, strategy, status, started_at
-                        FROM alpatrade.runs
-                        ORDER BY created_at DESC
-                        LIMIT 50
-                    """)
-                )
+                sql = """
+                    SELECT run_id, mode, strategy, status, started_at
+                    FROM alpatrade.runs
+                """
+                bind = {}
+                if self.user_id:
+                    sql += " WHERE user_id = :user_id"
+                    bind["user_id"] = self.user_id
+                sql += " ORDER BY created_at DESC LIMIT 50"
+                result = session.execute(text(sql), bind)
                 rows = result.fetchall()
 
             if not rows:
@@ -131,6 +141,28 @@ class StrategyCLI:
         except Exception as e:
             self.console.print(f"\n[red]Error loading runs:[/red] {e}\n")
 
+    def _handle_login(self):
+        """Re-authenticate during a session."""
+        from tui.cli_auth import cli_login
+        user_id, user_email, user_display = cli_login(self.console)
+        if user_id:
+            self.user_id = user_id
+            self.user_email = user_email
+            self.user_display = user_display or user_email
+            # Reset orchestrator so it picks up the new user_id
+            self._orch = None
+
+    def _handle_logout(self):
+        """Clear current user session."""
+        if self.user_id:
+            self.console.print(f"\n  [yellow]Logged out from {self.user_display}[/yellow]\n")
+            self.user_id = None
+            self.user_email = None
+            self.user_display = None
+            self._orch = None
+        else:
+            self.console.print("\n  [yellow]Not logged in.[/yellow]\n")
+
     def _cleanup_and_exit(self):
         """Signal background task to stop and force-exit the process.
 
@@ -145,6 +177,20 @@ class StrategyCLI:
     async def process_command(self, command: str):
         """Process a user command and display results."""
         cmd_lower = command.strip().lower()
+
+        # Login / logout commands
+        if cmd_lower == "login":
+            self._handle_login()
+            return
+        if cmd_lower == "logout":
+            self._handle_logout()
+            return
+        if cmd_lower == "whoami":
+            if self.user_id:
+                self.console.print(f"\n  Logged in as [bold cyan]{self.user_display}[/bold cyan]\n")
+            else:
+                self.console.print("\n  [yellow]Not logged in.[/yellow] Type [bold]login[/bold] to authenticate.\n")
+            return
 
         # Handle built-in table views directly (fast, no markdown)
         if cmd_lower == "trades":
@@ -171,7 +217,7 @@ class StrategyCLI:
 
         from tui.command_processor import CommandProcessor
 
-        processor = CommandProcessor(self)
+        processor = CommandProcessor(self, user_id=self.user_id)
 
         try:
             result = await processor.process_command(command)

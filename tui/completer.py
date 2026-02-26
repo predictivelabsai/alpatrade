@@ -1,8 +1,14 @@
 """Tab-completion for the Rich CLI."""
 
-import readline
+try:
+    import readline
+except ModuleNotFoundError:
+    readline = None  # type: ignore[assignment]  # unavailable on Windows
 
 COMMANDS = {
+    "login": {},
+    "logout": {},
+    "whoami": {},
     "help": {},
     "status": {},
     "trades": {},
@@ -77,6 +83,8 @@ COMMANDS = {
 
 def setup_completer():
     """Configure readline with tab-completion. Handles both GNU readline and libedit."""
+    if readline is None:
+        return  # prompt_toolkit handles completion on Windows
     completer = CommandCompleter()
     readline.set_completer(completer.complete)
     readline.set_completer_delims(readline.get_completer_delims().replace(":", ""))
