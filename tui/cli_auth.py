@@ -12,7 +12,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 
-PROD_URL = "https://alpatrade.dev"
+PROD_URL = "https://alpatrade.chat"
 LOCAL_URL = "http://localhost:5002"
 MAX_ATTEMPTS = 3
 
