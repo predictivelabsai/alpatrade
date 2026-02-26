@@ -3,7 +3,6 @@
 AlpaTrade CLI - Main Entry Point
 Interactive CLI with prompt_toolkit dropdown auto-completion.
 """
-import os
 import logging
 from pathlib import Path
 from dotenv import load_dotenv
@@ -29,9 +28,15 @@ def main():
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
 
+    from rich.console import Console
+    from tui.cli_auth import cli_login
+
+    console = Console()
+    user_id, user_email, user_display = cli_login(console)
+
     from tui.pt_cli import PTStrategyCLI
     import asyncio
-    cli = PTStrategyCLI()
+    cli = PTStrategyCLI(user_id=user_id, user_email=user_email, user_display=user_display)
     asyncio.run(cli.run())
 
 
