@@ -526,13 +526,15 @@ Plotly.newPlot('chart', [trace1], {{
             return self._agent_stop()
         elif subcmd == "agent:logs":
             return self._agent_logs(params)
+        elif subcmd == "agent:pnl":
+            return self._agent_pnl(params)
         else:
             return (
                 f"# Unknown Agent Command\n\n`{subcmd}` is not recognized.\n\n"
                 "Available: `agent:backtest`, `agent:validate`, `agent:paper`, "
                 "`agent:full`, `agent:reconcile`, `agent:report`, `agent:top`, "
                 "`agent:status`, `agent:runs`, `agent:trades`, `agent:stop`, "
-                "`agent:logs`"
+                "`agent:logs`, `agent:pnl`"
             )
 
     def _parse_kv_params(self, parts: list) -> Dict[str, str]:
@@ -1434,6 +1436,131 @@ Plotly.newPlot('chart', [trace1], {{
             return f"# Error\n\n```\n{e}\n```"
 
     # ------------------------------------------------------------------
+    # agent:pnl
+    # ------------------------------------------------------------------
+
+    def _agent_pnl(self, params: Dict) -> str:
+        """P&L breakdown for a specific run."""
+        run_id = params.get("run-id")
+        if not run_id:
+            return "# P&L\n\nUsage: `agent:pnl run-id:<uuid>`"
+
+        try:
+            from utils.db.db_pool import DatabasePool
+            from sqlalchemy import text
+
+            pool = DatabasePool()
+            with pool.get_session() as session:
+                # Get run metadata
+                run_bind: Dict[str, Any] = {"run_id": run_id}
+                if self.user_id:
+                    run_bind["user_id"] = self.user_id
+                user_filter = " AND user_id = :user_id" if self.user_id else ""
+                run_row = session.execute(
+                    text(f"SELECT mode, strategy, status FROM alpatrade.runs "
+                         f"WHERE run_id = :run_id{user_filter}"),
+                    run_bind,
+                ).fetchone()
+
+                if not run_row:
+                    return f"# P&L\n\nRun `{run_id}` not found."
+
+                mode, strategy, status = run_row
+
+                # Get trades for this run
+                trades = session.execute(
+                    text("SELECT symbol, direction, shares, entry_price, exit_price, "
+                         "pnl, pnl_pct, total_fees, exit_time "
+                         "FROM alpatrade.trades WHERE run_id = :run_id "
+                         "ORDER BY exit_time ASC NULLS LAST"),
+                    {"run_id": run_id},
+                ).fetchall()
+
+                # Get backtest summary metrics if available
+                summary_row = session.execute(
+                    text("SELECT sharpe_ratio, total_return, total_pnl, win_rate "
+                         "FROM alpatrade.backtest_summaries "
+                         "WHERE run_id = :run_id AND is_best = true LIMIT 1"),
+                    {"run_id": run_id},
+                ).fetchone()
+
+            if not trades:
+                return f"# P&L — {run_id[:8]}...\n\nNo trades found for this run."
+
+            # Compute aggregates
+            total_pnl = sum(float(t[5] or 0) for t in trades)
+            total_fees = sum(float(t[7] or 0) for t in trades)
+            wins = sum(1 for t in trades if (t[5] or 0) > 0)
+            losses = sum(1 for t in trades if (t[5] or 0) <= 0)
+            total = len(trades)
+            win_rate = (wins / total * 100) if total else 0
+
+            sharpe = float(summary_row[0]) if summary_row and summary_row[0] else None
+            total_return = float(summary_row[1]) if summary_row and summary_row[1] else None
+
+            short_id = run_id[:8]
+            md = f"# P&L Breakdown — `{short_id}...`\n\n"
+
+            # Summary header
+            md += "| Metric | Value |\n|--------|-------|\n"
+            md += f"| Mode | {mode} |\n"
+            md += f"| Strategy | {strategy or '-'} |\n"
+            md += f"| Status | {status} |\n"
+            md += f"| Total P&L | ${total_pnl:,.2f} |\n"
+            md += f"| Total Fees | ${total_fees:,.2f} |\n"
+            if total_return is not None:
+                md += f"| Total Return | {total_return:.2f}% |\n"
+            if sharpe is not None:
+                md += f"| Sharpe Ratio | {sharpe:.2f} |\n"
+            md += f"| Win Rate | {win_rate:.1f}% ({wins}W / {losses}L) |\n"
+            md += f"| Total Trades | {total} |\n\n"
+
+            # Per-symbol breakdown
+            from collections import defaultdict
+            by_symbol: Dict[str, Dict[str, Any]] = defaultdict(
+                lambda: {"pnl": 0.0, "fees": 0.0, "count": 0, "wins": 0, "losses": 0}
+            )
+            for t in trades:
+                sym = t[0] or "UNKNOWN"
+                pnl_val = float(t[5] or 0)
+                by_symbol[sym]["pnl"] += pnl_val
+                by_symbol[sym]["fees"] += float(t[7] or 0)
+                by_symbol[sym]["count"] += 1
+                if pnl_val > 0:
+                    by_symbol[sym]["wins"] += 1
+                else:
+                    by_symbol[sym]["losses"] += 1
+
+            md += "## Per Symbol\n\n"
+            md += "| Symbol | Trades | Wins | Losses | Total P&L | Avg P&L |\n"
+            md += "|--------|--------|------|--------|-----------|--------|\n"
+            for sym in sorted(by_symbol, key=lambda s: by_symbol[s]["pnl"], reverse=True):
+                s = by_symbol[sym]
+                avg = s["pnl"] / s["count"] if s["count"] else 0
+                md += (
+                    f"| {sym} | {s['count']} | {s['wins']} | {s['losses']} | "
+                    f"${s['pnl']:,.2f} | ${avg:,.2f} |\n"
+                )
+
+            # Top trades
+            sorted_trades = sorted(trades, key=lambda t: float(t[5] or 0), reverse=True)
+            top_n = min(10, len(sorted_trades))
+            md += f"\n## Top {top_n} Trades\n\n"
+            md += "| Symbol | Dir | Shares | Entry | Exit | P&L | P&L% |\n"
+            md += "|--------|-----|--------|-------|------|-----|------|\n"
+            for t in sorted_trades[:top_n]:
+                md += (
+                    f"| {t[0]} | {t[1]} | {float(t[2] or 0):.0f} | "
+                    f"${float(t[3] or 0):.2f} | ${float(t[4] or 0):.2f} | "
+                    f"${float(t[5] or 0):.2f} | {float(t[6] or 0):.2f}% |\n"
+                )
+
+            return md
+
+        except Exception as e:
+            return f"# Error\n\n```\n{e}\n```"
+
+    # ------------------------------------------------------------------
     # Help
     # ------------------------------------------------------------------
 
@@ -1515,6 +1642,7 @@ Plotly.newPlot('chart', [trace1], {{
         col3.add_row("agent:top", "rank strategies")
         col3.add_row("agent:status", "agent states")
         col3.add_row("agent:logs", "paper trade log tail")
+        col3.add_row("agent:pnl run-id:<id>", "P&L breakdown")
         col3.add_row("agent:stop", "stop background task")
         col3.add_row("", "")
         col3.add_row("[bold white]Options[/bold white]", "")
