@@ -427,6 +427,29 @@ def _nav(session):
     if user:
         name = user.get("display_name") or user.get("email", "user")
         links.append(A(name, href="/profile", style="color: var(--pico-color); font-weight: 600;"))
+        
+        from utils.auth import get_user_accounts
+        accounts = get_user_accounts(user["user_id"])
+        if accounts:
+            uss = _get_user_session(session) if session else None
+            active_id = uss.cli.account_id if uss else None
+            if not active_id and accounts:
+                active_id = accounts[0]["account_id"]
+                if uss:
+                    uss.cli.account_id = active_id
+                
+            opts = []
+            for acc in accounts:
+                selected = str(acc["account_id"]) == str(active_id)
+                opts.append(Option(acc["account_name"], value=str(acc["account_id"]), selected=selected))
+            
+            sel = Select(*opts, 
+                         name="account_id", 
+                         hx_post="/set_account", 
+                         hx_swap="none", 
+                         style="width: 150px; padding: 0.2rem 0.5rem; margin: 0; font-size: 0.85em; display: inline-block;")
+            links.append(sel)
+
         links.append(A("Logout", href="/logout"))
     else:
         links.append(A("Sign up", href="/register"))
@@ -535,6 +558,16 @@ async def post(command: str, session):
 
         uss = _get_user_session(session)
 
+        # ---- Account management commands (web-specific rendering) ----
+        if cmd_lower == "accounts":
+            return _web_show_accounts(command, uss)
+
+        if cmd_lower.startswith("account:add"):
+            return _web_account_add(command, uss)
+
+        if cmd_lower.startswith("account:switch"):
+            return _web_account_switch(command, uss)
+
         # Check if this is a long-running agent command
         first_word = cmd_lower.split()[0] if cmd_lower.split() else ""
         if first_word in _STREAMING_COMMANDS:
@@ -598,15 +631,178 @@ def _start_streaming_command(command: str, uss: UserSessionState):
     return Div(
         P(B(f"> {command}"), cls="cmd-echo"),
         Div(
-            Pre("Starting...", cls="log-pre"),
-            id="log-console", cls="log-console",
-            hx_get="/logs", hx_trigger="every 1s", hx_swap="innerHTML",
+            Button("Stop", hx_post="/stop_cmd", hx_target="#output", hx_swap="beforeend",
+                   cls="copy-btn", style="background:#dc3545;"),
+            Pre(Code("Starting...", id="log-output-code"), cls="log-pre"),
+            cls="log-console", id="log-console",
+            hx_ext="sse", sse_connect="/stream_logs", sse_swap="logMsg",
         ),
         cls="cmd-entry",
     )
 
 
-@rt("/logs")
+# ---------------------------------------------------------------------------
+# Web-specific account management helpers
+# ---------------------------------------------------------------------------
+
+
+def _web_show_accounts(command: str, uss):
+    """Render the user's accounts as an HTML table."""
+    from utils.auth import get_user_accounts
+    if not uss or not uss.user_id:
+        return Div(P(B(f"> {command}"), cls="cmd-echo"), P("Not logged in."), cls="cmd-entry")
+
+    accounts = get_user_accounts(uss.user_id)
+    if not accounts:
+        return Div(
+            P(B(f"> {command}"), cls="cmd-echo"),
+            P("No accounts found. Use ", Code("account:add <API_KEY> <SECRET_KEY>"), " to add one."),
+            cls="cmd-entry",
+        )
+
+    active_id = uss.cli.account_id
+    rows = []
+    for i, acc in enumerate(accounts, 1):
+        is_current = str(acc["account_id"]) == str(active_id)
+        marker = " ◀" if is_current else ""
+        rows.append(Tr(
+            Td(str(i)),
+            Td(B(acc["account_name"] + marker) if is_current else acc["account_name"]),
+            Td(Code(acc.get("api_key_hint", "****"))),
+            Td("✓"),
+        ))
+
+    tbl = Table(
+        Thead(Tr(Th("#"), Th("Name"), Th("API Key"), Th("Active"))),
+        Tbody(*rows),
+        style="width:100%; margin:0.5rem 0;",
+    )
+    return Div(
+        P(B(f"> {command}"), cls="cmd-echo"),
+        tbl,
+        P(Code("account:switch 1"), " or ", Code("account:switch <name>"), style="color:gray; font-size:0.85em;"),
+        cls="cmd-entry",
+    )
+
+
+def _web_account_add(command: str, uss):
+    """Add a new Alpaca account from the web terminal."""
+    if not uss or not uss.user_id:
+        return Div(P(B(f"> {command}"), cls="cmd-echo"), P("Not logged in."), cls="cmd-entry")
+
+    parts = command.split()
+    if len(parts) < 3:
+        return Div(
+            P(B(f"> {command}"), cls="cmd-echo"),
+            P("Usage: ", Code("account:add <API_KEY> <SECRET_KEY>")),
+            P("Example: ", Code("account:add PKXXXXXXXX ECpXXXXXXXX"), style="color:gray; font-size:0.85em;"),
+            cls="cmd-entry",
+        )
+
+    api_key = parts[1].strip()
+    sec_key = parts[2].strip()
+
+    # Auto-detect account name from Alpaca
+    acc_name = f"Account ({api_key[:6]}...)"
+    status_msgs = []
+    try:
+        from utils.alpaca_util import AlpacaAPI
+        client = AlpacaAPI(api_key=api_key, secret_key=sec_key, paper=True)
+        acct_info = client.get_account()
+        if "error" not in acct_info:
+            acct_num = acct_info.get("account_number", "")
+            acc_name = f"Paper-{acct_num}" if acct_num else acc_name
+            status_msgs.append(P(f"✓ Alpaca verified: {acc_name}", style="color:green;"))
+        else:
+            status_msgs.append(P(f"⚠ Could not verify: {acct_info['error']}", style="color:orange;"))
+    except Exception as e:
+        status_msgs.append(P(f"⚠ Could not verify: {e}", style="color:orange;"))
+
+    from utils.auth import store_alpaca_keys
+    try:
+        new_id = store_alpaca_keys(uss.user_id, api_key, sec_key, account_name=acc_name)
+        uss.cli.account_id = new_id
+        uss.cli._orch = None
+        status_msgs.append(P(f"✓ Account '{acc_name}' saved and activated!", style="color:green; font-weight:bold;"))
+        status_msgs.append(P(f"ID: {new_id}", style="color:gray; font-size:0.85em;"))
+    except Exception as e:
+        status_msgs.append(P(f"✗ Failed: {e}", style="color:red;"))
+
+    return Div(P(B(f"> {command}"), cls="cmd-echo"), *status_msgs, cls="cmd-entry")
+
+
+def _web_account_switch(command: str, uss):
+    """Switch account by number, name, or key prefix."""
+    from utils.auth import get_user_accounts
+    if not uss or not uss.user_id:
+        return Div(P(B(f"> {command}"), cls="cmd-echo"), P("Not logged in."), cls="cmd-entry")
+
+    query = command.split(maxsplit=1)[1].strip() if len(command.split(maxsplit=1)) > 1 else ""
+    if not query:
+        return Div(
+            P(B(f"> {command}"), cls="cmd-echo"),
+            P("Usage: ", Code("account:switch <number|name|key-prefix>")),
+            cls="cmd-entry",
+        )
+
+    accounts = get_user_accounts(uss.user_id)
+    if not accounts:
+        return Div(P(B(f"> {command}"), cls="cmd-echo"), P("No accounts. Use account:add first."), cls="cmd-entry")
+
+    matched = None
+    # Try row number
+    try:
+        idx = int(query) - 1
+        if 0 <= idx < len(accounts):
+            matched = accounts[idx]
+    except ValueError:
+        pass
+    # Try name
+    if not matched:
+        q = query.lower()
+        for acc in accounts:
+            if q in acc["account_name"].lower():
+                matched = acc
+                break
+    # Try API key prefix
+    if not matched:
+        q = query.upper()
+        for acc in accounts:
+            if acc.get("api_key_hint", "").upper().startswith(q[:6]):
+                matched = acc
+                break
+    # Try UUID
+    if not matched:
+        for acc in accounts:
+            if acc["account_id"].startswith(query):
+                matched = acc
+                break
+
+    if matched:
+        uss.cli.account_id = matched["account_id"]
+        uss.cli._orch = None
+        return Div(
+            P(B(f"> {command}"), cls="cmd-echo"),
+            P(f"✓ Switched to: {matched['account_name']} ({matched['api_key_hint']})", style="color:green; font-weight:bold;"),
+            cls="cmd-entry",
+        )
+    else:
+        return Div(
+            P(B(f"> {command}"), cls="cmd-echo"),
+            P(f"✗ No account matches '{query}'. Type ", Code("accounts"), " to see the list.", style="color:red;"),
+            cls="cmd-entry",
+        )
+@rt("/set_account")
+def post(account_id: str, session):
+    """Switch active account via HTMX dropdown."""
+    uss = _get_user_session(session)
+    if uss:
+        uss.cli.account_id = account_id
+        uss.cli._orch = None  # Force fresh orchestrator on next command
+    return ""
+
+
+@rt("/stream_logs")
 def logs_get(session):
     """Return current log lines; HTTP 286 stops HTMX polling when done."""
     uss = _get_user_session(session)

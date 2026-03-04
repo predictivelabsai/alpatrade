@@ -61,7 +61,9 @@ agent = Agent(
         "When users ask for a graph or chart of a backtest run, use the show_equity_curve tool with the run_id. "
         "For stock price charts, use show_stock_chart. "
         "When users ask about their positions, holdings, or portfolio, use get_alpaca_positions. "
-        "When users ask about their account, balance, buying power, or cash, use get_alpaca_account."
+        "When users ask about their account, balance, buying power, or cash, use get_alpaca_account. "
+        "When users ask about their linked accounts or want to see which accounts are configured, use list_user_accounts. "
+        "When users ask about running agents, background tasks, or agent status, use show_running_agents."
     ),
 )
 
@@ -156,11 +158,11 @@ def get_valuation(tickers: str) -> str:
 
 
 @agent.tool_plain
-def get_alpaca_positions() -> str:
+def get_alpaca_positions(account_id: Optional[str] = None) -> str:
     """Get current open positions from the Alpaca paper trading account. Shows symbol, qty, entry price, current price, and unrealized P&L."""
     try:
         from utils.alpaca_util import AlpacaAPI
-        client = AlpacaAPI(paper=True)
+        client = AlpacaAPI(paper=True, account_id=account_id)
         positions = client.get_positions()
         if isinstance(positions, dict) and "error" in positions:
             return f"Error fetching positions: {positions['error']}"
@@ -183,11 +185,11 @@ def get_alpaca_positions() -> str:
 
 
 @agent.tool_plain
-def get_alpaca_account() -> str:
+def get_alpaca_account(account_id: Optional[str] = None) -> str:
     """Get Alpaca paper trading account summary — portfolio value, cash, buying power, and P&L."""
     try:
         from utils.alpaca_util import AlpacaAPI
-        client = AlpacaAPI(paper=True)
+        client = AlpacaAPI(paper=True, account_id=account_id)
         acct = client.get_account()
         if "error" in acct:
             return f"Error fetching account: {acct['error']}"
@@ -209,6 +211,70 @@ def get_alpaca_account() -> str:
         )
     except Exception as e:
         return f"Error fetching account: {e}"
+
+
+@agent.tool_plain
+def list_user_accounts() -> str:
+    """List all Alpaca brokerage accounts linked to the current user. Shows account name, API key hint, and status."""
+    try:
+        from utils.auth import get_user_accounts
+        # Use a placeholder — the interceptor will inject the real user_id
+        # This tool is mainly for the AI to describe what accounts exist
+        from utils.db.db_pool import DatabasePool
+        from sqlalchemy import text
+        pool = DatabasePool()
+        with pool.get_session() as session:
+            result = session.execute(
+                text("""
+                    SELECT ua.account_name, ua.account_id, ua.created_at
+                    FROM alpatrade.user_accounts ua
+                    WHERE ua.is_active = TRUE
+                    ORDER BY ua.created_at ASC
+                    LIMIT 20
+                """)
+            )
+            rows = result.fetchall()
+        if not rows:
+            return "No accounts found. Use `account:add <API_KEY> <SECRET_KEY>` to add one."
+        md = "**Your Alpaca Accounts**\n\n"
+        md += "| # | Name | Account ID | Added |\n"
+        md += "|---|------|------------|-------|\n"
+        for i, r in enumerate(rows, 1):
+            created = str(r[2])[:10] if r[2] else "-"
+            short_id = str(r[1])[:8]
+            md += f"| {i} | {r[0]} | `{short_id}` | {created} |\n"
+        md += f"\n*{len(rows)} accounts*\n"
+        md += "\nUse `account:switch <number>` to change active account."
+        return md
+    except Exception as e:
+        return f"Error listing accounts: {e}"
+
+
+@agent.tool_plain
+def show_running_agents() -> str:
+    """Show all currently running background trading agents (paper trade, backtest, etc.) and their status."""
+    try:
+        from utils.agent_runner import get_all_running_agents
+        agents = get_all_running_agents()
+        if not agents:
+            return "No agents are currently running."
+        md = "**Running Agents**\n\n"
+        md += "| Run ID | Mode | Account | Status | PID |\n"
+        md += "|--------|------|---------|--------|-----|\n"
+        for a in agents:
+            short_id = str(a.get('run_id', '?'))[:8]
+            mode = a.get('mode', '?')
+            acct = a.get('account_id', '-')
+            if acct and len(acct) > 8:
+                acct = acct[:8]
+            status = a.get('status', 'running')
+            pid = a.get('pid', '?')
+            md += f"| `{short_id}` | {mode} | `{acct}` | {status} | {pid} |\n"
+        md += f"\n*{len(agents)} agent(s) running*\n"
+        md += "\nUse `agent:stop id:<run_id>` to stop an agent."
+        return md
+    except Exception as e:
+        return f"Error checking agents: {e}"
 
 
 @agent.tool_plain
@@ -390,7 +456,7 @@ _app_state = _AppState()
 
 # Commands that should bypass the AI agent and go to CommandProcessor
 _CLI_BASES = {"news", "profile", "financials", "price", "movers", "analysts", "valuation", "chart", "equity"}
-_CLI_EXACT = {"trades", "runs", "status", "help", "guide", "positions", "account"}
+_CLI_EXACT = {"trades", "runs", "status", "help", "guide", "positions", "account", "accounts"}
 
 # Long-running commands that get streamed with log console instead of blocking
 _STREAMING_COMMANDS = {
@@ -408,6 +474,7 @@ async def _command_interceptor(msg: str, session):
     is_command = (
         first_word.startswith("agent:") or
         first_word.startswith("alpaca:") or
+        first_word.startswith("account:") or
         cmd_lower in _CLI_EXACT or
         base in _CLI_BASES
     )
@@ -446,6 +513,65 @@ async def _command_interceptor(msg: str, session):
         return get_alpaca_positions()
     if cmd_lower == "account":
         return get_alpaca_account()
+
+    # Account management commands
+    if cmd_lower == "accounts":
+        return list_user_accounts()
+
+    if cmd_lower.startswith("account:add"):
+        parts = msg.strip().split()
+        if len(parts) < 3:
+            return "**Usage:** `account:add <API_KEY> <SECRET_KEY>`\n\nExample: `account:add PKXXXXXXXX ECpXXXXXXXX`"
+        api_key, sec_key = parts[1], parts[2]
+        acc_name = f"Account ({api_key[:6]}...)"
+        try:
+            from utils.alpaca_util import AlpacaAPI
+            client = AlpacaAPI(api_key=api_key, secret_key=sec_key, paper=True)
+            acct_info = client.get_account()
+            if "error" not in acct_info:
+                acct_num = acct_info.get("account_number", "")
+                acc_name = f"Paper-{acct_num}" if acct_num else acc_name
+        except Exception:
+            pass
+        user_id = session.get("user", {}).get("user_id") if session.get("user") else None
+        if not user_id:
+            return "Not logged in. Please sign in first."
+        from utils.auth import store_alpaca_keys
+        try:
+            new_id = store_alpaca_keys(user_id, api_key, sec_key, account_name=acc_name)
+            return f"✓ **Account '{acc_name}' saved!**\n\nID: `{new_id}`\n\nThis account is now active."
+        except Exception as e:
+            return f"✗ Failed to add account: {e}"
+
+    if cmd_lower.startswith("account:switch"):
+        query = msg.strip().split(maxsplit=1)[1].strip() if len(msg.strip().split(maxsplit=1)) > 1 else ""
+        if not query:
+            return "**Usage:** `account:switch <number|name>`"
+        user_id = session.get("user", {}).get("user_id") if session.get("user") else None
+        if not user_id:
+            return "Not logged in."
+        from utils.auth import get_user_accounts
+        accounts = get_user_accounts(user_id)
+        if not accounts:
+            return "No accounts found. Use `account:add` first."
+        matched = None
+        try:
+            idx = int(query) - 1
+            if 0 <= idx < len(accounts):
+                matched = accounts[idx]
+        except ValueError:
+            pass
+        if not matched:
+            q = query.lower()
+            for acc in accounts:
+                if q in acc["account_name"].lower():
+                    matched = acc
+                    break
+        if matched:
+            _app_state.account_id = matched["account_id"]
+            _app_state._orch = None
+            return f"✓ **Switched to: {matched['account_name']}** (`{matched.get('api_key_hint', '****')}`)"
+        return f"✗ No account matches '{query}'. Type `accounts` to see the list."
 
     # Long-running commands → return StreamingCommand sentinel
     if first_word in _STREAMING_COMMANDS:

@@ -15,6 +15,7 @@ class CmdRequest(BaseModel):
 
 
 class BacktestRequest(BaseModel):
+    account_id: Optional[str] = Field(None, description="Specific AlpaTrade account_id snippet to run the backtest under (optional)")
     lookback: str = Field("3m", description="Lookback period, e.g. '3m', '6m', '1y'")
     symbols: Optional[str] = Field(None, description="Comma-separated symbols, e.g. 'AAPL,MSFT'")
     strategy: str = Field("buy_the_dip", description="Strategy name: buy_the_dip, vix, momentum, box_wedge")
@@ -29,6 +30,7 @@ class BacktestRequest(BaseModel):
 
 
 class PaperRequest(BaseModel):
+    account_id: Optional[str] = Field(None, description="Specific AlpaTrade account_id UUID to paper trade under (optional)")
     duration: str = Field("7d", description="Paper trading duration, e.g. '1h', '7d', '1m'")
     symbols: Optional[str] = None
     strategy: str = "buy_the_dip"
@@ -45,9 +47,11 @@ class PaperRequest(BaseModel):
 class ValidateRequest(BaseModel):
     run_id: str = Field(..., description="UUID of the run to validate")
     source: str = Field("backtest", description="'backtest' or 'paper'")
+    account_id: Optional[str] = Field(None, description="Optional account override")
 
 
 class FullCycleRequest(BaseModel):
+    account_id: Optional[str] = None
     lookback: str = "3m"
     duration: str = "7d"
     symbols: Optional[str] = None
@@ -60,6 +64,7 @@ class FullCycleRequest(BaseModel):
 
 
 class ReconcileRequest(BaseModel):
+    account_id: Optional[str] = None
     window_days: int = Field(7, description="Number of days to reconcile")
 
 
