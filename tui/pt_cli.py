@@ -63,7 +63,8 @@ help                                      Full reference
                 default = self._suggested_command or ""
                 self._suggested_command = ""
 
-                prompt_prefix = f"{self.user_display} > " if self.user_display else "> "
+                acc_str = f"[{self.account_id}]" if getattr(self, "account_id", None) else ""
+                prompt_prefix = f"{self.user_display}{acc_str} > " if self.user_display else "> "
                 user_input = await session.prompt_async(
                     prompt_prefix,
                     default=default,

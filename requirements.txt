@@ -24,5 +24,4 @@ cryptography
 PyJWT
 pydantic-ai
 ag-ui-protocol
-bcrypt
-cryptography
+psutil
