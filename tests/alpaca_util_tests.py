@@ -345,25 +345,72 @@ def test_get_open_orders(client):
         return []
 
 
+def test_account_name(client):
+    """Test getting the paper trading account name/identity"""
+    print("\n" + "="*60)
+    print("TEST: Get Account Name / Identity")
+    print("="*60)
+
+    try:
+        account = client.get_account()
+
+        if 'error' in account:
+            print_test_result("Get Account Name", False, error=account['error'])
+            return None
+
+        # Extract identity-related fields
+        identity_fields = {
+            "account_number": account.get('account_number'),
+            "status": str(account.get('status', '')),
+            "crypto_status": str(account.get('crypto_status', '')),
+            "currency": account.get('currency'),
+            "created_at": str(account.get('created_at', '')),
+        }
+
+        print(f"Account Number: {identity_fields['account_number']}")
+        print(f"Status: {identity_fields['status']}")
+        print(f"Crypto Status: {identity_fields['crypto_status']}")
+        print(f"Currency: {identity_fields['currency']}")
+        print(f"Created At: {identity_fields['created_at']}")
+
+        # Print all available keys for inspection
+        print(f"\nAll account fields ({len(account)} keys):")
+        for key in sorted(account.keys()):
+            val = account[key]
+            # Truncate long values
+            val_str = str(val)
+            if len(val_str) > 80:
+                val_str = val_str[:80] + "..."
+            print(f"  {key}: {val_str}")
+
+        print_test_result("Get Account Name", True, identity_fields)
+        return identity_fields
+
+    except Exception as e:
+        print_test_result("Get Account Name", False, error=e)
+        return None
+
+
 def main():
     """Run all tests"""
     print("="*60)
     print("ALPACA UTILITY TESTS")
     print("="*60)
     print(f"Started at: {datetime.now(timezone.utc).isoformat()}")
-    
+
     # Initialize client
     api_key = os.getenv('ALPACA_PAPER_API_KEY')
     secret_key = os.getenv('ALPACA_PAPER_SECRET_KEY')
-    
+
     if not api_key or not secret_key:
         print("❌ ERROR: ALPACA_PAPER_API_KEY and ALPACA_PAPER_SECRET_KEY must be set in .env")
         sys.exit(1)
-    
+
     client = AlpacaAPI(api_key=api_key, secret_key=secret_key, paper=True)
     print(f"✅ Connected to Alpaca (Paper Trading)")
-    
+
     # Run tests
+    account_name = test_account_name(client)
     account_info = test_account_info(client)
     
     all_positions = test_get_all_positions(client)
