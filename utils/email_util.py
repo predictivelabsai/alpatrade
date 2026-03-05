@@ -65,6 +65,8 @@ def send_daily_pnl_report(
     trades: List[Dict[str, Any]],
     cumulative_pnl: float = 0.0,
     win_rate: float = 0.0,
+    account_name: str = "",
+    user_name: str = "",
 ) -> bool:
     """
     Send a daily P&L report email.
@@ -119,11 +121,28 @@ def send_daily_pnl_report(
     if not trades_rows:
         trades_rows = "<tr><td colspan='6'>No trades today</td></tr>"
 
-    subject = f"AlpaTrade Daily Report — {date} — P&L: {pnl_sign}${abs(pnl):.2f}"
+    acct_label = f" — {account_name}" if account_name else ""
+    subject = f"AlpaTrade Daily Report{acct_label} — {date} — P&L: {pnl_sign}${abs(pnl):.2f}"
+
+    # Build optional account/user header
+    account_header = ""
+    if account_name or user_name:
+        parts = []
+        if account_name:
+            parts.append(f"<strong>Account:</strong> {account_name}")
+        if user_name:
+            parts.append(f"<strong>User:</strong> {user_name}")
+        account_header = (
+            '<div style="background: #e3f2fd; padding: 12px 16px; border-radius: 8px; '
+            'margin-bottom: 16px; border-left: 4px solid #1976d2;">'
+            + " &nbsp;|&nbsp; ".join(parts)
+            + "</div>"
+        )
 
     body_html = f"""
     <div style="font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #333;">AlpaTrade Daily Report</h2>
+      {account_header}
       <p><strong>Date:</strong> {date}</p>
 
       <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin: 16px 0;">

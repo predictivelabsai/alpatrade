@@ -33,12 +33,15 @@ class PaperTradeAgent:
     """Agent that runs continuous paper trading via Alpaca paper API."""
 
     def __init__(self, message_bus=None, state=None, user_id=None,
-                 alpaca_api_key=None, alpaca_secret_key=None):
+                 alpaca_api_key=None, alpaca_secret_key=None,
+                 account_id=None, account_name=None):
         self.message_bus = message_bus
         self.state = state
         self.user_id = user_id
         self._alpaca_api_key = alpaca_api_key
         self._alpaca_secret_key = alpaca_secret_key
+        self.account_id = account_id
+        self.account_name = account_name or ""
         self.client: Optional[AlpacaAPI] = None
         self.session_id = str(uuid.uuid4())
         self.trades: List[Dict[str, Any]] = []
@@ -614,6 +617,17 @@ class PaperTradeAgent:
             win_count = sum(1 for t in sell_trades if (t.get("pnl") or 0) > 0)
             win_rate = (win_count / len(sell_trades) * 100) if sell_trades else 0.0
 
+            # Resolve user display name
+            user_name = ""
+            if self.user_id:
+                try:
+                    from utils.auth import get_user_by_id
+                    user = get_user_by_id(self.user_id)
+                    if user:
+                        user_name = user.get("display_name") or user.get("email", "")
+                except Exception:
+                    pass
+
             send_daily_pnl_report(
                 date=date,
                 pnl=daily_pnl,
@@ -621,6 +635,8 @@ class PaperTradeAgent:
                 trades=today_trades,
                 cumulative_pnl=cumulative_pnl,
                 win_rate=win_rate,
+                account_name=self.account_name,
+                user_name=user_name,
             )
         except Exception as e:
             logger.warning(f"Could not send daily email: {e}")

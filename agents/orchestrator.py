@@ -69,12 +69,19 @@ class Orchestrator:
         # Resolve per-user Alpaca keys (None = fall back to env vars)
         self._alpaca_api_key = None
         self._alpaca_secret_key = None
+        self._account_name = ""
         if user_id:
             try:
-                from utils.auth import get_alpaca_keys
+                from utils.auth import get_alpaca_keys, get_user_accounts
                 keys = get_alpaca_keys(user_id, account_id)
                 if keys:
                     self._alpaca_api_key, self._alpaca_secret_key = keys
+                # Resolve account_name for email reports
+                if account_id:
+                    for acc in get_user_accounts(user_id):
+                        if acc["account_id"] == str(account_id):
+                            self._account_name = acc.get("account_name", "")
+                            break
             except Exception:
                 pass
 
@@ -84,7 +91,9 @@ class Orchestrator:
         self.paper_trader = PaperTradeAgent(message_bus=self.bus, state=self.state,
                                              user_id=user_id,
                                              alpaca_api_key=self._alpaca_api_key,
-                                             alpaca_secret_key=self._alpaca_secret_key)
+                                             alpaca_secret_key=self._alpaca_secret_key,
+                                             account_id=account_id,
+                                             account_name=self._account_name)
         self.validator = ValidateAgent(message_bus=self.bus, state=self.state,
                                        user_id=user_id)
         self.reconciler = ReconcileAgent(message_bus=self.bus, state=self.state,
