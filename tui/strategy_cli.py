@@ -33,6 +33,9 @@ class StrategyCLI:
         self._bg_task = None
         self._bg_stop = threading.Event()
         self._suggested_command: str = ""
+        # Auto-select first account if user is logged in
+        if self.user_id:
+            self._auto_select_account()
 
     def _show_trades_table(self):
         """Render trades from DB as a Rich Table."""
@@ -142,6 +145,16 @@ class StrategyCLI:
         except Exception as e:
             self.console.print(f"\n[red]Error loading runs:[/red] {e}\n")
 
+    def _auto_select_account(self):
+        """Auto-select the first account for the logged-in user."""
+        try:
+            from utils.auth import get_user_accounts
+            accounts = get_user_accounts(self.user_id)
+            if accounts:
+                self.account_id = accounts[0]["account_id"]
+        except Exception:
+            pass
+
     def _handle_login(self):
         """Re-authenticate during a session."""
         from tui.cli_auth import cli_login
@@ -152,6 +165,7 @@ class StrategyCLI:
             self.user_display = user_display or user_email
             # Reset orchestrator so it picks up the new user_id
             self._orch = None
+            self._auto_select_account()
 
     def _handle_logout(self):
         """Clear current user session."""
@@ -165,31 +179,63 @@ class StrategyCLI:
             self.console.print("\n  [yellow]Not logged in.[/yellow]\n")
 
     def _show_accounts(self):
-        """Show available accounts for the user."""
-        from utils.auth import get_user_accounts
+        """Show available accounts with live portfolio data from Alpaca."""
+        from utils.auth import get_user_accounts, get_alpaca_keys
         if not self.user_id:
             self.console.print("\n[yellow]Not logged in.[/yellow]\n")
             return
-            
+
         accounts = get_user_accounts(self.user_id)
         if not accounts:
             self.console.print("\n[yellow]No accounts found. Use [bold]account:add <API_KEY> <SECRET_KEY>[/bold] to add one.[/yellow]\n")
             return
-            
+
+        self.console.print("[dim]Fetching portfolio data...[/dim]")
+
         from rich.table import Table
         table = Table(title="Your Alpaca Accounts")
         table.add_column("#", style="bold white")
         table.add_column("Name", style="cyan")
         table.add_column("API Key", style="dim")
-        table.add_column("Active", justify="center")
-        
+        table.add_column("Portfolio Value", justify="right", style="bold")
+        table.add_column("Equity", justify="right")
+        table.add_column("Cash", justify="right")
+        table.add_column("Currency", justify="center")
+        table.add_column("Selected", justify="center")
+
         for i, acc in enumerate(accounts, 1):
             is_current = str(acc["account_id"]) == str(self.account_id)
-            marker = " [bold green]◀[/bold green]" if is_current else ""
-            # Show partial API key for identification
+            marker = "[bold green]◀[/bold green]" if is_current else ""
             api_hint = acc.get("api_key_hint", "****")
-            table.add_row(str(i), acc["account_name"] + marker, api_hint, "[green]✓[/green]")
-            
+
+            # Fetch live Alpaca data for this account
+            portfolio_val = "-"
+            equity_val = "-"
+            cash_val = "-"
+            currency = "-"
+            try:
+                keys = get_alpaca_keys(self.user_id, account_id=acc["account_id"])
+                if keys:
+                    from utils.alpaca_util import AlpacaAPI
+                    client = AlpacaAPI(api_key=keys[0], secret_key=keys[1], paper=True)
+                    acct_data = client.get_account()
+                    if "error" not in acct_data:
+                        pv = float(acct_data.get("portfolio_value", 0))
+                        eq = float(acct_data.get("equity", 0))
+                        ca = float(acct_data.get("cash", 0))
+                        currency = acct_data.get("currency", "USD")
+                        pv_style = "green" if pv > 0 else "red"
+                        portfolio_val = f"[{pv_style}]${pv:,.2f}[/{pv_style}]"
+                        equity_val = f"${eq:,.2f}"
+                        cash_val = f"${ca:,.2f}"
+            except Exception:
+                pass
+
+            table.add_row(
+                str(i), acc["account_name"], api_hint,
+                portfolio_val, equity_val, cash_val, currency, marker,
+            )
+
         self.console.print("\n")
         self.console.print(table)
         self.console.print("\n[dim]Switch: [bold]account:switch 1[/bold] or [bold]account:switch <name>[/bold][/dim]\n")
