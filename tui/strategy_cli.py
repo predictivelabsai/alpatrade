@@ -431,6 +431,8 @@ class StrategyCLI:
 ```
 trades                                    Show trades from DB
 runs                                      Show runs from DB
+accounts                                  List linked accounts
+account:switch <id>                       Change active account
 agent:backtest lookback:1m                Run parameterized backtest
 agent:backtest lookback:1m hours:extended Extended hours backtest
 agent:paper duration:7d                   Paper trade in background

@@ -1608,6 +1608,9 @@ Plotly.newPlot('chart', [trace1], {{
         col2.add_row("equity:<run_id>", "backtest equity curve")
         col2.add_row("", "")
         col2.add_row("[bold white]Alpaca Account[/bold white]", "")
+        col2.add_row("accounts", "list linked accounts")
+        col2.add_row("account:add <api> <secret>", "add new account")
+        col2.add_row("account:switch <id>", "change active account")
         col2.add_row("positions", "open positions")
         col2.add_row("account", "portfolio & buying power")
 
