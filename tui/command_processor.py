@@ -523,7 +523,7 @@ Plotly.newPlot('chart', [trace1], {{
         elif subcmd == "agent:top":
             return self._agent_top(params)
         elif subcmd == "agent:stop":
-            return self._agent_stop()
+            return self._agent_stop(params)
         elif subcmd == "agent:logs":
             return self._agent_logs(params)
         elif subcmd == "agent:pnl":
@@ -797,22 +797,19 @@ Plotly.newPlot('chart', [trace1], {{
 
     async def _agent_paper(self, params: Dict) -> str:
         """Start paper trading in the background."""
-        import logging
+        from utils.agent_runner import spawn_agent, get_all_running_agents
         from agents.orchestrator import parse_duration
 
-        if self.app._bg_task and not self.app._bg_task.done():
+        running = get_all_running_agents(user_id=self.user_id)
+        if any(r.get("mode") == "paper" for r in running):
             return (
                 "# Paper Trading Already Running\n\n"
                 "Use `agent:stop` to cancel, or `agent:status` to check progress."
             )
 
-        orch = self._new_orchestrator()
-        orch._mode = "paper"  # set eagerly so agent:status shows correct mode
-        self.app._bg_stop.clear()
-
+        duration = params.get("duration", "7d")
         symbols_str = params.get("symbols", ",".join(self.default_symbols))
         symbols = [s.strip().upper() for s in symbols_str.split(",")]
-        duration = params.get("duration", "7d")
 
         # PDT protection
         pdt_val = params.get("pdt")
@@ -829,56 +826,8 @@ Plotly.newPlot('chart', [trace1], {{
             "email_notifications": params.get("email", "true").lower() not in ("false", "no", "0", "off"),
             "pdt_protection": pdt_protection,
         }
-
-        run_id = orch.run_id
-        log_path = Path("data/paper_trade.log")
-        log_path.parent.mkdir(parents=True, exist_ok=True)
-        stop_event = self.app._bg_stop
-
-        async def _run_paper():
-            # Redirect logs to file so they don't flood the console
-            root = logging.getLogger()
-            original_handlers = root.handlers[:]
-            file_handler = logging.FileHandler(str(log_path), mode="w")
-            file_handler.setFormatter(
-                logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
-            )
-            # Swap: remove console handlers, add file handler
-            for h in original_handlers:
-                root.removeHandler(h)
-            root.addHandler(file_handler)
-            try:
-                result = await asyncio.to_thread(
-                    orch.run_paper_trade, config, stop_event=stop_event
-                )
-                # Notify TUI when done
-                if hasattr(self.app, 'notify'):
-                    trades = result.get("total_trades", 0)
-                    pnl = result.get("total_pnl", 0)
-                    self.app.notify(
-                        f"Paper trading done: {trades} trades, P&L: ${pnl:.2f}"
-                    )
-            except asyncio.CancelledError:
-                # Update agent state so agent:status reflects the stop
-                agent_state = orch.state.get_agent("paper_trader")
-                agent_state.set_idle()
-                orch.state.save()
-                from utils.agent_storage import update_run
-                update_run(orch.run_id, "cancelled")
-            finally:
-                # Restore original console handlers
-                root.removeHandler(file_handler)
-                file_handler.close()
-                for h in original_handlers:
-                    root.addHandler(h)
-
-        self.app._bg_task = asyncio.create_task(_run_paper())
-
-        hours_label = "Extended (4AM-8PM ET)" if config["extended_hours"] else "Regular (9:30AM-4PM ET)"
-        pdt_label = "Off" if pdt_protection is False else "On" if pdt_protection else "Auto"
-        email_label = "On" if config["email_notifications"] else "Off"
-
-        # Load strategy params from parameters.yaml (same source as paper_trade_agent)
+        
+        # Load yaml config for threshold defaults
         import yaml
         yaml_path = Path("config/parameters.yaml")
         yaml_cfg = {}
@@ -892,12 +841,33 @@ Plotly.newPlot('chart', [trace1], {{
         sl = params.get("stop_loss_threshold", yaml_cfg.get("stop_loss_threshold", 0.5))
         hold = params.get("hold_days", yaml_cfg.get("hold_days", 2))
         cpt = params.get("capital_per_trade", yaml_cfg.get("capital_per_trade", 1000.0))
+        
+        config["dip_threshold"] = float(dip)
+        config["take_profit_threshold"] = float(tp)
+        config["stop_loss_threshold"] = float(sl)
+        config["hold_days"] = int(hold)
+        config["capital_per_trade"] = float(cpt)
+
+        account_id = params.get("account")
+        run_id = spawn_agent("paper", config, user_id=self.user_id, account_id=account_id)
+
+        # Set orch locally just so current CLI knows a run happened.
+        orch = self._new_orchestrator()
+        orch._mode = "paper"
+        orch.run_id = run_id
+
+        hours_label = "Extended (4AM-8PM ET)" if config.get("extended_hours") else "Regular (9:30AM-4PM ET)"
+        pdt_label = "Off" if pdt_protection is False else "On" if pdt_protection else "Auto"
+        email_label = "On" if config.get("email_notifications") else "Off"
+
+        log_path = Path("data/paper_trade.log")
 
         return (
             f"# Paper Trading Started\n\n"
             f"- **Run ID**: `{run_id}`\n"
             f"- **Duration**: {duration}\n"
             f"- **Strategy**: {config['strategy']}\n"
+            f"- **Account**: {account_id or 'Default'}\n"
             f"- **Symbols**: {', '.join(symbols)}\n"
             f"- **Dip Threshold**: {dip}%\n"
             f"- **Take Profit**: {tp}%\n"
@@ -909,8 +879,7 @@ Plotly.newPlot('chart', [trace1], {{
             f"- **PDT Protection**: {pdt_label}\n"
             f"- **Email Reports**: {email_label}\n"
             f"- **Log**: `{log_path}`\n\n"
-            f"Running in background. Use `agent:status` to monitor, "
-            f"`agent:stop` to cancel."
+            f"Running in background. Use `agent:status` to monitor, `agent:stop` to cancel."
         )
 
     # ------------------------------------------------------------------
@@ -1060,88 +1029,82 @@ Plotly.newPlot('chart', [trace1], {{
 
     def _agent_status(self) -> str:
         """Show current agent states."""
+        from utils.agent_runner import get_all_running_agents
+        
+        running = get_all_running_agents(user_id=self.user_id)
         orch = self.app._orch
-        if orch is None:
+
+        if not running and orch is None:
             return "# Agent Status\n\nNo session active. Run an `agent:*` command first.\n"
 
-        # Use instance mode (not persisted state which may be stale)
-        mode = getattr(orch, '_mode', None) or orch.state.mode or 'n/a'
-        bg_running = self.app._bg_task and not self.app._bg_task.done()
-        bg_done = self.app._bg_task and self.app._bg_task.done()
+        md = "# Agent Status\n\n"
+        
+        if running:
+            md += "## Background Agents\n"
+            for r in running:
+                run_id = r.get("run_id")
+                mode = r.get("mode")
+                pid = r.get("pid")
+                account_id = r.get("account_id") or "Default"
+                
+                md += f"- **Mode**: {mode.upper()} | **Account**: {account_id} | **PID**: {pid} | **Run ID**: `{run_id}`\n"
+            md += "\n"
 
-        # Header with status
-        if bg_running:
-            status_label = "RUNNING"
-        elif bg_done:
-            status_label = "COMPLETED"
-        else:
-            status_label = "IDLE"
+        if orch:
+            # Use instance mode (not persisted state which may be stale)
+            mode = getattr(orch, '_mode', None) or orch.state.mode or 'n/a'
+            status_label = "IDLE (Local)"
 
-        md = f"# {mode.replace('_', ' ').title()} — {status_label}\n\n"
-        md += f"- **Run ID**: `{orch.run_id}`\n"
+            md += f"## Local Session: {mode.replace('_', ' ').title()} — {status_label}\n"
+            md += f"- **Run ID**: `{orch.run_id}`\n"
 
-        # Show started time in ET
-        from utils.tz_util import format_et
-        started = orch.state.started_at or 'n/a'
-        if started != 'n/a':
-            started = format_et(started)
-        md += f"- **Started**: {started}\n\n"
+            # Show started time in ET
+            from utils.tz_util import format_et
+            started = orch.state.started_at or 'n/a'
+            if started != 'n/a':
+                started = format_et(started)
+            md += f"- **Started**: {started}\n\n"
 
-        # Agents table — only show agents relevant to the mode
-        md += "| Agent | Status | Task |\n|-------|--------|------|\n"
-        for name, agent in orch.state.agents.items():
-            md += f"| {name} | {agent.status} | {agent.current_task or '-'} |\n"
+            # Agents table — only show agents relevant to the mode
+            md += "| Agent | Status | Task |\n|-------|--------|------|\n"
+            for name, agent in orch.state.agents.items():
+                md += f"| {name} | {agent.status} | {agent.current_task or '-'} |\n"
 
-        # Best config (only for modes that involve backtesting)
-        if orch.state.best_config and mode in ('backtest', 'full'):
-            best = orch.state.best_config
-            md += (
-                f"\n## Best Config\n"
-                f"- Sharpe: {best.get('sharpe_ratio', 0):.2f}\n"
-                f"- Return: {best.get('total_return', 0):.1f}%\n"
-                f"- Annualized: {best.get('annualized_return', 0):.1f}%\n"
-            )
+            # Best config (only for modes that involve backtesting)
+            if orch.state.best_config and mode in ('backtest', 'full'):
+                best = orch.state.best_config
+                md += (
+                    f"\n## Best Config\n"
+                    f"- Sharpe: {best.get('sharpe_ratio', 0):.2f}\n"
+                    f"- Return: {best.get('total_return', 0):.1f}%\n"
+                    f"- Annualized: {best.get('annualized_return', 0):.1f}%\n"
+                )
 
-        # Last validation (only if we ran validation)
-        if orch.state.validation_results and mode in ('validate', 'full'):
-            last = orch.state.validation_results[-1]
-            md += (
-                f"\n## Last Validation\n"
-                f"- Status: {last.get('status')}\n"
-                f"- Anomalies: {last.get('anomalies_found', 0)}\n"
-            )
+            # Last validation (only if we ran validation)
+            if orch.state.validation_results and mode in ('validate', 'full'):
+                last = orch.state.validation_results[-1]
+                md += (
+                    f"\n## Last Validation\n"
+                    f"- Status: {last.get('status')}\n"
+                    f"- Anomalies: {last.get('anomalies_found', 0)}\n"
+                )
 
-        # Show elapsed time for paper trading
-        if mode == 'paper' and started != 'n/a':
+        # Show recent log lines for paper trading (from file)
+        log_path = Path("data/paper_trade.log")
+        if log_path.exists():
             try:
-                from datetime import timezone as tz
-                started_dt = orch.state.started_at
-                if started_dt:
-                    elapsed = datetime.now(tz.utc) - started_dt
-                    hours, remainder = divmod(int(elapsed.total_seconds()), 3600)
-                    mins, secs = divmod(remainder, 60)
-                    md += f"\n**Elapsed**: {hours}h {mins}m {secs}s\n"
+                raw = log_path.read_text(errors="replace")
+                lines = [
+                    ln for ln in raw.splitlines()
+                    if ln.strip() and ln.isprintable()
+                ]
+                tail = lines[-10:] if len(lines) > 10 else lines
+                if tail:
+                    md += "\n## Recent Logs\n```\n"
+                    md += "\n".join(tail)
+                    md += "\n```\n"
             except Exception:
                 pass
-
-        # Show recent log lines for paper trading
-        if mode == 'paper' and (bg_running or bg_done):
-            log_path = Path("data/paper_trade.log")
-            if log_path.exists():
-                try:
-                    raw = log_path.read_text(errors="replace")
-                    # Filter out lines with non-printable / garbage bytes
-                    lines = [
-                        ln for ln in raw.splitlines()
-                        if ln.strip() and ln.isprintable()
-                    ]
-                    tail = lines[-10:] if len(lines) > 10 else lines
-                    if tail:
-                        md += "\n## Recent Logs\n```\n"
-                        md += "\n".join(tail)
-                        md += "\n```\n"
-                except Exception:
-                    pass
 
         return md
 
@@ -1400,13 +1363,33 @@ Plotly.newPlot('chart', [trace1], {{
     # agent:stop
     # ------------------------------------------------------------------
 
-    def _agent_stop(self) -> str:
+    def _agent_stop(self, params: Dict) -> str:
         """Stop background paper trading."""
-        if self.app._bg_task and not self.app._bg_task.done():
-            self.app._bg_stop.set()
-            self.app._bg_task.cancel()
-            return "# Paper Trading Stopped\n\nBackground task cancelled."
-        return "# No Background Task\n\nNo paper trading session is currently running."
+        from utils.agent_runner import stop_agent, get_all_running_agents
+        
+        run_id = params.get("run-id") or params.get("id")
+        # Support positional argument stop <uuid> without key
+        if not run_id:
+           # Also check if it's the first param that wasn't key val
+           pass # Handled by finding running agent
+
+        if not run_id:
+            running = get_all_running_agents(user_id=self.user_id)
+            if len(running) == 1:
+                run_id = running[0]["run_id"]
+            elif len(running) > 1:
+                return "# Stop Error\n\nMultiple agents running. Specify run-id: `agent:stop id:<uuid>`"
+            else:
+                return "# No Background Task\n\nNo paper trading session is currently running."
+                
+        if stop_agent(run_id):
+            if hasattr(self.app, '_bg_task') and self.app._bg_task and not self.app._bg_task.done():
+                self.app._bg_stop.set()
+                self.app._bg_task.cancel()
+                
+            return f"# Agent Stopped\n\nBackground agent `{run_id}` cancelled."
+        else:
+            return f"# Stop Error\n\nCould not find or stop agent `{run_id}`."
 
     # ------------------------------------------------------------------
     # agent:logs
@@ -1625,6 +1608,9 @@ Plotly.newPlot('chart', [trace1], {{
         col2.add_row("equity:<run_id>", "backtest equity curve")
         col2.add_row("", "")
         col2.add_row("[bold white]Alpaca Account[/bold white]", "")
+        col2.add_row("accounts", "list linked accounts")
+        col2.add_row("account:add <api> <secret>", "add new account")
+        col2.add_row("account:switch <id>", "change active account")
         col2.add_row("positions", "open positions")
         col2.add_row("account", "portfolio & buying power")
 

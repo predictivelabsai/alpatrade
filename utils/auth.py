@@ -200,45 +200,81 @@ def link_google_id(email: str, google_id: str) -> bool:
 # Alpaca key management
 # ---------------------------------------------------------------------------
 
-def store_alpaca_keys(user_id: str, api_key: str, secret_key: str) -> None:
-    """Encrypt and store Alpaca API keys for a user."""
+def store_alpaca_keys(user_id: str, api_key: str, secret_key: str, account_name: str = "Default Account", account_id: Optional[str] = None) -> str:
+    """
+    Encrypt and store Alpaca API keys for a user account.
+    If account_id is provided, updates existing account; otherwise inserts new one.
+    Returns the account_id.
+    """
     from sqlalchemy import text
     pool = _get_pool()
     with pool.get_session() as session:
-        session.execute(
-            text("""
-                UPDATE alpatrade.users
-                SET alpaca_api_key_enc = :api_enc,
-                    alpaca_secret_key_enc = :secret_enc,
-                    updated_at = :now
-                WHERE user_id = :user_id
-            """),
-            {
-                "user_id": user_id,
-                "api_enc": encrypt_key(api_key),
-                "secret_enc": encrypt_key(secret_key),
-                "now": datetime.now(timezone.utc),
-            },
-        )
-    logger.info(f"Alpaca keys stored for user {user_id}")
+        if account_id:
+            session.execute(
+                text("""
+                    UPDATE alpatrade.user_accounts
+                    SET account_name = :name,
+                        alpaca_api_key_enc = :api_enc,
+                        alpaca_secret_key_enc = :secret_enc,
+                        updated_at = :now
+                    WHERE account_id = :account_id AND user_id = :user_id
+                """),
+                {
+                    "name": account_name,
+                    "api_enc": encrypt_key(api_key),
+                    "secret_enc": encrypt_key(secret_key),
+                    "now": datetime.now(timezone.utc),
+                    "account_id": account_id,
+                    "user_id": user_id,
+                },
+            )
+            return account_id
+        else:
+            result = session.execute(
+                text("""
+                    INSERT INTO alpatrade.user_accounts (user_id, account_name, alpaca_api_key_enc, alpaca_secret_key_enc)
+                    VALUES (:user_id, :name, :api_enc, :secret_enc)
+                    RETURNING account_id
+                """),
+                {
+                    "user_id": user_id,
+                    "name": account_name,
+                    "api_enc": encrypt_key(api_key),
+                    "secret_enc": encrypt_key(secret_key),
+                },
+            )
+            new_id = result.scalar()
+            return str(new_id) if new_id else ""
 
 
-def get_alpaca_keys(user_id: str) -> Optional[Tuple[str, str]]:
+def get_alpaca_keys(user_id: str, account_id: Optional[str] = None) -> Optional[Tuple[str, str]]:
     """
-    Retrieve and decrypt Alpaca keys for a user.
+    Retrieve and decrypt Alpaca keys for a user's account.
+    If account_id is not provided, defaults to the first active account for the user.
     Returns (api_key, secret_key) or None if not configured.
     """
     from sqlalchemy import text
     pool = _get_pool()
     with pool.get_session() as session:
-        result = session.execute(
-            text("""
-                SELECT alpaca_api_key_enc, alpaca_secret_key_enc
-                FROM alpatrade.users
-                WHERE user_id = :user_id
-            """),
-            {"user_id": user_id},
-        )
+        if account_id:
+            result = session.execute(
+                text("""
+                    SELECT alpaca_api_key_enc, alpaca_secret_key_enc
+                    FROM alpatrade.user_accounts
+                    WHERE user_id = :user_id AND account_id = :account_id AND is_active = TRUE
+                """),
+                {"user_id": user_id, "account_id": account_id},
+            )
+        else:
+            result = session.execute(
+                text("""
+                    SELECT alpaca_api_key_enc, alpaca_secret_key_enc
+                    FROM alpatrade.user_accounts
+                    WHERE user_id = :user_id AND is_active = TRUE
+                    ORDER BY created_at ASC LIMIT 1
+                """),
+                {"user_id": user_id},
+            )
         row = result.fetchone()
         if not row or not row[0] or not row[1]:
             return None
@@ -249,6 +285,43 @@ def get_alpaca_keys(user_id: str) -> Optional[Tuple[str, str]]:
         if isinstance(secret_enc, memoryview):
             secret_enc = bytes(secret_enc)
         return decrypt_key(api_enc), decrypt_key(secret_enc)
+
+
+def get_user_accounts(user_id: str) -> list[Dict]:
+    """Retrieve all active Alpaca accounts for a user."""
+    from sqlalchemy import text
+    pool = _get_pool()
+    with pool.get_session() as session:
+        result = session.execute(
+            text("""
+                SELECT account_id, account_name, alpaca_api_key_enc, created_at, is_active
+                FROM alpatrade.user_accounts
+                WHERE user_id = :user_id AND is_active = TRUE
+                ORDER BY created_at ASC
+            """),
+            {"user_id": user_id},
+        )
+        accounts = []
+        for r in result.fetchall():
+            # Decrypt just enough to show a hint
+            api_hint = "****"
+            try:
+                enc = r[2]
+                if enc:
+                    if isinstance(enc, memoryview):
+                        enc = bytes(enc)
+                    full_key = decrypt_key(enc)
+                    api_hint = full_key[:6] + "****" if len(full_key) > 6 else "****"
+            except Exception:
+                pass
+            accounts.append({
+                "account_id": str(r[0]),
+                "account_name": r[1],
+                "api_key_hint": api_hint,
+                "created_at": r[3],
+                "is_active": r[4],
+            })
+        return accounts
 
 
 # ---------------------------------------------------------------------------

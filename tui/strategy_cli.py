@@ -27,11 +27,15 @@ class StrategyCLI:
         self.command_history = []
         self.current_strategy = None
         self.current_symbols = []
+        self.account_id = None
         # Agent state — shared with CommandProcessor
         self._orch = None
         self._bg_task = None
         self._bg_stop = threading.Event()
         self._suggested_command: str = ""
+        # Auto-select first account if user is logged in
+        if self.user_id:
+            self._auto_select_account()
 
     def _show_trades_table(self):
         """Render trades from DB as a Rich Table."""
@@ -141,6 +145,16 @@ class StrategyCLI:
         except Exception as e:
             self.console.print(f"\n[red]Error loading runs:[/red] {e}\n")
 
+    def _auto_select_account(self):
+        """Auto-select the first account for the logged-in user."""
+        try:
+            from utils.auth import get_user_accounts
+            accounts = get_user_accounts(self.user_id)
+            if accounts:
+                self.account_id = accounts[0]["account_id"]
+        except Exception:
+            pass
+
     def _handle_login(self):
         """Re-authenticate during a session."""
         from tui.cli_auth import cli_login
@@ -151,6 +165,7 @@ class StrategyCLI:
             self.user_display = user_display or user_email
             # Reset orchestrator so it picks up the new user_id
             self._orch = None
+            self._auto_select_account()
 
     def _handle_logout(self):
         """Clear current user session."""
@@ -162,6 +177,68 @@ class StrategyCLI:
             self._orch = None
         else:
             self.console.print("\n  [yellow]Not logged in.[/yellow]\n")
+
+    def _show_accounts(self):
+        """Show available accounts with live portfolio data from Alpaca."""
+        from utils.auth import get_user_accounts, get_alpaca_keys
+        if not self.user_id:
+            self.console.print("\n[yellow]Not logged in.[/yellow]\n")
+            return
+
+        accounts = get_user_accounts(self.user_id)
+        if not accounts:
+            self.console.print("\n[yellow]No accounts found. Use [bold]account:add <API_KEY> <SECRET_KEY>[/bold] to add one.[/yellow]\n")
+            return
+
+        self.console.print("[dim]Fetching portfolio data...[/dim]")
+
+        from rich.table import Table
+        table = Table(title="Your Alpaca Accounts")
+        table.add_column("#", style="bold white")
+        table.add_column("Name", style="cyan")
+        table.add_column("API Key", style="dim")
+        table.add_column("Portfolio Value", justify="right", style="bold")
+        table.add_column("Equity", justify="right")
+        table.add_column("Cash", justify="right")
+        table.add_column("Currency", justify="center")
+        table.add_column("Selected", justify="center")
+
+        for i, acc in enumerate(accounts, 1):
+            is_current = str(acc["account_id"]) == str(self.account_id)
+            marker = "[bold green]◀[/bold green]" if is_current else ""
+            api_hint = acc.get("api_key_hint", "****")
+
+            # Fetch live Alpaca data for this account
+            portfolio_val = "-"
+            equity_val = "-"
+            cash_val = "-"
+            currency = "-"
+            try:
+                keys = get_alpaca_keys(self.user_id, account_id=acc["account_id"])
+                if keys:
+                    from utils.alpaca_util import AlpacaAPI
+                    client = AlpacaAPI(api_key=keys[0], secret_key=keys[1], paper=True)
+                    acct_data = client.get_account()
+                    if "error" not in acct_data:
+                        pv = float(acct_data.get("portfolio_value", 0))
+                        eq = float(acct_data.get("equity", 0))
+                        ca = float(acct_data.get("cash", 0))
+                        currency = acct_data.get("currency", "USD")
+                        pv_style = "green" if pv > 0 else "red"
+                        portfolio_val = f"[{pv_style}]${pv:,.2f}[/{pv_style}]"
+                        equity_val = f"${eq:,.2f}"
+                        cash_val = f"${ca:,.2f}"
+            except Exception:
+                pass
+
+            table.add_row(
+                str(i), acc["account_name"], api_hint,
+                portfolio_val, equity_val, cash_val, currency, marker,
+            )
+
+        self.console.print("\n")
+        self.console.print(table)
+        self.console.print("\n[dim]Switch: [bold]account:switch 1[/bold] or [bold]account:switch <name>[/bold][/dim]\n")
 
     def _cleanup_and_exit(self):
         """Signal background task to stop and force-exit the process.
@@ -192,6 +269,105 @@ class StrategyCLI:
                 self.console.print("\n  [yellow]Not logged in.[/yellow] Type [bold]login[/bold] to authenticate.\n")
             return
 
+        if cmd_lower == "accounts":
+            self._show_accounts()
+            return
+
+        if cmd_lower.startswith("account:switch"):
+            from utils.auth import get_user_accounts
+            query = command.split(maxsplit=1)[1].strip() if len(command.split(maxsplit=1)) > 1 else ""
+            if not query:
+                self.console.print("\n[yellow]Usage: account:switch <number|name|key-prefix>[/yellow]\n")
+                return
+            accounts = get_user_accounts(self.user_id) if self.user_id else []
+            if not accounts:
+                self.console.print("\n[yellow]No accounts. Use account:add first.[/yellow]\n")
+                return
+            
+            matched = None
+            # Try row number first (e.g., "1", "2")
+            try:
+                idx = int(query) - 1
+                if 0 <= idx < len(accounts):
+                    matched = accounts[idx]
+            except ValueError:
+                pass
+            
+            # Try matching by name (case-insensitive partial match)
+            if not matched:
+                q = query.lower()
+                for acc in accounts:
+                    if q in acc["account_name"].lower():
+                        matched = acc
+                        break
+            
+            # Try matching by API key prefix
+            if not matched:
+                q = query.upper()
+                for acc in accounts:
+                    if acc.get("api_key_hint", "").upper().startswith(q[:6]):
+                        matched = acc
+                        break
+            
+            # Try matching by account_id UUID
+            if not matched:
+                for acc in accounts:
+                    if acc["account_id"].startswith(query):
+                        matched = acc
+                        break
+            
+            if matched:
+                self.account_id = matched["account_id"]
+                self._orch = None
+                self.console.print(f"\n[green]Switched to: {matched['account_name']} ({matched['api_key_hint']})[/green]\n")
+            else:
+                self.console.print(f"\n[red]No account matches '{query}'. Type [bold]accounts[/bold] to see the list.[/red]\n")
+            return
+
+        if cmd_lower.startswith("account:add"):
+            if not self.user_id:
+                self.console.print("\n[yellow]Not logged in.[/yellow]\n")
+                return
+            
+            parts = command.split()
+            # Usage: account:add <API_KEY> <SECRET_KEY>
+            if len(parts) < 3:
+                self.console.print("\n[yellow]Usage: [bold]account:add <API_KEY> <SECRET_KEY>[/bold][/yellow]")
+                self.console.print("[dim]Example: account:add PKXXXXXXXX ECpXXXXXXXX[/dim]\n")
+                return
+            
+            api_key = parts[1].strip()
+            sec_key = parts[2].strip()
+            
+            # Auto-detect account name from Alpaca
+            acc_name = f"Account ({api_key[:6]}...)"
+            try:
+                self.console.print("[dim]Connecting to Alpaca to verify keys...[/dim]")
+                from utils.alpaca_util import AlpacaAPI
+                client = AlpacaAPI(api_key=api_key, secret_key=sec_key, paper=True)
+                acct_info = client.get_account()
+                if "error" not in acct_info:
+                    acct_num = acct_info.get("account_number", "")
+                    acc_name = f"Paper-{acct_num}" if acct_num else acc_name
+                    self.console.print(f"[green]✓ Alpaca account verified: {acc_name}[/green]")
+                else:
+                    self.console.print(f"[yellow]⚠ Could not verify keys: {acct_info['error']}[/yellow]")
+                    self.console.print("[dim]Saving anyway...[/dim]")
+            except Exception as e:
+                self.console.print(f"[yellow]⚠ Could not verify: {e}[/yellow]")
+                self.console.print("[dim]Saving anyway...[/dim]")
+            
+            from utils.auth import store_alpaca_keys
+            try:
+                new_id = store_alpaca_keys(self.user_id, api_key, sec_key, account_name=acc_name)
+                self.account_id = new_id
+                self._orch = None
+                self.console.print(f"\n[bold green]✓ Account '{acc_name}' saved and activated![/bold green]")
+                self.console.print(f"[dim]ID: {new_id}[/dim]\n")
+            except Exception as e:
+                self.console.print(f"\n[red]Failed to add account: {e}[/red]\n")
+            return
+
         # Handle built-in table views directly (fast, no markdown)
         if cmd_lower == "trades":
             self._show_trades_table()
@@ -218,6 +394,10 @@ class StrategyCLI:
         from tui.command_processor import CommandProcessor
 
         processor = CommandProcessor(self, user_id=self.user_id)
+
+        # Inject active account_id into agent commands if not specified
+        if self.account_id and command.startswith("agent:") and "account:" not in command.lower():
+            command += f" account:{self.account_id}"
 
         try:
             result = await processor.process_command(command)
@@ -251,6 +431,8 @@ class StrategyCLI:
 ```
 trades                                    Show trades from DB
 runs                                      Show runs from DB
+accounts                                  List linked accounts
+account:switch <id>                       Change active account
 agent:backtest lookback:1m                Run parameterized backtest
 agent:backtest lookback:1m hours:extended Extended hours backtest
 agent:paper duration:7d                   Paper trade in background

@@ -634,7 +634,7 @@ async def v2_backtest(req: BacktestRequest, user: Optional[Dict] = Depends(get_c
     if req.pdt is not None:
         config["pdt"] = req.pdt
 
-    orch = Orchestrator(user_id=uid)
+    orch = Orchestrator(user_id=uid, account_id=req.account_id)
     state = _get_app_state(uid)
     state._orch = orch
 
@@ -669,7 +669,7 @@ async def v2_validate(req: ValidateRequest, user: Optional[Dict] = Depends(get_c
     from agents.orchestrator import Orchestrator
 
     uid = _uid(user)
-    orch = Orchestrator(user_id=uid)
+    orch = Orchestrator(user_id=uid, account_id=req.account_id)
     state = _get_app_state(uid)
     state._orch = orch
 
@@ -697,7 +697,7 @@ async def v2_paper(req: PaperRequest, user: Optional[Dict] = Depends(get_current
     if state._bg_task and not state._bg_task.done():
         raise HTTPException(status_code=409, detail="Paper trading is already running")
 
-    orch = Orchestrator(user_id=uid)
+    orch = Orchestrator(user_id=uid, account_id=req.account_id)
     state._orch = orch
     state._bg_stop = threading.Event()
 
@@ -760,7 +760,7 @@ async def v2_full(req: FullCycleRequest, user: Optional[Dict] = Depends(get_curr
     if req.poll:
         config["poll_interval"] = req.poll
 
-    orch = Orchestrator(user_id=uid)
+    orch = Orchestrator(user_id=uid, account_id=req.account_id)
     state = _get_app_state(uid)
     state._orch = orch
 
@@ -791,7 +791,7 @@ async def v2_reconcile(req: ReconcileRequest, user: Optional[Dict] = Depends(get
     from agents.orchestrator import Orchestrator
 
     uid = _uid(user)
-    orch = Orchestrator(user_id=uid)
+    orch = Orchestrator(user_id=uid, account_id=req.account_id)
     state = _get_app_state(uid)
     state._orch = orch
 

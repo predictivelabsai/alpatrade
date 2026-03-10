@@ -57,7 +57,7 @@ def _py(val):
 
 def store_run(run_id: str, mode: str, strategy: str = None,
               config: Dict = None, strategy_slug: str = None,
-              user_id: Optional[str] = None):
+              user_id: Optional[str] = None, account_id: Optional[str] = None):
     """Insert a new row into alpatrade.runs."""
     backend = get_storage_backend()
     if backend != "db":
@@ -68,9 +68,9 @@ def store_run(run_id: str, mode: str, strategy: str = None,
         session.execute(
             text("""
                 INSERT INTO alpatrade.runs
-                    (run_id, mode, strategy, status, config, started_at, strategy_slug, user_id)
+                    (run_id, mode, strategy, status, config, started_at, strategy_slug, user_id, account_id)
                 VALUES
-                    (:run_id, :mode, :strategy, 'running', :config, :started_at, :strategy_slug, :user_id)
+                    (:run_id, :mode, :strategy, 'running', :config, :started_at, :strategy_slug, :user_id, :account_id)
                 ON CONFLICT (run_id) DO NOTHING
             """),
             {
@@ -81,6 +81,7 @@ def store_run(run_id: str, mode: str, strategy: str = None,
                 "started_at": datetime.now(timezone.utc),
                 "strategy_slug": strategy_slug,
                 "user_id": user_id,
+                "account_id": account_id,
             },
         )
     logger.info(f"Run {run_id} stored (mode={mode})")
@@ -148,7 +149,7 @@ def _store_backtest_file(run_id: str, best: Dict, all_results: List[Dict],
 def _store_backtest_db(run_id: str, best: Dict, all_results: List[Dict],
                        trades: Optional[List[Dict]] = None,
                        strategy: str = None, lookback: str = None,
-                       user_id: Optional[str] = None):
+                       user_id: Optional[str] = None, account_id: Optional[str] = None):
     """Write backtest summaries + trades into the alpatrade schema."""
     from sqlalchemy import text
     pool = _get_pool()
@@ -219,13 +220,13 @@ def _store_backtest_db(run_id: str, best: Dict, all_results: List[Dict],
                          entry_time, exit_time, entry_price, exit_price,
                          target_price, stop_price, hit_target, hit_stop,
                          pnl, pnl_pct, capital_after, total_fees, dip_pct,
-                         reason, user_id)
+                         reason, user_id, account_id)
                     VALUES
                         (:run_id, 'backtest', :symbol, :direction, :shares,
                          :entry_time, :exit_time, :entry_price, :exit_price,
                          :target_price, :stop_price, :hit_target, :hit_stop,
                          :pnl, :pnl_pct, :capital_after, :total_fees, :dip_pct,
-                         :reason, :user_id)
+                         :reason, :user_id, :account_id)
                 """),
                 {
                     "run_id": run_id,
@@ -247,6 +248,7 @@ def _store_backtest_db(run_id: str, best: Dict, all_results: List[Dict],
                     "dip_pct": _py(t.get("dip_pct")),
                     "reason": t.get("reason"),
                     "user_id": user_id,
+                    "account_id": account_id,
                 },
             )
 
@@ -314,7 +316,7 @@ def _store_paper_trade_file(session_id: str, trade: Dict):
 
 
 def _store_paper_trade_db(session_id: str, trade: Dict,
-                          user_id: Optional[str] = None):
+                          user_id: Optional[str] = None, account_id: Optional[str] = None):
     from sqlalchemy import text
     pool = _get_pool()
     with pool.get_session() as session:
@@ -325,13 +327,13 @@ def _store_paper_trade_db(session_id: str, trade: Dict,
                      entry_time, exit_time, entry_price, exit_price,
                      target_price, stop_price, hit_target, hit_stop,
                      pnl, pnl_pct, capital_after, total_fees, dip_pct,
-                     order_id, reason, user_id)
+                     order_id, reason, user_id, account_id)
                 VALUES
                     (:run_id, 'paper', :symbol, :direction, :shares,
                      :entry_time, :exit_time, :entry_price, :exit_price,
                      :target_price, :stop_price, :hit_target, :hit_stop,
                      :pnl, :pnl_pct, :capital_after, :total_fees, :dip_pct,
-                     :order_id, :reason, :user_id)
+                     :order_id, :reason, :user_id, :account_id)
             """),
             {
                 "run_id": session_id,
@@ -354,6 +356,7 @@ def _store_paper_trade_db(session_id: str, trade: Dict,
                 "order_id": trade.get("order_id"),
                 "reason": trade.get("reason") or trade.get("notes"),
                 "user_id": user_id,
+                "account_id": account_id,
             },
         )
     logger.debug(f"Paper trade stored to DB for session {session_id}")
