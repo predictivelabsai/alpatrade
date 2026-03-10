@@ -394,6 +394,11 @@ def _help_html():
             ("analysts:AAPL", "ratings & targets"),
             ("valuation:AAPL,MSFT", "valuation comparison"),
         ]),
+        *_section("Accounts", [
+            ("accounts", "list linked accounts"),
+            ("account:add <KEY> <SECRET>", "add Alpaca account"),
+            ("account:switch <id|name>", "change active account"),
+        ]),
         *_section("Options", [
             ("hours:extended", "4AM-8PM ET"),
             ("intraday_exit:true", "5-min bar exits"),
