@@ -6,8 +6,9 @@ user CRUD, and JWT token handling.
 """
 
 import os
+import secrets
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Tuple
 
 import bcrypt as _bcrypt
@@ -322,6 +323,99 @@ def get_user_accounts(user_id: str) -> list[Dict]:
                 "is_active": r[4],
             })
         return accounts
+
+
+# ---------------------------------------------------------------------------
+# Password reset
+# ---------------------------------------------------------------------------
+
+def create_password_reset_token(email: str) -> Optional[str]:
+    """
+    Generate a password-reset token for the given email.
+    Returns the token string, or None if the email is not registered.
+    Token expires in 1 hour.
+    """
+    from sqlalchemy import text
+
+    user = get_user_by_email(email)
+    if not user:
+        return None
+
+    token = secrets.token_urlsafe(48)
+    pool = _get_pool()
+    with pool.get_session() as session:
+        session.execute(
+            text("""
+                INSERT INTO alpatrade.password_reset_tokens (user_id, token, expires_at)
+                VALUES (:user_id, :token, :expires_at)
+            """),
+            {
+                "user_id": user["user_id"],
+                "token": token,
+                "expires_at": datetime.now(timezone.utc) + timedelta(hours=1),
+            },
+        )
+    return token
+
+
+def verify_and_consume_reset_token(token: str) -> Optional[Dict]:
+    """
+    Verify a password-reset token is valid and not expired.
+    Marks the token as used on success.
+    Returns the user dict, or None if invalid/expired.
+    """
+    from sqlalchemy import text
+
+    pool = _get_pool()
+    with pool.get_session() as session:
+        result = session.execute(
+            text("""
+                SELECT t.user_id, u.email, u.display_name
+                FROM alpatrade.password_reset_tokens t
+                JOIN alpatrade.users u ON u.user_id = t.user_id
+                WHERE t.token = :token
+                  AND t.used_at IS NULL
+                  AND t.expires_at > :now
+                  AND u.is_active = TRUE
+            """),
+            {"token": token, "now": datetime.now(timezone.utc)},
+        )
+        row = result.fetchone()
+        if not row:
+            return None
+
+        # Mark token as consumed
+        session.execute(
+            text("""
+                UPDATE alpatrade.password_reset_tokens
+                SET used_at = :now
+                WHERE token = :token
+            """),
+            {"token": token, "now": datetime.now(timezone.utc)},
+        )
+        return {"user_id": str(row[0]), "email": row[1], "display_name": row[2]}
+
+
+def update_password(user_id: str, new_password: str) -> bool:
+    """Update a user's password hash."""
+    from sqlalchemy import text
+
+    pw_hash = hash_password(new_password)
+    pool = _get_pool()
+    with pool.get_session() as session:
+        result = session.execute(
+            text("""
+                UPDATE alpatrade.users
+                SET password_hash = :pw_hash, updated_at = :now
+                WHERE user_id = :user_id AND is_active = TRUE
+            """),
+            {
+                "pw_hash": pw_hash,
+                "user_id": user_id,
+                "now": datetime.now(timezone.utc),
+            },
+        )
+        return result.rowcount > 0
 
 
 # ---------------------------------------------------------------------------

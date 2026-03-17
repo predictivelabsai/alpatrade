@@ -153,15 +153,24 @@ def _is_broker_query(text: str) -> bool:
     return any(kw in lower for kw in _BROKER_KEYWORDS)
 
 # ---------------------------------------------------------------------------
-# Google OAuth setup (optional — gracefully skip if no creds)
+# Google OAuth setup via authlib (optional — gracefully skip if no creds)
 # ---------------------------------------------------------------------------
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 _oauth_enabled = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)
 
+_authlib_oauth = None
 if _oauth_enabled:
-    from fasthtml.oauth import GoogleAppClient, redir_url
+    from authlib.integrations.starlette_client import OAuth as AuthlibOAuth
+    _authlib_oauth = AuthlibOAuth()
+    _authlib_oauth.register(
+        name="google",
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET,
+        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+        client_kwargs={"scope": "openid email profile"},
+    )
 
 FREE_QUERY_LIMIT = 50
 # Commands that don't count toward the free query limit
@@ -238,27 +247,55 @@ nav.top-nav .nav-links a:hover { color: var(--pico-primary); }
 .log-pre { color: #8b949e; font-size: 0.8em; margin: 0; white-space: pre-wrap; word-break: break-word; }
 .backtest-chart { margin-top: 1rem; border-radius: 0.5rem; }
 
-/* Auth forms */
-.auth-page { max-width: 420px; margin: 2rem auto; }
-.auth-page h2 { text-align: center; margin-bottom: 1.5rem; }
-.auth-page form { display: flex; flex-direction: column; gap: 0.75rem; }
-.auth-page input { width: 100%; }
-.auth-page button { width: 100%; margin-top: 0.5rem; }
-.auth-page .alt-link { text-align: center; margin-top: 1rem; font-size: 0.85em; color: var(--pico-muted-color); }
-.auth-page .alt-link a { color: var(--pico-primary); }
-.auth-page .error-msg { color: #e06c75; font-size: 0.85em; text-align: center; margin-bottom: 0.5rem; }
-.auth-page .success-msg { color: #2ea043; font-size: 0.85em; text-align: center; margin-bottom: 0.5rem; }
-.auth-page .divider { text-align: center; color: var(--pico-muted-color); margin: 1rem 0;
+/* Auth forms — card layout with logo */
+.auth-wrapper { display: flex; flex-direction: column; align-items: center;
+                justify-content: center; min-height: 85vh; padding: 1rem; }
+.auth-logo { text-align: center; margin-bottom: 1.5rem; }
+.auth-logo .logo-icon { font-size: 2.8rem; display: block; margin-bottom: 0.4rem; }
+.auth-logo .logo-text { font-size: 1.6rem; font-weight: 700; color: var(--pico-primary);
+                         letter-spacing: -0.02em; }
+.auth-logo .logo-tagline { font-size: 0.8rem; color: var(--pico-muted-color); margin-top: 0.2rem; }
+.auth-card { width: 100%; max-width: 420px; background: var(--pico-card-background-color);
+             border: 1px solid var(--pico-muted-border-color); border-radius: 12px;
+             padding: 2rem; box-shadow: 0 4px 24px rgba(0,0,0,0.2); }
+.auth-card h2 { text-align: center; margin-bottom: 1.5rem; font-size: 1.3rem; }
+.auth-card form { display: flex; flex-direction: column; gap: 0.75rem; }
+.auth-card input { width: 100%; }
+.auth-card button[type=submit] { width: 100%; margin-top: 0.5rem; padding: 0.65rem;
+                                  font-weight: 600; border-radius: 8px; }
+.auth-card .alt-link { text-align: center; margin-top: 1rem; font-size: 0.85em;
+                        color: var(--pico-muted-color); }
+.auth-card .alt-link a { color: var(--pico-primary); }
+.auth-card .error-msg { color: #e06c75; font-size: 0.85em; text-align: center;
+                         margin-bottom: 0.5rem; background: rgba(224,108,117,0.08);
+                         padding: 0.5rem; border-radius: 6px; }
+.auth-card .success-msg { color: #2ea043; font-size: 0.85em; text-align: center;
+                           margin-bottom: 0.5rem; background: rgba(46,160,67,0.08);
+                           padding: 0.5rem; border-radius: 6px; }
+.auth-card .divider { text-align: center; color: var(--pico-muted-color); margin: 1rem 0;
                        font-size: 0.85em; position: relative; }
-.auth-page .divider::before, .auth-page .divider::after {
+.auth-card .divider::before, .auth-card .divider::after {
     content: ""; position: absolute; top: 50%; width: 40%; height: 1px;
     background: var(--pico-muted-border-color); }
-.auth-page .divider::before { left: 0; }
-.auth-page .divider::after { right: 0; }
-.auth-page .google-btn { background: #4285f4; color: #fff; text-align: center;
-                          text-decoration: none; display: block; padding: 0.5rem;
-                          border-radius: 0.25rem; font-weight: 600; }
-.auth-page .google-btn:hover { opacity: 0.9; }
+.auth-card .divider::before { left: 0; }
+.auth-card .divider::after { right: 0; }
+.auth-card .google-btn { background: #4285f4; color: #fff; text-align: center;
+                          text-decoration: none; display: flex; align-items: center;
+                          justify-content: center; gap: 0.5rem; padding: 0.6rem;
+                          border-radius: 8px; font-weight: 600; font-size: 0.9rem; }
+.auth-card .google-btn:hover { background: #3367d6; color: #fff; }
+.auth-card .google-btn svg { flex-shrink: 0; }
+.auth-footer { text-align: center; margin-top: 2rem; font-size: 0.75em;
+               color: var(--pico-muted-color); }
+.auth-footer a { color: var(--pico-muted-color); }
+/* Password field with eye toggle */
+.pw-wrap { position: relative; }
+.pw-wrap input { width: 100%; padding-right: 2.8rem; }
+.pw-toggle { position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%);
+             background: none; border: none; cursor: pointer; padding: 0.25rem;
+             color: var(--pico-muted-color); line-height: 1; }
+.pw-toggle:hover { color: var(--pico-primary); }
+.pw-toggle svg { width: 20px; height: 20px; display: block; }
 
 /* Profile page */
 .profile-page { max-width: 600px; margin: 2rem auto; }
@@ -272,6 +309,12 @@ nav.top-nav .nav-links a:hover { color: var(--pico-primary); }
 .profile-page .key-status { font-size: 0.85em; padding: 0.3rem 0.6rem; border-radius: 0.25rem; }
 .profile-page .key-status.configured { color: #2ea043; background: rgba(46, 160, 67, 0.1); }
 .profile-page .key-status.not-configured { color: #e06c75; background: rgba(224, 108, 117, 0.1); }
+.profile-page .accounts-table { width: 100%; font-size: 0.85em; margin-bottom: 1.5rem; }
+.profile-page .accounts-table th { text-align: left; padding: 0.5rem; border-bottom: 1px solid var(--pico-muted-border-color); }
+.profile-page .accounts-table td { padding: 0.5rem; border-bottom: 1px solid rgba(128,128,128,0.15); }
+.profile-page .btn-sm { padding: 0.25rem 0.6rem; font-size: 0.75em; }
+.profile-page .btn-danger { background: #e06c75; border-color: #e06c75; color: #fff; }
+.profile-page .btn-danger:hover { background: #c95a63; }
 
 /* User guide page */
 .guide { max-width: 760px; margin: 0 auto; font-size: 0.9em; line-height: 1.6; }
@@ -315,6 +358,17 @@ document.addEventListener('htmx:afterSwap', function(evt) {
     if (lc) lc.scrollTop = lc.scrollHeight;
     var cc = document.getElementById('chat-console');
     if (cc) cc.scrollTop = cc.scrollHeight;
+});
+// Password eye toggle
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.pw-toggle');
+    if (!btn) return;
+    var wrap = btn.closest('.pw-wrap');
+    var inp = wrap.querySelector('input');
+    var isHidden = inp.type === 'password';
+    inp.type = isHidden ? 'text' : 'password';
+    btn.querySelector('.eye-open').style.display = isHidden ? 'none' : 'block';
+    btn.querySelector('.eye-closed').style.display = isHidden ? 'block' : 'none';
 });
 """)
 
@@ -984,6 +1038,59 @@ def chat_stream_get(session):
 # Registration & login routes
 # ---------------------------------------------------------------------------
 
+_GOOGLE_SVG = """<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+<path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+<path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+<path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9s.38 1.572.957 3.042l3.007-2.332z" fill="#FBBC05"/>
+<path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+</svg>"""
+
+
+def _auth_layout(title: str, card_parts: list):
+    """Wrap auth card content in the branded layout with logo and footer."""
+    return (
+        Title(f"{title} — AlpaTrade"),
+        Main(
+            Div(
+                Div(
+                    Span("AT", cls="logo-icon",
+                         style="background:linear-gradient(135deg,#1976d2,#42a5f5);color:#fff;"
+                               "width:56px;height:56px;border-radius:14px;display:inline-flex;"
+                               "align-items:center;justify-content:center;font-weight:800;"
+                               "font-size:1.4rem;letter-spacing:-0.02em;margin:0 auto;"),
+                    Div("AlpaTrade", cls="logo-text"),
+                    Div("Algorithmic Trading Platform", cls="logo-tagline"),
+                    cls="auth-logo",
+                ),
+                Div(*card_parts, cls="auth-card"),
+                Div(
+                    f"© 2024–2026 AlpaTrade. All rights reserved.",
+                    cls="auth-footer",
+                ),
+                cls="auth-wrapper",
+            ),
+            style="height: auto; padding: 0;",
+        ),
+    )
+
+
+def _google_btn(label: str):
+    """Return the Google sign-in button with the colored G icon."""
+    return A(NotStr(_GOOGLE_SVG), label, href="/login", cls="google-btn")
+
+
+_EYE_OPEN = '<svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
+_EYE_CLOSED = '<svg class="eye-closed" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+
+
+def _pw_input(name: str = "password", placeholder: str = "Password", **kwargs):
+    """Password input with eye toggle button."""
+    return Div(
+        Input(type="password", name=name, placeholder=placeholder, required=True, **kwargs),
+        Button(NotStr(_EYE_OPEN + _EYE_CLOSED), type="button", cls="pw-toggle"),
+        cls="pw-wrap",
+    )
+
 
 def _session_login(session, user: Dict):
     """Set session state after successful login."""
@@ -1019,27 +1126,24 @@ def register(session, email: str = "", password: str = "", display_name: str = "
     parts = [H2("Create Account")]
     if error:
         parts.append(P(error, cls="error-msg"))
+    if _oauth_enabled:
+        parts.append(_google_btn("Sign up with Google"))
+        parts.append(Div("or", cls="divider"))
     parts.append(
         Form(
             Input(type="email", name="email", placeholder="Email", required=True, autofocus=True),
-            Input(type="password", name="password", placeholder="Password (min 8 characters)", required=True, minlength="8"),
+            _pw_input("password", "Password (min 8 characters)", minlength="8"),
             Input(type="text", name="display_name", placeholder="Display name (optional)"),
             Button("Create Account", type="submit"),
             method="post", action="/register",
         )
     )
-    if _oauth_enabled:
-        parts.append(Div("or", cls="divider"))
-        parts.append(A("Sign in with Google", href="/login", cls="google-btn"))
     parts.append(Div("Already have an account? ", A("Login", href="/signin"), cls="alt-link"))
-    return (
-        Title("Register — AlpaTrade"),
-        Main(_nav(session), Div(*parts, cls="auth-page"), style="height: auto;"),
-    )
+    return _auth_layout("Register", parts)
 
 
 @rt("/signin")
-def signin(session, email: str = "", password: str = "", error: str = ""):
+def signin(session, email: str = "", password: str = "", error: str = "", msg: str = ""):
     # Handle POST submission (form data present)
     if email and password:
         from utils.auth import authenticate
@@ -1053,24 +1157,113 @@ def signin(session, email: str = "", password: str = "", error: str = ""):
     if session.get("user"):
         return RedirectResponse("/")
     parts = [H2("Login")]
+    if msg:
+        parts.append(P(msg, cls="success-msg"))
     if error:
         parts.append(P(error, cls="error-msg"))
+    if _oauth_enabled:
+        parts.append(_google_btn("Login with Google"))
+        parts.append(Div("or", cls="divider"))
     parts.append(
         Form(
             Input(type="email", name="email", placeholder="Email", required=True, autofocus=True),
-            Input(type="password", name="password", placeholder="Password", required=True),
+            _pw_input("password", "Password"),
             Button("Login", type="submit"),
             method="post", action="/signin",
         )
     )
-    if _oauth_enabled:
-        parts.append(Div("or", cls="divider"))
-        parts.append(A("Login with Google", href="/login", cls="google-btn"))
+    parts.append(Div(A("Forgot password?", href="/forgot"), cls="alt-link"))
     parts.append(Div("Don't have an account? ", A("Sign up", href="/register"), cls="alt-link"))
-    return (
-        Title("Login — AlpaTrade"),
-        Main(_nav(session), Div(*parts, cls="auth-page"), style="height: auto;"),
+    return _auth_layout("Login", parts)
+
+
+@rt("/forgot")
+def forgot_password(request, session, email: str = "", error: str = "", msg: str = ""):
+    # Handle POST
+    if email:
+        from utils.auth import create_password_reset_token
+        token = create_password_reset_token(email)
+        if token:
+            from utils.email_util import send_email_to
+            # Build absolute reset URL from the incoming request
+            scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+            host = request.headers.get("host", request.url.netloc)
+            reset_url = f"{scheme}://{host}/reset?token={token}"
+            body_html = f"""
+            <div style="font-family: -apple-system, sans-serif; max-width: 500px; margin: 0 auto;">
+              <h2>Reset Your Password</h2>
+              <p>You requested a password reset for your AlpaTrade account.</p>
+              <p><a href="{reset_url}"
+                    style="display:inline-block; padding:12px 24px; background:#1976d2;
+                           color:#fff; text-decoration:none; border-radius:6px;">
+                Reset Password
+              </a></p>
+              <p style="color:#6c757d; font-size:13px;">
+                This link expires in 1 hour. If you didn't request this, ignore this email.
+              </p>
+            </div>
+            """
+            send_email_to(email, "AlpaTrade — Password Reset", body_html)
+        # Always show success to prevent email enumeration
+        return RedirectResponse(
+            "/forgot?msg=If+that+email+is+registered+you+will+receive+a+reset+link",
+            status_code=303,
+        )
+
+    # Show form (GET)
+    if session.get("user"):
+        return RedirectResponse("/")
+    parts = [H2("Forgot Password")]
+    if msg:
+        parts.append(P(msg, cls="success-msg"))
+    if error:
+        parts.append(P(error, cls="error-msg"))
+    parts.append(
+        P("Enter your email and we'll send you a reset link.",
+          style="text-align:center; color:var(--pico-muted-color); font-size:0.85em; margin-bottom:0.5rem;"),
     )
+    parts.append(
+        Form(
+            Input(type="email", name="email", placeholder="Enter your email", required=True, autofocus=True),
+            Button("Send Reset Link", type="submit"),
+            method="post", action="/forgot",
+        )
+    )
+    parts.append(Div(A("Back to login", href="/signin"), cls="alt-link"))
+    return _auth_layout("Forgot Password", parts)
+
+
+@rt("/reset")
+def reset_password(session, token: str = "", password: str = "", confirm_password: str = "", error: str = ""):
+    # Handle POST (new password submitted)
+    if token and password:
+        if len(password) < 8:
+            return RedirectResponse(f"/reset?token={token}&error=Password+must+be+at+least+8+characters", status_code=303)
+        if password != confirm_password:
+            return RedirectResponse(f"/reset?token={token}&error=Passwords+do+not+match", status_code=303)
+        from utils.auth import verify_and_consume_reset_token, update_password
+        user = verify_and_consume_reset_token(token)
+        if not user:
+            return RedirectResponse("/forgot?error=Reset+link+is+invalid+or+expired", status_code=303)
+        update_password(user["user_id"], password)
+        return RedirectResponse("/signin?msg=Password+reset+successful.+Please+log+in.", status_code=303)
+
+    # Show form (GET)
+    if not token:
+        return RedirectResponse("/forgot")
+    parts = [H2("Set New Password")]
+    if error:
+        parts.append(P(error, cls="error-msg"))
+    parts.append(
+        Form(
+            Input(type="hidden", name="token", value=token),
+            _pw_input("password", "New password (min 8 characters)", minlength="8", autofocus=True),
+            _pw_input("confirm_password", "Confirm new password", minlength="8"),
+            Button("Reset Password", type="submit"),
+            method="post", action="/reset",
+        )
+    )
+    return _auth_layout("Reset Password", parts)
 
 
 @rt("/profile")
@@ -1079,18 +1272,18 @@ def profile(session, msg: str = ""):
     if not user:
         return RedirectResponse("/signin")
 
-    # Check if Alpaca keys are configured
-    keys_configured = False
+    # Fetch all accounts for this user (includes keys added from CLI)
+    accounts = []
     try:
-        from utils.auth import get_alpaca_keys
-        keys = get_alpaca_keys(user["user_id"])
-        keys_configured = keys is not None
+        from utils.auth import get_user_accounts
+        accounts = get_user_accounts(user["user_id"])
     except Exception:
         pass
 
+    account_count = len(accounts)
     key_badge = (
-        Span("Configured", cls="key-status configured")
-        if keys_configured
+        Span(f"{account_count} account{'s' if account_count != 1 else ''}", cls="key-status configured")
+        if account_count > 0
         else Span("Not configured", cls="key-status not-configured")
     )
 
@@ -1099,7 +1292,7 @@ def profile(session, msg: str = ""):
         Dl(
             Dt("Email"), Dd(user.get("email", "")),
             Dt("Display Name"), Dd(user.get("display_name", "")),
-            Dt("Alpaca Keys"), Dd(key_badge),
+            Dt("Alpaca Accounts"), Dd(key_badge),
             cls="info-grid",
         ),
     ]
@@ -1107,11 +1300,39 @@ def profile(session, msg: str = ""):
     if msg:
         parts.append(P(msg, cls="success-msg"))
 
+    # Show existing accounts table (synced from CLI and web)
+    if accounts:
+        rows = []
+        for i, acct in enumerate(accounts, 1):
+            rows.append(Tr(
+                Td(str(i)),
+                Td(acct.get("account_name", "—")),
+                Td(Code(acct.get("api_key_hint", "****"))),
+                Td(
+                    Form(
+                        Input(type="hidden", name="account_id", value=acct["account_id"]),
+                        Button("Remove", type="submit", cls="btn-sm btn-danger"),
+                        method="post", action="/profile/keys/remove",
+                    )
+                ),
+            ))
+        parts.extend([
+            H3("Your Alpaca Accounts"),
+            P("Accounts added from the web or CLI appear here. Keys are encrypted at rest.",
+              style="color: var(--pico-muted-color); font-size: 0.85em;"),
+            Table(
+                Thead(Tr(Th("#"), Th("Account Name"), Th("API Key"), Th(""))),
+                Tbody(*rows),
+                cls="accounts-table",
+            ),
+        ])
+
+    # Add new account form
     parts.extend([
-        H3("Alpaca Paper Trading Keys"),
-        P("Your keys are encrypted at rest. They are used for paper trading and reconciliation.",
-          style="color: var(--pico-muted-color); font-size: 0.85em;"),
+        H3("Add Alpaca Account"),
         Form(
+            Input(type="text", name="account_name",
+                  placeholder="Account name (optional)", value=""),
             Input(type="password", name="api_key",
                   placeholder="Alpaca Paper API Key", required=True),
             Input(type="password", name="secret_key",
@@ -1128,7 +1349,7 @@ def profile(session, msg: str = ""):
 
 
 @rt("/profile/keys")
-def profile_keys(session, api_key: str = "", secret_key: str = ""):
+def profile_keys(session, api_key: str = "", secret_key: str = "", account_name: str = ""):
     user = session.get("user")
     if not user:
         return RedirectResponse("/signin")
@@ -1137,11 +1358,38 @@ def profile_keys(session, api_key: str = "", secret_key: str = ""):
 
     try:
         from utils.auth import store_alpaca_keys
-        store_alpaca_keys(user["user_id"], api_key, secret_key)
+        name = account_name.strip() or "Default Account"
+        store_alpaca_keys(user["user_id"], api_key, secret_key, account_name=name)
         return RedirectResponse("/profile?msg=Alpaca+keys+saved+successfully", status_code=303)
     except Exception as e:
         logger.error(f"Failed to store Alpaca keys: {e}")
         return RedirectResponse("/profile?msg=Error+saving+keys", status_code=303)
+
+
+@rt("/profile/keys/remove")
+def profile_keys_remove(session, account_id: str = ""):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+    if not account_id:
+        return RedirectResponse("/profile", status_code=303)
+    try:
+        from utils.db.db_pool import DatabasePool
+        from sqlalchemy import text
+        pool = DatabasePool()
+        with pool.get_session() as db:
+            db.execute(
+                text("""
+                    UPDATE alpatrade.user_accounts
+                    SET is_active = FALSE, updated_at = NOW()
+                    WHERE account_id = :account_id AND user_id = :user_id
+                """),
+                {"account_id": account_id, "user_id": user["user_id"]},
+            )
+        return RedirectResponse("/profile?msg=Account+removed", status_code=303)
+    except Exception as e:
+        logger.error(f"Failed to remove account: {e}")
+        return RedirectResponse("/profile?msg=Error+removing+account", status_code=303)
 
 
 # ---------------------------------------------------------------------------
@@ -1150,24 +1398,29 @@ def profile_keys(session, api_key: str = "", secret_key: str = ""):
 
 if _oauth_enabled:
     @rt("/login")
-    def login_get(request):
-        client = GoogleAppClient(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
-        redirect_uri = redir_url(request, "/auth/callback")
-        login_url = client.login_link(redirect_uri)
-        return RedirectResponse(login_url)
+    async def login_get(request):
+        # Build absolute redirect URI from the incoming request
+        scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+        host = request.headers.get("host", request.url.netloc)
+        redirect_uri = f"{scheme}://{host}/auth/callback"
+        return await _authlib_oauth.google.authorize_redirect(request, redirect_uri)
 
     @rt("/auth/callback")
-    async def auth_callback(request, session, code: str = "", error: str = ""):
-        if error or not code:
-            return RedirectResponse("/")
-        # Create a fresh client per request (thread safety — retr_info stores token on instance)
-        client = GoogleAppClient(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
-        redirect_uri = redir_url(request, "/auth/callback")
-        info = await client.retr_info_async(code, redirect_uri)
+    async def auth_callback(request, session):
+        try:
+            token = await _authlib_oauth.google.authorize_access_token(request)
+        except Exception as e:
+            logger.error(f"OAuth token exchange failed: {e}")
+            return RedirectResponse("/signin?error=Google+login+failed")
 
-        google_id = info.get("sub") or info.get("id", "")
-        email = info.get("email", "")
-        name = info.get("name", "")
+        # authlib parses the id_token automatically via OIDC
+        userinfo = token.get("userinfo", {})
+        if not userinfo:
+            userinfo = await _authlib_oauth.google.userinfo(token=token)
+
+        google_id = userinfo.get("sub", "")
+        email = userinfo.get("email", "")
+        name = userinfo.get("name", "")
 
         if not email:
             return RedirectResponse("/signin?error=Google+did+not+provide+email")
