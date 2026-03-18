@@ -1,7 +1,7 @@
 """
-AlpaTrade AG-UI — 3-pane chat interface powered by pydantic-ai + AG-UI protocol.
+AlpaTrade AG-UI — 3-pane chat interface powered by LangGraph + astream_events.
 
-Left pane:  Auth / settings / navigation
+Left pane:  Auth / settings / navigation / help expanders
 Center:     Chat (WebSocket streaming)
 Right:      Thinking trace / artifact canvas (toggled)
 
@@ -21,54 +21,36 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from pydantic import BaseModel
-from pydantic_ai import Agent
-from pydantic_ai.ui import StateDeps
 from fasthtml.common import *
 
-from utils.agui import setup_agui, get_chat_styles, StreamingCommand
+from utils.agui import setup_agui, get_chat_styles, StreamingCommand, list_conversations
 import threading
 
 # ---------------------------------------------------------------------------
-# pydantic-ai Agent with real tools
+# LangGraph Agent with StructuredTool wrappers
 # ---------------------------------------------------------------------------
 
-class AlpaTradeState(BaseModel):
-    """Shared state between UI and agent — rendered in right pane."""
-    last_action: str = ""
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import StructuredTool
+from langgraph.prebuilt import create_react_agent
 
-    def __ft__(self):
-        if not self.last_action:
-            return Div()
-        return Div(
-            Div(self.last_action, cls="state-value"),
-            id="agui-state",
-            hx_swap_oob="innerHTML",
-        )
-
-
-agent = Agent(
-    "xai:grok-3-mini",
-    name="AlpaTrade",
-    instructions=(
-        "You are AlpaTrade, an AI trading assistant. "
-        "You have tools to look up real stock data, news, and analyst ratings. "
-        "Use your tools when users ask about specific stocks or market data. "
-        "Be concise and use markdown formatting with tables where appropriate. "
-        "Users can type CLI commands directly in chat (e.g. agent:backtest lookback:1m, "
-        "news:TSLA, trades, runs) and they will be executed automatically. "
-        "For stock queries, always use the appropriate tool to get real data. "
-        "When users ask for a graph or chart of a backtest run, use the show_equity_curve tool with the run_id. "
-        "For stock price charts, use show_stock_chart. "
-        "When users ask about their positions, holdings, or portfolio, use get_alpaca_positions. "
-        "When users ask about their account, balance, buying power, or cash, use get_alpaca_account. "
-        "When users ask about their linked accounts or want to see which accounts are configured, use list_user_accounts. "
-        "When users ask about running agents, background tasks, or agent status, use show_running_agents."
-    ),
+SYSTEM_PROMPT = (
+    "You are AlpaTrade, an AI trading assistant. "
+    "You have tools to look up real stock data, news, and analyst ratings. "
+    "Use your tools when users ask about specific stocks or market data. "
+    "Be concise and use markdown formatting with tables where appropriate. "
+    "Users can type CLI commands directly in chat (e.g. agent:backtest lookback:1m, "
+    "news:TSLA, trades, runs) and they will be executed automatically. "
+    "For stock queries, always use the appropriate tool to get real data. "
+    "When users ask for a graph or chart of a backtest run, use the show_equity_curve tool with the run_id. "
+    "For stock price charts, use show_stock_chart. "
+    "When users ask about their positions, holdings, or portfolio, use get_alpaca_positions. "
+    "When users ask about their account, balance, buying power, or cash, use get_alpaca_account. "
+    "When users ask about their linked accounts or want to see which accounts are configured, use list_user_accounts. "
+    "When users ask about running agents, background tasks, or agent status, use show_running_agents."
 )
 
 
-@agent.tool_plain
 def get_stock_price(ticker: str) -> str:
     """Get current stock price and recent performance for a ticker symbol."""
     try:
@@ -91,7 +73,7 @@ def get_stock_price(ticker: str) -> str:
         return f"Error fetching price for {ticker}: {e}"
 
 
-@agent.tool_plain
+
 def get_stock_news(ticker: str, limit: int = 5) -> str:
     """Get latest news headlines for a stock ticker."""
     try:
@@ -102,7 +84,7 @@ def get_stock_news(ticker: str, limit: int = 5) -> str:
         return f"Error fetching news for {ticker}: {e}"
 
 
-@agent.tool_plain
+
 def get_analyst_ratings(ticker: str) -> str:
     """Get analyst ratings and price targets for a stock."""
     try:
@@ -113,7 +95,7 @@ def get_analyst_ratings(ticker: str) -> str:
         return f"Error fetching ratings for {ticker}: {e}"
 
 
-@agent.tool_plain
+
 def get_company_profile(ticker: str) -> str:
     """Get company profile, sector, and key details for a stock."""
     try:
@@ -124,7 +106,7 @@ def get_company_profile(ticker: str) -> str:
         return f"Error fetching profile for {ticker}: {e}"
 
 
-@agent.tool_plain
+
 def get_financials(ticker: str, period: str = "annual") -> str:
     """Get financial data (revenue, earnings, margins) for a stock. Period: 'annual' or 'quarterly'."""
     try:
@@ -135,7 +117,7 @@ def get_financials(ticker: str, period: str = "annual") -> str:
         return f"Error fetching financials for {ticker}: {e}"
 
 
-@agent.tool_plain
+
 def get_market_movers(direction: str = "both") -> str:
     """Get today's top market movers (gainers and losers). Direction: 'gainers', 'losers', or 'both'."""
     try:
@@ -146,7 +128,7 @@ def get_market_movers(direction: str = "both") -> str:
         return f"Error fetching market movers: {e}"
 
 
-@agent.tool_plain
+
 def get_valuation(tickers: str) -> str:
     """Compare valuation metrics (P/E, P/B, EV/EBITDA) for multiple stocks. Pass comma-separated tickers like 'AAPL,MSFT,GOOGL'."""
     try:
@@ -157,7 +139,7 @@ def get_valuation(tickers: str) -> str:
         return f"Error fetching valuation: {e}"
 
 
-@agent.tool_plain
+
 def get_alpaca_positions(account_id: Optional[str] = None) -> str:
     """Get current open positions from the Alpaca paper trading account. Shows symbol, qty, entry price, current price, and unrealized P&L."""
     try:
@@ -184,7 +166,7 @@ def get_alpaca_positions(account_id: Optional[str] = None) -> str:
         return f"Error fetching positions: {e}"
 
 
-@agent.tool_plain
+
 def get_alpaca_account(account_id: Optional[str] = None) -> str:
     """Get Alpaca paper trading account summary — portfolio value, cash, buying power, and P&L."""
     try:
@@ -213,7 +195,7 @@ def get_alpaca_account(account_id: Optional[str] = None) -> str:
         return f"Error fetching account: {e}"
 
 
-@agent.tool_plain
+
 def list_user_accounts() -> str:
     """List all Alpaca brokerage accounts linked to the current user. Shows account name, API key hint, and status."""
     try:
@@ -250,7 +232,7 @@ def list_user_accounts() -> str:
         return f"Error listing accounts: {e}"
 
 
-@agent.tool_plain
+
 def show_running_agents() -> str:
     """Show all currently running background trading agents (paper trade, backtest, etc.) and their status."""
     try:
@@ -277,7 +259,7 @@ def show_running_agents() -> str:
         return f"Error checking agents: {e}"
 
 
-@agent.tool_plain
+
 def show_recent_trades(limit: int = 20) -> str:
     """Show recent trades from the AlpaTrade database."""
     try:
@@ -310,7 +292,7 @@ def show_recent_trades(limit: int = 20) -> str:
         return f"Error fetching trades: {e}"
 
 
-@agent.tool_plain
+
 def show_stock_chart(ticker: str, period: str = "3mo") -> str:
     """Show a price chart for a stock. Period: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y."""
     try:
@@ -337,7 +319,7 @@ def show_stock_chart(ticker: str, period: str = "3mo") -> str:
         return f"Error generating chart for {ticker}: {e}"
 
 
-@agent.tool_plain
+
 def show_recent_runs(limit: int = 20) -> str:
     """Show recent backtest/paper trade runs from the AlpaTrade database."""
     try:
@@ -367,7 +349,7 @@ def show_recent_runs(limit: int = 20) -> str:
         return f"Error fetching runs: {e}"
 
 
-@agent.tool_plain
+
 def show_equity_curve(run_id: str) -> str:
     """Show the equity curve chart for a backtest run. Accepts full or partial (prefix) run IDs."""
     try:
@@ -425,6 +407,55 @@ def show_equity_curve(run_id: str) -> str:
         return f"__CHART_DATA__{chart_data}__END_CHART__"
     except Exception as e:
         return f"Error generating equity curve: {e}"
+
+
+# ---------------------------------------------------------------------------
+# Build LangGraph agent from tool functions
+# ---------------------------------------------------------------------------
+
+TOOLS = [
+    StructuredTool.from_function(get_stock_price, name="get_stock_price",
+        description="Get current stock price and recent performance for a ticker symbol."),
+    StructuredTool.from_function(get_stock_news, name="get_stock_news",
+        description="Get latest news headlines for a stock ticker."),
+    StructuredTool.from_function(get_analyst_ratings, name="get_analyst_ratings",
+        description="Get analyst ratings and price targets for a stock."),
+    StructuredTool.from_function(get_company_profile, name="get_company_profile",
+        description="Get company profile, sector, and key details for a stock."),
+    StructuredTool.from_function(get_financials, name="get_financials",
+        description="Get financial data (revenue, earnings, margins) for a stock. Period: 'annual' or 'quarterly'."),
+    StructuredTool.from_function(get_market_movers, name="get_market_movers",
+        description="Get today's top market movers (gainers and losers). Direction: 'gainers', 'losers', or 'both'."),
+    StructuredTool.from_function(get_valuation, name="get_valuation",
+        description="Compare valuation metrics (P/E, P/B, EV/EBITDA) for multiple stocks. Pass comma-separated tickers like 'AAPL,MSFT,GOOGL'."),
+    StructuredTool.from_function(get_alpaca_positions, name="get_alpaca_positions",
+        description="Get current open positions from the Alpaca paper trading account."),
+    StructuredTool.from_function(get_alpaca_account, name="get_alpaca_account",
+        description="Get Alpaca paper trading account summary — portfolio value, cash, buying power, and P&L."),
+    StructuredTool.from_function(list_user_accounts, name="list_user_accounts",
+        description="List all Alpaca brokerage accounts linked to the current user."),
+    StructuredTool.from_function(show_running_agents, name="show_running_agents",
+        description="Show all currently running background trading agents and their status."),
+    StructuredTool.from_function(show_recent_trades, name="show_recent_trades",
+        description="Show recent trades from the AlpaTrade database."),
+    StructuredTool.from_function(show_stock_chart, name="show_stock_chart",
+        description="Show a price chart for a stock. Period: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y."),
+    StructuredTool.from_function(show_recent_runs, name="show_recent_runs",
+        description="Show recent backtest/paper trade runs from the AlpaTrade database."),
+    StructuredTool.from_function(show_equity_curve, name="show_equity_curve",
+        description="Show the equity curve chart for a backtest run. Accepts full or partial (prefix) run IDs."),
+]
+
+llm = ChatOpenAI(
+    api_key=os.getenv("XAI_API_KEY"),
+    base_url="https://api.x.ai/v1",
+    model="grok-3-mini",
+    temperature=0.5,
+    max_tokens=3000,
+    streaming=True,
+)
+
+langgraph_agent = create_react_agent(model=llm, tools=TOOLS, prompt=SYSTEM_PROMPT)
 
 
 # ---------------------------------------------------------------------------
@@ -639,8 +670,7 @@ _AGUI_HELP = """# AlpaTrade Commands
 Type any question to chat with AI about stocks & trading.
 """
 
-agui = setup_agui(app, agent, AlpaTradeState(), AlpaTradeState,
-                  command_interceptor=_command_interceptor)
+agui = setup_agui(app, langgraph_agent, command_interceptor=_command_interceptor)
 
 
 # ---------------------------------------------------------------------------
@@ -1206,6 +1236,84 @@ body {
   padding-top: 0.5rem;
 }
 
+/* === Help Expanders (sidebar command reference) === */
+.help-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.help-toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  background: none;
+  border: none;
+  border-radius: 0.375rem;
+  color: #475569;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.help-toggle:hover { background: #f1f5f9; color: #1e293b; }
+
+.help-cnt {
+  margin-left: auto;
+  margin-right: 0.35rem;
+  font-size: 0.65rem;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 0.1rem 0.4rem;
+  border-radius: 1rem;
+}
+
+.help-arrow {
+  color: #94a3b8;
+  font-size: 0.65rem;
+  transition: transform 0.2s;
+}
+
+.help-toggle.open .help-arrow { transform: rotate(90deg); }
+
+.help-list {
+  display: none;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding-left: 0.5rem;
+}
+
+.help-list.open { display: flex; }
+
+.help-item {
+  display: block;
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  background: none;
+  border: none;
+  border-radius: 0.25rem;
+  color: #3b82f6;
+  font-family: ui-monospace, monospace;
+  font-size: 0.7rem;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.15s;
+}
+
+.help-item:hover {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
 /* === Responsive === */
 @media (max-width: 768px) {
   .app-layout {
@@ -1237,6 +1345,99 @@ def _session_login(session, user: Dict):
 
 
 # ---------------------------------------------------------------------------
+# Help expanders — collapsible command reference in sidebar
+# ---------------------------------------------------------------------------
+
+_HELP_CATEGORIES = [
+    ("Backtest", [
+        ("agent:backtest lookback:1m", "1-month backtest"),
+        ("agent:backtest symbols:AAPL,TSLA", "custom symbols"),
+        ("agent:backtest hours:extended", "pre/after-market"),
+        ("agent:backtest intraday_exit:true", "5-min TP/SL bars"),
+        ("agent:backtest pdt:false", "disable PDT rule"),
+    ]),
+    ("Validate", [
+        ("agent:validate run-id:<uuid>", "validate a run"),
+        ("agent:reconcile window:14d", "DB vs Alpaca"),
+    ]),
+    ("Reconcile", [
+        ("agent:reconcile window:7d", "7-day reconcile"),
+        ("agent:reconcile window:30d", "30-day reconcile"),
+    ]),
+    ("Paper Trade", [
+        ("agent:paper duration:7d", "paper trade 7 days"),
+        ("agent:paper symbols:AAPL,MSFT", "custom symbols"),
+        ("agent:paper poll:60", "60-second poll"),
+        ("agent:paper hours:extended", "extended hours"),
+        ("agent:stop", "stop paper trading"),
+    ]),
+    ("Full Cycle", [
+        ("agent:full lookback:1m duration:1m", "backtest + validate + paper"),
+        ("agent:full lookback:3m duration:7d", "3-month + 7-day paper"),
+    ]),
+    ("Query & Monitor", [
+        ("trades", "recent trades from DB"),
+        ("runs", "recent runs from DB"),
+        ("agent:report", "performance summary"),
+        ("agent:report run-id:<uuid>", "single run detail"),
+        ("agent:top", "rank strategies"),
+        ("agent:status", "agent states"),
+        ("agent:logs", "paper trade log tail"),
+        ("positions", "Alpaca open positions"),
+    ]),
+    ("Research", [
+        ("news:TSLA", "company news"),
+        ("price:AAPL", "stock quote"),
+        ("profile:MSFT", "company profile"),
+        ("analysts:GOOGL", "analyst ratings"),
+        ("financials:AAPL", "income & balance sheet"),
+        ("valuation:AAPL,MSFT", "valuation comparison"),
+        ("movers", "top gainers & losers"),
+        ("chart:AAPL period:1y", "stock chart"),
+    ]),
+    ("Accounts", [
+        ("accounts", "list linked accounts"),
+        ("account:add <KEY> <SECRET>", "add new account"),
+        ("account:switch <num>", "switch active account"),
+    ]),
+    ("Options", [
+        ("hours:extended", "pre/after-market hours"),
+        ("pdt:false", "disable PDT rule"),
+        ("intraday_exit:true", "intraday TP/SL exits"),
+    ]),
+]
+
+
+def _help_expanders():
+    """Build collapsible help category groups for the sidebar."""
+    groups = []
+    for cat_name, items in _HELP_CATEGORIES:
+        cat_id = f"help-{cat_name.lower().replace(' ', '-').replace('&', '')}"
+        toggle_btn = Button(
+            cat_name,
+            Span(f"{len(items)}", cls="help-cnt"),
+            Span(">", cls="help-arrow"),
+            cls="help-toggle",
+            onclick=f"toggleGroup('{cat_id}')",
+        )
+        tool_items = []
+        for cmd, desc in items:
+            tool_items.append(
+                Button(
+                    cmd,
+                    cls="help-item",
+                    onclick=f"fillChat({repr(cmd)})",
+                    title=desc,
+                )
+            )
+        tool_list = Div(*tool_items, cls="help-list", id=cat_id)
+        groups.append(toggle_btn)
+        groups.append(tool_list)
+
+    return Div(*groups, cls="help-section")
+
+
+# ---------------------------------------------------------------------------
 # Left pane builder
 # ---------------------------------------------------------------------------
 
@@ -1264,6 +1465,9 @@ def _left_pane(session):
             onclick="window.location.href='/?new=1'",
         )
     )
+
+    # Help expanders — collapsible command reference
+    parts.append(_help_expanders())
 
     # Conversation list
     parts.append(
@@ -1394,6 +1598,27 @@ LAYOUT_JS = """
 function toggleRightPane() {
     var layout = document.querySelector('.app-layout');
     layout.classList.toggle('right-open');
+}
+
+/* Help expander toggle */
+function toggleGroup(catId) {
+    var list = document.getElementById(catId);
+    if (!list) return;
+    list.classList.toggle('open');
+    // Find the toggle button (previous sibling)
+    var btn = list.previousElementSibling;
+    if (btn) btn.classList.toggle('open');
+}
+
+/* Fill chat input from sidebar help item */
+function fillChat(cmd) {
+    if (window._aguiProcessing) return;
+    var ta = document.getElementById('chat-input');
+    var fm = document.getElementById('chat-form');
+    if (ta && fm) {
+        ta.value = cmd;
+        ta.focus();
+    }
 }
 
 function showTab(tab) {
@@ -1617,23 +1842,24 @@ def get(session, new: str = "", thread: str = ""):
 
 @rt("/agui-conv/list")
 def get(session):
-    """Return the conversation list for the sidebar."""
+    """Return the conversation list for the sidebar (DB-backed)."""
     current_tid = session.get("thread_id", "")
-    threads = agui._threads  # Dict[str, AGUIThread]
+    user_id = session.get("user", {}).get("user_id") if session.get("user") else None
 
-    if not threads:
+    try:
+        convs = list_conversations(user_id=user_id, limit=20)
+    except Exception:
+        convs = []
+
+    if not convs:
         return Div(Span("No conversations yet", cls="conv-empty"))
 
     items = []
-    for tid, thread in threads.items():
-        # Use first user message as title, or fallback
-        title = "New chat"
-        for m in thread._messages:
-            if m.role == "user":
-                title = m.content[:40]
-                if len(m.content) > 40:
-                    title += "..."
-                break
+    for c in convs:
+        tid = c["thread_id"]
+        title = c.get("first_msg") or c.get("title") or "New chat"
+        if len(title) > 40:
+            title = title[:40] + "..."
         cls = "conv-item conv-active" if tid == current_tid else "conv-item"
         items.append(A(title, href=f"/?thread={tid}", cls=cls))
 

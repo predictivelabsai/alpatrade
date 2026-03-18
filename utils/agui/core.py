@@ -1,30 +1,10 @@
 """
-AG-UI core: WebSocket-based chat with pydantic-ai agents.
+AG-UI core: WebSocket-based chat with LangGraph agents.
 
-Based on ft-agui core.py — adapted for AlpaTrade.
+Streaming via LangGraph astream_events(v2) — replaces pydantic-ai + AG-UI protocol.
 """
 
-from typing import Dict, List, Optional, Any, TypeVar, Generic
-from pydantic import BaseModel
-from pydantic_ai import Agent
-from pydantic_ai.ui.ag_ui import AGUIAdapter
-from pydantic_ai.ui import StateDeps
-from ag_ui.core.types import (
-    RunAgentInput,
-    Tool,
-    BaseMessage,
-    UserMessage,
-    AssistantMessage,
-    Context,
-)
-from ag_ui.core.events import (
-    EventType,
-    RunStartedEvent,
-    RunFinishedEvent,
-    TextMessageStartEvent,
-    TextMessageChunkEvent,
-    StateSnapshotEvent,
-)
+from typing import Dict, List, Optional, Any
 from fasthtml.common import (
     Div, Form, Hidden, Textarea, Button, Span, Script, Style, Pre, NotStr,
 )
@@ -35,8 +15,11 @@ import re
 import threading
 import uuid
 
-from .patches import setup_ft_patches
 from .styles import get_chat_styles
+from .chat_store import (
+    save_conversation, save_message,
+    load_conversation_messages, list_conversations,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -269,54 +252,38 @@ class LogCapture(logging.Handler):
         with self._lock:
             self.lines.clear()
 
-T = TypeVar("T", bound=BaseModel)
-
 
 # ---------------------------------------------------------------------------
 # UI renderer
 # ---------------------------------------------------------------------------
 
-class UI(Generic[T]):
+class UI:
     """Renders chat components for a given thread."""
 
     def __init__(self, thread_id: str, autoscroll: bool = True):
         self.thread_id = thread_id
         self.autoscroll = autoscroll
 
-    def _trigger_run(self, run_id: str):
-        return Div(
-            "...",
-            Div(
-                id=f"run-trigger-{run_id}",
-                hx_get=f"/agui/run/{self.thread_id}/{run_id}",
-                hx_trigger="load",
-                style="display: none;",
-            ),
-            id="chat-status",
-            hx_swap_oob="innerHTML",
-        )
-
     def _clear_input(self):
         return self._render_input_form(oob_swap=True)
 
-    def _render_messages(self, messages: List[BaseMessage], oob: bool = False):
+    def _render_messages(self, messages: list[dict], oob: bool = False):
         attrs = {"id": "chat-messages", "cls": "chat-messages"}
         if oob:
             attrs["hx_swap_oob"] = "outerHTML"
         return Div(
-            *[
-                m.__ft__() if hasattr(m, "__ft__") else self._render_message(m)
-                for m in messages
-            ],
+            *[self._render_message(m) for m in messages],
             **attrs,
         )
 
-    def _render_message(self, message: BaseMessage):
-        cls = "chat-user" if message.role == "user" else "chat-assistant"
+    def _render_message(self, message: dict):
+        role = message.get("role", "assistant")
+        cls = "chat-user" if role == "user" else "chat-assistant"
+        mid = message.get("message_id", str(uuid.uuid4()))
         return Div(
-            Div(message.content, cls="chat-message-content"),
+            Div(message.get("content", ""), cls="chat-message-content marked"),
             cls=f"chat-message {cls}",
-            id=message.id,
+            id=mid,
         )
 
     def _render_input_form(self, oob_swap=False):
@@ -510,19 +477,30 @@ class UI(Generic[T]):
 # Thread (conversation)
 # ---------------------------------------------------------------------------
 
-class AGUIThread(Generic[T]):
-    """Single conversation thread with message history and agent runs."""
+class AGUIThread:
+    """Single conversation thread with message history and LangGraph agent."""
 
-    def __init__(self, thread_id: str, state: T, agent: Agent):
+    def __init__(self, thread_id: str, langgraph_agent, user_id: str = None):
         self.thread_id = thread_id
-        self._state = state
-        self._runs: Dict[str, RunAgentInput] = {}
-        self._agent = agent
-        self._messages: List[BaseMessage] = []
+        self._agent = langgraph_agent
+        self._user_id = user_id
+        self._messages: list[dict] = []  # [{role, content, message_id}]
         self._connections: Dict[str, Any] = {}
-        self.ui = UI[T](self.thread_id, autoscroll=True)
-        self._suggestions: List[str] = []
+        self.ui = UI(self.thread_id, autoscroll=True)
+        self._suggestions: list[str] = []
         self._command_interceptor = None  # async callable(msg, session) -> str|None
+        self._loaded = False
+
+    def _ensure_loaded(self):
+        """Load messages from DB on first access."""
+        if self._loaded:
+            return
+        self._loaded = True
+        try:
+            rows = load_conversation_messages(self.thread_id)
+            self._messages = rows
+        except Exception:
+            pass
 
     def subscribe(self, connection_id, send):
         self._connections[connection_id] = send
@@ -535,14 +513,10 @@ class AGUIThread(Generic[T]):
             await send_fn(element)
 
     async def _send_js(self, js_code: str):
-        """Execute JS in the browser via OOB swap into the hidden agui-js div.
-
-        Bare <script> tags sent via HTMX WebSocket are silently ignored.
-        Wrapping the script inside an OOB-swapped element ensures execution.
-        """
+        """Execute JS in the browser via OOB swap into the hidden agui-js div."""
         await self.send(Div(Script(js_code), id="agui-js", hx_swap_oob="innerHTML"))
 
-    async def set_suggestions(self, suggestions: List[str]):
+    async def set_suggestions(self, suggestions: list[str]):
         self._suggestions = suggestions[:4]
         if self._suggestions:
             el = Div(
@@ -570,6 +544,8 @@ class AGUIThread(Generic[T]):
                             hx_trigger="load", hx_swap="innerHTML", hx_swap_oob="outerHTML"))
 
     async def _handle_message(self, msg: str, session):
+        self._ensure_loaded()
+
         # Block double-submit immediately
         await self._send_js(_GUARD_ENABLE_JS)
 
@@ -589,34 +565,218 @@ class AGUIThread(Generic[T]):
                     await self._handle_command_result(msg, result, session)
                 return
 
-        run_id = str(uuid.uuid4())
-        message = UserMessage(
-            id=str(uuid.uuid4()),
-            role="user",
-            content=msg,
-            name=session.get("username", "User"),
-        )
-        self._messages.append(message)
+        # AI message — route to LangGraph
+        await self._handle_ai_run(msg, session)
 
-        run_input = RunAgentInput(
-            thread_id=self.thread_id,
-            run_id=run_id,
-            messages=self._messages,
-            state=self._state,
-            tools=[],
-            forwarded_props=[],
-            context=[],
-        )
-        self._runs[run_id] = run_input
+    async def _handle_ai_run(self, msg: str, session):
+        """Stream a LangGraph agent response via astream_events(v2)."""
+        from langchain_core.messages import HumanMessage, AIMessage
 
-        await self.send(self.ui._render_messages(self._messages, oob=True))
-        await self.send(self.ui._trigger_run(run_id))
+        _open_trace = (
+            "var l=document.querySelector('.app-layout');"
+            "if(l&&!l.classList.contains('right-open'))l.classList.add('right-open');"
+            "setTimeout(function(){var tc=document.getElementById('trace-content');"
+            "if(tc)tc.scrollTop=tc.scrollHeight;},100);"
+        )
+
+        user_mid = str(uuid.uuid4())
+        asst_mid = str(uuid.uuid4())
+        content_id = f"message-content-{asst_mid}"
+
+        # 1. Save user message
+        user_dict = {"role": "user", "content": msg, "message_id": user_mid}
+        self._messages.append(user_dict)
+        try:
+            title = msg[:80] if len(self._messages) == 1 else None
+            save_conversation(self.thread_id, user_id=self._user_id, title=title)
+        except Exception:
+            pass
+        try:
+            save_message(self.thread_id, "user", msg, user_mid)
+        except Exception:
+            pass
+
+        # 2. Send user bubble
+        await self.send(Div(
+            Div(
+                Div(msg, cls="chat-message-content"),
+                cls="chat-message chat-user",
+                id=user_mid,
+            ),
+            id="chat-messages",
+            hx_swap_oob="beforeend",
+        ))
+
+        # Clear input + disable
         await self.send(self.ui._clear_input())
+        await self._send_js(
+            "var b=document.querySelector('.chat-input-button'),t=document.getElementById('chat-input');"
+            "if(b){b.disabled=true;b.classList.add('sending')}"
+            "if(t){t.disabled=true;t.placeholder='Thinking...'}"
+        )
+
+        # 3. Create empty streaming assistant bubble
+        await self.send(Div(
+            Div(
+                Div(
+                    Span("", id=content_id),
+                    Span("", cls="chat-streaming", id=f"streaming-{asst_mid}"),
+                    cls="chat-message-content",
+                ),
+                cls="chat-message chat-assistant",
+                id=f"message-{asst_mid}",
+            ),
+            id="chat-messages",
+            hx_swap_oob="beforeend",
+        ))
+
+        # 4. Trace: run started
+        run_trace_id = str(uuid.uuid4())
+        await self.send(Div(
+            Div(
+                Span("AI run started", cls="trace-label"),
+                cls="trace-entry trace-run-start",
+                id=f"trace-run-{run_trace_id}",
+            ),
+            Script(_open_trace),
+            id="trace-content",
+            hx_swap_oob="beforeend",
+        ))
+
+        # 5. Convert message history to LangChain format
+        lc_messages = []
+        for m in self._messages:
+            role = m.get("role", "user")
+            content = m.get("content", "")
+            if role == "user":
+                lc_messages.append(HumanMessage(content=content))
+            else:
+                lc_messages.append(AIMessage(content=content))
+
+        # 6. Stream via astream_events
+        full_response = ""
+        try:
+            async for event in self._agent.astream_events(
+                {"messages": lc_messages}, version="v2"
+            ):
+                kind = event.get("event", "")
+
+                if kind == "on_chat_model_stream":
+                    chunk = event.get("data", {}).get("chunk")
+                    if chunk and hasattr(chunk, "content") and chunk.content:
+                        token = chunk.content
+                        full_response += token
+                        # Append token to streaming bubble
+                        await self.send(Span(
+                            token,
+                            id=content_id,
+                            hx_swap_oob="beforeend",
+                        ))
+
+                elif kind == "on_tool_start":
+                    tool_name = event.get("name", "tool")
+                    tool_run_id = event.get("run_id", "")[:8]
+                    # Trace: tool call
+                    await self.send(Div(
+                        Div(
+                            Span(f"Tool: {tool_name}", cls="trace-label"),
+                            Span("running...", cls="trace-detail"),
+                            cls="trace-entry trace-tool-active",
+                            id=f"trace-tool-{tool_run_id}",
+                        ),
+                        Script(_open_trace),
+                        id="trace-content",
+                        hx_swap_oob="beforeend",
+                    ))
+                    # Tool indicator in chat
+                    await self.send(Div(
+                        Div(
+                            Div(f"Running {tool_name}...", cls="chat-message-content"),
+                            cls="chat-message chat-tool",
+                            id=f"tool-{tool_run_id}",
+                        ),
+                        id="chat-messages",
+                        hx_swap_oob="beforeend",
+                    ))
+
+                elif kind == "on_tool_end":
+                    tool_run_id = event.get("run_id", "")[:8]
+                    # Update tool indicator
+                    await self.send(Div(
+                        Div("Done", cls="chat-message-content"),
+                        cls="chat-message chat-tool",
+                        id=f"tool-{tool_run_id}",
+                        hx_swap_oob="outerHTML",
+                    ))
+                    # Update trace
+                    await self.send(Div(
+                        Span("Tool complete", cls="trace-label"),
+                        cls="trace-entry trace-tool-done",
+                        id=f"trace-tool-{tool_run_id}",
+                        hx_swap_oob="outerHTML",
+                    ))
+
+        except Exception as e:
+            error_msg = str(e)
+            full_response = f"Error: {error_msg}"
+            # Show error in chat
+            await self.send(Span(
+                f"\n\n**Error:** {error_msg}",
+                id=content_id,
+                hx_swap_oob="beforeend",
+            ))
+            # Trace: error
+            await self.send(Div(
+                Div(
+                    Span("Error", cls="trace-label"),
+                    Span(error_msg[:200], cls="trace-detail"),
+                    cls="trace-entry trace-error",
+                ),
+                id="trace-content",
+                hx_swap_oob="beforeend",
+            ))
+
+        # 7. Finalize: remove cursor, add marked class, render markdown
+        await self.send(Span("", id=f"streaming-{asst_mid}", hx_swap_oob="outerHTML"))
+        await self._send_js(
+            f"var el=document.getElementById('{content_id}');"
+            f"if(el)el.classList.add('marked');"
+            f"renderMarkdown('{content_id}');"
+        )
+
+        # Trace: run finished
+        await self.send(Div(
+            Div(
+                Span("Run finished", cls="trace-label"),
+                cls="trace-entry trace-run-end",
+            ),
+            id="trace-content",
+            hx_swap_oob="beforeend",
+        ))
+
+        # 8. Save assistant message
+        asst_dict = {"role": "assistant", "content": full_response, "message_id": asst_mid}
+        self._messages.append(asst_dict)
+        try:
+            save_message(self.thread_id, "assistant", full_response, asst_mid)
+        except Exception:
+            pass
+
+        # Refresh sidebar
+        await self._refresh_conv_list()
+
+        # Re-enable input
+        await self.send(self.ui._clear_input())
+        await self._send_js(
+            _GUARD_DISABLE_JS +
+            "var b=document.querySelector('.chat-input-button'),t=document.getElementById('chat-input');"
+            "if(b){b.disabled=false;b.classList.remove('sending')}"
+            "if(t){t.disabled=false;t.placeholder='Type a command or ask a question...';t.focus()}"
+        )
+        await self._send_js(_SCROLL_CHAT_JS)
 
     async def _handle_command_result(self, msg: str, result: str, session):
         """Display a CLI command result in chat with trace pane integration."""
-        import asyncio
-        from fasthtml.common import Script
 
         # Disable input during processing
         await self._send_js(
@@ -634,20 +794,30 @@ class AGUIThread(Generic[T]):
         cmd_id = str(uuid.uuid4())
 
         # Append user message
-        user_msg = UserMessage(
-            id=str(uuid.uuid4()),
-            role="user",
-            content=msg,
-            name=session.get("username", "User"),
-        )
-        self._messages.append(user_msg)
+        user_mid = str(uuid.uuid4())
+        user_dict = {"role": "user", "content": msg, "message_id": user_mid}
+        self._messages.append(user_dict)
+
+        # Persist
+        try:
+            save_conversation(self.thread_id, user_id=self._user_id,
+                              title=msg[:80] if len(self._messages) == 1 else None)
+        except Exception:
+            try:
+                save_conversation(self.thread_id, user_id=self._user_id)
+            except Exception:
+                pass
+        try:
+            save_message(self.thread_id, "user", msg, user_mid)
+        except Exception:
+            pass
 
         # Send user message + open trace with "Command started"
         await self.send(Div(
             Div(
                 Div(msg, cls="chat-message-content"),
                 cls="chat-message chat-user",
-                id=user_msg.id,
+                id=user_mid,
             ),
             id="chat-messages",
             hx_swap_oob="beforeend",
@@ -724,13 +894,12 @@ class AGUIThread(Generic[T]):
         ))
 
         # Store message
-        asst_msg = AssistantMessage(
-            id=asst_id,
-            role="assistant",
-            content=result,
-            name=self._agent.name or "AlpaTrade",
-        )
-        self._messages.append(asst_msg)
+        asst_dict = {"role": "assistant", "content": result, "message_id": asst_id}
+        self._messages.append(asst_dict)
+        try:
+            save_message(self.thread_id, "assistant", result, asst_id)
+        except Exception:
+            pass
 
         # Refresh sidebar conversation list
         await self._refresh_conv_list()
@@ -763,19 +932,29 @@ class AGUIThread(Generic[T]):
         trace_progress_id = f"trace-progress-{cmd_id}"
 
         # 1. Append + send user message
-        user_msg = UserMessage(
-            id=str(uuid.uuid4()),
-            role="user",
-            content=msg,
-            name=session.get("username", "User"),
-        )
-        self._messages.append(user_msg)
+        user_mid = str(uuid.uuid4())
+        user_dict = {"role": "user", "content": msg, "message_id": user_mid}
+        self._messages.append(user_dict)
+
+        # Persist
+        try:
+            save_conversation(self.thread_id, user_id=self._user_id,
+                              title=msg[:80] if len(self._messages) == 1 else None)
+        except Exception:
+            try:
+                save_conversation(self.thread_id, user_id=self._user_id)
+            except Exception:
+                pass
+        try:
+            save_message(self.thread_id, "user", msg, user_mid)
+        except Exception:
+            pass
 
         await self.send(Div(
             Div(
                 Div(msg, cls="chat-message-content"),
                 cls="chat-message chat-user",
-                id=user_msg.id,
+                id=user_mid,
             ),
             id="chat-messages",
             hx_swap_oob="beforeend",
@@ -963,14 +1142,13 @@ class AGUIThread(Generic[T]):
                 hx_swap_oob="beforeend",
             ))
 
-            # Store message in history (before conv refresh so title updates)
-            asst_msg = AssistantMessage(
-                id=asst_id,
-                role="assistant",
-                content=final_result,
-                name=self._agent.name or "AlpaTrade",
-            )
-            self._messages.append(asst_msg)
+            # Store message in history
+            asst_dict = {"role": "assistant", "content": final_result, "message_id": asst_id}
+            self._messages.append(asst_dict)
+            try:
+                save_message(self.thread_id, "assistant", final_result, asst_id)
+            except Exception:
+                pass
 
             # Refresh sidebar conversation list
             await self._refresh_conv_list()
@@ -993,97 +1171,26 @@ class AGUIThread(Generic[T]):
             except Exception:
                 pass
 
-    async def _handle_run(self, run_id: str):
-        if run_id not in self._runs:
-            return Div("Run not found")
-
-        run_input = self._runs[run_id]
-        adapter = AGUIAdapter(self._agent, run_input=run_input)
-        response = AssistantMessage(
-            id=str(uuid.uuid4()),
-            role="assistant",
-            content="",
-            name=self._agent.name or "AlpaTrade",
-        )
-        deps = StateDeps[T](state=self._state)
-        streamed = False  # Track whether TextMessageStart fired
-
-        async for event in adapter.run_stream(
-            message_history=self._messages or [],
-            deps=deps,
-        ):
-            if hasattr(event, "__ft__"):
-                result = event.__ft__()
-                # Support tuple/list returns for multi-target OOB swaps
-                if isinstance(result, (tuple, list)):
-                    for el in result:
-                        await self.send(el)
-                else:
-                    await self.send(result)
-
-            if event.type == EventType.TEXT_MESSAGE_START:
-                response.id = event.message_id
-                response.content = ""  # Reset for each new text message
-                streamed = True
-            elif event.type == EventType.TEXT_MESSAGE_CONTENT:
-                response.content += event.delta
-            elif event.type == EventType.RUN_FINISHED:
-                self._messages.append(response)
-                if not streamed and response.content:
-                    # Fallback: show final content only if streaming didn't happen
-                    content_id = f"content-{response.id}"
-                    await self.send(
-                        Div(
-                            Div(
-                                Div(
-                                    response.content,
-                                    cls="chat-message-content marked",
-                                    id=content_id,
-                                ),
-                                cls="chat-message chat-assistant",
-                                id=f"message-{response.id}",
-                            ),
-                            id="chat-messages",
-                            hx_swap_oob="beforeend",
-                        )
-                    )
-                    await self._send_js(f"renderMarkdown('{content_id}');")
-                await self.send(Div(id="chat-status", hx_swap_oob="innerHTML"))
-                await self._send_js(_GUARD_DISABLE_JS)
-            elif event.type == EventType.STATE_SNAPSHOT:
-                self._state = event.snapshot
-
-        return Div()
-
 
 # ---------------------------------------------------------------------------
 # Setup
 # ---------------------------------------------------------------------------
 
-class AGUISetup(Generic[T]):
+class AGUISetup:
     """Wire AG-UI routes into a FastHTML app."""
 
-    def __init__(self, app, agent: Agent, state: T, command_interceptor=None):
+    def __init__(self, app, langgraph_agent, command_interceptor=None):
         self.app = app
-        self.agent = agent
-        self._state: T = state
-        self._threads: Dict[str, AGUIThread[T]] = {}
+        self._agent = langgraph_agent
+        self._threads: Dict[str, AGUIThread] = {}
         self._command_interceptor = command_interceptor
-        setup_ft_patches()
         self._setup_routes()
 
     def _setup_routes(self):
         @self.app.get("/agui/ui/{thread_id}/chat")
         async def agui_chat_ui(thread_id: str, session):
             session["thread_id"] = thread_id
-            return self.thread(thread_id).ui.chat()
-
-        @self.app.get("/agui/ui/{thread_id}/state")
-        async def agui_state_ui(thread_id: str):
-            st = self.thread(thread_id)._state
-            if hasattr(st, "__ft__"):
-                return st.__ft__()
-            return Div()
+            return self.thread(thread_id, session).ui.chat()
 
         @self.app.ws(
             "/agui/ws/{thread_id}",
@@ -1093,20 +1200,21 @@ class AGUISetup(Generic[T]):
         async def agui_ws(thread_id: str, msg: str, session):
             await self._threads[thread_id]._handle_message(msg, session)
 
-        @self.app.route("/agui/run/{thread_id}/{run_id}")
-        async def agui_run(thread_id: str, run_id: str):
-            return await self._threads[thread_id]._handle_run(run_id)
-
         @self.app.route("/agui/messages/{thread_id}")
-        def agui_messages(thread_id: str):
-            thread = self.thread(thread_id)
+        def agui_messages(thread_id: str, session):
+            thread = self.thread(thread_id, session)
+            thread._ensure_loaded()
             if thread._messages:
                 return thread.ui._render_messages(thread._messages)
             return Div(thread.ui._render_welcome(), id="chat-messages", cls="chat-messages")
 
-    def thread(self, thread_id: str) -> AGUIThread[T]:
+    def thread(self, thread_id: str, session=None) -> AGUIThread:
         if thread_id not in self._threads:
-            t = AGUIThread[T](thread_id=thread_id, state=self._state, agent=self.agent)
+            user_id = None
+            if session and session.get("user"):
+                user_id = session["user"].get("user_id")
+            t = AGUIThread(thread_id=thread_id, langgraph_agent=self._agent,
+                           user_id=user_id)
             if self._command_interceptor:
                 t._command_interceptor = self._command_interceptor
             self._threads[thread_id] = t
@@ -1114,11 +1222,12 @@ class AGUISetup(Generic[T]):
 
     def _on_conn(self, ws, send, session):
         tid = session.get("thread_id", "default")
-        self.thread(tid).subscribe(str(id(ws)), send)
+        self.thread(tid, session).subscribe(str(id(ws)), send)
 
     def _on_disconn(self, ws, session):
         tid = session.get("thread_id", "default")
-        self.thread(tid).unsubscribe(str(id(ws)))
+        if tid in self._threads:
+            self._threads[tid].unsubscribe(str(id(ws)))
 
     def chat(self, thread_id: str):
         """Return a loader div that fetches the chat UI."""
@@ -1128,19 +1237,7 @@ class AGUISetup(Generic[T]):
             hx_swap="innerHTML",
         )
 
-    def state(self, thread_id: str):
-        return Div(
-            hx_get=f"/agui/ui/{thread_id}/state",
-            hx_trigger="load",
-            hx_swap="innerHTML",
-        )
 
-    async def set_suggestions(self, thread_id: str, suggestions: List[str]):
-        await self.thread(thread_id).set_suggestions(suggestions)
-
-
-def setup_agui(app, agent: Agent, initial_state: T, state_type: type,
-               command_interceptor=None) -> AGUISetup:
+def setup_agui(app, langgraph_agent, command_interceptor=None) -> AGUISetup:
     """One-line setup: wire AG-UI into a FastHTML app."""
-    state = state_type.model_validate_json(initial_state.model_dump_json())
-    return AGUISetup(app, agent, state, command_interceptor=command_interceptor)
+    return AGUISetup(app, langgraph_agent, command_interceptor=command_interceptor)

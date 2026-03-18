@@ -1,16 +1,20 @@
 """
-Vendored AG-UI integration for FastHTML + pydantic-ai.
+Vendored AG-UI integration for FastHTML + LangGraph.
 
 Based on ft-agui (https://github.com/Novia-RDI-Seafaring/ft-ag-ui)
 by Christoffer Bjorkskog / Novia University — MIT license.
 
-Adapted for AlpaTrade: 3-pane layout, custom patches, no external
+Adapted for AlpaTrade: 3-pane layout, LangGraph streaming, no external
 ft-agui dependency.
 """
 
 from .core import setup_agui, AGUISetup, AGUIThread, UI, StreamingCommand
 from .styles import get_chat_styles, get_custom_theme, CHAT_UI_STYLES
-from .patches import setup_ft_patches
+from .chat_store import (
+    save_conversation, save_message,
+    load_conversation_messages, list_conversations,
+    delete_conversation,
+)
 
 __all__ = [
     "setup_agui",
@@ -21,5 +25,9 @@ __all__ = [
     "get_chat_styles",
     "get_custom_theme",
     "CHAT_UI_STYLES",
-    "setup_ft_patches",
+    "save_conversation",
+    "save_message",
+    "load_conversation_messages",
+    "list_conversations",
+    "delete_conversation",
 ]
