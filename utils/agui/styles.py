@@ -491,6 +491,38 @@ CHAT_UI_STYLES = """
 .progress-bar-fill { background: linear-gradient(90deg, #3b82f6, #2563eb); height: 100%; border-radius: 4px; transition: width 0.4s ease; width: 0%; }
 .progress-bar-label { font-size: 0.7rem; color: #64748b; margin-top: 0.25rem; font-family: monospace; }
 
+/* === Table Toolbar (CSV copy/download) === */
+.table-toolbar {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: flex-end;
+  margin-bottom: 0.25rem;
+}
+
+.table-action-btn {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  font-family: inherit;
+  color: #3b82f6;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.table-action-btn:hover {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+}
+
+/* === Inline Charts === */
+.inline-chart {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+}
+
 /* === Table column constraints (news results) === */
 .chat-message-content td:nth-child(3) { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 

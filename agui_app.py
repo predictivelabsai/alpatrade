@@ -12,6 +12,7 @@ Launch:  python agui_app.py          # port 5003
 import os
 import sys
 import uuid as _uuid
+import logging
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -22,6 +23,35 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fasthtml.common import *
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Google OAuth setup via authlib (optional — gracefully skip if no creds)
+# ---------------------------------------------------------------------------
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+_oauth_enabled = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)
+
+_authlib_oauth = None
+if _oauth_enabled:
+    from authlib.integrations.starlette_client import OAuth as AuthlibOAuth
+    _authlib_oauth = AuthlibOAuth()
+    _authlib_oauth.register(
+        name="google",
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET,
+        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+        client_kwargs={"scope": "openid email profile"},
+    )
+
+_GOOGLE_SVG = """<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+<path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+<path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+<path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9s.38 1.572.957 3.042l3.007-2.332z" fill="#FBBC05"/>
+<path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+</svg>"""
 
 from utils.agui import setup_agui, get_chat_styles, StreamingCommand, list_conversations
 import threading
@@ -795,6 +825,41 @@ body {
 
 .sidebar-auth button:hover { background: #2563eb; }
 
+.sidebar-auth .google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem;
+  background: #4285f4;
+  color: #fff;
+  border: none;
+  border-radius: 0.375rem;
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+}
+
+.sidebar-auth .google-btn:hover { background: #3367d6; }
+
+.sidebar-auth .divider {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.sidebar-auth .divider::before,
+.sidebar-auth .divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e2e8f0;
+}
+
 .alt-link { font-size: 0.75rem; color: #64748b; }
 .alt-link a { color: #3b82f6; }
 
@@ -1314,6 +1379,115 @@ body {
   color: #2563eb;
 }
 
+/* === Profile Page === */
+.profile-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+}
+
+.profile-container h2 {
+  font-size: 1.25rem;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.profile-container h3 {
+  font-size: 1rem;
+  color: #1e293b;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.profile-info {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 1rem;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.profile-info dt { color: #64748b; font-weight: 500; }
+.profile-info dd { color: #1e293b; margin: 0; }
+
+.profile-container .accounts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.profile-container .accounts-table th {
+  text-align: left;
+  color: #64748b;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.profile-container .accounts-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+.profile-container .keys-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-container .keys-form input {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  color: #1e293b;
+  font-family: inherit;
+  font-size: 0.8rem;
+}
+
+.profile-container .keys-form input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.profile-container .keys-form button {
+  padding: 0.5rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.8rem;
+}
+
+.profile-container .keys-form button:hover { background: #2563eb; }
+
+.btn-sm { padding: 0.25rem 0.5rem; font-size: 0.7rem; border-radius: 0.25rem; cursor: pointer; border: none; }
+.btn-danger { background: #fee2e2; color: #dc2626; }
+.btn-danger:hover { background: #fecaca; }
+
+.profile-container .back-link {
+  display: inline-block;
+  margin-top: 1.5rem;
+  color: #3b82f6;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.profile-container .back-link:hover { text-decoration: underline; }
+
 /* === Responsive === */
 @media (max-width: 768px) {
   .app-layout {
@@ -1497,17 +1671,16 @@ def _left_pane(session):
         name = user.get("display_name") or user.get("email", "user")
         email = user.get("email", "")
 
-        keys_configured = False
+        account_count = 0
         try:
-            from utils.auth import get_alpaca_keys
-            keys = get_alpaca_keys(user["user_id"])
-            keys_configured = keys is not None
+            from utils.auth import get_user_accounts
+            account_count = len(get_user_accounts(user["user_id"]))
         except Exception:
             pass
 
         key_badge = (
-            Span("Keys OK", cls="key-status configured")
-            if keys_configured
+            Span(f"{account_count} account{'s' if account_count != 1 else ''}", cls="key-status configured")
+            if account_count > 0
             else Span("No keys", cls="key-status not-configured")
         )
 
@@ -1971,7 +2144,11 @@ def get(run_id: str, session):
 @rt("/agui-auth/login-form")
 def login_form_fragment():
     """Return the login form for the sidebar."""
-    return Div(
+    parts = []
+    if _oauth_enabled:
+        parts.append(A(NotStr(_GOOGLE_SVG), "Sign in with Google", href="/login", cls="google-btn"))
+        parts.append(Div("or", cls="divider"))
+    parts.extend([
         Form(
             Input(type="email", name="email", placeholder="Email", required=True),
             Input(type="password", name="password", placeholder="Password", required=True),
@@ -1987,13 +2164,18 @@ def login_form_fragment():
               hx_target="#auth-forms", hx_swap="innerHTML"),
             cls="alt-link",
         ),
-    )
+    ])
+    return Div(*parts, cls="sidebar-auth")
 
 
 @rt("/agui-auth/register-form")
 def register_form_fragment():
     """Return the register form for the sidebar."""
-    return Div(
+    parts = []
+    if _oauth_enabled:
+        parts.append(A(NotStr(_GOOGLE_SVG), "Sign up with Google", href="/login", cls="google-btn"))
+        parts.append(Div("or", cls="divider"))
+    parts.extend([
         Form(
             Input(type="email", name="email", placeholder="Email", required=True),
             Input(type="password", name="password", placeholder="Password (min 8 chars)",
@@ -2011,7 +2193,8 @@ def register_form_fragment():
               hx_target="#auth-forms", hx_swap="innerHTML"),
             cls="alt-link",
         ),
-    )
+    ])
+    return Div(*parts, cls="sidebar-auth")
 
 
 @rt("/agui-auth/login")
@@ -2064,75 +2247,128 @@ def profile(session, msg: str = ""):
     if not user:
         return RedirectResponse("/")
 
-    keys_configured = False
+    # Fetch all accounts for this user (includes keys added from CLI)
+    accounts = []
     try:
-        from utils.auth import get_alpaca_keys
-        keys = get_alpaca_keys(user["user_id"])
-        keys_configured = keys is not None
+        from utils.auth import get_user_accounts
+        accounts = get_user_accounts(user["user_id"])
     except Exception:
         pass
 
+    account_count = len(accounts)
     key_badge = (
-        Span("Configured", cls="key-status configured")
-        if keys_configured
+        Span(f"{account_count} account{'s' if account_count != 1 else ''}", cls="key-status configured")
+        if account_count > 0
         else Span("Not configured", cls="key-status not-configured")
     )
+
+    parts = [
+        H2("Profile"),
+        Dl(
+            Dt("Email"), Dd(user.get("email", "")),
+            Dt("Display Name"), Dd(user.get("display_name", "")),
+            Dt("Alpaca Accounts"), Dd(key_badge),
+            cls="profile-info",
+        ),
+    ]
+
+    if msg:
+        parts.append(P(msg, cls="success-msg"))
+
+    # Show existing accounts table (synced from CLI and web)
+    if accounts:
+        rows = []
+        for i, acct in enumerate(accounts, 1):
+            rows.append(Tr(
+                Td(str(i)),
+                Td(acct.get("account_name", "—")),
+                Td(Code(acct.get("api_key_hint", "****"))),
+                Td(
+                    Form(
+                        Input(type="hidden", name="account_id", value=acct["account_id"]),
+                        Button("Remove", type="submit", cls="btn-sm btn-danger"),
+                        method="post", action="/profile/keys/remove",
+                    )
+                ),
+            ))
+        parts.extend([
+            H3("Your Alpaca Accounts"),
+            P("Accounts added from the web, chat, or CLI all appear here. Keys are encrypted at rest.",
+              style="color: #64748b; font-size: 0.8rem;"),
+            Table(
+                Thead(Tr(Th("#"), Th("Name"), Th("API Key"), Th(""))),
+                Tbody(*rows),
+                cls="accounts-table",
+            ),
+        ])
+
+    # Add new account form
+    parts.extend([
+        H3("Add Alpaca Account"),
+        Form(
+            Input(type="text", name="account_name",
+                  placeholder="Account name (optional)", value=""),
+            Input(type="password", name="api_key",
+                  placeholder="Alpaca Paper API Key", required=True),
+            Input(type="password", name="secret_key",
+                  placeholder="Alpaca Paper Secret Key", required=True),
+            Button("Save Keys", type="submit"),
+            method="post", action="/profile/keys", cls="keys-form",
+        ),
+        A("Back to Chat", href="/", cls="back-link"),
+    ])
 
     return (
         Title("Profile — AlpaTrade"),
         Style(LAYOUT_CSS),
         Div(
-            Div(
-                A("AlpaTrade", href="/", cls="brand"),
-                Div(
-                    H4("Profile"),
-                    Div(
-                        Div(user.get("display_name", ""), cls="name"),
-                        Div(user.get("email", ""), cls="email"),
-                        Div(key_badge, style="margin-top: 0.5rem;"),
-                        cls="user-info",
-                    ),
-                    cls="sidebar-section",
-                ),
-                Div(
-                    H4("Alpaca Paper Keys"),
-                    P("Encrypted at rest. Used for paper trading.",
-                      style="color: #64748b; font-size: 0.75rem; margin-bottom: 0.5rem;"),
-                    Form(
-                        Input(type="password", name="api_key",
-                              placeholder="Alpaca Paper API Key", required=True),
-                        Input(type="password", name="secret_key",
-                              placeholder="Alpaca Paper Secret Key", required=True),
-                        Button("Save Keys", type="submit"),
-                        method="post", action="/profile/keys",
-                        cls="keys-form",
-                    ),
-                    P(msg, cls="success-msg") if msg else "",
-                    cls="sidebar-section",
-                ),
-                Div(
-                    A("Back to Chat", href="/"),
-                    A("Logout", href="/logout", cls="logout-btn"),
-                    cls="sidebar-section",
-                ),
-                cls="left-pane",
-                style="max-width: 400px; margin: 2rem auto; height: auto;",
-            ),
-            style="display: flex; justify-content: center; min-height: 100vh; background: #0f172a;",
+            Div(*parts, cls="profile-container"),
+            style="min-height: 100vh; background: #f8fafc; padding: 1rem;",
         ),
     )
 
 
 @rt("/profile/keys")
-def profile_keys(session, api_key: str = "", secret_key: str = ""):
+def profile_keys(session, api_key: str = "", secret_key: str = "", account_name: str = ""):
     user = session.get("user")
     if not user:
         return RedirectResponse("/")
     if not api_key or not secret_key:
-        return RedirectResponse("/profile?msg=Both+keys+required")
-    from utils.auth import store_alpaca_keys
-    store_alpaca_keys(user["user_id"], api_key, secret_key)
-    return RedirectResponse("/profile?msg=Keys+saved+successfully", status_code=303)
+        return RedirectResponse("/profile?msg=Both+keys+are+required", status_code=303)
+    try:
+        from utils.auth import store_alpaca_keys
+        name = account_name.strip() or "Default Account"
+        store_alpaca_keys(user["user_id"], api_key, secret_key, account_name=name)
+        return RedirectResponse("/profile?msg=Alpaca+keys+saved+successfully", status_code=303)
+    except Exception as e:
+        logger.error(f"Failed to store Alpaca keys: {e}")
+        return RedirectResponse("/profile?msg=Error+saving+keys", status_code=303)
+
+
+@rt("/profile/keys/remove")
+def profile_keys_remove(session, account_id: str = ""):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/")
+    if not account_id:
+        return RedirectResponse("/profile", status_code=303)
+    try:
+        from utils.db.db_pool import DatabasePool
+        from sqlalchemy import text
+        pool = DatabasePool()
+        with pool.get_session() as db:
+            db.execute(
+                text("""
+                    UPDATE alpatrade.user_accounts
+                    SET is_active = FALSE, updated_at = NOW()
+                    WHERE account_id = :account_id AND user_id = :user_id
+                """),
+                {"account_id": account_id, "user_id": user["user_id"]},
+            )
+        return RedirectResponse("/profile?msg=Account+removed", status_code=303)
+    except Exception as e:
+        logger.error(f"Failed to remove account: {e}")
+        return RedirectResponse("/profile?msg=Error+removing+account", status_code=303)
 
 
 # ---------------------------------------------------------------------------
@@ -2178,6 +2414,61 @@ def guide(session):
 def screenshots():
     """Redirect to main app screenshots."""
     return RedirectResponse("https://alpatrade.chat/screenshots", status_code=307)
+
+
+# ---------------------------------------------------------------------------
+# Google OAuth routes
+# ---------------------------------------------------------------------------
+
+if _oauth_enabled:
+    @rt("/login")
+    async def login_get(request):
+        scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+        host = request.headers.get("host", request.url.netloc)
+        redirect_uri = f"{scheme}://{host}/auth/callback"
+        return await _authlib_oauth.google.authorize_redirect(request, redirect_uri)
+
+    @rt("/auth/callback")
+    async def auth_callback(request, session):
+        try:
+            token = await _authlib_oauth.google.authorize_access_token(request)
+        except Exception as e:
+            logger.error(f"OAuth token exchange failed: {e}")
+            return RedirectResponse("/?error=Google+login+failed")
+
+        userinfo = token.get("userinfo", {})
+        if not userinfo:
+            userinfo = await _authlib_oauth.google.userinfo(token=token)
+
+        google_id = userinfo.get("sub", "")
+        email = userinfo.get("email", "")
+        name = userinfo.get("name", "")
+
+        if not email:
+            return RedirectResponse("/?error=Google+did+not+provide+email")
+
+        from utils.auth import get_user_by_google_id, get_user_by_email, create_user, link_google_id
+
+        user = get_user_by_google_id(google_id) if google_id else None
+
+        if not user:
+            user = get_user_by_email(email)
+            if user and google_id:
+                link_google_id(email, google_id)
+            elif not user:
+                user = create_user(email=email, google_id=google_id, display_name=name)
+
+        if user:
+            _session_login(session, user)
+        else:
+            return RedirectResponse("/?error=Could+not+create+account")
+
+        return RedirectResponse("/")
+
+if not _oauth_enabled:
+    @rt("/login")
+    def login_get():
+        return RedirectResponse("/")
 
 
 # ---------------------------------------------------------------------------

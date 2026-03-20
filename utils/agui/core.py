@@ -395,12 +395,119 @@ class UI:
                 // (marked.parse converts __ to <strong>, destroying the marker)
                 function extractAndRenderCharts(txt, el) {
                     var chartMatch = txt.match(/__CHART_DATA__(.+?)__END_CHART__/);
-                    if (chartMatch && window.renderChart) {
-                        window.renderChart(chartMatch[1]);
+                    if (chartMatch) {
+                        var chartJson = chartMatch[1];
+                        // Render in artifact pane (right side)
+                        if (window.renderChart) window.renderChart(chartJson);
+                        // Also render inline in the chat message
                         txt = txt.replace(/__CHART_DATA__.*?__END_CHART__/, '');
+                        if (el) {
+                            el._pendingChart = chartJson;
+                        }
                     }
                     return txt;
                 }
+
+                // Add inline chart after markdown render
+                function renderInlineChart(el) {
+                    if (!el._pendingChart || !window.Plotly) return;
+                    try {
+                        var data = JSON.parse(el._pendingChart);
+                        var chartDiv = document.createElement('div');
+                        chartDiv.className = 'inline-chart';
+                        chartDiv.style.cssText = 'width:100%;min-height:280px;margin:0.5rem 0;border-radius:0.5rem;overflow:hidden;';
+                        el.appendChild(chartDiv);
+
+                        if (data.type === 'equity_curve') {
+                            var eqTrace = {x:data.dates,y:data.equity,type:'scatter',mode:'lines',
+                                name:'Equity',line:{color:'#3b82f6',width:2},fill:'tozeroy',
+                                fillcolor:'rgba(59,130,246,0.08)'};
+                            var capLine = {x:[data.dates[0],data.dates[data.dates.length-1]],
+                                y:[data.initial_capital,data.initial_capital],type:'scatter',mode:'lines',
+                                name:'Initial',line:{color:'#94a3b8',width:1,dash:'dash'}};
+                            var shortId = data.run_id ? data.run_id.substring(0,8) : '';
+                            Plotly.newPlot(chartDiv,[eqTrace,capLine],{
+                                title:{text:'Equity — '+shortId,font:{size:13,color:'#1e293b'}},
+                                paper_bgcolor:'#ffffff',plot_bgcolor:'#f8fafc',
+                                font:{color:'#64748b',family:'-apple-system,sans-serif',size:11},
+                                xaxis:{gridcolor:'#e2e8f0',linecolor:'#e2e8f0'},
+                                yaxis:{gridcolor:'#e2e8f0',linecolor:'#e2e8f0',tickprefix:'$'},
+                                legend:{orientation:'h',y:-0.15},margin:{t:35,r:15,b:35,l:55},
+                                showlegend:true
+                            },{responsive:true,displayModeBar:false});
+                        } else {
+                            var trace = {x:data.dates,y:data.close,type:'scatter',mode:'lines',
+                                name:data.ticker,line:{color:'#3b82f6',width:2},fill:'tozeroy',
+                                fillcolor:'rgba(59,130,246,0.08)'};
+                            Plotly.newPlot(chartDiv,[trace],{
+                                title:{text:data.ticker+' — '+data.period,font:{size:13,color:'#1e293b'}},
+                                paper_bgcolor:'#ffffff',plot_bgcolor:'#f8fafc',
+                                font:{color:'#64748b',family:'-apple-system,sans-serif',size:11},
+                                xaxis:{gridcolor:'#e2e8f0',linecolor:'#e2e8f0'},
+                                yaxis:{gridcolor:'#e2e8f0',linecolor:'#e2e8f0',tickprefix:'$'},
+                                margin:{t:35,r:15,b:35,l:55},showlegend:false
+                            },{responsive:true,displayModeBar:false});
+                        }
+                    } catch(e) { console.error('Inline chart error:', e); }
+                    delete el._pendingChart;
+                }
+
+                // Convert table to CSV string
+                function tableToCSV(table) {
+                    var rows = [];
+                    table.querySelectorAll('tr').forEach(function(tr) {
+                        var cells = [];
+                        tr.querySelectorAll('th, td').forEach(function(td) {
+                            var val = td.textContent.trim().replace(/"/g, '""');
+                            cells.push('"' + val + '"');
+                        });
+                        rows.push(cells.join(','));
+                    });
+                    return rows.join('\\n');
+                }
+
+                // Add toolbar (Copy CSV + Download CSV) above tables
+                function enhanceTables(container) {
+                    container.querySelectorAll('table').forEach(function(table) {
+                        if (table.dataset.enhanced) return;
+                        table.dataset.enhanced = '1';
+                        var toolbar = document.createElement('div');
+                        toolbar.className = 'table-toolbar';
+                        var copyBtn = document.createElement('button');
+                        copyBtn.textContent = 'Copy CSV';
+                        copyBtn.className = 'table-action-btn';
+                        copyBtn.onclick = function() {
+                            var csv = tableToCSV(table);
+                            navigator.clipboard.writeText(csv).then(function() {
+                                copyBtn.textContent = 'Copied!';
+                                setTimeout(function(){ copyBtn.textContent = 'Copy CSV'; }, 1500);
+                            });
+                        };
+                        var dlBtn = document.createElement('button');
+                        dlBtn.textContent = 'Download CSV';
+                        dlBtn.className = 'table-action-btn';
+                        dlBtn.onclick = function() {
+                            var csv = tableToCSV(table);
+                            var blob = new Blob([csv], {type: 'text/csv'});
+                            var url = URL.createObjectURL(blob);
+                            var a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'alpatrade-data.csv';
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        };
+                        toolbar.appendChild(copyBtn);
+                        toolbar.appendChild(dlBtn);
+                        table.parentNode.insertBefore(toolbar, table);
+                    });
+                }
+
+                // Post-render: add table toolbars + inline charts
+                function postRenderEnhance(el) {
+                    enhanceTables(el);
+                    renderInlineChart(el);
+                }
+
                 function renderMarkdown(elementId) {
                     setTimeout(function() {
                         var el = document.getElementById(elementId);
@@ -412,6 +519,7 @@ class UI:
                                 el.classList.remove('marked');
                                 el.classList.add('marked-done');
                                 delete el.dataset.rendering;
+                                postRenderEnhance(el);
                             }
                         }
                     }, 100);
@@ -437,6 +545,7 @@ class UI:
                                         el.innerHTML = finalTxt.trim() ? marked.parse(finalTxt) : '';
                                         el.classList.remove('marked');
                                         el.classList.add('marked-done');
+                                        postRenderEnhance(el);
                                     }
                                     delete el.dataset.rendering;
                                 }, 150);
