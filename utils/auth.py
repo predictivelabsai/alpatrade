@@ -418,6 +418,43 @@ def update_password(user_id: str, new_password: str) -> bool:
         return result.rowcount > 0
 
 
+def update_display_name(user_id: str, display_name: str) -> bool:
+    """Update a user's display name."""
+    from sqlalchemy import text
+
+    pool = _get_pool()
+    with pool.get_session() as session:
+        result = session.execute(
+            text("""
+                UPDATE alpatrade.users
+                SET display_name = :display_name, updated_at = :now
+                WHERE user_id = :user_id AND is_active = TRUE
+            """),
+            {
+                "display_name": display_name.strip(),
+                "user_id": user_id,
+                "now": datetime.now(timezone.utc),
+            },
+        )
+        return result.rowcount > 0
+
+
+def has_password(user_id: str) -> bool:
+    """Check if user has a password set (Google-only users may not)."""
+    from sqlalchemy import text
+
+    pool = _get_pool()
+    with pool.get_session() as session:
+        row = session.execute(
+            text("""
+                SELECT password_hash FROM alpatrade.users
+                WHERE user_id = :user_id AND is_active = TRUE
+            """),
+            {"user_id": user_id},
+        ).fetchone()
+        return row is not None and row[0] is not None and row[0] != ""
+
+
 # ---------------------------------------------------------------------------
 # JWT helpers
 # ---------------------------------------------------------------------------

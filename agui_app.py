@@ -2262,18 +2262,68 @@ def profile(session, msg: str = ""):
         else Span("Not configured", cls="key-status not-configured")
     )
 
+    # Check if user has a password set (Google-only users may not)
+    user_has_password = False
+    try:
+        from utils.auth import has_password
+        user_has_password = has_password(user["user_id"])
+    except Exception:
+        pass
+
     parts = [
         H2("Profile"),
-        Dl(
-            Dt("Email"), Dd(user.get("email", "")),
-            Dt("Display Name"), Dd(user.get("display_name", "")),
-            Dt("Alpaca Accounts"), Dd(key_badge),
-            cls="profile-info",
-        ),
     ]
 
     if msg:
         parts.append(P(msg, cls="success-msg"))
+
+    # --- Display Name & Email section ---
+    parts.extend([
+        H3("Account Info"),
+        Form(
+            Label("Email", For="email"),
+            Input(type="email", id="email", value=user.get("email", ""), disabled=True,
+                  style="background: #e2e8f0; cursor: not-allowed;"),
+            Label("Display Name", For="display_name"),
+            Input(type="text", id="display_name", name="display_name",
+                  value=user.get("display_name", ""), placeholder="Your display name", required=True),
+            Button("Update Name", type="submit"),
+            method="post", action="/profile/name", cls="keys-form",
+        ),
+    ])
+
+    # --- Password section ---
+    parts.append(H3("Change Password" if user_has_password else "Set Password"))
+    if user_has_password:
+        parts.append(
+            Form(
+                Input(type="password", name="current_password",
+                      placeholder="Current password", required=True),
+                Input(type="password", name="new_password",
+                      placeholder="New password (min 8 chars)", required=True, minlength="8"),
+                Input(type="password", name="confirm_password",
+                      placeholder="Confirm new password", required=True, minlength="8"),
+                Button("Change Password", type="submit"),
+                method="post", action="/profile/password", cls="keys-form",
+            )
+        )
+    else:
+        parts.append(
+            Form(
+                P("You signed in with Google. Set a password to also log in with email.",
+                  style="color: #64748b; font-size: 0.85rem;"),
+                Input(type="password", name="new_password",
+                      placeholder="New password (min 8 chars)", required=True, minlength="8"),
+                Input(type="password", name="confirm_password",
+                      placeholder="Confirm new password", required=True, minlength="8"),
+                Button("Set Password", type="submit"),
+                method="post", action="/profile/password", cls="keys-form",
+            )
+        )
+
+    # --- Alpaca accounts badge ---
+    parts.append(H3("Alpaca Accounts"))
+    parts.append(P(key_badge))
 
     # Show existing accounts table (synced from CLI and web)
     if accounts:
@@ -2315,17 +2365,65 @@ def profile(session, msg: str = ""):
             Button("Save Keys", type="submit"),
             method="post", action="/profile/keys", cls="keys-form",
         ),
-        A("Back to Chat", href="/", cls="back-link"),
     ])
 
     return (
         Title("Profile — AlpaTrade"),
         Style(LAYOUT_CSS),
         Div(
-            Div(*parts, cls="profile-container"),
-            style="min-height: 100vh; background: #f8fafc; padding: 1rem;",
+            Div(
+                A("← Back to Chat", href="/", cls="back-link"),
+                *parts,
+                A("← Back to Chat", href="/", cls="back-link", style="margin-top: 1.5rem;"),
+                cls="profile-container",
+            ),
+            style="height: 100vh; overflow-y: auto; background: #f8fafc; padding: 1rem;",
         ),
     )
+
+
+@rt("/profile/name")
+def profile_name(session, display_name: str = ""):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/")
+    if not display_name.strip():
+        return RedirectResponse("/profile?msg=Display+name+cannot+be+empty", status_code=303)
+    try:
+        from utils.auth import update_display_name
+        if update_display_name(user["user_id"], display_name):
+            session["user"]["display_name"] = display_name.strip()
+            return RedirectResponse("/profile?msg=Display+name+updated", status_code=303)
+        return RedirectResponse("/profile?msg=Failed+to+update+name", status_code=303)
+    except Exception as e:
+        logger.error(f"Failed to update display name: {e}")
+        return RedirectResponse("/profile?msg=Error+updating+name", status_code=303)
+
+
+@rt("/profile/password")
+def profile_password(session, current_password: str = "", new_password: str = "", confirm_password: str = ""):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/")
+    if new_password != confirm_password:
+        return RedirectResponse("/profile?msg=Passwords+do+not+match", status_code=303)
+    if len(new_password) < 8:
+        return RedirectResponse("/profile?msg=Password+must+be+at+least+8+characters", status_code=303)
+    try:
+        from utils.auth import has_password, verify_password, get_user_by_email, update_password
+        # If user already has a password, verify the current one
+        if has_password(user["user_id"]):
+            if not current_password:
+                return RedirectResponse("/profile?msg=Current+password+is+required", status_code=303)
+            db_user = get_user_by_email(user["email"])
+            if not db_user or not verify_password(current_password, db_user["password_hash"]):
+                return RedirectResponse("/profile?msg=Current+password+is+incorrect", status_code=303)
+        if update_password(user["user_id"], new_password):
+            return RedirectResponse("/profile?msg=Password+updated+successfully", status_code=303)
+        return RedirectResponse("/profile?msg=Failed+to+update+password", status_code=303)
+    except Exception as e:
+        logger.error(f"Failed to update password: {e}")
+        return RedirectResponse("/profile?msg=Error+updating+password", status_code=303)
 
 
 @rt("/profile/keys")
