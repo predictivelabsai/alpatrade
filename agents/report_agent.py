@@ -22,7 +22,8 @@ class ReportAgent:
     """Agent that generates trading performance reports from DB data."""
 
     def summary(self, trade_type: Optional[str] = None, limit: int = 10,
-                user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+                user_id: Optional[str] = None,
+                account_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         List recent runs with key metrics.
 
@@ -33,6 +34,7 @@ class ReportAgent:
             trade_type: Filter by mode ('backtest' or 'paper'). None = all.
             limit: Max rows to return.
             user_id: Filter by user. None = no filtering (CLI).
+            account_id: Filter by Alpaca account. None = all accounts.
 
         Returns:
             List of dicts with run_id, mode, strategy, status, total_pnl,
@@ -49,6 +51,9 @@ class ReportAgent:
         if user_id:
             where_clauses.append("r.user_id = :user_id")
             bind["user_id"] = user_id
+        if account_id:
+            where_clauses.append("r.account_id = :account_id")
+            bind["account_id"] = account_id
 
         where_sql = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
 
@@ -93,8 +98,8 @@ class ReportAgent:
                     ) pt ON pt.run_id = r.run_id AND r.mode = 'paper'
                     LEFT JOIN (
                         SELECT run_id,
-                               MIN(entry_time) AS data_start,
-                               MAX(COALESCE(exit_time, entry_time)) AS data_end
+                               MIN(COALESCE(entry_time, created_at)) AS data_start,
+                               MAX(COALESCE(exit_time, entry_time, created_at)) AS data_end
                         FROM alpatrade.trades
                         GROUP BY run_id
                     ) td ON td.run_id = r.run_id
@@ -125,9 +130,16 @@ class ReportAgent:
             elif mode == "paper" and paper_trades:
                 total_pnl = float(paper_pnl or 0)
                 total_return = (total_pnl / initial_capital * 100) if initial_capital else 0
-                sharpe = 0  # not enough data for paper
                 trades_count = int(paper_trades or 0)
-                ann_ret = 0
+                wins = int(paper_wins or 0)
+                # Annualized return from period
+                if data_start and data_end:
+                    days = (data_end - data_start).total_seconds() / 86400
+                    ann_ret = (total_return * 365.25 / days) if days > 1 else 0
+                else:
+                    ann_ret = 0
+                # Sharpe from win rate approximation
+                sharpe = 0
             else:
                 total_pnl = 0
                 total_return = 0
@@ -201,23 +213,33 @@ class ReportAgent:
                 )
 
     def top_strategies(self, strategy: Optional[str] = None,
+                        trade_type: Optional[str] = None,
                         limit: int = 20,
-                        user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+                        user_id: Optional[str] = None,
+                        account_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Rank strategy slugs by average annualized return across all runs.
 
         Args:
             strategy: Optional prefix filter (e.g. "btd" to show only buy-the-dip).
+            trade_type: Filter by 'backtest' or 'paper'. None = all.
             limit: Max rows to return.
             user_id: Filter by user. None = no filtering (CLI).
+            account_id: Filter by Alpaca account. None = all accounts.
 
         Returns:
             List of dicts with strategy_slug, avg_sharpe, avg_return, avg_win_rate,
-            total_runs, total_trades.
+            total_runs, total_trades, mode.
         """
         from utils.db.db_pool import DatabasePool
         from sqlalchemy import text
 
+        # If paper or no filter, include paper trade stats via trades table
+        if trade_type == "paper":
+            return self._top_paper(strategy=strategy, limit=limit,
+                                   user_id=user_id, account_id=account_id)
+
+        # Backtest (or all) — use backtest_summaries
         where_clauses = ["bs.strategy_slug IS NOT NULL"]
         bind: Dict[str, Any] = {"lim": limit}
         if strategy:
@@ -226,6 +248,9 @@ class ReportAgent:
         if user_id:
             where_clauses.append("bs.user_id = :user_id")
             bind["user_id"] = user_id
+        if account_id:
+            where_clauses.append("bs.account_id = :account_id")
+            bind["account_id"] = account_id
 
         where_sql = " WHERE " + " AND ".join(where_clauses)
 
@@ -269,6 +294,65 @@ class ReportAgent:
             })
         return results
 
+    def _top_paper(self, strategy: Optional[str] = None,
+                   limit: int = 20,
+                   user_id: Optional[str] = None,
+                   account_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Rank paper trading runs by total P&L."""
+        from utils.db.db_pool import DatabasePool
+        from sqlalchemy import text
+
+        where_clauses = ["r.mode = 'paper'", "r.strategy_slug IS NOT NULL"]
+        bind: Dict[str, Any] = {"lim": limit}
+        if strategy:
+            where_clauses.append("r.strategy_slug LIKE :prefix")
+            bind["prefix"] = strategy + "%"
+        if user_id:
+            where_clauses.append("r.user_id = :user_id")
+            bind["user_id"] = user_id
+        if account_id:
+            where_clauses.append("r.account_id = :account_id")
+            bind["account_id"] = account_id
+
+        where_sql = " WHERE " + " AND ".join(where_clauses)
+
+        pool = DatabasePool()
+        with pool.get_session() as session:
+            rows = session.execute(
+                text(f"""
+                    SELECT
+                        r.strategy_slug,
+                        COALESCE(SUM(t.pnl), 0) AS total_pnl,
+                        COUNT(t.*) AS total_trades,
+                        COUNT(t.*) FILTER (WHERE t.pnl > 0) AS wins,
+                        COUNT(DISTINCT r.run_id) AS total_runs
+                    FROM alpatrade.runs r
+                    LEFT JOIN alpatrade.trades t ON t.run_id = r.run_id AND t.trade_type = 'paper'
+                    {where_sql}
+                    GROUP BY r.strategy_slug
+                    ORDER BY total_pnl DESC
+                    LIMIT :lim
+                """),
+                bind,
+            ).fetchall()
+
+        results = []
+        for row in rows:
+            slug, total_pnl, total_trades, wins, total_runs = row
+            win_rate = (float(wins) / float(total_trades) * 100) if total_trades else 0
+            results.append({
+                "strategy_slug": slug,
+                "avg_sharpe": 0,
+                "avg_return": 0,
+                "avg_ann_return": 0,
+                "avg_win_rate": win_rate,
+                "avg_drawdown": 0,
+                "total_trades": int(total_trades or 0),
+                "total_runs": int(total_runs or 0),
+                "avg_pnl": float(total_pnl or 0),
+            })
+        return results
+
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
@@ -290,7 +374,7 @@ class ReportAgent:
         # Data period from trades
         tp = session.execute(
             text("""
-                SELECT MIN(entry_time), MAX(COALESCE(exit_time, entry_time))
+                SELECT MIN(COALESCE(entry_time, created_at)), MAX(COALESCE(exit_time, entry_time, created_at))
                 FROM alpatrade.trades WHERE run_id = :run_id
             """),
             {"run_id": run_id},
@@ -350,7 +434,7 @@ class ReportAgent:
         # Data period from trades
         tp = session.execute(
             text("""
-                SELECT MIN(entry_time), MAX(COALESCE(exit_time, entry_time))
+                SELECT MIN(COALESCE(entry_time, created_at)), MAX(COALESCE(exit_time, entry_time, created_at))
                 FROM alpatrade.trades WHERE run_id = :run_id
             """),
             {"run_id": run_id},

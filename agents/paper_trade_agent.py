@@ -308,9 +308,9 @@ class PaperTradeAgent:
         """
         entry_times: Dict[str, str] = {}
         try:
-            # Query filled orders from last 7 days
-            after = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
-            orders = self.client.get_orders(status='closed', after=after, limit=200)
+            # Query filled orders from last 90 days (covers most positions)
+            after = (datetime.now(timezone.utc) - timedelta(days=90)).isoformat()
+            orders = self.client.get_orders(status='closed', after=after, limit=500)
             if not isinstance(orders, list):
                 return entry_times
 
@@ -333,6 +333,33 @@ class PaperTradeAgent:
 
         except Exception as e:
             logger.warning(f"Could not look up entry times from Alpaca orders: {e}")
+
+        # Fallback: check DB trades for any missing symbols
+        missing = [s for s in symbols if s not in entry_times]
+        if missing:
+            try:
+                from utils.db.db_pool import DatabasePool
+                from sqlalchemy import text
+                pool = DatabasePool()
+                placeholders = ", ".join(f":s{i}" for i in range(len(missing)))
+                bind = {f"s{i}": s for i, s in enumerate(missing)}
+                with pool.get_session() as session:
+                    rows = session.execute(
+                        text(f"""
+                            SELECT DISTINCT ON (symbol) symbol, created_at
+                            FROM alpatrade.trades
+                            WHERE symbol IN ({placeholders})
+                              AND direction = 'buy' AND trade_type = 'paper'
+                            ORDER BY symbol, created_at DESC
+                        """),
+                        bind,
+                    ).fetchall()
+                    for row in rows:
+                        sym, created = row
+                        if sym not in entry_times and created:
+                            entry_times[sym] = created.isoformat() if hasattr(created, 'isoformat') else str(created)
+            except Exception as e:
+                logger.debug(f"DB fallback for entry times failed: {e}")
 
         return entry_times
 
@@ -423,6 +450,8 @@ class PaperTradeAgent:
                             "qty": qty_available,
                             "entry_price": entry_price,
                             "exit_price": current_price,
+                            "entry_time": entry_time_str,
+                            "exit_time": datetime.now(timezone.utc).isoformat(),
                             "pnl": pnl,
                             "pnl_pct": unrealized_pct,
                             "reason": exit_reason,
@@ -541,6 +570,7 @@ class PaperTradeAgent:
                             "side": "buy",
                             "qty": qty,
                             "price": current_price,
+                            "entry_time": entry_time,
                             "dip_pct": dip_pct,
                             "order_id": str(result.get("id", "")),
                             "timestamp": entry_time,
@@ -565,7 +595,8 @@ class PaperTradeAgent:
     def _store_trade(self, trade: Dict):
         """Store trade using the configured backend (file or DB)."""
         try:
-            store_paper_trade(self.session_id, trade, user_id=self.user_id)
+            store_paper_trade(self.session_id, trade, user_id=self.user_id,
+                              account_id=self.account_id)
         except Exception as e:
             logger.warning(f"Could not store trade: {e}")
 

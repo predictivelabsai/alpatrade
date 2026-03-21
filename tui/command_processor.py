@@ -22,9 +22,10 @@ if str(project_root) not in sys.path:
 class CommandProcessor:
     """Processes commands for the Strategy Simulator TUI."""
 
-    def __init__(self, app_instance, user_id=None):
+    def __init__(self, app_instance, user_id=None, account_id=None):
         self.app = app_instance
         self.user_id = user_id
+        self.account_id = account_id
         self.console = Console()
 
         # Default parameters
@@ -64,10 +65,18 @@ class CommandProcessor:
             return self._show_guide()
         elif cmd_lower == "status":
             return self._show_status()
-        elif cmd_lower == "trades":
-            return self._agent_trades({})
-        elif cmd_lower == "runs":
-            return self._agent_runs()
+        # Shortcut commands: trades/runs/top/report with positional params
+        first_token = cmd_lower.split()[0]
+        first_base = first_token.split(":")[0]
+        if first_base == "trades":
+            return self._agent_trades(self._parse_positional_params(user_input))
+        elif first_base == "runs":
+            params = self._parse_positional_params(user_input)
+            return self._agent_runs(trade_type=params.get("type"), params=params)
+        elif first_base == "top":
+            return self._agent_top(self._parse_positional_params(user_input))
+        elif first_base == "report":
+            return self._agent_report(self._parse_positional_params(user_input))
 
         # Chart commands (open Plotly chart in browser)
         first_word = cmd_lower.split()[0]
@@ -285,16 +294,21 @@ class CommandProcessor:
             return f"# Error\n\n```\n{e}\n```"
 
     async def _handle_equity_command(self, user_input: str) -> str:
-        """Handle equity:<run_id> — open equity curve chart in browser."""
+        """Handle equity [paper|backtest] [slug] [run-id] — open equity curve chart."""
         import webbrowser, tempfile, json
 
-        msg = user_input.strip()
-        if ":" not in msg or not msg.split(":", 1)[1].strip():
-            return "# Error\n\nUsage: `equity:<run_id>`"
+        params = self._parse_positional_params(user_input)
+        rid = params.get("run-id", "")
 
-        rid = msg.split(":", 1)[1].strip()
+        # If no run-id, find latest by type/slug
+        if not rid:
+            parts = user_input.strip().split(":", 1)
+            if len(parts) > 1 and parts[1].strip() and parts[1].strip() not in ("paper", "backtest"):
+                rid = parts[1].strip()  # equity:<run_id> syntax
 
-        self.console.print(f"[dim]Fetching equity curve for {rid}...[/dim]")
+        trade_type = params.get("type")
+        strategy = params.get("strategy")
+        self.console.print(f"[dim]Fetching equity curve...[/dim]")
 
         try:
             from utils.db.db_pool import DatabasePool
@@ -302,9 +316,29 @@ class CommandProcessor:
 
             pool = DatabasePool()
             with pool.get_session() as session:
-                # Prefix matching
                 full_rid = rid
-                if len(rid) < 36:
+                if not rid:
+                    # Find latest run by filters
+                    where = []
+                    bind = {}
+                    if trade_type:
+                        where.append("mode = :mode")
+                        bind["mode"] = trade_type
+                    if strategy:
+                        where.append("strategy_slug LIKE :slug")
+                        bind["slug"] = strategy + "%"
+                    if self.user_id:
+                        where.append("user_id = :user_id")
+                        bind["user_id"] = self.user_id
+                    where_sql = " WHERE " + " AND ".join(where) if where else ""
+                    row = session.execute(
+                        text(f"SELECT run_id FROM alpatrade.runs{where_sql} ORDER BY created_at DESC LIMIT 1"),
+                        bind,
+                    ).fetchone()
+                    if not row:
+                        return "# Error\n\nNo run found matching filters."
+                    full_rid = str(row[0])
+                elif len(rid) < 36:
                     row = session.execute(
                         text("SELECT run_id FROM alpatrade.runs WHERE CAST(run_id AS TEXT) LIKE :prefix ORDER BY created_at DESC LIMIT 1"),
                         {"prefix": f"{rid}%"},
@@ -348,12 +382,19 @@ class CommandProcessor:
                 "initial_capital": initial_capital,
             })
 
-            html = self._build_equity_chart_html(full_rid, chart_json)
-            path = Path(tempfile.mktemp(suffix=".html", prefix=f"equity_{full_rid[:8]}_"))
-            path.write_text(html)
-            webbrowser.open(f"file://{path}")
+            # For web/agui: return chart data marker for inline rendering
+            # For CLI: also open in browser
+            chart_marker = f"__CHART_DATA__{chart_json}__END_CHART__"
 
-            return f"# Equity Curve: {full_rid[:8]}...\n\nOpened equity curve chart in your browser."
+            try:
+                html = self._build_equity_chart_html(full_rid, chart_json)
+                path = Path(tempfile.mktemp(suffix=".html", prefix=f"equity_{full_rid[:8]}_"))
+                path.write_text(html)
+                webbrowser.open(f"file://{path}")
+            except Exception:
+                pass  # Browser open may fail in web/docker context
+
+            return f"# Equity Curve: {full_rid[:8]}...\n\n{chart_marker}"
 
         except Exception as e:
             return f"# Error\n\n```\n{e}\n```"
@@ -544,6 +585,65 @@ Plotly.newPlot('chart', [trace1], {{
             if ":" in part:
                 key, value = part.split(":", 1)
                 params[key.lower()] = value
+        return params
+
+    def _add_user_account_filters(self, where_clauses: list, bind: dict,
+                                    params: Dict, table_alias: str = "") -> None:
+        """Add user_id and account_id WHERE clauses unless 'all' param is set."""
+        prefix = f"{table_alias}." if table_alias else ""
+        if params.get("scope") == "all":
+            # Show all accounts for this user
+            if self.user_id:
+                where_clauses.append(f"{prefix}user_id = :user_id")
+                bind["user_id"] = self.user_id
+        else:
+            if self.user_id:
+                where_clauses.append(f"{prefix}user_id = :user_id")
+                bind["user_id"] = self.user_id
+            if self.account_id:
+                where_clauses.append(f"{prefix}account_id = :account_id")
+                bind["account_id"] = self.account_id
+
+    def _parse_positional_params(self, user_input: str, _cmd_base: str = "") -> Dict[str, str]:
+        """Parse positional params: <cmd>[:type] [type] [slug] [run-id] [key:value ...]
+
+        Positional order: type (paper/backtest), strategy slug, run-id.
+        Also supports colon syntax on the command itself: trades:paper.
+        If no params given, defaults to latest run.
+        """
+        _TYPES = {"paper", "backtest"}
+        params: Dict[str, str] = {}
+        parts = user_input.strip().split()
+        first = parts[0].lower()
+
+        # Extract type from colon on command: trades:paper, runs:backtest
+        if ":" in first:
+            _, suffix = first.split(":", 1)
+            if suffix in _TYPES:
+                params["type"] = suffix
+
+        # Parse remaining parts (positional + key:value)
+        positional = []
+        for part in parts[1:]:
+            if ":" in part:
+                key, value = part.split(":", 1)
+                params[key.lower()] = value
+            else:
+                positional.append(part)
+
+        # Assign positional args: type, strategy slug, run-id, "all"
+        for p in positional:
+            p_lower = p.lower()
+            if p_lower == "all":
+                params["scope"] = "all"
+            elif p_lower in _TYPES and "type" not in params:
+                params["type"] = p_lower
+            elif len(p) >= 8 and "-" in p and "run-id" not in params:
+                # Looks like a UUID / run-id
+                params["run-id"] = p
+            elif "strategy" not in params:
+                params["strategy"] = p_lower
+
         return params
 
     def _get_orchestrator(self) -> "Orchestrator":
@@ -1030,15 +1130,19 @@ Plotly.newPlot('chart', [trace1], {{
     def _agent_status(self) -> str:
         """Show current agent states."""
         from utils.agent_runner import get_all_running_agents
-        
+        from agents.shared.state import PortfolioState
+
         running = get_all_running_agents(user_id=self.user_id)
         orch = self.app._orch
 
-        if not running and orch is None:
+        # Always load persisted state from disk (background agents write here)
+        persisted = PortfolioState.load()
+
+        if not running and orch is None and not persisted.agents:
             return "# Agent Status\n\nNo session active. Run an `agent:*` command first.\n"
 
         md = "# Agent Status\n\n"
-        
+
         if running:
             md += "## Background Agents\n"
             for r in running:
@@ -1046,48 +1150,83 @@ Plotly.newPlot('chart', [trace1], {{
                 mode = r.get("mode")
                 pid = r.get("pid")
                 account_id = r.get("account_id") or "Default"
-                
+
                 md += f"- **Mode**: {mode.upper()} | **Account**: {account_id} | **PID**: {pid} | **Run ID**: `{run_id}`\n"
             md += "\n"
 
-        if orch:
-            # Use instance mode (not persisted state which may be stale)
-            mode = getattr(orch, '_mode', None) or orch.state.mode or 'n/a'
-            status_label = "IDLE (Local)"
+        # Use local orchestrator state if available, otherwise persisted state
+        state = orch.state if orch else persisted
+        mode = (getattr(orch, '_mode', None) if orch else None) or state.mode or 'n/a'
 
-            md += f"## Local Session: {mode.replace('_', ' ').title()} — {status_label}\n"
-            md += f"- **Run ID**: `{orch.run_id}`\n"
+        # Sync agent statuses with live background processes
+        bg_modes = {r.get("mode") for r in running}
 
-            # Show started time in ET
-            from utils.tz_util import format_et
-            started = orch.state.started_at or 'n/a'
-            if started != 'n/a':
-                started = format_et(started)
-            md += f"- **Started**: {started}\n\n"
+        for name, agent in state.agents.items():
+            if name == "paper_trader":
+                if "paper" in bg_modes:
+                    agent.status = "running"
+                    agent.current_task = "paper_trading"
+                elif agent.status == "running" and not orch:
+                    # Stale: state says running but no live process
+                    agent.status = "idle"
+                    agent.current_task = None
+            elif name == "backtester":
+                if "backtest" in bg_modes:
+                    agent.status = "running"
+                    agent.current_task = "parameterized_backtest"
+                elif agent.status == "running" and not orch:
+                    agent.status = "idle"
+                    agent.current_task = None
 
-            # Agents table — only show agents relevant to the mode
-            md += "| Agent | Status | Task |\n|-------|--------|------|\n"
-            for name, agent in orch.state.agents.items():
-                md += f"| {name} | {agent.status} | {agent.current_task or '-'} |\n"
+        # Save corrected state back to disk if we fixed stale entries
+        if not orch:
+            state.save()
 
-            # Best config (only for modes that involve backtesting)
-            if orch.state.best_config and mode in ('backtest', 'full'):
-                best = orch.state.best_config
-                md += (
-                    f"\n## Best Config\n"
-                    f"- Sharpe: {best.get('sharpe_ratio', 0):.2f}\n"
-                    f"- Return: {best.get('total_return', 0):.1f}%\n"
-                    f"- Annualized: {best.get('annualized_return', 0):.1f}%\n"
-                )
+        agent_statuses = [a.status for a in state.agents.values()]
+        if any(s == "running" for s in agent_statuses):
+            status_label = "RUNNING"
+        elif any(s == "error" for s in agent_statuses):
+            status_label = "ERROR"
+        elif any(s == "completed" for s in agent_statuses):
+            status_label = "COMPLETED"
+        else:
+            status_label = "IDLE"
 
-            # Last validation (only if we ran validation)
-            if orch.state.validation_results and mode in ('validate', 'full'):
-                last = orch.state.validation_results[-1]
-                md += (
-                    f"\n## Last Validation\n"
-                    f"- Status: {last.get('status')}\n"
-                    f"- Anomalies: {last.get('anomalies_found', 0)}\n"
-                )
+        source = "Local" if orch else "Background"
+        md += f"## Local Session: {mode.replace('_', ' ').title()} — {status_label} ({source})\n"
+        run_id = orch.run_id if orch else state.run_id or 'n/a'
+        md += f"- **Run ID**: `{run_id}`\n"
+
+        # Show started time in ET
+        from utils.tz_util import format_et
+        started = state.started_at or 'n/a'
+        if started != 'n/a':
+            started = format_et(started)
+        md += f"- **Started**: {started}\n\n"
+
+        # Agents table
+        md += "| Agent | Status | Task |\n|-------|--------|------|\n"
+        for name, agent in state.agents.items():
+            md += f"| {name} | {agent.status} | {agent.current_task or '-'} |\n"
+
+        # Best config (only for modes that involve backtesting)
+        if state.best_config and mode in ('backtest', 'full'):
+            best = state.best_config
+            md += (
+                f"\n## Best Config\n"
+                f"- Sharpe: {best.get('sharpe_ratio', 0):.2f}\n"
+                f"- Return: {best.get('total_return', 0):.1f}%\n"
+                f"- Annualized: {best.get('annualized_return', 0):.1f}%\n"
+            )
+
+        # Last validation (only if we ran validation)
+        if state.validation_results and mode in ('validate', 'full'):
+            last = state.validation_results[-1]
+            md += (
+                f"\n## Last Validation\n"
+                f"- Status: {last.get('status')}\n"
+                f"- Anomalies: {last.get('anomalies_found', 0)}\n"
+            )
 
         # Show recent log lines for paper trading (from file)
         log_path = Path("data/paper_trade.log")
@@ -1112,8 +1251,9 @@ Plotly.newPlot('chart', [trace1], {{
     # agent:runs (DB query)
     # ------------------------------------------------------------------
 
-    def _agent_runs(self) -> str:
+    def _agent_runs(self, trade_type: Optional[str] = None, params: Optional[Dict] = None) -> str:
         """List recent runs from alpatrade.runs."""
+        params = params or {}
         try:
             from utils.db.db_pool import DatabasePool
             from sqlalchemy import text
@@ -1124,10 +1264,14 @@ Plotly.newPlot('chart', [trace1], {{
                     SELECT run_id, mode, strategy, status, started_at, completed_at
                     FROM alpatrade.runs
                 """
+                where_clauses = []
                 bind = {}
-                if self.user_id:
-                    sql += " WHERE user_id = :user_id"
-                    bind["user_id"] = self.user_id
+                self._add_user_account_filters(where_clauses, bind, params)
+                if trade_type:
+                    where_clauses.append("mode = :mode")
+                    bind["mode"] = trade_type
+                if where_clauses:
+                    sql += " WHERE " + " AND ".join(where_clauses)
                 sql += " ORDER BY created_at DESC LIMIT 20"
                 result = session.execute(text(sql), bind)
                 rows = result.fetchall()
@@ -1155,38 +1299,65 @@ Plotly.newPlot('chart', [trace1], {{
     # ------------------------------------------------------------------
 
     def _agent_trades(self, params: Dict) -> str:
-        """Query trades from alpatrade.trades."""
+        """Query trades from alpatrade.trades.
+
+        Supports: trades [paper|backtest] [slug] [run-id] [limit:N]
+        Default: latest run's trades.
+        """
         try:
             from utils.db.db_pool import DatabasePool
             from sqlalchemy import text
 
             run_id = params.get("run-id")
             trade_type = params.get("type")
-            limit = int(params.get("limit", "20"))
+            strategy = params.get("strategy")
+            limit = int(params.get("limit", "50"))
 
             pool = DatabasePool()
             with pool.get_session() as session:
                 where_clauses = []
                 bind = {}
+
+                # If no specific filters, default to latest run
+                if not run_id and not trade_type and not strategy:
+                    user_filter = "WHERE user_id = :user_id" if self.user_id else ""
+                    if self.user_id:
+                        bind["user_id"] = self.user_id
+                    latest = session.execute(
+                        text(f"""
+                            SELECT run_id, mode, strategy_slug
+                            FROM alpatrade.runs
+                            {user_filter}
+                            ORDER BY created_at DESC LIMIT 1
+                        """),
+                        bind,
+                    ).fetchone()
+                    if latest:
+                        run_id = str(latest[0])
+                        trade_type = str(latest[1]) if latest[1] else None
+
+                bind = {}  # reset after latest-run lookup
                 if run_id:
-                    where_clauses.append("run_id = :run_id")
-                    bind["run_id"] = run_id
+                    where_clauses.append("t.run_id LIKE :run_id")
+                    bind["run_id"] = run_id + "%"
                 if trade_type:
-                    where_clauses.append("trade_type = :trade_type")
+                    where_clauses.append("t.trade_type = :trade_type")
                     bind["trade_type"] = trade_type
-                if self.user_id:
-                    where_clauses.append("user_id = :user_id")
-                    bind["user_id"] = self.user_id
+                if strategy:
+                    where_clauses.append("r.strategy_slug LIKE :slug")
+                    bind["slug"] = strategy + "%"
+                self._add_user_account_filters(where_clauses, bind, params, "t")
 
                 where_sql = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
 
                 result = session.execute(
                     text(f"""
-                        SELECT symbol, direction, shares, entry_price, exit_price,
-                               pnl, pnl_pct, trade_type, run_id
-                        FROM alpatrade.trades
+                        SELECT t.symbol, t.direction, t.shares, t.entry_price, t.exit_price,
+                               t.pnl, t.pnl_pct, t.trade_type, t.run_id
+                        FROM alpatrade.trades t
+                        LEFT JOIN alpatrade.runs r ON r.run_id = t.run_id
                         {where_sql}
-                        ORDER BY created_at DESC
+                        ORDER BY t.created_at DESC
                         LIMIT :lim
                     """),
                     {**bind, "lim": limit},
@@ -1194,9 +1365,26 @@ Plotly.newPlot('chart', [trace1], {{
                 rows = result.fetchall()
 
             if not rows:
-                return "# Trades\n\nNo trades found."
+                filters = []
+                if trade_type:
+                    filters.append(f"type={trade_type}")
+                if strategy:
+                    filters.append(f"strategy={strategy}")
+                if run_id:
+                    filters.append(f"run={run_id[:8]}")
+                filter_str = f" ({', '.join(filters)})" if filters else ""
+                return f"# Trades\n\nNo trades found{filter_str}."
 
-            md = "# Trades\n\n"
+            # Header with filter info
+            filters = []
+            if trade_type:
+                filters.append(trade_type)
+            if strategy:
+                filters.append(f"slug:{strategy}")
+            if run_id:
+                filters.append(f"run:{run_id[:8]}")
+            filter_str = f" ({', '.join(filters)})" if filters else ""
+            md = f"# Trades{filter_str}\n\n"
             md += "| Symbol | Dir | Shares | Entry | Exit | P&L | P&L% | Type |\n"
             md += "|--------|-----|--------|-------|------|-----|------|------|\n"
             for r in rows:
@@ -1264,8 +1452,9 @@ Plotly.newPlot('chart', [trace1], {{
             trade_type = params.get("type")
             strategy_filter = params.get("strategy")
             limit = int(params.get("limit", "10"))
+            acct = None if params.get("scope") == "all" else self.account_id
             rows = agent.summary(trade_type=trade_type, limit=limit,
-                                 user_id=self.user_id)
+                                 user_id=self.user_id, account_id=acct)
 
             # Filter by strategy slug prefix if provided
             if strategy_filter:
@@ -1322,9 +1511,12 @@ Plotly.newPlot('chart', [trace1], {{
 
             agent = ReportAgent()
             strategy = params.get("strategy")
+            trade_type = params.get("type")
             limit = int(params.get("limit", "20"))
-            rows = agent.top_strategies(strategy=strategy, limit=limit,
-                                       user_id=self.user_id)
+            acct = None if params.get("scope") == "all" else self.account_id
+            rows = agent.top_strategies(strategy=strategy, trade_type=trade_type,
+                                       limit=limit, user_id=self.user_id,
+                                       account_id=acct)
 
             if not rows:
                 msg = "# Top Strategies\n\nNo strategy slugs found."
@@ -1605,7 +1797,9 @@ Plotly.newPlot('chart', [trace1], {{
         col2.add_row("[bold white]Charts[/bold white]", "")
         col2.add_row("chart:AAPL", "stock price chart (3mo)")
         col2.add_row("chart:TSLA period:1y", "custom period")
-        col2.add_row("equity:<run_id>", "backtest equity curve")
+        col2.add_row("equity", "latest run equity curve")
+        col2.add_row("equity backtest", "latest backtest equity")
+        col2.add_row("equity paper btd", "filtered equity")
         col2.add_row("", "")
         col2.add_row("[bold white]Alpaca Account[/bold white]", "")
         col2.add_row("accounts", "list linked accounts")
@@ -1620,12 +1814,16 @@ Plotly.newPlot('chart', [trace1], {{
         col3.add_column(style="dim")
 
         col3.add_row("[bold white]Query & Monitor[/bold white]", "")
-        col3.add_row("trades", "recent trades from DB")
-        col3.add_row("runs", "recent runs from DB")
-        col3.add_row("agent:report", "performance summary")
-        col3.add_row("  run-id:<uuid>", "single run detail")
-        col3.add_row("  strategy:btd", "filter by slug prefix")
-        col3.add_row("agent:top", "rank strategies")
+        col3.add_row("trades", "latest run trades")
+        col3.add_row("trades paper", "paper trades only")
+        col3.add_row("trades backtest", "backtest trades only")
+        col3.add_row("trades paper btd", "paper + slug filter")
+        col3.add_row("trades all", "all accounts")
+        col3.add_row("runs / runs paper", "recent runs")
+        col3.add_row("report / report paper", "performance summary")
+        col3.add_row("report <run-id>", "single run detail")
+        col3.add_row("top / top paper", "rank strategies")
+        col3.add_row("top all", "all accounts")
         col3.add_row("agent:status", "agent states")
         col3.add_row("agent:logs", "paper trade log tail")
         col3.add_row("agent:pnl run-id:<id>", "P&L breakdown")

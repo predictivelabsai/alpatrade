@@ -87,7 +87,7 @@ class Orchestrator:
 
         # Initialize agents
         self.backtester = BacktestAgent(message_bus=self.bus, state=self.state,
-                                        user_id=user_id)
+                                        user_id=user_id, account_id=account_id)
         self.paper_trader = PaperTradeAgent(message_bus=self.bus, state=self.state,
                                              user_id=user_id,
                                              alpaca_api_key=self._alpaca_api_key,
@@ -247,12 +247,12 @@ class Orchestrator:
             self.state.mode = "paper"
             # Build slug from best config params or paper config
             best = self.state.best_config or {}
-            paper_params = best.get("params", {})
+            paper_params = best.get("params", {}) or config.get("params", {})
             paper_slug = build_slug(
                 config.get("strategy", "buy_the_dip"),
                 paper_params,
                 config.get("lookback", ""),
-            ) if paper_params else None
+            )
             store_run(self.run_id, "paper",
                       strategy=config.get("strategy", "buy_the_dip"),
                       config=config,

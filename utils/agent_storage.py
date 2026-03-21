@@ -120,13 +120,14 @@ def update_run(run_id: str, status: str, results: Dict = None):
 def store_backtest_results(run_id: str, best: Dict, all_results: List[Dict],
                            trades: Optional[List[Dict]] = None,
                            strategy: str = None, lookback: str = None,
-                           user_id: Optional[str] = None):
+                           user_id: Optional[str] = None,
+                           account_id: Optional[str] = None):
     """Store backtest results using the configured backend."""
     backend = get_storage_backend()
     if backend == "db":
         _store_backtest_db(run_id, best, all_results, trades,
                            strategy=strategy, lookback=lookback,
-                           user_id=user_id)
+                           user_id=user_id, account_id=account_id)
     else:
         _store_backtest_file(run_id, best, all_results, trades)
 
@@ -298,11 +299,12 @@ def _fetch_backtest_trades_db(run_id: str, user_id: Optional[str] = None) -> Lis
 # ---------------------------------------------------------------------------
 
 def store_paper_trade(session_id: str, trade: Dict,
-                      user_id: Optional[str] = None):
+                      user_id: Optional[str] = None,
+                      account_id: Optional[str] = None):
     """Store a single paper trade using the configured backend."""
     backend = get_storage_backend()
     if backend == "db":
-        _store_paper_trade_db(session_id, trade, user_id=user_id)
+        _store_paper_trade_db(session_id, trade, user_id=user_id, account_id=account_id)
     else:
         _store_paper_trade_file(session_id, trade)
 

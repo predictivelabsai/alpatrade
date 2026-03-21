@@ -425,12 +425,15 @@ def _help_html():
             ("  hours:extended", "extended hours"),
         ]),
         *_section("Query & Monitor", [
-            ("trades / runs", "DB tables"),
-            ("agent:report", "performance summary"),
-            ("  type:backtest run-id:<uuid>", "filter / detail"),
-            ("  strategy:btd", "filter by slug prefix"),
-            ("agent:top", "rank strategies by Avg Annual Return"),
-            ("  strategy:btd", "filter by slug prefix"),
+            ("trades", "latest run trades"),
+            ("trades paper / backtest", "filter by type"),
+            ("trades paper btd", "type + slug filter"),
+            ("trades all", "all accounts"),
+            ("runs / runs paper", "recent runs"),
+            ("report / report paper", "performance summary"),
+            ("report <run-id>", "single run detail"),
+            ("top / top paper", "rank strategies"),
+            ("top all", "all accounts"),
             ("agent:status", "agent states"),
             ("agent:stop", "stop background task"),
         ]),
@@ -1781,18 +1784,28 @@ def _guide_query():
 
         H3("Trades & Runs", id="q-trades"),
         Pre(Code(
-            "trades                       # recent trades from DB\n"
-            "runs                         # recent backtest/paper runs"
+            "trades                       # latest run's trades (current account)\n"
+            "trades paper                 # paper trades only\n"
+            "trades backtest              # backtest trades only\n"
+            "trades paper btd             # paper + strategy slug filter\n"
+            "trades backtest btd-3dp      # backtest + specific slug\n"
+            "trades all                   # all accounts (not just active)\n"
+            "runs                         # recent runs\n"
+            "runs paper                   # paper runs only\n"
+            "runs backtest                # backtest runs only"
         )),
-        P("Shows tables from the PostgreSQL database with your trade history "
-          "and run summaries."),
+        P("Filter order: ", Code("type"), " → ", Code("slug"), " → ",
+          Code("run-id"), " (all optional). Add ", Code("all"),
+          " to see across all linked accounts. Default: current user + active account, latest run."),
 
         H3("Performance Reports", id="q-report"),
         Pre(Code(
-            "agent:report                         # summary of recent runs\n"
-            "agent:report run-id:abc12345         # detailed single-run report\n"
-            "agent:report type:backtest           # filter by trade type\n"
-            "agent:report strategy:btd            # filter by strategy slug prefix"
+            "report                       # summary of recent runs\n"
+            "report paper                 # paper runs summary\n"
+            "report backtest              # backtest runs summary\n"
+            "report <run-id>              # detailed single-run report\n"
+            "report paper btd             # paper + strategy slug filter\n"
+            "report all                   # all accounts"
         )),
         P("The summary view shows a compact table with return, Sharpe ratio, P&L, "
           "and trade count for each run. The detail view shows full metrics for a "
@@ -1800,8 +1813,10 @@ def _guide_query():
 
         H3("Top Strategies", id="q-top"),
         Pre(Code(
-            "agent:top                    # rank all strategy slugs by avg annual return\n"
-            "agent:top strategy:btd       # filter by slug prefix"
+            "top                          # rank strategies (backtest)\n"
+            "top paper                    # rank paper trade results\n"
+            "top paper btd               # paper + slug filter\n"
+            "top all                      # all accounts"
         )),
         P("Aggregates across all runs to rank strategy configurations by average "
           "annualized return. Shows Sharpe ratio, return, win rate, drawdown, and "

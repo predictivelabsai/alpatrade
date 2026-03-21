@@ -290,26 +290,35 @@ def show_running_agents() -> str:
 
 
 
-def show_recent_trades(limit: int = 20) -> str:
-    """Show recent trades from the AlpaTrade database."""
+def show_recent_trades(limit: int = 20, trade_type: str = "") -> str:
+    """Show recent trades from the AlpaTrade database. Use trade_type='paper' or 'backtest' to filter."""
     try:
         from utils.db.db_pool import DatabasePool
         from sqlalchemy import text
         pool = DatabasePool()
         with pool.get_session() as session:
+            where = ""
+            bind = {"lim": limit}
+            if trade_type:
+                where = "WHERE trade_type = :trade_type"
+                bind["trade_type"] = trade_type
             result = session.execute(
-                text("""
+                text(f"""
                     SELECT symbol, direction, shares, entry_price, exit_price,
                            pnl, pnl_pct, trade_type
                     FROM alpatrade.trades
+                    {where}
                     ORDER BY created_at DESC LIMIT :lim
                 """),
-                {"lim": limit},
+                bind,
             )
             rows = result.fetchall()
         if not rows:
-            return "No trades found in database."
-        md = "| Symbol | Dir | Shares | Entry | Exit | P&L | P&L% | Type |\n"
+            label = f" ({trade_type})" if trade_type else ""
+            return f"No trades{label} found in database."
+        label = f" ({trade_type})" if trade_type else ""
+        md = f"**Trades{label}**\n\n"
+        md += "| Symbol | Dir | Shares | Entry | Exit | P&L | P&L% | Type |\n"
         md += "|--------|-----|--------|-------|------|-----|------|------|\n"
         for r in rows:
             md += (
@@ -344,7 +353,7 @@ def show_stock_chart(ticker: str, period: str = "3mo") -> str:
             "high": highs,
             "low": lows,
         })
-        return f"__CHART_DATA__{chart_data}__END_CHART__"
+        return f"**{ticker}** — {period} chart\n\n__CHART_DATA__{chart_data}__END_CHART__"
     except Exception as e:
         return f"Error generating chart for {ticker}: {e}"
 
@@ -380,8 +389,8 @@ def show_recent_runs(limit: int = 20) -> str:
 
 
 
-def show_equity_curve(run_id: str) -> str:
-    """Show the equity curve chart for a backtest run. Accepts full or partial (prefix) run IDs."""
+def show_equity_curve(run_id: str = "", trade_type: str = "", strategy: str = "") -> str:
+    """Show equity curve chart. Accepts run_id (full or prefix), or use trade_type/strategy to find latest run."""
     try:
         from utils.db.db_pool import DatabasePool
         from sqlalchemy import text
@@ -389,9 +398,26 @@ def show_equity_curve(run_id: str) -> str:
 
         pool = DatabasePool()
         with pool.get_session() as session:
-            # Prefix matching — find full run_id from partial
-            rid = run_id.strip()
-            if len(rid) < 36:
+            rid = run_id.strip() if run_id else ""
+
+            # If no run_id, find latest run by filters
+            if not rid:
+                where = ["1=1"]
+                bind = {}
+                if trade_type:
+                    where.append("mode = :mode")
+                    bind["mode"] = trade_type
+                if strategy:
+                    where.append("strategy_slug LIKE :slug")
+                    bind["slug"] = strategy + "%"
+                row = session.execute(
+                    text(f"SELECT run_id FROM alpatrade.runs WHERE {' AND '.join(where)} ORDER BY created_at DESC LIMIT 1"),
+                    bind,
+                ).fetchone()
+                if not row:
+                    return "No run found matching filters."
+                rid = str(row[0])
+            elif len(rid) < 36:
                 row = session.execute(
                     text("SELECT run_id FROM alpatrade.runs WHERE CAST(run_id AS TEXT) LIKE :prefix ORDER BY created_at DESC LIMIT 1"),
                     {"prefix": f"{rid}%"},
@@ -434,7 +460,13 @@ def show_equity_curve(run_id: str) -> str:
             "equity": equity,
             "initial_capital": initial_capital,
         })
-        return f"__CHART_DATA__{chart_data}__END_CHART__"
+        short = rid[:8]
+        final_eq = equity[-1] if equity else initial_capital
+        pnl = final_eq - initial_capital
+        pct = (pnl / initial_capital * 100) if initial_capital else 0
+        sign = "+" if pnl >= 0 else ""
+        label = f"**Equity Curve** — `{short}` ({sign}${pnl:.0f} / {sign}{pct:.1f}%)"
+        return f"{label}\n\n__CHART_DATA__{chart_data}__END_CHART__"
     except Exception as e:
         return f"Error generating equity curve: {e}"
 
@@ -467,13 +499,13 @@ TOOLS = [
     StructuredTool.from_function(show_running_agents, name="show_running_agents",
         description="Show all currently running background trading agents and their status."),
     StructuredTool.from_function(show_recent_trades, name="show_recent_trades",
-        description="Show recent trades from the AlpaTrade database."),
+        description="Show recent trades from the database. Use trade_type='paper' for paper trades only, 'backtest' for backtests only."),
     StructuredTool.from_function(show_stock_chart, name="show_stock_chart",
         description="Show a price chart for a stock. Period: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y."),
     StructuredTool.from_function(show_recent_runs, name="show_recent_runs",
         description="Show recent backtest/paper trade runs from the AlpaTrade database."),
     StructuredTool.from_function(show_equity_curve, name="show_equity_curve",
-        description="Show the equity curve chart for a backtest run. Accepts full or partial (prefix) run IDs."),
+        description="Show equity curve chart. Use trade_type='paper' or 'backtest' to filter. Use run_id for a specific run. Default: latest run."),
 ]
 
 llm = ChatOpenAI(
@@ -516,8 +548,9 @@ class _AppState:
 _app_state = _AppState()
 
 # Commands that should bypass the AI agent and go to CommandProcessor
-_CLI_BASES = {"news", "profile", "financials", "price", "movers", "analysts", "valuation", "chart", "equity"}
-_CLI_EXACT = {"trades", "runs", "status", "help", "guide", "positions", "account", "accounts"}
+_CLI_BASES = {"news", "profile", "financials", "price", "movers", "analysts", "valuation",
+              "chart", "equity", "trades", "runs", "top", "report"}
+_CLI_EXACT = {"status", "help", "guide", "positions", "account", "accounts"}
 
 # Long-running commands that get streamed with log console instead of blocking
 _STREAMING_COMMANDS = {
@@ -562,12 +595,29 @@ async def _command_interceptor(msg: str, session):
             return show_stock_chart(ticker, period)
         return "Usage: `chart:AAPL` or `chart:AAPL period:1y`"
 
-    # equity:<RUN_ID> — equity curve chart (bypass CommandProcessor)
+    # equity [paper|backtest] [slug] [run-id] — equity curve chart
     if base == "equity":
-        rid = msg.strip().split(":", 1)[1].strip() if ":" in msg.strip() else None
-        if rid:
-            return show_equity_curve(rid)
-        return "Usage: `equity:<run_id>`"
+        _TYPES = {"paper", "backtest"}
+        parts = msg.strip().split()
+        rid = ""
+        trade_type = ""
+        strategy = ""
+        # Parse: equity:RUN_ID or equity paper btd RUN_ID
+        if ":" in parts[0] and parts[0].split(":", 1)[1].strip():
+            suffix = parts[0].split(":", 1)[1].strip()
+            if suffix in _TYPES:
+                trade_type = suffix
+            else:
+                rid = suffix
+        for p in parts[1:]:
+            pl = p.lower()
+            if pl in _TYPES and not trade_type:
+                trade_type = pl
+            elif len(p) >= 8 and "-" in p and not rid:
+                rid = p
+            elif not strategy:
+                strategy = pl
+        return show_equity_curve(run_id=rid, trade_type=trade_type, strategy=strategy)
 
     # Alpaca account/positions — direct tool call, bypass CommandProcessor
     if cmd_lower == "positions":
@@ -670,13 +720,24 @@ _AGUI_HELP = """# AlpaTrade Commands
 - `agent:reconcile window:14d` — DB vs Alpaca
 
 ## Query & Monitor
-- `trades` — recent trades from DB
-- `runs` — recent runs from DB
-- `agent:report` — performance summary
-- `agent:report run-id:<uuid>` — single run detail
-- `agent:top` — rank strategies
+All query commands support filters: `[paper|backtest] [slug] [run-id] [all]`
+
+- `trades` — latest run's trades (current account)
+- `trades paper` — paper trades only
+- `trades backtest` — backtest trades only
+- `trades paper btd` — paper + strategy slug filter
+- `trades backtest btd-3dp` — backtest + specific slug
+- `trades all` — all accounts (not just active)
+- `runs` / `runs paper` / `runs backtest` — recent runs
+- `report` / `report paper` — performance summary
+- `report <run-id>` — single run detail
+- `top` / `top paper` — rank strategies
+- `top all` — rankings across all accounts
 - `agent:status` — agent states
 - `agent:logs` — paper trade log tail
+
+**Filter order**: type → slug → run-id (all optional)
+**Default**: current user + active account, latest run
 
 ## Market Research
 - `news:TSLA` — company news
@@ -691,10 +752,14 @@ _AGUI_HELP = """# AlpaTrade Commands
 - `positions` — open positions from Alpaca paper account
 - `account` — account summary (portfolio value, cash, buying power)
 
-## Charts
+## Charts (rendered inline with download button)
 - `chart:AAPL` — stock price chart (3mo default)
 - `chart:TSLA period:1y` — custom period
-- `equity:<run_id>` — equity curve for a backtest run
+- `equity` — equity curve for latest run
+- `equity backtest` — latest backtest equity
+- `equity paper` — latest paper trade equity
+- `equity paper btd` — paper + slug filter
+- `equity <run-id>` — specific run equity curve
 
 ## AI Chat
 Type any question to chat with AI about stocks & trading.
@@ -1224,11 +1289,17 @@ body {
 /* === Conversation List === */
 .conv-section {
   flex: 1;
+  min-height: 200px;
+  max-height: 35vh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
+.conv-section::-webkit-scrollbar { width: 8px; }
+.conv-section::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+.conv-section::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+.conv-section::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
 .conv-section h4 {
   font-size: 0.7rem;
@@ -1550,14 +1621,21 @@ _HELP_CATEGORIES = [
         ("agent:full lookback:3m duration:7d", "3-month + 7-day paper"),
     ]),
     ("Query & Monitor", [
-        ("trades", "recent trades from DB"),
-        ("runs", "recent runs from DB"),
-        ("agent:report", "performance summary"),
-        ("agent:report run-id:<uuid>", "single run detail"),
-        ("agent:top", "rank strategies"),
+        ("trades", "latest run trades"),
+        ("trades paper", "paper only"),
+        ("trades backtest", "backtest only"),
+        ("trades paper btd", "paper + slug"),
+        ("trades all", "all accounts"),
+        ("runs", "recent runs"),
+        ("runs paper", "paper runs"),
+        ("report", "summary"),
+        ("report paper", "paper summary"),
+        ("top", "rank strategies"),
+        ("top paper", "paper rankings"),
+        ("top all", "all accounts"),
         ("agent:status", "agent states"),
-        ("agent:logs", "paper trade log tail"),
-        ("positions", "Alpaca open positions"),
+        ("agent:logs", "log tail"),
+        ("positions", "Alpaca positions"),
     ]),
     ("Research", [
         ("news:TSLA", "company news"),
@@ -1568,6 +1646,12 @@ _HELP_CATEGORIES = [
         ("valuation:AAPL,MSFT", "valuation comparison"),
         ("movers", "top gainers & losers"),
         ("chart:AAPL period:1y", "stock chart"),
+    ]),
+    ("Charts & Equity", [
+        ("equity", "latest run equity curve"),
+        ("equity backtest", "latest backtest equity"),
+        ("equity paper", "latest paper equity"),
+        ("equity paper btd", "paper + slug"),
     ]),
     ("Accounts", [
         ("accounts", "list linked accounts"),
@@ -1736,9 +1820,7 @@ def _right_pane():
             cls="right-header",
         ),
         Div(
-            Button("Thinking", cls="right-tab active", onclick="showTab('trace')"),
-            Button("Artifacts", cls="right-tab", onclick="showTab('artifact')"),
-            Button("Details", cls="right-tab", onclick="showTab('detail')"),
+            Span("Trace", cls="right-tab active"),
             cls="right-tabs",
         ),
         Div(
@@ -1746,16 +1828,6 @@ def _right_pane():
                 Div("Tool calls and reasoning will appear here during agent runs.",
                     style="color: #475569; font-style: italic;"),
                 id="trace-content",
-            ),
-            Div(
-                Div("Charts and data will appear here when tools generate visual output.",
-                    style="color: #475569; font-style: italic;"),
-                id="artifact-content",
-            ),
-            Div(
-                Div("Select a run ID from the chat to view details.",
-                    style="color: #475569; font-style: italic;"),
-                id="detail-content",
             ),
             cls="right-content",
         ),
@@ -1796,171 +1868,19 @@ function fillChat(cmd) {
 
 function showTab(tab) {
     var trace = document.getElementById('trace-content');
-    var artifact = document.getElementById('artifact-content');
-    var detail = document.getElementById('detail-content');
-    var tabs = document.querySelectorAll('.right-tab');
-
-    tabs.forEach(function(t) { t.classList.remove('active'); });
-    if (trace) trace.style.display = 'none';
-    if (artifact) artifact.style.display = 'none';
-    if (detail) detail.style.display = 'none';
-
-    if (tab === 'trace') {
-        if (trace) trace.style.display = 'flex';
-        tabs[0].classList.add('active');
-    } else if (tab === 'artifact') {
-        if (artifact) artifact.style.display = 'block';
-        tabs[1].classList.add('active');
-    } else if (tab === 'detail') {
-        if (detail) detail.style.display = 'block';
-        tabs[2].classList.add('active');
-    }
+    if (trace) trace.style.display = 'flex';
 }
 
-/* Chart rendering — detect __CHART_DATA__ markers in assistant messages */
-function renderChart(chartJson) {
-    try {
-        var data = JSON.parse(chartJson);
-        if (data.type === 'equity_curve') {
-            renderEquityCurve(data);
-        } else {
-            renderStockChart(data);
-        }
-    } catch(e) {
-        console.error('Chart render error:', e);
-    }
+/* renderChart is a no-op — charts are rendered inline in chat only */
+function renderChart(chartJson) {}
+
+/* Download a Plotly chart as PNG */
+function downloadChart(chartDiv, filename) {
+    if (!window.Plotly || !chartDiv) return;
+    Plotly.downloadImage(chartDiv, {format: 'png', width: 1200, height: 600, filename: filename || 'chart'});
 }
 
-function renderStockChart(data) {
-    var container = document.getElementById('artifact-content');
-    if (!container || !window.Plotly) return;
-
-    container.innerHTML = '';
-    var chartDiv = document.createElement('div');
-    chartDiv.id = 'plotly-chart';
-    chartDiv.className = 'artifact-chart';
-    container.appendChild(chartDiv);
-
-    var trace = {
-        x: data.dates,
-        y: data.close,
-        type: 'scatter',
-        mode: 'lines',
-        name: data.ticker,
-        line: { color: '#3b82f6', width: 2 },
-        fill: 'tozeroy',
-        fillcolor: 'rgba(59, 130, 246, 0.1)',
-    };
-
-    var rangeLine = {
-        x: data.dates,
-        y: data.high,
-        type: 'scatter',
-        mode: 'lines',
-        name: 'High',
-        line: { color: '#22c55e', width: 1, dash: 'dot' },
-        opacity: 0.5,
-    };
-
-    var lowLine = {
-        x: data.dates,
-        y: data.low,
-        type: 'scatter',
-        mode: 'lines',
-        name: 'Low',
-        line: { color: '#ef4444', width: 1, dash: 'dot' },
-        opacity: 0.5,
-    };
-
-    var layout = {
-        title: { text: data.ticker + ' — ' + data.period, font: { color: '#f1f5f9', size: 14 } },
-        paper_bgcolor: '#1e293b',
-        plot_bgcolor: '#0f172a',
-        font: { color: '#94a3b8', family: 'ui-monospace, monospace', size: 11 },
-        xaxis: { gridcolor: '#1e293b', linecolor: '#334155' },
-        yaxis: { gridcolor: '#1e293b', linecolor: '#334155', tickprefix: '$' },
-        legend: { orientation: 'h', y: -0.15 },
-        margin: { t: 40, r: 20, b: 40, l: 60 },
-        showlegend: true,
-    };
-
-    Plotly.newPlot(chartDiv, [trace, rangeLine, lowLine], layout, {
-        responsive: true,
-        displayModeBar: false,
-    });
-
-    showTab('artifact');
-}
-
-function renderEquityCurve(data) {
-    var container = document.getElementById('artifact-content');
-    if (!container || !window.Plotly) return;
-
-    container.innerHTML = '';
-    var chartDiv = document.createElement('div');
-    chartDiv.id = 'plotly-chart';
-    chartDiv.className = 'artifact-chart';
-    container.appendChild(chartDiv);
-
-    var equityTrace = {
-        x: data.dates,
-        y: data.equity,
-        type: 'scatter',
-        mode: 'lines',
-        name: 'Equity',
-        line: { color: '#3b82f6', width: 2 },
-        fill: 'tozeroy',
-        fillcolor: 'rgba(59, 130, 246, 0.1)',
-    };
-
-    var capitalLine = {
-        x: [data.dates[0], data.dates[data.dates.length - 1]],
-        y: [data.initial_capital, data.initial_capital],
-        type: 'scatter',
-        mode: 'lines',
-        name: 'Initial Capital',
-        line: { color: '#94a3b8', width: 1, dash: 'dash' },
-    };
-
-    var shortId = data.run_id ? data.run_id.substring(0, 8) : 'unknown';
-    var layout = {
-        title: { text: 'Equity Curve — ' + shortId, font: { color: '#f1f5f9', size: 14 } },
-        paper_bgcolor: '#1e293b',
-        plot_bgcolor: '#0f172a',
-        font: { color: '#94a3b8', family: 'ui-monospace, monospace', size: 11 },
-        xaxis: { gridcolor: '#1e293b', linecolor: '#334155' },
-        yaxis: { gridcolor: '#1e293b', linecolor: '#334155', tickprefix: '$' },
-        legend: { orientation: 'h', y: -0.15 },
-        margin: { t: 40, r: 20, b: 40, l: 60 },
-        showlegend: true,
-    };
-
-    Plotly.newPlot(chartDiv, [equityTrace, capitalLine], layout, {
-        responsive: true,
-        displayModeBar: false,
-    });
-
-    showTab('artifact');
-}
-
-/* Watch for chart data markers in messages */
-(function() {
-    var chartObs = new MutationObserver(function() {
-        document.querySelectorAll('.marked, .marked-done').forEach(function(el) {
-            var text = el.textContent || '';
-            var match = text.match(/__CHART_DATA__(.+?)__END_CHART__/);
-            if (match) {
-                renderChart(match[1]);
-                // Clean up the marker from the message
-                el.innerHTML = el.innerHTML.replace(/__CHART_DATA__.*?__END_CHART__/, '');
-            }
-        });
-    });
-    setTimeout(function() {
-        var body = document.body;
-        if (body) chartObs.observe(body, {childList: true, subtree: true, characterData: true});
-    }, 500);
-})();
+/* Chart marker cleanup is handled by extractAndRenderCharts() in renderMarkdown() */
 """
 
 

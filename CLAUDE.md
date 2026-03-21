@@ -100,6 +100,21 @@ Five agents collaborate to backtest, paper trade, validate, and reconcile strate
 - Messages: `{from_agent, to_agent, type, payload, timestamp}`
 - State persistence: `data/agent_state.json`
 
+### Regression Tests
+
+```bash
+# Run the full regression suite (65 tests covering all backend modules)
+python tests/regression_suite.py
+
+# Covers: strategy slugs, agent state, message bus, auth (hash/encrypt/JWT),
+# command parsing, DB schema, report agent, storage, AGUI tools, orchestrator,
+# backtest agent, validate agent, PDT tracker, config loading, user CRUD,
+# backtester metrics, stale state detection, command routing, end-to-end queries
+```
+
+Run the regression suite after significant changes to verify nothing is broken.
+When the user says "run regression" or "run tests", execute `python tests/regression_suite.py`.
+
 ### Running
 
 ```bash

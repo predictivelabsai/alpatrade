@@ -151,12 +151,24 @@ def _enrich_result(command: str, result: str):
                 f'>{rid[:8]}...</a>'
             )
 
-        return (
+        card_html = (
             '<div class="result-card backtest-card">'
             f'<div class="card-header"><h3>Backtest Results</h3>{run_id_html}</div>'
             f'<div class="card-metrics">{"".join(metric_divs)}</div>'
             '</div>'
         )
+
+        # Auto-append equity curve chart after backtest results
+        if run_id_match:
+            try:
+                from agui_app import show_equity_curve
+                eq_result = show_equity_curve(run_id=run_id_match.group(1))
+                if "__CHART_DATA__" in eq_result:
+                    card_html += "\n" + eq_result
+            except Exception:
+                pass
+
+        return card_html
 
     # Validation results
     if first.startswith("agent:validate") and result:
@@ -397,9 +409,6 @@ class UI:
                     var chartMatch = txt.match(/__CHART_DATA__(.+?)__END_CHART__/);
                     if (chartMatch) {
                         var chartJson = chartMatch[1];
-                        // Render in artifact pane (right side)
-                        if (window.renderChart) window.renderChart(chartJson);
-                        // Also render inline in the chat message
                         txt = txt.replace(/__CHART_DATA__.*?__END_CHART__/, '');
                         if (el) {
                             el._pendingChart = chartJson;
@@ -408,15 +417,40 @@ class UI:
                     return txt;
                 }
 
-                // Add inline chart after markdown render
+                // Add inline chart after markdown render (with download button)
                 function renderInlineChart(el) {
                     if (!el._pendingChart || !window.Plotly) return;
                     try {
                         var data = JSON.parse(el._pendingChart);
+                        var wrapper = document.createElement('div');
+                        wrapper.className = 'inline-chart-wrapper';
+                        wrapper.style.cssText = 'width:100%;margin:0.75rem 0;';
+
                         var chartDiv = document.createElement('div');
                         chartDiv.className = 'inline-chart';
-                        chartDiv.style.cssText = 'width:100%;min-height:280px;margin:0.5rem 0;border-radius:0.5rem;overflow:hidden;';
-                        el.appendChild(chartDiv);
+                        chartDiv.style.cssText = 'width:100%;min-height:380px;border-radius:0.5rem;overflow:hidden;';
+                        wrapper.appendChild(chartDiv);
+
+                        // Download button
+                        var dlBtn = document.createElement('button');
+                        dlBtn.textContent = 'Download PNG';
+                        dlBtn.className = 'chart-download-btn';
+                        dlBtn.style.cssText = 'margin-top:0.5rem;padding:0.35rem 0.75rem;font-size:0.75rem;background:#3b82f6;color:#fff;border:none;border-radius:4px;cursor:pointer;';
+                        dlBtn.onclick = function() {
+                            var fname = data.type === 'equity_curve' ? 'equity-'+(data.run_id||'').substring(0,8) : (data.ticker||'chart');
+                            if (window.downloadChart) window.downloadChart(chartDiv, fname);
+                        };
+                        wrapper.appendChild(dlBtn);
+                        el.appendChild(wrapper);
+
+                        var lightLayout = {
+                            paper_bgcolor:'#ffffff',plot_bgcolor:'#f8fafc',
+                            font:{color:'#64748b',family:'-apple-system,sans-serif',size:11},
+                            xaxis:{gridcolor:'#e2e8f0',linecolor:'#e2e8f0'},
+                            yaxis:{gridcolor:'#e2e8f0',linecolor:'#e2e8f0',tickprefix:'$'},
+                            legend:{orientation:'h',y:-0.15},margin:{t:40,r:15,b:40,l:60},
+                            showlegend:true
+                        };
 
                         if (data.type === 'equity_curve') {
                             var eqTrace = {x:data.dates,y:data.equity,type:'scatter',mode:'lines',
@@ -424,29 +458,22 @@ class UI:
                                 fillcolor:'rgba(59,130,246,0.08)'};
                             var capLine = {x:[data.dates[0],data.dates[data.dates.length-1]],
                                 y:[data.initial_capital,data.initial_capital],type:'scatter',mode:'lines',
-                                name:'Initial',line:{color:'#94a3b8',width:1,dash:'dash'}};
+                                name:'Initial Capital',line:{color:'#94a3b8',width:1,dash:'dash'}};
                             var shortId = data.run_id ? data.run_id.substring(0,8) : '';
-                            Plotly.newPlot(chartDiv,[eqTrace,capLine],{
-                                title:{text:'Equity — '+shortId,font:{size:13,color:'#1e293b'}},
-                                paper_bgcolor:'#ffffff',plot_bgcolor:'#f8fafc',
-                                font:{color:'#64748b',family:'-apple-system,sans-serif',size:11},
-                                xaxis:{gridcolor:'#e2e8f0',linecolor:'#e2e8f0'},
-                                yaxis:{gridcolor:'#e2e8f0',linecolor:'#e2e8f0',tickprefix:'$'},
-                                legend:{orientation:'h',y:-0.15},margin:{t:35,r:15,b:35,l:55},
-                                showlegend:true
-                            },{responsive:true,displayModeBar:false});
+                            var finalPnl = data.equity[data.equity.length-1] - data.initial_capital;
+                            var pnlPct = (finalPnl / data.initial_capital * 100).toFixed(1);
+                            var pnlColor = finalPnl >= 0 ? '#16a34a' : '#dc2626';
+                            var pnlSign = finalPnl >= 0 ? '+' : '';
+                            lightLayout.title = {text:'Equity Curve — '+shortId+'  ('+pnlSign+'$'+finalPnl.toFixed(0)+' / '+pnlSign+pnlPct+'%)',
+                                font:{size:13,color:'#1e293b'}};
+                            Plotly.newPlot(chartDiv,[eqTrace,capLine],lightLayout,{responsive:true,displayModeBar:false});
                         } else {
                             var trace = {x:data.dates,y:data.close,type:'scatter',mode:'lines',
                                 name:data.ticker,line:{color:'#3b82f6',width:2},fill:'tozeroy',
                                 fillcolor:'rgba(59,130,246,0.08)'};
-                            Plotly.newPlot(chartDiv,[trace],{
-                                title:{text:data.ticker+' — '+data.period,font:{size:13,color:'#1e293b'}},
-                                paper_bgcolor:'#ffffff',plot_bgcolor:'#f8fafc',
-                                font:{color:'#64748b',family:'-apple-system,sans-serif',size:11},
-                                xaxis:{gridcolor:'#e2e8f0',linecolor:'#e2e8f0'},
-                                yaxis:{gridcolor:'#e2e8f0',linecolor:'#e2e8f0',tickprefix:'$'},
-                                margin:{t:35,r:15,b:35,l:55},showlegend:false
-                            },{responsive:true,displayModeBar:false});
+                            lightLayout.title = {text:data.ticker+' — '+data.period,font:{size:13,color:'#1e293b'}};
+                            lightLayout.showlegend = false;
+                            Plotly.newPlot(chartDiv,[trace],lightLayout,{responsive:true,displayModeBar:false});
                         }
                     } catch(e) { console.error('Inline chart error:', e); }
                     delete el._pendingChart;
