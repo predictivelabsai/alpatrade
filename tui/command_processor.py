@@ -1166,21 +1166,20 @@ Plotly.newPlot('chart', [trace1], {{
                 if "paper" in bg_modes:
                     agent.status = "running"
                     agent.current_task = "paper_trading"
-                elif agent.status == "running" and not orch:
-                    # Stale: state says running but no live process
+                elif agent.status == "running":
+                    # No live background process — mark idle
                     agent.status = "idle"
                     agent.current_task = None
             elif name == "backtester":
                 if "backtest" in bg_modes:
                     agent.status = "running"
                     agent.current_task = "parameterized_backtest"
-                elif agent.status == "running" and not orch:
+                elif agent.status == "running":
                     agent.status = "idle"
                     agent.current_task = None
 
-        # Save corrected state back to disk if we fixed stale entries
-        if not orch:
-            state.save()
+        # Save corrected state back to disk
+        state.save()
 
         agent_statuses = [a.status for a in state.agents.values()]
         if any(s == "running" for s in agent_statuses):
