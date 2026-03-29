@@ -34,7 +34,7 @@ def _get_followup_suggestions(msg: str, result: str = None) -> list:
     # Extract run_id from result text
     run_id = None
     if result:
-        m = re.search(r'Run ID:?\s*`?([a-f0-9-]+)', result)
+        m = re.search(r'Run ID\*?\*?:?\s*`?([a-f0-9-]+)',result)
         if m:
             run_id = m.group(1)
 
@@ -139,7 +139,7 @@ def _enrich_result(command: str, result: str):
             )
 
         # Extract run_id for detail link
-        run_id_match = re.search(r'Run ID:?\s*`?([a-f0-9-]+)', result)
+        run_id_match = re.search(r'Run ID\*?\*?:?\s*`?([a-f0-9-]+)',result)
         run_id_html = ""
         if run_id_match:
             rid = run_id_match.group(1)
@@ -157,16 +157,6 @@ def _enrich_result(command: str, result: str):
             f'<div class="card-metrics">{"".join(metric_divs)}</div>'
             '</div>'
         )
-
-        # Auto-append equity curve chart after backtest results
-        if run_id_match:
-            try:
-                from agui_app import show_equity_curve
-                eq_result = show_equity_curve(run_id=run_id_match.group(1))
-                if "__CHART_DATA__" in eq_result:
-                    card_html += "\n" + eq_result
-            except Exception:
-                pass
 
         return card_html
 
@@ -1257,6 +1247,19 @@ class AGUIThread:
             final_result = f"# Error\n\n```\n{result_holder['error']}\n```"
         else:
             final_result = result_holder["value"] or "Command executed."
+
+        # Auto-append equity curve chart for backtest results
+        cmd_first = msg.strip().lower().split()[0] if msg.strip() else ""
+        if cmd_first.startswith("agent:backtest") and final_result and "Error" not in final_result[:20]:
+            try:
+                run_id_match = re.search(r'Run ID\*?\*?:?\s*`?([a-f0-9-]+)',final_result)
+                if run_id_match:
+                    from agui_app import show_equity_curve
+                    eq_result = show_equity_curve(run_id=run_id_match.group(1))
+                    if "__CHART_DATA__" in eq_result:
+                        final_result += "\n\n" + eq_result
+            except Exception as _eq_err:
+                logger.warning(f"Equity chart auto-append failed: {_eq_err}")
 
         # Replace log console with final markdown result (with enrichment)
         try:
