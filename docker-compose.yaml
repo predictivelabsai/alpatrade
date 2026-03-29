@@ -33,6 +33,7 @@ services:
       - "9002:5002"
     environment:
       - DATABASE_URL=${DATABASE_URL}
+      - API_URL=http://api:5001
       - ALPACA_PAPER_API_KEY=${ALPACA_PAPER_API_KEY}
       - ALPACA_PAPER_SECRET_KEY=${ALPACA_PAPER_SECRET_KEY}
       - MASSIVE_API_KEY=${MASSIVE_API_KEY}
@@ -61,6 +62,7 @@ services:
       - "9003:5003"
     environment:
       - DATABASE_URL=${DATABASE_URL}
+      - API_URL=http://api:5001
       - ALPACA_PAPER_API_KEY=${ALPACA_PAPER_API_KEY}
       - ALPACA_PAPER_SECRET_KEY=${ALPACA_PAPER_SECRET_KEY}
       - MASSIVE_API_KEY=${MASSIVE_API_KEY}
@@ -68,6 +70,9 @@ services:
       - EODHD_API_KEY=${EODHD_API_KEY:-}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
       - JWT_SECRET=${JWT_SECRET:-}
+    depends_on:
+      api:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5003/')"]
       interval: 30s

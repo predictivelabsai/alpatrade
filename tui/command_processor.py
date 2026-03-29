@@ -545,6 +545,14 @@ Plotly.newPlot('chart', [trace1], {{
         subcmd = parts[0].lower()
         params = self._parse_kv_params(parts[1:])
 
+        # When API_URL is set, delegate agent execution commands to API
+        from utils.api_client import is_api_mode
+        _API_COMMANDS = {"agent:backtest", "agent:paper", "agent:full",
+                         "agent:validate", "agent:reconcile",
+                         "agent:stop", "agent:status"}
+        if is_api_mode() and subcmd in _API_COMMANDS:
+            return await self._agent_via_api(subcmd, params)
+
         if subcmd == "agent:backtest":
             return await self._agent_backtest(params)
         elif subcmd == "agent:validate":
@@ -605,6 +613,38 @@ Plotly.newPlot('chart', [trace1], {{
             if self.account_id:
                 where_clauses.append(f"{prefix}account_id = :account_id")
                 bind["account_id"] = self.account_id
+
+    async def _agent_via_api(self, subcmd: str, params: Dict) -> str:
+        """Route agent commands to the API server via HTTP."""
+        import asyncio
+        from utils import api_client
+
+        try:
+            if subcmd == "agent:paper":
+                return await asyncio.to_thread(
+                    api_client.api_paper, params, self.user_id, self.account_id)
+            elif subcmd == "agent:backtest":
+                return await asyncio.to_thread(
+                    api_client.api_backtest, params, self.user_id, self.account_id)
+            elif subcmd == "agent:validate":
+                return await asyncio.to_thread(
+                    api_client.api_validate, params, self.user_id, self.account_id)
+            elif subcmd == "agent:full":
+                return await asyncio.to_thread(
+                    api_client.api_full, params, self.user_id, self.account_id)
+            elif subcmd == "agent:reconcile":
+                return await asyncio.to_thread(
+                    api_client.api_reconcile, params, self.user_id, self.account_id)
+            elif subcmd == "agent:stop":
+                return await asyncio.to_thread(
+                    api_client.api_stop, self.user_id)
+            elif subcmd == "agent:status":
+                return await asyncio.to_thread(
+                    api_client.api_status, self.user_id)
+            else:
+                return f"# Error\n\nUnknown API command: `{subcmd}`"
+        except Exception as e:
+            return f"# API Error\n\n```\n{e}\n```"
 
     def _parse_positional_params(self, user_input: str, _cmd_base: str = "") -> Dict[str, str]:
         """Parse positional params: <cmd>[:type] [type] [slug] [run-id] [key:value ...]

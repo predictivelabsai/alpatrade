@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 sys.path.insert(0, str(Path(__file__).parent.absolute()))
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -69,17 +69,27 @@ def _get_app_state(user_id: Optional[str] = None) -> _AppState:
 _bearer = HTTPBearer(auto_error=False)
 
 async def get_current_user(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
 ) -> Optional[Dict]:
     """
     Decode JWT from Authorization header.
-    Returns user payload dict or None (optional auth — unauthenticated requests pass through).
+    Also accepts X-User-Id header for internal service-to-service calls
+    (agui/web containers calling the API container within Docker network).
+    Returns user payload dict or None.
     """
-    if not credentials:
-        return None
-    from utils.auth import decode_jwt_token
-    payload = decode_jwt_token(credentials.credentials)
-    return payload  # {"user_id": ..., "email": ..., ...} or None
+    if credentials:
+        from utils.auth import decode_jwt_token
+        payload = decode_jwt_token(credentials.credentials)
+        if payload:
+            return payload
+
+    # Internal service-to-service: accept X-User-Id header
+    internal_uid = request.headers.get("X-User-Id")
+    if internal_uid:
+        return {"user_id": internal_uid}
+
+    return None
 
 # ---------------------------------------------------------------------------
 # FastAPI app
