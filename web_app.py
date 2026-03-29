@@ -425,17 +425,17 @@ def _help_html():
             ("  hours:extended", "extended hours"),
         ]),
         *_section("Query & Monitor", [
-            ("trades", "latest run trades"),
-            ("trades paper / backtest", "filter by type"),
-            ("trades paper btd", "type + slug filter"),
-            ("trades all", "all accounts"),
-            ("runs / runs paper", "recent runs"),
-            ("report / report paper", "performance summary"),
-            ("report <run-id>", "single run detail"),
-            ("top / top paper", "rank strategies"),
-            ("top all", "all accounts"),
-            ("agent:status", "agent states"),
-            ("agent:stop", "stop background task"),
+            ("trades:backtest / trades:paper", "filter by type"),
+            ("trades:all", "all types + accounts"),
+            ("  slug:btd run-id:<uuid> limit:10", "optional filters"),
+            ("runs:backtest / runs:paper", "recent runs"),
+            ("report:backtest / report:paper", "summary"),
+            ("report run-id:<uuid>", "single run detail"),
+            ("top:backtest / top:paper", "rank strategies"),
+            ("top:all", "all types + accounts"),
+            ("pnl run-id:<uuid>", "P&L breakdown"),
+            ("positions", "Alpaca positions"),
+            ("agent:status / agent:stop", "monitor & control"),
         ]),
     )
 
@@ -1116,10 +1116,13 @@ def register(session, email: str = "", password: str = "", display_name: str = "
     if email and password:
         if len(password) < 8:
             return RedirectResponse("/register?error=Password+must+be+at+least+8+characters", status_code=303)
-        from utils.auth import create_user
+        from utils.auth import create_user, get_user_by_email
+        existing = get_user_by_email(email)
+        if existing:
+            return RedirectResponse("/signin?error=An+account+with+this+email+already+exists.+Please+sign+in+instead.", status_code=303)
         user = create_user(email=email, password=password, display_name=display_name or None)
         if not user:
-            return RedirectResponse("/register?error=Email+already+registered", status_code=303)
+            return RedirectResponse("/register?error=Unable+to+create+account.+Please+try+again.", status_code=303)
         _session_login(session, user)
         return RedirectResponse("/", status_code=303)
 

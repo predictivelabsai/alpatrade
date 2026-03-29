@@ -720,24 +720,29 @@ _AGUI_HELP = """# AlpaTrade Commands
 - `agent:reconcile window:14d` — DB vs Alpaca
 
 ## Query & Monitor
-All query commands support filters: `[paper|backtest] [slug] [run-id] [all]`
+Use `command:type` to filter by backtest or paper. Add optional params after.
 
-- `trades` — latest run's trades (current account)
-- `trades paper` — paper trades only
-- `trades backtest` — backtest trades only
-- `trades paper btd` — paper + strategy slug filter
-- `trades backtest btd-3dp` — backtest + specific slug
-- `trades all` — all accounts (not just active)
-- `runs` / `runs paper` / `runs backtest` — recent runs
-- `report` / `report paper` — performance summary
-- `report <run-id>` — single run detail
-- `top` / `top paper` — rank strategies
-- `top all` — rankings across all accounts
-- `agent:status` — agent states
-- `agent:logs` — paper trade log tail
+| Command | Description |
+|---------|-------------|
+| `trades:backtest` | backtest trades |
+| `trades:paper` | paper trades |
+| `trades:all` | both types, all accounts |
+| `runs:backtest` / `runs:paper` | recent runs by type |
+| `report:backtest` / `report:paper` | performance summary |
+| `report run-id:<uuid>` | single run detail |
+| `top:backtest` / `top:paper` | rank strategies |
+| `top:all` | all types + accounts |
+| `pnl run-id:<uuid>` | P&L breakdown |
+| `positions` | open Alpaca positions |
+| `agent:status` | agent states |
+| `agent:logs` | paper trade log tail |
+| `agent:stop` | stop background task |
 
-**Filter order**: type → slug → run-id (all optional)
-**Default**: current user + active account, latest run
+**Optional filters** (append to any query command):
+- `slug:btd` — filter by strategy slug
+- `run-id:<uuid>` — specific run
+- `limit:10` — limit rows
+- `scope:all` — all accounts (default: active account)
 
 ## Market Research
 - `news:TSLA` — company news
@@ -1063,19 +1068,23 @@ body {
 }
 
 .center-chat .chat-input {
-  background: #ffffff;
+  background: #f8fafc;
   border-top: 1px solid #e2e8f0;
 }
 
-.center-chat .chat-input-field {
-  background: #f8fafc;
+.center-chat .chat-input-form {
+  background: #ffffff;
   border-color: #e2e8f0;
-  color: #1e293b;
 }
 
-.center-chat .chat-input-field:focus {
+.center-chat .chat-input-form:focus-within {
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.center-chat .chat-input-field {
+  background: transparent;
+  color: #1e293b;
 }
 
 .center-chat .chat-message.chat-assistant .chat-message-content {
@@ -1620,22 +1629,31 @@ _HELP_CATEGORIES = [
         ("agent:full lookback:1m duration:1m", "backtest + validate + paper"),
         ("agent:full lookback:3m duration:7d", "3-month + 7-day paper"),
     ]),
-    ("Query & Monitor", [
-        ("trades", "latest run trades"),
-        ("trades paper", "paper only"),
-        ("trades backtest", "backtest only"),
-        ("trades paper btd", "paper + slug"),
-        ("trades all", "all accounts"),
-        ("runs", "recent runs"),
-        ("runs paper", "paper runs"),
-        ("report", "summary"),
-        ("report paper", "paper summary"),
-        ("top", "rank strategies"),
-        ("top paper", "paper rankings"),
-        ("top all", "all accounts"),
+    ("Trades", [
+        ("trades:backtest", "backtest trades"),
+        ("trades:paper", "paper trades"),
+        ("trades:all", "all types + accounts"),
+        ("trades:backtest slug:btd", "filter by slug"),
+        ("trades:paper run-id:<uuid>", "specific run"),
+    ]),
+    ("Runs & Reports", [
+        ("runs:backtest", "backtest runs"),
+        ("runs:paper", "paper runs"),
+        ("report:backtest", "backtest summary"),
+        ("report:paper", "paper summary"),
+        ("report run-id:<uuid>", "single run detail"),
+    ]),
+    ("Rankings & P&L", [
+        ("top:backtest", "rank backtest strategies"),
+        ("top:paper", "rank paper strategies"),
+        ("top:all", "all types + accounts"),
+        ("pnl run-id:<uuid>", "P&L breakdown"),
+    ]),
+    ("Monitor", [
+        ("positions", "Alpaca positions"),
         ("agent:status", "agent states"),
         ("agent:logs", "log tail"),
-        ("positions", "Alpaca positions"),
+        ("agent:stop", "stop background task"),
     ]),
     ("Research", [
         ("news:TSLA", "company news"),
@@ -2143,10 +2161,16 @@ def auth_register(session, email: str = "", password: str = "", display_name: st
     if len(password) < 8:
         return Div(P("Password must be at least 8 characters.", cls="error-msg"),
                    register_form_fragment())
-    from utils.auth import create_user
+    from utils.auth import create_user, get_user_by_email
+    existing = get_user_by_email(email)
+    if existing:
+        return Div(
+            P("An account with this email already exists. Please sign in instead.", cls="error-msg"),
+            login_form_fragment(),
+        )
     user = create_user(email=email, password=password, display_name=display_name or None)
     if not user:
-        return Div(P("Email already registered.", cls="error-msg"),
+        return Div(P("Unable to create account. Please try again.", cls="error-msg"),
                    register_form_fragment())
     _session_login(session, user)
     return Div(

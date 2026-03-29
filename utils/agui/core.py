@@ -311,11 +311,11 @@ class UI:
                 Textarea(
                     id="chat-input",
                     name="msg",
-                    placeholder="Type a command or ask a question...",
+                    placeholder="Type a command or ask a question...\nShift+Enter for new line",
                     autofocus=True,
                     autocomplete="off",
                     cls="chat-input-field",
-                    rows="1",
+                    rows="2",
                     onkeydown="handleKeyDown(this, event)",
                     oninput="autoResize(this)",
                 ),
@@ -325,7 +325,7 @@ class UI:
                 id="chat-form",
                 ws_send=True,
             ),
-            Div(Span("Enter", cls="kbd"), " to send", cls="input-hint"),
+            Div(Span("Enter", cls="kbd"), " to send  ", Span("Shift+Enter", cls="kbd"), " new line", cls="input-hint"),
             **container_attrs,
         )
 
@@ -387,6 +387,25 @@ class UI:
             ),
             self._render_input_form(),
             Script("""
+                // Welcome-active class management
+                (function() {
+                    function checkWelcome() {
+                        var container = document.querySelector('.chat-container');
+                        var welcome = document.getElementById('welcome-screen');
+                        if (container) {
+                            if (welcome) container.classList.add('welcome-active');
+                            else container.classList.remove('welcome-active');
+                        }
+                    }
+                    checkWelcome();
+                    // Watch the container itself (not just messages) so we catch outerHTML swaps
+                    var container = document.querySelector('.chat-container');
+                    if (container) {
+                        var observer = new MutationObserver(checkWelcome);
+                        observer.observe(container, {childList: true, subtree: true});
+                    }
+                })();
+
                 function autoResize(textarea) {
                     textarea.style.height = 'auto';
                     var maxH = 12 * 16;
@@ -604,7 +623,7 @@ class UI:
             *components,
             hx_ext="ws",
             ws_connect=f"/agui/ws/{self.thread_id}",
-            cls="chat-container",
+            cls="chat-container welcome-active",
             **kwargs,
         )
 
@@ -685,8 +704,11 @@ class AGUIThread:
         # Block double-submit immediately
         await self._send_js(_GUARD_ENABLE_JS)
 
-        # Hide welcome screen + clear previous suggestions
-        await self.send(Div(id="welcome-screen", style="display:none", hx_swap_oob="outerHTML"))
+        # Remove welcome screen + switch to scrollable layout
+        await self._send_js(
+            "var w=document.getElementById('welcome-screen');if(w)w.remove();"
+            "var c=document.querySelector('.chat-container');if(c)c.classList.remove('welcome-active');"
+        )
         await self.set_suggestions([])
 
         # CLI command interception — bypass AI agent for known commands

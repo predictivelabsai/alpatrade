@@ -77,6 +77,8 @@ class CommandProcessor:
             return self._agent_top(self._parse_positional_params(user_input))
         elif first_base == "report":
             return self._agent_report(self._parse_positional_params(user_input))
+        elif first_base == "pnl":
+            return self._agent_pnl(self._parse_positional_params(user_input))
 
         # Chart commands (open Plotly chart in browser)
         first_word = cmd_lower.split()[0]
@@ -621,13 +623,19 @@ Plotly.newPlot('chart', [trace1], {{
             _, suffix = first.split(":", 1)
             if suffix in _TYPES:
                 params["type"] = suffix
+            elif suffix == "all":
+                params["scope"] = "all"
 
         # Parse remaining parts (positional + key:value)
         positional = []
         for part in parts[1:]:
             if ":" in part:
                 key, value = part.split(":", 1)
-                params[key.lower()] = value
+                key_lower = key.lower()
+                # Normalize slug → strategy
+                if key_lower == "slug":
+                    key_lower = "strategy"
+                params[key_lower] = value
             else:
                 positional.append(part)
 
@@ -1260,7 +1268,8 @@ Plotly.newPlot('chart', [trace1], {{
             pool = DatabasePool()
             with pool.get_session() as session:
                 sql = """
-                    SELECT run_id, mode, strategy, status, started_at, completed_at
+                    SELECT run_id, mode, strategy, status, started_at, completed_at,
+                           strategy_slug
                     FROM alpatrade.runs
                 """
                 where_clauses = []
@@ -1280,12 +1289,13 @@ Plotly.newPlot('chart', [trace1], {{
 
             from utils.tz_util import format_et
             md = "# Recent Runs\n\n"
-            md += "| Run ID | Mode | Strategy | Status | Started (ET) |\n"
-            md += "|--------|------|----------|--------|--------------|\n"
+            md += "| Run ID | Mode | Strategy | Slug | Status | Started (ET) |\n"
+            md += "|--------|------|----------|------|--------|--------------|\n"
             for r in rows:
-                short_id = str(r[0])[:8]
+                short_id = str(r[0])[:12]
+                slug = r[6] if len(r) > 6 and r[6] else "-"
                 started = format_et(r[4]) if r[4] else "-"
-                md += f"| `{short_id}...` | {r[1]} | {r[2] or '-'} | {r[3]} | {started} |\n"
+                md += f"| `{short_id}` | {r[1]} | {r[2] or '-'} | {slug} | {r[3]} | {started} |\n"
 
             md += f"\n*{len(rows)} runs shown*"
             return md
@@ -1318,7 +1328,8 @@ Plotly.newPlot('chart', [trace1], {{
                 bind = {}
 
                 # If no specific filters, default to latest run
-                if not run_id and not trade_type and not strategy:
+                scope = params.get("scope")
+                if not run_id and not trade_type and not strategy and not scope:
                     user_filter = "WHERE user_id = :user_id" if self.user_id else ""
                     if self.user_id:
                         bind["user_id"] = self.user_id
@@ -1352,7 +1363,9 @@ Plotly.newPlot('chart', [trace1], {{
                 result = session.execute(
                     text(f"""
                         SELECT t.symbol, t.direction, t.shares, t.entry_price, t.exit_price,
-                               t.pnl, t.pnl_pct, t.trade_type, t.run_id
+                               t.pnl, t.pnl_pct, t.trade_type, t.run_id,
+                               t.entry_time, t.exit_time,
+                               r.strategy_slug
                         FROM alpatrade.trades t
                         LEFT JOIN alpatrade.runs r ON r.run_id = t.run_id
                         {where_sql}
@@ -1384,15 +1397,21 @@ Plotly.newPlot('chart', [trace1], {{
                 filters.append(f"run:{run_id[:8]}")
             filter_str = f" ({', '.join(filters)})" if filters else ""
             md = f"# Trades{filter_str}\n\n"
-            md += "| Symbol | Dir | Shares | Entry | Exit | P&L | P&L% | Type |\n"
-            md += "|--------|-----|--------|-------|------|-----|------|------|\n"
+            md += "| Symbol | Dir | Shares | Entry | Exit | P&L | P&L% | Type | Slug | Run | Entry Time | Exit Time |\n"
+            md += "|--------|-----|--------|-------|------|-----|------|------|------|-----|------------|----------|\n"
+            from utils.tz_util import format_et
             for r in rows:
                 pnl_str = f"${float(r[5] or 0):.2f}"
                 pct_str = f"{float(r[6] or 0):.2f}%"
+                slug_str = r[11] or "-"
+                run_str = str(r[8])[:12] if r[8] else "-"
+                entry_t = format_et(r[9], "%m/%d %H:%M") if r[9] else "-"
+                exit_t = format_et(r[10], "%m/%d %H:%M") if r[10] else "-"
                 md += (
                     f"| {r[0]} | {r[1]} | {float(r[2] or 0):.0f} | "
                     f"${float(r[3] or 0):.2f} | ${float(r[4] or 0):.2f} | "
-                    f"{pnl_str} | {pct_str} | {r[7]} |\n"
+                    f"{pnl_str} | {pct_str} | {r[7]} | "
+                    f"{slug_str} | `{run_str}` | {entry_t} | {exit_t} |\n"
                 )
 
             md += f"\n*{len(rows)} trades shown*"
@@ -1471,10 +1490,11 @@ Plotly.newPlot('chart', [trace1], {{
             if strategy_filter:
                 md += f" (filter: `{strategy_filter}`)"
             md += "\n\n"
-            md += "| Run | Slug | Period | Ran | Cap | P&L | Ret | Ann | Sharpe | # | Status |\n"
-            md += "|-----|------|--------|-----|-----|-----|-----|-----|--------|---|--------|\n"
+            md += "| Run | Type | Slug | Period | Ran | Cap | P&L | Ret | Ann | Sharpe | # | Status |\n"
+            md += "|-----|------|------|--------|-----|-----|-----|-----|-----|--------|---|--------|\n"
             for r in rows:
-                short_id = str(r["run_id"])[:6]
+                short_id = str(r["run_id"])[:12]
+                mode_str = r.get("mode", "-")
                 ds = format_et(r["data_start"], "%m/%d") if r.get("data_start") else "-"
                 de = format_et(r["data_end"], "%m/%d") if r.get("data_end") else "-"
                 period = f"{ds}-{de}" if ds != "-" else "-"
@@ -1488,7 +1508,7 @@ Plotly.newPlot('chart', [trace1], {{
                 sharpe_str = f"{r['sharpe_ratio']:.2f}" if r["sharpe_ratio"] else "-"
                 slug_str = r.get('strategy_slug') or '-'
                 md += (
-                    f"| `{short_id}` | {slug_str} | {period} | {rd} | {cap_str} | "
+                    f"| `{short_id}` | {mode_str} | {slug_str} | {period} | {rd} | {cap_str} | "
                     f"{pnl_str} | {ret_str} | {ann_str} | {sharpe_str} | "
                     f"{r['total_trades']} | {r['status']} |\n"
                 )
@@ -1527,13 +1547,14 @@ Plotly.newPlot('chart', [trace1], {{
             if strategy:
                 md += f" (filter: `{strategy}`)"
             md += "\n\n"
-            md += "| # | Strategy Slug | Avg Sharpe | Avg Ret | Avg Ann | Win% | Avg DD | Avg P&L | Trades | Runs |\n"
-            md += "|---|---------------|------------|---------|---------|------|--------|---------|--------|------|\n"
+            md += "| # | Strategy Slug | Type | Avg Sharpe | Avg Ret | Avg Ann | Win% | Avg DD | Avg P&L | Trades | Runs |\n"
+            md += "|---|---------------|------|------------|---------|---------|------|--------|---------|--------|------|\n"
             for i, r in enumerate(rows, 1):
                 pnl = r['avg_pnl']
                 pnl_str = f"${pnl / 1000:.1f}k" if abs(pnl) >= 1000 else f"${pnl:.0f}"
+                type_str = r.get('type', '-')
                 md += (
-                    f"| {i} | `{r['strategy_slug']}` | "
+                    f"| {i} | `{r['strategy_slug']}` | {type_str} | "
                     f"{r['avg_sharpe']:.2f} | "
                     f"{r['avg_return']:.1f}% | "
                     f"{r['avg_ann_return']:.0f}% | "
@@ -1617,7 +1638,7 @@ Plotly.newPlot('chart', [trace1], {{
         """P&L breakdown for a specific run."""
         run_id = params.get("run-id")
         if not run_id:
-            return "# P&L\n\nUsage: `agent:pnl run-id:<uuid>`"
+            return "# P&L\n\nUsage: `pnl run-id:<uuid>`\n\nTip: run `runs:backtest` or `runs:paper` to see run IDs."
 
         try:
             from utils.db.db_pool import DatabasePool
@@ -1626,25 +1647,26 @@ Plotly.newPlot('chart', [trace1], {{
             pool = DatabasePool()
             with pool.get_session() as session:
                 # Get run metadata
-                run_bind: Dict[str, Any] = {"run_id": run_id}
+                run_bind: Dict[str, Any] = {"run_id": run_id + "%"}
                 if self.user_id:
                     run_bind["user_id"] = self.user_id
                 user_filter = " AND user_id = :user_id" if self.user_id else ""
                 run_row = session.execute(
-                    text(f"SELECT mode, strategy, status FROM alpatrade.runs "
-                         f"WHERE run_id = :run_id{user_filter}"),
+                    text(f"SELECT mode, strategy, status, strategy_slug, run_id FROM alpatrade.runs "
+                         f"WHERE run_id::text LIKE :run_id{user_filter}"),
                     run_bind,
                 ).fetchone()
 
                 if not run_row:
                     return f"# P&L\n\nRun `{run_id}` not found."
 
-                mode, strategy, status = run_row
+                mode, strategy, status, strategy_slug, full_run_id = run_row
+                run_id = str(full_run_id)  # use full ID for trade lookup
 
                 # Get trades for this run
                 trades = session.execute(
                     text("SELECT symbol, direction, shares, entry_price, exit_price, "
-                         "pnl, pnl_pct, total_fees, exit_time "
+                         "pnl, pnl_pct, total_fees, exit_time, entry_time "
                          "FROM alpatrade.trades WHERE run_id = :run_id "
                          "ORDER BY exit_time ASC NULLS LAST"),
                     {"run_id": run_id},
@@ -1679,6 +1701,9 @@ Plotly.newPlot('chart', [trace1], {{
             md += "| Metric | Value |\n|--------|-------|\n"
             md += f"| Mode | {mode} |\n"
             md += f"| Strategy | {strategy or '-'} |\n"
+            if strategy_slug:
+                md += f"| Slug | `{strategy_slug}` |\n"
+            md += f"| Run ID | `{run_id}` |\n"
             md += f"| Status | {status} |\n"
             md += f"| Total P&L | ${total_pnl:,.2f} |\n"
             md += f"| Total Fees | ${total_fees:,.2f} |\n"
@@ -1720,13 +1745,17 @@ Plotly.newPlot('chart', [trace1], {{
             sorted_trades = sorted(trades, key=lambda t: float(t[5] or 0), reverse=True)
             top_n = min(10, len(sorted_trades))
             md += f"\n## Top {top_n} Trades\n\n"
-            md += "| Symbol | Dir | Shares | Entry | Exit | P&L | P&L% |\n"
-            md += "|--------|-----|--------|-------|------|-----|------|\n"
+            md += "| Symbol | Dir | Shares | Entry | Exit | P&L | P&L% | Entry Time | Exit Time |\n"
+            md += "|--------|-----|--------|-------|------|-----|------|------------|----------|\n"
+            from utils.tz_util import format_et
             for t in sorted_trades[:top_n]:
+                entry_t = format_et(t[9], "%m/%d %H:%M") if t[9] else "-"
+                exit_t = format_et(t[8], "%m/%d %H:%M") if t[8] else "-"
                 md += (
                     f"| {t[0]} | {t[1]} | {float(t[2] or 0):.0f} | "
                     f"${float(t[3] or 0):.2f} | ${float(t[4] or 0):.2f} | "
-                    f"${float(t[5] or 0):.2f} | {float(t[6] or 0):.2f}% |\n"
+                    f"${float(t[5] or 0):.2f} | {float(t[6] or 0):.2f}% | "
+                    f"{entry_t} | {exit_t} |\n"
                 )
 
             return md
@@ -1813,19 +1842,20 @@ Plotly.newPlot('chart', [trace1], {{
         col3.add_column(style="dim")
 
         col3.add_row("[bold white]Query & Monitor[/bold white]", "")
-        col3.add_row("trades", "latest run trades")
-        col3.add_row("trades paper", "paper trades only")
-        col3.add_row("trades backtest", "backtest trades only")
-        col3.add_row("trades paper btd", "paper + slug filter")
-        col3.add_row("trades all", "all accounts")
-        col3.add_row("runs / runs paper", "recent runs")
-        col3.add_row("report / report paper", "performance summary")
-        col3.add_row("report <run-id>", "single run detail")
-        col3.add_row("top / top paper", "rank strategies")
-        col3.add_row("top all", "all accounts")
+        col3.add_row("trades:backtest", "backtest trades")
+        col3.add_row("trades:paper", "paper trades")
+        col3.add_row("trades:all", "all types + accounts")
+        col3.add_row("  slug:btd limit:10", "+ optional filters")
+        col3.add_row("  run-id:<uuid>", "+ specific run")
+        col3.add_row("runs:backtest / runs:paper", "recent runs")
+        col3.add_row("report:backtest / report:paper", "summary")
+        col3.add_row("report run-id:<uuid>", "single run detail")
+        col3.add_row("top:backtest / top:paper", "rank strategies")
+        col3.add_row("top:all", "all types + accounts")
+        col3.add_row("pnl run-id:<uuid>", "P&L breakdown")
+        col3.add_row("positions", "open Alpaca positions")
         col3.add_row("agent:status", "agent states")
         col3.add_row("agent:logs", "paper trade log tail")
-        col3.add_row("agent:pnl run-id:<id>", "P&L breakdown")
         col3.add_row("agent:stop", "stop background task")
         col3.add_row("", "")
         col3.add_row("[bold white]Options[/bold white]", "")

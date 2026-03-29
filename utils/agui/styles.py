@@ -25,6 +25,23 @@ CHAT_UI_STYLES = """
   gap: 0.75rem;
 }
 
+/* When welcome screen is visible, center everything vertically */
+.chat-container.welcome-active {
+  justify-content: center;
+}
+
+.chat-container.welcome-active .chat-messages {
+  flex: 0 0 auto;
+  overflow-y: hidden;
+  padding-bottom: 0;
+}
+
+.chat-container.welcome-active .chat-input {
+  padding-top: 0.75rem;
+  border-top: none;
+  flex: 0 0 auto;
+}
+
 /* === Messages === */
 .chat-message {
   display: flex;
@@ -138,9 +155,13 @@ CHAT_UI_STYLES = """
 
 /* === Input Form === */
 .chat-input {
-  padding: 1rem;
+  padding: 1.25rem 1.5rem 1.5rem;
   background: #ffffff;
   border-top: 1px solid #e2e8f0;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .chat-status {
@@ -155,8 +176,9 @@ CHAT_UI_STYLES = """
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  padding: 0.5rem;
-  margin-bottom: 0.5rem;
+  padding: 0.5rem 0;
+  margin-bottom: 0.25rem;
+  justify-content: center;
 }
 
 .suggestion-btn {
@@ -195,20 +217,30 @@ CHAT_UI_STYLES = """
   gap: 0.5rem;
   align-items: end;
   width: 100%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 0.5rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.chat-input-form:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .chat-input-field {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  background: #f8fafc;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
   color: #1e293b;
   font-family: inherit;
   font-size: 0.9rem;
   line-height: 1.5;
   resize: none;
-  min-height: 2.75rem;
+  min-height: 3.5rem;
   max-height: 12rem;
   overflow-y: hidden;
   box-sizing: border-box;
@@ -216,21 +248,23 @@ CHAT_UI_STYLES = """
 
 .chat-input-field:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  border: none;
+  box-shadow: none;
 }
 
 .chat-input-button {
-  padding: 0.75rem 1.25rem;
+  padding: 0.5rem 1rem;
   background: #3b82f6;
   color: white;
   border: none;
-  border-radius: 0.75rem;
+  border-radius: 0.625rem;
   font-family: inherit;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  min-height: 2.75rem;
+  min-height: 2.25rem;
+  align-self: end;
+  margin-bottom: 0.125rem;
 }
 
 .chat-input-button:hover { background: #2563eb; }
@@ -278,7 +312,8 @@ CHAT_UI_STYLES = """
   align-items: center;
   max-width: 560px;
   margin: 0 auto;
-  padding-top: 12vh;
+  padding-top: 2vh;
+  padding-bottom: 2rem;
   text-align: center;
 }
 

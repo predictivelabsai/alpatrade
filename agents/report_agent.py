@@ -234,12 +234,22 @@ class ReportAgent:
         from utils.db.db_pool import DatabasePool
         from sqlalchemy import text
 
-        # If paper or no filter, include paper trade stats via trades table
+        # If paper only, return paper results
         if trade_type == "paper":
             return self._top_paper(strategy=strategy, limit=limit,
                                    user_id=user_id, account_id=account_id)
 
-        # Backtest (or all) — use backtest_summaries
+        # If no type filter, merge backtest + paper results
+        if not trade_type:
+            backtest_results = self.top_strategies(strategy=strategy, trade_type="backtest",
+                                                   limit=limit, user_id=user_id, account_id=account_id)
+            paper_results = self._top_paper(strategy=strategy, limit=limit,
+                                            user_id=user_id, account_id=account_id)
+            combined = backtest_results + paper_results
+            combined.sort(key=lambda x: x["avg_ann_return"], reverse=True)
+            return combined[:limit]
+
+        # Backtest only — use backtest_summaries
         where_clauses = ["bs.strategy_slug IS NOT NULL"]
         bind: Dict[str, Any] = {"lim": limit}
         if strategy:
@@ -291,6 +301,7 @@ class ReportAgent:
                 "total_trades": int(total_trades or 0),
                 "total_runs": int(total_runs or 0),
                 "avg_pnl": float(avg_pnl or 0),
+                "type": trade_type or "backtest",
             })
         return results
 
@@ -350,6 +361,7 @@ class ReportAgent:
                 "total_trades": int(total_trades or 0),
                 "total_runs": int(total_runs or 0),
                 "avg_pnl": float(total_pnl or 0),
+                "type": "paper",
             })
         return results
 
