@@ -473,7 +473,7 @@ _app_state = _AppState()
 
 # Commands that should bypass the AI agent and go to CommandProcessor
 _CLI_BASES = {"news", "profile", "financials", "price", "movers", "analysts", "valuation",
-              "chart", "equity", "trades", "runs", "top", "report"}
+              "chart", "equity", "trades", "runs", "top", "report", "load", "pnl"}
 _CLI_EXACT = {"status", "help", "guide", "positions", "account", "accounts"}
 
 # Long-running commands that get streamed with log console instead of blocking

@@ -575,9 +575,7 @@ Plotly.newPlot('chart', [trace1], {{
 
         # When API_URL is set, delegate agent execution commands to API
         from utils.api_client import is_api_mode
-        _API_COMMANDS = {"agent:backtest", "agent:paper", "agent:full",
-                         "agent:validate", "agent:reconcile",
-                         "agent:stop", "agent:status"}
+        _API_COMMANDS = {"agent:paper"}
         if is_api_mode() and subcmd in _API_COMMANDS:
             return await self._agent_via_api(subcmd, params)
 
@@ -1215,6 +1213,22 @@ Plotly.newPlot('chart', [trace1], {{
         if not running and orch is None:
             return "# Agent Status\n\nNo agents running. Use `agent:paper` or `agent:backtest` to start.\n"
 
+        # Build account_id → name lookup + find active account name
+        account_names: Dict[str, str] = {}
+        active_account_name = "Default"
+        if self.user_id:
+            try:
+                from utils.auth import get_user_accounts
+                for acct in get_user_accounts(self.user_id):
+                    account_names[acct["account_id"]] = acct.get("account_name") or acct["account_id"][:8]
+                    if acct.get("is_active"):
+                        active_account_name = acct.get("account_name") or acct["account_id"][:8]
+                if account_names and active_account_name == "Default":
+                    # If no active flag, use first account
+                    active_account_name = list(account_names.values())[0]
+            except Exception:
+                pass
+
         md = "# Agent Status\n\n"
 
         # --- Background agents (paper trading, etc.) ---
@@ -1226,7 +1240,8 @@ Plotly.newPlot('chart', [trace1], {{
                 run_id = str(r.get("run_id", ""))[:12]
                 mode = (r.get("mode") or "").upper()
                 pid = r.get("pid", "-")
-                account_id = r.get("account_id") or "Default"
+                acct_id = r.get("account_id") or ""
+                account_label = account_names.get(acct_id, active_account_name if not acct_id else acct_id[:8])
                 started_at = r.get("started_at")
                 if started_at:
                     elapsed_sec = int(time.time() - started_at)
@@ -1240,54 +1255,59 @@ Plotly.newPlot('chart', [trace1], {{
                 else:
                     elapsed_str = "-"
                     started_str = "-"
-                md += f"| {mode} | `{run_id}` | {account_id} | {started_str} | {elapsed_str} | {pid} |\n"
+                md += f"| {mode} | `{run_id}` | {account_label} | {started_str} | {elapsed_str} | {pid} |\n"
             md += "\n"
 
         # --- Last completed session (from local orchestrator) ---
+        # Only show if it was backtest/validate/full (not paper — that's in Background)
         if orch:
-            mode = getattr(orch, '_mode', None) or 'n/a'
-            run_id = orch.run_id or 'n/a'
-            state = orch.state
+            orch_mode = getattr(orch, '_mode', None) or 'n/a'
+            if orch_mode not in ('paper',):
+                run_id = orch.run_id or 'n/a'
+                state = orch.state
 
-            agent_statuses = [a.status for a in state.agents.values()] if state.agents else []
-            if any(s == "completed" for s in agent_statuses):
-                status_label = "COMPLETED"
-            elif any(s == "error" for s in agent_statuses):
-                status_label = "ERROR"
-            elif any(s == "running" for s in agent_statuses):
-                status_label = "RUNNING"
-            else:
-                status_label = "IDLE"
+                agent_statuses = [a.status for a in state.agents.values()] if state.agents else []
+                if any(s == "completed" for s in agent_statuses):
+                    status_label = "COMPLETED"
+                elif any(s == "error" for s in agent_statuses):
+                    status_label = "ERROR"
+                elif any(s == "running" for s in agent_statuses):
+                    status_label = "RUNNING"
+                else:
+                    status_label = "IDLE"
 
-            md += f"## Last Session: {mode.replace('_', ' ').title()} — {status_label}\n"
-            md += f"- **Run ID**: `{run_id}`\n"
-            started = state.started_at or None
-            if started:
-                md += f"- **Started**: {format_et(started)}\n"
-            md += "\n"
+                md += f"## Last Session: {orch_mode.replace('_', ' ').title()} — {status_label}\n"
+                md += f"- **Run ID**: `{run_id}`\n"
+                started = state.started_at or None
+                if started:
+                    md += f"- **Started**: {format_et(started)}\n"
+                md += "\n"
 
-            md += "| Agent | Status | Task |\n|-------|--------|------|\n"
-            for name, agent in state.agents.items():
-                md += f"| {name} | {agent.status} | {agent.current_task or '-'} |\n"
+                # Show agents table — exclude paper_trader (shown in Background Agents)
+                show_agents = {n: a for n, a in state.agents.items() if n != "paper_trader"}
+                if show_agents:
+                    md += "| Agent | Status | Task |\n|-------|--------|------|\n"
+                    for name, agent in show_agents.items():
+                        md += f"| {name} | {agent.status} | {agent.current_task or '-'} |\n"
 
-            # Best config
-            if state.best_config and mode in ('backtest', 'full'):
-                best = state.best_config
-                md += (
-                    f"\n## Best Config\n"
-                    f"- Sharpe: {best.get('sharpe_ratio', 0):.2f}\n"
-                    f"- Return: {best.get('total_return', 0):.1f}%\n"
-                    f"- Annualized: {best.get('annualized_return', 0):.1f}%\n"
-                )
+                # Best config
+                if state.best_config and orch_mode in ('backtest', 'full'):
+                    best = state.best_config
+                    md += (
+                        f"\n## Best Config\n"
+                        f"- Sharpe: {best.get('sharpe_ratio', 0):.2f}\n"
+                        f"- Return: {best.get('total_return', 0):.1f}%\n"
+                        f"- Annualized: {best.get('annualized_return', 0):.1f}%\n"
+                    )
 
-        # Last validation (only if we ran validation)
-        if state.validation_results and mode in ('validate', 'full'):
-            last = state.validation_results[-1]
-            md += (
-                f"\n## Last Validation\n"
-                f"- Status: {last.get('status')}\n"
-                f"- Anomalies: {last.get('anomalies_found', 0)}\n"
-            )
+                # Last validation
+                if state.validation_results and orch_mode in ('validate', 'full'):
+                    last = state.validation_results[-1]
+                    md += (
+                        f"\n## Last Validation\n"
+                        f"- Status: {last.get('status')}\n"
+                        f"- Anomalies: {last.get('anomalies_found', 0)}\n"
+                    )
 
         # Show recent log lines for paper trading (from file)
         log_path = Path("data/paper_trade.log")
