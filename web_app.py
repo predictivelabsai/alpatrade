@@ -118,8 +118,9 @@ _STREAMING_COMMANDS = {"agent:backtest", "agent:paper", "agent:full", "agent:val
 
 # Structured command prefixes — anything not matching these is free-form chat
 _STRUCTURED_PREFIXES = {
-    "news", "price", "profile", "financials", "analysts", "valuation", "movers",
-    "trades", "runs", "agent:backtest", "agent:paper", "agent:full", "agent:validate",
+    "news", "price", "profile", "financials", "analysts", "valuation", "movers", "load",
+    "trades", "runs", "top", "report", "pnl",
+    "agent:backtest", "agent:paper", "agent:full", "agent:validate",
     "agent:reconcile", "agent:status", "agent:stop", "agent:report", "agent:top",
     "agent:runs", "agent:trades", "agent:logs",
     "alpaca:backtest",
