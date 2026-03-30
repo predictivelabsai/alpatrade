@@ -1206,11 +1206,23 @@ Plotly.newPlot('chart', [trace1], {{
         import time
         from utils.agent_runner import get_all_running_agents
         from utils.tz_util import format_et
+        from utils.api_client import is_api_mode
 
         running = get_all_running_agents(user_id=self.user_id)
         orch = self.app._orch
 
-        if not running and orch is None:
+        # Also check API for running agents (paper trading runs on API container)
+        api_status = None
+        if is_api_mode():
+            try:
+                from utils import api_client
+                data = api_client._get("/v2/status", user_id=self.user_id)
+                if data.get("status") not in (None, "idle"):
+                    api_status = data
+            except Exception:
+                pass
+
+        if not running and orch is None and not api_status:
             return "# Agent Status\n\nNo agents running. Use `agent:paper` or `agent:backtest` to start.\n"
 
         # Build account_id → name lookup + find active account name
@@ -1256,6 +1268,30 @@ Plotly.newPlot('chart', [trace1], {{
                     elapsed_str = "-"
                     started_str = "-"
                 md += f"| {mode} | `{run_id}` | {account_label} | {started_str} | {elapsed_str} | {pid} |\n"
+            md += "\n"
+
+        # --- API running agents (paper trading on API container) ---
+        if api_status and not running:
+            # Only show if no local background agents (avoid duplicate)
+            api_mode = (api_status.get("mode") or "").upper()
+            api_run_id = str(api_status.get("run_id") or "")[:12]
+            api_started = api_status.get("started_at") or "-"
+            api_elapsed_str = "-"
+            if api_status.get("elapsed_seconds"):
+                es = int(api_status["elapsed_seconds"])
+                h, rem = divmod(es, 3600)
+                m, s = divmod(rem, 60)
+                api_elapsed_str = f"{h}h {m}m" if h else f"{m}m {s}s"
+            if isinstance(api_started, str) and api_started != "-":
+                try:
+                    api_started = format_et(api_started)
+                except Exception:
+                    pass
+
+            md += "## Running on API Server\n\n"
+            md += "| Mode | Run ID | Status | Started | Elapsed |\n"
+            md += "|------|--------|--------|---------|----------|\n"
+            md += f"| {api_mode} | `{api_run_id}` | {api_status.get('status', '-')} | {api_started} | {api_elapsed_str} |\n"
             md += "\n"
 
         # --- Last completed session (from local orchestrator) ---
@@ -1652,12 +1688,8 @@ Plotly.newPlot('chart', [trace1], {{
     def _agent_stop(self, params: Dict) -> str:
         """Stop background paper trading."""
         from utils.agent_runner import stop_agent, get_all_running_agents
-        
+
         run_id = params.get("run-id") or params.get("id")
-        # Support positional argument stop <uuid> without key
-        if not run_id:
-           # Also check if it's the first param that wasn't key val
-           pass # Handled by finding running agent
 
         if not run_id:
             running = get_all_running_agents(user_id=self.user_id)
@@ -1665,17 +1697,26 @@ Plotly.newPlot('chart', [trace1], {{
                 run_id = running[0]["run_id"]
             elif len(running) > 1:
                 return "# Stop Error\n\nMultiple agents running. Specify run-id: `agent:stop id:<uuid>`"
-            else:
-                return "# No Background Task\n\nNo paper trading session is currently running."
-                
-        if stop_agent(run_id):
+
+        # Try local stop first
+        if run_id and stop_agent(run_id):
             if hasattr(self.app, '_bg_task') and self.app._bg_task and not self.app._bg_task.done():
                 self.app._bg_stop.set()
                 self.app._bg_task.cancel()
-                
             return f"# Agent Stopped\n\nBackground agent `{run_id}` cancelled."
-        else:
+
+        # If no local agent found, try stopping via API (paper runs on API container)
+        from utils.api_client import is_api_mode
+        if is_api_mode():
+            try:
+                from utils import api_client
+                return api_client.api_stop(self.user_id)
+            except Exception as e:
+                return f"# Stop Error\n\n```\n{e}\n```"
+
+        if run_id:
             return f"# Stop Error\n\nCould not find or stop agent `{run_id}`."
+        return "# No Background Task\n\nNo paper trading session is currently running."
 
     # ------------------------------------------------------------------
     # agent:logs
