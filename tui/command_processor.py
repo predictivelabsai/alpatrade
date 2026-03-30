@@ -1399,13 +1399,13 @@ Plotly.newPlot('chart', [trace1], {{
 
             from utils.tz_util import format_et
             md = "# Recent Runs\n\n"
-            md += "| Run ID | Mode | Strategy | Slug | Status | Started (ET) |\n"
-            md += "|--------|------|----------|------|--------|--------------|\n"
+            md += "| Run | Mode | Slug | Status | Started |\n"
+            md += "|-----|------|------|--------|----------|\n"
             for r in rows:
-                short_id = str(r[0])[:12]
-                slug = r[6] if len(r) > 6 and r[6] else "-"
-                started = format_et(r[4]) if r[4] else "-"
-                md += f"| `{short_id}` | {r[1]} | {r[2] or '-'} | {slug} | {r[3]} | {started} |\n"
+                short_id = str(r[0])[:8]
+                slug = r[6] if len(r) > 6 and r[6] else (r[2] or "-")
+                started = format_et(r[4], "%m/%d %H:%M") if r[4] else "-"
+                md += f"| `{short_id}` | {r[1]} | {slug} | {r[3]} | {started} |\n"
 
             md += f"\n*{len(rows)} runs shown*"
             return md
@@ -1507,22 +1507,30 @@ Plotly.newPlot('chart', [trace1], {{
                 filters.append(f"run:{run_id[:8]}")
             filter_str = f" ({', '.join(filters)})" if filters else ""
             md = f"# Trades{filter_str}\n\n"
-            md += "| Symbol | Dir | Shares | Entry | Exit | P&L | P&L% | Type | Slug | Run | Entry Time | Exit Time |\n"
-            md += "|--------|-----|--------|-------|------|-----|------|------|------|-----|------------|----------|\n"
+            show_type = not trade_type
             from utils.tz_util import format_et
+            if show_type:
+                md += "| Symbol | Type | Entry | Exit | P&L | % |\n"
+                md += "|--------|------|-------|------|-----|---|\n"
+            else:
+                md += "| Symbol | Entry | Exit | P&L | % | Date |\n"
+                md += "|--------|-------|------|-----|---|------|\n"
             for r in rows:
-                pnl_str = f"${float(r[5] or 0):.2f}"
-                pct_str = f"{float(r[6] or 0):.2f}%"
-                slug_str = r[11] or "-"
-                run_str = str(r[8])[:12] if r[8] else "-"
-                entry_t = format_et(r[9], "%m/%d %H:%M") if r[9] else "-"
-                exit_t = format_et(r[10], "%m/%d %H:%M") if r[10] else "-"
-                md += (
-                    f"| {r[0]} | {r[1]} | {float(r[2] or 0):.0f} | "
-                    f"${float(r[3] or 0):.2f} | ${float(r[4] or 0):.2f} | "
-                    f"{pnl_str} | {pct_str} | {r[7]} | "
-                    f"{slug_str} | `{run_str}` | {entry_t} | {exit_t} |\n"
-                )
+                pnl_str = f"${float(r[5] or 0):+.2f}"
+                pct_str = f"{float(r[6] or 0):+.1f}%"
+                if show_type:
+                    md += (
+                        f"| {r[0]} | {r[7]} | "
+                        f"${float(r[3] or 0):.2f} | ${float(r[4] or 0):.2f} | "
+                        f"{pnl_str} | {pct_str} |\n"
+                    )
+                else:
+                    date_str = format_et(r[9], "%m/%d") if r[9] else "-"
+                    md += (
+                        f"| {r[0]} | "
+                        f"${float(r[3] or 0):.2f} | ${float(r[4] or 0):.2f} | "
+                        f"{pnl_str} | {pct_str} | {date_str} |\n"
+                    )
 
             md += f"\n*{len(rows)} trades shown*"
             return md
@@ -1600,28 +1608,30 @@ Plotly.newPlot('chart', [trace1], {{
             if strategy_filter:
                 md += f" (filter: `{strategy_filter}`)"
             md += "\n\n"
-            md += "| Run | Type | Slug | Period | Ran | Cap | P&L | Ret | Ann | Sharpe | # | Status |\n"
-            md += "|-----|------|------|--------|-----|-----|-----|-----|-----|--------|---|--------|\n"
+            show_type = not trade_type
+            if show_type:
+                md += "| Run | Type | P&L | Ret | Sharpe | Status |\n"
+                md += "|-----|------|-----|-----|--------|--------|\n"
+            else:
+                md += "| Run | P&L | Ret | Sharpe | Trades | Status |\n"
+                md += "|-----|-----|-----|--------|--------|--------|\n"
             for r in rows:
-                short_id = str(r["run_id"])[:12]
-                mode_str = r.get("mode", "-")
-                ds = format_et(r["data_start"], "%m/%d") if r.get("data_start") else "-"
-                de = format_et(r["data_end"], "%m/%d") if r.get("data_end") else "-"
-                period = f"{ds}-{de}" if ds != "-" else "-"
-                rd = format_et(r["run_date"], "%m/%d") if r.get("run_date") else "-"
-                cap = r['initial_capital']
-                cap_str = f"${cap / 1000:.0f}k" if cap >= 1000 else f"${cap:.0f}"
+                short_id = str(r["run_id"])[:8]
                 pnl = r['total_pnl']
-                pnl_str = f"${pnl / 1000:.1f}k" if abs(pnl) >= 1000 else f"${pnl:.0f}"
-                ret_str = f"{r['total_return']:.1f}%"
-                ann_str = f"{r['annualized_return']:.0f}%" if r["annualized_return"] else "-"
+                pnl_str = f"${pnl / 1000:.1f}k" if abs(pnl) >= 1000 else f"${pnl:+.0f}"
+                ret_str = f"{r['total_return']:+.1f}%"
                 sharpe_str = f"{r['sharpe_ratio']:.2f}" if r["sharpe_ratio"] else "-"
-                slug_str = r.get('strategy_slug') or '-'
-                md += (
-                    f"| `{short_id}` | {mode_str} | {slug_str} | {period} | {rd} | {cap_str} | "
-                    f"{pnl_str} | {ret_str} | {ann_str} | {sharpe_str} | "
-                    f"{r['total_trades']} | {r['status']} |\n"
-                )
+                if show_type:
+                    md += (
+                        f"| `{short_id}` | {r.get('mode', '-')} | "
+                        f"{pnl_str} | {ret_str} | {sharpe_str} | {r['status']} |\n"
+                    )
+                else:
+                    md += (
+                        f"| `{short_id}` | "
+                        f"{pnl_str} | {ret_str} | {sharpe_str} | "
+                        f"{r['total_trades']} | {r['status']} |\n"
+                    )
 
             md += f"\n*{len(rows)} runs shown*"
             return md
@@ -1657,23 +1667,33 @@ Plotly.newPlot('chart', [trace1], {{
             if strategy:
                 md += f" (filter: `{strategy}`)"
             md += "\n\n"
-            md += "| # | Strategy Slug | Type | Avg Sharpe | Avg Ret | Avg Ann | Win% | Avg DD | Avg P&L | Trades | Runs |\n"
-            md += "|---|---------------|------|------------|---------|---------|------|--------|---------|--------|------|\n"
+            show_type = not trade_type  # show Type column only for top:all
+            if show_type:
+                md += "| Slug | Type | Sharpe | Ann | Win% | P&L |\n"
+                md += "|------|------|--------|-----|------|-----|\n"
+            else:
+                md += "| Slug | Sharpe | Ann | Win% | P&L | Trades |\n"
+                md += "|------|--------|-----|------|-----|--------|\n"
             for i, r in enumerate(rows, 1):
                 pnl = r['avg_pnl']
-                pnl_str = f"${pnl / 1000:.1f}k" if abs(pnl) >= 1000 else f"${pnl:.0f}"
-                type_str = r.get('type', '-')
-                md += (
-                    f"| {i} | `{r['strategy_slug']}` | {type_str} | "
-                    f"{r['avg_sharpe']:.2f} | "
-                    f"{r['avg_return']:.1f}% | "
-                    f"{r['avg_ann_return']:.0f}% | "
-                    f"{r['avg_win_rate']:.0f}% | "
-                    f"{r['avg_drawdown']:.1f}% | "
-                    f"{pnl_str} | "
-                    f"{r['total_trades']} | "
-                    f"{r['total_runs']} |\n"
-                )
+                pnl_str = f"${pnl / 1000:.1f}k" if abs(pnl) >= 1000 else f"${pnl:+.0f}"
+                if show_type:
+                    md += (
+                        f"| {r['strategy_slug']} | {r.get('type', '-')} | "
+                        f"{r['avg_sharpe']:.2f} | "
+                        f"{r['avg_ann_return']:.0f}% | "
+                        f"{r['avg_win_rate']:.0f}% | "
+                        f"{pnl_str} |\n"
+                    )
+                else:
+                    md += (
+                        f"| {r['strategy_slug']} | "
+                        f"{r['avg_sharpe']:.2f} | "
+                        f"{r['avg_ann_return']:.0f}% | "
+                        f"{r['avg_win_rate']:.0f}% | "
+                        f"{pnl_str} | "
+                        f"{r['total_trades']} |\n"
+                    )
 
             md += f"\n*{len(rows)} strategies shown*"
             return md
@@ -1846,31 +1866,26 @@ Plotly.newPlot('chart', [trace1], {{
                     by_symbol[sym]["losses"] += 1
 
             md += "## Per Symbol\n\n"
-            md += "| Symbol | Trades | Wins | Losses | Total P&L | Avg P&L |\n"
-            md += "|--------|--------|------|--------|-----------|--------|\n"
+            md += "| Symbol | Trades | W/L | P&L |\n"
+            md += "|--------|--------|-----|-----|\n"
             for sym in sorted(by_symbol, key=lambda s: by_symbol[s]["pnl"], reverse=True):
                 s = by_symbol[sym]
-                avg = s["pnl"] / s["count"] if s["count"] else 0
                 md += (
-                    f"| {sym} | {s['count']} | {s['wins']} | {s['losses']} | "
-                    f"${s['pnl']:,.2f} | ${avg:,.2f} |\n"
+                    f"| {sym} | {s['count']} | {s['wins']}/{s['losses']} | "
+                    f"${s['pnl']:+,.2f} |\n"
                 )
 
             # Top trades
             sorted_trades = sorted(trades, key=lambda t: float(t[5] or 0), reverse=True)
             top_n = min(10, len(sorted_trades))
             md += f"\n## Top {top_n} Trades\n\n"
-            md += "| Symbol | Dir | Shares | Entry | Exit | P&L | P&L% | Entry Time | Exit Time |\n"
-            md += "|--------|-----|--------|-------|------|-----|------|------------|----------|\n"
-            from utils.tz_util import format_et
+            md += "| Symbol | Entry | Exit | P&L | % |\n"
+            md += "|--------|-------|------|-----|---|\n"
             for t in sorted_trades[:top_n]:
-                entry_t = format_et(t[9], "%m/%d %H:%M") if t[9] else "-"
-                exit_t = format_et(t[8], "%m/%d %H:%M") if t[8] else "-"
                 md += (
-                    f"| {t[0]} | {t[1]} | {float(t[2] or 0):.0f} | "
+                    f"| {t[0]} | "
                     f"${float(t[3] or 0):.2f} | ${float(t[4] or 0):.2f} | "
-                    f"${float(t[5] or 0):.2f} | {float(t[6] or 0):.2f}% | "
-                    f"{entry_t} | {exit_t} |\n"
+                    f"${float(t[5] or 0):+.2f} | {float(t[6] or 0):+.1f}% |\n"
                 )
 
             return md

@@ -148,10 +148,11 @@ CHAT_UI_STYLES = """
 .chat-message-content th, .chat-message-content td {
   display: table-cell;
   border: 1px solid var(--table-border, #334155);
-  padding: 0.45rem 0.6rem;
+  padding: 0.4rem 0.5rem;
   text-align: left;
   color: var(--table-text, #f1f5f9) !important;
   white-space: nowrap;
+  font-size: 0.8rem;
 }
 .chat-message-content th {
   background: var(--table-header, #1e293b);
