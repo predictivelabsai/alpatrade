@@ -93,7 +93,7 @@ class CommandProcessor:
             return await self._handle_alpaca_command(cmd_lower)
 
         # Market research commands (colon syntax: news:TSLA, profile:AAPL)
-        research_cmds = ("news", "profile", "financials", "price", "movers", "analysts", "valuation")
+        research_cmds = ("news", "profile", "financials", "price", "movers", "analysts", "valuation", "load")
         research_base = base
         if research_base in research_cmds:
             return await self._handle_research_command(user_input)
@@ -231,6 +231,13 @@ class CommandProcessor:
                 for t in tickers:
                     all_tickers.extend(t.split(","))
                 return await asyncio.to_thread(research.valuation, all_tickers)
+            elif cmd == "load":
+                if not ticker:
+                    return "# Error\n\nUsage: `load:AAPL` or `load:TSLA period:1y`"
+                period = params.get("period", "3mo")
+                price_md = await asyncio.to_thread(research.price, ticker)
+                chart_md = await self._inline_stock_chart(ticker, period)
+                return f"{price_md}\n\n{chart_md}"
             else:
                 return f"# Error\n\nUnknown research command: `{cmd}`"
         except Exception as e:
@@ -294,6 +301,27 @@ class CommandProcessor:
 
         except Exception as e:
             return f"# Error\n\n```\n{e}\n```"
+
+    async def _inline_stock_chart(self, ticker: str, period: str = "3mo") -> str:
+        """Return inline stock chart as __CHART_DATA__ marker for AGUI rendering."""
+        import json
+        try:
+            from utils.data_loader import get_intraday_data
+            interval = "1d" if period not in ("1d", "5d") else "5m"
+            df = await asyncio.to_thread(get_intraday_data, ticker, interval=interval, period=period)
+            if df.empty:
+                return f"No chart data for `{ticker}`"
+            dates = [d.isoformat() if hasattr(d, 'isoformat') else str(d) for d in df.index]
+            closes = [round(float(c), 2) for c in df["Close"]]
+            chart_json = json.dumps({
+                "ticker": ticker,
+                "period": period,
+                "dates": dates,
+                "close": closes,
+            })
+            return f"__CHART_DATA__{chart_json}__END_CHART__"
+        except Exception as e:
+            return f"Chart error: {e}"
 
     async def _handle_equity_command(self, user_input: str) -> str:
         """Handle equity [paper|backtest] [slug] [run-id] — open equity curve chart."""
@@ -1177,94 +1205,80 @@ Plotly.newPlot('chart', [trace1], {{
 
     def _agent_status(self) -> str:
         """Show current agent states."""
+        import time
         from utils.agent_runner import get_all_running_agents
-        from agents.shared.state import PortfolioState
+        from utils.tz_util import format_et
 
         running = get_all_running_agents(user_id=self.user_id)
         orch = self.app._orch
 
-        # Always load persisted state from disk (background agents write here)
-        persisted = PortfolioState.load()
-
-        if not running and orch is None and not persisted.agents:
-            return "# Agent Status\n\nNo session active. Run an `agent:*` command first.\n"
+        if not running and orch is None:
+            return "# Agent Status\n\nNo agents running. Use `agent:paper` or `agent:backtest` to start.\n"
 
         md = "# Agent Status\n\n"
 
+        # --- Background agents (paper trading, etc.) ---
         if running:
-            md += "## Background Agents\n"
+            md += "## Background Agents\n\n"
+            md += "| Mode | Run ID | Account | Started | Elapsed | PID |\n"
+            md += "|------|--------|---------|---------|---------|-----|\n"
             for r in running:
-                run_id = r.get("run_id")
-                mode = r.get("mode")
-                pid = r.get("pid")
+                run_id = str(r.get("run_id", ""))[:12]
+                mode = (r.get("mode") or "").upper()
+                pid = r.get("pid", "-")
                 account_id = r.get("account_id") or "Default"
-
-                md += f"- **Mode**: {mode.upper()} | **Account**: {account_id} | **PID**: {pid} | **Run ID**: `{run_id}`\n"
+                started_at = r.get("started_at")
+                if started_at:
+                    elapsed_sec = int(time.time() - started_at)
+                    hours, remainder = divmod(elapsed_sec, 3600)
+                    mins, secs = divmod(remainder, 60)
+                    if hours > 0:
+                        elapsed_str = f"{hours}h {mins}m"
+                    else:
+                        elapsed_str = f"{mins}m {secs}s"
+                    started_str = format_et(datetime.fromtimestamp(started_at), "%m/%d %H:%M ET")
+                else:
+                    elapsed_str = "-"
+                    started_str = "-"
+                md += f"| {mode} | `{run_id}` | {account_id} | {started_str} | {elapsed_str} | {pid} |\n"
             md += "\n"
 
-        # Use local orchestrator state if available, otherwise persisted state
-        state = orch.state if orch else persisted
-        mode = (getattr(orch, '_mode', None) if orch else None) or state.mode or 'n/a'
+        # --- Last completed session (from local orchestrator) ---
+        if orch:
+            mode = getattr(orch, '_mode', None) or 'n/a'
+            run_id = orch.run_id or 'n/a'
+            state = orch.state
 
-        # Sync agent statuses with live background processes
-        bg_modes = {r.get("mode") for r in running}
+            agent_statuses = [a.status for a in state.agents.values()] if state.agents else []
+            if any(s == "completed" for s in agent_statuses):
+                status_label = "COMPLETED"
+            elif any(s == "error" for s in agent_statuses):
+                status_label = "ERROR"
+            elif any(s == "running" for s in agent_statuses):
+                status_label = "RUNNING"
+            else:
+                status_label = "IDLE"
 
-        for name, agent in state.agents.items():
-            if name == "paper_trader":
-                if "paper" in bg_modes:
-                    agent.status = "running"
-                    agent.current_task = "paper_trading"
-                elif agent.status == "running":
-                    # No live background process — mark idle
-                    agent.status = "idle"
-                    agent.current_task = None
-            elif name == "backtester":
-                if "backtest" in bg_modes:
-                    agent.status = "running"
-                    agent.current_task = "parameterized_backtest"
-                elif agent.status == "running":
-                    agent.status = "idle"
-                    agent.current_task = None
+            md += f"## Last Session: {mode.replace('_', ' ').title()} — {status_label}\n"
+            md += f"- **Run ID**: `{run_id}`\n"
+            started = state.started_at or None
+            if started:
+                md += f"- **Started**: {format_et(started)}\n"
+            md += "\n"
 
-        # Save corrected state back to disk
-        state.save()
+            md += "| Agent | Status | Task |\n|-------|--------|------|\n"
+            for name, agent in state.agents.items():
+                md += f"| {name} | {agent.status} | {agent.current_task or '-'} |\n"
 
-        agent_statuses = [a.status for a in state.agents.values()]
-        if any(s == "running" for s in agent_statuses):
-            status_label = "RUNNING"
-        elif any(s == "error" for s in agent_statuses):
-            status_label = "ERROR"
-        elif any(s == "completed" for s in agent_statuses):
-            status_label = "COMPLETED"
-        else:
-            status_label = "IDLE"
-
-        source = "Local" if orch else "Background"
-        md += f"## Local Session: {mode.replace('_', ' ').title()} — {status_label} ({source})\n"
-        run_id = orch.run_id if orch else state.run_id or 'n/a'
-        md += f"- **Run ID**: `{run_id}`\n"
-
-        # Show started time in ET
-        from utils.tz_util import format_et
-        started = state.started_at or 'n/a'
-        if started != 'n/a':
-            started = format_et(started)
-        md += f"- **Started**: {started}\n\n"
-
-        # Agents table
-        md += "| Agent | Status | Task |\n|-------|--------|------|\n"
-        for name, agent in state.agents.items():
-            md += f"| {name} | {agent.status} | {agent.current_task or '-'} |\n"
-
-        # Best config (only for modes that involve backtesting)
-        if state.best_config and mode in ('backtest', 'full'):
-            best = state.best_config
-            md += (
-                f"\n## Best Config\n"
-                f"- Sharpe: {best.get('sharpe_ratio', 0):.2f}\n"
-                f"- Return: {best.get('total_return', 0):.1f}%\n"
-                f"- Annualized: {best.get('annualized_return', 0):.1f}%\n"
-            )
+            # Best config
+            if state.best_config and mode in ('backtest', 'full'):
+                best = state.best_config
+                md += (
+                    f"\n## Best Config\n"
+                    f"- Sharpe: {best.get('sharpe_ratio', 0):.2f}\n"
+                    f"- Return: {best.get('total_return', 0):.1f}%\n"
+                    f"- Annualized: {best.get('annualized_return', 0):.1f}%\n"
+                )
 
         # Last validation (only if we ran validation)
         if state.validation_results and mode in ('validate', 'full'):
@@ -1854,6 +1868,7 @@ Plotly.newPlot('chart', [trace1], {{
         col2.add_column(style="dim")
 
         col2.add_row("[bold white]Research[/bold white]", "")
+        col2.add_row("load:AAPL", "quote + inline chart")
         col2.add_row("news:TSLA", "company news")
         col2.add_row("price:TSLA", "quote & technicals")
         col2.add_row("profile:TSLA", "company profile")

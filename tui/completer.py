@@ -78,6 +78,7 @@ COMMANDS = {
     "profile": {},
     "financials": {"period": ["annual", "quarterly"]},
     "price": {},
+    "load": {"period": ["1mo", "3mo", "6mo", "1y"]},
     "movers": {},
     "analysts": {},
     "valuation": {},

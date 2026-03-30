@@ -442,6 +442,7 @@ def _help_html():
     # Column 3: Research & Options
     col3 = Div(
         *_section("Research", [
+            ("load:AAPL", "quote + inline chart"),
             ("news:TSLA", "company news"),
             ("  provider:xai|tavily", "force news provider"),
             ("profile:TSLA", "company profile"),

@@ -437,7 +437,7 @@ class UI:
 
                         var chartDiv = document.createElement('div');
                         chartDiv.className = 'inline-chart';
-                        chartDiv.style.cssText = 'width:100%;min-height:380px;border-radius:0.5rem;overflow:hidden;';
+                        chartDiv.style.cssText = 'width:100%;min-height:480px;border-radius:0.5rem;overflow:hidden;';
                         wrapper.appendChild(chartDiv);
 
                         // Download button

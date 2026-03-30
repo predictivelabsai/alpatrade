@@ -669,6 +669,8 @@ Use `command:type` to filter by backtest or paper. Add optional params after.
 - `scope:all` — all accounts (default: active account)
 
 ## Market Research
+- `load:AAPL` — stock quote + inline price chart
+- `load:TSLA period:1y` — custom period
 - `news:TSLA` — company news
 - `price:AAPL` — stock quote
 - `profile:MSFT` — company profile
@@ -1581,6 +1583,8 @@ _HELP_CATEGORIES = [
         ("agent:stop", "stop background task"),
     ]),
     ("Research", [
+        ("load:AAPL", "quote + inline chart"),
+        ("load:TSLA period:1y", "custom period"),
         ("news:TSLA", "company news"),
         ("price:AAPL", "stock quote"),
         ("profile:MSFT", "company profile"),
