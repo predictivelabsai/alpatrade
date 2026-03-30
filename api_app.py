@@ -1,7 +1,10 @@
 """FastAPI REST server for AlpaTrade — exposes CLI commands as JSON endpoints."""
 import asyncio
+import logging
 import sys
 import threading
+
+logger = logging.getLogger(__name__)
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -556,10 +559,11 @@ async def v2_status(user: Optional[Dict] = Depends(get_current_user)):
                 ).fetchone()
             if row:
                 return StatusResponse(
-                    run_id=row[0], mode=row[1], status=row[2],
+                    run_id=str(row[0]), mode=row[1], status=row[2] or "unknown",
                     started_at=row[3],
                 )
-        except Exception:
+        except Exception as e:
+            logger.warning(f"/v2/status DB fallback error: {e}")
             pass
         return StatusResponse(status="idle")
 
