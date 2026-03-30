@@ -549,8 +549,8 @@ async def v2_status(user: Optional[Dict] = Depends(get_current_user)):
                 bind: Dict = {}
                 user_filter = ""
                 if uid:
-                    user_filter = " WHERE user_id = :user_id"
-                    bind["user_id"] = uid
+                    user_filter = " WHERE user_id = CAST(:user_id AS UUID)"
+                    bind["user_id"] = str(uid)
                 row = session.execute(
                     text(f"SELECT run_id, mode, status, started_at "
                          f"FROM alpatrade.runs{user_filter} "
@@ -588,7 +588,14 @@ async def v2_status(user: Optional[Dict] = Depends(get_current_user)):
     elapsed = None
     started = getattr(orch.state, 'started_at', None) if hasattr(orch, 'state') else None
     if started:
-        elapsed = (datetime.now(timezone.utc) - started).total_seconds()
+        try:
+            if isinstance(started, str):
+                started = datetime.fromisoformat(started.replace("Z", "+00:00"))
+            if started.tzinfo is None:
+                started = started.replace(tzinfo=timezone.utc)
+            elapsed = (datetime.now(timezone.utc) - started).total_seconds()
+        except Exception:
+            elapsed = None
 
     best = None
     if hasattr(orch, 'state') and orch.state.best_config:
