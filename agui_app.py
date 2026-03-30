@@ -390,85 +390,9 @@ def show_recent_runs(limit: int = 20) -> str:
 
 
 def show_equity_curve(run_id: str = "", trade_type: str = "", strategy: str = "") -> str:
-    """Show equity curve chart. Accepts run_id (full or prefix), or use trade_type/strategy to find latest run."""
-    try:
-        from utils.db.db_pool import DatabasePool
-        from sqlalchemy import text
-        import json
-
-        pool = DatabasePool()
-        with pool.get_session() as session:
-            rid = run_id.strip() if run_id else ""
-
-            # If no run_id, find latest run by filters
-            if not rid:
-                where = ["1=1"]
-                bind = {}
-                if trade_type:
-                    where.append("mode = :mode")
-                    bind["mode"] = trade_type
-                if strategy:
-                    where.append("strategy_slug LIKE :slug")
-                    bind["slug"] = strategy + "%"
-                row = session.execute(
-                    text(f"SELECT run_id FROM alpatrade.runs WHERE {' AND '.join(where)} ORDER BY created_at DESC LIMIT 1"),
-                    bind,
-                ).fetchone()
-                if not row:
-                    return "No run found matching filters."
-                rid = str(row[0])
-            elif len(rid) < 36:
-                row = session.execute(
-                    text("SELECT run_id FROM alpatrade.runs WHERE CAST(run_id AS TEXT) LIKE :prefix ORDER BY created_at DESC LIMIT 1"),
-                    {"prefix": f"{rid}%"},
-                ).fetchone()
-                if not row:
-                    return f"No run found matching prefix `{rid}`"
-                rid = str(row[0])
-
-            # Get initial_capital from runs.config JSONB
-            run_row = session.execute(
-                text("SELECT config FROM alpatrade.runs WHERE run_id = :rid"),
-                {"rid": rid},
-            ).fetchone()
-            initial_capital = 10000.0
-            if run_row and run_row[0]:
-                cfg = run_row[0] if isinstance(run_row[0], dict) else json.loads(run_row[0])
-                initial_capital = float(cfg.get("initial_capital", 10000))
-
-            # Get equity data from trades — exit_time + capital_after
-            trades = session.execute(
-                text("""
-                    SELECT exit_time, capital_after
-                    FROM alpatrade.trades
-                    WHERE run_id = :rid AND exit_time IS NOT NULL AND capital_after IS NOT NULL
-                    ORDER BY exit_time ASC
-                """),
-                {"rid": rid},
-            ).fetchall()
-
-        if not trades:
-            return f"No trade data with equity info for run `{rid[:8]}`"
-
-        dates = [t[0].isoformat() if hasattr(t[0], 'isoformat') else str(t[0]) for t in trades]
-        equity = [round(float(t[1]), 2) for t in trades]
-
-        chart_data = json.dumps({
-            "type": "equity_curve",
-            "run_id": rid,
-            "dates": dates,
-            "equity": equity,
-            "initial_capital": initial_capital,
-        })
-        short = rid[:8]
-        final_eq = equity[-1] if equity else initial_capital
-        pnl = final_eq - initial_capital
-        pct = (pnl / initial_capital * 100) if initial_capital else 0
-        sign = "+" if pnl >= 0 else ""
-        label = f"**Equity Curve** — `{short}` ({sign}${pnl:.0f} / {sign}{pct:.1f}%)"
-        return f"{label}\n\n__CHART_DATA__{chart_data}__END_CHART__"
-    except Exception as e:
-        return f"Error generating equity curve: {e}"
+    """Show equity curve chart — delegates to shared utility."""
+    from utils.equity_chart import show_equity_curve as _show
+    return _show(run_id=run_id, trade_type=trade_type, strategy=strategy)
 
 
 # ---------------------------------------------------------------------------
@@ -812,8 +736,8 @@ body {
 
 /* === Left Pane (Sidebar) === */
 .left-pane {
-  background: #ffffff;
-  border-right: 1px solid #e2e8f0;
+  background: var(--bg-primary, #ffffff);
+  border-right: 1px solid var(--border-color, #e2e8f0);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -824,13 +748,13 @@ body {
 .brand {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary, #1e293b);
   text-decoration: none;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
 }
 
-.brand:hover { color: #3b82f6; }
+.brand:hover { color: var(--accent, #3b82f6); }
 
 .sidebar-section { display: flex; flex-direction: column; gap: 0.5rem; }
 
@@ -838,12 +762,12 @@ body {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #64748b;
+  color: var(--text-secondary, #64748b);
   margin-bottom: 0.25rem;
 }
 
 .sidebar-section a {
-  color: #94a3b8;
+  color: var(--text-muted, #94a3b8);
   text-decoration: none;
   font-size: 0.85rem;
   padding: 0.35rem 0.5rem;
@@ -852,12 +776,12 @@ body {
 }
 
 .sidebar-section a:hover {
-  background: #f1f5f9;
-  color: #1e293b;
+  background: var(--bg-tertiary, #f1f5f9);
+  color: var(--text-primary, #1e293b);
 }
 
 .sidebar-section a.active {
-  background: #3b82f6;
+  background: var(--accent, #3b82f6);
   color: white;
 }
 
@@ -867,17 +791,17 @@ body {
 .sidebar-auth input {
   width: 100%;
   padding: 0.5rem 0.6rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 0.375rem;
-  color: #1e293b;
+  color: var(--text-primary, #1e293b);
   font-family: inherit;
   font-size: 0.8rem;
 }
 
 .sidebar-auth input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--accent, #3b82f6);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
 }
 
@@ -937,15 +861,15 @@ body {
 .success-msg { color: #16a34a; font-size: 0.8rem; }
 
 .user-info {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 0.5rem;
   padding: 0.75rem;
   font-size: 0.8rem;
 }
 
-.user-info .name { font-weight: 600; color: #1e293b; }
-.user-info .email { color: #64748b; font-size: 0.75rem; }
+.user-info .name { font-weight: 600; color: var(--text-primary, #1e293b); }
+.user-info .email { color: var(--text-secondary, #64748b); font-size: 0.75rem; }
 
 .key-status {
   display: inline-block;
@@ -960,16 +884,16 @@ body {
 .keys-form input {
   width: 100%;
   padding: 0.5rem 0.6rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 0.375rem;
-  color: #1e293b;
+  color: var(--text-primary, #1e293b);
   font-family: inherit;
   font-size: 0.8rem;
   margin-bottom: 0.5rem;
 }
 
-.keys-form input:focus { outline: none; border-color: #3b82f6; }
+.keys-form input:focus { outline: none; border-color: var(--accent, #3b82f6); }
 
 .keys-form button {
   width: 100%;
@@ -999,7 +923,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #f8fafc;
+  background: var(--bg-secondary, #f8fafc);
   overflow: hidden;
 }
 
@@ -1008,15 +932,15 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--bg-primary, #ffffff);
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
   min-height: 3rem;
 }
 
 .center-header h2 {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary, #1e293b);
 }
 
 .toggle-trace-btn {
@@ -1057,28 +981,28 @@ body {
   flex: 1;
   border: none;
   border-radius: 0;
-  background: #f8fafc;
+  background: var(--bg-secondary, #f8fafc);
   display: flex;
   flex-direction: column;
 }
 
 .center-chat .chat-messages {
-  background: #f8fafc;
+  background: var(--bg-secondary, #f8fafc);
   flex: 1;
 }
 
 .center-chat .chat-input {
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  background: var(--bg-secondary, #f8fafc);
+  border-top: 1px solid var(--border-color, #e2e8f0);
 }
 
 .center-chat .chat-input-form {
-  background: #ffffff;
-  border-color: #e2e8f0;
+  background: var(--bg-primary, #ffffff);
+  border-color: var(--border-color, #e2e8f0);
 }
 
 .center-chat .chat-input-form:focus-within {
-  border-color: #3b82f6;
+  border-color: var(--accent, #3b82f6);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -1104,8 +1028,8 @@ body {
 
 /* === Right Pane (Trace / Artifacts) === */
 .right-pane {
-  background: #ffffff;
-  border-left: 1px solid #e2e8f0;
+  background: var(--bg-primary, #ffffff);
+  border-left: 1px solid var(--border-color, #e2e8f0);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1116,13 +1040,13 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
 }
 
 .right-header h3 {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary, #1e293b);
 }
 
 .close-trace-btn {
@@ -1407,14 +1331,14 @@ body {
   text-align: left;
 }
 
-.help-toggle:hover { background: #f1f5f9; color: #1e293b; }
+.help-toggle:hover { background: var(--bg-tertiary, #f1f5f9); color: var(--text-primary, #1e293b); }
 
 .help-cnt {
   margin-left: auto;
   margin-right: 0.35rem;
   font-size: 0.65rem;
-  color: #94a3b8;
-  background: #f1f5f9;
+  color: var(--text-muted, #94a3b8);
+  background: var(--bg-tertiary, #f1f5f9);
   padding: 0.1rem 0.4rem;
   border-radius: 1rem;
 }
@@ -1455,8 +1379,8 @@ body {
 }
 
 .help-item:hover {
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--table-hover, #eff6ff);
+  color: var(--accent-hover, #2563eb);
 }
 
 /* === Profile Page === */
@@ -1464,22 +1388,23 @@ body {
   max-width: 600px;
   margin: 2rem auto;
   padding: 2rem;
-  background: #ffffff;
+  background: var(--bg-primary, #ffffff);
   border-radius: 0.75rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color, #e2e8f0);
+  color: var(--text-primary, #1e293b);
 }
 
 .profile-container h2 {
   font-size: 1.25rem;
-  color: #1e293b;
+  color: var(--text-primary, #1e293b);
   margin-bottom: 1.5rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
 }
 
 .profile-container h3 {
   font-size: 1rem;
-  color: #1e293b;
+  color: var(--text-primary, #1e293b);
   margin-top: 1.5rem;
   margin-bottom: 0.75rem;
 }

@@ -1254,7 +1254,7 @@ class AGUIThread:
             try:
                 run_id_match = re.search(r'Run ID\*?\*?:?\s*`?([a-f0-9-]+)',final_result)
                 if run_id_match:
-                    from agui_app import show_equity_curve
+                    from utils.equity_chart import show_equity_curve
                     eq_result = show_equity_curve(run_id=run_id_match.group(1))
                     if "__CHART_DATA__" in eq_result:
                         final_result += "\n\n" + eq_result

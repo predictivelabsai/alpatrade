@@ -5,12 +5,36 @@ Chat UI styles — light theme only, simplified.
 from fasthtml.common import Style
 
 CHAT_UI_STYLES = """
-/* === Chat UI — Light Only === */
+/* === CSS Variables (Light default) === */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border-color: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --table-bg: #1e293b;
+  --table-header: #1e293b;
+  --table-border: #334155;
+  --table-stripe: #263348;
+  --table-hover: #334155;
+  --table-text: #f1f5f9;
+  --code-bg: #f1f5f9;
+  --user-bubble: #3b82f6;
+  --asst-bubble: #f8fafc;
+  --asst-border: #e2e8f0;
+}
+
+/* === Chat UI === */
 .chat-container {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #ffffff;
+  background: var(--bg-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
 }
@@ -19,7 +43,7 @@ CHAT_UI_STYLES = """
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
-  background: #ffffff;
+  background: var(--bg-primary);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -65,16 +89,17 @@ CHAT_UI_STYLES = """
 .chat-message-content li { margin: 0.25rem 0; }
 
 .chat-message-content code {
-  background: #f1f5f9;
+  background: var(--code-bg, #f1f5f9);
+  color: var(--text-primary, #1e293b);
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
   font-size: 0.875em;
 }
 
 .chat-message-content pre {
-  background: #f8fafc;
-  color: #1e293b;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-secondary, #f8fafc);
+  color: var(--text-primary, #1e293b);
+  border: 1px solid var(--border-color, #e2e8f0);
   padding: 0.75rem;
   border-radius: 0.5rem;
   overflow-x: auto;
@@ -86,16 +111,20 @@ CHAT_UI_STYLES = """
 .chat-message-content pre code { background: none; padding: 0; color: inherit; }
 
 .chat-message-content blockquote {
-  border-left: 3px solid #e2e8f0;
+  border-left: 3px solid var(--border-color, #e2e8f0);
   padding-left: 1rem;
   margin: 0.5rem 0;
-  color: #64748b;
+  color: var(--text-secondary, #64748b);
 }
 
 .chat-message-content h1, .chat-message-content h2,
 .chat-message-content h3, .chat-message-content h4 {
-  margin: 0.75rem 0 0.5rem 0; font-weight: 600; color: #1e293b;
+  margin: 0.75rem 0 0.5rem 0; font-weight: 600; color: var(--text-primary, #1e293b);
 }
+
+.chat-message-content strong { color: var(--text-primary, #1e293b); }
+.chat-message-content li { color: var(--text-primary, #1e293b); }
+.chat-message-content p { color: var(--text-primary, #1e293b); }
 .chat-message-content h1 { font-size: 1.25rem; }
 .chat-message-content h2 { font-size: 1.125rem; }
 .chat-message-content h3 { font-size: 1rem; }
@@ -104,20 +133,46 @@ CHAT_UI_STYLES = """
   border-collapse: collapse;
   width: 100%;
   margin: 0.5rem 0;
-  background: #ffffff;
+  background: var(--table-bg, #ffffff);
   display: block;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--table-border, #cbd5e1);
+  border-radius: 0.375rem;
+  font-size: 0.85rem;
+  color: var(--text-primary, #1e293b);
 }
+.chat-message-content thead { display: table; width: 100%; table-layout: fixed; }
+.chat-message-content tbody { display: table; width: 100%; table-layout: fixed; }
+.chat-message-content tr { display: table-row; }
 .chat-message-content th, .chat-message-content td {
-  border: 1px solid #e2e8f0;
-  padding: 0.5rem;
+  display: table-cell;
+  border: 1px solid var(--table-border, #334155);
+  padding: 0.45rem 0.6rem;
   text-align: left;
-  color: #1e293b;
+  color: var(--table-text, #f1f5f9) !important;
+  white-space: nowrap;
 }
 .chat-message-content th {
-  background: #f8fafc;
+  background: var(--table-header, #1e293b);
   font-weight: 600;
+  color: var(--table-text, #f1f5f9) !important;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.chat-message-content tbody tr:nth-child(even) td {
+  background: var(--table-stripe, #f8fafc);
+}
+.chat-message-content tbody tr:hover td {
+  background: var(--table-hover, #eef2ff);
+}
+.chat-message-content td code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+  font-size: 0.8rem;
+  color: #93c5fd !important;
 }
 
 @keyframes chat-message-in {
@@ -129,15 +184,15 @@ CHAT_UI_STYLES = """
 .chat-assistant { align-self: flex-start; }
 
 .chat-user .chat-message-content {
-  background: #3b82f6;
+  background: var(--user-bubble);
   color: #ffffff;
   border-bottom-right-radius: 0.375rem;
 }
 
 .chat-assistant .chat-message-content {
-  background: #f8fafc;
-  color: #1e293b;
-  border: 1px solid #e2e8f0;
+  background: var(--asst-bubble);
+  color: var(--text-primary);
+  border: 1px solid var(--asst-border);
   border-bottom-left-radius: 0.375rem;
 }
 
@@ -156,8 +211,8 @@ CHAT_UI_STYLES = """
 /* === Input Form === */
 .chat-input {
   padding: 1.25rem 1.5rem 1.5rem;
-  background: #ffffff;
-  border-top: 1px solid #e2e8f0;
+  background: var(--bg-primary, #ffffff);
+  border-top: 1px solid var(--border-color, #e2e8f0);
   max-width: 800px;
   margin: 0 auto;
   width: 100%;
@@ -167,7 +222,7 @@ CHAT_UI_STYLES = """
 .chat-status {
   min-height: 1rem;
   padding: 0.25rem 0;
-  color: #64748b;
+  color: var(--text-secondary, #64748b);
   font-size: 0.8rem;
   text-align: center;
 }
@@ -186,10 +241,10 @@ CHAT_UI_STYLES = """
   align-items: center;
   gap: 0.35rem;
   padding: 0.45rem 0.9rem;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-primary, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 1.25rem;
-  color: #3b82f6;
+  color: var(--accent, #3b82f6);
   font-size: 0.8rem;
   cursor: pointer;
   white-space: nowrap;
@@ -217,15 +272,15 @@ CHAT_UI_STYLES = """
   gap: 0.5rem;
   align-items: end;
   width: 100%;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 1rem;
   padding: 0.5rem;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .chat-input-form:focus-within {
-  border-color: #3b82f6;
+  border-color: var(--accent, #3b82f6);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -235,7 +290,7 @@ CHAT_UI_STYLES = """
   border: none;
   border-radius: 0.5rem;
   background: transparent;
-  color: #1e293b;
+  color: var(--text-primary, #1e293b);
   font-family: inherit;
   font-size: 0.9rem;
   line-height: 1.5;
@@ -273,8 +328,8 @@ CHAT_UI_STYLES = """
 .chat-tool { align-self: center; max-width: 70%; }
 
 .chat-tool .chat-message-content {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--bg-tertiary, #f1f5f9);
+  color: var(--text-secondary, #64748b);
   font-size: 0.8rem;
   text-align: center;
   border-radius: 0.75rem;
@@ -294,13 +349,13 @@ CHAT_UI_STYLES = """
 }
 
 .agui-log-pre {
-  color: #475569;
+  color: var(--text-secondary, #475569);
   font-size: 0.8em;
   margin: 0;
   white-space: pre-wrap;
   font-family: ui-monospace, monospace;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
   padding: 0.75rem;
   border-radius: 0.5rem;
 }
@@ -352,8 +407,8 @@ CHAT_UI_STYLES = """
 }
 
 .welcome-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-primary, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 12px;
   padding: 1rem;
   cursor: pointer;
@@ -380,26 +435,26 @@ CHAT_UI_STYLES = """
 .welcome-card-title {
   font-size: 0.825rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary, #1e293b);
   margin-bottom: 0.25rem;
 }
 
 .welcome-card-desc {
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--text-secondary, #64748b);
 }
 
 /* === Input Hint === */
 .input-hint {
   font-size: 0.7rem;
-  color: #94a3b8;
+  color: var(--text-muted, #94a3b8);
   text-align: center;
   padding-top: 0.25rem;
 }
 
 .kbd {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-tertiary, #f1f5f9);
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 3px;
   padding: 0.1rem 0.35rem;
   font-family: ui-monospace, monospace;
@@ -425,9 +480,9 @@ CHAT_UI_STYLES = """
 
 /* === Result Cards === */
 .result-card {
-  background: #ffffff;
+  background: var(--bg-primary, #ffffff);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color, #e2e8f0);
   overflow: hidden;
   max-width: 100%;
   margin-bottom: 0.75rem;
@@ -438,13 +493,13 @@ CHAT_UI_STYLES = """
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--bg-tertiary, #f1f5f9);
 }
 
 .card-header h3 {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary, #1e293b);
   margin: 0;
 }
 
@@ -462,7 +517,7 @@ CHAT_UI_STYLES = """
 
 .metric-label {
   font-size: 0.7rem;
-  color: #64748b;
+  color: var(--text-secondary, #64748b);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -470,20 +525,20 @@ CHAT_UI_STYLES = """
 .metric-value {
   font-size: 1rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary, #1e293b);
 }
 
 .metric-value.positive { color: #16a34a; }
 .metric-value.negative { color: #dc2626; }
 
 .card-details {
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--bg-tertiary, #f1f5f9);
 }
 
 .card-details summary {
   padding: 0.5rem 1rem;
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--text-secondary, #64748b);
   cursor: pointer;
 }
 
@@ -522,9 +577,9 @@ CHAT_UI_STYLES = """
 /* === Progress Bar (streaming commands) === */
 .progress-bar-container { display: none; margin-bottom: 0.5rem; }
 .progress-bar-container.active { display: block; }
-.progress-bar-outer { background: #e2e8f0; border-radius: 4px; height: 6px; overflow: hidden; }
+.progress-bar-outer { background: var(--border-color, #e2e8f0); border-radius: 4px; height: 6px; overflow: hidden; }
 .progress-bar-fill { background: linear-gradient(90deg, #3b82f6, #2563eb); height: 100%; border-radius: 4px; transition: width 0.4s ease; width: 0%; }
-.progress-bar-label { font-size: 0.7rem; color: #64748b; margin-top: 0.25rem; font-family: monospace; }
+.progress-bar-label { font-size: 0.7rem; color: var(--text-secondary, #64748b); margin-top: 0.25rem; font-family: monospace; }
 
 /* === Table Toolbar (CSV copy/download) === */
 .table-toolbar {
@@ -538,23 +593,23 @@ CHAT_UI_STYLES = """
   padding: 0.2rem 0.5rem;
   font-size: 0.7rem;
   font-family: inherit;
-  color: #3b82f6;
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
+  color: var(--accent, #3b82f6);
+  background: var(--bg-secondary, #eff6ff);
+  border: 1px solid var(--border-color, #dbeafe);
   border-radius: 0.25rem;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .table-action-btn:hover {
-  background: #3b82f6;
+  background: var(--accent, #3b82f6);
   color: #fff;
-  border-color: #3b82f6;
+  border-color: var(--accent, #3b82f6);
 }
 
 /* === Inline Charts === */
 .inline-chart {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 0.5rem;
 }
 
