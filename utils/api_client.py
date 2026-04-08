@@ -219,9 +219,12 @@ def api_reconcile(params: Dict[str, str], user_id: Optional[str] = None,
     )
 
 
-def api_stop(user_id: Optional[str] = None) -> str:
+def api_stop(user_id: Optional[str] = None, run_id: Optional[str] = None) -> str:
     """Stop running agent via API."""
-    data = _post("/v2/stop", {}, user_id=user_id)
+    path = "/v2/stop"
+    if run_id:
+        path = f"/v2/stop?run_id={run_id}"
+    data = _post(path, {}, user_id=user_id)
 
     if data.get("stopped"):
         return f"# Stopped\n\n{data.get('message', 'Background task cancelled.')}"

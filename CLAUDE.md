@@ -1,164 +1,146 @@
-# AlpaTrade
+# CLAUDE.md
 
-Trading strategy simulator, backtester, and paper trader.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project
+
+AlpaTrade — trading strategy backtester, paper trader, and AI research CLI powered by Alpaca Markets. Published on PyPI as `alpatrade`.
 
 ## Stack
 
-- **Python 3.13**, virtualenv at `.venv/`
-- **FastHTML** web UI (`web_app.py`)
-- **FastAPI** REST server (`api_app.py`)
-- **Rich CLI** (`tui/strategy_cli.py`, entry point: `alpatrade.py`)
+- **Python 3.13**, virtualenv at `.venv/`, managed with `uv`
+- **FastHTML** web UI (`web_app.py`, port 5002)
+- **FastAPI** REST server (`api_app.py`, port 5001)
+- **AG-UI Chat** (`agui_app.py`, port 5003) — pydantic-ai agent (XAI Grok-3-mini) with WebSocket streaming
+- **Rich CLI** (entry point: `alpatrade.py` → `tui/pt_cli.py` → `tui/command_processor.py`)
+- **PostgreSQL** with `alpatrade` schema, accessed via SQLAlchemy (`utils/db/db_pool.py`)
 - **Config**: `config/parameters.yaml` (strategy params), `.env` (API keys)
 
-## Key Directories
+## Commands
 
-| Directory | Purpose |
-|-----------|---------|
-| `utils/` | Core logic (alpaca_util, buy_the_dip, vix_strategy, momentum, massive_util, backtester_util, pdt_tracker) |
-| `utils/db/` | Database pool (`db_pool.py`) |
-| `tasks/` | CLI tools (cli_trader.py, validate_backtest.py) |
-| `tui/` | Rich CLI app |
-| `agents/` | Multi-agent system (backtester, paper-trader, validator, orchestrator) |
-| `agents/shared/` | Message bus, shared state, DB setup |
-| `tests/` | Tests |
-| `data/` | Runtime data (orders, agent messages, agent state) |
-| `config/` | parameters.yaml |
+```bash
+# Install dependencies
+uv sync
+
+# Run the CLI
+uv run python alpatrade.py
+
+# Run the AG-UI Chat (port 5003)
+uv run uvicorn agui_app:app --host 0.0.0.0 --port 5003 --reload
+
+# Run the Web UI (port 5002)
+uv run python web_app.py
+
+# Run the API Server (port 5001)
+uv run uvicorn api_app:app --host 0.0.0.0 --port 5001 --reload
+
+# Run the full regression suite (~65 tests, requires DB)
+python tests/regression_suite.py
+
+# Run with pytest (alternative)
+python -m pytest tests/regression_suite.py -v
+
+# Run a single test class
+python -m pytest tests/regression_suite.py::TestStrategySlug -v
+
+# Orchestrator direct invocation
+python agents/orchestrator.py --mode backtest
+python agents/orchestrator.py --mode paper --duration 1h
+python agents/orchestrator.py --mode validate --run-id <uuid>
+python agents/orchestrator.py --mode reconcile --window 7
+python agents/orchestrator.py --mode full
+```
+
+When the user says "run regression" or "run tests", execute `python tests/regression_suite.py`.
+Run the regression suite after significant changes to verify nothing is broken.
+
+## Architecture
+
+Four entry points share the same backend:
+
+```
+CLI (alpatrade.py) ──┐
+AG-UI Chat (agui_app.py) ──┤──→ CommandProcessor / Orchestrator ──→ Agents ──→ DB + Alpaca + Market Data
+Web UI (web_app.py) ──┤
+REST API (api_app.py) ──┘
+```
+
+### Command Flow
+
+1. **CLI**: `alpatrade.py` → `tui/pt_cli.py` (prompt_toolkit REPL) → `tui/command_processor.py` dispatches commands
+2. **AG-UI**: `agui_app.py` intercepts CLI commands via `_CLI_BASES`/`_CLI_EXACT` sets, routes to `CommandProcessor`; free-form text goes to LangGraph agent with `StructuredTool` wrappers
+3. **Web/API**: route handlers call `Orchestrator` or `CommandProcessor` directly
+
+`CommandProcessor` is the central dispatcher. It parses positional params (e.g., `trades paper btd-3dp`) and routes to handler methods (`_agent_trades`, `_agent_runs`, `_agent_top`, etc.). Unknown input falls through to the AI chat agent.
+
+### Multi-Agent System
+
+Five agents coordinated by the Orchestrator (`agents/orchestrator.py`):
+
+| Agent | File | Role |
+|-------|------|------|
+| Backtester | `agents/backtest_agent.py` | Parameterized grid-search backtests, stores to DB |
+| Paper Trader | `agents/paper_trade_agent.py` | Live paper trading via Alpaca API, background polling |
+| Validator | `agents/validate_agent.py` | Cross-checks trades against market data, self-correction loop (max 10 iterations) |
+| Reconciler | `agents/reconcile_agent.py` | Compares DB positions vs Alpaca holdings |
+| Reporter | `agents/report_agent.py` | Queries DB for summaries, top strategies, run details |
+
+**Communication**: File-based JSON message bus (`agents/shared/message_bus.py` → `data/agent_messages/`). State persistence: `agents/shared/state.py` → `data/agent_state.json`.
+
+**Workflow**: Backtest → Validate → Paper Trade → Validate → Report
+
+### Data Flow
+
+- **Market data**: `utils/massive_util.py` (Polygon.io), `utils/yf_util.py` (yfinance fallback), `utils/eodhd_util.py` (intraday)
+- **Trading**: `utils/alpaca_util.py` (Alpaca paper API)
+- **Strategies**: `utils/buy_the_dip.py`, `utils/vix_strategy.py`, `utils/momentum.py`, `utils/box_wedge.py`
+- **Backtesting engine**: `utils/backtester_util.py` (runs strategies, calculates metrics)
+- **Storage**: `utils/agent_storage.py` (DB writes), `utils/backtest_db_util.py` (DB reads)
+- **Strategy slugs**: `utils/strategy_slug.py` — encodes params into compact IDs like `btd-7dp-05sl-1tp-1d-3m`
+- **PDT tracking**: `utils/pdt_tracker.py` — FINRA Pattern Day Trader rule enforcement
+
+### Database
+
+PostgreSQL with `alpatrade` schema. Key tables: `runs`, `trades`, `backtest_summaries`, `users`, `user_accounts`, `chat_messages`. Migrations in `sql/` (numbered `01_` through `13_`). All tables have `user_id` column for data isolation.
+
+Connection pool: `utils/db/db_pool.py` → `DatabasePool` with `get_session()` context manager. Reads `DATABASE_URL` from env.
+
+### Authentication
+
+- **Web/AG-UI**: Email/password + Google OAuth → session-based
+- **API**: JWT bearer token (`POST /auth/login`, `/auth/register`)
+- **CLI**: No auth — `user_id=None`, Alpaca keys from `.env`
+- Per-user Alpaca keys: Fernet-encrypted in `alpatrade.users` table
+- Auth module: `utils/auth.py` (bcrypt, Fernet, JWT, user CRUD)
 
 ## Strategies
 
-- **Buy the Dip**: Buys on `dip_threshold%` drops from recent high, exits at `take_profit_threshold%` gain, `stop_loss_threshold%` loss, or after `hold_days`
-- **VIX Fear Index**: Trades based on VIX levels exceeding threshold
-- **Momentum**: Buys on strong upward momentum over lookback period
-- **Box-Wedge**: Pattern-based strategy
+- **Buy the Dip** (`btd`): Buys on dip_threshold% drops, exits at take_profit%, stop_loss%, or hold_days
+- **VIX Fear Index** (`vix`): Trades based on VIX levels exceeding threshold
+- **Momentum** (`mom`): Buys on strong upward momentum over lookback period
+- **Box-Wedge** (`bwg`): Pattern-based strategy
+
+### Strategy Options
+
+- `hours:extended` — 4:00 AM - 8:00 PM ET (pre-market + after-hours)
+- `intraday_exit:true` — 5-min bars for precise TP/SL exit timing
+- `pdt:false` — Disable PDT rule for accounts > $25k
 
 ## Secrets Policy
 
-**NEVER copy, persist, log, or document actual secret values.** API keys, tokens, passwords, and connection strings from `.env` must only be used transiently during runtime. Specifically:
-- Do not write secret values into source files, docs, markdown, YAML, or memory files
-- Do not include secrets in commit messages, comments, or debug output
-- Do not hardcode API keys in any source file — always read from environment variables
-- Reference secrets by variable name only (e.g. `ALPACA_PAPER_API_KEY=...`)
-- **XAI_API_KEY** is especially sensitive — a prior key was leaked via GitHub and revoked. Never embed xAI keys in code, configs, notebooks, or tool output
+**NEVER copy, persist, log, or document actual secret values.** Reference by variable name only.
+- **XAI_API_KEY** especially sensitive — a prior key was leaked via GitHub and revoked
 - Before committing, verify no secrets appear in `git diff` output
-- If a secret is accidentally committed, immediately purge it from git history with `git-filter-repo`
 
-## Required Environment Variables (.env)
+### Required Environment Variables (.env)
 
 ```
 ALPACA_PAPER_API_KEY=...
 ALPACA_PAPER_SECRET_KEY=...
 MASSIVE_API_KEY=...        # Polygon.io compatible
-EODHD_API_KEY=...
-XAI_API_KEY=...
 DATABASE_URL=...           # PostgreSQL connection string
-ENCRYPTION_KEY=...         # Fernet key for encrypting user Alpaca keys (generate: python scripts/generate_keys.py)
-JWT_SECRET=...             # Secret for API JWT tokens (generate: python scripts/generate_keys.py)
+ENCRYPTION_KEY=...         # Fernet key (generate: python scripts/generate_keys.py)
+JWT_SECRET=...             # JWT secret (generate: python scripts/generate_keys.py)
 ```
 
-## Authentication & User Management
-
-- **Web UI**: Email/password registration + Google OAuth login
-- **API**: JWT bearer token auth (`POST /auth/login`, `POST /auth/register`)
-- **CLI**: No auth — `user_id=None`, keys from `.env`
-- **Per-user Alpaca keys**: Fernet-encrypted in `alpatrade.users` table
-- **Data isolation**: All DB tables have `user_id` column; web/API queries filter by user
-- **Auth module**: `utils/auth.py` — password hashing (bcrypt), key encryption (Fernet), JWT, user CRUD
-- **Migrations**: `sql/07_create_users_table.sql`, `sql/08_add_user_id_columns.sql`, `sql/09_migrate_existing_data.sql`
-- See `docs/auth_readme.md` for full setup instructions
-
-## Multi-Agent System
-
-Five agents collaborate to backtest, paper trade, validate, and reconcile strategies:
-
-### Agent 1: Backtester (`agents/backtest_agent.py`)
-- Runs parameterized backtests varying symbols, date ranges, and strategy parameters
-- Stores results via `agent_storage.py` into `alpatrade.backtest_summaries` / `alpatrade.trades` tables
-- Reports best-performing configuration to Portfolio Manager
-
-### Agent 2: Paper Trader (`agents/paper_trade_agent.py`)
-- Continuous paper trading via real Alpaca paper API
-- Polls at configurable intervals, tracks positions and daily P&L
-- Writes trades to `alpatrade.trades` DB table
-
-### Agent 3: Validator (`agents/validate_agent.py`)
-- Cross-checks trades against Massive market data for price accuracy
-- Validates P&L math, market hours, weekend trades, TP/SL logic
-- **Self-correction loop**: Attempts up to `n=10` iterations to fix anomalies
-- After 10 failed iterations: stops, reports error behaviors, suggests fixes
-
-### Agent 4: Portfolio Manager (`agents/orchestrator.py`)
-- Orchestrator — dispatches work, tracks state, routes messages
-- Workflow: Backtest -> Validate -> Paper Trade -> Validate -> Report
-
-### Agent 5: Reconciler (`agents/reconcile_agent.py`)
-- Compares DB positions/P&L vs actual Alpaca holdings for a given time window
-- Checks: position match, trade match, P&L comparison, missing/extra trades
-- Accepts `window_days` param (default 7)
-
-### Communication
-- File-based JSON message bus (`data/agent_messages/`)
-- Messages: `{from_agent, to_agent, type, payload, timestamp}`
-- State persistence: `data/agent_state.json`
-
-### Regression Tests
-
-```bash
-# Run the full regression suite (65 tests covering all backend modules)
-python tests/regression_suite.py
-
-# Covers: strategy slugs, agent state, message bus, auth (hash/encrypt/JWT),
-# command parsing, DB schema, report agent, storage, AGUI tools, orchestrator,
-# backtest agent, validate agent, PDT tracker, config loading, user CRUD,
-# backtester metrics, stale state detection, command routing, end-to-end queries
-```
-
-Run the regression suite after significant changes to verify nothing is broken.
-When the user says "run regression" or "run tests", execute `python tests/regression_suite.py`.
-
-### Running
-
-```bash
-# Rich CLI (primary interface)
-python alpatrade.py
-
-# CLI commands:
-#   trades                                    Show trades from DB
-#   runs                                      Show runs from DB
-#   agent:backtest lookback:1m                Run parameterized backtest
-#   agent:backtest lookback:1m hours:extended Extended hours backtest
-#   agent:backtest lookback:1m intraday_exit:true  Intraday TP/SL exits
-#   agent:backtest lookback:1m pdt:false      Disable PDT rule (>$25k accounts)
-#   agent:paper duration:7d                   Paper trade in background
-#   agent:paper duration:7d hours:extended    Extended hours paper trading
-#   agent:full lookback:1m duration:1m        Full cycle
-#   agent:reconcile window:7d                 Reconcile DB vs Alpaca
-
-# Orchestrator (direct invocation)
-python agents/orchestrator.py --mode full
-python agents/orchestrator.py --mode backtest
-python agents/orchestrator.py --mode validate --run-id <uuid>
-python agents/orchestrator.py --mode paper --duration 1h
-python agents/orchestrator.py --mode reconcile --window 7
-```
-
-### Extended Hours
-- `hours:regular` (default) — 9:30 AM - 4:00 PM ET
-- `hours:extended` — 4:00 AM - 8:00 PM ET (pre-market + after-hours)
-- Flows through: CLI -> Orchestrator -> Agent -> Strategy util / Validator
-
-### Intraday Exits
-- `intraday_exit:true` — Use 5-min intraday bars for precise TP/SL exit timing
-- Determines which of TP/SL is hit first within each day
-- No same-day re-entry after exit
-
-### PDT Rule (Pattern Day Trader)
-- FINRA PDT rule enforced by default: max 3 day trades per rolling 5-business-day window
-- `pdt:false` to disable for accounts > $25k
-- Tracked via `utils/pdt_tracker.py` (`PDTTracker` class)
-- Applies to both backtesting and paper trading
-- Flows through: CLI -> Orchestrator -> Agent -> Strategy util
-
-### Email Notifications
-- Paper trading sends daily P&L reports via Postmark
-- Requires: `POSTMARK_API_KEY`, `TO_EMAIL`, `FROM_EMAIL` in `.env`
-- Disable with `email:false` on `agent:paper` command
+Optional: `XAI_API_KEY`, `EODHD_API_KEY`, `POSTMARK_API_KEY`, `TO_EMAIL`, `FROM_EMAIL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`

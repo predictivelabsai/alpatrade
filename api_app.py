@@ -55,6 +55,7 @@ class _AppState:
         self._bg_task = None
         self._bg_stop = threading.Event()
         self._suggested_command: str = ""
+        self._subprocess_run_id: Optional[str] = None
 
 # Per-user state keyed by user_id (None key = anonymous)
 _user_states: Dict[Optional[str], _AppState] = {}
@@ -535,102 +536,161 @@ async def v2_positions(
 @app.get("/v2/status", response_model=StatusResponse, tags=["agents"])
 async def v2_status(user: Optional[Dict] = Depends(get_current_user)):
     """Current orchestrator / agent status."""
+    import time as _time
+    from utils.agent_runner import get_all_running_agents
+
     uid = _uid(user)
     state = _get_app_state(uid)
     orch = state._orch
 
-    if orch is None:
-        # Check DB for most recent run
-        try:
-            from utils.db.db_pool import DatabasePool
-            from sqlalchemy import text
-            pool = DatabasePool()
-            with pool.get_session() as session:
-                bind: Dict = {}
-                user_filter = ""
-                if uid:
-                    user_filter = " WHERE user_id = CAST(:user_id AS UUID)"
-                    bind["user_id"] = str(uid)
-                row = session.execute(
-                    text(f"SELECT run_id, mode, status, started_at "
-                         f"FROM alpatrade.runs{user_filter} "
-                         f"ORDER BY created_at DESC LIMIT 1"),
-                    bind,
-                ).fetchone()
-            if row:
-                return StatusResponse(
-                    run_id=str(row[0]), mode=row[1], status=row[2] or "unknown",
-                    started_at=row[3],
-                )
-        except Exception as e:
-            logger.warning(f"/v2/status DB fallback error: {e}")
-            pass
-        return StatusResponse(status="idle")
+    # 1) Check subprocess-based running agents (PID files)
+    running = get_all_running_agents(user_id=uid)
+    if running:
+        agent_info = max(running, key=lambda r: r.get("started_at", 0))
+        started_ts = agent_info.get("started_at")
+        started_dt = datetime.fromtimestamp(started_ts, tz=timezone.utc) if started_ts else None
+        elapsed = (_time.time() - started_ts) if started_ts else None
 
-    mode = getattr(orch, '_mode', None) or getattr(orch.state, 'mode', None) or 'n/a'
-    bg_running = state._bg_task and not state._bg_task.done()
+        # Attach best_config from in-memory orch if available (e.g. prior backtest)
+        best = None
+        if orch and hasattr(orch, 'state') and orch.state.best_config:
+            bc = orch.state.best_config
+            best = BestConfig(
+                sharpe_ratio=bc.get("sharpe_ratio"),
+                total_return=bc.get("total_return"),
+                annualized_return=bc.get("annualized_return"),
+                total_pnl=bc.get("total_pnl"),
+                win_rate=bc.get("win_rate"),
+                total_trades=bc.get("total_trades"),
+                max_drawdown=bc.get("max_drawdown"),
+                params=bc.get("params"),
+            )
 
-    if bg_running:
-        status_label = "running"
-    elif state._bg_task and state._bg_task.done():
-        status_label = "completed"
-    else:
-        status_label = "idle"
-
-    agents_list = []
-    if hasattr(orch, 'state') and hasattr(orch.state, 'agents'):
-        for name, agent in orch.state.agents.items():
-            agents_list.append(AgentStatus(
-                name=name, status=agent.status,
-                current_task=agent.current_task,
-            ))
-
-    elapsed = None
-    started = getattr(orch.state, 'started_at', None) if hasattr(orch, 'state') else None
-    if started:
-        try:
-            if isinstance(started, str):
-                started = datetime.fromisoformat(started.replace("Z", "+00:00"))
-            if started.tzinfo is None:
-                started = started.replace(tzinfo=timezone.utc)
-            elapsed = (datetime.now(timezone.utc) - started).total_seconds()
-        except Exception:
-            elapsed = None
-
-    best = None
-    if hasattr(orch, 'state') and orch.state.best_config:
-        bc = orch.state.best_config
-        best = BestConfig(
-            sharpe_ratio=bc.get("sharpe_ratio"),
-            total_return=bc.get("total_return"),
-            annualized_return=bc.get("annualized_return"),
-            total_pnl=bc.get("total_pnl"),
-            win_rate=bc.get("win_rate"),
-            total_trades=bc.get("total_trades"),
-            max_drawdown=bc.get("max_drawdown"),
-            params=bc.get("params"),
+        return StatusResponse(
+            run_id=agent_info["run_id"],
+            mode=agent_info.get("mode", "paper"),
+            status="running",
+            agents=[],
+            started_at=started_dt,
+            elapsed_seconds=elapsed,
+            best_config=best,
         )
 
-    return StatusResponse(
-        run_id=orch.run_id,
-        mode=mode,
-        status=status_label,
-        agents=agents_list,
-        started_at=started,
-        elapsed_seconds=elapsed,
-        best_config=best,
-    )
+    # 2) Check in-memory orchestrator state (backtest results, completed sessions)
+    if orch is not None:
+        mode = getattr(orch, '_mode', None) or getattr(orch.state, 'mode', None) or 'n/a'
+        bg_running = state._bg_task and not state._bg_task.done()
+
+        if bg_running:
+            status_label = "running"
+        elif state._bg_task and state._bg_task.done():
+            status_label = "completed"
+        else:
+            status_label = "idle"
+
+        agents_list = []
+        if hasattr(orch, 'state') and hasattr(orch.state, 'agents'):
+            for name, agent in orch.state.agents.items():
+                agents_list.append(AgentStatus(
+                    name=name, status=agent.status,
+                    current_task=agent.current_task,
+                ))
+
+        elapsed = None
+        started = getattr(orch.state, 'started_at', None) if hasattr(orch, 'state') else None
+        if started:
+            try:
+                if isinstance(started, str):
+                    started = datetime.fromisoformat(started.replace("Z", "+00:00"))
+                if started.tzinfo is None:
+                    started = started.replace(tzinfo=timezone.utc)
+                elapsed = (datetime.now(timezone.utc) - started).total_seconds()
+            except Exception:
+                elapsed = None
+
+        best = None
+        if hasattr(orch, 'state') and orch.state.best_config:
+            bc = orch.state.best_config
+            best = BestConfig(
+                sharpe_ratio=bc.get("sharpe_ratio"),
+                total_return=bc.get("total_return"),
+                annualized_return=bc.get("annualized_return"),
+                total_pnl=bc.get("total_pnl"),
+                win_rate=bc.get("win_rate"),
+                total_trades=bc.get("total_trades"),
+                max_drawdown=bc.get("max_drawdown"),
+                params=bc.get("params"),
+            )
+
+        return StatusResponse(
+            run_id=orch.run_id,
+            mode=mode,
+            status=status_label,
+            agents=agents_list,
+            started_at=started,
+            elapsed_seconds=elapsed,
+            best_config=best,
+        )
+
+    # 3) DB fallback — check most recent run
+    try:
+        from utils.db.db_pool import DatabasePool
+        from sqlalchemy import text
+        pool = DatabasePool()
+        with pool.get_session() as session:
+            bind: Dict = {}
+            user_filter = ""
+            if uid:
+                user_filter = " WHERE user_id = CAST(:user_id AS UUID)"
+                bind["user_id"] = str(uid)
+            row = session.execute(
+                text(f"SELECT run_id, mode, status, started_at "
+                     f"FROM alpatrade.runs{user_filter} "
+                     f"ORDER BY created_at DESC LIMIT 1"),
+                bind,
+            ).fetchone()
+        if row:
+            return StatusResponse(
+                run_id=str(row[0]), mode=row[1], status=row[2] or "unknown",
+                started_at=row[3],
+            )
+    except Exception as e:
+        logger.warning(f"/v2/status DB fallback error: {e}")
+
+    return StatusResponse(status="idle")
 
 
 @app.post("/v2/stop", response_model=StopResponse, tags=["agents"])
-async def v2_stop(user: Optional[Dict] = Depends(get_current_user)):
-    """Stop a running background task (paper trading)."""
+async def v2_stop(
+    run_id: Optional[str] = Query(None, description="Specific run_id to stop. If omitted, stops the most recent agent."),
+    user: Optional[Dict] = Depends(get_current_user),
+):
+    """Stop a running background agent (subprocess or in-memory task)."""
+    from utils.agent_runner import stop_agent, get_all_running_agents
+
     uid = _uid(user)
     state = _get_app_state(uid)
+
+    target_run_id = run_id
+
+    # Auto-detect target from running subprocess agents
+    if not target_run_id:
+        running = get_all_running_agents(user_id=uid)
+        if running:
+            target_run_id = max(running, key=lambda r: r.get("started_at", 0))["run_id"]
+
+    # Try subprocess stop
+    if target_run_id and stop_agent(target_run_id):
+        if state._subprocess_run_id == target_run_id:
+            state._subprocess_run_id = None
+        return StopResponse(stopped=True, message=f"Agent {target_run_id} stopped.")
+
+    # Fallback: legacy in-memory task stop
     if state._bg_task and not state._bg_task.done():
         state._bg_stop.set()
         state._bg_task.cancel()
         return StopResponse(stopped=True, message="Background task cancelled.")
+
     return StopResponse(stopped=False, message="No background task is running.")
 
 
@@ -709,18 +769,21 @@ async def v2_validate(req: ValidateRequest, user: Optional[Dict] = Depends(get_c
 
 @app.post("/v2/paper", response_model=PaperStartResponse, tags=["agents"])
 async def v2_paper(req: PaperRequest, user: Optional[Dict] = Depends(get_current_user)):
-    """Start paper trading in the background. Returns immediately."""
+    """Start paper trading as an autonomous subprocess. Returns immediately."""
     from agents.orchestrator import Orchestrator, parse_duration
+    from utils.agent_runner import spawn_agent, get_all_running_agents
 
     uid = _uid(user)
     state = _get_app_state(uid)
 
-    if state._bg_task and not state._bg_task.done():
+    # Check for already-running paper agent (subprocess-based)
+    running = get_all_running_agents(user_id=uid)
+    if any(r.get("mode") == "paper" for r in running):
         raise HTTPException(status_code=409, detail="Paper trading is already running")
 
-    orch = Orchestrator(user_id=uid, account_id=req.account_id)
-    state._orch = orch
-    state._bg_stop = threading.Event()
+    # Legacy in-memory task check (backward compat)
+    if state._bg_task and not state._bg_task.done():
+        raise HTTPException(status_code=409, detail="Paper trading is already running")
 
     duration_sec = parse_duration(req.duration)
     config = {
@@ -730,28 +793,29 @@ async def v2_paper(req: PaperRequest, user: Optional[Dict] = Depends(get_current
     if req.symbols:
         config["symbols"] = [s.strip() for s in req.symbols.split(",")]
     if req.poll:
-        config["poll_interval"] = req.poll
+        config["poll_interval_seconds"] = req.poll
     if req.hours:
-        config["hours"] = req.hours
+        config["extended_hours"] = req.hours == "extended"
     if req.email is not None:
-        config["email"] = req.email
+        config["email_notifications"] = req.email
     if req.pdt is not None:
-        config["pdt"] = req.pdt
+        config["pdt_protection"] = req.pdt
 
-    async def _run_paper():
-        try:
-            await asyncio.to_thread(orch.run_paper_trade, config, state._bg_stop)
-        except asyncio.CancelledError:
-            pass
+    # Spawn as a detached subprocess — survives API restarts
+    run_id = spawn_agent("paper", config, user_id=uid, account_id=req.account_id)
+    state._subprocess_run_id = run_id
 
-    state._bg_task = asyncio.create_task(_run_paper())
+    # Set lightweight orch stub for status display (like CLI does)
+    orch = Orchestrator(user_id=uid, account_id=req.account_id)
+    orch._mode = "paper"
+    orch.run_id = run_id
+    state._orch = orch
 
-    symbols = config.get("symbols")
     return PaperStartResponse(
-        run_id=orch.run_id,
+        run_id=run_id,
         status="started",
         strategy=req.strategy,
-        symbols=symbols,
+        symbols=config.get("symbols"),
         duration=req.duration,
         poll_interval=req.poll,
     )
