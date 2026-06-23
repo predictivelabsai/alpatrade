@@ -4,7 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-AlpaTrade — trading strategy backtester, paper trader, and AI research CLI powered by Alpaca Markets. Published on PyPI as `alpatrade`.
+AssetHero — a multi-asset trading platform with a **shared backtesting & paper-trading
+engine**. Published on PyPI as `assethero` (the `alpatrade` package is a deprecated alias).
+
+This repo (renamed from `alpatrade`) is the platform base. It currently holds the **equities /
+Alpaca** vertical; per the migration plan it is being consolidated into a single monorepo that
+also absorbs crypto (rl-agent-swarm), FX/macro (macrohero), prediction markets (polytrade), and
+equities research (alpha-agents) behind one `engine/` + `verticals/` structure. The
+architecture below describes the **current** (equities-only) code; the engine extraction and
+vertical merges land in later phases.
 
 ## Stack
 
@@ -12,7 +20,7 @@ AlpaTrade — trading strategy backtester, paper trader, and AI research CLI pow
 - **FastHTML** web UI (`web_app.py`, port 5002)
 - **FastAPI** REST server (`api_app.py`, port 5001)
 - **AG-UI Chat** (`agui_app.py`, port 5003) — pydantic-ai agent (XAI Grok-3-mini) with WebSocket streaming
-- **Rich CLI** (entry point: `alpatrade.py` → `tui/pt_cli.py` → `tui/command_processor.py`)
+- **Rich CLI** (entry point: `cli.py` → `tui/pt_cli.py` → `tui/command_processor.py`; console scripts `assethero` / `alpatrade`)
 - **PostgreSQL** with `alpatrade` schema, accessed via SQLAlchemy (`utils/db/db_pool.py`)
 - **Config**: `config/parameters.yaml` (strategy params), `.env` (API keys)
 
@@ -23,7 +31,7 @@ AlpaTrade — trading strategy backtester, paper trader, and AI research CLI pow
 uv sync
 
 # Run the CLI
-uv run python alpatrade.py
+uv run python cli.py
 
 # Run the AG-UI Chat (port 5003)
 uv run uvicorn agui_app:app --host 0.0.0.0 --port 5003 --reload
@@ -59,7 +67,7 @@ Run the regression suite after significant changes to verify nothing is broken.
 Four entry points share the same backend:
 
 ```
-CLI (alpatrade.py) ──┐
+CLI (cli.py) ──┐
 AG-UI Chat (agui_app.py) ──┤──→ CommandProcessor / Orchestrator ──→ Agents ──→ DB + Alpaca + Market Data
 Web UI (web_app.py) ──┤
 REST API (api_app.py) ──┘
@@ -67,7 +75,7 @@ REST API (api_app.py) ──┘
 
 ### Command Flow
 
-1. **CLI**: `alpatrade.py` → `tui/pt_cli.py` (prompt_toolkit REPL) → `tui/command_processor.py` dispatches commands
+1. **CLI**: `cli.py` → `tui/pt_cli.py` (prompt_toolkit REPL) → `tui/command_processor.py` dispatches commands
 2. **AG-UI**: `agui_app.py` intercepts CLI commands via `_CLI_BASES`/`_CLI_EXACT` sets, routes to `CommandProcessor`; free-form text goes to LangGraph agent with `StructuredTool` wrappers
 3. **Web/API**: route handlers call `Orchestrator` or `CommandProcessor` directly
 
@@ -129,8 +137,12 @@ Connection pool: `utils/db/db_pool.py` → `DatabasePool` with `get_session()` c
 ## Secrets Policy
 
 **NEVER copy, persist, log, or document actual secret values.** Reference by variable name only.
+- Do not write secret values into source, docs, markdown, YAML, notebooks, or tool output
+- Do not include secrets in commit messages, comments, or debug output; never hardcode keys
 - **XAI_API_KEY** especially sensitive — a prior key was leaked via GitHub and revoked
-- Before committing, verify no secrets appear in `git diff` output
+- Before committing, verify no secrets appear in `git diff`; run `scripts/verify_no_secrets.sh`
+  (also wired as a pre-commit gate). If a secret is ever committed, purge it from history with
+  `git-filter-repo` immediately.
 
 ### Required Environment Variables (.env)
 

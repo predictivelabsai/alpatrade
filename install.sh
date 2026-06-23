@@ -1,9 +1,9 @@
 #!/bin/bash
-# AlpaTrade installer
-# Usage: curl -fsSL https://alpatrade.chat/install.sh | bash
+# AssetHero installer
+# Usage: curl -fsSL https://assethero.chat/install.sh | bash
 set -e
 
-echo "==> Installing AlpaTrade..."
+echo "==> Installing AssetHero..."
 
 # Install uv if not present
 if ! command -v uv &>/dev/null; then
@@ -12,11 +12,11 @@ if ! command -v uv &>/dev/null; then
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
-# Install alpatrade via uv tool (isolated venv, no system pollution)
-uv tool install alpatrade
+# Install assethero via uv tool (isolated venv, no system pollution)
+uv tool install assethero
 
 echo ""
 echo "==> Installed! Run:"
 echo ""
-echo "    alpatrade"
+echo "    assethero"
 echo ""
