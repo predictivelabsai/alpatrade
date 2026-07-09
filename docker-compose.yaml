@@ -54,6 +54,8 @@ services:
       start_period: 15s
     restart: unless-stopped
 
+  # Merged single FastHTML app (landing + auth + chat + guide + voice).
+  # Serves alpatrade.chat via `python main.py` on port 5003.
   agui:
     build:
       context: .
@@ -61,6 +63,7 @@ services:
     ports:
       - "9003:5003"
     environment:
+      - ASSETHERO_WEB_PORT=5003
       - DATABASE_URL=${DATABASE_URL}
       - API_URL=https://api.alpatrade.chat
       - ALPACA_PAPER_API_KEY=${ALPACA_PAPER_API_KEY}
@@ -70,6 +73,8 @@ services:
       - EODHD_API_KEY=${EODHD_API_KEY:-}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
       - JWT_SECRET=${JWT_SECRET:-}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
     depends_on:
       api:
         condition: service_healthy
