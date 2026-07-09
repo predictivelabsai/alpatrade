@@ -1748,18 +1748,17 @@ def _left_pane(session):
 # ---------------------------------------------------------------------------
 
 def _right_pane():
-    """Build the right pane: thinking trace + artifacts + details."""
+    """Build the right pane: Market News (default) + agent Trace, tabbed."""
     return Div(
         Div(
-            H3("Trace"),
+            H3("Market"),
             Div(
                 Button(
-                    "Clear",
+                    "↻",
                     cls="close-trace-btn",
-                    onclick="document.getElementById('trace-content').innerHTML="
-                    "'<div style=\"color:#475569;font-style:italic\">"
-                    "Tool calls and reasoning will appear here.</div>';",
-                    style="margin-right: 0.5rem; font-size: 0.7rem;",
+                    title="Refresh news",
+                    onclick="loadNews(true)",
+                    style="margin-right: 0.5rem; font-size: 0.8rem;",
                 ),
                 Button("x", cls="close-trace-btn", onclick="toggleRightPane()"),
                 style="display: flex; align-items: center;",
@@ -1767,14 +1766,22 @@ def _right_pane():
             cls="right-header",
         ),
         Div(
-            Span("Trace", cls="right-tab active"),
+            Span("News", cls="right-tab active", id="tab-news",
+                 onclick="showRightTab('news')"),
+            Span("Trace", cls="right-tab", id="tab-trace",
+                 onclick="showRightTab('trace')"),
             cls="right-tabs",
         ),
         Div(
             Div(
+                Div("Loading market news…", style="color:#475569;font-style:italic;"),
+                id="news-content",
+            ),
+            Div(
                 Div("Tool calls and reasoning will appear here during agent runs.",
                     style="color: #475569; font-style: italic;"),
                 id="trace-content",
+                style="display:none;",
             ),
             cls="right-content",
         ),
@@ -1813,10 +1820,47 @@ function fillChat(cmd) {
     }
 }
 
-function showTab(tab) {
+/* Switch between the News and Trace tabs in the right pane */
+function showRightTab(tab) {
+    var news = document.getElementById('news-content');
     var trace = document.getElementById('trace-content');
-    if (trace) trace.style.display = 'flex';
+    var tabNews = document.getElementById('tab-news');
+    var tabTrace = document.getElementById('tab-trace');
+    var isNews = (tab === 'news');
+    if (news) news.style.display = isNews ? 'block' : 'none';
+    if (trace) trace.style.display = isNews ? 'none' : 'block';
+    if (tabNews) tabNews.classList.toggle('active', isNews);
+    if (tabTrace) tabTrace.classList.toggle('active', !isNews);
 }
+
+/* Load market news into the News tab (cached unless force=true) */
+window._newsLoaded = false;
+function loadNews(force) {
+    var el = document.getElementById('news-content');
+    if (!el) return;
+    if (window._newsLoaded && !force) return;
+    el.innerHTML = '<div style="color:#475569;font-style:italic;">Loading market news…</div>';
+    fetch('/news').then(function(r){ return r.text(); }).then(function(md){
+        el.innerHTML = (window.marked ? marked.parse(md) : md);
+        window._newsLoaded = true;
+    }).catch(function(e){
+        el.innerHTML = '<div style="color:#ef4444;">Could not load news: ' + e + '</div>';
+    });
+}
+
+/* A trace arrived — surface the Trace tab so streaming is visible */
+function showTab(tab) {
+    showRightTab('trace');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    /* Open the right pane and load news by default */
+    var layout = document.querySelector('.app-layout');
+    if (layout && !layout.classList.contains('right-open')) {
+        layout.classList.add('right-open');
+    }
+    loadNews(false);
+});
 
 /* renderChart is a no-op — charts are rendered inline in chat only */
 function renderChart(chartJson) {}
@@ -1860,7 +1904,7 @@ def get(session, new: str = "", thread: str = ""):
                 Div(
                     H2("AlpaTrade Chat"),
                     Button(
-                        "Trace",
+                        "News",
                         cls="toggle-trace-btn",
                         onclick="toggleRightPane()",
                     ),
@@ -1870,10 +1914,24 @@ def get(session, new: str = "", thread: str = ""):
                 cls="center-pane",
             ),
             _right_pane(),
-            cls="app-layout",
+            cls="app-layout right-open",
         ),
         Script(LAYOUT_JS),
     )
+
+
+# ---------------------------------------------------------------------------
+# Market news feed (right-pane News tab)
+# ---------------------------------------------------------------------------
+
+@rt("/news")
+def get(ticker: str = ""):
+    """Return market news as markdown (rendered client-side via marked.js)."""
+    try:
+        from utils.market_research_util import MarketResearch
+        return MarketResearch().news(ticker=(ticker.upper() or None), limit=12)
+    except Exception as e:  # noqa: BLE001
+        return f"Could not load news: {e}"
 
 
 # ---------------------------------------------------------------------------

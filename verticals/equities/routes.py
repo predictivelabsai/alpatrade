@@ -115,7 +115,7 @@ def _dashboard(user):
     else:
         center.append(Div(H3("Recent runs"), _runs_table(runs), cls="card"))
     return page("equities", NAV, *center, user=user, active_nav="/equities",
-                title="AssetHero · Equities", rail_chips=RAIL_CHIPS)
+                title="AlpaTrade · Equities", rail_chips=RAIL_CHIPS)
 
 
 def _backtest_form(user, result_block=None):
@@ -146,7 +146,7 @@ def _backtest_form(user, result_block=None):
     if result_block is not None:
         center.append(result_block)
     return page("equities", NAV, *center, user=user, active_nav="/equities/backtest",
-                title="AssetHero · Backtest", rail_chips=RAIL_CHIPS)
+                title="AlpaTrade · Backtest", rail_chips=RAIL_CHIPS)
 
 
 def _teaching_five_block(res):
@@ -227,7 +227,7 @@ def register(app, rt, current_user):
         center.append(Div(f"Runs unavailable: {err}", cls="notice err") if err
                       else Div(_runs_table(runs), cls="card"))
         return page("equities", NAV, *center, user=user, active_nav="/equities/runs",
-                    title="AssetHero · Runs", rail_chips=RAIL_CHIPS)
+                    title="AlpaTrade · Runs", rail_chips=RAIL_CHIPS)
 
     @app.post("/equities/assistant")
     async def equities_assistant(session, request):

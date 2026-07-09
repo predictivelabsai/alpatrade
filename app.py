@@ -20,11 +20,46 @@ from starlette.responses import RedirectResponse  # noqa: E402
 
 from engine.auth import (  # noqa: E402
     authenticate, create_user, get_user_by_id, get_user_by_email, get_user_accounts,
+    get_user_by_google_id, link_google_id,
 )
 from engine.web.layout import auth_page, page  # noqa: E402
+from engine.web import landing  # noqa: E402
 import verticals.equities.routes as equities  # noqa: E402
 
 app, rt = fast_app(pico=False)
+
+# --------------------------------------------------------------------------- oauth
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+_oauth_enabled = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)
+
+_authlib_oauth = None
+if _oauth_enabled:
+    from authlib.integrations.starlette_client import OAuth as AuthlibOAuth  # noqa: E402
+
+    _authlib_oauth = AuthlibOAuth()
+    _authlib_oauth.register(
+        name="google",
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET,
+        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+        client_kwargs={"scope": "openid email profile"},
+    )
+
+
+_GOOGLE_SVG = ('<svg width="18" height="18" viewBox="0 0 18 18" style="display:inline-block;'
+               'vertical-align:middle;margin-right:8px"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 '
+               '1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/><path '
+               'd="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 '
+               '8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 '
+               '8.996 0 000 9s.38 1.572.957 3.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 '
+               '3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" '
+               'fill="#EA4335"/></svg>')
+
+
+def _google_btn(label):
+    return A(NotStr(_GOOGLE_SVG), label, href="/login", cls="btn ghost",
+             style="width:100%;display:flex;align-items:center;justify-content:center;text-decoration:none")
 
 
 def current_user(session):
@@ -38,7 +73,11 @@ def current_user(session):
 
 
 # --------------------------------------------------------------------------- auth
-def _login_form(error=None, email=""):
+def _or_divider():
+    return Div("or", cls="muted", style="text-align:center;margin:.9rem 0;font-size:.8rem")
+
+
+def _signin_form(error=None, email=""):
     rows = [
         Div(Label("Email"), Input(name="email", type="email", value=email), cls="formrow"),
         Div(Label("Password"), Input(name="password", type="password"), cls="formrow"),
@@ -47,10 +86,13 @@ def _login_form(error=None, email=""):
     blocks = []
     if error:
         blocks.append(Div(error, cls="notice err"))
-    blocks.append(Form(*rows, method="post", action="/login"))
+    if _oauth_enabled:
+        blocks.append(_google_btn("Continue with Google"))
+        blocks.append(_or_divider())
+    blocks.append(Form(*rows, method="post", action="/signin"))
     blocks.append(P(A("Create an account", href="/register"), cls="muted",
                     style="text-align:center;margin-top:1rem"))
-    return auth_page(*blocks, title="AssetHero · Login")
+    return auth_page(*blocks, title="AlpaTrade · Sign in")
 
 
 def _register_form(error=None, email=""):
@@ -63,21 +105,24 @@ def _register_form(error=None, email=""):
     blocks = []
     if error:
         blocks.append(Div(error, cls="notice err"))
+    if _oauth_enabled:
+        blocks.append(_google_btn("Sign up with Google"))
+        blocks.append(_or_divider())
     blocks.append(Form(*rows, method="post", action="/register"))
-    blocks.append(P(A("Back to login", href="/login"), cls="muted",
+    blocks.append(P(A("Back to sign in", href="/signin"), cls="muted",
                     style="text-align:center;margin-top:1rem"))
-    return auth_page(*blocks, title="AssetHero · Register")
+    return auth_page(*blocks, title="AlpaTrade · Register")
 
 
-@rt("/login", methods=["GET"])
-def login_get(session):
+@rt("/signin", methods=["GET"])
+def signin_get(session):
     if current_user(session):
         return RedirectResponse("/equities", status_code=303)
-    return _login_form()
+    return _signin_form()
 
 
-@app.post("/login")
-async def login_post(session, request):
+@app.post("/signin")
+async def signin_post(session, request):
     form = await request.form()
     email = (form.get("email") or "").strip()
     pw = form.get("password") or ""
@@ -86,7 +131,7 @@ async def login_post(session, request):
     except Exception:  # noqa: BLE001
         user = None
     if not user:
-        return _login_form(error="Invalid email or password.", email=email)
+        return _signin_form(error="Invalid email or password.", email=email)
     session["user_id"] = user["user_id"]
     return RedirectResponse("/equities", status_code=303)
 
@@ -119,19 +164,75 @@ async def register_post(session, request):
 @rt("/logout")
 def logout(session):
     session.pop("user_id", None)
-    return RedirectResponse("/login", status_code=303)
+    return RedirectResponse("/", status_code=303)
 
 
+# ------------------------------------------------------------------- google oauth
+if _oauth_enabled:
+    @rt("/login")
+    async def google_login(request):
+        scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+        host = request.headers.get("host", request.url.netloc)
+        redirect_uri = f"{scheme}://{host}/auth/callback"
+        return await _authlib_oauth.google.authorize_redirect(request, redirect_uri)
+
+    @rt("/auth/callback")
+    async def auth_callback(request, session):
+        try:
+            token = await _authlib_oauth.google.authorize_access_token(request)
+        except Exception:  # noqa: BLE001
+            return RedirectResponse("/signin?error=google", status_code=303)
+        userinfo = token.get("userinfo") or await _authlib_oauth.google.userinfo(token=token)
+        google_id = userinfo.get("sub", "")
+        email = userinfo.get("email", "")
+        name = userinfo.get("name", "")
+        if not email:
+            return RedirectResponse("/signin?error=google", status_code=303)
+        user = get_user_by_google_id(google_id) if google_id else None
+        if not user:
+            user = get_user_by_email(email)
+            if user and google_id:
+                link_google_id(email, google_id)
+            elif not user:
+                user = create_user(email=email, google_id=google_id, display_name=name)
+        if not user:
+            return RedirectResponse("/signin?error=google", status_code=303)
+        session["user_id"] = user["user_id"]
+        return RedirectResponse("/equities", status_code=303)
+else:
+    @rt("/login")
+    def google_login_stub():
+        return RedirectResponse("/signin", status_code=303)
+
+
+# --------------------------------------------------------------------- marketing
 @rt("/")
 def root(session):
-    return RedirectResponse("/equities" if current_user(session) else "/login", status_code=303)
+    if current_user(session):
+        return RedirectResponse("/equities", status_code=303)
+    return landing.home_page()
+
+
+@rt("/platform")
+def platform_page():
+    return landing.platform_page()
+
+
+@rt("/agents")
+def agents_page():
+    return landing.agents_page()
+
+
+@rt("/pricing")
+def pricing_page():
+    return landing.pricing_page()
 
 
 @rt("/profile")
 def profile(session):
     user = current_user(session)
     if not user:
-        return RedirectResponse("/login", status_code=303)
+        return RedirectResponse("/signin", status_code=303)
     try:
         accounts = get_user_accounts(user["user_id"])
     except Exception:  # noqa: BLE001
@@ -147,14 +248,14 @@ def profile(session):
         ),
     ]
     return page("equities", nav, *body, user=user, active_nav="/profile",
-                title="AssetHero · Profile")
+                title="AlpaTrade · Profile")
 
 
 # ----------------------------------------------------------------- vertical stubs
 def _stub(vertical, label, session):
     user = current_user(session)
     if not user:
-        return RedirectResponse("/login", status_code=303)
+        return RedirectResponse("/signin", status_code=303)
     body = [
         H2(label),
         Div(P(f"The {label} vertical is coming in a later phase of the assethero merge."),
@@ -162,7 +263,7 @@ def _stub(vertical, label, session):
             cls="card"),
     ]
     return page(vertical, [("Overview", f"/{vertical}")], *body, user=user,
-                title=f"AssetHero · {label}")
+                title=f"AlpaTrade · {label}")
 
 
 def _make_stub(vertical, label):

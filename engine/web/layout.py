@@ -124,7 +124,7 @@ def topbar(active: str, user: Optional[dict]):
     else:
         right = Div(A("Login", href="/login"), cls="usermenu")
     return Div(
-        Div(NotStr('Asset<span class="h">Hero</span>'), cls="brand"),
+        Div(NotStr('Alpa<span class="h">Trade</span>'), cls="brand"),
         switcher(active),
         right,
         cls="topbar",
@@ -157,7 +157,7 @@ def ai_rail(active: str, chips=None, title="AI Assistant"):
 
 
 def page(active_vertical: str, nav_items, *content, user: Optional[dict] = None,
-         active_nav: str = "", title: str = "AssetHero", right_rail=None,
+         active_nav: str = "", title: str = "AlpaTrade", right_rail=None,
          rail_chips=None):
     """Full 3-pane page. `right_rail` overrides the default AI rail when provided."""
     rail = right_rail if right_rail is not None else ai_rail(active_vertical, rail_chips)
@@ -178,12 +178,12 @@ def page(active_vertical: str, nav_items, *content, user: Optional[dict] = None,
     )
 
 
-def auth_page(*content, title="AssetHero"):
+def auth_page(*content, title="AlpaTrade"):
     """Minimal centered shell for login/register (no nav/rail)."""
     return (
         Title(title),
         Style(LAYOUT_CSS),
-        Div(Div(NotStr('Asset<span class="h">Hero</span>'), cls="brand",
+        Div(Div(NotStr('Alpa<span class="h">Trade</span>'), cls="brand",
                 style="font-size:1.6rem;text-align:center;margin-bottom:1.2rem"),
             *content, cls="authwrap"),
     )
