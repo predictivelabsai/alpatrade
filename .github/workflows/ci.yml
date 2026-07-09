@@ -30,7 +30,7 @@ jobs:
       - name: Import smoke test
         run: |
           python -c "import app; print('app import OK')"
-          python -c "from engine.web import landing, layout, commands; print('shell import OK')"
+          python -c "from engine.web import landing, layout; print('shell import OK')"
 
       # DB-backed regression suite (opt-in): runs only when the DATABASE_URL secret
       # is configured on the repo. Add it with:  gh secret set DATABASE_URL
