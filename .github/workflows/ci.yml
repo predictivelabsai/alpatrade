@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[web]"
+          pip install authlib
+
+      - name: Byte-compile (syntax check)
+        run: python -m compileall -q app.py api.py engine verticals tui utils agents
+
+      - name: Import smoke test
+        run: |
+          python -c "import app; print('app import OK')"
+          python -c "from engine.web import landing, layout, commands; print('shell import OK')"
+
+      # DB-backed regression suite (opt-in): runs only when the DATABASE_URL secret
+      # is configured on the repo. Add it with:  gh secret set DATABASE_URL
+      - name: Regression suite (if DB secret present)
+        if: ${{ env.DATABASE_URL != '' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ALPACA_PAPER_API_KEY: ${{ secrets.ALPACA_PAPER_API_KEY }}
+          ALPACA_PAPER_SECRET_KEY: ${{ secrets.ALPACA_PAPER_SECRET_KEY }}
+          MASSIVE_API_KEY: ${{ secrets.MASSIVE_API_KEY }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: python -m pytest tests/regression_suite.py -q

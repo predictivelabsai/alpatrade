@@ -1,0 +1,34 @@
+name: Deploy (Coolify)
+
+# Triggers a Coolify redeploy after CI succeeds on main.
+# Requires one repo secret:  COOLIFY_WEBHOOK_URL  (Coolify app → Webhooks → Deploy)
+# Optional:                   COOLIFY_TOKEN        (Bearer token, if the webhook needs one)
+# If COOLIFY_WEBHOOK_URL is unset the job no-ops, so this file is safe to merge early.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Trigger Coolify deploy
+        env:
+          WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+          TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then
+            echo "COOLIFY_WEBHOOK_URL not set — skipping deploy (configure it to enable CD)."
+            exit 0
+          fi
+          if [ -n "$TOKEN" ]; then
+            curl -fsSL -X GET -H "Authorization: Bearer $TOKEN" "$WEBHOOK"
+          else
+            curl -fsSL -X GET "$WEBHOOK"
+          fi
+          echo "Coolify deploy triggered."
