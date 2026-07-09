@@ -454,8 +454,14 @@ app, rt = fast_app(
     hdrs=[
         Script(src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"),
         Script(src="https://cdn.plot.ly/plotly-2.35.2.min.js"),
+        Script(src="/static/voice.js"),
     ],
 )
+
+# Voice mode: /ws/voice proxy to the x.ai realtime agent (with the get_positions tool).
+from engine.voice import register_voice_routes  # noqa: E402
+
+register_voice_routes(app)
 
 # ---------------------------------------------------------------------------
 # CLI command interceptor — routes agent:*, trades, runs, news:* etc. to
@@ -1874,6 +1880,22 @@ function downloadChart(chartDiv, filename) {
 /* Chart marker cleanup is handled by extractAndRenderCharts() in renderMarkdown() */
 """
 
+VOICE_CSS = """
+.voice-btn.active { background:#DC2626 !important; color:#fff !important; border-color:#DC2626 !important; }
+.voice-panel { display:flex; align-items:center; gap:12px; margin:0 1rem .5rem; padding:10px 14px;
+  border:1px solid #1E293B; border-radius:12px; background:#111A2E; }
+.voice-orb { width:12px; height:12px; border-radius:50%; background:#9CA3AF; flex-shrink:0; }
+.voice-panel[data-state="listening"] .voice-orb { background:#3B82F6; animation:voicePulse 1.2s infinite; }
+.voice-panel[data-state="speaking"]  .voice-orb { background:#10B981; animation:voicePulse .8s infinite; }
+.voice-panel[data-state="thinking"]  .voice-orb { background:#F59E0B; animation:voicePulse 1s infinite; }
+.voice-panel[data-state="error"]     .voice-orb { background:#DC2626; }
+@keyframes voicePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.6)} }
+.voice-status { flex:1; font-size:13px; color:#E5E7EB; font-weight:500; }
+.voice-stop { padding:5px 12px; font-size:12px; font-weight:600; color:#fff; background:#334155;
+  border:none; border-radius:8px; cursor:pointer; }
+.voice-stop:hover { background:#475569; }
+"""
+
 
 # ---------------------------------------------------------------------------
 # Routes
@@ -1898,11 +1920,20 @@ def get(session, new: str = "", thread: str = ""):
     return (
         Title("AlpaTrade"),
         Style(LAYOUT_CSS),
+        Style(VOICE_CSS),
         Div(
             _left_pane(session),
             Div(
                 Div(
                     H2("AlpaTrade Chat"),
+                    Button(
+                        "🎙 Voice",
+                        id="voice-btn",
+                        cls="toggle-trace-btn voice-btn",
+                        onclick="toggleVoice()",
+                        title="Talk to AlpaTrade — ask for your positions",
+                        type="button",
+                    ),
                     Button(
                         "News",
                         cls="toggle-trace-btn",
