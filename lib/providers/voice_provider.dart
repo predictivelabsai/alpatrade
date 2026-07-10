@@ -96,16 +96,15 @@ class VoiceNotifier extends Notifier<VoiceUiState> {
         state = state.copyWith(phase: VoicePhase.thinking, label: 'Thinking…');
       case 'tool':
         state = state.copyWith(phase: VoicePhase.thinking, label: 'Checking…');
+      case 'user_partial':
+        if ((e.text ?? '').isNotEmpty) chat.voiceUserPartial(e.text!);
       case 'user_transcript':
-        if ((e.text ?? '').trim().isNotEmpty) {
-          chat.appendVoiceMessage('user', e.text!);
-        }
+        chat.voiceUserFinal(e.text ?? '');
       case 'assistant_delta':
         state = state.copyWith(phase: VoicePhase.speaking, label: 'Speaking…');
+        if ((e.text ?? '').isNotEmpty) chat.voiceAssistantDelta(e.text!);
       case 'assistant_done':
-        if ((e.text ?? '').trim().isNotEmpty) {
-          chat.appendVoiceMessage('assistant', e.text!);
-        }
+        chat.voiceAssistantFinal(e.text);
       case 'done':
         state = state.copyWith(
           phase: VoicePhase.listening,

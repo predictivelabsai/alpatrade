@@ -59,11 +59,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     final chatState = ref.watch(chatProvider);
     final voice = ref.watch(voiceProvider);
-    final hasMessages = chatState.messages.isNotEmpty;
+    final hasContent =
+        chatState.messages.isNotEmpty ||
+        chatState.isStreaming ||
+        chatState.liveUserText != null ||
+        chatState.liveAssistantText != null;
 
     ref.listen(chatProvider, (prev, next) {
       if (prev?.messages.length != next.messages.length ||
-          prev?.streamBuffer != next.streamBuffer) {
+          prev?.streamBuffer != next.streamBuffer ||
+          prev?.liveUserText != next.liveUserText ||
+          prev?.liveAssistantText != next.liveAssistantText) {
         _scrollToBottom();
       }
     });
@@ -78,7 +84,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ],
         ),
         actions: [
-          if (hasMessages)
+          if (chatState.messages.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.add_comment_outlined),
               tooltip: 'New chat',
@@ -89,7 +95,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       body: Column(
         children: [
           Expanded(
-            child: hasMessages || chatState.isStreaming
+            child: hasContent
                 ? _buildMessageList(chatState)
                 : WelcomeMessage(
                     onPromptTap: (prompt) =>
@@ -112,55 +118,68 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildMessageList(ChatState chatState) {
-    final extra =
-        (chatState.isStreaming ? 1 : 0) + (chatState.error != null ? 1 : 0);
+    final items = <Widget>[
+      for (final m in chatState.messages) ChatMessageBubble(message: m),
+    ];
+
+    // Text-chat streaming (tools + partial answer).
+    if (chatState.isStreaming) {
+      items.add(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final tool in chatState.activeToolCalls)
+              ToolExecutionCard(toolCall: tool, isActive: !tool.done),
+            if (chatState.streamBuffer.isNotEmpty)
+              StreamingText(text: chatState.streamBuffer),
+            if (chatState.streamBuffer.isEmpty &&
+                chatState.activeToolCalls.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.accent,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Thinking…',
+                      style: TextStyle(fontSize: 13, color: AppTheme.inkDim),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
+    // Live voice transcript — user speech, then the agent typing its reply back.
+    if (chatState.liveUserText != null) {
+      items.add(
+        ChatMessageBubble(
+          message: ChatMessage(role: 'user', content: chatState.liveUserText!),
+        ),
+      );
+    }
+    if (chatState.liveAssistantText != null) {
+      items.add(StreamingText(text: chatState.liveAssistantText!));
+    }
+
+    if (chatState.error != null) {
+      items.add(_ErrorCard(message: chatState.error!));
+    }
+
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: chatState.messages.length + extra,
-      itemBuilder: (context, index) {
-        if (chatState.error != null &&
-            index ==
-                chatState.messages.length + (chatState.isStreaming ? 1 : 0)) {
-          return _ErrorCard(message: chatState.error!);
-        }
-
-        if (chatState.isStreaming && index == chatState.messages.length) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (final tool in chatState.activeToolCalls)
-                ToolExecutionCard(toolCall: tool, isActive: !tool.done),
-              if (chatState.streamBuffer.isNotEmpty)
-                StreamingText(text: chatState.streamBuffer),
-              if (chatState.streamBuffer.isEmpty &&
-                  chatState.activeToolCalls.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppTheme.accent,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Thinking…',
-                        style: TextStyle(fontSize: 13, color: AppTheme.inkDim),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          );
-        }
-
-        return ChatMessageBubble(message: chatState.messages[index]);
-      },
+      itemCount: items.length,
+      itemBuilder: (context, index) => items[index],
     );
   }
 }

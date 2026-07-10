@@ -91,15 +91,50 @@ class ChatNotifier extends Notifier<ChatState> {
     }
   }
 
-  /// Append a transcript line produced by the voice session so voice and text
-  /// share one conversation view.
-  void appendVoiceMessage(String role, String content) {
-    if (content.trim().isEmpty) return;
+  // ---- Voice transcript (streamed live, then finalized into messages) ----
+
+  /// Live (in-progress) user speech transcript.
+  void voiceUserPartial(String text) {
+    state = state.copyWith(liveUserText: text);
+  }
+
+  /// Finalize the user's spoken turn into a permanent message.
+  void voiceUserFinal(String text) {
+    if (text.trim().isEmpty) {
+      state = state.copyWith(clearLiveUser: true);
+      return;
+    }
     state = state.copyWith(
       messages: [
         ...state.messages,
-        ChatMessage(role: role, content: content),
+        ChatMessage(role: 'user', content: text),
       ],
+      clearLiveUser: true,
+    );
+  }
+
+  /// Accumulate the assistant's spoken reply so it types back in real time.
+  void voiceAssistantDelta(String delta) {
+    state = state.copyWith(
+      liveAssistantText: (state.liveAssistantText ?? '') + delta,
+    );
+  }
+
+  /// Finalize the assistant's spoken turn into a permanent message.
+  void voiceAssistantFinal(String? text) {
+    final content = (text != null && text.trim().isNotEmpty)
+        ? text
+        : (state.liveAssistantText ?? '');
+    if (content.trim().isEmpty) {
+      state = state.copyWith(clearLiveAssistant: true);
+      return;
+    }
+    state = state.copyWith(
+      messages: [
+        ...state.messages,
+        ChatMessage(role: 'assistant', content: content, agentSlug: 'voice'),
+      ],
+      clearLiveAssistant: true,
     );
   }
 

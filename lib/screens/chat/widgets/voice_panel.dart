@@ -1,38 +1,54 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:alpatrade/config/theme.dart';
 import 'package:alpatrade/providers/voice_provider.dart';
 
-/// Slim voice status strip shown above the input bar while a voice session is
-/// active. Mirrors the web voice.js panel (orb + status + End button).
+/// Voice status strip shown above the composer while a voice session is active.
+/// Mirrors the alpatrade web voice bar: an animated 5-bar waveform + status +
+/// "End voice", colored per state (listening=blue, speaking=green,
+/// thinking=amber, error=red).
 class VoicePanel extends ConsumerWidget {
   const VoicePanel({super.key});
+
+  static const _blue = Color(0xFF2563EB);
+  static const _amber = Color(0xFFF59E0B);
+
+  static Color _colorFor(VoicePhase phase) => switch (phase) {
+    VoicePhase.listening => _blue,
+    VoicePhase.speaking => AppTheme.accent,
+    VoicePhase.thinking => _amber,
+    VoicePhase.error => AppTheme.loss,
+    VoicePhase.connecting => _blue,
+    VoicePhase.idle => AppTheme.inkDim,
+  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final voice = ref.watch(voiceProvider);
     if (voice.phase == VoicePhase.idle) return const SizedBox.shrink();
 
+    final color = _colorFor(voice.phase);
     final isError = voice.phase == VoicePhase.error;
+    final animate =
+        voice.phase == VoicePhase.listening ||
+        voice.phase == VoicePhase.speaking ||
+        voice.phase == VoicePhase.thinking;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: isError
-            ? AppTheme.loss.withValues(alpha: 0.08)
-            : AppTheme.accentDim.withValues(alpha: 0.5),
+        color: color.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isError ? AppTheme.loss : AppTheme.accent,
-          width: 0.6,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.7), width: 0.8),
       ),
       child: Row(
         children: [
-          _Orb(phase: voice.phase),
-          const SizedBox(width: 10),
+          _Waveform(color: color, animate: animate),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,7 +59,7 @@ class VoicePanel extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isError ? AppTheme.loss : AppTheme.accentDeep,
+                    color: color,
                   ),
                 ),
                 if (voice.error != null)
@@ -60,7 +76,7 @@ class VoicePanel extends ConsumerWidget {
           TextButton(
             onPressed: () => ref.read(voiceProvider.notifier).stop(),
             style: TextButton.styleFrom(
-              foregroundColor: isError ? AppTheme.loss : AppTheme.accentDeep,
+              foregroundColor: color,
               padding: const EdgeInsets.symmetric(horizontal: 8),
               minimumSize: const Size(0, 32),
             ),
@@ -72,24 +88,45 @@ class VoicePanel extends ConsumerWidget {
   }
 }
 
-class _Orb extends StatefulWidget {
-  final VoicePhase phase;
-  const _Orb({required this.phase});
+/// Five bars bouncing between 6 and 22 px on a 1 s cycle with staggered
+/// phase — the Flutter equivalent of the web `voiceBounce` keyframe.
+class _Waveform extends StatefulWidget {
+  final Color color;
+  final bool animate;
+
+  const _Waveform({required this.color, required this.animate});
 
   @override
-  State<_Orb> createState() => _OrbState();
+  State<_Waveform> createState() => _WaveformState();
 }
 
-class _OrbState extends State<_Orb> with SingleTickerProviderStateMixin {
-  late final AnimationController _c;
+class _WaveformState extends State<_Waveform>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1000),
+  );
+
+  static const _bars = 5;
+  static const _minH = 6.0;
+  static const _maxH = 22.0;
+  static const _delays = [0.0, 0.12, 0.24, 0.36, 0.48]; // seconds
 
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
+    if (widget.animate) _c.repeat();
+  }
+
+  @override
+  void didUpdateWidget(_Waveform old) {
+    super.didUpdateWidget(old);
+    if (widget.animate && !_c.isAnimating) {
+      _c.repeat();
+    } else if (!widget.animate && _c.isAnimating) {
+      _c.stop();
+      _c.value = 0;
+    }
   }
 
   @override
@@ -100,29 +137,41 @@ class _OrbState extends State<_Orb> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final color = switch (widget.phase) {
-      VoicePhase.error => AppTheme.loss,
-      VoicePhase.speaking => AppTheme.accent,
-      VoicePhase.thinking => AppTheme.accentDeep,
-      _ => AppTheme.accent,
-    };
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, _) {
-        final pulse =
-            widget.phase == VoicePhase.connecting ||
-                widget.phase == VoicePhase.error
-            ? 1.0
-            : 0.55 + _c.value * 0.45;
-        return Container(
-          width: 14,
-          height: 14,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color.withValues(alpha: pulse),
-          ),
-        );
-      },
+    return SizedBox(
+      height: _maxH,
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              for (var i = 0; i < _bars; i++) ...[
+                if (i > 0) const SizedBox(width: 3),
+                _bar(i),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _bar(int i) {
+    final double h;
+    if (widget.animate) {
+      final t = (_c.value + _delays[i]) % 1.0;
+      h = _minH + (_maxH - _minH) * math.sin(t * math.pi);
+    } else {
+      h = _minH;
+    }
+    return Container(
+      width: 3,
+      height: h,
+      decoration: BoxDecoration(
+        color: widget.color,
+        borderRadius: BorderRadius.circular(3),
+      ),
     );
   }
 }

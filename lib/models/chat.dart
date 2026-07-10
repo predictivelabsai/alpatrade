@@ -126,6 +126,11 @@ class ChatState {
   final List<ToolCall> activeToolCalls;
   final String? error;
 
+  /// Live voice transcript, streamed while a voice session speaks/listens.
+  /// Finalized lines move into [messages]; these hold the in-progress text.
+  final String? liveUserText;
+  final String? liveAssistantText;
+
   const ChatState({
     this.messages = const [],
     this.threadId,
@@ -134,6 +139,8 @@ class ChatState {
     this.streamBuffer = '',
     this.activeToolCalls = const [],
     this.error,
+    this.liveUserText,
+    this.liveAssistantText,
   });
 
   factory ChatState.initial() => const ChatState();
@@ -146,6 +153,10 @@ class ChatState {
     String? streamBuffer,
     List<ToolCall>? activeToolCalls,
     String? error,
+    String? liveUserText,
+    bool clearLiveUser = false,
+    String? liveAssistantText,
+    bool clearLiveAssistant = false,
   }) => ChatState(
     messages: messages ?? this.messages,
     threadId: threadId ?? this.threadId,
@@ -154,5 +165,9 @@ class ChatState {
     streamBuffer: streamBuffer ?? this.streamBuffer,
     activeToolCalls: activeToolCalls ?? this.activeToolCalls,
     error: error,
+    liveUserText: clearLiveUser ? null : (liveUserText ?? this.liveUserText),
+    liveAssistantText: clearLiveAssistant
+        ? null
+        : (liveAssistantText ?? this.liveAssistantText),
   );
 }
