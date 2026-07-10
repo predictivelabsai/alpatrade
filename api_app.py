@@ -995,7 +995,7 @@ def _is_broker_query(text: str) -> bool:
 
 @app.get("/chat")
 async def chat_stream(question: str, thread_id: str = "api_default"):
-    """SSE endpoint for streaming chat responses."""
+    """SSE endpoint for streaming chat responses (legacy)."""
     import json
 
     async def event_generator():
@@ -1009,6 +1009,58 @@ async def chat_stream(question: str, thread_id: str = "api_default"):
             yield f"data: {json.dumps(event)}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@app.post("/v2/chat", tags=["chat"])
+async def v2_chat(
+    request: Request,
+    user: Optional[Dict] = Depends(get_current_user),
+):
+    """Streaming chat for the mobile app — the SAME router as the web chat.
+
+    Auth: optional `Authorization: Bearer <JWT>` (authed users trade under their own
+    linked Alpaca account; anonymous falls back to the server's paper keys).
+
+    Body (JSON or form-encoded): `msg` (or `message`), `thread_id` (or `sid`).
+
+    Response: `text/event-stream` with named SSE events —
+      session · agent_route · token · tool_start · tool_end · error · done
+    (`data:` is JSON). This matches the web chat event contract.
+    """
+    import json as _json
+
+    msg, thread_id = "", "mobile_default"
+    if "application/json" in (request.headers.get("content-type") or ""):
+        try:
+            body = await request.json()
+        except Exception:  # noqa: BLE001
+            body = {}
+        msg = (body.get("msg") or body.get("message") or "").strip()
+        thread_id = body.get("thread_id") or body.get("sid") or thread_id
+    else:
+        form = await request.form()
+        msg = (form.get("msg") or form.get("message") or "").strip()
+        thread_id = form.get("thread_id") or form.get("sid") or thread_id
+
+    uid = str(user["user_id"]) if user and user.get("user_id") else None
+
+    from engine.ai.chat_stream import stream_chat_events, api_history
+    hist = api_history(f"{uid}:{thread_id}")
+
+    async def gen():
+        if not msg:
+            yield "event: done\ndata: {}\n\n"
+            return
+        try:
+            async for ev in stream_chat_events(msg, uid, thread_id, hist):
+                etype = ev.pop("type", "token")
+                yield f"event: {etype}\ndata: {_json.dumps(ev, default=str)}\n\n"
+        except Exception as e:  # noqa: BLE001
+            yield f"event: error\ndata: {_json.dumps({'message': str(e)})}\n\n"
+            yield "event: done\ndata: {}\n\n"
+
+    return StreamingResponse(gen(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 # ---------------------------------------------------------------------------
 # Serve install.sh

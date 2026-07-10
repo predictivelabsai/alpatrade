@@ -173,13 +173,14 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
 # ---------------------------------------------------------------------------
 # Center — the chat (header · messages · composer · suggestion cards below)
 # ---------------------------------------------------------------------------
+# Natural-language prompts — the router figures out the command/tool to run.
 _SUGGESTION_CARDS = [
-    "agent:backtest lookback:1m symbols:AAPL,TSLA",
-    "trades:paper",
-    "top:backtest",
-    "report:paper",
-    "news:TSLA",
-    "load:AAPL period:1y",
+    "Show me my positions",
+    "How large is my MSFT position?",
+    "What's my account balance and P&L?",
+    "Backtest buy-the-dip on AAPL and TSLA over the last month",
+    "What's the latest news on TSLA?",
+    "Which of my strategies performed best?",
 ]
 
 
@@ -187,13 +188,15 @@ def _welcome_hero():
     chips = [
         Button(Span("◆", cls="sugg-icon"), Span(c),
                cls="suggestion-chip", type="button", onclick=f"fillChat({c!r})")
-        for c in ("agent:backtest lookback:1m", "trades:paper", "top:backtest")
+        for c in ("Show me my positions", "What's the latest on TSLA?",
+                  "Backtest buy-the-dip on AAPL")
     ]
     return Div(
         Span("◆", cls="hero-mark"),
         Div("How can I help you trade?", cls="welcome-title"),
-        P("Ask about your runs, or type a command — e.g. "
-          "agent:backtest lookback:1m, trades:paper, top:backtest.",
+        P("Ask in plain English — I'll route it. Try "
+          "“show me my positions” or “backtest buy-the-dip on AAPL”. "
+          "Power users can still type commands like trades:paper.",
           cls="welcome-sub"),
         Div(*chips, cls="suggestions"),
         id="welcome-hero", cls="welcome-hero",
@@ -208,7 +211,7 @@ def _sample_cards():
         for c in _SUGGESTION_CARDS
     ]
     return Div(
-        Span("Try a command", cls="sample-cards-label"),
+        Span("Try a prompt", cls="sample-cards-label"),
         Div(*cards, cls="sample-cards-row"),
         id="sample-cards", cls="sample-cards",
     )
