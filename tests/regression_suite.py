@@ -823,6 +823,61 @@ class TestEndToEnd(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# 21. Voice AI — cross-check the realtime voice path vs the eval-covered tools
+# ---------------------------------------------------------------------------
+
+class TestVoice(unittest.TestCase):
+    """Voice mode (engine.voice) is a WS proxy to x.ai realtime with a get_positions
+    tool. It is not in the eval suite (audio path), so cross-check it here against the
+    same Alpaca positions data the chat `get_alpaca_positions` eval validates."""
+
+    def test_ws_route_registered(self):
+        from starlette.routing import WebSocketRoute
+        from engine.voice import register_voice_routes
+
+        class _App:
+            class _R:
+                routes = []
+            router = _R()
+        app = _App()
+        register_voice_routes(app)
+        paths = [r.path for r in app.router.routes if isinstance(r, WebSocketRoute)]
+        self.assertIn("/ws/voice", paths)
+
+    def test_positions_tool_schema(self):
+        from engine.voice import TOOLS, SESSION_UPDATE
+        names = [t.get("name") for t in TOOLS]
+        self.assertIn("get_positions", names)
+        # The realtime session must advertise the tool + audio modality.
+        self.assertIn("audio", SESSION_UPDATE["session"]["modalities"])
+        self.assertEqual(SESSION_UPDATE["session"]["tools"], TOOLS)
+
+    def test_voice_model_configured(self):
+        # Voice uses its own XAI_VOICE_MODEL (default grok-4-fast) — must be non-empty.
+        import engine.voice as v
+        self.assertTrue(v.MODEL, "voice model unset")
+
+    def test_positions_text_consistent_with_chat_tool(self):
+        """The spoken positions summary and the chat positions tool must agree on the
+        open-position count (both read the same Alpaca paper account)."""
+        if not os.getenv("ALPACA_PAPER_API_KEY"):
+            self.skipTest("ALPACA_PAPER_API_KEY not set")
+        from engine.voice import _get_positions_text
+        spoken = _get_positions_text()
+        self.assertIsInstance(spoken, str)
+        if spoken.startswith("I couldn't reach"):
+            self.skipTest("brokerage unreachable")
+        from engine.brokers.alpaca import AlpacaAPI
+        positions = AlpacaAPI(paper=True).get_positions() or []
+        if positions:
+            self.assertIn(f"{len(positions)} open positions", spoken)
+            # a real symbol should be read back in the spoken summary
+            self.assertIn(positions[0].get("symbol", "\0"), spoken)
+        else:
+            self.assertIn("no open positions", spoken)
+
+
+# ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
 
