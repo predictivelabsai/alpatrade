@@ -133,3 +133,6 @@ app.*.symbols
 
 # Flutter metadata
 .metadatatest-results/
+
+# Built APKs (distribute via web, not git)
+*.apk
