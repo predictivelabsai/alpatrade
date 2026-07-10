@@ -25,37 +25,9 @@ services:
       start_period: 15s
     restart: unless-stopped
 
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile.fasthtml
-    ports:
-      - "9002:5002"
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - API_URL=https://api.alpatrade.chat
-      - ALPACA_PAPER_API_KEY=${ALPACA_PAPER_API_KEY}
-      - ALPACA_PAPER_SECRET_KEY=${ALPACA_PAPER_SECRET_KEY}
-      - MASSIVE_API_KEY=${MASSIVE_API_KEY}
-      - XAI_API_KEY=${XAI_API_KEY:-}
-      - EODHD_API_KEY=${EODHD_API_KEY:-}
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
-      - JWT_SECRET=${JWT_SECRET:-}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
-    depends_on:
-      api:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5002/')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
-    restart: unless-stopped
-
   # Merged single FastHTML app (landing + auth + chat + guide + voice).
-  # Serves alpatrade.chat via `python main.py` on port 5003.
+  # Serves BOTH alpatrade.chat and alpatrade.dev via `python main.py` on port 5003.
+  # (The legacy `web` service running web_app.py has been retired.)
   agui:
     build:
       context: .
