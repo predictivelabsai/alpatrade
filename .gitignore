@@ -216,3 +216,4 @@ reports/
 
 # eval outputs
 eval-results/
+.deepeval/
