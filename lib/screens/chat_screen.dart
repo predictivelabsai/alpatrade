@@ -6,6 +6,7 @@ import 'package:alpatrade/providers/chat_provider.dart';
 import 'package:alpatrade/providers/voice_provider.dart';
 import 'package:alpatrade/screens/chat/widgets/chat_input_bar.dart';
 import 'package:alpatrade/screens/chat/widgets/quick_order_bar.dart';
+import 'package:alpatrade/screens/chat/widgets/order_ticket_sheet.dart';
 import 'package:alpatrade/screens/chat/widgets/chat_message_bubble.dart';
 import 'package:alpatrade/screens/chat/widgets/streaming_text.dart';
 import 'package:alpatrade/screens/chat/widgets/tool_execution_card.dart';
@@ -24,12 +25,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final TextEditingController _inputController = TextEditingController();
   final FocusNode _inputFocus = FocusNode();
 
-  void _prefill(String text) {
-    _inputController.value = TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: text.length),
+  void _openOrderTicket(OrderPreset preset) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) =>
+          OrderTicketSheet(side: preset.side, orderType: preset.orderType),
     );
-    _inputFocus.requestFocus();
   }
 
   void _scrollToBottom() {
@@ -94,7 +97,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ),
           ),
           const VoicePanel(),
-          QuickOrderBar(onTemplate: _prefill),
+          QuickOrderBar(onSelect: _openOrderTicket),
           ChatInputBar(
             isStreaming: chatState.isStreaming,
             voiceActive: voice.isActive,
