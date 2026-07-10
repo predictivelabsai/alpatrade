@@ -78,10 +78,11 @@ SYSTEM_PROMPT = (
     "When users ask about their account, balance, buying power, or cash, use get_alpaca_account. "
     "When users ask about their linked accounts or want to see which accounts are configured, use list_user_accounts. "
     "When users ask about running agents, background tasks, or agent status, use show_running_agents. "
-    "TRADING: when a user asks to buy or sell shares or place a trade, use place_paper_order. "
-    "ALWAYS call it with confirm=false FIRST and show the returned preview; only call it again with "
-    "confirm=true AFTER the user explicitly confirms in a following message (e.g. 'confirm', 'yes', "
-    "'go ahead'). All trading is paper (simulated) — never place an order without an explicit confirmation."
+    "TRADING: when a user asks to buy or sell shares or place a trade, use place_paper_order to place "
+    "the order directly and report the result. Use order_type='market' for a market order; if the user "
+    "names a price (e.g. 'buy 10 AAPL at $180' or 'limit 180'), use order_type='limit' with that "
+    "limit_price. All trading is PAPER (simulated) — no real money, so no separate confirmation step is "
+    "needed; just place it and summarise the fill."
 )
 
 
@@ -230,46 +231,63 @@ def get_alpaca_account(account_id: Optional[str] = None) -> str:
 
 
 def place_paper_order(symbol: str, qty: float, side: str = "buy",
-                      confirm: bool = False, account_id: Optional[str] = None) -> str:
-    """Place a PAPER (simulated) market order on Alpaca. Paper trading only — no real
-    money. ALWAYS call this with confirm=false FIRST to return a preview; only call it
-    again with confirm=true AFTER the user has explicitly confirmed."""
+                      order_type: str = "market", limit_price: Optional[float] = None,
+                      confirm: bool = True, account_id: Optional[str] = None) -> str:
+    """Place a PAPER (simulated) order on Alpaca and execute it. Paper trading only —
+    no real money — so it places directly (no confirmation step needed).
+
+    order_type: 'market' (fills at the current price) or 'limit' (fills only at
+    limit_price or better — pass limit_price when the user names a price, e.g.
+    'buy 10 AAPL at $180'). Pass confirm=false only to preview instead of placing."""
     symbol = (symbol or "").upper().strip()
     side = (side or "buy").lower().strip()
+    order_type = (order_type or "market").lower().strip()
     if side not in ("buy", "sell"):
         return "Side must be 'buy' or 'sell'."
+    if order_type not in ("market", "limit"):
+        return "order_type must be 'market' or 'limit'."
     try:
         qty = float(qty)
     except Exception:  # noqa: BLE001
         return "Quantity must be a number."
     if qty <= 0:
         return "Quantity must be greater than zero."
+    if order_type == "limit":
+        try:
+            limit_price = float(limit_price)
+        except Exception:  # noqa: BLE001
+            return "A limit order needs a numeric limit_price (the price to buy/sell at)."
 
-    est = None
-    try:
-        from utils.data_loader import get_intraday_data
-        df = get_intraday_data(symbol, interval="1d", period="5d")
-        if df is not None and not df.empty:
-            est = float(df["Close"].iloc[-1])
-    except Exception:  # noqa: BLE001
+    if order_type == "limit":
+        price_txt = f" @ ${limit_price:,.2f} limit"
+        est_total = f" (≈ ${limit_price * qty:,.2f})"
+    else:
         est = None
-    est_txt = f" @ ~${est:,.2f} (≈ ${est * qty:,.2f})" if est else ""
+        try:
+            from utils.data_loader import get_intraday_data
+            df = get_intraday_data(symbol, interval="1d", period="5d")
+            if df is not None and not df.empty:
+                est = float(df["Close"].iloc[-1])
+        except Exception:  # noqa: BLE001
+            est = None
+        price_txt = f" @ ~${est:,.2f} market" if est else " (market)"
+        est_total = f" (≈ ${est * qty:,.2f})" if est else ""
 
     if not confirm:
         return (f"🧾 **Order preview — PAPER (simulated)**\n\n"
-                f"{side.upper()} **{qty:g} {symbol}**{est_txt}, market order.\n\n"
-                f"This is a paper trade — no real money. Reply **confirm** (or “yes”) "
-                f"to place it, or “cancel” to abort.")
+                f"{side.upper()} **{qty:g} {symbol}**{price_txt}{est_total}.\n\n"
+                f"This is a paper trade — no real money. Reply **confirm** to place it.")
 
     try:
         from utils.alpaca_util import AlpacaAPI
         client = AlpacaAPI(paper=True)  # primary paper account (…8CR) via .env
-        order = client.create_order(symbol=symbol, qty=qty, side=side, type="market")
+        order = client.create_order(symbol=symbol, qty=qty, side=side, type=order_type,
+                                    limit_price=limit_price if order_type == "limit" else None)
         if isinstance(order, dict) and order.get("error"):
             return f"Order failed: {order['error']}"
         oid = (order or {}).get("id", "?") if isinstance(order, dict) else "?"
         status = (order or {}).get("status", "submitted") if isinstance(order, dict) else "submitted"
-        return (f"✅ **Paper order placed** — {side.upper()} {qty:g} {symbol} (market).\n\n"
+        return (f"✅ **Paper order placed** — {side.upper()} {qty:g} {symbol}{price_txt}.\n\n"
                 f"Order id `{oid}`, status: {status}. Simulated paper trade — no real money.")
     except Exception as e:  # noqa: BLE001
         return f"Order failed: {e}"
@@ -481,7 +499,7 @@ TOOLS = [
     StructuredTool.from_function(show_equity_curve, name="show_equity_curve",
         description="Show equity curve chart. Use trade_type='paper' or 'backtest' to filter. Use run_id for a specific run. Default: latest run."),
     StructuredTool.from_function(place_paper_order, name="place_paper_order",
-        description="Place a PAPER (simulated) market buy/sell order. ALWAYS call with confirm=false first to preview; call again with confirm=true only after the user explicitly confirms."),
+        description="Place a PAPER (simulated) buy/sell order and execute it (paper only — no real money). order_type='market' or 'limit' (pass limit_price for limit). Use for any buy/sell request."),
 ]
 
 llm = ChatOpenAI(

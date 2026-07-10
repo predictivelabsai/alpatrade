@@ -176,10 +176,10 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
 # Natural-language prompts — the router figures out the command/tool to run.
 _SUGGESTION_CARDS = [
     "Show me my positions",
-    "How large is my MSFT position?",
-    "Buy 1 share of TSLA (paper)",
+    "Buy 1 share of TSLA at market",
+    "Buy 10 AAPL with a $180 limit",
     "What's my account balance and P&L?",
-    "Backtest buy-the-dip on AAPL and TSLA over the last month",
+    "Backtest buy-the-dip on AAPL over the last month",
     "What's the latest news on TSLA?",
 ]
 

@@ -90,23 +90,28 @@ class AlpacaAPI:
             logger.error(f"API request failed: {e}")
             return {"error": str(e)}
 
-    def create_order(self, symbol, qty=None, side='buy', type='market', time_in_force='day', notional=None, **kwargs):
-        from alpaca.trading.requests import MarketOrderRequest
+    def create_order(self, symbol, qty=None, side='buy', type='market', time_in_force='day',
+                     notional=None, limit_price=None, **kwargs):
+        from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest
         from alpaca.trading.enums import OrderSide, TimeInForce
         try:
-            # Enforce market orders only
-            if type != 'market':
-                raise ValueError(f"Only market orders are allowed. Requested type: {type}")
-            
+            otype = (type or 'market').lower()
+            if otype not in ('market', 'limit'):
+                raise ValueError(f"Unsupported order type: {type}. Use 'market' or 'limit'.")
+
             side_enum = OrderSide.BUY if side.lower() == 'buy' else OrderSide.SELL
             tif_enum = TimeInForce.DAY if time_in_force.lower() == 'day' else TimeInForce.GTC
-            
-            # Only create market orders
-            if notional is not None:
+
+            if otype == 'limit':
+                if limit_price is None:
+                    raise ValueError("limit_price is required for a limit order.")
+                req = LimitOrderRequest(symbol=symbol, qty=qty, side=side_enum,
+                                        time_in_force=tif_enum, limit_price=float(limit_price))
+            elif notional is not None:
                 req = MarketOrderRequest(symbol=symbol, notional=notional, side=side_enum, time_in_force=tif_enum)
             else:
                 req = MarketOrderRequest(symbol=symbol, qty=qty, side=side_enum, time_in_force=tif_enum)
-                
+
             order = self.trading_client.submit_order(req)
             order_dict = order.dict()
             
