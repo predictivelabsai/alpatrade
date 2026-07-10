@@ -250,13 +250,7 @@ CHAT_JS = r"""
   }
   window.sendMessage=sendMessage;
 
-  // Render the News pane markdown after htmx swaps it in.
-  document.body.addEventListener('htmx:afterSwap', function(e){
-    var tgt=e.detail && e.detail.target;
-    if(tgt && tgt.id==='news-body' && window.marked){
-      var raw=tgt.textContent||''; if(raw.trim()) tgt.innerHTML=marked.parse(raw);
-    }
-  });
+  // News pane now returns ready-made HTML cards (see /news) — no markdown step.
 })();
 """
 
@@ -416,10 +410,32 @@ def register(app, rt):
         return await _stream(msg, session)
 
     @rt("/news")
-    def news(ticker: str = ""):
-        """Market news as markdown (rendered client-side via marked.js)."""
+    async def news():
+        """Multi-source market news as a pehero-style HTML card fragment."""
+        from fasthtml.common import A, Div, Span, P, to_xml
+        from starlette.responses import HTMLResponse
         try:
-            from utils.market_research_util import MarketResearch
-            return MarketResearch().news(ticker=(ticker.upper() or None), limit=12)
+            from utils.news_feed import fetch_news, time_ago
+            articles = await fetch_news()
         except Exception as e:  # noqa: BLE001
-            return f"Could not load news: {e}"
+            return HTMLResponse(to_xml(P(f"Could not load news: {e}", cls="news-empty")))
+        if not articles:
+            return HTMLResponse(to_xml(P("No market news right now — check back shortly.",
+                                         cls="news-empty")))
+        items = []
+        for a in articles:
+            summary = (a.get("summary") or "").strip()
+            # NB: FastHTML escapes text children — do NOT pre-escape (double-encodes entities).
+            parts = [
+                Div(
+                    Span(a.get("icon") or a["source"], cls="news-source"),
+                    Span(time_ago(a.get("published", "")), cls="news-time"),
+                    cls="news-item-header",
+                ),
+                Div(a["title"], cls="news-item-title"),
+            ]
+            if summary:
+                parts.append(Div(summary[:160], cls="news-item-summary"))
+            items.append(A(*parts, href=a["url"], target="_blank", rel="noopener",
+                           cls="news-item"))
+        return HTMLResponse(to_xml(Div(*items)))

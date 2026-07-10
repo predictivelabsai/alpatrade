@@ -27,3 +27,4 @@ pydantic-ai
 ag-ui-protocol
 psutil
 authlib
+feedparser

@@ -38,6 +38,7 @@ dependencies = [
     "rich>=13.0",
     "prompt_toolkit>=3.0",
     "httpx>=0.25",
+    "feedparser>=6.0",
 ]
 
 [project.optional-dependencies]
