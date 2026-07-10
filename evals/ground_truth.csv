@@ -31,3 +31,5 @@ agent:status,Shows agent status.,agent;Agent;status;Status;running;idle;No ,Comm
 agent:reconcile window:7d,Reconciles DB positions vs the broker for the last 7 days.,reconcil;Reconcil;position;Position;match;broker,Reconciler,deterministic,
 agent:backtest lookback:1m symbols:AAPL,Runs a 1-month backtest on AAPL and reports trades/metrics.,backtest;Backtest;trade;Trade;Sharpe;return;Return,Backtester,deterministic,1
 agent:paper duration:1m symbols:AAPL poll:60,Starts a paper-trading agent on AAPL.,paper;Paper;start;Start;agent;running,Paper Trader,deterministic,1
+Show me a market map,Renders a finviz-style market map / treemap of S&P sectors and stocks by return; a one-line summary is fine.,,show_market_map,chat,
+Compare AAPL vs MSFT vs NVDA performance,Compares the recent performance of AAPL MSFT and NVDA and renders a chart; a brief summary that names each ticker with its percentage return is a correct answer.,,compare_stocks,chat,

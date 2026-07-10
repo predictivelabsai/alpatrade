@@ -81,9 +81,12 @@ SYSTEM_PROMPT = (
     "When users ask which strategies performed best, top strategies, or rankings, use get_top_strategies. "
     "When users ask to see/show a price chart, use show_stock_chart and reply that the chart is rendered "
     "below — do not re-describe the raw numbers. "
-    "When users ask for a market map, sector heatmap, or how the market/sectors are doing, use show_market_map. "
-    "When users ask to compare the performance/returns of several stocks (X vs Y), use compare_stocks. "
-    "For any chart tool, keep the reply to a one-line summary and say the chart is rendered below. "
+    "When users ask for a market map, sector heatmap, or how the market/sectors are doing, use show_market_map "
+    "and relay the tool's summary line verbatim (it names the up/down count and the best & worst sectors) — "
+    "do not collapse it to just 'rendered below'. "
+    "When users ask to compare the performance/returns of several stocks (X vs Y), use compare_stocks and relay "
+    "its summary line (each ticker's return). "
+    "For chart tools always keep the tool's summary sentence and add that the chart is rendered below. "
     "TRADING: when a user asks to buy or sell shares or place a trade, use place_paper_order to place "
     "the order directly and report the result. Use order_type='market' for a market order; if the user "
     "names a price (e.g. 'buy 10 AAPL at $180' or 'limit 180'), use order_type='limit' with that "
@@ -175,10 +178,13 @@ def get_valuation(tickers: str) -> str:
     try:
         import re
         from utils.market_research_util import MarketResearch
-        syms = [t for t in re.split(r"[,\s]+", (tickers or "").upper()) if t]
+        _stop = {"AND", "OR", "VS", "VERSUS", "THE", "WITH", "COMPARE", "TO"}
+        syms = [t for t in re.split(r"[,\s]+", (tickers or "").upper())
+                if t and t not in _stop]
         if not syms:
             return "Please provide one or more tickers, e.g. AAPL,MSFT,GOOGL."
-        return MarketResearch().valuation(tickers=",".join(syms))
+        # valuation() expects a LIST — passing a string makes it iterate characters.
+        return MarketResearch().valuation(tickers=syms)
     except Exception as e:
         return f"Error fetching valuation: {e}"
 

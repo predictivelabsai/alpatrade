@@ -18,12 +18,13 @@ Each result row: `prompt · expected_answer · ai_answer · agent_name · agent_
 
 ## Latest run — 2026-07-10 (after fixes)
 
-**Overall accuracy: 30/30 = 100.0%** (chat re-run 16/16; deterministic 14/14 unchanged; excludes the 2 slow agents).
+**Overall accuracy: 32/32 = 100.0%** (chat 18/18; deterministic 14/14; excludes the 2 slow agents).
+Chat now includes the two new charting tools (`show_market_map`, `compare_stocks`).
 
 | Type | Passed | Accuracy |
 |---|---|---|
 | Deterministic | 14/14 | **100.0%** |
-| Chat | 16/16 | **100.0%** |
+| Chat | 18/18 | **100.0%** |
 
 ### By agent
 
@@ -42,6 +43,8 @@ Each result row: `prompt · expected_answer · ai_answer · agent_name · agent_
 | get_valuation | 1/1 | 100% |
 | place_paper_order | 3/3 | 100% |
 | show_stock_chart | 1/1 | 100% |
+| show_market_map | 1/1 | 100% |
+| compare_stocks | 1/1 | 100% |
 | show_recent_runs / get_top_strategies | 1/1 | 100% |
 | show_running_agents | 1/1 | 100% |
 
@@ -49,9 +52,12 @@ Each result row: `prompt · expected_answer · ai_answer · agent_name · agent_
 
 The first run (27/30) surfaced three real defects, now resolved:
 
-1. **`get_valuation` empty-ticker bug** — the tool split on `,` and passed empty tokens to the data
-   provider (`Quote not found for symbol: ,`). **Fixed:** parse with `re.split(r"[,\s]+", …)` and drop
-   empty/whitespace tokens before querying. Now 1.0.
+1. **`get_valuation` ticker bug** — two layered defects. First the tool split on `,` and passed empty
+   tokens through (`Quote not found for symbol: ,`). Deeper: `MarketResearch.valuation()` expects a
+   **list**, but the wrapper handed it a **string**, so it iterated the string *character by character* —
+   the comma 404'd and stray letters resolved to unrelated real tickers (`A`=Agilent, `M`=Macy's), which
+   the agent reported as "unrelated tickers". **Fixed:** parse with `re.split(r"[,\s]+", …)`, drop
+   empties and connector words (`and`/`vs`/…), and pass a **list**. Now 0.9.
 2. **`place_paper_order` (sell) wash-trade rejection** — "Sell 1 TSLA at market" was rejected by Alpaca
    as a *potential wash trade* because open opposite (buy) orders from earlier testing existed.
    **Fixed:** (a) the tool now surfaces a friendly wash-trade explanation instead of a raw API error,
