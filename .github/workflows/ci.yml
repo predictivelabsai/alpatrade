@@ -56,6 +56,8 @@ jobs:
     name: Build & Distribute Android
     runs-on: ubuntu-latest
     needs: [analyze, test]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -106,6 +108,28 @@ jobs:
         with:
           name: release-aab
           path: build/app/outputs/bundle/release/app-release.aab
+
+      # Publishes a GitHub Release so the website can link to a stable URL that
+      # always serves the newest build:
+      #   https://github.com/predictivelabsai/alpatrade-mobile/releases/latest/download/alpatrade-latest.apk
+      # Each release also keeps a versioned asset (alpatrade-vX.Y.Z.apk).
+      - name: Publish GitHub Release (stable latest link)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: *//' | cut -d'+' -f1)
+          TAG="v$VERSION"
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          cp "$APK" alpatrade-latest.apk
+          cp "$APK" "alpatrade-v$VERSION.apk"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" alpatrade-latest.apk "alpatrade-v$VERSION.apk" --clobber
+          else
+            gh release create "$TAG" alpatrade-latest.apk "alpatrade-v$VERSION.apk" \
+              --title "AlpaTrade $TAG" \
+              --notes "Signed release build. Stable download: alpatrade-latest.apk"
+          fi
 
       - name: Distribute to Firebase App Distribution
         if: github.ref == 'refs/heads/main'

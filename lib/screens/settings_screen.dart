@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:alpatrade/config/api_config.dart';
 import 'package:alpatrade/config/constants.dart';
 import 'package:alpatrade/config/theme.dart';
+import 'package:alpatrade/providers/app_info_provider.dart';
 import 'package:alpatrade/providers/locale_provider.dart';
 
 /// Human-readable names for the supported locale codes.
@@ -85,6 +86,30 @@ class SettingsScreen extends ConsumerWidget {
                       color: AppTheme.inkMuted,
                       height: 1.4,
                     ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.verified_outlined,
+                        size: 15,
+                        color: AppTheme.inkDim,
+                      ),
+                      const SizedBox(width: 6),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final v = ref.watch(appVersionProvider);
+                          return Text(
+                            'Version ${v.whenOrNull(data: (s) => s) ?? '…'}',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontFamily: AppTheme.monoFont,
+                              color: AppTheme.inkMuted,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   Container(

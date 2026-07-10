@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:alpatrade/config/constants.dart';
 import 'package:alpatrade/config/theme.dart';
+import 'package:alpatrade/providers/app_info_provider.dart';
 
 class WelcomeMessage extends StatelessWidget {
   final ValueChanged<String> onPromptTap;
@@ -84,6 +86,20 @@ class WelcomeMessage extends StatelessWidget {
                     ),
                   ),
                 ),
+            const SizedBox(height: 20),
+            Consumer(
+              builder: (context, ref, _) {
+                final v = ref.watch(appVersionProvider);
+                return Text(
+                  'v${v.whenOrNull(data: (s) => s) ?? '…'}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontFamily: AppTheme.monoFont,
+                    color: AppTheme.inkDim,
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),

@@ -1,7 +1,7 @@
 name: alpatrade
 description: AlpaTrade — AI trading research & paper-trading assistant
 publish_to: none
-version: 1.0.2+3
+version: 1.0.3+4
 
 environment:
   sdk: ^3.12.0
@@ -50,6 +50,7 @@ dependencies:
   collection: any
   equatable: ^2.0.7
   connectivity_plus: ^6.1.4
+  package_info_plus: ^10.2.0
 
 dev_dependencies:
   flutter_test:
