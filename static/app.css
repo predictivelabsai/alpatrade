@@ -52,7 +52,9 @@ a { color: var(--accent); }
     display: flex; align-items: center; gap: .65rem;
 }
 .brand-link { display: flex; align-items: center; color: var(--ink); text-decoration: none; font-weight: 700; gap: .5rem; letter-spacing: -.01em; }
-.brand-mark { color: var(--accent); }
+.brand-mark { display: inline-flex; align-items: center; }
+.tile-mark { width: 1.45rem; height: 1.45rem; display: block; border-radius: 6px; }
+.auth-card .auth-brand .tile-mark { width: 1.7rem; height: 1.7rem; }
 .brand-name { font-size: .98rem; }
 .brand-badge { font-size: .6rem; font-weight: 600; color: var(--accent); background: var(--accent-dim); padding: .15rem .45rem; border-radius: 4px; letter-spacing: .08em; text-transform: uppercase; }
 .brand-version { font-size: .58rem; color: var(--ink-dim); font-family: var(--font-mono); margin-left: .3rem; }

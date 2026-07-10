@@ -40,6 +40,15 @@ _MARKED_CDN = "https://cdn.jsdelivr.net/npm/marked/marked.min.js"
 _PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js"
 _HTMX_CDN = "https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js"
 
+# Brand mark — green tile with the nested-diamond motif (matches the app icon + favicon).
+TILE_MARK = (
+    '<svg viewBox="0 0 32 32" class="tile-mark" aria-hidden="true">'
+    '<rect width="32" height="32" rx="7" fill="#1F5D43"/>'
+    '<polygon points="16,5.5 26.5,16 16,26.5 5.5,16" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="1.3"/>'
+    '<polygon points="16,9.5 22.5,16 16,22.5 9.5,16" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.3"/>'
+    '<polygon points="16,12.6 19.4,16 16,19.4 12.6,16" fill="#fff"/></svg>'
+)
+
 # Small inline mic glyph for the voice button.
 _MIC_SVG = (
     '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" '
@@ -86,6 +95,8 @@ def head(title: str = "AlpaTrade"):
         Meta(charset="utf-8"),
         Meta(name="viewport", content="width=device-width, initial-scale=1"),
         Meta(name="description", content="AlpaTrade — multi-asset trading, backtesting & paper-trading"),
+        Link(rel="icon", type="image/svg+xml", href="/static/favicon.svg"),
+        Meta(name="theme-color", content="#1F5D43"),
         Style("html,body{margin:0}"),
         Link(rel="stylesheet", href="/static/app.css"),
         Script(src=_HTMX_CDN),
@@ -101,7 +112,7 @@ def head(title: str = "AlpaTrade"):
 # ---------------------------------------------------------------------------
 def _brand():
     return A(
-        Span("◆", cls="brand-mark"),
+        Span(NotStr(TILE_MARK), cls="brand-mark"),
         Span("AlpaTrade", cls="brand-name"),
         Span("beta", cls="brand-badge"),
         href="/", cls="brand-link",
@@ -305,7 +316,7 @@ def auth_shell(*content, title: str = "AlpaTrade"):
         *head(title),
         Div(
             Div(
-                Div(Span("◆", cls="brand-mark"), Span("AlpaTrade"), cls="auth-brand"),
+                Div(Span(NotStr(TILE_MARK), cls="brand-mark"), Span("AlpaTrade"), cls="auth-brand"),
                 *content,
                 cls="auth-card",
             ),

@@ -20,10 +20,13 @@ from fasthtml.common import (
 )
 from starlette.responses import RedirectResponse
 
-from engine.web.ph_layout import head
+from engine.web.ph_layout import head, TILE_MARK
 
 SITE_NAME = "AlpaTrade"
 SITE_TAGLINE = "Backtest, paper-trade and prove the P&L — one AI trading desk on Alpaca."
+
+# Android APK — hosted as a GitHub release asset (55MB binary kept out of the repo/image).
+APK_DOWNLOAD_URL = "https://github.com/predictivelabsai/alpatrade/releases/download/v1.0.0/alpatrade-v1.0.0.apk"
 
 _GOOGLE_SVG = (
     '<svg width="17" height="17" viewBox="0 0 18 18" style="display:inline-block;'
@@ -52,7 +55,8 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 .lp-nav-inner { max-width: 1160px; margin: 0 auto; padding: 0 1.5rem; height: 4rem;
   display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .lp-brand { display: flex; align-items: center; gap: .5rem; color: var(--ink); font-weight: 600; font-size: 1.02rem; letter-spacing: -.01em; }
-.lp-brand .mark { color: var(--accent); }
+.lp-brand .mark { display: inline-flex; align-items: center; }
+.lp-brand .mark .tile-mark { width: 1.5rem; height: 1.5rem; }
 .lp-brand .badge { font-size: .58rem; font-weight: 600; color: var(--accent); background: var(--accent-dim);
   padding: .12rem .4rem; border-radius: 4px; letter-spacing: .08em; text-transform: uppercase; }
 .lp-nav-links { display: flex; align-items: center; gap: 1.75rem; }
@@ -145,6 +149,14 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 .lp-footer-links { display: flex; flex-wrap: wrap; gap: 1.25rem; }
 .lp-footer-links a { font-size: .82rem; color: var(--ink-muted); }
 .lp-footer-links a:hover { color: var(--accent); }
+.lp-footer-apps { display: flex; align-items: center; gap: 1rem; margin: 1.75rem 0 .5rem; flex-wrap: wrap; }
+.apk-badge-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .12em; color: var(--ink-dim); font-family: var(--font-mono); }
+.apk-badge { display: inline-flex; align-items: center; gap: .6rem; padding: .5rem 1rem; border: 1px solid var(--line-br); border-radius: .7rem; background: var(--bg); color: var(--ink); text-decoration: none; transition: all .15s; }
+.apk-badge:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.apk-badge-ic { display: inline-flex; color: var(--accent); }
+.apk-badge-txt { display: flex; flex-direction: column; line-height: 1.12; text-align: left; }
+.apk-badge-top { font-size: .58rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-dim); }
+.apk-badge-big { font-size: .95rem; font-weight: 600; }
 .lp-fine { font-size: .72rem; line-height: 1.55; color: var(--ink-dim); max-width: 60rem;
   margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
 
@@ -208,7 +220,7 @@ def _btn(label, href, variant="primary", *, arrow=False, sm=False, google=False)
 
 
 def _brand():
-    return A(Span("◆", cls="mark"), Span(SITE_NAME), Span("beta", cls="badge"),
+    return A(Span(NotStr(TILE_MARK), cls="mark"), Span(SITE_NAME), Span("beta", cls="badge"),
              href="/", cls="lp-brand")
 
 
@@ -230,6 +242,25 @@ def _nav(active="home"):
     )
 
 
+_ANDROID_SVG = (
+    '<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true">'
+    '<path d="M17.6 9.48l1.84-3.18a.4.4 0 0 0-.69-.4l-1.86 3.23a11.4 11.4 0 0 0-9.78 0L5.25 5.9a.4.4 0 1 0-.69.4L6.4 9.48'
+    'A10.8 10.8 0 0 0 1 18.13h22a10.8 10.8 0 0 0-5.4-8.65zM7 15.25a1.1 1.1 0 1 1 1.1-1.1 1.1 1.1 0 0 1-1.1 1.1zm10 0a1.1 '
+    '1.1 0 1 1 1.1-1.1 1.1 1.1 0 0 1-1.1 1.1z"/></svg>'
+)
+
+
+def apk_badge():
+    """Unigox-style 'GET & INSTALL / APK for Android' download badge."""
+    return A(
+        Span(NotStr(_ANDROID_SVG), cls="apk-badge-ic"),
+        Span(Span("GET & INSTALL", cls="apk-badge-top"),
+             Span("APK for Android", cls="apk-badge-big"), cls="apk-badge-txt"),
+        href="/download/android", cls="apk-badge",
+        title="Download the AlpaTrade Android app (APK)",
+    )
+
+
 def _footer():
     return Footer(
         Div(
@@ -246,6 +277,8 @@ def _footer():
                 ),
                 cls="lp-footer-top",
             ),
+            Div(Span("Get the mobile app", cls="apk-badge-label"), apk_badge(),
+                cls="lp-footer-apps"),
             P("Paper trading is a simulated environment and does not involve real money. Backtested "
               "results are hypothetical, do not represent actual trading, and do not guarantee future "
               "results. AlpaTrade is for research and educational purposes only — not investment advice. "
@@ -447,4 +480,9 @@ def register(app, rt):
     def landing_pricing(session):
         return pricing_page()
 
-    return ["/", "/platform", "/pricing"]
+    @rt("/download/android")
+    def download_android():
+        # APK is published as a GitHub release asset (kept out of the repo/image).
+        return RedirectResponse(APK_DOWNLOAD_URL, status_code=302)
+
+    return ["/", "/platform", "/pricing", "/download/android"]
