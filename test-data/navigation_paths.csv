@@ -1,0 +1,21 @@
+id,from_route,to_route,via,expected_screen,description
+1,/chat,/daily-scan,sidebar,Daily Scan,Chat to Daily Scan via sidebar
+2,/chat,/market-map,sidebar,Market Map,Chat to Market Map via sidebar
+3,/chat,/favorites,sidebar,Favorites,Chat to Favorites via sidebar
+4,/chat,/saved-searches,sidebar,Saved Searches,Chat to Saved Searches via sidebar
+5,/chat,/garage,sidebar,My Garage,Chat to Garage via sidebar
+6,/chat,/analytics,sidebar,Analytics,Chat to Analytics via sidebar
+7,/chat,/profile,sidebar,Profile & Preferences,Chat to Profile via sidebar
+8,/daily-scan,/chat,sidebar_new_chat,CarHero AI,Daily Scan to Chat via New Chat
+9,/market-map,/chat,sidebar_new_chat,CarHero AI,Market Map to Chat via New Chat
+10,/favorites,/chat,sidebar_new_chat,CarHero AI,Favorites to Chat via New Chat
+11,/garage,/chat,sidebar_new_chat,CarHero AI,Garage to Chat via New Chat
+12,/profile,/chat,sidebar_new_chat,CarHero AI,Profile to Chat via New Chat
+13,/daily-scan,/market-map,sidebar,Market Map,Daily Scan to Market Map via sidebar
+14,/daily-scan,/favorites,sidebar,Favorites,Daily Scan to Favorites via sidebar
+15,/market-map,/daily-scan,sidebar,Daily Scan,Market Map to Daily Scan via sidebar
+16,/market-map,/favorites,sidebar,Favorites,Market Map to Favorites via sidebar
+17,/favorites,/garage,sidebar,My Garage,Favorites to Garage via sidebar
+18,/garage,/profile,sidebar,Profile & Preferences,Garage to Profile via sidebar
+19,/analytics,/chat,sidebar,CarHero AI,Analytics to Chat via sidebar link
+20,/profile,/daily-scan,sidebar,Daily Scan,Profile to Daily Scan via sidebar

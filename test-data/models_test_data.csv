@@ -1,0 +1,41 @@
+id,model_class,field,test_value,expected_type,description
+1,DailyScanStats,totalActive,1500,int,Parse total active count
+2,DailyScanStats,freshCount,800,int,Parse fresh count
+3,DailyScanStats,newCount,120,int,Parse new count
+4,DailyScanStats,providersScraped,8,int,Parse providers scraped
+5,DailyScanStats,countriesCovered,6,int,Parse countries covered
+6,DailyScanStats,lastScrape,2026-06-01T10:00:00,String,Parse last scrape timestamp
+7,DailyScanStats,totalActive,,int,Handle null total active
+8,DailyScanStats,freshCount,,int,Handle null fresh count
+9,PriceComparison,make,BMW,String,Parse make
+10,PriceComparison,model,M3,String,Parse model
+11,PriceComparison,year,2020,int,Parse year
+12,PriceComparison,savingsEur,5500.0,double,Parse savings EUR
+13,PriceComparison,savingsPct,18.5,double,Parse savings percentage
+14,PriceComparison,cheapPrice,25000.0,double,Parse cheap price
+15,PriceComparison,cheapCountry,Germany,String,Parse cheap country
+16,PriceComparison,cheapProvider,AutoScout24,String,Parse cheap provider
+17,PriceComparison,expensivePrice,30500.0,double,Parse expensive price
+18,PriceComparison,cheapKm,45000,int,Parse cheap km
+19,PriceComparison,cheapUrl,https://example.com/listing1,String,Parse cheap URL
+20,PriceDrop,make,Porsche,String,Parse price drop make
+21,PriceDrop,model,911,String,Parse price drop model
+22,PriceDrop,variant,Carrera,String,Parse variant
+23,PriceDrop,priceEur,85000.0,double,Parse current price
+24,PriceDrop,oldPrice,95000.0,double,Parse old price
+25,PriceDrop,dropEur,10000.0,double,Parse drop amount
+26,PriceDrop,dropPct,10.5,double,Parse drop percentage
+27,PriceDrop,country,Netherlands,String,Parse country
+28,PriceDrop,fuelType,Petrol,String,Parse fuel type
+29,PriceDrop,mileageKm,,int,Handle null mileage
+30,PriceDrop,sourceUrl,,String,Handle null source URL
+31,AgentOut,slug,search,String,Parse agent slug
+32,AgentOut,name,Car Search,String,Parse agent name
+33,AgentOut,icon,🔍,String,Parse agent icon
+34,AgentOut,category,search,String,Parse agent category
+35,SessionSummary,id,1,int,Parse session id
+36,SessionSummary,title,Find me a BMW M3,String,Parse session title
+37,Favorite,id,1,int,Parse favorite id
+38,Favorite,make,Audi,String,Parse favorite make
+39,GarageCar,id,1,int,Parse garage car id
+40,GarageCar,make,Mercedes-Benz,String,Parse garage car make

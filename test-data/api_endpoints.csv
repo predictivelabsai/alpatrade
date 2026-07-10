@@ -1,0 +1,41 @@
+id,method,path,auth_required,expected_status,description
+1,GET,/health,false,200,Health check
+2,GET,/agents,false,200,List all agents
+3,GET,/sessions,false,200,List sessions (guest)
+4,GET,/sessions?limit=5,false,200,List sessions with limit
+5,GET,/sessions/99999,false,404,Get non-existent session
+6,DELETE,/sessions/99999,false,404,Delete non-existent session
+7,POST,/auth/login,false,401,Login with wrong credentials
+8,POST,/auth/register,false,422,Register with missing fields
+9,GET,/auth/me,true,401,Get profile without token
+10,GET,/daily-scan,false,200,Daily scan data
+11,GET,/market-map/filters,false,200,Market map filters
+12,GET,/market-map/treemap?format=data,false,200,Treemap data
+13,GET,/market-map/trends?format=data,false,200,Trends data
+14,GET,/market-map/geo?format=data,false,200,Geo data
+15,GET,/market-map/value-map?format=data,false,200,Value map data
+16,GET,/market-map/price-index?format=data,false,200,Price index data
+17,GET,/market-map/treemap?format=data&make=BMW,false,200,Treemap filtered by make
+18,GET,/market-map/trends?format=data&make=BMW,false,200,Trends filtered by make
+19,GET,/market-map/geo?make=BMW&format=data,false,200,Geo filtered by make
+20,GET,/market-map/treemap?format=data&country=Germany,false,200,Treemap filtered by country
+21,GET,/listings/search,false,200,Search listings no filters
+22,GET,/listings/search?make=BMW,false,200,Search listings by make
+23,GET,/listings/search?make=Porsche&max_price=50000,false,200,Search listings by make and price
+24,GET,/listings/search?min_year=2020&max_mileage=50000,false,200,Search listings by year and mileage
+25,GET,/listings/search?fuel_type=Electric,false,200,Search electric listings
+26,GET,/listings/search?country=Germany&limit=5,false,200,Search listings by country with limit
+27,GET,/listings/999999,false,404,Get non-existent listing
+28,GET,/listings/trending,false,422,Trending listings (path conflict with /listings/{id})
+29,GET,/listings/trending?limit=5,false,422,Trending listings with limit (path conflict)
+30,GET,/favorites,true,401,List favorites without auth
+31,POST,/favorites,true,401,Add favorite without auth
+32,GET,/saved-searches,true,401,List saved searches without auth
+33,GET,/garage,true,401,List garage without auth
+34,GET,/user/profile,true,401,Get profile without auth
+35,POST,/analytics/query,true,401,Analytics without auth
+36,POST,/contact,false,200,Submit contact form
+37,POST,/contact,false,422,Submit contact with empty body
+38,GET,/market-map/treemap,false,200,Treemap plotly format
+39,GET,/market-map/price-index?make=BMW&format=data,false,200,Price index filtered by make
+40,GET,/market-map/value-map?make=BMW&format=data,false,200,Value map filtered by make
