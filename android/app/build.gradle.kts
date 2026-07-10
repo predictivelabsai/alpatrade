@@ -14,7 +14,9 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "chat.alpatrade.app"
-    compileSdk = flutter.compileSdkVersion
+    // Pinned: the voice plugins' androidx deps (core 1.13, window 1.2, …) require
+    // compileSdk 34+, above this Flutter channel's default.
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -24,7 +26,8 @@ android {
 
     defaultConfig {
         applicationId = "chat.alpatrade.app"
-        minSdk = flutter.minSdkVersion
+        // record + flutter_pcm_sound require a modern minSdk.
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
