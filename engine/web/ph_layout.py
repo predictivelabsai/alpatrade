@@ -229,7 +229,7 @@ def chat_center():
             cls="chat-header-left",
         ),
         Div(
-            Button("News", id="news-btn", cls="news-toggle-btn active", type="button",
+            Button("News", id="news-btn", cls="news-toggle-btn", type="button",
                    onclick="toggleNewsPane()"),
             cls="chat-header-right",
         ),
@@ -278,7 +278,7 @@ def _news_pane():
                 hx_swap="innerHTML", hx_indicator="#news-loading"),
             cls="right-body",
         ),
-        id="right-pane", cls="right-pane open",
+        id="right-pane", cls="right-pane",
     )
 
 
@@ -295,7 +295,7 @@ def page(active, *content, user: Optional[dict] = None,
     children.append(Div(id="left-overlay", cls="left-overlay", onclick="toggleLeftPane()"))
     return (
         *head(title),
-        Div(*children, cls="app", id="app"),
+        Div(*children, cls="app pane-closed", id="app"),
     )
 
 

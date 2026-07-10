@@ -39,6 +39,7 @@ a { color: var(--accent); }
     display: grid;
     grid-template-columns: 300px 1fr;
     height: 100vh;
+    height: 100dvh; /* account for mobile browser chrome so the composer stays visible */
     padding-right: 420px;
     transition: padding-right .3s ease;
 }
@@ -420,8 +421,11 @@ td.neg { color: var(--red); }
     .right-pane { width: 92vw; right: -95vw; }
     .right-pane.open { right: 0; }
     .welcome-hero .suggestions { display: none; }
-    .sample-cards { display: none; }
-    .welcome-hero { top: 30%; }
+    /* Keep the prompt cards visible below the composer on mobile (compact). */
+    .sample-cards { padding: .4rem .6rem .7rem; max-height: 33vh; overflow-y: auto; }
+    .sample-cards-row { gap: .4rem; }
+    .sample-card { font-size: .72rem; }
+    .welcome-hero { top: 26%; }
     .welcome-title { font-size: 1.4rem; }
     .welcome-sub { font-size: .78rem; }
     .hero-mark { font-size: 1.6rem; }
