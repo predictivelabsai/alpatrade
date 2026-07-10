@@ -31,8 +31,11 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 MODEL_PROVIDERS = ["xai", "openai", "anthropic"]
+# Order matters for XAI: the self-heal fallback (_resolve_xai_model) walks this list
+# and picks the first callable model, so keep the preferred default first.
 MODEL_NAMES = {
-    "xai": ["grok-4.3", "grok-4.5", "grok-3-mini"],
+    "xai": ["grok-4-1-fast-reasoning", "grok-4-1-fast-non-reasoning", "grok-4.3",
+            "grok-3-mini", "grok-4.5"],
     "openai": ["gpt-4o", "gpt-4o-mini"],
     "anthropic": ["claude-sonnet-5", "claude-opus-4-8", "claude-haiku-4-5"],
 }
@@ -42,7 +45,7 @@ AGENT_FRAMEWORKS = ["langgraph", "hermes", "deepagents"]
 
 _DEFAULTS = {
     "model_provider": "xai",
-    "model_name": "grok-4.3",
+    "model_name": "grok-4-1-fast-reasoning",
     "market_data_provider": "massive",
     "search_provider": "tavily",
     "agent_framework": "langgraph",
@@ -86,7 +89,8 @@ def _env_defaults() -> dict:
     historical ``MARKED_DATA_PROVIDER`` misspelling as well as the correct one."""
     return {
         "model_provider": _norm(os.getenv("MODEL_PROVIDER")) or _DEFAULTS["model_provider"],
-        "model_name": os.getenv("MODEL_NAME") or _DEFAULTS["model_name"],
+        # DEFAULT_MODEL is an accepted alias for MODEL_NAME (DEFAULT_MODEL wins if both set).
+        "model_name": os.getenv("DEFAULT_MODEL") or os.getenv("MODEL_NAME") or _DEFAULTS["model_name"],
         "market_data_provider": (
             _norm(os.getenv("MARKET_DATA_PROVIDER"))
             or _norm(os.getenv("MARKED_DATA_PROVIDER"))
