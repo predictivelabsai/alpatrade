@@ -25,9 +25,35 @@ from engine.web.ph_layout import head, TILE_MARK
 SITE_NAME = "AlpaTrade"
 SITE_TAGLINE = "Backtest, paper-trade and prove the P&L — one AI trading desk on Alpaca."
 
-# Android APK — hosted as a GitHub release asset (binary kept out of the repo/image).
-# Signed release build (upload key). Bump this on each new versioned release.
-APK_DOWNLOAD_URL = "https://github.com/predictivelabsai/alpatrade/releases/download/v1.0.1/alpatrade-v1.0.1.apk"
+# Android APK — published as a GitHub release asset (binary kept out of the repo/image).
+# /download/android resolves the LATEST release's .apk dynamically, so the website link
+# never needs changing when a new versioned/signed build is released.
+_APK_RELEASES_API = "https://api.github.com/repos/predictivelabsai/alpatrade/releases/latest"
+_APK_FALLBACK = "https://github.com/predictivelabsai/alpatrade/releases/latest"
+_apk_cache = {"url": None, "at": 0.0}
+_APK_TTL = 300  # seconds
+
+
+def latest_apk_url() -> str:
+    """Return the newest release's .apk download URL (cached ~5 min). Falls back to the
+    releases page if the API is unreachable or no .apk asset is found."""
+    import time as _t
+    import requests
+    now = _t.time()
+    if _apk_cache["url"] and (now - _apk_cache["at"]) < _APK_TTL:
+        return _apk_cache["url"]
+    url = _APK_FALLBACK
+    try:
+        r = requests.get(_APK_RELEASES_API, timeout=8,
+                         headers={"Accept": "application/vnd.github+json"})
+        assets = r.json().get("assets", []) if r.ok else []
+        apk = next((a for a in assets if a.get("name", "").lower().endswith(".apk")), None)
+        if apk and apk.get("browser_download_url"):
+            url = apk["browser_download_url"]
+    except Exception:  # noqa: BLE001
+        pass
+    _apk_cache.update(url=url, at=now)
+    return url
 
 _GOOGLE_SVG = (
     '<svg width="17" height="17" viewBox="0 0 18 18" style="display:inline-block;'
@@ -483,7 +509,7 @@ def register(app, rt):
 
     @rt("/download/android")
     def download_android():
-        # APK is published as a GitHub release asset (kept out of the repo/image).
-        return RedirectResponse(APK_DOWNLOAD_URL, status_code=302)
+        # Always resolves to the newest release's APK — no need to update the link per version.
+        return RedirectResponse(latest_apk_url(), status_code=302)
 
     return ["/", "/platform", "/pricing", "/download/android"]
