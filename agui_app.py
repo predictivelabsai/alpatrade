@@ -178,7 +178,7 @@ def get_alpaca_positions(account_id: Optional[str] = None) -> str:
     """Get current open positions from the Alpaca paper trading account. Shows symbol, qty, entry price, current price, and unrealized P&L."""
     try:
         from utils.alpaca_util import AlpacaAPI
-        client = AlpacaAPI(paper=True, account_id=account_id)
+        client = AlpacaAPI(paper=True)  # primary paper account (…8CR) via .env
         positions = client.get_positions()
         if isinstance(positions, dict) and "error" in positions:
             return f"Error fetching positions: {positions['error']}"
@@ -205,7 +205,7 @@ def get_alpaca_account(account_id: Optional[str] = None) -> str:
     """Get Alpaca paper trading account summary — portfolio value, cash, buying power, and P&L."""
     try:
         from utils.alpaca_util import AlpacaAPI
-        client = AlpacaAPI(paper=True, account_id=account_id)
+        client = AlpacaAPI(paper=True)  # primary paper account (…8CR) via .env
         acct = client.get_account()
         if "error" in acct:
             return f"Error fetching account: {acct['error']}"
@@ -263,7 +263,7 @@ def place_paper_order(symbol: str, qty: float, side: str = "buy",
 
     try:
         from utils.alpaca_util import AlpacaAPI
-        client = AlpacaAPI(paper=True, account_id=account_id)
+        client = AlpacaAPI(paper=True)  # primary paper account (…8CR) via .env
         order = client.create_order(symbol=symbol, qty=qty, side=side, type="market")
         if isinstance(order, dict) and order.get("error"):
             return f"Order failed: {order['error']}"
