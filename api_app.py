@@ -1011,7 +1011,51 @@ async def chat_stream(question: str, thread_id: str = "api_default"):
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
-@app.post("/v2/chat", tags=["chat"])
+@app.post(
+    "/v2/chat",
+    tags=["chat"],
+    summary="Streaming chat (SSE) — same router as the web chat",
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "msg": {"type": "string", "description": "The user message / prompt.",
+                                    "example": "Show me my positions"},
+                            "thread_id": {"type": "string",
+                                          "description": "Conversation id for history continuity.",
+                                          "example": "mobile-1"},
+                        },
+                        "required": ["msg"],
+                    }
+                },
+                "application/x-www-form-urlencoded": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {"msg": {"type": "string"}, "thread_id": {"type": "string"}},
+                        "required": ["msg"],
+                    }
+                },
+            },
+        },
+        "responses": {
+            "200": {
+                "description": (
+                    "Server-Sent Events stream. Each event is `event: <type>` + `data: <json>`. "
+                    "Types: session · agent_route · token · tool_start · tool_end · error · done. "
+                    "`token.text` chunks concatenate into the assistant reply (markdown)."
+                ),
+                "content": {"text/event-stream": {"schema": {"type": "string"},
+                            "example": ("event: session\\ndata: {\"sid\": \"mobile-1\"}\\n\\n"
+                                        "event: token\\ndata: {\"text\": \"MSFT position: 2 shares\"}\\n\\n"
+                                        "event: done\\ndata: {}\\n\\n")}},
+            }
+        },
+    },
+)
 async def v2_chat(
     request: Request,
     user: Optional[Dict] = Depends(get_current_user),
