@@ -14,9 +14,9 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "chat.alpatrade.app"
-    // Pinned: the voice plugins' androidx deps (core 1.13, window 1.2, …) require
-    // compileSdk 34+, above this Flutter channel's default.
-    compileSdk = 35
+    // Pinned: the voice plugins' androidx deps require compileSdk 36,
+    // above this Flutter channel's default.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
