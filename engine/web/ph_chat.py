@@ -386,7 +386,8 @@ async def _stream(msg: str, session) -> StreamingResponse:
 
         full = ""
         try:
-            async for event in langgraph_agent.astream_events({"messages": lc}, version="v2"):
+            agent = _agui.agent_for_user(str(uid) if uid is not None else None)
+            async for event in agent.astream_events({"messages": lc}, version="v2"):
                 kind = event.get("event", "")
                 if kind == "on_chat_model_stream":
                     chunk = event.get("data", {}).get("chunk")

@@ -326,6 +326,70 @@ def get_user_accounts(user_id: str) -> list[Dict]:
 
 
 # ---------------------------------------------------------------------------
+# Per-user settings (model / data / search / agent providers)
+# ---------------------------------------------------------------------------
+
+# Columns exposed on alpatrade.user_settings (see sql/14_add_user_settings.sql).
+USER_SETTING_FIELDS = (
+    "model_provider",
+    "model_name",
+    "market_data_provider",
+    "search_provider",
+    "agent_framework",
+)
+
+
+def get_user_settings(user_id: str) -> Dict:
+    """Return the user's stored provider preferences as a dict.
+
+    Only non-null columns are returned, so callers can merge over env defaults.
+    Returns an empty dict when the user has no row or no user_id.
+    """
+    if not user_id:
+        return {}
+    from sqlalchemy import text
+    pool = _get_pool()
+    cols = ", ".join(USER_SETTING_FIELDS)
+    with pool.get_session() as session:
+        row = session.execute(
+            text(f"SELECT {cols} FROM alpatrade.user_settings WHERE user_id = :uid"),
+            {"uid": user_id},
+        ).fetchone()
+    if not row:
+        return {}
+    return {field: val for field, val in zip(USER_SETTING_FIELDS, row) if val}
+
+
+def store_user_settings(user_id: str, **fields) -> None:
+    """Upsert provider preferences for a user.
+
+    Accepts any subset of USER_SETTING_FIELDS; unknown keys are ignored and
+    empty-string values are stored as NULL (i.e. "fall back to env default").
+    """
+    if not user_id:
+        return
+    updates = {k: (v or None) for k, v in fields.items() if k in USER_SETTING_FIELDS}
+    if not updates:
+        return
+    from sqlalchemy import text
+    pool = _get_pool()
+    cols = list(updates.keys())
+    insert_cols = ", ".join(["user_id"] + cols)
+    insert_vals = ", ".join([":user_id"] + [f":{c}" for c in cols])
+    set_clause = ", ".join([f"{c} = EXCLUDED.{c}" for c in cols] + ["updated_at = NOW()"])
+    params = {"user_id": user_id, **updates}
+    with pool.get_session() as session:
+        session.execute(
+            text(f"""
+                INSERT INTO alpatrade.user_settings ({insert_cols})
+                VALUES ({insert_vals})
+                ON CONFLICT (user_id) DO UPDATE SET {set_clause}
+            """),
+            params,
+        )
+
+
+# ---------------------------------------------------------------------------
 # Password reset
 # ---------------------------------------------------------------------------
 

@@ -31,7 +31,7 @@ def _model(env_prefix: str, default: str) -> str:
 
 # name, api-key env var, base_url, default chat model. XAI is first / primary.
 PROVIDERS = [
-    ("xai",      "XAI_API_KEY",      "https://api.x.ai/v1",            _model("XAI", "grok-3-mini")),
+    ("xai",      "XAI_API_KEY",      "https://api.x.ai/v1",            _model("XAI", "grok-4.3")),
     ("openai",   "OPENAI_API_KEY",   "https://api.openai.com/v1",      _model("OPENAI", "gpt-4o-mini")),
     ("deepseek", "DEEPSEEK_API_KEY", "https://api.deepseek.com",       _model("DEEPSEEK", "deepseek-chat")),
     ("groq",     "GROQ_API_KEY",     "https://api.groq.com/openai/v1", _model("GROQ", "llama-3.1-8b-instant")),
@@ -61,6 +61,16 @@ if pytest is not None:
             pytest.skip(f"{env_key} not set")
         reply = _chat(base_url, key, model)
         assert reply, f"{name} ({model}) returned an empty completion"
+
+    def test_configured_model_answers():
+        """The effective chat model from engine.config answers — even if MODEL_NAME
+        points at an unavailable model, build_chat_model must self-heal to a good one."""
+        if not os.getenv("XAI_API_KEY"):
+            pytest.skip("XAI_API_KEY not set")
+        from engine.config import get_settings, build_chat_model
+        llm = build_chat_model(get_settings(), streaming=False, max_tokens=8)
+        reply = (llm.invoke("Reply with exactly one word: pong").content or "").strip()
+        assert reply, "configured chat model returned an empty completion"
 
 
 def _main() -> int:

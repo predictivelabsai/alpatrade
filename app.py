@@ -51,12 +51,14 @@ from engine.web import ph_auth  # noqa: E402
 from engine.web import ph_chat  # noqa: E402
 from engine.web import ph_guide  # noqa: E402
 from engine.web import ph_charts  # noqa: E402
+from engine.web import ph_settings  # noqa: E402
 
 ph_landing.register(app, rt)
 ph_auth.register(app, rt)
 ph_chat.register(app, rt)
 ph_guide.register(app, rt)
 ph_charts.register(app, rt)
+ph_settings.register(app, rt)
 
 # --- voice (mic button → /voice/* endpoints) --------------------------------
 from engine.voice import register_voice_routes  # noqa: E402

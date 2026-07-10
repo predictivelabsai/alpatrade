@@ -74,7 +74,7 @@ def _header(title: str, sub: str):
             Span(title, cls="chat-header-title"),
             cls="chat-header-left",
         ),
-        Div(NotStr('<a class="news-toggle-btn" href="/equities">Open chat</a>'),
+        Div(NotStr('<a class="news-toggle-btn" href="/app">Open chat</a>'),
             cls="chat-header-right"),
         cls="chat-header",
     )

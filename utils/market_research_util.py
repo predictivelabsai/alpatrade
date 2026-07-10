@@ -105,10 +105,11 @@ class MarketResearch:
             ticker = ticker.upper()
 
         # Map of provider → (fetch_fn, display_name)
-        # XAI and Tavily first — Polygon free tier often returns stale news
+        # Tavily first — it returns real, fresh article links; XAI can hallucinate
+        # headlines/URLs and Polygon's free tier is often stale.
         providers = [
-            ("xai", self._news_xai, "XAI Grok"),
             ("tavily", self._news_tavily, "Tavily"),
+            ("xai", self._news_xai, "XAI Grok"),
             ("polygon", self._news_polygon, "Polygon"),
         ]
 
@@ -192,13 +193,37 @@ class MarketResearch:
             logger.warning(f"XAI news failed: {e}")
         return None
 
+    _NAME_CACHE: dict = {}
+
+    def _company_name(self, ticker):
+        """Best-effort company name for a ticker (cached); '' if unknown."""
+        t = (ticker or "").upper()
+        if t in self._NAME_CACHE:
+            return self._NAME_CACHE[t]
+        name = ""
+        try:
+            info = yf.Ticker(t).info
+            name = info.get("shortName") or info.get("longName") or ""
+            # Trim common suffixes so the search query stays tight.
+            for suf in (", Inc.", " Inc.", " Inc", " Corporation", " Corp.", " Corp", ", Ltd.", " Ltd."):
+                if name.endswith(suf):
+                    name = name[: -len(suf)]
+        except Exception:  # noqa: BLE001
+            name = ""
+        self._NAME_CACHE[t] = name
+        return name
+
     def _news_tavily(self, ticker, limit):
         if not self.tavily_key:
             return None
         try:
             today = datetime.now().strftime("%B %d, %Y")
             if ticker:
-                query = f"{ticker} stock latest news headlines {today}"
+                # Include the company name so the search stays on the issuer (e.g.
+                # TSLA → Tesla) rather than drifting to adjacent entities (SpaceX).
+                name = self._company_name(ticker)
+                subject = f'"{name}" ({ticker})' if name else ticker
+                query = f"{subject} stock news earnings analyst {today}"
             else:
                 query = f"US stock market breaking news headlines {today}"
             r = requests.post("https://api.tavily.com/search", json={
@@ -504,26 +529,57 @@ class MarketResearch:
     def movers(self, direction="both") -> str:
         """Get top gainers and/or losers."""
         md = "# Market Movers\n\n"
+        got_any = False
 
         if direction in ("both", "gainers"):
             data = self._polygon_get("/v2/snapshot/locale/us/markets/stocks/gainers")
             if data and data.get("tickers"):
                 md += "## Top Gainers\n\n"
                 md += self._format_movers_table(data["tickers"][:10])
-            elif direction == "gainers":
-                md += "No gainers data available (requires Polygon subscription).\n"
+                got_any = True
 
         if direction in ("both", "losers"):
             data = self._polygon_get("/v2/snapshot/locale/us/markets/stocks/losers")
             if data and data.get("tickers"):
                 md += "\n## Top Losers\n\n"
                 md += self._format_movers_table(data["tickers"][:10])
-            elif direction == "losers":
-                md += "No losers data available (requires Polygon subscription).\n"
+                got_any = True
 
-        if md == "# Market Movers\n\n":
-            md += "No data available. Movers requires a Polygon.io subscription.\n"
+        # Polygon's gainers/losers endpoints need a paid plan. Fall back to ranking
+        # a liquid S&P universe by today's return via yfinance so movers still work.
+        if not got_any:
+            fb = self._movers_yfinance(direction)
+            if fb:
+                return fb
+            md += "No market-movers data available right now.\n"
 
+        return md
+
+    def _movers_yfinance(self, direction="both", limit=10):
+        """Rank the S&P sector universe by today's % change (yfinance fallback)."""
+        try:
+            from engine.market_map import market_map_data
+            stocks = [s for s in market_map_data("1d").get("stocks", [])
+                      if s.get("return") is not None]
+        except Exception as e:  # noqa: BLE001
+            logger.debug("yfinance movers fallback failed: %s", e)
+            return None
+        if not stocks:
+            return None
+        md = "# Market Movers\n\n"
+        by_ret = sorted(stocks, key=lambda s: s["return"], reverse=True)
+        if direction in ("both", "gainers"):
+            md += "## Top Gainers\n\n" + self._format_movers_yf(by_ret[:limit])
+        if direction in ("both", "losers"):
+            md += "\n## Top Losers\n\n" + self._format_movers_yf(by_ret[::-1][:limit])
+        md += "\n_Source: yfinance (today's move across a liquid S&P universe)._\n"
+        return md
+
+    def _format_movers_yf(self, stocks):
+        md = "| # | Ticker | Price | Change % |\n|---|--------|-------|----------|\n"
+        for i, s in enumerate(stocks, 1):
+            sign = "+" if s.get("return", 0) >= 0 else ""
+            md += f"| {i} | {s.get('ticker','')} | ${s.get('price',0):,.2f} | {sign}{s.get('return',0):.2f}% |\n"
         return md
 
     def _format_movers_table(self, tickers):

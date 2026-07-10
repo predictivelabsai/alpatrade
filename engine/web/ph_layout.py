@@ -167,6 +167,8 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             Div(
                 A("🗺 Market Map", href="/map", cls="page-link" + (" active" if active == "map" else "")),
                 A("📈 Charts", href="/charts", cls="page-link" + (" active" if active == "charts" else "")),
+                A("❓ Help & shortcuts", href="/guide", cls="page-link" + (" active" if active == "guide" else "")),
+                A("⚙ Settings", href="/settings", cls="page-link" + (" active" if active == "settings" else "")),
                 cls="page-links",
             ),
             Div(Span("Chats", cls="section-label")),

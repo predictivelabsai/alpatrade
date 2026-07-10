@@ -8,9 +8,10 @@ sys.path.insert(0, str(Path(__file__).parent.absolute()))
 from utils.db.db_pool import DatabasePool
 from sqlalchemy import text
 
-def run_migration():
+def run_migration(sql_file: str | None = None):
     pool = DatabasePool()
-    sql_file = Path("sql/11_add_user_accounts.sql")
+    # Accept a path on the CLI: `python run_migration.py sql/14_add_user_settings.sql`
+    sql_file = Path(sql_file or (sys.argv[1] if len(sys.argv) > 1 else "sql/11_add_user_accounts.sql"))
     print(f"Running migration: {sql_file}")
     
     with open(sql_file, "r") as f:

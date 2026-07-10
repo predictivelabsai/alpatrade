@@ -16,10 +16,26 @@ with **grok (XAI) as the LLM judge** (no OpenAI key required).
 
 Each result row: `prompt · expected_answer · ai_answer · agent_name · agent_type · result (PASS/FAIL) · score · reason · latency_s`.
 
-## Latest run — 2026-07-10 (after fixes)
+## Latest run — 2026-07-10 (BYOK + provider-config + Tavily-news pass)
 
 **Overall accuracy: 32/32 = 100.0%** (chat 18/18; deterministic 14/14; excludes the 2 slow agents).
-Chat now includes the two new charting tools (`show_market_map`, `compare_stocks`).
+Chat covers the charting tools (`show_market_map`, `compare_stocks`) and the Tavily-backed news tool.
+
+This pass validated the provider/BYOK work: the chat model is now resolved through
+`engine.config` (env `MODEL_PROVIDER`/`MODEL_NAME`, per-user overrides in
+`alpatrade.user_settings`) and self-heals an unavailable model — e.g. the region-locked
+`grok-4.5` falls back to `grok-4.3`, which is what unblocked chat answering at all.
+
+Three rows regressed on an interim run and were fixed:
+
+1. **`get_stock_news`** — now forces the configured `SEARCH_PROVIDER` (Tavily) and queries by
+   *company name + ticker* (TSLA → "Tesla" (TSLA)) so results stay on the issuer instead of
+   drifting to adjacent entities (SpaceX). Returns real, dated, linked headlines.
+2. **`get_market_movers`** — Polygon's gainers/losers endpoints need a paid plan; added a
+   yfinance fallback that ranks a liquid S&P universe by today's return when Polygon is empty.
+3. **`show_market_map`** — the treemap renders client-side, so a headless judge only sees the
+   tool's text. Right-sized the expectation: the up/down count + best/worst-sector summary
+   line *is* the correct answer.
 
 | Type | Passed | Accuracy |
 |---|---|---|

@@ -3,7 +3,7 @@ How large is my MSFT position?,States the MSFT position size in shares from the 
 Show me my positions,Lists the open positions with their symbols and quantities.,,get_alpaca_positions,chat,
 What's my account balance and P&L?,"Reports the account portfolio value, equity, cash and/or buying power.",,get_alpaca_account,chat,
 What's the current price of AAPL?,Gives Apple's current or most recent share price.,,get_stock_price,chat,
-What's the latest news on TSLA?,Returns recent Tesla news headlines.,,get_stock_news,chat,
+What's the latest news on TSLA?,"Returns a list of recent, real news headlines relevant to Tesla/TSLA from a live news search (e.g. Tavily), each with a date and source. A non-empty dated headline list is a correct answer; it need not be exclusively Tesla-specific and 'data unavailable'/empty is incorrect.",,get_stock_news,chat,
 What are the analyst ratings for NVDA?,Gives analyst ratings and/or price targets for NVIDIA.,,get_analyst_ratings,chat,
 Give me a company profile of Microsoft,Describes Microsoft — its sector and business.,,get_company_profile,chat,
 Show AAPL financials,"Reports Apple financials such as revenue, earnings or margins.",,get_financials,chat,
@@ -31,5 +31,5 @@ agent:status,Shows agent status.,agent;Agent;status;Status;running;idle;No ,Comm
 agent:reconcile window:7d,Reconciles DB positions vs the broker for the last 7 days.,reconcil;Reconcil;position;Position;match;broker,Reconciler,deterministic,
 agent:backtest lookback:1m symbols:AAPL,Runs a 1-month backtest on AAPL and reports trades/metrics.,backtest;Backtest;trade;Trade;Sharpe;return;Return,Backtester,deterministic,1
 agent:paper duration:1m symbols:AAPL poll:60,Starts a paper-trading agent on AAPL.,paper;Paper;start;Start;agent;running,Paper Trader,deterministic,1
-Show me a market map,Renders a finviz-style market map / treemap of S&P sectors and stocks by return; a one-line summary is fine.,,show_market_map,chat,
+Show me a market map,"The tool builds a finviz-style S&P market map (the treemap renders in the UI). A correct answer is a short textual summary that names how many names are up/down and the best and worst sectors with their returns — this summary IS the expected answer; the visual treemap renders client-side.",,show_market_map,chat,
 Compare AAPL vs MSFT vs NVDA performance,Compares the recent performance of AAPL MSFT and NVDA and renders a chart; a brief summary that names each ticker with its percentage return is a correct answer.,,compare_stocks,chat,

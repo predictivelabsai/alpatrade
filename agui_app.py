@@ -122,8 +122,13 @@ def get_stock_news(ticker: str, limit: int = 5) -> str:
     """Get latest news headlines for a stock ticker."""
     try:
         from utils.market_research_util import MarketResearch
+        from engine.config import get_settings
         mr = MarketResearch()
-        return mr.news(ticker=ticker.upper(), limit=limit)
+        # Honour the configured SEARCH_PROVIDER (defaults to Tavily, which returns
+        # real fresh article links). Unknown providers fall back to the default order.
+        sp = (get_settings().search_provider or "tavily").lower()
+        provider = sp if sp in ("tavily", "xai", "polygon") else "tavily"
+        return mr.news(ticker=ticker.upper(), limit=limit, provider=provider)
     except Exception as e:
         return f"Error fetching news for {ticker}: {e}"
 
@@ -609,16 +614,40 @@ TOOLS = [
         description="Place a PAPER (simulated) buy/sell order and execute it (paper only — no real money). order_type='market' or 'limit' (pass limit_price for limit). Use for any buy/sell request."),
 ]
 
-llm = ChatOpenAI(
-    api_key=os.getenv("XAI_API_KEY"),
-    base_url="https://api.x.ai/v1",
-    model="grok-3-mini",
-    temperature=0.5,
-    max_tokens=3000,
-    streaming=True,
-)
+from engine.config import get_settings, build_chat_model
+
+# Default (deployment-level) model. MODEL_PROVIDER / MODEL_NAME come from env via
+# engine.config, which self-heals an unavailable model (e.g. region-locked
+# grok-4.5 → grok-4.3). Per-user overrides are applied by agent_for_user() below.
+llm = build_chat_model(get_settings(), streaming=True)
 
 langgraph_agent = create_react_agent(model=llm, tools=TOOLS, prompt=SYSTEM_PROMPT)
+
+
+# Per-user agents, cached by (provider, model) so a user's Settings choice takes
+# effect without rebuilding the tool graph on every request.
+_agent_cache: dict = {}
+
+
+def agent_for_user(user_id: str | None):
+    """Return the react agent for a user's resolved model settings.
+
+    Falls back to the shared default agent when the user has no override or the
+    override matches the default (keeping a single hot agent for anonymous use)."""
+    if not user_id:
+        return langgraph_agent
+    try:
+        s = get_settings(user_id)
+        key = (s.model_provider, s.model_name)
+        default = get_settings()
+        if key == (default.model_provider, default.model_name):
+            return langgraph_agent
+        if key not in _agent_cache:
+            _agent_cache[key] = create_react_agent(
+                model=build_chat_model(s, streaming=True), tools=TOOLS, prompt=SYSTEM_PROMPT)
+        return _agent_cache[key]
+    except Exception:  # noqa: BLE001 — never let model selection break chat
+        return langgraph_agent
 
 
 # ---------------------------------------------------------------------------

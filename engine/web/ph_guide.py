@@ -51,7 +51,7 @@ _GUIDE_CSS = """
 # ---------------------------------------------------------------------------
 # shared chrome
 # ---------------------------------------------------------------------------
-def _header(title: str, sub_href: str = "/equities", sub_label: str = "Open app"):
+def _header(title: str, sub_href: str = "/app", sub_label: str = "Open app"):
     return Div(
         Div(
             Button("☰", cls="mobile-menu-btn", type="button", onclick="toggleLeftPane()"),
@@ -82,6 +82,13 @@ def _guide_toc():
     return Div(
         H4("Table of Contents"),
         Ul(
+            Li(A("Chat Quick-Start", href="#chat")),
+            Ul(
+                Li(A("Things you can ask", href="#chat-ask")),
+                Li(A("Charts & the market map", href="#chat-charts")),
+                Li(A("Bring your own keys", href="#chat-byok")),
+                Li(A("Voice", href="#chat-voice")),
+            ),
             Li(A("Backtesting", href="#backtest")),
             Ul(
                 Li(A("Quick Start", href="#bt-quickstart")),
@@ -131,6 +138,40 @@ def _guide_toc():
             ),
         ),
         cls="toc",
+    )
+
+
+def _guide_chat():
+    return (
+        H2("Chat Quick-Start", id="chat"),
+        P("AlpaTrade is chat-first — just ask in plain English in the composer. "
+          "The AI routes your question to the right tool (quotes, news, charts, "
+          "orders, backtests). You never have to memorise commands."),
+        H3("Things you can ask", id="chat-ask"),
+        Pre(Code(
+            "What's the price of AAPL?\n"
+            "Latest news on TSLA\n"
+            "Compare AAPL vs MSFT vs NVDA performance\n"
+            "Show me a market map\n"
+            "Show me a candlestick chart of NVDA\n"
+            "Which of my strategies performed best?\n"
+            "Buy 1 share of AAPL at market   (paper)\n"
+            "What's my account balance and P&L?"
+        )),
+        H3("Charts & the market map", id="chat-charts"),
+        P("Charts render inline in the chat, and there are full-screen pages too: ",
+          A("🗺 Market Map", href="/map"), " (finviz-style S&P sector/stock treemap) and ",
+          A("📈 Charts", href="/charts"), " (candlestick + multi-ticker compare)."),
+        H3("Bring your own keys", id="chat-byok"),
+        P("Open ", A("⚙ Settings", href="/settings"), " to connect your own Alpaca "
+          "paper keys (Fernet-encrypted at rest) and pick your model / data / search "
+          "providers. Without keys, the shared demo account is used."),
+        H3("Voice", id="chat-voice"),
+        P("Tap the microphone in the composer to talk to the agent hands-free — ask "
+          "for a quote or your positions and hear the answer back."),
+        Div("Prefer terminal-style commands? Everything below still works — type ",
+            Code("help"), " in the composer for a compact reference, or read on.",
+            cls="tip"),
     )
 
 
@@ -542,6 +583,7 @@ def _guide_body():
         P("Complete reference for all AlpaTrade commands. Type any command in the chat "
           "composer on the ", A("home page", href="/"), ".", cls="lead"),
         _guide_toc(),
+        *_guide_chat(),
         *_guide_backtest(),
         *_guide_paper(),
         *_guide_full(),
@@ -617,7 +659,7 @@ def register(app, rt):
     @rt("/guide", methods=["GET"])
     def guide_get(session):
         center = Div(_header("User Guide"), _guide_body(), cls="center-pane")
-        return page(None, Style(_GUIDE_CSS), center, user=_user(session),
+        return page("guide", Style(_GUIDE_CSS), center, user=_user(session),
                     title="User Guide · AlpaTrade", right_news=False)
 
     @rt("/download", methods=["GET"])
