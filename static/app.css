@@ -83,6 +83,15 @@ a { color: var(--accent); }
 }
 .new-chat-btn:hover { background: var(--ink); }
 
+/* Explore page links (Market Map / Charts) */
+.page-links { display: flex; flex-direction: column; gap: .15rem; margin-bottom: .75rem; }
+.page-link {
+    display: block; padding: .4rem .5rem; border-radius: .45rem; font-size: .82rem;
+    color: var(--ink-muted); text-decoration: none; font-family: var(--font-body);
+}
+.page-link:hover { background: var(--accent-dim); color: var(--ink); }
+.page-link.active { background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+
 /* Session history */
 .session-list { display: flex; flex-direction: column; gap: .2rem; }
 .sessions-empty { font-size: .72rem; color: var(--ink-dim); padding: .4rem; }

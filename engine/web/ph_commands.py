@@ -89,6 +89,9 @@ MAIN_NAV = [
         ("chart:AAPL period:1y", "price chart"),
     ]),
     ("Charts & Equity", [
+        ("Show me a market map", "S&P sector return treemap"),
+        ("Compare AAPL vs MSFT vs NVDA", "relative-return chart"),
+        ("Show me a candlestick chart of AAPL", "OHLC + volume"),
         ("equity", "latest run equity curve"),
         ("equity backtest", "latest backtest equity"),
         ("equity paper", "latest paper equity"),

@@ -120,24 +120,84 @@ CHAT_JS = r"""
     return txt;
   }
 
+  // diverging red→grey→green scale for a % return (finviz style)
+  function retColor(r){
+    if(r==null||isNaN(r)) return '#9AA39C';
+    var c=Math.max(-1,Math.min(1,r/6));   // saturate near ±6%
+    if(c>=0) return 'rgb('+Math.round(122-91*c)+','+Math.round(134+21*c)+','+Math.round(126-59*c)+')';
+    var a=-c; return 'rgb('+Math.round(122+58*a)+','+Math.round(134-63*a)+','+Math.round(126-79*a)+')';
+  }
+  var PALETTE=['#1F5D43','#B4472F','#3E7CB1','#C89B3C','#7A5FA0','#4C9A82','#B4657A','#6E8C4E'];
+
   function renderChart(bubble){
     if(!bubble || !bubble._chart || !window.Plotly) return;
     var data; try{ data=JSON.parse(bubble._chart); }catch(e){ return; }
+    var tall=(data.type==='treemap');
     var wrap=document.createElement('div'); wrap.style.cssText='width:100%;margin:.6rem 0;';
-    var div=document.createElement('div'); div.style.cssText='width:100%;min-height:360px;';
+    var div=document.createElement('div'); div.style.cssText='width:100%;min-height:'+(tall?'480px':'360px')+';';
     wrap.appendChild(div);
     var dl=document.createElement('button'); dl.textContent='Download PNG'; dl.className='table-action-btn';
     dl.style.marginTop='.4rem';
-    dl.onclick=function(){ Plotly.downloadImage(div,{format:'png',width:1200,height:600,
-      filename:(data.type==='equity_curve'?'equity':(data.ticker||'chart'))}); };
+    var fname={equity_curve:'equity',treemap:'market-map',compare:'compare'}[data.type]||(data.ticker||'chart');
+    dl.onclick=function(){ Plotly.downloadImage(div,{format:'png',width:1200,height:tall?720:600,filename:fname}); };
     wrap.appendChild(dl);
     bubble.appendChild(wrap);
-    var layout={paper_bgcolor:'#FFFFFF',plot_bgcolor:'#F7F6F1',
+    var base={paper_bgcolor:'#FFFFFF',plot_bgcolor:'#F7F6F1',
       font:{color:'#415046',family:'Inter,sans-serif',size:11},
       xaxis:{gridcolor:'#E3DFD2',linecolor:'#E3DFD2'},
       yaxis:{gridcolor:'#E3DFD2',linecolor:'#E3DFD2',tickprefix:'$'},
       legend:{orientation:'h',y:-0.15},margin:{t:38,r:15,b:40,l:60},showlegend:true};
-    if(data.type==='equity_curve'){
+
+    if(data.type==='treemap'){
+      var ids=[],labels=[],parents=[],values=[],colors=[],texts=[],hovers=[];
+      (data.sectors||[]).forEach(function(s){
+        ids.push(s.name); labels.push(s.name); parents.push(''); values.push(0);
+        colors.push(retColor(s.return));
+        texts.push(s.name+'  '+(s.return>=0?'+':'')+s.return.toFixed(1)+'%'); hovers.push(s.name);
+      });
+      (data.stocks||[]).forEach(function(d){
+        ids.push(d.sector+'/'+d.ticker); labels.push(d.ticker); parents.push(d.sector);
+        values.push(d.size||1); colors.push(retColor(d.return));
+        texts.push(d.ticker+'<br>'+(d.return>=0?'+':'')+d.return.toFixed(1)+'%');
+        hovers.push(d.ticker+'<br>$'+d.price+'<br>'+(d.return>=0?'+':'')+d.return.toFixed(2)+'%');
+      });
+      var tm={type:'treemap',ids:ids,labels:labels,parents:parents,values:values,
+        branchvalues:'remainder',text:texts,textinfo:'text',hovertext:hovers,hoverinfo:'text',
+        marker:{colors:colors,line:{width:1,color:'#F7F6F1'}},textfont:{color:'#FFFFFF',size:11},
+        pathbar:{visible:true}};
+      Plotly.newPlot(div,[tm],{margin:{t:30,l:4,r:4,b:4},paper_bgcolor:'#FFFFFF',
+        title:{text:'Market Map — '+data.period+' returns',font:{size:13,color:'#14231B'}},
+        font:{color:'#415046',size:10}},{responsive:true,displayModeBar:false});
+
+    } else if(data.type==='candlestick'){
+      var cs={x:data.dates,open:data.open,high:data.high,low:data.low,close:data.close,
+        type:'candlestick',name:data.ticker,xaxis:'x',yaxis:'y',
+        increasing:{line:{color:'#1F5D43'}},decreasing:{line:{color:'#B4472F'}}};
+      var traces=[cs];
+      if(data.volume && data.volume.length){
+        traces.push({x:data.dates,y:data.volume,type:'bar',name:'Vol',xaxis:'x',yaxis:'y2',
+          marker:{color:'rgba(122,134,126,0.35)'}});
+      }
+      Plotly.newPlot(div,traces,{paper_bgcolor:'#FFFFFF',plot_bgcolor:'#F7F6F1',
+        title:{text:data.ticker+' — '+data.period,font:{size:13,color:'#14231B'}},
+        font:{color:'#415046',size:11},showlegend:false,margin:{t:38,r:15,b:30,l:58},
+        xaxis:{gridcolor:'#E3DFD2',rangeslider:{visible:false}},
+        yaxis:{gridcolor:'#E3DFD2',tickprefix:'$',domain:[0.26,1]},
+        yaxis2:{gridcolor:'#F0ECE0',domain:[0,0.2],showticklabels:false}},
+        {responsive:true,displayModeBar:false});
+
+    } else if(data.type==='compare'){
+      var ct=(data.series||[]).map(function(s,i){
+        var last=s.pct[s.pct.length-1];
+        return {x:s.dates,y:s.pct,type:'scatter',mode:'lines',
+          name:s.name+' '+(last>=0?'+':'')+last.toFixed(1)+'%',
+          line:{color:PALETTE[i%PALETTE.length],width:2}};
+      });
+      base.yaxis={gridcolor:'#E3DFD2',ticksuffix:'%',zeroline:true,zerolinecolor:'#C9C2AE'};
+      base.title={text:'Relative return — '+data.period,font:{size:13,color:'#14231B'}};
+      Plotly.newPlot(div,ct,base,{responsive:true,displayModeBar:false});
+
+    } else if(data.type==='equity_curve'){
       var eq={x:data.dates,y:data.equity,type:'scatter',mode:'lines',name:'Equity',
         line:{color:'#1F5D43',width:2},fill:'tozeroy',fillcolor:'rgba(31,93,67,0.08)'};
       var cap={x:[data.dates[0],data.dates[data.dates.length-1]],
@@ -146,15 +206,16 @@ CHAT_JS = r"""
       var fin=data.equity[data.equity.length-1]-data.initial_capital;
       var pct=(fin/data.initial_capital*100).toFixed(1);
       var sign=fin>=0?'+':'';
-      layout.title={text:'Equity Curve  ('+sign+'$'+fin.toFixed(0)+' / '+sign+pct+'%)',
+      base.title={text:'Equity Curve  ('+sign+'$'+fin.toFixed(0)+' / '+sign+pct+'%)',
         font:{size:13,color:'#14231B'}};
-      Plotly.newPlot(div,[eq,cap],layout,{responsive:true,displayModeBar:false});
+      Plotly.newPlot(div,[eq,cap],base,{responsive:true,displayModeBar:false});
+
     } else {
       var tr={x:data.dates,y:data.close,type:'scatter',mode:'lines',name:data.ticker,
         line:{color:'#1F5D43',width:2},fill:'tozeroy',fillcolor:'rgba(31,93,67,0.08)'};
-      layout.title={text:data.ticker+' — '+data.period,font:{size:13,color:'#14231B'}};
-      layout.showlegend=false;
-      Plotly.newPlot(div,[tr],layout,{responsive:true,displayModeBar:false});
+      base.title={text:data.ticker+' — '+data.period,font:{size:13,color:'#14231B'}};
+      base.showlegend=false;
+      Plotly.newPlot(div,[tr],base,{responsive:true,displayModeBar:false});
     }
     delete bubble._chart;
   }

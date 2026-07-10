@@ -81,6 +81,9 @@ SYSTEM_PROMPT = (
     "When users ask which strategies performed best, top strategies, or rankings, use get_top_strategies. "
     "When users ask to see/show a price chart, use show_stock_chart and reply that the chart is rendered "
     "below — do not re-describe the raw numbers. "
+    "When users ask for a market map, sector heatmap, or how the market/sectors are doing, use show_market_map. "
+    "When users ask to compare the performance/returns of several stocks (X vs Y), use compare_stocks. "
+    "For any chart tool, keep the reply to a one-line summary and say the chart is rendered below. "
     "TRADING: when a user asks to buy or sell shares or place a trade, use place_paper_order to place "
     "the order directly and report the result. Use order_type='market' for a market order; if the user "
     "names a price (e.g. 'buy 10 AAPL at $180' or 'limit 180'), use order_type='limit' with that "
@@ -433,7 +436,8 @@ def show_recent_trades(limit: int = 20, trade_type: str = "") -> str:
 
 
 def show_stock_chart(ticker: str, period: str = "3mo") -> str:
-    """Show a price chart for a stock. Period: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y."""
+    """Show a candlestick price chart (with volume) for a stock.
+    Period: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y."""
     try:
         from utils.data_loader import get_intraday_data
         interval = "1d" if period not in ("1d", "5d") else "5m"
@@ -441,22 +445,80 @@ def show_stock_chart(ticker: str, period: str = "3mo") -> str:
         if df.empty:
             return f"No chart data for {ticker.upper()}"
         dates = [d.isoformat() if hasattr(d, 'isoformat') else str(d) for d in df.index]
-        closes = [round(float(c), 2) for c in df["Close"]]
-        highs = [round(float(h), 2) for h in df["High"]]
-        lows = [round(float(l), 2) for l in df["Low"]]
+        _r = lambda s: [round(float(v), 2) for v in df[s]]  # noqa: E731
+        vols = [int(v) for v in df["Volume"]] if "Volume" in df else []
         import json
         chart_data = json.dumps({
+            "type": "candlestick",
             "ticker": ticker.upper(),
             "period": period,
             "dates": dates,
-            "close": closes,
-            "high": highs,
-            "low": lows,
+            "open": _r("Open"),
+            "high": _r("High"),
+            "low": _r("Low"),
+            "close": _r("Close"),
+            "volume": vols,
         })
-        return (f"📈 Here is the **{ticker.upper()}** {period} price chart, rendered below.\n\n"
+        return (f"📈 Here is the **{ticker.upper()}** {period} candlestick chart, rendered below.\n\n"
                 f"__CHART_DATA__{chart_data}__END_CHART__")
     except Exception as e:
         return f"Error generating chart for {ticker}: {e}"
+
+
+def show_market_map(period: str = "1mo") -> str:
+    """Show a finviz-style market map — a treemap of S&P 500 sectors and stocks
+    coloured by return (green up / red down), sized by liquidity. Use when the
+    user asks for a market map, sector heatmap, or 'how is the market doing'.
+    Period: 1d, 5d, 1mo, 3mo, 6mo, 1y, ytd."""
+    try:
+        from engine.market_map import market_map_data
+        import json
+        d = market_map_data(period)
+        if d.get("error") or not d.get("stocks"):
+            return f"Couldn't build the market map right now ({d.get('error', 'no data')})."
+        up = sum(1 for s in d["stocks"] if s["return"] > 0)
+        best = d["sectors"][0] if d["sectors"] else None
+        worst = d["sectors"][-1] if d["sectors"] else None
+        chart_data = json.dumps({"type": "treemap", **d})
+        summary = f"🗺️ **Market map** ({d['period']}) — {up}/{len(d['stocks'])} names green."
+        if best and worst:
+            summary += (f" Best sector: **{best['name']}** ({best['return']:+.1f}%); "
+                        f"worst: **{worst['name']}** ({worst['return']:+.1f}%).")
+        return f"{summary} Rendered below.\n\n__CHART_DATA__{chart_data}__END_CHART__"
+    except Exception as e:  # noqa: BLE001
+        return f"Error building market map: {e}"
+
+
+def compare_stocks(tickers: str, period: str = "6mo") -> str:
+    """Compare the normalised total return of several stocks on one chart.
+    `tickers` is a comma/space-separated list (e.g. 'AAPL, MSFT, NVDA').
+    Period: 1mo, 3mo, 6mo, 1y, 2y, 5y, ytd."""
+    try:
+        import re, json
+        from utils.data_loader import get_intraday_data
+        syms = [t for t in re.split(r"[,\s]+", (tickers or "").upper()) if t][:8]
+        if not syms:
+            return "Give me at least one ticker to compare."
+        series, summary = [], []
+        for sym in syms:
+            df = get_intraday_data(sym, interval="1d", period=period)
+            if df.empty or len(df) < 2:
+                continue
+            closes = [float(c) for c in df["Close"]]
+            base = closes[0] or closes[-1]
+            pct = [round((c - base) / base * 100.0, 2) for c in closes]
+            dates = [d.isoformat() if hasattr(d, "isoformat") else str(d) for d in df.index]
+            series.append({"name": sym, "dates": dates, "pct": pct})
+            summary.append((sym, pct[-1]))
+        if not series:
+            return f"No data for {', '.join(syms)}."
+        summary.sort(key=lambda x: x[1], reverse=True)
+        line = ", ".join(f"**{s}** {p:+.1f}%" for s, p in summary)
+        chart_data = json.dumps({"type": "compare", "period": period, "series": series})
+        return (f"📊 **{period} return comparison** — {line}. Rendered below.\n\n"
+                f"__CHART_DATA__{chart_data}__END_CHART__")
+    except Exception as e:  # noqa: BLE001
+        return f"Error comparing stocks: {e}"
 
 
 
@@ -526,7 +588,11 @@ TOOLS = [
     StructuredTool.from_function(show_recent_trades, name="show_recent_trades",
         description="Show recent trades from the database. Use trade_type='paper' for paper trades only, 'backtest' for backtests only."),
     StructuredTool.from_function(show_stock_chart, name="show_stock_chart",
-        description="Show a price chart for a stock. Period: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y."),
+        description="Show a candlestick price chart (with volume) for a single stock. Period: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y."),
+    StructuredTool.from_function(show_market_map, name="show_market_map",
+        description="Show a finviz-style market map: a treemap of S&P sectors/stocks coloured by return. Use for 'market map', 'sector heatmap', 'how's the market'. Period: 1d, 5d, 1mo, 3mo, 6mo, 1y, ytd."),
+    StructuredTool.from_function(compare_stocks, name="compare_stocks",
+        description="Compare normalised returns of multiple stocks on one chart. tickers is a comma/space list. Use for 'compare X vs Y', 'X vs Y vs Z performance'. Period: 1mo, 3mo, 6mo, 1y, 2y, 5y, ytd."),
     StructuredTool.from_function(show_recent_runs, name="show_recent_runs",
         description="Show recent backtest/paper trade runs from the AlpaTrade database."),
     StructuredTool.from_function(get_top_strategies, name="get_top_strategies",

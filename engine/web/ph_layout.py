@@ -163,6 +163,12 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
         Div(
             A("＋ New chat", cls="new-chat-btn", href="#",
               onclick="newChat();return false;"),
+            Div(Span("Explore", cls="section-label")),
+            Div(
+                A("🗺 Market Map", href="/map", cls="page-link" + (" active" if active == "map" else "")),
+                A("📈 Charts", href="/charts", cls="page-link" + (" active" if active == "charts" else "")),
+                cls="page-links",
+            ),
             Div(Span("Chats", cls="section-label")),
             Div(Div("No chats yet.", cls="sessions-empty"),
                 cls="session-list", id="session-list"),
@@ -188,8 +194,8 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
 _SUGGESTION_CARDS = [
     "Show me my positions",
     "Buy 1 share of TSLA at market",
-    "Buy 10 AAPL with a $180 limit",
-    "What's my account balance and P&L?",
+    "Show me a market map",
+    "Compare AAPL vs MSFT vs NVDA",
     "Backtest buy-the-dip on AAPL over the last month",
     "What's the latest news on TSLA?",
 ]
