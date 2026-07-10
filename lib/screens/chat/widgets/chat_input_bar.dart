@@ -7,12 +7,18 @@ class ChatInputBar extends StatefulWidget {
   final ValueChanged<String> onSend;
   final VoidCallback onMic;
 
+  /// Owned by the parent so quick-action cards can prefill the field.
+  final TextEditingController controller;
+  final FocusNode focusNode;
+
   const ChatInputBar({
     super.key,
     required this.isStreaming,
     required this.voiceActive,
     required this.onSend,
     required this.onMic,
+    required this.controller,
+    required this.focusNode,
   });
 
   @override
@@ -20,17 +26,20 @@ class ChatInputBar extends StatefulWidget {
 }
 
 class _ChatInputBarState extends State<ChatInputBar> {
-  final _controller = TextEditingController();
-  final _focusNode = FocusNode();
+  TextEditingController get _controller => widget.controller;
+  FocusNode get _focusNode => widget.focusNode;
   bool _hasText = false;
 
   @override
   void initState() {
     super.initState();
-    _controller.addListener(() {
-      final hasText = _controller.text.trim().isNotEmpty;
-      if (hasText != _hasText) setState(() => _hasText = hasText);
-    });
+    _hasText = _controller.text.trim().isNotEmpty;
+    _controller.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    final hasText = _controller.text.trim().isNotEmpty;
+    if (hasText != _hasText) setState(() => _hasText = hasText);
   }
 
   void _send() {
@@ -43,8 +52,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
 
   @override
   void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
+    _controller.removeListener(_onTextChanged);
     super.dispose();
   }
 

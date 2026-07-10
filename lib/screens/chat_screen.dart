@@ -5,6 +5,7 @@ import 'package:alpatrade/models/chat.dart';
 import 'package:alpatrade/providers/chat_provider.dart';
 import 'package:alpatrade/providers/voice_provider.dart';
 import 'package:alpatrade/screens/chat/widgets/chat_input_bar.dart';
+import 'package:alpatrade/screens/chat/widgets/quick_order_bar.dart';
 import 'package:alpatrade/screens/chat/widgets/chat_message_bubble.dart';
 import 'package:alpatrade/screens/chat/widgets/streaming_text.dart';
 import 'package:alpatrade/screens/chat/widgets/tool_execution_card.dart';
@@ -20,6 +21,16 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _inputController = TextEditingController();
+  final FocusNode _inputFocus = FocusNode();
+
+  void _prefill(String text) {
+    _inputController.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+    _inputFocus.requestFocus();
+  }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -36,6 +47,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _inputController.dispose();
+    _inputFocus.dispose();
     super.dispose();
   }
 
@@ -81,9 +94,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ),
           ),
           const VoicePanel(),
+          QuickOrderBar(onTemplate: _prefill),
           ChatInputBar(
             isStreaming: chatState.isStreaming,
             voiceActive: voice.isActive,
+            controller: _inputController,
+            focusNode: _inputFocus,
             onSend: (text) => ref.read(chatProvider.notifier).sendMessage(text),
             onMic: () => ref.read(voiceProvider.notifier).toggle(),
           ),
