@@ -1,7 +1,7 @@
 name: alpatrade
 description: AlpaTrade — AI trading research & paper-trading assistant
 publish_to: none
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.12.0
