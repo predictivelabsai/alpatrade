@@ -25,8 +25,9 @@ from engine.web.ph_layout import head, TILE_MARK
 SITE_NAME = "AlpaTrade"
 SITE_TAGLINE = "Backtest, paper-trade and prove the P&L — one AI trading desk on Alpaca."
 
-# Android APK — hosted as a GitHub release asset (55MB binary kept out of the repo/image).
-APK_DOWNLOAD_URL = "https://github.com/predictivelabsai/alpatrade/releases/download/v1.0.0/alpatrade-v1.0.0.apk"
+# Android APK — hosted as a GitHub release asset (binary kept out of the repo/image).
+# Signed release build (upload key). Bump this on each new versioned release.
+APK_DOWNLOAD_URL = "https://github.com/predictivelabsai/alpatrade/releases/download/v1.0.1/alpatrade-v1.0.1.apk"
 
 _GOOGLE_SVG = (
     '<svg width="17" height="17" viewBox="0 0 18 18" style="display:inline-block;'
