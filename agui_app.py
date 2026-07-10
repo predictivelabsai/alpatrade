@@ -77,7 +77,11 @@ SYSTEM_PROMPT = (
     "When users ask about their positions, holdings, or portfolio, use get_alpaca_positions. "
     "When users ask about their account, balance, buying power, or cash, use get_alpaca_account. "
     "When users ask about their linked accounts or want to see which accounts are configured, use list_user_accounts. "
-    "When users ask about running agents, background tasks, or agent status, use show_running_agents."
+    "When users ask about running agents, background tasks, or agent status, use show_running_agents. "
+    "TRADING: when a user asks to buy or sell shares or place a trade, use place_paper_order. "
+    "ALWAYS call it with confirm=false FIRST and show the returned preview; only call it again with "
+    "confirm=true AFTER the user explicitly confirms in a following message (e.g. 'confirm', 'yes', "
+    "'go ahead'). All trading is paper (simulated) — never place an order without an explicit confirmation."
 )
 
 
@@ -223,6 +227,52 @@ def get_alpaca_account(account_id: Optional[str] = None) -> str:
         )
     except Exception as e:
         return f"Error fetching account: {e}"
+
+
+def place_paper_order(symbol: str, qty: float, side: str = "buy",
+                      confirm: bool = False, account_id: Optional[str] = None) -> str:
+    """Place a PAPER (simulated) market order on Alpaca. Paper trading only — no real
+    money. ALWAYS call this with confirm=false FIRST to return a preview; only call it
+    again with confirm=true AFTER the user has explicitly confirmed."""
+    symbol = (symbol or "").upper().strip()
+    side = (side or "buy").lower().strip()
+    if side not in ("buy", "sell"):
+        return "Side must be 'buy' or 'sell'."
+    try:
+        qty = float(qty)
+    except Exception:  # noqa: BLE001
+        return "Quantity must be a number."
+    if qty <= 0:
+        return "Quantity must be greater than zero."
+
+    est = None
+    try:
+        from utils.data_loader import get_intraday_data
+        df = get_intraday_data(symbol, interval="1d", period="5d")
+        if df is not None and not df.empty:
+            est = float(df["Close"].iloc[-1])
+    except Exception:  # noqa: BLE001
+        est = None
+    est_txt = f" @ ~${est:,.2f} (≈ ${est * qty:,.2f})" if est else ""
+
+    if not confirm:
+        return (f"🧾 **Order preview — PAPER (simulated)**\n\n"
+                f"{side.upper()} **{qty:g} {symbol}**{est_txt}, market order.\n\n"
+                f"This is a paper trade — no real money. Reply **confirm** (or “yes”) "
+                f"to place it, or “cancel” to abort.")
+
+    try:
+        from utils.alpaca_util import AlpacaAPI
+        client = AlpacaAPI(paper=True, account_id=account_id)
+        order = client.create_order(symbol=symbol, qty=qty, side=side, type="market")
+        if isinstance(order, dict) and order.get("error"):
+            return f"Order failed: {order['error']}"
+        oid = (order or {}).get("id", "?") if isinstance(order, dict) else "?"
+        status = (order or {}).get("status", "submitted") if isinstance(order, dict) else "submitted"
+        return (f"✅ **Paper order placed** — {side.upper()} {qty:g} {symbol} (market).\n\n"
+                f"Order id `{oid}`, status: {status}. Simulated paper trade — no real money.")
+    except Exception as e:  # noqa: BLE001
+        return f"Order failed: {e}"
 
 
 
@@ -430,6 +480,8 @@ TOOLS = [
         description="Show recent backtest/paper trade runs from the AlpaTrade database."),
     StructuredTool.from_function(show_equity_curve, name="show_equity_curve",
         description="Show equity curve chart. Use trade_type='paper' or 'backtest' to filter. Use run_id for a specific run. Default: latest run."),
+    StructuredTool.from_function(place_paper_order, name="place_paper_order",
+        description="Place a PAPER (simulated) market buy/sell order. ALWAYS call with confirm=false first to preview; call again with confirm=true only after the user explicitly confirms."),
 ]
 
 llm = ChatOpenAI(

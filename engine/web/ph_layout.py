@@ -177,10 +177,10 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
 _SUGGESTION_CARDS = [
     "Show me my positions",
     "How large is my MSFT position?",
+    "Buy 1 share of TSLA (paper)",
     "What's my account balance and P&L?",
     "Backtest buy-the-dip on AAPL and TSLA over the last month",
     "What's the latest news on TSLA?",
-    "Which of my strategies performed best?",
 ]
 
 
