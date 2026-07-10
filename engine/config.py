@@ -73,7 +73,7 @@ def _norm(val: str | None) -> str | None:
     """Normalise a provider token: lowercase, drop a trailing ``.com``/``.io`` and
     any inline comment (``massive.com  # eodhd.com`` → ``massive``)."""
     if not val:
-        return val
+        return None
     val = val.split("#", 1)[0].strip().lower()
     for suffix in (".com", ".io", ".ai", ".org"):
         if val.endswith(suffix):

@@ -588,6 +588,53 @@ class TestConfig(unittest.TestCase):
         self.assertIn("hold_days", btd)
 
 
+class TestProviderConfig(unittest.TestCase):
+    """engine.config — provider/model settings resolution (network-free)."""
+
+    def test_norm_strips_domain_and_comment(self):
+        from engine.config import _norm
+        self.assertEqual(_norm("massive.com  # eodhd.com"), "massive")
+        self.assertEqual(_norm("Tavily"), "tavily")
+        self.assertEqual(_norm("eodhd.io"), "eodhd")
+        self.assertIsNone(_norm(""))
+
+    def test_choices_nonempty(self):
+        from engine.config import (MODEL_PROVIDERS, MODEL_NAMES, MARKET_DATA_PROVIDERS,
+                                   SEARCH_PROVIDERS, AGENT_FRAMEWORKS)
+        for choices in (MODEL_PROVIDERS, MARKET_DATA_PROVIDERS, SEARCH_PROVIDERS, AGENT_FRAMEWORKS):
+            self.assertTrue(len(choices) >= 1)
+        self.assertIn("grok-4.3", MODEL_NAMES["xai"])
+
+    def test_get_settings_has_all_fields(self):
+        from engine.config import get_settings
+        s = get_settings()
+        for field in ("model_provider", "model_name", "market_data_provider",
+                      "search_provider", "agent_framework"):
+            self.assertTrue(getattr(s, field), f"{field} empty")
+
+    def test_env_override_and_normalization(self):
+        import os
+        from engine.config import get_settings
+        saved = {k: os.environ.get(k) for k in ("MARKED_DATA_PROVIDER", "SEARCH_PROVIDER")}
+        try:
+            os.environ["MARKED_DATA_PROVIDER"] = "massive.com"
+            os.environ["SEARCH_PROVIDER"] = "Tavily"
+            s = get_settings()
+            self.assertEqual(s.market_data_provider, "massive")
+            self.assertEqual(s.search_provider, "tavily")
+        finally:
+            for k, v in saved.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+
+    def test_user_settings_no_row_returns_empty(self):
+        from engine.auth import get_user_settings
+        # A random uuid has no settings row → {} (no crash).
+        self.assertEqual(get_user_settings("00000000-0000-0000-0000-000000000000"), {})
+
+
 # ---------------------------------------------------------------------------
 # 15. PDT Tracker
 # ---------------------------------------------------------------------------

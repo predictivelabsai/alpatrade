@@ -248,9 +248,16 @@ def get_alpaca_account(account_id: Optional[str] = None) -> str:
     try:
         from utils.alpaca_util import AlpacaAPI
         client = AlpacaAPI(paper=True)  # primary paper account (…8CR) via .env
+        # Alpaca's REST API occasionally returns a transient error; retry once
+        # before surfacing a failure so a blip doesn't read as "unavailable".
         acct = client.get_account()
-        if "error" in acct:
-            return f"Error fetching account: {acct['error']}"
+        if isinstance(acct, dict) and "error" in acct:
+            import time as _t
+            _t.sleep(0.6)
+            acct = client.get_account()
+        if not isinstance(acct, dict) or "error" in acct:
+            err = acct.get("error") if isinstance(acct, dict) else acct
+            return f"Error fetching account: {err}"
         equity = float(acct.get("equity", 0))
         cash = float(acct.get("cash", 0))
         buying_power = float(acct.get("buying_power", 0))

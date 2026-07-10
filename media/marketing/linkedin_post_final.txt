@@ -1,0 +1,23 @@
+Meet AlpaTrade — your personal trading floor → https://alpatrade.chat (clone it / fork it to run your own — sharing is caring)
+
+A few things it can do that a normal trading dashboard can't 👇
+
+🔑 Bring your own keys — connect your own Alpaca keys (Paper to practice, Production when you're ready) and off you go. Fernet-encrypted at rest, never leave your account. We never hold your funds — you trade through your own broker.
+🎙️ Talk to it, don't just type — tap the mic for a real spoken conversation. Voice streams live audio + transcripts back through x.ai's realtime agent, right in the same window (the API key stays server-side).
+🗺️ It answers with charts — ask "show me a market map" and it streams a finviz-style S&P treemap inline, coloured by return and sized by liquidity. Or a candlestick. Or a normalised multi-ticker compare.
+📈 A full trading floor, not a chatbot — backtesting, paper trading, live positions & P&L, reconciliation, analyst ratings — all behind one calm chat.
+📰 Real news, not hallucinated — headlines pulled live via Tavily search, grounded to the ticker you asked about.
+⚙️ Provider-agnostic — pick your model / data / search provider from Settings (Grok / OpenAI / Claude — one dropdown), stored per user.
+🔒 Bot-proof — a light sign-in protects the token budget without a paywall.
+
+The stack (all open source, self-hosted):
+• FastHTML — server-rendered, SSE streaming, no JS framework
+• LangGraph agent, provider-agnostic (Grok / OpenAI / Claude — one env var)
+• PostgreSQL + Docker on Coolify, auto-deploy on git push
+• Eval suite (deepeval + LLM-as-judge) in the repo
+
+⭐ Code: https://github.com/predictivelabsai/alpatrade
+
+⚠️ Not financial advice. AlpaTrade holds no customer funds — it's a new-generation interface to your own brokerage account; every trade is yours. Trading involves risk.
+
+#OpenSource #AI #LLM #LangGraph #FastHTML #Trading #Fintech #Agents

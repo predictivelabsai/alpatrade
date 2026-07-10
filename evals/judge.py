@@ -60,7 +60,13 @@ def correctness_metric(threshold: float = 0.6):
             "Determine whether the AI answer is factually correct and covers the key "
             "facts in the expected answer. Minor phrasing differences are fine. For "
             "numeric/data answers, the numbers and entities must match. Missing or wrong "
-            "key facts should be penalised."
+            "key facts should be penalised. "
+            "IMPORTANT: the expected answer is a MINIMUM baseline, not an exhaustive or "
+            "exclusive list. If the AI answer provides ADDITIONAL correct, relevant detail "
+            "beyond the expected answer (e.g. extra metrics, a direct yes/no, richer "
+            "context), that is GOOD and must NOT be penalised as an 'unrequested addition'. "
+            "Only penalise missing required facts, factual errors, refusals, or off-topic "
+            "answers — never penalise a correct answer for being more complete."
         ),
         evaluation_params=[LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.EXPECTED_OUTPUT],
         threshold=threshold,
