@@ -213,3 +213,6 @@ test-results/
 reports/
 .sesskey
 .playwright-mcp/
+
+# eval outputs
+eval-results/
