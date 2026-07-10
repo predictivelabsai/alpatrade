@@ -42,7 +42,7 @@ _HTMX_CDN = "https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js"
 
 # Small inline mic glyph for the voice button.
 _MIC_SVG = (
-    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" '
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" '
     'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
     'stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 '
     '3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19"'
@@ -226,8 +226,6 @@ def chat_center():
             cls="chat-header-left",
         ),
         Div(
-            Button(NotStr(_MIC_SVG), id="voice-btn", cls="voice-btn", type="button",
-                   title="Voice mode", onclick="toggleVoice()"),
             Button("News", id="news-btn", cls="news-toggle-btn active", type="button",
                    onclick="toggleNewsPane()"),
             cls="chat-header-right",
@@ -240,6 +238,8 @@ def chat_center():
             placeholder="Ask anything — or type a command like  trades:paper · agent:backtest lookback:1m",
             onkeydown="handleKey(event)", oninput="autoResize(this)",
         ),
+        Button(NotStr(_MIC_SVG), id="voice-btn", cls="voice-btn", type="button",
+               title="Voice — ask for your positions", onclick="toggleVoice()"),
         Button("Send", type="submit", cls="chat-send", id="send-btn"),
         id="chat-form", cls="chat-form",
         onsubmit="if(window.sendMessage)return sendMessage(event);return false;",

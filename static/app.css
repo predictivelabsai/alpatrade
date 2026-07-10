@@ -212,12 +212,12 @@ details.agent-group[open] .agent-list { display: flex; flex-direction: column; g
 
 /* Voice mic button (chat header) */
 .voice-btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 2rem; height: 2rem; padding: 0; background: transparent;
-    border: 1px solid var(--line-br); border-radius: .45rem; color: var(--ink-muted);
+    display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    align-self: flex-end; width: 2.7rem; height: 2.7rem; padding: 0; background: var(--bg-elev);
+    border: 1px solid var(--line-br); border-radius: .6rem; color: var(--accent);
     cursor: pointer; transition: all .15s;
 }
-.voice-btn:hover { border-color: var(--accent); color: var(--accent); }
+.voice-btn:hover { background: var(--accent-dim); border-color: var(--accent); }
 .voice-btn.recording { background: var(--red); color: #fff; border-color: var(--red); animation: pulse 1.1s ease-in-out infinite; }
 
 /* Chat action buttons (copy, share) */
