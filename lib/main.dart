@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:carhero/app.dart';
+import 'package:alpatrade/app.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ProviderScope(child: CarHeroApp()));
+  runApp(const ProviderScope(child: AlpaTradeApp()));
 }

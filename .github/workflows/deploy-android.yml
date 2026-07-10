@@ -31,9 +31,6 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Generate mocks and serialization code
-        run: dart run build_runner build --delete-conflicting-outputs
-
       - name: Run tests
         run: flutter test
 

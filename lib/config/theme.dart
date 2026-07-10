@@ -1,40 +1,84 @@
 import 'package:flutter/material.dart';
 
+/// AlpaTrade palette — mirrors the web app (static/app.css): warm cream
+/// surfaces, forest-green accent, JetBrains Mono for numbers/tickers.
 class AppTheme {
-  static const _ink = Color(0xFF1A1A1A);
-  static const _white = Color(0xFFFFFFFF);
-  static const _gray50 = Color(0xFFF9FAFB);
-  static const _gray100 = Color(0xFFF3F4F6);
-  static const _gray200 = Color(0xFFE5E7EB);
-  static const _gray400 = Color(0xFF9CA3AF);
-  static const _gray500 = Color(0xFF6B7280);
-  static const _green600 = Color(0xFF16A34A);
-  static const _red600 = Color(0xFFDC2626);
-  static const _blue600 = Color(0xFF2563EB);
+  // Brand
+  static const _accent = Color(0xFF1F5D43); // --accent
+  static const _accentDim = Color(0xFFCFE5DA); // --accent-dim
+  static const _accentDeep = Color(0xFF164A35); // --accent-deep
 
+  // Surfaces
+  static const _bg = Color(0xFFF7F6F1); // --bg
+  static const _bgElev = Color(0xFFFFFFFF); // --bg-elev
+  static const _bgRaise = Color(0xFFEFEDE4); // --bg-raise
+
+  // Ink
+  static const _ink = Color(0xFF14231B); // --ink
+  static const _inkMuted = Color(0xFF415046); // --ink-muted
+  static const _inkDim = Color(0xFF7A867E); // --ink-dim
+
+  // Lines
+  static const _line = Color(0xFFE3DFD2); // --line
+  static const _lineBr = Color(0xFFCFC8B4); // --line-br
+
+  // Semantic (P&L)
+  static const _red = Color(0xFFB83A3A); // --red / loss
+  static const _green = Color(0xFF1F6B45); // --green / gain
+
+  static const _white = Color(0xFFFFFFFF);
+
+  // Public accessors (mono font name for numeric/ticker text)
+  static const String monoFont = 'JetBrains Mono';
+
+  static Color get accent => _accent;
+  static Color get accentDim => _accentDim;
+  static Color get accentDeep => _accentDeep;
+  static Color get bg => _bg;
+  static Color get bgElev => _bgElev;
+  static Color get bgRaise => _bgRaise;
   static Color get ink => _ink;
-  static Color get gray50 => _gray50;
-  static Color get gray100 => _gray100;
-  static Color get gray200 => _gray200;
-  static Color get gray400 => _gray400;
-  static Color get gray500 => _gray500;
-  static Color get green600 => _green600;
-  static Color get red600 => _red600;
-  static Color get blue600 => _blue600;
+  static Color get inkMuted => _inkMuted;
+  static Color get inkDim => _inkDim;
+  static Color get line => _line;
+  static Color get lineBr => _lineBr;
+  static Color get gain => _green;
+  static Color get loss => _red;
+
+  // ---- Backwards-compatible aliases used across older widgets ----
+  static Color get gray50 => _bg;
+  static Color get gray100 => _bgRaise;
+  static Color get gray200 => _line;
+  static Color get gray400 => _lineBr;
+  static Color get gray500 => _inkDim;
+  static Color get green600 => _green;
+  static Color get red600 => _red;
+  static Color get blue600 => _accent;
+
+  /// Positive/negative tint for a signed value.
+  static Color pnlColor(num? v) => (v ?? 0) > 0
+      ? _green
+      : (v ?? 0) < 0
+      ? _red
+      : _inkDim;
 
   static ThemeData get light => ThemeData(
     useMaterial3: true,
     fontFamily: 'Inter',
-    colorScheme: ColorScheme.light(
-      primary: _ink,
+    scaffoldBackgroundColor: _bg,
+    colorScheme: const ColorScheme.light(
+      primary: _accent,
       onPrimary: _white,
-      surface: _white,
+      secondary: _accentDeep,
+      onSecondary: _white,
+      surface: _bgElev,
       onSurface: _ink,
-      outline: _gray200,
+      surfaceContainerHighest: _bgRaise,
+      outline: _line,
+      error: _red,
     ),
-    scaffoldBackgroundColor: _white,
     appBarTheme: const AppBarTheme(
-      backgroundColor: _white,
+      backgroundColor: _bgElev,
       foregroundColor: _ink,
       elevation: 0,
       scrolledUnderElevation: 1,
@@ -47,25 +91,25 @@ class AppTheme {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: _white,
+      fillColor: _bgElev,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: _gray200),
+        borderSide: const BorderSide(color: _line),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: _gray200),
+        borderSide: const BorderSide(color: _line),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: _ink, width: 1.5),
+        borderSide: const BorderSide(color: _accent, width: 1.5),
       ),
-      hintStyle: const TextStyle(color: _gray400, fontSize: 14),
+      hintStyle: const TextStyle(color: _inkDim, fontSize: 14),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: _ink,
+        backgroundColor: _accent,
         foregroundColor: _white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -78,7 +122,7 @@ class AppTheme {
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: _ink,
+        foregroundColor: _accent,
         textStyle: const TextStyle(
           fontFamily: 'Inter',
           fontWeight: FontWeight.w600,
@@ -87,26 +131,29 @@ class AppTheme {
       ),
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: _white,
-      selectedColor: _ink,
-      labelStyle: const TextStyle(fontSize: 13),
-      side: const BorderSide(color: _gray200),
+      backgroundColor: _bgElev,
+      selectedColor: _accentDim,
+      labelStyle: const TextStyle(fontSize: 13, color: _ink),
+      side: const BorderSide(color: _line),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: _white,
-      selectedItemColor: _ink,
-      unselectedItemColor: _gray400,
+      backgroundColor: _bgElev,
+      selectedItemColor: _accent,
+      unselectedItemColor: _inkDim,
       type: BottomNavigationBarType.fixed,
       elevation: 8,
+      selectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+      unselectedLabelStyle: TextStyle(fontSize: 11),
     ),
-    dividerTheme: const DividerThemeData(color: _gray100, thickness: 1),
+    dividerTheme: const DividerThemeData(color: _line, thickness: 1),
     cardTheme: CardThemeData(
+      color: _bgElev,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(color: _gray200),
+        borderRadius: BorderRadius.circular(10),
+        side: const BorderSide(color: _line),
       ),
     ),
   );

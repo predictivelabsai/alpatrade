@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:carhero/config/api_config.dart';
+import 'package:alpatrade/config/api_config.dart';
 
+/// Kept for compatibility; the AlpaTrade API is anonymous so 401s are rare,
+/// but market/data endpoints may still surface auth errors.
 class UnauthorizedException implements Exception {
   final String message;
   const UnauthorizedException([this.message = 'Unauthorized']);
@@ -9,10 +11,12 @@ class UnauthorizedException implements Exception {
   String toString() => 'UnauthorizedException: $message';
 }
 
+/// Thin Dio wrapper over the AlpaTrade REST API. No auth token — the API uses
+/// a shared demo paper account for anonymous callers.
 class ApiClient {
   final Dio _dio;
 
-  ApiClient({required String? Function() getToken})
+  ApiClient()
     : _dio = Dio(
         BaseOptions(
           baseUrl: ApiConfig.baseUrl,
@@ -23,13 +27,6 @@ class ApiClient {
       ) {
     _dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: (options, handler) {
-          final token = getToken();
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-          handler.next(options);
-        },
         onError: (error, handler) {
           if (error.response?.statusCode == 401) {
             handler.reject(
@@ -52,58 +49,26 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? queryParameters,
   }) async {
-    try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        path,
-        queryParameters: queryParameters,
-      );
-      return response.data!;
-    } on DioException catch (e) {
-      if (e.error is UnauthorizedException) {
-        throw e.error as UnauthorizedException;
-      }
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> post(String path, {dynamic data}) async {
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(path, data: data);
-      return response.data!;
-    } on DioException catch (e) {
-      if (e.error is UnauthorizedException) {
-        throw e.error as UnauthorizedException;
-      }
-      rethrow;
-    }
-  }
-
-  Future<void> delete(String path) async {
-    try {
-      await _dio.delete<dynamic>(path);
-    } on DioException catch (e) {
-      if (e.error is UnauthorizedException) {
-        throw e.error as UnauthorizedException;
-      }
-      rethrow;
-    }
+    final response = await _dio.get<Map<String, dynamic>>(
+      path,
+      queryParameters: queryParameters,
+    );
+    return response.data!;
   }
 
   Future<List<dynamic>> getList(
     String path, {
     Map<String, dynamic>? queryParameters,
   }) async {
-    try {
-      final response = await _dio.get<List<dynamic>>(
-        path,
-        queryParameters: queryParameters,
-      );
-      return response.data!;
-    } on DioException catch (e) {
-      if (e.error is UnauthorizedException) {
-        throw e.error as UnauthorizedException;
-      }
-      rethrow;
-    }
+    final response = await _dio.get<List<dynamic>>(
+      path,
+      queryParameters: queryParameters,
+    );
+    return response.data!;
+  }
+
+  Future<Map<String, dynamic>> post(String path, {dynamic data}) async {
+    final response = await _dio.post<Map<String, dynamic>>(path, data: data);
+    return response.data!;
   }
 }

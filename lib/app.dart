@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:carhero/config/theme.dart';
-import 'package:carhero/router/app_router.dart';
-import 'package:carhero/providers/locale_provider.dart';
+import 'package:alpatrade/config/theme.dart';
+import 'package:alpatrade/router/app_router.dart';
+import 'package:alpatrade/providers/locale_provider.dart';
 
-class CarHeroApp extends ConsumerWidget {
-  const CarHeroApp({super.key});
+class AlpaTradeApp extends ConsumerWidget {
+  const AlpaTradeApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -14,7 +14,7 @@ class CarHeroApp extends ConsumerWidget {
     final localeCode = ref.watch(localeProvider);
 
     return MaterialApp.router(
-      title: 'Kenri.ai',
+      title: 'AlpaTrade',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       locale: Locale(localeCode),

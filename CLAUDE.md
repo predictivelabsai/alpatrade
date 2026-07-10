@@ -8,17 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Install dependencies
 flutter pub get
 
-# Generate mocks and serialization code (required before tests run)
-dart run build_runner build --delete-conflicting-outputs
-
-# Run all tests (370 tests)
+# Run all tests
 flutter test
 
 # Run a single test file
 flutter test test/unit/models/chat_test.dart
-
-# Run tests in a directory
-flutter test test/widget/
 
 # Static analysis (errors only — infos/warnings are non-blocking)
 flutter analyze --no-fatal-infos --no-fatal-warnings
@@ -26,11 +20,9 @@ flutter analyze --no-fatal-infos --no-fatal-warnings
 # Format code
 dart format lib/ test/
 
-# Run the app (default API: https://carhero.chat/api/v1)
+# Run the app (defaults: API https://api.alpatrade.chat, voice wss://alpatrade.chat/ws/voice)
 flutter run
-
-# Run with custom API URL
-flutter run --dart-define=API_BASE_URL=http://localhost:8000/api/v1
+flutter run --dart-define=API_BASE_URL=http://localhost:8000 --dart-define=VOICE_WS_URL=ws://localhost:5003/ws/voice
 
 # Generate app icons (after changing assets/images/app_icon.png)
 dart run flutter_launcher_icons
@@ -38,77 +30,66 @@ dart run flutter_launcher_icons
 
 ## Architecture
 
-Flutter mobile client for the CarHero web app (at `../carhero/`). Connects to a FastAPI backend at `/api/v1` for all data. No local database — all state comes from the API or in-memory Riverpod providers.
+Flutter mobile client for **AlpaTrade** (backend at `../alpatrade/`, api_app.py + agui_app.py). It talks to the live API at `https://api.alpatrade.chat` (REST + SSE chat) and `wss://alpatrade.chat/ws/voice` (realtime voice). No local database — all state comes from the API or in-memory Riverpod providers. **No auth**: the API is anonymous and serves a shared demo paper-trading account.
 
-### State & Data Flow
-
-**Riverpod 3** is the state management layer. The provider dependency chain is:
+### State & Data Flow (Riverpod 3)
 
 ```
-authProvider (AsyncNotifier) → apiClientProvider (Dio + JWT interceptor) → *ServiceProviders → *ScreenProviders
+apiClientProvider (anonymous Dio)     → *ServiceProviders → *Providers (FutureProvider) → screens
+chatProvider (Notifier<ChatState>)    → ChatService (raw http SSE) → /v2/chat
+voiceProvider (Notifier<VoiceUiState>)→ VoiceService (WebSocket + mic PCM + PCM playback)
 connectivityProvider (StreamNotifier) → AppScaffold (offline banner)
 ```
 
-- `authProvider` owns the JWT token lifecycle (login, register, restore from secure storage, logout)
-- `apiClientProvider` creates a `Dio` instance that auto-attaches the Bearer token via interceptor and throws `UnauthorizedException` on 401
-- Each feature has a service class (thin API wrapper) and a provider that holds UI state
-- `chatProvider` is a `Notifier<ChatState>` that manages the SSE streaming state machine
-- `connectivityProvider` monitors network via connectivity_plus and drives the offline banner
+- `apiClientProvider` (lib/providers/api_provider.dart) is a single shared anonymous `ApiClient` (Dio). No JWT.
+- Each feature has a stateless service (thin API wrapper taking `ApiClient`) and a `FutureProvider` holding its async read.
+- `chatProvider` manages the SSE streaming state machine and keeps one `thread_id` per conversation (so the 2-step paper-order confirm works).
+- `voiceProvider` drives the realtime voice session and appends transcript lines into the chat message list.
 
-### Chat SSE Streaming
+### Chat SSE Streaming — `POST /v2/chat`
 
-Chat uses **raw `http` package** (not Dio) because Dio doesn't support streaming POST responses well. The flow:
+`ChatService.streamChat()` uses the raw `http` package (Dio can't stream POST bodies). Body: `{msg, thread_id?}`, `Accept: text/event-stream`. Events parsed into a sealed `ChatEvent`: `session` (echoes thread id, a **String**), `agent_route` (`command`|`ai`), `token` (concatenate `text`), `tool_start`/`tool_end`, `error`, `done`. There are no `artifact` events.
 
-1. `ChatService.streamChat()` sends a POST to `/chat` with `Accept: text/event-stream`
-2. Parses the SSE wire format (`event: <name>\ndata: <json>\n\n`) into a sealed `ChatEvent` hierarchy
-3. `ChatNotifier` consumes the stream and transitions through: idle → add user message → streaming (accumulate tokens, track tool calls) → finalize assistant message → idle
-4. 8 event types: `session`, `agent_route`, `token`, `tool_start`, `tool_end`, `artifact_show`, `done`, `error`
+### Voice — `wss://alpatrade.chat/ws/voice`
+
+Server-side proxy to x.ai's realtime agent (PCM16 mono @ 24 kHz, server VAD). `VoiceService` (lib/services/voice_service.dart): captures mic via `record` (`AudioEncoder.pcm16bits`), streams `{type:"audio", audio:<base64>}` up the WebSocket, and plays returned `audio` frames via `flutter_pcm_sound`. Inbound events: `ready`, `speech_started/stopped`, `user_transcript`, `assistant_delta/done`, `tool`, `audio`, `done`, `error`. The x.ai key stays server-side. Requires `RECORD_AUDIO` (declared in the manifest).
 
 ### Routing
 
-**GoRouter** with auth-guarded routes. Public routes (`/`, `/about`, `/contact`, `/shared/:token`) bypass auth. Protected routes use a `ShellRoute` with `AppScaffold` (bottom nav bar + offline banner). Auth redirect is currently disabled for testing — re-enable in `app_router.dart` when auth token flow is finalized.
+**GoRouter** with a `ShellRoute` + `AppScaffold` (bottom nav + offline banner). Five tabs: `/chat`, `/portfolio`, `/activity`, `/strategies`, `/more`. `/` redirects to `/chat`. No auth guard (anonymous API). Sub-screens under More/Strategies are opened via `Navigator.push`, not the router.
 
-### i18n
+### Feature modules
 
-12 languages via Flutter's built-in localization. ARB files in `lib/l10n/`, generated class is `L10n` (configured in `l10n.yaml`). Template is `app_en.arb`. Locale is stored in `localeProvider` and synced with the chat API's `lang` parameter.
+| Tab | Endpoints | Files |
+|---|---|---|
+| Chat | `POST /v2/chat`, `wss .../ws/voice` | chat_*, voice_* |
+| Portfolio | `GET /v2/positions` (+ client-side totals) | position.dart, positions_* |
+| Activity | `GET /v2/trades?trade_type=`, `GET /v2/runs` | trade.dart, run.dart, activity_* |
+| Strategies | `GET /v2/top`, `/v2/report`, `/v2/pnl/{id}` | strategy.dart, pnl.dart, strategies_*, strategy_detail_screen |
+| More | `GET /news`, `/movers` (return `{result: markdown}`), `GET /v2/status` | market_*, news/movers/status/settings screens |
+
+`GET /news` and `GET /movers` return `{"result": "<markdown>"}` — render the markdown directly. `/v2/top` is a JSON array. Full contract: `docs/mobile-api.md`; spec: `docs/swagger.json`.
 
 ### Theme
 
-Single `AppTheme.light` in `config/theme.dart`. Uses a dark ink (#1A1A1A) + white palette with gray tones. Available grays: `gray50`, `gray100`, `gray200`, `gray400`, `gray500` (no gray300 or gray600). Material 3, Inter font family.
+`AppTheme.light` (lib/config/theme.dart) mirrors the web app palette: cream `#F7F6F1` surfaces, forest-green accent `#1F5D43`, ink `#14231B`. Inter for text, JetBrains Mono (`AppTheme.monoFont`) for numbers/tickers. P&L coloring via `AppTheme.pnlColor(v)` / `gain` / `loss`. Formatting via `Fmt.*` (lib/utils/formatters.dart): `usd`, `signedUsd`, `pct(v, signed:)`, `shares`, `titleize`, date helpers.
 
-### Key Patterns
+### Key patterns
 
-- **Models** are plain Dart classes with `fromJson`/`toJson` (no freezed codegen in use despite the dependency)
-- **Services** are stateless API wrappers that take `ApiClient` and return typed models
-- **Providers** use Riverpod 3 API: `Notifier`/`NotifierProvider` for mutable state, `FutureProvider` for async reads, `Provider` for derived/computed values. No `StateNotifier` or `StateProvider` (Riverpod 2 API removed).
-- **Widget tests** that touch providers watching network-backed `FutureProvider`s (like `agentsProvider`) must override them to avoid pending timer failures
-- The `Override` type from Riverpod is **not** exported from the main `flutter_riverpod` barrel in v3; avoid using it as a type annotation
+- Models are plain Dart classes with `fromJson` (no codegen). Null-safe casts: `(j['x'] as num?)?.toDouble()`.
+- Riverpod 3 API only: `Notifier`/`NotifierProvider`, `FutureProvider`(`.family`), `Provider`. No `StateNotifier`/`StateProvider`. Don't annotate variables with the `Override` type (not exported from the v3 barrel).
+- Prefer `.withValues(alpha:)` over the deprecated `.withOpacity`.
 
 ## Testing
 
-36 test files, 370 tests. Three layers:
-- `test/unit/` — models (JSON round-trip), services (mocked Dio via `@GenerateMocks`), utils
-- `test/widget/` — individual widget rendering and interaction (10 files)
-- `test/integration/` — multi-widget flows using providers and router (7 files)
-
-Service tests require generated mock files. Run `dart run build_runner build` before `flutter test` if mocks are missing.
+Unit tests under `test/unit/` cover models (JSON round-trip: chat/position/trade), SSE parsing, and formatters. Run `flutter test`.
 
 ## CI/CD
 
-GitHub Actions CI (`.github/workflows/ci.yml`) runs on every push to main:
-1. Analyze (format + static analysis)
-2. Test (370 tests with coverage)
-3. Build Android APK + AAB
-4. Distribute APK to Firebase App Distribution (testers group)
-
-Manual deploy: `.github/workflows/deploy-android.yml` (workflow_dispatch)
+`.github/workflows/ci.yml` on push to main: analyze (format + static analysis) → test → build APK + AAB (`--dart-define=API_BASE_URL=https://api.alpatrade.chat`) → distribute APK to the **testers** group via Firebase App Distribution. Manual: `deploy-android.yml` (workflow_dispatch). The app bundles **no** Firebase SDK; App Distribution runs entirely in CI via the `wzieba/Firebase-Distribution-Github-Action`.
 
 ## Firebase & GCP
 
-- **Firebase Project**: `carhero-mobile` (project number: 698790728504)
-- **App ID**: `1:698790728504:android:9dfa8be9906dacc8b9a7cd`
-- **Package**: `chat.carhero.carhero`
-- **Service Account**: `firebase-app-dist@carhero-mobile.iam.gserviceaccount.com`
-- **Google OAuth** (GCP project `finespresso`):
-  - Web Client ID: `76656799510-2996ug4uc4743ht74g4hsopn61g71ien.apps.googleusercontent.com`
-  - Android Client ID: `76656799510-99q9f28jc0494atvgmjirppeuk2mfe8l.apps.googleusercontent.com`
+- **Firebase project**: `finespresso` (App Distribution only).
+- **Android package / app id**: `chat.alpatrade.app`.
+- Required repo secrets: `FIREBASE_APP_ID`, `FIREBASE_SERVICE_ACCOUNT` (service-account JSON), plus release-signing secrets `KEYSTORE_BASE64`, `KEY_ALIAS`, `KEY_PASSWORD`, `STORE_PASSWORD`.

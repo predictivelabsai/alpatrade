@@ -3,27 +3,24 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import 'package:carhero/config/api_config.dart';
-import 'package:carhero/models/chat.dart';
+import 'package:alpatrade/config/api_config.dart';
+import 'package:alpatrade/models/chat.dart';
 
+/// Streams POST /v2/chat as Server-Sent Events. Uses the raw `http` package
+/// because Dio does not stream POST response bodies well.
 class ChatService {
   Stream<ChatEvent> streamChat({
     required String message,
-    int? sessionId,
-    String lang = 'en',
-    required String token,
+    String? threadId,
   }) async* {
-    final uri = Uri.parse('${ApiConfig.baseUrl}/chat');
+    final uri = Uri.parse('${ApiConfig.baseUrl}/v2/chat');
 
-    final request = http.Request('POST', uri);
-    request.headers['Content-Type'] = 'application/json';
-    request.headers['Accept'] = 'text/event-stream';
-    if (token.isNotEmpty) {
-      request.headers['Authorization'] = 'Bearer $token';
-    }
-    request.body = jsonEncode(
-      ChatRequest(message: message, sessionId: sessionId, lang: lang).toJson(),
-    );
+    final request = http.Request('POST', uri)
+      ..headers['Content-Type'] = 'application/json'
+      ..headers['Accept'] = 'text/event-stream'
+      ..body = jsonEncode(
+        ChatRequest(msg: message, threadId: threadId).toJson(),
+      );
 
     final response = await http.Client().send(request);
 
@@ -49,10 +46,10 @@ class ChatService {
         String? eventData;
 
         for (final line in rawEvent.split('\n')) {
-          if (line.startsWith('event: ')) {
-            eventName = line.substring(7).trim();
-          } else if (line.startsWith('data: ')) {
-            eventData = line.substring(6);
+          if (line.startsWith('event:')) {
+            eventName = line.substring(6).trim();
+          } else if (line.startsWith('data:')) {
+            eventData = line.substring(5).trim();
           }
         }
 

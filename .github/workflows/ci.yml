@@ -43,9 +43,6 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Generate mocks and serialization code
-        run: dart run build_runner build --delete-conflicting-outputs
-
       - name: Run tests with coverage
         run: flutter test --coverage
 
@@ -93,10 +90,10 @@ jobs:
           fi
 
       - name: Build APK
-        run: flutter build apk --release --dart-define=API_BASE_URL=https://carhero.chat/api/v1
+        run: flutter build apk --release --dart-define=API_BASE_URL=https://api.alpatrade.chat
 
       - name: Build App Bundle
-        run: flutter build appbundle --release --dart-define=API_BASE_URL=https://carhero.chat/api/v1
+        run: flutter build appbundle --release --dart-define=API_BASE_URL=https://api.alpatrade.chat
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

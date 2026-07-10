@@ -1,47 +1,29 @@
 class AppConstants {
-  static const List<String> brands = [
-    'BMW',
-    'Mercedes-Benz',
-    'Audi',
-    'Porsche',
-    'Jaguar',
-    'Land Rover',
-    'Volvo',
-    'Tesla',
-    'Lexus',
-    'Maserati',
-    'Alfa Romeo',
-    'Ferrari',
+  /// Suggested prompts shown on the empty chat screen.
+  static const List<String> samplePrompts = [
+    'What are my open positions?',
+    "How's my paper account doing today?",
+    'Show my P&L for this week',
+    'What are the top market movers right now?',
+    'Latest news on NVDA',
+    'Backtest buy-the-dip on AAPL over the last 3 months',
+    'What are my best-performing strategies?',
+    'Buy 1 share of TSLA',
   ];
 
-  static const List<String> bodyTypes = [
-    'Sedan',
-    'SUV',
-    'Estate',
-    'Coupe',
-    'Convertible',
-    'Hatchback',
+  /// Common symbols for quick quote/news lookups.
+  static const List<String> popularSymbols = [
+    'AAPL',
+    'MSFT',
+    'NVDA',
+    'TSLA',
+    'AMZN',
+    'GOOGL',
+    'META',
+    'AMD',
+    'SPY',
+    'QQQ',
   ];
-
-  static const List<String> fuelTypes = [
-    'Petrol',
-    'Diesel',
-    'Electric',
-    'Hybrid',
-    'Plugin Hybrid',
-  ];
-
-  static const List<String> transmissions = ['Automatic', 'Manual'];
-
-  static const Map<String, String> countries = {
-    'GB': 'United Kingdom',
-    'DE': 'Germany',
-    'EE': 'Estonia',
-    'LT': 'Lithuania',
-    'LV': 'Latvia',
-    'SE': 'Sweden',
-    'EU': 'Other EU',
-  };
 
   static const List<String> supportedLocales = [
     'en',

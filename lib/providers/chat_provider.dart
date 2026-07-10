@@ -1,8 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:carhero/models/chat.dart';
-import 'package:carhero/services/chat_service.dart';
-import 'package:carhero/providers/auth_provider.dart';
-import 'package:carhero/providers/session_provider.dart';
+import 'package:alpatrade/models/chat.dart';
+import 'package:alpatrade/services/chat_service.dart';
 
 final chatServiceProvider = Provider<ChatService>((ref) => ChatService());
 
@@ -14,73 +12,76 @@ class ChatNotifier extends Notifier<ChatState> {
   @override
   ChatState build() => ChatState.initial();
 
-  Future<void> sendMessage(String message, {String lang = 'en'}) async {
-    final token = ref.read(currentTokenProvider) ?? '';
+  /// Keeps the same thread_id across a conversation so the 2-step paper-order
+  /// confirm flow works ("buy 1 TSLA" -> preview -> "confirm").
+  String _ensureThreadId() {
+    final existing = state.threadId;
+    if (existing != null && existing.isNotEmpty) return existing;
+    final id = 'm${DateTime.now().microsecondsSinceEpoch}';
+    state = state.copyWith(threadId: id);
+    return id;
+  }
 
-    // Add user message immediately
+  Future<void> sendMessage(String message) async {
+    final trimmed = message.trim();
+    if (trimmed.isEmpty || state.isStreaming) return;
+
+    final threadId = _ensureThreadId();
+
     state = state.copyWith(
       messages: [
         ...state.messages,
-        ChatMessage(role: 'user', content: message),
+        ChatMessage(role: 'user', content: trimmed),
       ],
       isStreaming: true,
       streamBuffer: '',
       activeToolCalls: [],
-      artifacts: [],
       error: null,
     );
 
     final service = ref.read(chatServiceProvider);
     String buffer = '';
     final toolCalls = <ToolCall>[];
-    final artifacts = <Artifact>[];
 
     try {
       await for (final event in service.streamChat(
-        message: message,
-        sessionId: state.currentSessionId,
-        lang: lang,
-        token: token,
+        message: trimmed,
+        threadId: threadId,
       )) {
         switch (event) {
           case SessionEvent(:final sid):
-            state = state.copyWith(currentSessionId: sid);
-          case AgentRouteEvent(:final slug, :final name, :final icon):
+            if (sid.isNotEmpty) state = state.copyWith(threadId: sid);
+          case AgentRouteEvent(:final slug, :final name):
             state = state.copyWith(
-              currentAgent: AgentInfo(slug: slug, name: name, icon: icon),
+              currentAgent: AgentInfo(slug: slug, name: name),
             );
           case TokenEvent(:final text):
             buffer += text;
             state = state.copyWith(streamBuffer: buffer);
-          case ToolStartEvent(:final name, :final args):
-            toolCalls.add(ToolCall(name: name, args: args));
+          case ToolStartEvent(:final name):
+            toolCalls.add(ToolCall(name: name));
             state = state.copyWith(activeToolCalls: List.of(toolCalls));
-          case ToolEndEvent(:final name, :final output):
+          case ToolEndEvent(:final name):
             final idx = toolCalls.lastIndexWhere(
-              (t) => t.name == name && t.output == null,
+              (t) => t.name == name && !t.done,
             );
             if (idx >= 0) {
-              toolCalls[idx] = toolCalls[idx].withOutput(output);
+              toolCalls[idx] = toolCalls[idx].complete();
               state = state.copyWith(activeToolCalls: List.of(toolCalls));
             }
-          case ArtifactEvent(:final payload):
-            artifacts.add(Artifact.fromJson(payload));
-            state = state.copyWith(artifacts: List.of(artifacts));
           case DoneEvent():
             final assistantMsg = ChatMessage(
               role: 'assistant',
-              content: buffer.isEmpty ? '(no response)' : buffer,
+              content: buffer.isEmpty ? '_(no response)_' : buffer,
               agentSlug: state.currentAgent?.slug,
               toolCalls: List.of(toolCalls),
-              artifacts: List.of(artifacts),
             );
             state = state.copyWith(
               messages: [...state.messages, assistantMsg],
               isStreaming: false,
               streamBuffer: '',
+              activeToolCalls: [],
             );
-            // Refresh sessions list
-            ref.invalidate(sessionsProvider);
           case ErrorEvent(:final message):
             state = state.copyWith(error: message, isStreaming: false);
         }
@@ -90,11 +91,17 @@ class ChatNotifier extends Notifier<ChatState> {
     }
   }
 
-  void loadSession(int sessionId, List<ChatMessage> messages) {
-    state = ChatState(messages: messages, currentSessionId: sessionId);
+  /// Append a transcript line produced by the voice session so voice and text
+  /// share one conversation view.
+  void appendVoiceMessage(String role, String content) {
+    if (content.trim().isEmpty) return;
+    state = state.copyWith(
+      messages: [
+        ...state.messages,
+        ChatMessage(role: role, content: content),
+      ],
+    );
   }
 
-  void newChat() {
-    state = ChatState.initial();
-  }
+  void newChat() => state = ChatState.initial();
 }

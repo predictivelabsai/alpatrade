@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:carhero/config/theme.dart';
+import 'package:alpatrade/config/theme.dart';
 
 class ChatInputBar extends StatefulWidget {
   final bool isStreaming;
+  final bool voiceActive;
   final ValueChanged<String> onSend;
+  final VoidCallback onMic;
 
   const ChatInputBar({
     super.key,
     required this.isStreaming,
+    required this.voiceActive,
     required this.onSend,
+    required this.onMic,
   });
 
   @override
@@ -25,9 +29,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
     super.initState();
     _controller.addListener(() {
       final hasText = _controller.text.trim().isNotEmpty;
-      if (hasText != _hasText) {
-        setState(() => _hasText = hasText);
-      }
+      if (hasText != _hasText) setState(() => _hasText = hasText);
     });
   }
 
@@ -52,25 +54,27 @@ class _ChatInputBarState extends State<ChatInputBar> {
 
     return Container(
       padding: EdgeInsets.fromLTRB(
-        12,
+        8,
         8,
         8,
         8 + (bottom > 0 ? 0 : MediaQuery.of(context).padding.bottom),
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppTheme.gray200, width: 0.5)),
+        color: AppTheme.bgElev,
+        border: Border(top: BorderSide(color: AppTheme.line, width: 0.5)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          _MicButton(active: widget.voiceActive, onTap: widget.onMic),
+          const SizedBox(width: 6),
           Expanded(
             child: Container(
               constraints: const BoxConstraints(maxHeight: 120),
               decoration: BoxDecoration(
-                color: AppTheme.gray50,
+                color: AppTheme.bg,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppTheme.gray200),
+                border: Border.all(color: AppTheme.line),
               ),
               child: TextField(
                 controller: _controller,
@@ -81,7 +85,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
                 onSubmitted: (_) => _send(),
                 style: const TextStyle(fontSize: 14, height: 1.4),
                 decoration: const InputDecoration(
-                  hintText: 'Search for a car, compare models...',
+                  hintText: 'Ask about positions, P&L, news, backtests…',
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -106,6 +110,41 @@ class _ChatInputBarState extends State<ChatInputBar> {
   }
 }
 
+class _MicButton extends StatelessWidget {
+  final bool active;
+  final VoidCallback onTap;
+
+  const _MicButton({required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: active ? AppTheme.accent : AppTheme.bgRaise,
+        shape: BoxShape.circle,
+        border: Border.all(color: active ? AppTheme.accent : AppTheme.line),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Center(
+            child: Icon(
+              active ? Icons.stop : Icons.mic_none,
+              size: 20,
+              color: active ? Colors.white : AppTheme.inkMuted,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _SendButton extends StatelessWidget {
   final bool canSend;
   final bool isStreaming;
@@ -124,7 +163,7 @@ class _SendButton extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: canSend ? AppTheme.ink : AppTheme.gray200,
+        color: canSend ? AppTheme.accent : AppTheme.bgRaise,
         shape: BoxShape.circle,
       ),
       child: Material(
@@ -139,13 +178,13 @@ class _SendButton extends StatelessWidget {
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppTheme.gray500,
+                      color: AppTheme.inkDim,
                     ),
                   )
                 : Icon(
                     Icons.arrow_upward,
                     size: 20,
-                    color: canSend ? Colors.white : AppTheme.gray400,
+                    color: canSend ? Colors.white : AppTheme.inkDim,
                   ),
           ),
         ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:carhero/config/theme.dart';
+import 'package:alpatrade/config/theme.dart';
 
 class EmptyState extends StatelessWidget {
   final IconData icon;
