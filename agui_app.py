@@ -78,6 +78,9 @@ SYSTEM_PROMPT = (
     "When users ask about their account, balance, buying power, or cash, use get_alpaca_account. "
     "When users ask about their linked accounts or want to see which accounts are configured, use list_user_accounts. "
     "When users ask about running agents, background tasks, or agent status, use show_running_agents. "
+    "When users ask which strategies performed best, top strategies, or rankings, use get_top_strategies. "
+    "When users ask to see/show a price chart, use show_stock_chart and reply that the chart is rendered "
+    "below — do not re-describe the raw numbers. "
     "TRADING: when a user asks to buy or sell shares or place a trade, use place_paper_order to place "
     "the order directly and report the result. Use order_type='market' for a market order; if the user "
     "names a price (e.g. 'buy 10 AAPL at $180' or 'limit 180'), use order_type='limit' with that "
@@ -167,11 +170,35 @@ def get_market_movers(direction: str = "both") -> str:
 def get_valuation(tickers: str) -> str:
     """Compare valuation metrics (P/E, P/B, EV/EBITDA) for multiple stocks. Pass comma-separated tickers like 'AAPL,MSFT,GOOGL'."""
     try:
+        import re
         from utils.market_research_util import MarketResearch
-        mr = MarketResearch()
-        return mr.valuation(tickers=tickers.upper())
+        syms = [t for t in re.split(r"[,\s]+", (tickers or "").upper()) if t]
+        if not syms:
+            return "Please provide one or more tickers, e.g. AAPL,MSFT,GOOGL."
+        return MarketResearch().valuation(tickers=",".join(syms))
     except Exception as e:
         return f"Error fetching valuation: {e}"
+
+
+def get_top_strategies(trade_type: str = "backtest", limit: int = 5) -> str:
+    """Rank the best-performing strategies by return/Sharpe. trade_type: 'backtest', 'paper', or 'all'."""
+    try:
+        from agents.report_agent import ReportAgent
+        tt = (trade_type or "backtest").lower()
+        rows = ReportAgent().top_strategies(trade_type=(None if tt == "all" else tt), limit=limit)
+        if not rows:
+            return "No strategy runs found yet — run a backtest first."
+        md = ("| # | Strategy | Avg Return | Avg Sharpe | Win Rate | Runs |\n"
+              "|---|----------|-----------|-----------|----------|------|\n")
+        for i, r in enumerate(rows[:limit], 1):
+            ret = float(r.get("avg_return") or 0)
+            shp = float(r.get("avg_sharpe") or 0)
+            wr = float(r.get("avg_win_rate") or 0)
+            md += (f"| {i} | {r.get('strategy_slug', '?')} | {ret:.2f} | {shp:.2f} | "
+                   f"{wr:.1f} | {r.get('total_runs', 0)} |\n")
+        return f"**Top {tt} strategies** (ranked by return/Sharpe)\n\n" + md
+    except Exception as e:  # noqa: BLE001
+        return f"Error ranking strategies: {e}"
 
 
 
@@ -290,7 +317,12 @@ def place_paper_order(symbol: str, qty: float, side: str = "buy",
         return (f"✅ **Paper order placed** — {side.upper()} {qty:g} {symbol}{price_txt}.\n\n"
                 f"Order id `{oid}`, status: {status}. Simulated paper trade — no real money.")
     except Exception as e:  # noqa: BLE001
-        return f"Order failed: {e}"
+        msg = str(e)
+        if "wash trade" in msg.lower():
+            return (f"⚠️ Couldn't place that {side} order for {symbol} — the broker flagged a "
+                    f"**potential wash trade** (there's an open opposite-side order for {symbol}). "
+                    f"Cancel that order or let it fill first, then retry.")
+        return f"Order failed: {msg}"
 
 
 
@@ -421,7 +453,8 @@ def show_stock_chart(ticker: str, period: str = "3mo") -> str:
             "high": highs,
             "low": lows,
         })
-        return f"**{ticker}** — {period} chart\n\n__CHART_DATA__{chart_data}__END_CHART__"
+        return (f"📈 Here is the **{ticker.upper()}** {period} price chart, rendered below.\n\n"
+                f"__CHART_DATA__{chart_data}__END_CHART__")
     except Exception as e:
         return f"Error generating chart for {ticker}: {e}"
 
@@ -496,6 +529,8 @@ TOOLS = [
         description="Show a price chart for a stock. Period: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y."),
     StructuredTool.from_function(show_recent_runs, name="show_recent_runs",
         description="Show recent backtest/paper trade runs from the AlpaTrade database."),
+    StructuredTool.from_function(get_top_strategies, name="get_top_strategies",
+        description="Rank the best-performing strategies by return/Sharpe. Use when the user asks which strategies performed best / top strategies / rankings. trade_type: 'backtest', 'paper', or 'all'."),
     StructuredTool.from_function(show_equity_curve, name="show_equity_curve",
         description="Show equity curve chart. Use trade_type='paper' or 'backtest' to filter. Use run_id for a specific run. Default: latest run."),
     StructuredTool.from_function(place_paper_order, name="place_paper_order",

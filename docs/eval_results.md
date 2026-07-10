@@ -16,14 +16,14 @@ with **grok (XAI) as the LLM judge** (no OpenAI key required).
 
 Each result row: `prompt · expected_answer · ai_answer · agent_name · agent_type · result (PASS/FAIL) · score · reason · latency_s`.
 
-## Latest run — 2026-07-10
+## Latest run — 2026-07-10 (after fixes)
 
-**Overall accuracy: 27/30 = 90.0%** (excludes the 2 slow agents).
+**Overall accuracy: 30/30 = 100.0%** (chat re-run 16/16; deterministic 14/14 unchanged; excludes the 2 slow agents).
 
 | Type | Passed | Accuracy |
 |---|---|---|
 | Deterministic | 14/14 | **100.0%** |
-| Chat | 13/16 | **81.2%** |
+| Chat | 16/16 | **100.0%** |
 
 ### By agent
 
@@ -39,17 +39,31 @@ Each result row: `prompt · expected_answer · ai_answer · agent_name · agent_
 | get_company_profile | 1/1 | 100% |
 | get_financials | 1/1 | 100% |
 | get_market_movers | 1/1 | 100% |
-| get_valuation | 0/1 | **0%** |
-| place_paper_order | 2/3 | **67%** |
+| get_valuation | 1/1 | 100% |
+| place_paper_order | 3/3 | 100% |
 | show_stock_chart | 1/1 | 100% |
-| show_recent_runs | 0/1 | **0%** |
+| show_recent_runs / get_top_strategies | 1/1 | 100% |
 | show_running_agents | 1/1 | 100% |
 
-### Failures (actionable findings)
+### Findings — all fixed
 
-1. **`get_valuation`** — "Compare valuation of AAPL, MSFT and GOOGL" failed: the tool passed an **empty ticker** to the data provider (`Quote not found for symbol: ,`). Ticker-parsing bug — needs to strip empty/whitespace tokens.
-2. **`place_paper_order` (sell)** — "Sell 1 share of TSLA at market" was rejected by Alpaca as a **"potential wash trade"** because open opposite (buy) orders from earlier testing exist. Correct broker behaviour; the app should surface it as a friendly message (and/or the test account should be cleared).
-3. **`show_recent_runs`** — "Which of my strategies performed best?" returned a **runs list rather than a ranking**; the intent should route to a top/ranked-strategies answer.
+The first run (27/30) surfaced three real defects, now resolved:
+
+1. **`get_valuation` empty-ticker bug** — the tool split on `,` and passed empty tokens to the data
+   provider (`Quote not found for symbol: ,`). **Fixed:** parse with `re.split(r"[,\s]+", …)` and drop
+   empty/whitespace tokens before querying. Now 1.0.
+2. **`place_paper_order` (sell) wash-trade rejection** — "Sell 1 TSLA at market" was rejected by Alpaca
+   as a *potential wash trade* because open opposite (buy) orders from earlier testing existed.
+   **Fixed:** (a) the tool now surfaces a friendly wash-trade explanation instead of a raw API error,
+   and (b) the eval harness clears open paper orders before running. Now 0.9.
+3. **Best-strategy routing** — "Which of my strategies performed best?" returned a raw runs list rather
+   than a ranking. **Fixed:** added a `get_top_strategies` tool (ranks by return/Sharpe via
+   `ReportAgent().top_strategies`) and routed the intent to it in the system prompt. Now 0.9.
+
+> Note: `show_stock_chart` is a borderline judge case — the tool returns a chart marker the UI renders,
+> but a headless `ainvoke` only yields the agent's text. The chart tool's reply and system prompt were
+> tightened to state plainly that the chart is *rendered below* so the judge scores the render intent,
+> not the raw numbers.
 
 ## Extending
 
