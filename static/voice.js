@@ -27,7 +27,7 @@
         p.className = "voice-panel";
         p.setAttribute("data-state", "connecting");
         p.innerHTML =
-            '<span class="voice-orb"></span>' +
+            '<span class="voice-wave"><i></i><i></i><i></i><i></i><i></i></span>' +
             '<span class="voice-status" id="voice-status">Connecting…</span>' +
             '<button class="voice-stop" id="voice-stop">End voice</button>';
         const form = formEl();
