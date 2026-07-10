@@ -119,6 +119,27 @@ All return typed JSON (see `swagger.json` for schemas). Pass the bearer token to
 | GET | `/v2/logs` | Recent agent logs. |
 | GET | `/health` | Liveness. |
 
+## Trading (REST) — `POST /v2/order`
+
+Place a **paper** (simulated) order directly, without going through chat. On the primary
+paper account (…8CR). No real money.
+
+- **Body (JSON):**
+  ```json
+  { "symbol": "AAPL", "qty": 10, "side": "buy",
+    "order_type": "limit", "limit_price": 180.0, "time_in_force": "day" }
+  ```
+  - `side`: `buy` | `sell` · `order_type`: `market` | `limit` (limit needs `limit_price`) · `time_in_force`: `day` | `gtc`
+- **Auth:** optional bearer.
+- **Returns:**
+  ```json
+  { "ok": true, "order_id": "…", "symbol": "AAPL", "qty": 10, "side": "buy",
+    "order_type": "limit", "limit_price": 180.0, "status": "PENDING_NEW", "paper": true }
+  ```
+  On error: `{ "ok": false, "error": "limit_price is required for a limit order" }`.
+
+> Chat-driven ordering (`/v2/chat`, e.g. *"buy 10 AAPL with a $180 limit"*) does the same thing; use `/v2/order` when the client places orders from a form/button.
+
 ## Actions (REST)
 
 | Method | Path | Purpose |

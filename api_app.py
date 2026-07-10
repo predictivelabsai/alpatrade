@@ -1106,6 +1106,71 @@ async def v2_chat(
     return StreamingResponse(gen(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
+
+# ---------------------------------------------------------------------------
+# Paper order placement (market / limit) — for the mobile app
+# ---------------------------------------------------------------------------
+from pydantic import BaseModel, Field  # noqa: E402
+
+
+class OrderRequest(BaseModel):
+    symbol: str = Field(..., example="AAPL")
+    qty: float = Field(..., gt=0, example=1)
+    side: str = Field("buy", example="buy", description="buy | sell")
+    order_type: str = Field("market", example="limit", description="market | limit")
+    limit_price: Optional[float] = Field(None, example=180.0,
+                                         description="Required for a limit order.")
+    time_in_force: str = Field("day", example="day", description="day | gtc")
+
+
+class OrderResponse(BaseModel):
+    ok: bool
+    order_id: Optional[str] = None
+    symbol: Optional[str] = None
+    qty: Optional[float] = None
+    side: Optional[str] = None
+    order_type: Optional[str] = None
+    limit_price: Optional[float] = None
+    status: Optional[str] = None
+    paper: bool = True
+    error: Optional[str] = None
+
+
+@app.post("/v2/order", response_model=OrderResponse, tags=["trading"],
+          summary="Place a PAPER order (market or limit)")
+async def v2_order(req: OrderRequest, user: Optional[Dict] = Depends(get_current_user)):
+    """Place a **paper** (simulated) market or limit order on the primary paper
+    account (…8CR). No real money. For a limit order set `order_type=limit` and
+    `limit_price`. Returns the created order id + status."""
+    side = (req.side or "buy").lower()
+    otype = (req.order_type or "market").lower()
+    if side not in ("buy", "sell"):
+        return OrderResponse(ok=False, error="side must be 'buy' or 'sell'")
+    if otype not in ("market", "limit"):
+        return OrderResponse(ok=False, error="order_type must be 'market' or 'limit'")
+    if otype == "limit" and req.limit_price is None:
+        return OrderResponse(ok=False, error="limit_price is required for a limit order")
+    try:
+        from engine.brokers.alpaca import AlpacaAPI
+        client = AlpacaAPI(paper=True)  # primary paper account (…8CR)
+        order = client.create_order(
+            symbol=req.symbol.upper(), qty=req.qty, side=side, type=otype,
+            time_in_force=(req.time_in_force or "day").lower(),
+            limit_price=req.limit_price if otype == "limit" else None,
+        )
+        if isinstance(order, dict) and order.get("error"):
+            return OrderResponse(ok=False, error=str(order["error"]))
+        o = order if isinstance(order, dict) else {}
+        return OrderResponse(
+            ok=True, order_id=str(o.get("id", "")), symbol=req.symbol.upper(),
+            qty=req.qty, side=side, order_type=otype,
+            limit_price=req.limit_price if otype == "limit" else None,
+            status=str(o.get("status", "submitted")),
+        )
+    except Exception as e:  # noqa: BLE001
+        return OrderResponse(ok=False, error=str(e))
+
+
 # ---------------------------------------------------------------------------
 # Serve install.sh
 # ---------------------------------------------------------------------------

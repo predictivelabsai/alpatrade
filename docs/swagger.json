@@ -1766,6 +1766,53 @@
         ]
       }
     },
+    "/v2/order": {
+      "post": {
+        "tags": [
+          "trading"
+        ],
+        "summary": "Place a PAPER order (market or limit)",
+        "description": "Place a **paper** (simulated) market or limit order on the primary paper\naccount (\u20268CR). No real money. For a limit order set `order_type=limit` and\n`limit_price`. Returns the created order id + status.",
+        "operationId": "v2_order_v2_order_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/install.sh": {
       "get": {
         "summary": "Install Sh",
@@ -2333,6 +2380,167 @@
           "total_lines"
         ],
         "title": "LogsResponse"
+      },
+      "OrderRequest": {
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "title": "Symbol",
+            "example": "AAPL"
+          },
+          "qty": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Qty",
+            "example": 1
+          },
+          "side": {
+            "type": "string",
+            "title": "Side",
+            "description": "buy | sell",
+            "default": "buy",
+            "example": "buy"
+          },
+          "order_type": {
+            "type": "string",
+            "title": "Order Type",
+            "description": "market | limit",
+            "default": "market",
+            "example": "limit"
+          },
+          "limit_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Price",
+            "description": "Required for a limit order.",
+            "example": 180.0
+          },
+          "time_in_force": {
+            "type": "string",
+            "title": "Time In Force",
+            "description": "day | gtc",
+            "default": "day",
+            "example": "day"
+          }
+        },
+        "type": "object",
+        "required": [
+          "symbol",
+          "qty"
+        ],
+        "title": "OrderRequest"
+      },
+      "OrderResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id"
+          },
+          "symbol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Symbol"
+          },
+          "qty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qty"
+          },
+          "side": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Side"
+          },
+          "order_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Type"
+          },
+          "limit_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Price"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "paper": {
+            "type": "boolean",
+            "title": "Paper",
+            "default": true
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "title": "OrderResponse"
       },
       "PaperRequest": {
         "properties": {
