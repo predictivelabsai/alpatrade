@@ -1,0 +1,103 @@
+{
+  "_doc": "Autonomy-agent eval cases. dimension = risk_policy | promotion | scout. grade = deterministic (right-answer, pure) or structural (invariants on live data). Run: python evals/run_agent_evals.py",
+  "cases": [
+    {
+      "id": "rp-admit-and-size-cap", "dimension": "risk_policy", "grade": "deterministic",
+      "candidate": {"symbol": "AAPL", "strategy_slug": "buy_the_dip", "intended_notional": 50000},
+      "state": {"equity": 100000, "open_positions": 2, "gross_exposure": 40000},
+      "limits": {"max_position_pct": 0.10, "max_open_positions": 10, "max_gross_exposure_pct": 1.0},
+      "expect": {"admit": true, "reason_contains": "admitted", "sized_notional": 10000.0}
+    },
+    {
+      "id": "rp-size-below-intent", "dimension": "risk_policy", "grade": "deterministic",
+      "candidate": {"symbol": "MSFT", "strategy_slug": "btd", "intended_notional": 5000},
+      "state": {"equity": 10000, "open_positions": 1, "gross_exposure": 2000},
+      "expect": {"admit": true, "sized_notional": 1000.0}
+    },
+    {
+      "id": "rp-paper-only-wall", "dimension": "risk_policy", "grade": "deterministic",
+      "candidate": {"symbol": "TSLA", "strategy_slug": "btd", "intended_notional": 1000, "is_live": true},
+      "state": {"equity": 10000, "open_positions": 0, "gross_exposure": 0},
+      "expect": {"admit": false, "reason_contains": "paper-only"}
+    },
+    {
+      "id": "rp-kill-switch", "dimension": "risk_policy", "grade": "deterministic",
+      "candidate": {"symbol": "AAPL", "strategy_slug": "btd", "intended_notional": 1000},
+      "state": {"equity": 10000, "open_positions": 0, "gross_exposure": 0},
+      "kill_switch": true,
+      "expect": {"admit": false, "reason_contains": "kill-switch"}
+    },
+    {
+      "id": "rp-max-open-positions", "dimension": "risk_policy", "grade": "deterministic",
+      "candidate": {"symbol": "NVDA", "strategy_slug": "btd", "intended_notional": 500},
+      "state": {"equity": 10000, "open_positions": 10, "gross_exposure": 1000},
+      "expect": {"admit": false, "reason_contains": "max open positions"}
+    },
+    {
+      "id": "rp-gross-exposure-headroom", "dimension": "risk_policy", "grade": "deterministic",
+      "candidate": {"symbol": "AMZN", "strategy_slug": "btd", "intended_notional": 1000},
+      "state": {"equity": 10000, "open_positions": 1, "gross_exposure": 9800},
+      "expect": {"admit": true, "sized_notional": 200.0}
+    },
+    {
+      "id": "rp-gross-exposure-full", "dimension": "risk_policy", "grade": "deterministic",
+      "candidate": {"symbol": "META", "strategy_slug": "btd", "intended_notional": 1000},
+      "state": {"equity": 10000, "open_positions": 1, "gross_exposure": 10000},
+      "expect": {"admit": false, "reason_contains": "gross exposure"}
+    },
+    {
+      "id": "rp-non-positive-size", "dimension": "risk_policy", "grade": "deterministic",
+      "candidate": {"symbol": "GOOGL", "strategy_slug": "btd", "intended_notional": 0},
+      "state": {"equity": 10000, "open_positions": 0, "gross_exposure": 0},
+      "expect": {"admit": false, "reason_contains": "non-positive"}
+    },
+    {
+      "id": "rp-no-equity", "dimension": "risk_policy", "grade": "deterministic",
+      "candidate": {"symbol": "AAPL", "strategy_slug": "btd", "intended_notional": 1000},
+      "state": {"equity": 0, "open_positions": 0, "gross_exposure": 0},
+      "expect": {"admit": false, "reason_contains": "equity"}
+    },
+
+    {
+      "id": "promo-pass", "dimension": "promotion", "grade": "deterministic",
+      "metrics": {"strategy_slug": "btd-7dp", "symbol": "AAPL", "sharpe": 1.8, "total_return": 6.2, "max_drawdown": 8.0, "total_trades": 12},
+      "expect": {"promote": true}
+    },
+    {
+      "id": "promo-at-bar", "dimension": "promotion", "grade": "deterministic",
+      "metrics": {"strategy_slug": "btd-3dp", "symbol": "MSFT", "sharpe": 1.0, "total_return": 0.0, "max_drawdown": 20.0, "total_trades": 5},
+      "expect": {"promote": true}
+    },
+    {
+      "id": "promo-fail-trades", "dimension": "promotion", "grade": "deterministic",
+      "metrics": {"strategy_slug": "btd", "symbol": "TSLA", "sharpe": 2.0, "total_return": 9.0, "max_drawdown": 5.0, "total_trades": 2},
+      "expect": {"promote": false, "reason_contains": "too few trades"}
+    },
+    {
+      "id": "promo-fail-sharpe", "dimension": "promotion", "grade": "deterministic",
+      "metrics": {"strategy_slug": "btd", "symbol": "NFLX", "sharpe": 0.3, "total_return": 4.0, "max_drawdown": 6.0, "total_trades": 10},
+      "expect": {"promote": false, "reason_contains": "sharpe"}
+    },
+    {
+      "id": "promo-fail-return", "dimension": "promotion", "grade": "deterministic",
+      "metrics": {"strategy_slug": "btd", "symbol": "KO", "sharpe": 1.5, "total_return": -2.0, "max_drawdown": 6.0, "total_trades": 10},
+      "expect": {"promote": false, "reason_contains": "return"}
+    },
+    {
+      "id": "promo-fail-drawdown", "dimension": "promotion", "grade": "deterministic",
+      "metrics": {"strategy_slug": "btd", "symbol": "NVDA", "sharpe": 1.5, "total_return": 8.0, "max_drawdown": 30.0, "total_trades": 10},
+      "expect": {"promote": false, "reason_contains": "drawdown"}
+    },
+
+    {
+      "id": "scout-btd-targets-dips", "dimension": "scout", "grade": "structural",
+      "params": {"strategy": "btd", "limit": 5, "equity": 10000, "position_pct": 0.10},
+      "expect": {"all_paper": true, "sized_notional": 1000.0, "min_count": 1}
+    },
+    {
+      "id": "scout-momentum-targets-gainers", "dimension": "scout", "grade": "structural",
+      "params": {"strategy": "momentum", "limit": 3, "equity": 20000, "position_pct": 0.05},
+      "expect": {"all_paper": true, "sized_notional": 1000.0, "min_count": 1}
+    }
+  ]
+}

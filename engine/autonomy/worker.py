@@ -57,7 +57,12 @@ def loop(worker_id: str = "worker-1") -> None:
             reclaimed = queue.requeue_unfinished(STALE_SECONDS)
             if reclaimed:
                 log.info("requeued %d stale run(s)", reclaimed)
-            # Phase C: scout.enqueue_candidates() goes here.
+            # Self-feed: when the queue is idle, the Scout enqueues one new run.
+            if queue.pending_count() == 0:
+                from engine.autonomy import scout
+                rid = scout.enqueue_run(strategy=os.getenv("AUTONOMY_STRATEGY", "btd"))
+                if rid:
+                    log.info("scout enqueued run %s", rid)
             drained = 0
             while run_one(worker_id):
                 drained += 1

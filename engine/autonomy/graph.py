@@ -72,8 +72,29 @@ def policy_gate(ctx: dict) -> dict:
     return {"ctx": {"admitted": admitted}, "admitted_count": len(admitted)}
 
 
+def scout_node(ctx: dict) -> dict:
+    """Populate ctx['candidates'] + ctx['portfolio'] for the policy gate.
+
+    Uses symbols the Scout put in the run config; falls back to a fresh scan.
+    """
+    from engine.autonomy import scout
+    from engine.autonomy.policy import Candidate
+    cfg = ctx.get("config") or {}
+    portfolio = scout.portfolio_state()
+    scouted = cfg.get("scouted")
+    if scouted:
+        candidates = [Candidate(symbol=s["symbol"], strategy_slug=s.get("strategy", "btd"),
+                                intended_notional=float(s.get("notional", 0)))
+                      for s in scouted]
+    else:
+        candidates = scout.scan(strategy=cfg.get("strategy", "btd"),
+                                equity=portfolio.equity)
+    return {"ctx": {"candidates": candidates, "portfolio": portfolio},
+            "scouted": len(candidates)}
+
+
 def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = None) -> Pipeline:
-    """The paper-only research→paper→report pipeline, phases wrapped as checkpointed nodes."""
+    """The paper-only scout→backtest→gate→paper→reconcile→promote pipeline (checkpointed)."""
 
     def _orch():
         from agents.orchestrator import Orchestrator
@@ -92,15 +113,23 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
     def reconcile(ctx):
         return _orch().run_reconciliation(ctx.get("config"))
 
-    def report(ctx):
+    def promote(ctx):
         from agents.report_agent import ReportAgent
-        return {"top": ReportAgent().top_strategies(trade_type="paper", limit=5)}
+        from engine.autonomy import promote as _promote, notify as _notify
+        strategies = ReportAgent().top_strategies(trade_type="paper", limit=10) or []
+        if isinstance(strategies, dict):
+            strategies = strategies.get("strategies", [])
+        promoted = _promote.run_promotions(strategies, run_id=ctx.get("run_id"))
+        if promoted:
+            _notify.send_promotion_digest(promoted)
+        return {"promoted": len(promoted)}
 
     return Pipeline([
+        ("scout", scout_node),
         ("backtest", backtest),
         ("policy_gate", policy_gate),
         ("validate_backtest", validate_backtest),
         ("paper_trade", paper_trade),
         ("reconcile", reconcile),
-        ("report", report),
+        ("promote", promote),
     ])

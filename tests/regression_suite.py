@@ -1029,6 +1029,36 @@ class TestAutonomyNoLivePath(unittest.TestCase):
             self.assertNotIn("ALPACA_LIVE", src, f"{py.name} references live keys")
 
 
+class TestPromotion(unittest.TestCase):
+    """engine.autonomy.promote.should_promote — pure paper→live promotion gate."""
+
+    def test_passes_clear_winner(self):
+        from engine.autonomy.promote import should_promote
+        ok, _ = should_promote({"sharpe": 1.8, "total_return": 6.2,
+                                "max_drawdown": 8.0, "total_trades": 12})
+        self.assertTrue(ok)
+
+    def test_passes_exactly_at_bar(self):
+        from engine.autonomy.promote import should_promote
+        ok, _ = should_promote({"sharpe": 1.0, "total_return": 0.0,
+                                "max_drawdown": 20.0, "total_trades": 5})
+        self.assertTrue(ok)
+
+    def test_rejects_too_few_trades(self):
+        from engine.autonomy.promote import should_promote
+        ok, reason = should_promote({"sharpe": 3, "total_return": 9,
+                                     "max_drawdown": 2, "total_trades": 2})
+        self.assertFalse(ok)
+        self.assertIn("trades", reason)
+
+    def test_rejects_low_sharpe_and_deep_drawdown(self):
+        from engine.autonomy.promote import should_promote
+        self.assertFalse(should_promote({"sharpe": 0.2, "total_return": 5,
+                                         "max_drawdown": 5, "total_trades": 9})[0])
+        self.assertFalse(should_promote({"sharpe": 2, "total_return": 5,
+                                         "max_drawdown": 40, "total_trades": 9})[0])
+
+
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------

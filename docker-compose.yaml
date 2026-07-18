@@ -57,3 +57,32 @@ services:
       retries: 3
       start_period: 15s
     restart: unless-stopped
+
+  # Autonomous agent-team worker (Phase C). Paper-only, opt-in: only starts with
+  # `docker compose --profile autonomy up`, so the prod deploy never runs it. Enable
+  # the loop itself with AUTONOMY_ENABLED=true.
+  autonomy:
+    build:
+      context: .
+      dockerfile: Dockerfile.agui
+    command: ["python", "-m", "engine.autonomy.worker"]
+    profiles: ["autonomy"]
+    environment:
+      - AUTONOMY_ENABLED=${AUTONOMY_ENABLED:-false}
+      - AUTONOMY_SCAN_SECONDS=${AUTONOMY_SCAN_SECONDS:-300}
+      - AUTONOMY_STRATEGY=${AUTONOMY_STRATEGY:-btd}
+      - DATABASE_URL=${DATABASE_URL}
+      - ALPACA_PAPER_API_KEY=${ALPACA_PAPER_API_KEY}
+      - ALPACA_PAPER_SECRET_KEY=${ALPACA_PAPER_SECRET_KEY}
+      - MASSIVE_API_KEY=${MASSIVE_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY:-}
+      - MODEL_PROVIDER=${MODEL_PROVIDER:-}
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+      - POSTMARK_API_KEY=${POSTMARK_API_KEY:-}
+      - TO_EMAIL=${TO_EMAIL:-}
+      - FROM_EMAIL=${FROM_EMAIL:-}
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

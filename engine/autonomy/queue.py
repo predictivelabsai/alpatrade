@@ -80,6 +80,15 @@ def fail(run_id: str, error: str, max_attempts: int = 3) -> str:
     return new_status or "failed"
 
 
+def pending_count() -> int:
+    """Runs currently queued or running (to decide whether the scout should self-feed)."""
+    with _pool().get_session() as s:
+        n = s.execute(text("""
+            SELECT COUNT(*) FROM alpatrade.autonomy_runs WHERE status IN ('queued', 'running')
+        """)).scalar()
+    return int(n or 0)
+
+
 def requeue_unfinished(stale_seconds: int = 300) -> int:
     """Return runs stuck in 'running' with a stale heartbeat back to 'queued'."""
     with _pool().get_session() as s:

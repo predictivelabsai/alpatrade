@@ -1,7 +1,7 @@
 # Autonomous Trading Agent Team — Plan
 
-Status: **Phases A & B shipped; C–E proposed** · Author: session 2026-07 · Grounds:
-AlpaTrade current architecture + patterns mined from `dev/plai/plai-crm`.
+Status: **Phases A, B & C shipped; D–E proposed** · Author: session 2026-07 · Grounds:
+AlpaTrade current architecture + patterns mined from `dev/plai/plai-crm` + `kaljuvee-chat`.
 
 ## Decisions locked
 
@@ -192,8 +192,15 @@ engine/autonomy/
   `AUTONOMY_ENABLED`-gated). Covered by `TestAutonomyPolicy`/`Engine`/`NoLivePath` (10 tests) →
   regression **90/90**. *Remaining: wire `default_pipeline` to a real end-to-end run + a `autonomy`
   compose service (both Phase C-adjacent).*
-- **Phase C — Scout + RiskPolicy + continuous worker.** `worker.py` self-feeding loop, `policy.py`
-  pure gate, promotion reports via Postmark. `AUTONOMY_ENABLED` behind a flag, paper-only.
+- **Phase C — Scout + promotion + notifier + agent evals. ✅ SHIPPED.** `scout.py` (portfolio state +
+  deterministic candidate scan + `enqueue_run`), `promote.py` (pure `should_promote` + recorder),
+  `notify.py` (Postmark + Hermes digest), wired into `default_pipeline` (scout→…→promote); worker
+  self-feeds via the scout when idle. `autonomy` **compose service** (opt-in profile, `AUTONOMY_ENABLED`
+  off in prod). **Agent-eval harness** `evals/run_agent_evals.py` + `evals/autonomy_cases.json`
+  (risk_policy/promotion/scout dimensions, 17/17), pure `TestPromotion`, and a CRM-style evidence
+  benchmark `docs/autonomy_benchmark_2026-07-18.md` (stage matrix 9/12, honest first-blocker + retraction
+  section). *Remaining before "fully live team": run `default_pipeline` end-to-end via the worker and
+  thread the gate's `sized_notional` into the paper order (Phase D).*
 - **Phase D — Framework parity + front-ends.** Prove the pipeline runs identically under LangGraph
   vs DeepAgents; optional Hermes/Telegram notifier front-end; evidence benchmark.
 - **Phase E (optional, later).** Gated live promotion via durable interrupt + approver — only if you
