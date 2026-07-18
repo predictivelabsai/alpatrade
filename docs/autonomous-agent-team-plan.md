@@ -1,7 +1,7 @@
 # Autonomous Trading Agent Team — Plan
 
-Status: **proposal / design** · Author: session 2026-07 · Grounds: AlpaTrade current
-architecture + patterns mined from `dev/plai/plai-crm`.
+Status: **Phase A shipped; B–E proposed** · Author: session 2026-07 · Grounds: AlpaTrade
+current architecture + patterns mined from `dev/plai/plai-crm`.
 
 ## Decisions locked
 
@@ -67,21 +67,29 @@ engine/agents/runtime/
 ```
 
 ```python
-# base.py — the whole contract the pipeline depends on
+# base.py — the whole contract the pipeline depends on (as shipped)
 @dataclass
 class RoleSpec:
     name: str
-    instructions: str
-    tools: list            # StructuredTool-like; adapters translate to their tool type
-    model: Any             # from engine.config.build_chat_model
-    subagents: list = ()   # optional (DeepAgents/LangGraph supervisor)
+    instructions: str = ""
+    tools: list = ...          # StructuredTool-like/callables; adapters translate
+    model: Any = None          # from engine.config.build_chat_model; None → default
+    subagents: list = ...       # optional (DeepAgents/LangGraph supervisor)
 
 class AgentRuntime(Protocol):
     name: str
-    def build(self, spec: RoleSpec) -> "Agent": ...
-    async def run(self, agent, input: dict, *, stream=False) -> dict | AsyncIterator: ...
+    def build(self, spec: RoleSpec) -> Any: ...
+    def run(self, agent, prompt: str, *, history=None) -> RunResult: ...
+    def stream(self, agent, prompt: str, *, history=None) -> Iterator[str]: ...
     def supports_subagents(self) -> bool: ...
+    # each adapter also exposes staticmethod available() → bool for registry fallback
 ```
+
+Registry: `get_runtime(name=None)` resolves `AGENT_FRAMEWORK` (aliases normalised,
+e.g. `pydantic-ai`→`pydantic_ai`, `nous`→`hermes`) and **falls back to LangGraph** when the
+requested backend's lib isn't installed (`available()` is False). `available_runtimes()`
+reports the matrix. The Hermes adapter additionally exposes `notify(text)` (opt-in via
+`HERMES_WEBHOOK_URL`) for pushing autonomy digests to a Hermes/Telegram channel.
 
 Adapter notes:
 - **LangGraph** — wrap `create_react_agent` (per-node reasoning) and expose `StateGraph` for the
@@ -170,9 +178,13 @@ engine/autonomy/
 
 ## 9. Phased rollout
 
-- **Phase A — Adapter layer.** `engine/agents/runtime/` + LangGraph adapter; port the existing chat
-  agent to build through it (no behavior change). Add DeepAgents/Pydantic/Hermes adapters with the
-  fallback. *Ship + eval; nothing autonomous yet.*
+- **Phase A — Adapter layer. ✅ SHIPPED.** `engine/agents/runtime/` with `base.py` (RoleSpec +
+  AgentRuntime Protocol + `default_model`), `registry.py` (`AGENT_FRAMEWORK` select + alias + fallback),
+  and four adapters: `langgraph_rt` (reference; build/run/stream verified end-to-end), `deepagents_rt`
+  (subagents; falls back if `deepagents` absent), `pydantic_rt` (maps provider→`pydantic_ai` OpenAI model),
+  `hermes_rt` (LangGraph-delegating + `notify()`). Covered by `TestAgentRuntime` (6 tests) → regression
+  suite now **80/80**. *Remaining Phase-A polish: port `agui_app`/`ph_chat` to build through the adapter
+  (currently they still call `create_react_agent` directly — no behavior change when they switch).*
 - **Phase B — Durable run engine.** `sql/15_autonomy.sql`, `store.py`, `queue.py`, `graph.py` wrapping
   today's Orchestrator phases as checkpointed nodes. Manual kick first (`--mode full` through the new
   engine). Regression: no-live-path, queue, checkpoint-resume.

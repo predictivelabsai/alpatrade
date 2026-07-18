@@ -878,6 +878,58 @@ class TestVoice(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# 22. Agent-runtime adapter layer (pluggable frameworks)
+# ---------------------------------------------------------------------------
+
+class TestAgentRuntime(unittest.TestCase):
+    """engine.agents.runtime — framework pluggability (LLM axis handled elsewhere)."""
+
+    def test_available_runtimes(self):
+        from engine.agents.runtime import available_runtimes
+        avail = available_runtimes()
+        for fw in ("langgraph", "deepagents", "pydantic_ai", "hermes"):
+            self.assertIn(fw, avail)
+        self.assertTrue(avail["langgraph"], "langgraph adapter must be available")
+
+    def test_default_runtime_is_valid(self):
+        from engine.agents.runtime import get_runtime
+        rt = get_runtime()
+        self.assertIn(rt.name, ("langgraph", "deepagents", "pydantic_ai", "hermes"))
+
+    def test_unknown_framework_falls_back(self):
+        from engine.agents.runtime import get_runtime
+        self.assertEqual(get_runtime("does-not-exist").name, "langgraph")
+
+    def test_alias_normalisation(self):
+        from engine.agents.runtime import get_runtime
+        # 'pydantic-ai' → 'pydantic_ai' when installed, else langgraph fallback
+        self.assertIn(get_runtime("pydantic-ai").name, ("pydantic_ai", "langgraph"))
+        self.assertIn(get_runtime("deep-agents").name, ("deepagents", "langgraph"))
+
+    def test_uninstalled_framework_falls_back(self):
+        from engine.agents.runtime import get_runtime, available_runtimes
+        if not available_runtimes()["deepagents"]:
+            self.assertEqual(get_runtime("deepagents").name, "langgraph")
+
+    def test_build_and_run_langgraph(self):
+        if not os.getenv("XAI_API_KEY"):
+            self.skipTest("XAI_API_KEY not set")
+        from engine.agents.runtime import get_runtime, RoleSpec
+        from langchain_core.tools import StructuredTool
+
+        def add(a: int, b: int) -> str:
+            """Add two integers."""
+            return str(a + b)
+
+        rt = get_runtime("langgraph")
+        agent = rt.build(RoleSpec(name="calc", instructions="Use the add tool to compute.",
+                                  tools=[StructuredTool.from_function(add)]))
+        res = rt.run(agent, "What is 21 + 21? Use the add tool.")
+        self.assertIn("42", res.text)
+        self.assertEqual(res.runtime, "langgraph")
+
+
+# ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
 
