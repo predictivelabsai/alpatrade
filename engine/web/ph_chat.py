@@ -387,17 +387,26 @@ async def _stream(msg: str, session) -> StreamingResponse:
         full = ""
         try:
             agent = _agui.agent_for_user(str(uid) if uid is not None else None)
-            async for event in agent.astream_events({"messages": lc}, version="v2"):
-                kind = event.get("event", "")
-                if kind == "on_chat_model_stream":
-                    chunk = event.get("data", {}).get("chunk")
-                    if chunk is not None and getattr(chunk, "content", ""):
-                        full += chunk.content
-                        yield _sse("token", {"text": chunk.content})
-                elif kind == "on_tool_start":
-                    yield _sse("tool_start", {"name": event.get("name", "tool")})
-                elif kind == "on_tool_end":
-                    yield _sse("tool_end", {"name": event.get("name", "tool")})
+            if hasattr(agent, "astream_events"):
+                # LangGraph-family runtimes: fine-grained token + tool events (default path).
+                async for event in agent.astream_events({"messages": lc}, version="v2"):
+                    kind = event.get("event", "")
+                    if kind == "on_chat_model_stream":
+                        chunk = event.get("data", {}).get("chunk")
+                        if chunk is not None and getattr(chunk, "content", ""):
+                            full += chunk.content
+                            yield _sse("token", {"text": chunk.content})
+                    elif kind == "on_tool_start":
+                        yield _sse("tool_start", {"name": event.get("name", "tool")})
+                    elif kind == "on_tool_end":
+                        yield _sse("tool_end", {"name": event.get("name", "tool")})
+            else:
+                # Non-LangGraph runtime (e.g. pydantic_ai): no event stream → single-shot.
+                import asyncio as _asyncio
+                res = await _asyncio.to_thread(
+                    _agui.chat_runtime.run, agent, msg, history=history[:-1])
+                full = res.text
+                yield _sse("token", {"text": full})
         except Exception as e:  # noqa: BLE001
             yield _sse("error", {"message": str(e)})
             history.append({"role": "assistant", "content": f"Error: {e}"})

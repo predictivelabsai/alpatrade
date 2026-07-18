@@ -622,13 +622,21 @@ TOOLS = [
 ]
 
 from engine.config import get_settings, build_chat_model
+from engine.agents.runtime import get_runtime, RoleSpec
 
-# Default (deployment-level) model. MODEL_PROVIDER / MODEL_NAME come from env via
-# engine.config, which self-heals an unavailable model (e.g. region-locked
-# grok-4.5 → grok-4.3). Per-user overrides are applied by agent_for_user() below.
-llm = build_chat_model(get_settings(), streaming=True)
+# The chat agent is built through the pluggable AgentRuntime adapter (AGENT_FRAMEWORK,
+# default LangGraph — which yields the same ReAct agent as before, so ph_chat's
+# astream_events keeps working). The LLM axis is separate: MODEL_PROVIDER / MODEL_NAME
+# come from engine.config, which self-heals an unavailable model (region-locked
+# grok-4.5 → grok-4-1-fast-reasoning). Per-user overrides are applied by agent_for_user().
+chat_runtime = get_runtime()
 
-langgraph_agent = create_react_agent(model=llm, tools=TOOLS, prompt=SYSTEM_PROMPT)
+
+def _chat_role(model=None) -> RoleSpec:
+    return RoleSpec(name="alpatrade-chat", instructions=SYSTEM_PROMPT, tools=TOOLS, model=model)
+
+
+langgraph_agent = chat_runtime.build(_chat_role())
 
 
 # Per-user agents, cached by (provider, model) so a user's Settings choice takes
@@ -637,7 +645,7 @@ _agent_cache: dict = {}
 
 
 def agent_for_user(user_id: str | None):
-    """Return the react agent for a user's resolved model settings.
+    """Return the chat agent for a user's resolved model settings.
 
     Falls back to the shared default agent when the user has no override or the
     override matches the default (keeping a single hot agent for anonymous use)."""
@@ -650,8 +658,7 @@ def agent_for_user(user_id: str | None):
         if key == (default.model_provider, default.model_name):
             return langgraph_agent
         if key not in _agent_cache:
-            _agent_cache[key] = create_react_agent(
-                model=build_chat_model(s, streaming=True), tools=TOOLS, prompt=SYSTEM_PROMPT)
+            _agent_cache[key] = chat_runtime.build(_chat_role(build_chat_model(s, streaming=True)))
         return _agent_cache[key]
     except Exception:  # noqa: BLE001 — never let model selection break chat
         return langgraph_agent
