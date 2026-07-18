@@ -209,8 +209,9 @@ Five agents coordinated by the Orchestrator (`agents/orchestrator.py`):
 
 PostgreSQL with `alpatrade` schema. Key tables: `runs`, `trades`, `backtest_summaries`, `users`,
 `user_accounts` (per-user Alpaca keys, Fernet-encrypted BYTEA — this is where keys actually live, not
-`users`), `user_settings` (per-user provider prefs, `sql/14`), `chat_messages`. Migrations in `sql/`
-(numbered `01_` through `14_`, idempotent `CREATE TABLE IF NOT EXISTS`). Apply one with
+`users`), `user_settings` (per-user provider prefs, `sql/14`), `chat_messages`, and the autonomy engine tables
+`autonomy_runs`/`autonomy_run_steps`/`autonomy_events`/`autonomy_promotions` (`sql/15`). Migrations in
+`sql/` (numbered `01_` through `15_`, idempotent `CREATE TABLE IF NOT EXISTS`). Apply one with
 `python run_migration.py sql/NN_name.sql` (no migration-tracking table). All data tables carry `user_id`
 (and `account_id`) for isolation.
 

@@ -14,7 +14,7 @@ Buy 10 MSFT with a $300 limit,Confirms a paper LIMIT buy order for 10 MSFT at $3
 Sell 1 share of TSLA at market,Confirms a paper market SELL order for 1 TSLA was placed.,,place_paper_order,chat,
 Show me a price chart of AAPL,Returns or renders an AAPL price chart.,,show_stock_chart,chat,
 Which of my strategies performed best?,Ranks or reports the best-performing strategies.,,show_recent_runs,chat,
-Are any trading agents running right now?,Reports the status of background trading agents.,,show_running_agents,chat,
+Are any trading agents running right now?,"A clear yes/no about whether any background trading agents are currently running is correct — e.g. 'No agents are currently running' or a list of the running agents. It need not use the exact phrase 'trading agents'.",,show_running_agents,chat,
 trades:paper,Renders the paper trades table.,trade;Trade;paper;No ,CommandProcessor,deterministic,
 trades:backtest,Renders the backtest trades table.,trade;Trade;backtest;No ,CommandProcessor,deterministic,
 runs:backtest,Lists backtest runs.,run;Run;backtest;No ,CommandProcessor,deterministic,

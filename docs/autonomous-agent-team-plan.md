@@ -1,7 +1,7 @@
 # Autonomous Trading Agent Team — Plan
 
-Status: **Phase A shipped; B–E proposed** · Author: session 2026-07 · Grounds: AlpaTrade
-current architecture + patterns mined from `dev/plai/plai-crm`.
+Status: **Phases A & B shipped; C–E proposed** · Author: session 2026-07 · Grounds:
+AlpaTrade current architecture + patterns mined from `dev/plai/plai-crm`.
 
 ## Decisions locked
 
@@ -185,9 +185,13 @@ engine/autonomy/
   `hermes_rt` (LangGraph-delegating + `notify()`). Covered by `TestAgentRuntime` (6 tests) → regression
   suite now **80/80**. *Remaining Phase-A polish: port `agui_app`/`ph_chat` to build through the adapter
   (currently they still call `create_react_agent` directly — no behavior change when they switch).*
-- **Phase B — Durable run engine.** `sql/15_autonomy.sql`, `store.py`, `queue.py`, `graph.py` wrapping
-  today's Orchestrator phases as checkpointed nodes. Manual kick first (`--mode full` through the new
-  engine). Regression: no-live-path, queue, checkpoint-resume.
+- **Phase B — Durable run engine. ✅ SHIPPED.** `sql/15_autonomy.sql` (runs/steps/events/promotions),
+  `engine/autonomy/`: `policy.py` (pure paper-only RiskPolicy), `store.py` (CRUD + checkpoints),
+  `queue.py` (`FOR UPDATE SKIP LOCKED` claim + heartbeat + `requeue_unfinished`), `graph.py` (resumable
+  checkpointed `Pipeline` wrapping the Orchestrator phases + `policy_gate`), `worker.py` (continuous loop,
+  `AUTONOMY_ENABLED`-gated). Covered by `TestAutonomyPolicy`/`Engine`/`NoLivePath` (10 tests) →
+  regression **90/90**. *Remaining: wire `default_pipeline` to a real end-to-end run + a `autonomy`
+  compose service (both Phase C-adjacent).*
 - **Phase C — Scout + RiskPolicy + continuous worker.** `worker.py` self-feeding loop, `policy.py`
   pure gate, promotion reports via Postmark. `AUTONOMY_ENABLED` behind a flag, paper-only.
 - **Phase D — Framework parity + front-ends.** Prove the pipeline runs identically under LangGraph

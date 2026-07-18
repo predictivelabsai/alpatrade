@@ -930,6 +930,106 @@ class TestAgentRuntime(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# 23. Autonomy run engine (Phase B) — policy, queue, checkpoint/resume, paper-only
+# ---------------------------------------------------------------------------
+
+class TestAutonomyPolicy(unittest.TestCase):
+    """engine.autonomy.policy — pure, deterministic, paper-only (no DB/LLM)."""
+
+    def _state(self):
+        from engine.autonomy.policy import PortfolioState
+        return PortfolioState(equity=10000, open_positions=2, gross_exposure=3000)
+
+    def test_admit_and_size_cap(self):
+        from engine.autonomy.policy import evaluate, Candidate
+        d = evaluate(Candidate("AAPL", "btd", 5000), self._state())
+        self.assertTrue(d.admit)
+        self.assertEqual(d.sized_notional, 1000.0)  # 10% of 10k equity
+
+    def test_reject_live_paper_only(self):
+        from engine.autonomy.policy import evaluate, Candidate
+        d = evaluate(Candidate("AAPL", "btd", 1000, is_live=True), self._state())
+        self.assertFalse(d.admit)
+        self.assertIn("paper-only", d.reason)
+
+    def test_kill_switch(self):
+        from engine.autonomy.policy import evaluate, Candidate
+        self.assertFalse(evaluate(Candidate("AAPL", "btd", 1000), self._state(),
+                                  kill_switch=True).admit)
+
+    def test_max_open_positions(self):
+        from engine.autonomy.policy import evaluate, Candidate, PortfolioState
+        full = PortfolioState(equity=10000, open_positions=10, gross_exposure=1000)
+        self.assertFalse(evaluate(Candidate("AAPL", "btd", 500), full).admit)
+
+    def test_gross_exposure_headroom(self):
+        from engine.autonomy.policy import evaluate, Candidate, PortfolioState
+        near = PortfolioState(equity=10000, open_positions=1, gross_exposure=9800)
+        d = evaluate(Candidate("AAPL", "btd", 1000), near)
+        self.assertTrue(d.admit)
+        self.assertEqual(d.sized_notional, 200.0)  # clamped to remaining headroom
+
+    def test_allow_live_flag_is_false(self):
+        from engine.autonomy.policy import RiskLimits
+        self.assertFalse(RiskLimits().allow_live)
+
+
+class TestAutonomyEngine(unittest.TestCase):
+    """engine.autonomy queue + checkpointed pipeline (requires DB)."""
+
+    def test_queue_claim_heartbeat_ack(self):
+        from engine.autonomy import queue, store
+        queue.enqueue("test", {"x": 1})           # ensure at least one claimable run
+        claimed = queue.claim("w-test")           # claims the oldest queued (maybe not ours)
+        self.assertIsNotNone(claimed)
+        queue.heartbeat(claimed["run_id"], "w-test")
+        queue.ack(claimed["run_id"])
+        self.assertEqual(store.get_run(claimed["run_id"])["status"], "done")
+
+    def test_checkpoint_resume_skips_done(self):
+        from engine.autonomy import queue, store
+        from engine.autonomy.graph import Pipeline
+        rid = queue.enqueue("test")
+        queue.claim("w-test")
+        calls = []
+
+        def n1(ctx):
+            calls.append("n1"); return {"ctx": {"a": 1}}
+
+        def boom(ctx):
+            calls.append("boom"); raise RuntimeError("kaboom")
+
+        with self.assertRaises(RuntimeError):
+            Pipeline([("n1", n1), ("n2", boom)]).run(rid)
+        self.assertEqual(store.completed_steps(rid), {"n1"})
+
+        def n2ok(ctx):
+            calls.append("n2"); return {"ok": True}
+
+        Pipeline([("n1", n1), ("n2", n2ok)]).run(rid)
+        self.assertEqual(calls, ["n1", "boom", "n2"])  # n1 not re-run on resume
+        self.assertEqual(store.get_run(rid)["status"], "done")
+
+    def test_requeue_unfinished(self):
+        from engine.autonomy import queue
+        queue.enqueue("test")
+        queue.claim("w-test")
+        self.assertGreaterEqual(queue.requeue_unfinished(stale_seconds=0), 1)
+
+
+class TestAutonomyNoLivePath(unittest.TestCase):
+    """The autonomy package must never place a live order (paper-only wall)."""
+
+    def test_no_live_broker_usage_in_source(self):
+        import pathlib
+        pkg = pathlib.Path(PROJECT_ROOT) / "engine" / "autonomy"
+        for py in pkg.glob("*.py"):
+            src = py.read_text()
+            self.assertNotIn("paper=False", src, f"{py.name} references a live broker")
+            self.assertNotIn("ALPACA_LIVE", src, f"{py.name} references live keys")
+
+
+# ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
 
