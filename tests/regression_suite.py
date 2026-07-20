@@ -1103,6 +1103,49 @@ class TestScoutStrategyName(unittest.TestCase):
         self.assertEqual(strategy_name("buy_the_dip"), "buy_the_dip")  # idempotent
 
 
+class TestMinHoldSwing(unittest.TestCase):
+    """engine.backtest min_hold_days gates TP/SL exits until the min hold elapses
+    (PDT-safe swing) — verified offline on synthetic bars, no network."""
+
+    def _bars(self):
+        import pandas as pd
+        idx = pd.date_range("2025-01-01", periods=8, freq="D", tz="UTC")
+        rows = [  # o, h, l, c, v
+            (100, 100, 100, 100, 1e6),  # d0
+            (100, 100, 100, 100, 1e6),  # d1
+            (100, 100, 94, 94, 1e6),    # d2 dip → entry signal (close 94 <= 95)
+            (94, 100, 94, 100, 1e6),    # d3 fill buy @ open 94; close 100 → no re-signal
+            (96, 100, 96, 98, 1e6),     # d4 high 100 → TP target (95.88) available
+            (96, 100, 96, 98, 1e6),     # d5
+            (96, 100, 96, 98, 1e6),     # d6
+            (96, 100, 96, 98, 1e6),     # d7
+        ]
+        return {"X": pd.DataFrame(rows, columns=["o", "h", "l", "c", "v"], index=idx)}
+
+    def _round_trips(self, min_hold):
+        from engine.backtest.engine import simulate
+        from engine.backtest.fills import Friction
+        from engine.backtest.strategies import build_strategy
+        strat = build_strategy("buy_the_dip", lookback=2, dip_threshold=0.05,
+                               take_profit=0.02, stop_loss=0.90, hold_days=20,
+                               min_hold_days=min_hold, position_size=0.9)
+        rt, _eq, _fills = simulate(self._bars(), strat, 10000.0,
+                                   friction=Friction(spread_bps=0, slippage_bps=0))
+        return rt
+
+    def test_min_hold_delays_take_profit(self):
+        rt0 = self._round_trips(0)
+        rt4 = self._round_trips(4)
+        self.assertTrue(rt0 and rt4, "expected a round trip in both runs")
+        self.assertTrue(rt0[0]["hit_target"] and rt4[0]["hit_target"])
+        # min_hold=0 exits on the first eligible day; min_hold=4 must exit strictly later.
+        self.assertLess(rt0[0]["exit_time"], rt4[0]["exit_time"])
+
+    def test_default_min_hold_is_zero(self):
+        from engine.backtest.strategies import build_strategy
+        self.assertEqual(build_strategy("buy_the_dip").params["min_hold_days"], 0)
+
+
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------

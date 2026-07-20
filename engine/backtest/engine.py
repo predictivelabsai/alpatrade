@@ -57,16 +57,21 @@ def simulate(
             pos = positions[sym]
             exit_price = None
             reason = None
-            # conservative: stop before target
-            sp = stop_fill("sell", pos["stop"], bar, friction)
-            if sp is not None:
-                exit_price, reason = sp, "stop_loss"
-            else:
-                tp = limit_fill("sell", pos["target"], bar, friction)
-                if tp is not None:
-                    exit_price, reason = tp, "take_profit"
-                elif (i - pos["entry_idx"]) >= strategy.hold_days:
-                    exit_price, reason = friction.sell(bar["o"]), "hold_expiry"
+            held = i - pos["entry_idx"]
+            # Minimum hold (PDT-safe swing): suppress TP/SL exits until min_hold_days have
+            # elapsed; after that, intrabar TP/SL exits are allowed (0 = current behaviour).
+            min_hold = getattr(strategy, "min_hold_days", 0) or 0
+            if held >= min_hold:
+                # conservative: stop before target
+                sp = stop_fill("sell", pos["stop"], bar, friction)
+                if sp is not None:
+                    exit_price, reason = sp, "stop_loss"
+                else:
+                    tp = limit_fill("sell", pos["target"], bar, friction)
+                    if tp is not None:
+                        exit_price, reason = tp, "take_profit"
+            if exit_price is None and held >= strategy.hold_days:
+                exit_price, reason = friction.sell(bar["o"]), "hold_expiry"
             if exit_price is not None:
                 proceeds = pos["shares"] * exit_price
                 cash += proceeds

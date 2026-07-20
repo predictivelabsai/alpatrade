@@ -35,6 +35,7 @@ class BuyTheDip:
     take_profit: float = 0.01        # fractional gain to exit
     stop_loss: float = 0.005         # fractional loss to exit
     hold_days: int = 3               # max bars to hold before exit-at-open
+    min_hold_days: int = 0           # min bars before any TP/SL exit (PDT-safe swing)
     params: dict = field(default_factory=dict)
 
     def __post_init__(self):
@@ -46,6 +47,7 @@ class BuyTheDip:
             "take_profit": self.take_profit,
             "stop_loss": self.stop_loss,
             "hold_days": self.hold_days,
+            "min_hold_days": self.min_hold_days,
         }
 
     def warmup(self) -> int:
