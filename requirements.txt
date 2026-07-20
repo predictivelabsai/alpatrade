@@ -11,6 +11,7 @@ psycopg2-binary
 langchain-openai
 langgraph
 langchain-core
+deepagents  # pluggable AGENT_FRAMEWORK=deepagents (planning + subagents on LangGraph)
 pyyaml
 textual
 rich

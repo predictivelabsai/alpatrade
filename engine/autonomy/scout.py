@@ -21,12 +21,12 @@ log = logging.getLogger("autonomy.scout")
 # Strategy → which end of today's move to target.
 _DIP_STRATEGIES = {"btd", "buy_the_dip"}
 
-# Scout slug → the backtester's full strategy name (the grid-search rejects slugs).
+# Scout slug → the backtester's registered strategy name (grid-search rejects slugs).
+# The grid-search backtester registers exactly: buy_the_dip, momentum, vix.
 _STRATEGY_NAMES = {
     "btd": "buy_the_dip", "buy_the_dip": "buy_the_dip",
     "mom": "momentum", "momentum": "momentum",
-    "vix": "vix_strategy", "vix_strategy": "vix_strategy",
-    "bwg": "box_wedge", "box_wedge": "box_wedge",
+    "vix": "vix", "vix_strategy": "vix",
 }
 
 

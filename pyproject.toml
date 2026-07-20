@@ -39,6 +39,7 @@ dependencies = [
     "prompt_toolkit>=3.0",
     "httpx>=0.25",
     "feedparser>=6.0",
+    "deepagents>=0.6.12",
 ]
 
 [project.optional-dependencies]

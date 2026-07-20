@@ -1099,7 +1099,7 @@ class TestScoutStrategyName(unittest.TestCase):
         from engine.autonomy.scout import strategy_name
         self.assertEqual(strategy_name("btd"), "buy_the_dip")
         self.assertEqual(strategy_name("mom"), "momentum")
-        self.assertEqual(strategy_name("vix"), "vix_strategy")
+        self.assertEqual(strategy_name("vix"), "vix")  # backtester registers 'vix'
         self.assertEqual(strategy_name("buy_the_dip"), "buy_the_dip")  # idempotent
 
 
