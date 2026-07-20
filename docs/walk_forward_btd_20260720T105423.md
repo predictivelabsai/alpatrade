@@ -25,6 +25,13 @@ Each fold: optimise the grid on the **train** window by **PnL**, then trade that
 - vs a fixed naive config ($20,162 OOS): optimising per fold BEAT the fixed naive config out-of-sample — the tuning adds real PnL.
 - Bottom line: **$27,550 of realistic (out-of-sample) PnL** is the number to trust, not the $30,924 in-sample figure.
 
+## Annualised return & periods covered
+
+- **Periods:** out-of-sample test = **2025-11-22 → 2026-07-20** (eight consecutive 30-day windows = 240 days ≈ 8 months); training data reaches back to **~2025-09-23** (60 days before the first test), so ~10 months of data in total.
+- **Average per-fold (30-day) OOS return:** **+34.4%**.
+- **Annualised OOS return:** **~419%** simple (non-compounded) / **~3,486%** compounded (the 8 folds treated as one rolling $10k account: ×10.5, +952% over 8 months).
+- **Read this as a warning, not a headline.** No real strategy annualises at 400–3,500%. The walk-forward removed *window* over-fit (8/8 folds profitable, 11% IS→OOS drop), but an annualised return this large is direct evidence that the backtester's **idealised execution** (no slippage, negligible fees, 1-day holds capturing tiny reliable moves) is inflating the result. The tradeable number after realistic fills will be a small fraction of this.
+
 ## Caveats
 
 - Still uses the backtester's fill/fee model; OOS removes *window* over-fit but not idealised execution. Real fills/slippage would reduce this further.

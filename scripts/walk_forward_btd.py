@@ -137,6 +137,25 @@ def main() -> int:
     a(f"- vs a fixed naive config (${tot_base:,.0f} OOS): {verdict}.")
     a(f"- Bottom line: **${tot_oos:,.0f} of realistic (out-of-sample) PnL** is the number to trust, not "
       f"the ${tot_is:,.0f} in-sample figure.\n")
+
+    # annualised return + periods
+    import functools
+    test_days = len(rows) * TEST_DAYS
+    oos_rets = [r["oos_pnl"] / CAPITAL for r in rows]
+    simple = sum(oos_rets)
+    comp = functools.reduce(lambda x, y: x * (1 + y), oos_rets, 1.0) - 1
+    ann_simple = simple * 365 / test_days
+    ann_comp = (1 + comp) ** (365 / test_days) - 1
+    periods = f"{rows[0]['test_period'].split('→')[0]} → {rows[-1]['test_period'].split('→')[1]}"
+    a("## Annualised return & periods covered\n")
+    a(f"- **Periods (out-of-sample):** {periods} ({len(rows)} × {TEST_DAYS}d = {test_days}d "
+      f"≈ {test_days // 30} months); training data reaches ~{TRAIN_DAYS}d earlier.")
+    a(f"- **Avg per-fold ({TEST_DAYS}d) OOS return:** +{100*simple/len(rows):.1f}%.")
+    a(f"- **Annualised OOS return:** ~{ann_simple*100:.0f}% simple / ~{ann_comp*100:.0f}% compounded "
+      f"(×{comp+1:.1f} over {test_days}d).")
+    a("- A return this large is a **warning about idealised fills**, not a headline — realistic "
+      "execution (slippage + fees) would cut it to a fraction.\n")
+
     a("## Caveats\n")
     a("- Still uses the backtester's fill/fee model; OOS removes *window* over-fit but not idealised "
       "execution. Real fills/slippage would reduce this further.")
