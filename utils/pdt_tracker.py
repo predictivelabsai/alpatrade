@@ -81,10 +81,12 @@ class PDTTracker:
         """
         blocked = False
         reason = ""
-        equity = float(account.get("equity", 0))
-        pdt_flagged = account.get("pattern_day_trader", False)
-        trading_blocked = account.get("trading_blocked", False)
-        daytrade_count = int(account.get("daytrade_count", 0))
+        # Alpaca can return these keys present-but-None → coerce defensively (a plain
+        # .get(k, default) returns None when the key exists with value None).
+        equity = float(account.get("equity") or 0)
+        pdt_flagged = account.get("pattern_day_trader") or False
+        trading_blocked = account.get("trading_blocked") or False
+        daytrade_count = int(account.get("daytrade_count") or 0)
 
         if trading_blocked:
             blocked = True

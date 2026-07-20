@@ -1,6 +1,6 @@
 # Autonomous Trading Agent Team — Plan
 
-Status: **Phases A, B & C shipped; D–E proposed** · Author: session 2026-07 · Grounds:
+Status: **Phases A–D shipped; E proposed** · Author: session 2026-07 · Grounds:
 AlpaTrade current architecture + patterns mined from `dev/plai/plai-crm` + `kaljuvee-chat`.
 
 ## Decisions locked
@@ -201,8 +201,14 @@ engine/autonomy/
   benchmark `docs/autonomy_benchmark_2026-07-18.md` (stage matrix 9/12, honest first-blocker + retraction
   section). *Remaining before "fully live team": run `default_pipeline` end-to-end via the worker and
   thread the gate's `sized_notional` into the paper order (Phase D).*
-- **Phase D — Framework parity + front-ends.** Prove the pipeline runs identically under LangGraph
-  vs DeepAgents; optional Hermes/Telegram notifier front-end; evidence benchmark.
+- **Phase D — End-to-end run + risk-sized orders. ✅ SHIPPED.** `build_paper_config` threads the gate's
+  `sized_notional` → `capital_per_trade` and restricts to admitted symbols (bounded session, not 7 days);
+  `run_once` executes the full pipeline synchronously. **Verified end-to-end run reached `done` with a
+  real paper session (5 trades)** — see `docs/autonomy_benchmark_2026-07-20.md` (stage matrix now 14/14
+  excl. live). Fixed the sole blocker: `pdt_tracker.check_account_pdt_status` `int(None)` crash. Nodes
+  now halt honestly on phase error and skip cleanly when the backtest yields no strategy. Regression
+  98/98. *Remaining (Phase E): run via the compose `autonomy` worker with a promotion-digest email, and
+  framework parity under DeepAgents.*
 - **Phase E (optional, later).** Gated live promotion via durable interrupt + approver — only if you
   decide to move past paper-only.
 

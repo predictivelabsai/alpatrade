@@ -671,6 +671,15 @@ class TestPDTTracker(unittest.TestCase):
         # Old trades outside 5-business-day window should not count
         self.assertEqual(tracker.get_day_trade_count(now), 0)
 
+    def test_account_status_handles_none_fields(self):
+        """Alpaca can return account fields present-but-None (e.g. daytrade_count);
+        check_account_pdt_status must coerce, not raise int(None)."""
+        from utils.pdt_tracker import PDTTracker
+        acct = {"equity": None, "pattern_day_trader": None,
+                "trading_blocked": None, "daytrade_count": None}
+        status = PDTTracker.check_account_pdt_status(acct)  # must not raise
+        self.assertIsInstance(status, dict)
+
 
 # ---------------------------------------------------------------------------
 # 16. Auth — User CRUD (requires DB)
@@ -1057,6 +1066,30 @@ class TestPromotion(unittest.TestCase):
                                          "max_drawdown": 5, "total_trades": 9})[0])
         self.assertFalse(should_promote({"sharpe": 2, "total_return": 5,
                                          "max_drawdown": 40, "total_trades": 9})[0])
+
+
+class TestPaperSizing(unittest.TestCase):
+    """engine.autonomy.graph.build_paper_config — risk-gate sizing → paper order (pure)."""
+
+    def _admitted(self):
+        from engine.autonomy.policy import Candidate
+        return [{"candidate": Candidate("AAPL", "btd", 1000), "sized_notional": 1000.0},
+                {"candidate": Candidate("MSFT", "btd", 800), "sized_notional": 800.0}]
+
+    def test_threads_sizing_and_symbols(self):
+        from engine.autonomy.graph import build_paper_config
+        cfg = build_paper_config({"strategy": "btd"}, self._admitted())
+        self.assertEqual(cfg["symbols"], ["AAPL", "MSFT"])
+        self.assertEqual(cfg["capital_per_trade"], 800.0)  # min admitted size (respects cap)
+
+    def test_bounds_duration_not_seven_days(self):
+        from engine.autonomy.graph import build_paper_config, DEFAULT_PAPER_SECONDS
+        self.assertEqual(build_paper_config({}, [])["duration_seconds"], DEFAULT_PAPER_SECONDS)
+        self.assertLess(DEFAULT_PAPER_SECONDS, 604800)  # never the Orchestrator's 7-day default
+
+    def test_duration_override(self):
+        from engine.autonomy.graph import build_paper_config
+        self.assertEqual(build_paper_config({"paper_duration_seconds": 15}, [])["duration_seconds"], 15)
 
 
 # ---------------------------------------------------------------------------

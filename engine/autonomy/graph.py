@@ -93,6 +93,27 @@ def scout_node(ctx: dict) -> dict:
             "scouted": len(candidates)}
 
 
+# Bounded paper session for an autonomy run (the Orchestrator default is 7 days, which
+# would block the worker loop). Overridable per run via config['paper_duration_seconds'].
+DEFAULT_PAPER_SECONDS = 3600
+
+
+def build_paper_config(base_config: Optional[dict], admitted: list,
+                       default_duration: int = DEFAULT_PAPER_SECONDS) -> dict:
+    """Pure: turn the risk-gate's admitted candidates into a paper-trade config.
+
+    Threads the gate's *sized_notional* into ``capital_per_trade`` (the per-trade cap)
+    and restricts trading to the admitted symbols, so the executed size is the
+    risk-policy size — not the strategy default. Bounds the session duration.
+    """
+    cfg = dict(base_config or {})
+    if admitted:
+        cfg["symbols"] = [a["candidate"].symbol for a in admitted]
+        cfg["capital_per_trade"] = round(min(a["sized_notional"] for a in admitted), 2)
+    cfg["duration_seconds"] = int(cfg.get("paper_duration_seconds", default_duration))
+    return cfg
+
+
 def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = None) -> Pipeline:
     """The paper-only scout→backtest→gate→paper→reconcile→promote pipeline (checkpointed)."""
 
@@ -100,15 +121,32 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
         from agents.orchestrator import Orchestrator
         return Orchestrator(user_id=user_id, account_id=account_id)
 
+    def _check(result, phase):
+        # A phase that returns {"error": ...} must halt the run honestly (→ failed),
+        # not checkpoint a misleading "done".
+        if isinstance(result, dict) and result.get("error"):
+            raise RuntimeError(f"{phase}: {result['error']}")
+        return result
+
     def backtest(ctx):
-        return _orch().run_backtest(ctx.get("config"))
+        r = _check(_orch().run_backtest(ctx.get("config")), "backtest")
+        best = (r.get("best_config") if isinstance(r, dict) else None) or {}
+        return {"ctx": {"backtest_result": r, "best_config": best},
+                "variations": r.get("total_variations") if isinstance(r, dict) else None,
+                "has_strategy": bool(best.get("params"))}
 
     def validate_backtest(ctx):
-        return _orch().run_validation(source="backtest")
+        if not (ctx.get("best_config") or {}).get("params"):
+            return {"skipped": "no viable backtest strategy"}
+        return _check(_orch().run_validation(source="backtest"), "validate_backtest")
 
     def paper_trade(ctx):
-        # PAPER account only.
-        return _orch().run_paper_trade(ctx.get("config"))
+        # PAPER account only; size + symbols come from the risk gate. If the backtest
+        # produced no viable strategy, there is nothing to paper-trade — skip cleanly.
+        if not (ctx.get("best_config") or {}).get("params"):
+            return {"skipped": "no viable backtest strategy (no trades) — nothing to paper-trade"}
+        cfg = build_paper_config(ctx.get("config"), ctx.get("admitted", []))
+        return _check(_orch().run_paper_trade(cfg), "paper_trade")
 
     def reconcile(ctx):
         return _orch().run_reconciliation(ctx.get("config"))
@@ -133,3 +171,17 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
         ("reconcile", reconcile),
         ("promote", promote),
     ])
+
+
+def run_once(config: Optional[dict] = None, user_id: Optional[str] = None,
+             account_id: Optional[str] = None) -> str:
+    """Create one autonomy run and execute the full pipeline synchronously.
+
+    Returns the run_id (inspect alpatrade.autonomy_run_steps for the checkpoints).
+    For a quick verification run pass e.g.
+    ``{"symbols": ["AAPL"], "lookback": "1m", "paper_duration_seconds": 15}``.
+    """
+    run_id = store.create_run("full", config=config or {}, user_id=user_id, account_id=account_id)
+    ctx = {"config": config or {}, "run_id": run_id}
+    default_pipeline(user_id, account_id).run(run_id, ctx)
+    return run_id
