@@ -56,7 +56,28 @@ paper_trade · reconcile · promote — all `done`.
 - **Risk-sized orders:** `build_paper_config` threads the gate's `sized_notional` → `capital_per_trade`
   and restricts symbols to admitted; session duration bounded (not the Orchestrator's 7-day default).
 
-## First reliable blocker (next — Phase D→E)
+## Phase E — self-fed worker cycle (local, verified)
+
+Ran the actual worker path (`AUTONOMY_ENABLED=true`, `AUTONOMY_PAPER_SECONDS=12`), not just
+`run_once`:
+
+- **Self-feed proven:** `scout.enqueue_run` created run `89892bb9-…`; `worker.run_one` **claimed
+  it** (attempt 1, `claimed_by=local-worker`) and drove all 7 nodes to `done` → event `run complete`.
+  **Paper phase executed 9 trades.**
+- **Honest-halt + auto-requeue proven:** the first attempt hit a real bug (below); the `backtest`
+  node **raised**, the run went `failed → requeued` (status back to `queued`, `claimed_by` cleared) —
+  the retry mechanics work.
+- **Bug found + fixed:** `scout.enqueue_run` put the strategy **slug** `btd` into the backtest config,
+  but the grid-search wants the full name → "Unknown strategy: btd". Added `scout.strategy_name`
+  (slug→name map: btd→buy_the_dip, mom→momentum, …). Test: `TestScoutStrategyName`.
+- **Promotion digest:** 0 candidates cleared the bar this cycle (no email sent). The digest HTML the
+  notifier emits is captured at `media/marketing/promotion_digest.html` (Postmark-sent to `TO_EMAIL`
+  automatically when a candidate clears the bar).
+
+Updated stage matrix is unchanged at **14/14 excl. live** — now also verified via the *worker*, not
+only the synchronous entrypoint.
+
+## First reliable blocker (next)
 
 1. **Run via the `autonomy` worker/compose service** (not just `run_once`) with `AUTONOMY_ENABLED=true`
    on a non-prod host, and capture a full self-fed cycle incl. a promotion digest email.

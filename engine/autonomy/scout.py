@@ -21,6 +21,19 @@ log = logging.getLogger("autonomy.scout")
 # Strategy → which end of today's move to target.
 _DIP_STRATEGIES = {"btd", "buy_the_dip"}
 
+# Scout slug → the backtester's full strategy name (the grid-search rejects slugs).
+_STRATEGY_NAMES = {
+    "btd": "buy_the_dip", "buy_the_dip": "buy_the_dip",
+    "mom": "momentum", "momentum": "momentum",
+    "vix": "vix_strategy", "vix_strategy": "vix_strategy",
+    "bwg": "box_wedge", "box_wedge": "box_wedge",
+}
+
+
+def strategy_name(strategy: str) -> str:
+    """Map a scout strategy slug to the backtester's full strategy name."""
+    return _STRATEGY_NAMES.get((strategy or "").lower(), strategy)
+
 
 def portfolio_state(account_id: Optional[str] = None) -> PortfolioState:
     """Live PAPER-account snapshot for the RiskPolicy gate."""
@@ -85,7 +98,7 @@ def enqueue_run(strategy: str = "btd", limit: int = 5,
     from engine.autonomy import queue
     symbols = [c.symbol for c in candidates]
     return queue.enqueue("full", config={
-        "strategy": strategy,
+        "strategy": strategy_name(strategy),   # backtester needs the full name, not the slug
         "symbols": symbols,
         "scouted": [{"symbol": c.symbol, "strategy": c.strategy_slug,
                      "notional": c.intended_notional} for c in candidates],

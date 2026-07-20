@@ -1,7 +1,7 @@
 # Autonomous Trading Agent Team — Plan
 
-Status: **Phases A–D shipped; E proposed** · Author: session 2026-07 · Grounds:
-AlpaTrade current architecture + patterns mined from `dev/plai/plai-crm` + `kaljuvee-chat`.
+Status: **Phases A–E run locally & verified; deploy pending** · Author: session 2026-07 ·
+Grounds: AlpaTrade current architecture + patterns mined from `dev/plai/plai-crm` + `kaljuvee-chat`.
 
 ## Decisions locked
 
@@ -209,7 +209,16 @@ engine/autonomy/
   now halt honestly on phase error and skip cleanly when the backtest yields no strategy. Regression
   98/98. *Remaining (Phase E): run via the compose `autonomy` worker with a promotion-digest email, and
   framework parity under DeepAgents.*
-- **Phase E (optional, later).** Gated live promotion via durable interrupt + approver — only if you
+- **Phase E — worker self-fed cycle. ✅ RUN LOCALLY.** Ran the actual `worker.run_one` path
+  (`AUTONOMY_ENABLED=true`): the scout self-fed the queue, the worker claimed the run and drove all 7
+  nodes to `done` (9 paper trades) — event `run complete`. Honest-halt + auto-requeue proven on a real
+  bug (scout slug→name, fixed via `scout.strategy_name`). Promotion-digest HTML captured
+  (`media/marketing/promotion_digest.html`); auto-emails `TO_EMAIL` when a candidate clears the bar.
+  Regression 99/99. *Not yet deployed (Coolify `autonomy` profile stays off in prod).*
+  Follow-ups: investigate the benign reconcile drift; prove framework parity under DeepAgents (install
+  the lib — currently falls back to LangGraph).
+
+- **Phase F (optional, later).** Gated live promotion via durable interrupt + approver — only if you
   decide to move past paper-only.
 
 ## 10. Reuse map

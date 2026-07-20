@@ -11,6 +11,7 @@ a live broker into this package).
 """
 from __future__ import annotations
 
+import os
 from typing import Any, Callable, Optional
 
 from engine.autonomy import store
@@ -145,7 +146,8 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
         # produced no viable strategy, there is nothing to paper-trade — skip cleanly.
         if not (ctx.get("best_config") or {}).get("params"):
             return {"skipped": "no viable backtest strategy (no trades) — nothing to paper-trade"}
-        cfg = build_paper_config(ctx.get("config"), ctx.get("admitted", []))
+        dur = int(os.getenv("AUTONOMY_PAPER_SECONDS", DEFAULT_PAPER_SECONDS))
+        cfg = build_paper_config(ctx.get("config"), ctx.get("admitted", []), default_duration=dur)
         return _check(_orch().run_paper_trade(cfg), "paper_trade")
 
     def reconcile(ctx):

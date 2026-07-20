@@ -1092,6 +1092,17 @@ class TestPaperSizing(unittest.TestCase):
         self.assertEqual(build_paper_config({"paper_duration_seconds": 15}, [])["duration_seconds"], 15)
 
 
+class TestScoutStrategyName(unittest.TestCase):
+    """Scout slug → backtester strategy name (the grid-search rejects raw slugs)."""
+
+    def test_slug_to_full_name(self):
+        from engine.autonomy.scout import strategy_name
+        self.assertEqual(strategy_name("btd"), "buy_the_dip")
+        self.assertEqual(strategy_name("mom"), "momentum")
+        self.assertEqual(strategy_name("vix"), "vix_strategy")
+        self.assertEqual(strategy_name("buy_the_dip"), "buy_the_dip")  # idempotent
+
+
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
