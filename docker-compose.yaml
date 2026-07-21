@@ -92,13 +92,13 @@ services:
 
   # Observe a FIXED strategy in the wild — paper-trades the validated PDT-safe swing
   # (buy 7% dips / TP 6% / SL 10% / hold 3-20d) on the paper account, and fires the
-  # nightly PnL report. Opt-in profile; won't run in the default prod deploy.
+  # nightly PnL report. Runs in prod (paper only — no real money). Stop it by setting
+  # PAPER_DURATION_SECONDS=0 or scaling the service to 0 in Coolify.
   paper-strategy:
     build:
       context: .
       dockerfile: Dockerfile.agui
     command: ["python", "scripts/run_paper_strategy.py"]
-    profiles: ["autonomy"]
     environment:
       - PAPER_DIP=${PAPER_DIP:-7}
       - PAPER_TP=${PAPER_TP:-6}
