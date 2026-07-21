@@ -71,6 +71,9 @@ services:
       - AUTONOMY_ENABLED=${AUTONOMY_ENABLED:-false}
       - AUTONOMY_SCAN_SECONDS=${AUTONOMY_SCAN_SECONDS:-300}
       - AUTONOMY_STRATEGY=${AUTONOMY_STRATEGY:-btd}
+      - PNL_REPORT_FREQUENCY=${PNL_REPORT_FREQUENCY:-daily}
+      - PNL_REPORT_HOUR_UTC=${PNL_REPORT_HOUR_UTC:-21}
+      - PNL_REPORT_TO=${PNL_REPORT_TO:-}
       - DATABASE_URL=${DATABASE_URL}
       - ALPACA_PAPER_API_KEY=${ALPACA_PAPER_API_KEY}
       - ALPACA_PAPER_SECRET_KEY=${ALPACA_PAPER_SECRET_KEY}
@@ -81,6 +84,40 @@ services:
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
       - POSTMARK_API_KEY=${POSTMARK_API_KEY:-}
       - TO_EMAIL=${TO_EMAIL:-}
+      - FROM_EMAIL=${FROM_EMAIL:-}
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Observe a FIXED strategy in the wild — paper-trades the validated PDT-safe swing
+  # (buy 7% dips / TP 6% / SL 10% / hold 3-20d) on the paper account, and fires the
+  # nightly PnL report. Opt-in profile; won't run in the default prod deploy.
+  paper-strategy:
+    build:
+      context: .
+      dockerfile: Dockerfile.agui
+    command: ["python", "scripts/run_paper_strategy.py"]
+    profiles: ["autonomy"]
+    environment:
+      - PAPER_DIP=${PAPER_DIP:-7}
+      - PAPER_TP=${PAPER_TP:-6}
+      - PAPER_SL=${PAPER_SL:-10}
+      - PAPER_HOLD=${PAPER_HOLD:-20}
+      - PAPER_MIN_HOLD=${PAPER_MIN_HOLD:-3}
+      - PAPER_CAPITAL_PER_TRADE=${PAPER_CAPITAL_PER_TRADE:-1000}
+      - PAPER_SYMBOLS=${PAPER_SYMBOLS:-AAPL,MSFT,GOOGL,AMZN,META,TSLA,NVDA}
+      - PAPER_DURATION_SECONDS=${PAPER_DURATION_SECONDS:-604800}
+      - PAPER_POLL_SECONDS=${PAPER_POLL_SECONDS:-300}
+      - PNL_REPORT_FREQUENCY=${PNL_REPORT_FREQUENCY:-daily}
+      - PNL_REPORT_HOUR_UTC=${PNL_REPORT_HOUR_UTC:-21}
+      - PNL_REPORT_TO=${PNL_REPORT_TO:-}
+      - DATABASE_URL=${DATABASE_URL}
+      - ALPACA_PAPER_API_KEY=${ALPACA_PAPER_API_KEY}
+      - ALPACA_PAPER_SECRET_KEY=${ALPACA_PAPER_SECRET_KEY}
+      - MASSIVE_API_KEY=${MASSIVE_API_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+      - POSTMARK_API_KEY=${POSTMARK_API_KEY:-}
       - FROM_EMAIL=${FROM_EMAIL:-}
     depends_on:
       api:

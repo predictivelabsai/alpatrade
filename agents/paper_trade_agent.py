@@ -95,12 +95,14 @@ class PaperTradeAgent:
         take_profit = params.get("take_profit_threshold", yaml_cfg.get("take_profit_threshold", 1.0))
         stop_loss = params.get("stop_loss_threshold", yaml_cfg.get("stop_loss_threshold", 0.5))
         hold_days = params.get("hold_days", yaml_cfg.get("hold_days", 2))
+        min_hold_days = params.get("min_hold_days", yaml_cfg.get("min_hold_days", 0))
         capital_per_trade = params.get("capital_per_trade", yaml_cfg.get("capital_per_trade", 1000.0))
 
         logger.info(f"Paper trade agent starting session {self.session_id}")
         logger.info(f"Strategy: {strategy}, Symbols: {symbols}")
         logger.info(f"Duration: {duration}s, Poll interval: {poll_interval}s")
-        logger.info(f"Params: dip={dip_threshold}%, tp={take_profit}%, sl={stop_loss}%, hold={hold_days}d")
+        logger.info(f"Params: dip={dip_threshold}%, tp={take_profit}%, sl={stop_loss}%, "
+                    f"hold={hold_days}d, min_hold={min_hold_days}d")
 
         # Initialize Alpaca client (use injected per-user keys or fall back to env)
         try:
@@ -194,6 +196,7 @@ class PaperTradeAgent:
                         take_profit=take_profit,
                         stop_loss=stop_loss,
                         hold_days=hold_days,
+                        min_hold_days=min_hold_days,
                         capital_per_trade=capital_per_trade,
                     )
                 except Exception as e:
@@ -223,10 +226,10 @@ class PaperTradeAgent:
         return self._generate_summary(start_time)
 
     def _execute_cycle(self, symbols, dip_threshold, take_profit, stop_loss,
-                       hold_days, capital_per_trade):
+                       hold_days, capital_per_trade, min_hold_days=0):
         """Execute one buy-the-dip trading cycle: check exits then entries."""
         # 1. Process exits
-        self._process_exits(take_profit, stop_loss, hold_days)
+        self._process_exits(take_profit, stop_loss, hold_days, min_hold_days)
 
         # 2. Process entries
         self._process_entries(symbols, dip_threshold, capital_per_trade)
@@ -363,7 +366,7 @@ class PaperTradeAgent:
 
         return entry_times
 
-    def _process_exits(self, take_profit, stop_loss, hold_days):
+    def _process_exits(self, take_profit, stop_loss, hold_days, min_hold_days=0):
         """Check existing positions for exit signals."""
         try:
             positions = self.client.get_positions()
@@ -425,11 +428,13 @@ class PaperTradeAgent:
                         continue
 
                 exit_reason = None
-                if unrealized_pct >= take_profit:
-                    exit_reason = f"TAKE_PROFIT ({unrealized_pct:.2f}%)"
-                elif unrealized_pct <= -stop_loss:
-                    exit_reason = f"STOP_LOSS ({unrealized_pct:.2f}%)"
-                elif days_held >= hold_days:
+                # Minimum hold (PDT-safe swing): no TP/SL exit until min_hold_days elapsed.
+                if days_held >= min_hold_days:
+                    if unrealized_pct >= take_profit:
+                        exit_reason = f"TAKE_PROFIT ({unrealized_pct:.2f}%)"
+                    elif unrealized_pct <= -stop_loss:
+                        exit_reason = f"STOP_LOSS ({unrealized_pct:.2f}%)"
+                if exit_reason is None and days_held >= hold_days:
                     exit_reason = f"HOLD_EXPIRED ({days_held}d)"
 
                 if exit_reason:

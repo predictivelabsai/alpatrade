@@ -46,6 +46,13 @@ def run_one(worker_id: str) -> bool:
 
 
 def loop(worker_id: str = "worker-1") -> None:
+    # Nightly paper-PnL report fires regardless of AUTONOMY_ENABLED (you want the
+    # report even when only observing paper trading). Disable via PNL_REPORT_FREQUENCY=off.
+    try:
+        from engine.autonomy.schedule import start as start_scheduler
+        start_scheduler()
+    except Exception as e:  # noqa: BLE001
+        log.warning("PnL scheduler failed to start: %s", e)
     if not _enabled():
         log.warning("AUTONOMY_ENABLED is off — worker idle. Set AUTONOMY_ENABLED=true to run.")
     log.info("autonomy worker %s starting (scan=%ss)", worker_id, SCAN_SECONDS)
