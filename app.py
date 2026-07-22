@@ -55,6 +55,8 @@ from engine.web import ph_settings  # noqa: E402
 from engine.web import ph_pnl  # noqa: E402
 from engine.web import ph_filings  # noqa: E402
 from engine.web import ph_marketintel  # noqa: E402
+from engine.web import ph_ipomap  # noqa: E402
+from engine.web import ph_hedgefunds  # noqa: E402
 
 ph_landing.register(app, rt)
 ph_auth.register(app, rt)
@@ -65,6 +67,8 @@ ph_settings.register(app, rt)
 ph_pnl.register(app, rt)
 ph_filings.register(app, rt)
 ph_marketintel.register(app, rt)
+ph_ipomap.register(app, rt)
+ph_hedgefunds.register(app, rt)
 
 # --- voice (mic button → /voice/* endpoints) --------------------------------
 from engine.voice import register_voice_routes  # noqa: E402

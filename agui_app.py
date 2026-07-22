@@ -309,6 +309,42 @@ def get_pnl_report() -> str:
         return f"Error fetching PnL report: {e}"
 
 
+def get_ipo_map(limit: int = 12) -> str:
+    """Recent priced IPOs with best/worst performers since listing. Use for 'recent IPOs', 'IPO map', 'how are new IPOs doing'."""
+    try:
+        from engine.publicmarkets.ipo import ipo_summary
+        return ipo_summary(limit)
+    except Exception as e:  # noqa: BLE001
+        return f"Error fetching IPOs: {e}"
+
+
+def get_ipo_pipeline(limit: int = 15) -> str:
+    """Pre-IPO private companies and upcoming/filed listings. Use for 'IPO pipeline', 'upcoming IPOs', 'who's about to go public'."""
+    try:
+        from engine.publicmarkets.ipo import ipo_pipeline_summary
+        return ipo_pipeline_summary(limit)
+    except Exception as e:  # noqa: BLE001
+        return f"Error fetching IPO pipeline: {e}"
+
+
+def get_top_funds(limit: int = 15) -> str:
+    """Largest institutional managers by 13F portfolio value (AUM). Use for 'biggest hedge funds', 'top institutional managers', 'largest 13F filers'."""
+    try:
+        from engine.publicmarkets.hedge_funds import top_funds_summary
+        return top_funds_summary(limit)
+    except Exception as e:  # noqa: BLE001
+        return f"Error fetching top funds: {e}"
+
+
+def get_activist_filings(ticker: str = "", limit: int = 15) -> str:
+    """Recent activist / 13D filings, optionally filtered by target ticker. Use for 'activist filings', 'who's an activist in TSLA', 'recent 13D filings'."""
+    try:
+        from engine.publicmarkets.hedge_funds import activist_summary
+        return activist_summary(ticker.upper() if ticker else "", limit)
+    except Exception as e:  # noqa: BLE001
+        return f"Error fetching activist filings: {e}"
+
+
 def search_sec_filings(query: str, ticker: str = "", forms: str = "") -> str:
     """Search SEC EDGAR filings by full-text query (optionally filter by ticker or form type like 10-K/10-Q/8-K/S-1)."""
     try:
@@ -705,6 +741,14 @@ TOOLS = [
         description="List a company's recent SEC filings by ticker (optional single form type). Use for 'recent filings for AAPL', 'latest 10-K of MSFT', 'NVDA 8-Ks'."),
     StructuredTool.from_function(get_sector_performance, name="get_sector_performance",
         description="Sector-ETF annual returns — which S&P sectors are leading/lagging over the last N years. Use for 'sector performance', 'which sectors are hot', 'sector rotation'."),
+    StructuredTool.from_function(get_ipo_map, name="get_ipo_map",
+        description="Recent priced IPOs and their performance since listing (best/worst). Use for 'recent IPOs', 'how are IPOs doing', 'IPO map'."),
+    StructuredTool.from_function(get_ipo_pipeline, name="get_ipo_pipeline",
+        description="Pre-IPO private companies + upcoming/filed listings. Use for 'IPO pipeline', 'upcoming IPOs', 'who's about to go public'."),
+    StructuredTool.from_function(get_top_funds, name="get_top_funds",
+        description="Largest institutional managers by 13F AUM. Use for 'biggest hedge funds', 'top institutional managers', 'largest 13F filers'."),
+    StructuredTool.from_function(get_activist_filings, name="get_activist_filings",
+        description="Recent activist / 13D filings, optionally by target ticker. Use for 'activist filings', 'activists in TSLA', 'recent 13D filings'."),
 ]
 
 from engine.config import get_settings, build_chat_model
