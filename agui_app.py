@@ -309,6 +309,53 @@ def get_pnl_report() -> str:
         return f"Error fetching PnL report: {e}"
 
 
+def search_sec_filings(query: str, ticker: str = "", forms: str = "") -> str:
+    """Search SEC EDGAR filings by full-text query (optionally filter by ticker or form type like 10-K/10-Q/8-K/S-1)."""
+    try:
+        from engine.publicmarkets import edgar
+        d = edgar.search_filings(query, forms=forms, ticker=ticker.upper(), limit=15)
+        if d.get("error"):
+            return f"SEC search error: {d['error']}"
+        rows = d.get("results", [])
+        if not rows:
+            return f"No SEC filings found for “{query}”."
+        md = [f"**SEC filings — {d.get('total', 0)} hits for “{query}”**", "",
+              "| Form | Entity | Date | Link |", "|---|---|---|---|"]
+        for r in rows[:15]:
+            md.append(f"| {r.get('form_type','')} | {r.get('entity_name','')[:40]} | "
+                      f"{r.get('filing_date','')} | [view]({r.get('file_url','#')}) |")
+        return "\n".join(md)
+    except Exception as e:  # noqa: BLE001
+        return f"Error searching SEC filings: {e}"
+
+
+def get_company_filings(ticker: str, form_type: str = "") -> str:
+    """List a company's recent SEC filings by ticker (optionally a single form type like 10-K, 8-K, 13F-HR)."""
+    try:
+        from engine.publicmarkets import edgar
+        d = edgar.get_company_filings(ticker.upper(), form_type=form_type, limit=20)
+        if d.get("error"):
+            return d["error"]
+        rows = d.get("filings", [])
+        md = [f"**{d.get('company_name', ticker)} — recent filings**", "",
+              "| Form | Date | Document |", "|---|---|---|"]
+        for f in rows[:20]:
+            md.append(f"| {f.get('form_type','')} | {f.get('filing_date','')} | "
+                      f"[{f.get('description') or 'view'}]({f.get('url','#')}) |")
+        return "\n".join(md)
+    except Exception as e:  # noqa: BLE001
+        return f"Error fetching filings for {ticker}: {e}"
+
+
+def get_sector_performance(years: int = 5) -> str:
+    """Sector-ETF annual returns — which S&P sectors are leading/lagging over the last N years (default 5)."""
+    try:
+        from engine.publicmarkets.market_intel import sector_insights
+        return sector_insights(years)
+    except Exception as e:  # noqa: BLE001
+        return f"Error fetching sector performance: {e}"
+
+
 def place_paper_order(symbol: str, qty: float, side: str = "buy",
                       order_type: str = "market", limit_price: Optional[float] = None,
                       confirm: bool = True, account_id: Optional[str] = None) -> str:
@@ -652,6 +699,12 @@ TOOLS = [
         description="Place a PAPER (simulated) buy/sell order and execute it (paper only — no real money). order_type='market' or 'limit' (pass limit_price for limit). Use for any buy/sell request."),
     StructuredTool.from_function(get_pnl_report, name="get_pnl_report",
         description="Get today's paper account P&L report: day P&L, portfolio value, and open positions with unrealised P&L. Use for 'how's my P&L', 'pnl report', 'how am I doing today', 'show my paper account'."),
+    StructuredTool.from_function(search_sec_filings, name="search_sec_filings",
+        description="Search SEC EDGAR filings by full-text query. Optional ticker filter and form type (10-K, 10-Q, 8-K, S-1, DEF 14A, 13F-HR). Use for 'find SEC filings mentioning X', 'search 8-Ks about layoffs'."),
+    StructuredTool.from_function(get_company_filings, name="get_company_filings",
+        description="List a company's recent SEC filings by ticker (optional single form type). Use for 'recent filings for AAPL', 'latest 10-K of MSFT', 'NVDA 8-Ks'."),
+    StructuredTool.from_function(get_sector_performance, name="get_sector_performance",
+        description="Sector-ETF annual returns — which S&P sectors are leading/lagging over the last N years. Use for 'sector performance', 'which sectors are hot', 'sector rotation'."),
 ]
 
 from engine.config import get_settings, build_chat_model
