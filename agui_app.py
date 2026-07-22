@@ -278,6 +278,37 @@ def get_alpaca_account(account_id: Optional[str] = None) -> str:
         return f"Error fetching account: {e}"
 
 
+def get_pnl_report() -> str:
+    """Get today's paper-trading account P&L summary: day P&L, portfolio value, and open positions with unrealised P&L."""
+    try:
+        from scripts.daily_pnl_report import gather
+        d = gather()
+        lines = [
+            f"**Paper account** — day P&L **{'+' if d['day_pnl'] >= 0 else ''}${d['day_pnl']:,.2f} "
+            f"({d['day_pct']:+.2f}%)**",
+            f"Portfolio ${d['equity']:,.2f} · cash ${d['cash']:,.2f} · buying power ${d['buying_power']:,.2f} "
+            f"· open unrealised ${d['unrealized_pl']:,.2f}",
+            "",
+            "| Symbol | Qty | Entry | Price | Value | Unrealised P&L |",
+            "|--------|-----|-------|-------|-------|----------------|",
+        ]
+        for p in sorted(d["positions"], key=lambda x: float(x.get("unrealized_pl", 0) or 0), reverse=True):
+            def _n(v):
+                try:
+                    return float(v)
+                except (TypeError, ValueError):
+                    return 0.0
+            lines.append(
+                f"| {p.get('symbol','')} | {_n(p.get('qty')):g} | ${_n(p.get('avg_entry_price')):,.2f} | "
+                f"${_n(p.get('current_price')):,.2f} | ${_n(p.get('market_value')):,.0f} | "
+                f"${_n(p.get('unrealized_pl')):,.0f} ({_n(p.get('unrealized_plpc'))*100:+.1f}%) |")
+        if not d["positions"]:
+            lines.append("| _(no open positions)_ | | | | | |")
+        return "\n".join(lines)
+    except Exception as e:  # noqa: BLE001
+        return f"Error fetching PnL report: {e}"
+
+
 def place_paper_order(symbol: str, qty: float, side: str = "buy",
                       order_type: str = "market", limit_price: Optional[float] = None,
                       confirm: bool = True, account_id: Optional[str] = None) -> str:
@@ -619,6 +650,8 @@ TOOLS = [
         description="Show equity curve chart. Use trade_type='paper' or 'backtest' to filter. Use run_id for a specific run. Default: latest run."),
     StructuredTool.from_function(place_paper_order, name="place_paper_order",
         description="Place a PAPER (simulated) buy/sell order and execute it (paper only — no real money). order_type='market' or 'limit' (pass limit_price for limit). Use for any buy/sell request."),
+    StructuredTool.from_function(get_pnl_report, name="get_pnl_report",
+        description="Get today's paper account P&L report: day P&L, portfolio value, and open positions with unrealised P&L. Use for 'how's my P&L', 'pnl report', 'how am I doing today', 'show my paper account'."),
 ]
 
 from engine.config import get_settings, build_chat_model

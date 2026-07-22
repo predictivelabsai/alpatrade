@@ -146,6 +146,23 @@ def _menu_group(label: str, items, active: Optional[str]):
     )
 
 
+# Extra tool pages, appended by their feature modules as they're built.
+# Each entry: (label, href, active-key). EXPLORE = visual/map tools (IPO Map, Hedge
+# Funds, Market Intel); TOOLS = actionable tools (SEC Filings, Press Releases).
+EXPLORE_PAGES: list = []
+TOOLS_PAGES: list = []
+
+
+def _EXPLORE_EXTRA(active):
+    return [A(lbl, href=href, cls="page-link" + (" active" if active == key else ""))
+            for lbl, href, key in EXPLORE_PAGES]
+
+
+def _TOOLS_EXTRA(active):
+    return [A(lbl, href=href, cls="page-link" + (" active" if active == key else ""))
+            for lbl, href, key in TOOLS_PAGES]
+
+
 def _left_pane(active: Optional[str], user: Optional[dict]):
     if user:
         footer_inner = Div(
@@ -167,8 +184,7 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             Div(
                 A("🗺 Market Map", href="/map", cls="page-link" + (" active" if active == "map" else "")),
                 A("📈 Charts", href="/charts", cls="page-link" + (" active" if active == "charts" else "")),
-                A("❓ Help & shortcuts", href="/guide", cls="page-link" + (" active" if active == "guide" else "")),
-                A("⚙ Settings", href="/settings", cls="page-link" + (" active" if active == "settings" else "")),
+                *_EXPLORE_EXTRA(active),
                 cls="page-links",
             ),
             Div(Span("Chats", cls="section-label")),
@@ -179,9 +195,21 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             Div(*[_menu_group(lbl, items, active) for lbl, items in AGENT_SHORTCUTS],
                 cls="agent-browser"),
             Hr(cls="left-hr"),
-            Div(Span("Menu", cls="section-label")),
+            Div(Span("Tools", cls="section-label")),
+            Div(
+                A("📊 Paper PnL", href="/pnl", cls="page-link" + (" active" if active == "pnl" else "")),
+                *_TOOLS_EXTRA(active),
+                cls="page-links",
+            ),
             Div(*[_menu_group(lbl, items, active) for lbl, items in MAIN_NAV],
                 cls="agent-browser"),
+            Hr(cls="left-hr"),
+            Div(Span("Admin", cls="section-label")),
+            Div(
+                A("⚙ Settings", href="/settings", cls="page-link" + (" active" if active == "settings" else "")),
+                A("❓ Help & shortcuts", href="/guide", cls="page-link" + (" active" if active == "guide" else "")),
+                cls="page-links",
+            ),
             cls="left-body",
         ),
         Div(footer_inner, cls="left-footer"),
