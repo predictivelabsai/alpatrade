@@ -309,6 +309,24 @@ def get_pnl_report() -> str:
         return f"Error fetching PnL report: {e}"
 
 
+def get_press_releases(query: str = "", ticker: str = "", limit: int = 15) -> str:
+    """Search company press releases / news by headline keyword and/or ticker (with a modeled directional read). Use for 'press releases for NVDA', 'news about earnings', 'latest headlines on TSLA'."""
+    try:
+        from engine.publicmarkets.news import news_summary
+        return news_summary(query, ticker.upper() if ticker else "", limit)
+    except Exception as e:  # noqa: BLE001
+        return f"Error fetching press releases: {e}"
+
+
+def get_spacs(limit: int = 15) -> str:
+    """List SPACs (special-purpose acquisition companies) with trust size, NAV premium, status, and target. Use for 'SPACs', 'de-SPAC', 'SPACs by trust size'."""
+    try:
+        from engine.publicmarkets.spacs import spac_summary
+        return spac_summary(limit)
+    except Exception as e:  # noqa: BLE001
+        return f"Error fetching SPACs: {e}"
+
+
 def get_ipo_map(limit: int = 12) -> str:
     """Recent priced IPOs with best/worst performers since listing. Use for 'recent IPOs', 'IPO map', 'how are new IPOs doing'."""
     try:
@@ -749,6 +767,10 @@ TOOLS = [
         description="Largest institutional managers by 13F AUM. Use for 'biggest hedge funds', 'top institutional managers', 'largest 13F filers'."),
     StructuredTool.from_function(get_activist_filings, name="get_activist_filings",
         description="Recent activist / 13D filings, optionally by target ticker. Use for 'activist filings', 'activists in TSLA', 'recent 13D filings'."),
+    StructuredTool.from_function(get_press_releases, name="get_press_releases",
+        description="Search company press releases / news by headline keyword and/or ticker, with a modeled directional read. Use for 'press releases for NVDA', 'news about earnings', 'headlines on TSLA'."),
+    StructuredTool.from_function(get_spacs, name="get_spacs",
+        description="List SPACs with trust size, NAV premium, status, and target. Use for 'SPACs', 'de-SPAC candidates', 'SPACs by trust size'."),
 ]
 
 from engine.config import get_settings, build_chat_model
