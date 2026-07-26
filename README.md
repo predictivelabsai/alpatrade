@@ -146,6 +146,7 @@ sequenceDiagram
 - **Extended hours & intraday exits** — pre/after-market trading (4AM-8PM ET) and 5-minute bar TP/SL timing
 - **AI chat** — AG-UI protocol chat with pydantic-ai agent (XAI Grok-3-mini) for free-form stock research
 - **Interactive CLI** — prompt_toolkit-powered terminal with dropdown auto-completion, streaming log output, and Plotly equity curve charts
+- **Index-options paper tools** — discover and submit paper orders for SPX, SPXW, VIX, VIXW, DJX, and XSP contracts; see [`docs/index_options.md`](docs/index_options.md)
 
 ## Commands
 

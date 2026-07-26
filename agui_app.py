@@ -91,7 +91,11 @@ SYSTEM_PROMPT = (
     "the order directly and report the result. Use order_type='market' for a market order; if the user "
     "names a price (e.g. 'buy 10 AAPL at $180' or 'limit 180'), use order_type='limit' with that "
     "limit_price. All trading is PAPER (simulated) — no real money, so no separate confirmation step is "
-    "needed; just place it and summarise the fill."
+    "needed; just place it and summarise the order status. "
+    "INDEX OPTIONS: SPX, SPXW, VIX, VIXW, DJX, and XSP index options are available in paper only. "
+    "Always call list_index_option_contracts before proposing or ordering a contract; never invent a symbol. "
+    "Use place_index_option_paper_order only after an explicit trade request. Explain that these contracts "
+    "are cash-settled and European-style, flag AM versus PM expiry risk, and do not invent index data or Greeks."
 )
 
 
@@ -701,6 +705,57 @@ def show_recent_runs(limit: int = 20) -> str:
         return f"Error fetching runs: {e}"
 
 
+def list_index_option_contracts(
+    underlying: str, contract_type: str = "", min_expiration: str = "",
+    max_expiration: str = "", limit: int = 20,
+) -> str:
+    """List active Alpaca PAPER contracts for SPX/SPXW/VIX/VIXW/DJX/XSP."""
+    try:
+        from engine.brokers.index_options import list_contracts
+        from utils.alpaca_util import AlpacaAPI
+        client = AlpacaAPI(paper=True)
+        contracts = list_contracts(
+            client.trading_client, underlying, contract_type=contract_type or None,
+            min_expiration=min_expiration or None, max_expiration=max_expiration or None,
+            limit=limit,
+        )
+        if not contracts:
+            return "No matching active index-option contracts found."
+        lines = ["| Symbol | Type | Strike | Expiration | Style |", "|---|---|---:|---|---|"]
+        for contract in contracts:
+            lines.append(
+                f"| {contract.get('symbol', '')} | {contract.get('type', '')} | "
+                f"{contract.get('strike_price', '')} | {contract.get('expiration_date', '')} | "
+                f"{contract.get('style', '')} |"
+            )
+        return "\n".join(lines)
+    except Exception as e:  # noqa: BLE001
+        return f"Error listing index-option contracts: {e}"
+
+
+def place_index_option_paper_order(
+    symbol: str, qty: int, side: str = "buy", limit_price: Optional[float] = None,
+) -> str:
+    """Submit a paper-only index-option DAY order using a discovered contract symbol."""
+    try:
+        from engine.brokers.index_options import submit_order
+        from utils.alpaca_util import AlpacaAPI
+        client = AlpacaAPI(paper=True)
+        order = submit_order(
+            client.trading_client, symbol, qty, side, limit_price=limit_price,
+        )
+        return (
+            "🧾 **Index-option PAPER order submitted**\n\n"
+            f"- Contract: `{order.get('symbol', symbol)}`\n"
+            f"- Side / quantity: {order.get('side', side)} {order.get('qty', qty)}\n"
+            f"- Status: {order.get('status', 'submitted')}\n"
+            f"- Order ID: `{order.get('id', 'unknown')}`\n\n"
+            "Cash-settled, European-style contract; submission does not guarantee a fill."
+        )
+    except Exception as e:  # noqa: BLE001
+        return f"Error placing index-option paper order: {e}"
+
+
 
 def show_equity_curve(run_id: str = "", trade_type: str = "", strategy: str = "") -> str:
     """Show equity curve chart — delegates to shared utility."""
@@ -751,6 +806,10 @@ TOOLS = [
         description="Show equity curve chart. Use trade_type='paper' or 'backtest' to filter. Use run_id for a specific run. Default: latest run."),
     StructuredTool.from_function(place_paper_order, name="place_paper_order",
         description="Place a PAPER (simulated) buy/sell order and execute it (paper only — no real money). order_type='market' or 'limit' (pass limit_price for limit). Use for any buy/sell request."),
+    StructuredTool.from_function(list_index_option_contracts, name="list_index_option_contracts",
+        description="Discover active European-style Alpaca PAPER index-option contracts for SPX, SPXW, VIX, VIXW, DJX, or XSP. Dates use YYYY-MM-DD."),
+    StructuredTool.from_function(place_index_option_paper_order, name="place_index_option_paper_order",
+        description="Submit a paper-only DAY order for an index-option contract previously returned by list_index_option_contracts."),
     StructuredTool.from_function(get_pnl_report, name="get_pnl_report",
         description="Get today's paper account P&L report: day P&L, portfolio value, and open positions with unrealised P&L. Use for 'how's my P&L', 'pnl report', 'how am I doing today', 'show my paper account'."),
     StructuredTool.from_function(search_sec_filings, name="search_sec_filings",

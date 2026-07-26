@@ -183,10 +183,71 @@ def get_orders(status: Optional[str] = None) -> str:
     except Exception as e:
         return f"Error getting orders: {str(e)}"
 
+
+@tool
+def list_index_option_contracts(
+    underlying: str,
+    contract_type: Optional[str] = None,
+    min_expiration: Optional[str] = None,
+    max_expiration: Optional[str] = None,
+    limit: int = 20,
+) -> str:
+    """List active European-style Alpaca PAPER index-option contracts.
+
+    Supported underlyings: SPX, SPXW, VIX, VIXW, DJX, XSP. Dates use YYYY-MM-DD.
+    """
+    try:
+        from engine.brokers.index_options import list_contracts
+        contracts = list_contracts(
+            _get_trading_client(), underlying, contract_type=contract_type,
+            min_expiration=min_expiration, max_expiration=max_expiration, limit=limit,
+        )
+        if not contracts:
+            return "No matching active index-option contracts found."
+        lines = ["Symbol | Type | Strike | Expiration | Style", "---|---|---:|---|---"]
+        for contract in contracts:
+            lines.append(
+                f"{contract.get('symbol', '')} | {contract.get('type', '')} | "
+                f"{contract.get('strike_price', '')} | {contract.get('expiration_date', '')} | "
+                f"{contract.get('style', '')}"
+            )
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error listing index-option contracts: {e}"
+
+
+@tool
+def place_index_option_paper_order(
+    symbol: str,
+    qty: int,
+    side: str,
+    limit_price: Optional[float] = None,
+) -> str:
+    """Place a PAPER-only DAY order for a discovered Alpaca index-option contract."""
+    try:
+        from engine.brokers.index_options import submit_order
+        order = submit_order(
+            _get_trading_client(), symbol, qty, side, limit_price=limit_price,
+        )
+        return (
+            "Index-option PAPER order submitted:\n"
+            f"- Symbol: {order.get('symbol', symbol)}\n"
+            f"- Quantity: {order.get('qty', qty)}\n"
+            f"- Side: {order.get('side', side)}\n"
+            f"- Status: {order.get('status', 'submitted')}\n"
+            f"- Order ID: {order.get('id', 'unknown')}"
+        )
+    except Exception as e:
+        return f"Error placing index-option paper order: {e}"
+
+
 # ---------------------------------------------------------------------------
 # Agent setup
 # ---------------------------------------------------------------------------
-tools = [get_account_info, get_assets, place_market_order, get_positions, get_orders]
+tools = [
+    get_account_info, get_assets, place_market_order, get_positions, get_orders,
+    list_index_option_contracts, place_index_option_paper_order,
+]
 
 system_prompt = """You are a professional trading assistant for Alpaca Markets. Your task is to help users manage their \
 Alpaca trading account by providing information about assets, placing orders, and checking positions.
@@ -197,6 +258,8 @@ You have access to the following tools:
 3. place_market_order: Place market orders
 4. get_positions: View current positions
 5. get_orders: View recent or filtered orders
+6. list_index_option_contracts: Discover supported index-option contracts
+7. place_index_option_paper_order: Submit an index-option paper order
 
 When placing orders:
 1. Always confirm the details before executing
@@ -210,6 +273,8 @@ Remember to:
 3. Maintain a professional tone
 4. Explain any errors clearly
 5. Use natural, conversational language
+6. Never invent index-option contract symbols; discover them with the contract tool
+7. Index options are paper-only, cash-settled, and European-style
 """
 
 _model = None

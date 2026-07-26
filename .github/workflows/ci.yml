@@ -22,7 +22,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[web]"
-          pip install authlib
+          pip install authlib pytest
 
       - name: Byte-compile (syntax check)
         run: python -m compileall -q app.py api.py engine verticals tui utils agents
@@ -31,6 +31,9 @@ jobs:
         run: |
           python -c "import app; print('app import OK')"
           python -c "from engine.web import landing, layout; print('shell import OK')"
+
+      - name: Unit tests
+        run: python -m pytest tests/test_index_options.py -q
 
       # DB-backed regression suite (opt-in): runs only when the DATABASE_URL secret
       # is configured on the repo. Add it with:  gh secret set DATABASE_URL
