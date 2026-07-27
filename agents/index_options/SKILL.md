@@ -1,5 +1,5 @@
 ---
-name: index_options
+name: index-options
 description: Discovers and paper trades Alpaca index-option contracts with expiry-aware risk controls
 ---
 
@@ -32,6 +32,10 @@ Use this agent for paper-only workflows on `SPX`, `SPXW`, `VIX`, `VIXW`,
 ## Delivery
 
 - CI/CD must always remain configured and active for this capability.
+- Before every major feature or release push, bump the package version in
+  `pyproject.toml` and `uv.lock`.
+- Update `docs/change_log.md` in the same commit with user-visible changes,
+  tests, and deployment status.
 - Add focused tests for broker request construction, paper-only enforcement,
   and every new execution path.
 - Do not merge when required CI checks fail.

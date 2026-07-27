@@ -229,7 +229,7 @@ def hero():
             Div(
                 Div(
                     Div(
-                        P("$ assethero backtest paper btd-7dp-05sl-1tp-1d-3m",
+                        P("$ alpatrade backtest paper btd-7dp-05sl-1tp-1d-3m",
                           cls="mono text-sm", style=f"color:{GAIN};"),
                         P("→ 42 trades · win-rate 61% · Sharpe 1.34 · max DD -6.2%",
                           cls="mono text-sm mt-2", style=f"color:{INK_MUTED};"),

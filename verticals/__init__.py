@@ -1,1 +1,1 @@
-"""Asset-class verticals for the assethero platform (equities, crypto, fx, prediction, research)."""
+"""Asset-class verticals for AlpaTrade (equities, crypto, FX, prediction, research)."""

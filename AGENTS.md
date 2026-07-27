@@ -23,6 +23,8 @@ Pytest is the primary runner, although several suites use `unittest` classes. Na
 
 CI/CD must remain configured and active. Add every new feature's focused tests to `.github/workflows/ci.yml`, and do not merge while required checks fail.
 
+For every major feature or release push, bump the project version in both `pyproject.toml` and `uv.lock`. Update `docs/change_log.md` in the same commit with the date, version, user-visible changes, tests, and deployment notes.
+
 ## Commits & Pull Requests
 
 Recent history follows Conventional Commit-style subjects such as `feat(backtest): ...`, `fix(auth): ...`, and `docs: ...`. Keep commits imperative, focused, and scoped when useful. PRs should explain the user-visible impact, list verification commands, link relevant issues, and include screenshots for changes under `engine/web/` or `static/`. Call out migrations, new environment variables, and any paper-trading behavior explicitly.

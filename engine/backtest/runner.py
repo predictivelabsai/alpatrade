@@ -194,7 +194,7 @@ def reproduce(folder: Path) -> Dict:
 
 
 def _parse_args(argv=None):
-    p = argparse.ArgumentParser(description="assethero methodology backtest (Alpaca data)")
+    p = argparse.ArgumentParser(description="AlpaTrade methodology backtest (Alpaca data)")
     p.add_argument("--symbols", default="AAPL", help="comma-separated symbols")
     p.add_argument("--start", default="2024-01-01")
     p.add_argument("--end", default="2024-06-30")

@@ -167,7 +167,7 @@ def _run_py() -> str:
         '"""\n'
         'import json, sys\n'
         'from pathlib import Path\n\n'
-        '# Make the assethero `engine` package importable whether or not it is installed:\n'
+        '# Make the AlpaTrade `engine` package importable whether or not it is installed:\n'
         '# walk up from this run folder until we find a dir containing engine/backtest.\n'
         'try:\n'
         '    from engine.backtest.runner import reproduce\n'

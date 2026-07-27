@@ -1,4 +1,4 @@
-"""assethero shared engine.
+"""AlpaTrade shared engine.
 
 This package is the seed of the asset-agnostic backtesting + paper-trading engine
 that all verticals (equities, crypto, FX, prediction markets) will plug into.

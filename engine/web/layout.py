@@ -1,4 +1,4 @@
-"""House-style 3-pane shell + design tokens for the assethero platform UI.
+"""House-style 3-pane shell + design tokens for the AlpaTrade UI.
 
 One `page(...)` wraps every vertical view in: top bar (brand · asset-class switcher ·
 user menu) · left nav · center content · right AI rail. Verticals supply their own

@@ -3,14 +3,14 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "assethero"
-version = "0.2.0"
+name = "alpatrade"
+version = "0.2.1"
 description = "Multi-asset trading platform — shared backtesting & paper-trading engine across equities, crypto, FX, and prediction markets"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [
-    { name = "AssetHero", email = "info@assethero.dev" },
+    { name = "Predictive Labs" },
 ]
 keywords = ["trading", "backtesting", "paper-trading", "equities", "crypto", "forex", "prediction-markets", "alpaca", "cli"]
 classifiers = [
@@ -60,15 +60,14 @@ agui = [
     "pydantic-ai>=1.34",
     "ag-ui-protocol>=0.1",
 ]
-all = ["assethero[web,agents,agui]"]
+all = ["alpatrade[web,agents,agui]"]
 
 [project.urls]
-Homepage = "https://assethero.dev"
-Repository = "https://github.com/predictivelabsai/assethero"
+Homepage = "https://alpatrade.chat"
+Repository = "https://github.com/predictivelabsai/alpatrade"
 
 [project.scripts]
-assethero = "cli:main"
-alpatrade = "cli:main"  # deprecated alias, kept for backward compatibility
+alpatrade = "cli:main"
 
 [tool.setuptools]
 py-modules = ["cli", "web_app", "agui_app"]

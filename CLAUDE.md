@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-AssetHero — a multi-asset trading platform with a **shared backtesting & paper-trading
-engine**. Published on PyPI as `assethero` (the `alpatrade` package is a deprecated alias).
+AlpaTrade — a multi-asset trading platform with a **shared backtesting & paper-trading
+engine**. Published on PyPI as `alpatrade`.
 
 This repo (renamed from `alpatrade`) is the platform base. It currently holds the **equities /
 Alpaca** vertical; per the migration plan it is being consolidated into a single monorepo that
@@ -42,7 +42,7 @@ prefer `engine.*`.
 - **Unified web app** (`app.py`, port 5001) — FastHTML house-style shell + verticals switcher; mounts the equities vertical
 - **Unified REST API** (`api.py`, port 5002) — FastAPI; mounts each vertical under `/api/v1/<vertical>`
 - **AG-UI Chat** (`agui_app.py`, port 5003) — LangGraph chat agent (XAI Grok) with WebSocket streaming
-- **Rich CLI** (entry point: `cli.py` → `tui/pt_cli.py` → `tui/command_processor.py`; console scripts `assethero` / `alpatrade`)
+- **Rich CLI** (entry point: `cli.py` → `tui/pt_cli.py` → `tui/command_processor.py`; console script `alpatrade`)
 - **PostgreSQL** with `alpatrade` schema, accessed via SQLAlchemy (`engine.db.pool`)
 - **Config**: `config/parameters.yaml` (strategy params), `.env` (API keys)
 

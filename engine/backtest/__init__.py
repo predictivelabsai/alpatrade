@@ -5,7 +5,7 @@ reproducible research workflow:
 
     strategy idea -> formalized rules -> CLI data fetch -> local script -> artifacts -> report
 
-This package implements that contract for the assethero platform:
+This package implements that contract for AlpaTrade:
 
 - `data`        — fetch Alpaca bars (via the official alpaca-py SDK), save raw + normalized,
                   compute the per-symbol data fingerprint.

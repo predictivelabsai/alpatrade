@@ -203,8 +203,8 @@ wheels = [
 ]
 
 [[package]]
-name = "assethero"
-version = "0.2.0"
+name = "alpatrade"
+version = "0.2.1"
 source = { editable = "." }
 dependencies = [
     { name = "alpaca-py" },
@@ -262,7 +262,7 @@ web = [
 requires-dist = [
     { name = "ag-ui-protocol", marker = "extra == 'agui'", specifier = ">=0.1" },
     { name = "alpaca-py", specifier = ">=0.20" },
-    { name = "assethero", extras = ["web", "agents", "agui"], marker = "extra == 'all'" },
+    { name = "alpatrade", extras = ["web", "agents", "agui"], marker = "extra == 'all'" },
     { name = "bcrypt", marker = "extra == 'web'", specifier = ">=4.0" },
     { name = "cryptography", marker = "extra == 'web'", specifier = ">=41.0" },
     { name = "deepagents", specifier = ">=0.6.12" },

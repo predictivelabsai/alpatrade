@@ -1,4 +1,4 @@
-"""Compatibility shim — relocated to `engine.auth` in the assethero engine extraction (Phase 1).
+"""Compatibility shim — relocated to `engine.auth` in the AlpaTrade engine extraction (Phase 1).
 Removed in the Phase 7 cleanup."""
 import sys as _sys
 import engine.auth as _relocated

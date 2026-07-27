@@ -1,4 +1,4 @@
-"""Compatibility shim — AG-UI integration relocated to `engine.ai` in the assethero
+"""Compatibility shim — AG-UI integration relocated to `engine.ai` in the AlpaTrade
 engine extraction (Phase 1). Import from `engine.ai` in new code; this facade keeps
 existing `from utils.agui import ...` working and is removed in the Phase 7 cleanup."""
 from engine.ai import (  # noqa: F401

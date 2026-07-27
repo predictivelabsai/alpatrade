@@ -1,4 +1,4 @@
-"""assethero unified REST API (Phase 1) — port 5002.
+"""AlpaTrade unified REST API (Phase 1) — port 5002.
 
 Single FastAPI entry point. Each asset vertical is mounted under a versioned
 namespace `/api/v1/<vertical>`. Phase 1 ships the equities vertical (the existing
@@ -18,7 +18,7 @@ from fastapi import FastAPI  # noqa: E402
 import api_app  # noqa: E402  (existing equities FastAPI app)
 
 app = FastAPI(
-    title="AssetHero API",
+    title="AlpaTrade API",
     version="0.2.0",
     description="Multi-asset trading platform API. Verticals mount under /api/v1/<vertical>.",
 )
@@ -28,7 +28,7 @@ app = FastAPI(
 def health():
     return {
         "status": "ok",
-        "service": "assethero",
+        "service": "alpatrade",
         "version": "0.2.0",
         "verticals": {
             "equities": "/api/v1/equities",

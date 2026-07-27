@@ -1,1 +1,1 @@
-"""Database connection pool + schema access for the assethero engine."""
+"""Database connection pool and schema access for AlpaTrade."""
