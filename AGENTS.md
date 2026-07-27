@@ -1,34 +1,86 @@
-# Repository Guidelines
+# AGENTS.md
 
-## Project Structure & Module Organization
+Compact cheat sheet. **Read `CLAUDE.md` first** — it has the full architecture, migration state,
+provider config, and deployment notes. This file only captures what an agent would otherwise guess wrong.
 
-Core infrastructure lives in `engine/`: market feeds are under `engine/feeds/`, database access under `engine/db/`, web components under `engine/web/`, and agent runtimes under `engine/agents/runtime/`. Asset-specific routes belong in `verticals/`; current equities code is in `verticals/equities/`. Workflow agents live in `agents/`. Use `scripts/` for operational utilities and `tasks/` for trading jobs. Tests are in `tests/`, evaluation harnesses in `evals/`, and UI assets in `static/` and `screenshots/`.
+## Entry points & ports
 
-## Build, Test, and Development Commands
+| App | Entry | Port | Notes |
+|-----|-------|------|-------|
+| Web (prod) | `python main.py` → `app.py` | 5001 (env `ASSETHERO_WEB_PORT`) | Thin shim; this is what Coolify runs via `Dockerfile.agui` |
+| REST API | `python api.py` | 5002 (env `ASSETHERO_API_PORT`) | Mounts legacy `api_app.py` under `/api/v1/equities` |
+| AG-UI chat | `uvicorn agui_app:app --port 5003 --reload` | 5003 | Also defines `langgraph_agent` / `agent_for_user()` imported by `engine/web/ph_chat.py` |
+| CLI | `python cli.py` (or `alpatrade` console script) | — | `cli.py` → `tui/pt_cli.py` → `tui/command_processor.py` |
 
-- `uv sync --all-extras` creates the environment from `pyproject.toml` and `uv.lock`.
-- `uv run python main.py` starts the interactive application entry point.
-- `uv run python web_app.py` runs the FastHTML web UI.
-- `uv run uvicorn api_app:app --host 0.0.0.0 --port 5001 --reload` starts the REST API with reload.
-- `uv run python -m pytest tests/regression_suite.py -q` runs the CI regression suite.
-- `uv run python -m compileall -q app.py api.py engine verticals agents` performs a fast syntax check.
+`web_app.py` is **retired** (don't target it for new work). `api_app.py` is legacy but still mounted.
 
-## Coding Style & Naming Conventions
+## Commands
 
-Use Python 3.11+ syntax, four-space indentation, and PEP 8 naming: `snake_case` for modules, functions, and variables; `PascalCase` for classes; and `UPPER_CASE` for constants. Add type hints to public interfaces and docstrings where behavior is not obvious. Keep provider-neutral logic in `engine/` and asset-specific behavior in `verticals/`. No repository-wide formatter is configured, so follow nearby code and group imports as standard library, third-party, then local.
+```bash
+uv sync --all-extras                 # install (extras: web, agents, agui, all)
+uv run python cli.py                 # interactive CLI
+uv run python app.py                 # web UI
+python -m compileall -q app.py api.py engine verticals tui utils agents   # fast syntax check (matches CI)
+python -m pytest tests/regression_suite.py -v            # full suite — requires DB + .env + Alpaca/XAI
+python -m pytest tests/regression_suite.py::TestStrategySlug -v   # single class
+python -m pytest tests/test_index_options.py tests/test_ui_navigation.py -q   # DB-free unit tests (CI default)
+python -m engine.backtest.runner --symbols AAPL --start 2024-01-01 --end 2024-06-30  # methodology backtest → backtest-results/
+python run_migration.py sql/NN_name.sql                  # apply a migration (no tracking table; idempotent)
+python scripts/coolify_deploy.py deploy --name agui      # deploy to prod (needs COOLIFY_* in .env)
+scripts/verify_no_secrets.sh                            # pre-commit gate — run before pushing
+```
 
-## Testing Guidelines
+CI (`.github/workflows/ci.yml`) uses **pip**, not uv: `pip install -e ".[all]"`. The regression
+suite step only runs when the `DATABASE_URL` repo secret is set; otherwise CI runs only the two
+DB-free unit-test files above. Add new DB-free tests to that explicit list if they should run in CI.
 
-Pytest is the primary runner, although several suites use `unittest` classes. Name new files `test_<feature>.py` and test methods `test_<behavior>`. Mock brokerage, model, email, and market-data calls in unit tests. Tests requiring API keys or PostgreSQL must skip cleanly when configuration is absent. Run the focused test first, then the regression suite before opening a PR; no numeric coverage threshold is currently enforced.
+## Architecture facts that aren't obvious from filenames
 
-CI/CD must remain configured and active. Add every new feature's focused tests to `.github/workflows/ci.yml`, and do not merge while required checks fail.
+- **`engine/` is canonical; `utils/*` are compat shims** that `sys.modules`-alias to relocated
+  `engine` modules (removed in Phase 7). **New code imports `engine.*`, not `utils.*`.** When both
+  paths exist, prefer `engine.*`.
+- **Two distinct backtest engines**: grid-search (`utils/backtester_util.py`, driven by
+  `agents/backtest_agent.py`, used by CLI/web/orchestrator) and methodology-faithful
+  (`engine.backtest`, vendored Alpaca skill, writes deterministic dated folders to
+  `backtest-results/`). Don't conflate them.
+- **`CommandProcessor`** (`tui/command_processor.py`) is the central dispatcher for CLI commands;
+  positional params are parsed there (e.g. `trades paper btd-3dp`). Unknown input falls through to the AI agent.
+- **Five-agent orchestrator** (`agents/orchestrator.py`): Backtest → Validate → Paper Trade →
+  Validate → Report. Communication is a file-based JSON message bus (`data/agent_messages/`).
+- **Verticals**: `verticals/equities/` is the equities web vertical; `verticals/publicmarkets/` is
+  the newer IPO/SEC/hedge-fund tools vertical. Provider-neutral logic stays in `engine/`.
+- **DB**: PostgreSQL with `alpatrade` schema. Migrations in `sql/` (numbered `01_`–`15_`,
+  idempotent `CREATE TABLE IF NOT EXISTS`). Per-user Alpaca keys live in `user_accounts`
+  (Fernet-encrypted BYTEA), **not** `users`. All data tables carry `user_id` (+ `account_id`).
 
-For every major feature or release push, bump the project version in both `pyproject.toml` and `uv.lock`. Update `docs/change_log.md` in the same commit with the date, version, user-visible changes, tests, and deployment notes.
+## Model & provider config
 
-## Commits & Pull Requests
+- `engine/config.py::get_settings(user_id)` layers per-user DB overrides over env over defaults.
+  Default model `grok-4-1-fast-reasoning`; `DEFAULT_MODEL` wins over `MODEL_NAME`.
+- `build_chat_model` **self-heals** for XAI: probes the model, falls back to the first working entry
+  in `MODEL_NAMES["xai"]` if unavailable. Keep the preferred model first in that list.
+- Voice (`engine/voice.py`) has its own model (`XAI_VOICE_MODEL`, default `grok-4-fast`) and is **not**
+  routed through the self-heal.
 
-Recent history follows Conventional Commit-style subjects such as `feat(backtest): ...`, `fix(auth): ...`, and `docs: ...`. Keep commits imperative, focused, and scoped when useful. PRs should explain the user-visible impact, list verification commands, link relevant issues, and include screenshots for changes under `engine/web/` or `static/`. Call out migrations, new environment variables, and any paper-trading behavior explicitly.
+## Conventions
 
-## Security & Configuration
+- Python 3.13 in CI (pyproject floor is `>=3.11`). PEP 8, four-space indent, type hints on public
+  interfaces. **No repo-wide formatter** — follow nearby code.
+- Commits: Conventional Commit subjects (`feat(backtest): …`, `fix(auth): …`, `docs: …`).
+- **Version bumps**: for major features/releases, bump `pyproject.toml` **and** `uv.lock`, and
+  update `docs/change_log.md` in the same commit (date, version, user-visible changes, tests, deploy notes).
+- Trading changes default to **paper mode**; flag any path capable of live orders explicitly.
 
-Store credentials only in `.env`; never commit keys, tokens, account data, or database URLs. Run `scripts/verify_no_secrets.sh` before pushing configuration changes. Default all trading changes to paper mode and clearly flag any path capable of live orders.
+## Secrets
+
+NEVER copy/log/commit secret values — reference by variable name only. `XAI_API_KEY` is especially
+sensitive (a prior key was leaked via GitHub and revoked). Run `scripts/verify_no_secrets.sh` before
+pushing (also wired as a pre-commit hook). If a secret is ever committed, purge with `git-filter-repo`.
+Required `.env` keys: `ALPACA_PAPER_API_KEY`, `ALPACA_PAPER_SECRET_KEY`, `MASSIVE_API_KEY`,
+`DATABASE_URL`, `ENCRYPTION_KEY`, `JWT_SECRET`. See CLAUDE.md for the full optional list.
+
+## Skills (user-invocable, in `.claude/skills/`)
+
+- `coolify-deploy` — trigger/inspect Coolify deploys via API token (never the account password).
+- `linkedin-post` — post to LinkedIn via OAuth token (no password/2FA entered).
+- `alpaca-trading-backtest` — deterministic historical backtest via the Alpaca CLI skill.
