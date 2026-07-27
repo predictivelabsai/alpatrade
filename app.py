@@ -56,6 +56,7 @@ from engine.web import ph_pnl  # noqa: E402
 from engine.web import ph_filings  # noqa: E402
 from engine.web import ph_marketintel  # noqa: E402
 from engine.web import ph_ipomap  # noqa: E402
+from engine.web import ph_index_options  # noqa: E402
 from engine.web import ph_hedgefunds  # noqa: E402
 from engine.web import ph_press  # noqa: E402
 from engine.web import ph_spacs  # noqa: E402
@@ -70,6 +71,7 @@ ph_pnl.register(app, rt)
 ph_filings.register(app, rt)
 ph_marketintel.register(app, rt)
 ph_ipomap.register(app, rt)
+ph_index_options.register(app, rt)
 ph_hedgefunds.register(app, rt)
 ph_press.register(app, rt)
 ph_spacs.register(app, rt)

@@ -24,5 +24,5 @@ def test_public_market_pages_are_registered_in_their_own_section():
     from engine.web import ph_layout
 
     paths = {href for _label, href, _key in ph_layout.PUBLIC_PAGES}
-    assert {"/ipo-map", "/ipo-pipeline"} <= paths
+    assert {"/ipo-map", "/ipo-pipeline", "/index-options"} <= paths
     assert "/ipo-map" not in {href for _label, href, _key in ph_layout.EXPLORE_PAGES}
