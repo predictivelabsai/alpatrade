@@ -28,12 +28,14 @@ COOLIFY_APP_UUID=...        # optional default; get it from `list`
 ## Usage
 
 ```bash
-# find the app + its uuid (the prod web app is the "agui" service)
+# find the app + its uuid
 python scripts/coolify_deploy.py list
 
-# deploy by name or uuid (force rebuild)
-python scripts/coolify_deploy.py deploy --name agui
-python scripts/coolify_deploy.py deploy --uuid <uuid>
+# deploy by name or uuid (force rebuild). The prod web app is named
+# `predictivelabsai/alpatrade` (uuid lwgksc8kgcwc448o40c0w0k8) — NOT "agui";
+# "agui" is the Dockerfile/service name (Dockerfile.agui), not the Coolify app name.
+python scripts/coolify_deploy.py deploy --name predictivelabsai/alpatrade
+python scripts/coolify_deploy.py deploy --uuid lwgksc8kgcwc448o40c0w0k8
 
 # recent deployment status
 python scripts/coolify_deploy.py status
@@ -45,12 +47,15 @@ Verify the new build is actually live (the old image 404s these):
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" https://alpatrade.chat/map      # expect 200
-curl -s -o /dev/null -w "%{http_code}\n" https://alpatrade.chat/settings # expect 200 (→ /signin)
+curl -s -o /dev/null -w "%{http_code}\n" https://alpatrade.chat/settings # expect 303 (→ /signin)
+curl -s -o /dev/null -w "%{http_code}\n" https://alpatrade.chat/         # expect 200
 ```
 
-Then smoke-test `/`, `/map`, `/charts`, `/settings`, and chat. If a deploy doesn't
-appear after a few minutes, check `status` and the Coolify build logs; the AlpaTrade
-prod service is `agui` (`Dockerfile.agui` → `main.py` → merged `app.py` on 5003).
+Then smoke-test `/`, `/map`, `/charts`, `/settings`, and chat. The prod container runs
+`Dockerfile.agui` → `python main.py` → merged `app.py` (web on 5003 in prod via
+`ASSETHERO_WEB_PORT`). If a deploy doesn't appear after a few minutes, check `status`
+and the Coolify build logs.
 
-Tip: also confirm **auto-deploy on git push** is enabled for the `agui` app — recent
-pushes did NOT auto-deploy, which is why manual triggers were needed.
+**Auto-deploy on git push has NOT been firing** — pushes to `main` do not redeploy
+automatically. Trigger manually with this skill after every push that needs to ship,
+or fix the GitHub App webhook (see CLAUDE.md "Deployment").

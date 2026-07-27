@@ -11,7 +11,7 @@ Env (add to .env; never commit values):
 
 Usage:
   python scripts/coolify_deploy.py list                     # list apps (name, uuid, fqdn, status)
-  python scripts/coolify_deploy.py deploy --name agui       # deploy by app name
+  python scripts/coolify_deploy.py deploy --name predictivelabsai/alpatrade  # deploy by app name
   python scripts/coolify_deploy.py deploy --uuid <uuid>     # deploy by uuid
   python scripts/coolify_deploy.py deploy                   # deploy COOLIFY_APP_UUID
   python scripts/coolify_deploy.py status                   # recent deployments
