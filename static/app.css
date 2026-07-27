@@ -74,6 +74,25 @@ a { color: var(--accent); }
     letter-spacing: .14em; color: var(--ink-dim); padding: 0 .4rem; display: block; margin-bottom: .35rem;
 }
 
+/* Top-level sidebar sections: collapsed by default to preserve vertical space. */
+.nav-section { border-bottom: 1px solid var(--line); padding: .15rem 0; }
+.nav-section-toggle {
+    display: flex; align-items: center; width: 100%; padding: .48rem .4rem;
+    cursor: pointer; list-style: none; color: var(--ink-dim);
+    font-size: .64rem; font-weight: 700; text-transform: uppercase; letter-spacing: .13em;
+}
+.nav-section-toggle::-webkit-details-marker { display: none; }
+.nav-section-toggle:hover { color: var(--accent); }
+.nav-section-name { flex: 1; }
+.nav-section-expand,.nav-section-collapse {
+    color: var(--accent); font-family: var(--font-mono); font-size: .8rem;
+}
+.nav-section-collapse { display: none; }
+.nav-section[open] .nav-section-expand { display: none; }
+.nav-section[open] .nav-section-collapse { display: inline; }
+.nav-section-body { padding: .15rem 0 .45rem; }
+.nav-section-body .page-links { margin-bottom: 0; }
+
 /* New-chat button */
 .new-chat-btn {
     width: 100%; padding: .55rem; background: var(--accent); color: var(--bg);

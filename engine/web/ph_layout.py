@@ -61,12 +61,14 @@ _MIC_SVG = (
 # --- client helpers (fillChat / newChat / composer + pane toggles) ----------
 PH_JS = """
 function fillChat(t){var i=document.getElementById('chat-input');
-  if(i){i.value=t;i.focus();autoResize(i);}}
+  if(i){i.value=t;i.focus();autoResize(i);return;}
+  sessionStorage.setItem('alpatrade.pendingPrompt',t);window.location.href='/app';}
 function autoResize(el){if(!el)return;el.style.height='auto';
   el.style.height=Math.min(el.scrollHeight,192)+'px';}
 function newChat(){var m=document.getElementById('messages');if(m)m.innerHTML='';
   var w=document.getElementById('welcome-hero');if(w)w.style.display='';
-  var i=document.getElementById('chat-input');if(i){i.value='';autoResize(i);i.focus();}}
+  var i=document.getElementById('chat-input');if(i){i.value='';autoResize(i);i.focus();return;}
+  window.location.href='/app';}
 function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();
   var f=document.getElementById('chat-form');
   if(typeof window.sendMessage==='function'){window.sendMessage(e);}
@@ -82,6 +84,12 @@ function toggleLeftPane(){var p=document.getElementById('left-pane');
 window.fillChat=fillChat;window.newChat=newChat;window.autoResize=autoResize;
 window.handleKey=handleKey;window.toggleNewsPane=toggleNewsPane;
 window.toggleLeftPane=toggleLeftPane;
+document.addEventListener('DOMContentLoaded',function(){
+  var t=sessionStorage.getItem('alpatrade.pendingPrompt');
+  if(t&&document.getElementById('chat-input')){
+    sessionStorage.removeItem('alpatrade.pendingPrompt');fillChat(t);
+  }
+});
 """
 
 
@@ -146,11 +154,26 @@ def _menu_group(label: str, items, active: Optional[str]):
     )
 
 
+def _nav_section(label: str, *children):
+    """A compact top-level sidebar section, collapsed on every page load."""
+    return Details(
+        Summary(
+            Span(label, cls="nav-section-name"),
+            Span(">", cls="nav-section-expand", aria_hidden="true"),
+            Span("<", cls="nav-section-collapse", aria_hidden="true"),
+            cls="nav-section-toggle",
+        ),
+        Div(*children, cls="nav-section-body"),
+        cls="nav-section",
+    )
+
+
 # Extra tool pages, appended by their feature modules as they're built.
 # Each entry: (label, href, active-key). EXPLORE = visual/map tools (IPO Map, Hedge
 # Funds, Market Intel); TOOLS = actionable tools (SEC Filings, Press Releases).
 EXPLORE_PAGES: list = []
 TOOLS_PAGES: list = []
+PUBLIC_PAGES: list = []
 
 
 def _EXPLORE_EXTRA(active):
@@ -161,6 +184,11 @@ def _EXPLORE_EXTRA(active):
 def _TOOLS_EXTRA(active):
     return [A(lbl, href=href, cls="page-link" + (" active" if active == key else ""))
             for lbl, href, key in TOOLS_PAGES]
+
+
+def _PUBLIC_EXTRA(active):
+    return [A(lbl, href=href, cls="page-link" + (" active" if active == key else ""))
+            for lbl, href, key in PUBLIC_PAGES]
 
 
 def _left_pane(active: Optional[str], user: Optional[dict]):
@@ -180,35 +208,46 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
         Div(
             A("＋ New chat", cls="new-chat-btn", href="#",
               onclick="newChat();return false;"),
-            Div(Span("Explore", cls="section-label")),
-            Div(
-                A("🗺 Market Map", href="/map", cls="page-link" + (" active" if active == "map" else "")),
-                A("📈 Charts", href="/charts", cls="page-link" + (" active" if active == "charts" else "")),
-                *_EXPLORE_EXTRA(active),
-                cls="page-links",
+            _nav_section(
+                "Explore",
+                Div(
+                    A("🗺 Market Map", href="/map", cls="page-link" + (" active" if active == "map" else "")),
+                    A("📈 Charts", href="/charts", cls="page-link" + (" active" if active == "charts" else "")),
+                    *_EXPLORE_EXTRA(active),
+                    cls="page-links",
+                ),
             ),
-            Div(Span("Chats", cls="section-label")),
-            Div(Div("No chats yet.", cls="sessions-empty"),
-                cls="session-list", id="session-list"),
-            Hr(cls="left-hr"),
-            Div(Span("Agents", cls="section-label")),
-            Div(*[_menu_group(lbl, items, active) for lbl, items in AGENT_SHORTCUTS],
-                cls="agent-browser"),
-            Hr(cls="left-hr"),
-            Div(Span("Tools", cls="section-label")),
-            Div(
-                A("📊 Paper PnL", href="/pnl", cls="page-link" + (" active" if active == "pnl" else "")),
-                *_TOOLS_EXTRA(active),
-                cls="page-links",
+            _nav_section(
+                "Chats",
+                Div(Div("No chats yet.", cls="sessions-empty"),
+                    cls="session-list", id="session-list"),
             ),
-            Div(*[_menu_group(lbl, items, active) for lbl, items in MAIN_NAV],
-                cls="agent-browser"),
-            Hr(cls="left-hr"),
-            Div(Span("Admin", cls="section-label")),
-            Div(
-                A("⚙ Settings", href="/settings", cls="page-link" + (" active" if active == "settings" else "")),
-                A("❓ Help & shortcuts", href="/guide", cls="page-link" + (" active" if active == "guide" else "")),
-                cls="page-links",
+            _nav_section(
+                "Agents",
+                Div(*[_menu_group(lbl, items, active) for lbl, items in AGENT_SHORTCUTS],
+                    cls="agent-browser"),
+            ),
+            _nav_section(
+                "Tools",
+                Div(
+                    A("📊 Paper PnL", href="/pnl", cls="page-link" + (" active" if active == "pnl" else "")),
+                    *_TOOLS_EXTRA(active),
+                    cls="page-links",
+                ),
+                Div(*[_menu_group(lbl, items, active) for lbl, items in MAIN_NAV],
+                    cls="agent-browser"),
+            ),
+            _nav_section(
+                "Public Markets",
+                Div(*_PUBLIC_EXTRA(active), cls="page-links"),
+            ),
+            _nav_section(
+                "Admin",
+                Div(
+                    A("⚙ Settings", href="/settings", cls="page-link" + (" active" if active == "settings" else "")),
+                    A("❓ Help & shortcuts", href="/guide", cls="page-link" + (" active" if active == "guide" else "")),
+                    cls="page-links",
+                ),
             ),
             cls="left-body",
         ),

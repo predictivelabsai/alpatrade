@@ -38,7 +38,8 @@ def ipo_map_data(limit: int = 300) -> dict:
     with DatabasePool().get_session() as s:
         rows = s.execute(text("""
             SELECT ticker, company_name, sector, exchange, ipo_date, ipo_price,
-                   current_price, market_cap, price_change_since_ipo
+                   current_price, market_cap, price_change_since_ipo,
+                   country, region
             FROM liquidround.ipo_data
             ORDER BY market_cap DESC NULLS LAST
             LIMIT :lim
@@ -48,7 +49,8 @@ def ipo_map_data(limit: int = 300) -> dict:
         mc = _f(r[7])
         ipos.append({
             "ticker": r[0], "company": r[1], "sector": r[2] or "Other",
-            "exchange": r[3] or "", "region": _region(r[3]),
+            "exchange": r[3] or "", "country": r[9] or "United States",
+            "region": r[10] or _region(r[3]),
             "ipo_date": str(r[4]) if r[4] else "", "ipo_price": _f(r[5]),
             "price": _f(r[6]), "market_cap": mc,
             "return_pct": _f(r[8]), "size": mc or 1.0,
@@ -82,7 +84,9 @@ def ipo_pipeline_data(limit: int = 100) -> list[dict]:
     with DatabasePool().get_session() as s:
         rows = s.execute(text("""
             SELECT company_name, ticker, kind, sector, country, exchange,
-                   last_valuation, last_round, last_round_date, last_amount_raised
+                   last_valuation, last_round, last_round_date, last_amount_raised,
+                   funding_to_date, total_rounds, proposed_price, shares_offered,
+                   deal_value, expected_date, employees, website, summary, status
             FROM liquidround.ipo_pipeline
             ORDER BY last_valuation DESC NULLS LAST
             LIMIT :lim
@@ -90,7 +94,11 @@ def ipo_pipeline_data(limit: int = 100) -> list[dict]:
     return [{"company": r[0], "ticker": r[1], "kind": r[2], "sector": r[3],
              "country": r[4], "exchange": r[5], "valuation": _f(r[6]),
              "last_round": r[7], "last_round_date": str(r[8]) if r[8] else "",
-             "amount_raised": _f(r[9])} for r in rows]
+             "amount_raised": _f(r[9]), "funding_to_date": _f(r[10]),
+             "total_rounds": r[11], "proposed_price": _f(r[12]),
+             "shares_offered": _f(r[13]), "deal_value": _f(r[14]),
+             "expected_date": str(r[15]) if r[15] else "", "employees": r[16],
+             "website": r[17], "summary": r[18], "status": r[19]} for r in rows]
 
 
 def ipo_pipeline_summary(limit: int = 15) -> str:

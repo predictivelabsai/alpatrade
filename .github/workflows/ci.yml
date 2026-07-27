@@ -35,7 +35,9 @@ jobs:
           python -c "from engine.web import landing, layout; print('shell import OK')"
 
       - name: Unit tests
-        run: python -m pytest tests/test_index_options.py -q
+        env:
+          XAI_API_KEY: ci-import-placeholder
+        run: python -m pytest tests/test_index_options.py tests/test_ui_navigation.py -q
 
       # DB-backed regression suite (opt-in): runs only when the DATABASE_URL secret
       # is configured on the repo. Add it with:  gh secret set DATABASE_URL
