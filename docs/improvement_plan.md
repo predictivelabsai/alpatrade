@@ -74,6 +74,25 @@ loop. This is the highest system-level leverage for adapting to regime drift.
 **Verified** — `python -m pytest tests/test_refit.py tests/test_objective.py
 tests/test_index_options.py tests/test_ui_navigation.py -q` → 23 passed.
 
+### Phase 1c — Fix `run_full` + configurable validation gate (DONE)
+
+**What changed**
+- `Orchestrator.run_full` (`agents/orchestrator.py`) now runs the full
+  BT → Validate → PT → Validate → **Reconcile → Report** sequence
+  (previously skipped reconcile + report, contradicting AGENTS.md).
+- Added a `report` phase that calls `ReportAgent().summary()` and surfaces
+  recent runs in the result (non-fatal on error).
+- Validation failures are now configurable via `config["validation_gate"]`:
+  - `"warn"` (default, back-compat): log and continue.
+  - `"strict"`: halt the run on a failed validation so a broken backtest or
+    paper session never flows to the next phase.
+
+**Why** — `run_full` was incomplete (missing reconcile + report) and validation
+was advisory-only. A broken backtest would silently flow to paper trading.
+Strict mode gives the autonomy pipeline a real quality gate.
+
+**Verified** — compile + 23 tests pass.
+
 ---
 
 ## Remaining plan

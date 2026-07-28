@@ -324,10 +324,15 @@ class Orchestrator:
             return {"error": str(e)}
 
     def run_full(self, config: Dict[str, Any] = None) -> Dict[str, Any]:
-        """
-        Run full cycle: Backtest -> Validate -> Paper Trade -> Validate.
+        """Run full cycle: Backtest → Validate → Paper Trade → Validate → Reconcile → Report.
+
+        ``config["validation_gate"]`` controls validation failure behaviour:
+          - ``"warn"`` (default): log a warning and continue (back-compat).
+          - ``"strict"``: halt the run on a failed validation — a broken
+            backtest/paper session never flows to the next phase.
         """
         config = config or {}
+        gate = (config.get("validation_gate") or "warn").lower()
         self._mode = "full"
         self._config = config
         store_run(self.run_id, "full",
@@ -337,11 +342,24 @@ class Orchestrator:
         self.state.save()
 
         logger.info("=" * 60)
-        logger.info("FULL CYCLE: BT -> Validate -> PT -> Validate")
-        logger.info(f"Run ID: {self.run_id}")
+        logger.info("FULL CYCLE: BT -> Validate -> PT -> Validate -> Reconcile -> Report")
+        logger.info(f"Run ID: {self.run_id}  (validation_gate={gate})")
         logger.info("=" * 60)
 
         results = {"run_id": self.run_id, "phases": {}}
+
+        def _gate_check(val_result: Dict, phase_name: str) -> bool:
+            """Return True if the run should halt on this validation failure."""
+            failed = val_result.get("status") == "failed"
+            if failed and gate == "strict":
+                logger.error(f"{phase_name} validation failed — strict gate halting run.")
+                results["phases"][phase_name] = val_result
+                results["status"] = f"failed_at_{phase_name}"
+                self._save_final(results)
+                return True
+            if failed:
+                logger.warning(f"{phase_name} validation failed. Continuing (warn gate).")
+            return False
 
         # Phase 1: Backtest
         bt_result = self.run_backtest(config)
@@ -355,8 +373,8 @@ class Orchestrator:
         bt_trades = bt_result.get("trades", [])
         val1_result = self.run_validation(source="backtest", trades=bt_trades)
         results["phases"]["backtest_validation"] = val1_result
-        if val1_result.get("status") == "failed":
-            logger.warning("Backtest validation failed. Continuing with caution.")
+        if _gate_check(val1_result, "backtest_validation"):
+            return results
 
         # Phase 3: Paper trade
         pt_result = self.run_paper_trade(config)
@@ -369,6 +387,22 @@ class Orchestrator:
         # Phase 4: Validate paper trades
         val2_result = self.run_validation(source="paper_trade")
         results["phases"]["paper_trade_validation"] = val2_result
+        if _gate_check(val2_result, "paper_trade_validation"):
+            return results
+
+        # Phase 5: Reconcile DB vs Alpaca
+        rec_result = self.run_reconciliation(config)
+        results["phases"]["reconciliation"] = rec_result
+
+        # Phase 6: Report — surface the run summary
+        try:
+            from agents.report_agent import ReportAgent
+            report = ReportAgent().summary(
+                limit=5, user_id=self.user_id, account_id=self.account_id)
+            results["phases"]["report"] = {"recent_runs": report}
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"Report phase failed (non-fatal): {e}")
+            results["phases"]["report"] = {"error": str(e)}
 
         # Final status
         if val2_result.get("status") == "failed":
