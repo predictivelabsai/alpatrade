@@ -58,17 +58,16 @@ services:
       start_period: 15s
     restart: unless-stopped
 
-  # Autonomous agent-team worker (Phase C). Paper-only, opt-in: only starts with
-  # `docker compose --profile autonomy up`, so the prod deploy never runs it. Enable
-  # the loop itself with AUTONOMY_ENABLED=true.
+  # Autonomous agent-team worker (Phase C). Paper-only. Runs in prod alongside
+  # paper-strategy; the loop itself is gated by AUTONOMY_ENABLED (default true).
+  # Set AUTONOMY_ENABLED=false or scale the service to 0 in Coolify to stop it.
   autonomy:
     build:
       context: .
       dockerfile: Dockerfile.agui
     command: ["python", "-m", "engine.autonomy.worker"]
-    profiles: ["autonomy"]
     environment:
-      - AUTONOMY_ENABLED=${AUTONOMY_ENABLED:-false}
+      - AUTONOMY_ENABLED=${AUTONOMY_ENABLED:-true}
       - AUTONOMY_SCAN_SECONDS=${AUTONOMY_SCAN_SECONDS:-300}
       - AUTONOMY_STRATEGY=${AUTONOMY_STRATEGY:-btd}
       - PNL_REPORT_FREQUENCY=${PNL_REPORT_FREQUENCY:-daily}

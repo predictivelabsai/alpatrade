@@ -1,6 +1,7 @@
 """Continuous autonomy worker — self-feeding loop, Postgres-only.
 
-Gated by ``AUTONOMY_ENABLED`` (off by default, incl. prod). Each tick:
+Gated by ``AUTONOMY_ENABLED`` (on by default in prod via docker-compose).
+Each tick:
   1. ``requeue_unfinished`` — reclaim runs whose worker died.
   2. (Phase C) scout scan → ``queue.enqueue`` new candidate runs.
   3. Drain: ``queue.claim`` → run the pipeline (heart-beating) → ack / fail.

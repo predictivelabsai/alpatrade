@@ -25,6 +25,7 @@ from utils.backtester_util import (
     backtest_vix_strategy,
 )
 from utils.agent_storage import store_backtest_results
+from engine.objective import ObjectiveWeights, select_best, rank_variations
 
 logger = logging.getLogger(__name__)
 
@@ -135,8 +136,14 @@ class BacktestAgent:
 
         self.results = results
 
-        # Find best configuration by Sharpe ratio
-        best = max(results, key=lambda r: r.get("sharpe_ratio", 0)) if results else {}
+        # Select best by the PnL-maximising composite objective
+        # (annualised return − drawdown penalty − vol penalty, with a
+        # min-trades gate). Falls back to max-Sharpe only if all rows
+        # are disqualified. Objective weights are configurable per-run.
+        obj_cfg = request.get("objective") or {}
+        weights = ObjectiveWeights.from_config(obj_cfg)
+        best = select_best(results, weights)
+        ranked = rank_variations(results, weights)
 
         # Store results to DB if available
         lookback = request.get("lookback", "3m")
@@ -156,10 +163,13 @@ class BacktestAgent:
                     "params": r.get("params"),
                     "sharpe_ratio": r.get("sharpe_ratio", 0),
                     "total_return": r.get("total_return", 0),
+                    "annualized_return": r.get("annualized_return", 0),
+                    "max_drawdown": r.get("max_drawdown", 0),
                     "win_rate": r.get("win_rate", 0),
                     "total_trades": r.get("total_trades", 0),
+                    "score": r.get("_score"),
                 }
-                for r in results
+                for r in ranked
             ],
         }
 
@@ -174,7 +184,10 @@ class BacktestAgent:
 
         logger.info(
             f"Backtest run {run_id} complete: {len(results)} variations, "
-            f"best Sharpe={best.get('sharpe_ratio', 0):.2f}"
+            f"best score={best.get('_score')}, "
+            f"ann_ret={best.get('annualized_return', 0):.2f}%, "
+            f"max_dd={best.get('max_drawdown', 0):.2f}%, "
+            f"trades={best.get('total_trades', 0)}"
         )
         return output
 
