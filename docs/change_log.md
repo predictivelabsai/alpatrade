@@ -1,5 +1,28 @@
 # Change Log
 
+## 0.5.0 — 2026-07-28
+
+### Portfolio dashboard
+
+- Made an authenticated, account-scoped Portfolio P&L dashboard the default
+  post-login home page.
+- Added current calendar day, week, and month views using Alpaca portfolio
+  history, with equity, return, cash, buying power, unrealized P&L, and Plotly
+  equity/contributor charts.
+- Added paper and backtest strategy leaderboards and cached, fact-grounded AI
+  commentary routed through each user's configured model provider.
+- Added an all-accounts view, automatic selection of a funded account, support
+  for read-only paper and live Alpaca credentials, and connect-account onboarding.
+- Corrected backtest account scoping to join through its owning run, retaining
+  compatibility with databases where `backtest_summaries` has no `account_id`.
+
+### Tests
+
+- Added DB-free tests for calendar bounds, account isolation, funded-account
+  selection, aggregation, and onboarding.
+- Expanded Playwright coverage to assert real dashboard Plotly charts at
+  desktop, tablet, and mobile widths.
+
 ## 0.4.1 — 2026-07-28
 
 ### Fixed

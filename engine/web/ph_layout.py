@@ -217,6 +217,7 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             _nav_section(
                 "Explore",
                 Div(
+                    A("📊 Dashboard", href="/dashboard", cls="page-link" + (" active" if active == "dashboard" else "")),
                     A("🗺 Market Map", href="/map", cls="page-link" + (" active" if active == "map" else "")),
                     A("📈 Charts", href="/charts", cls="page-link" + (" active" if active == "charts" else "")),
                     *_EXPLORE_EXTRA(active),
@@ -236,7 +237,6 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             _nav_section(
                 "Tools",
                 Div(
-                    A("📊 Paper PnL", href="/pnl", cls="page-link" + (" active" if active == "pnl" else "")),
                     *_TOOLS_EXTRA(active),
                     cls="page-links",
                 ),

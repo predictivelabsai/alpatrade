@@ -11,6 +11,7 @@ def test_sidebar_sections_are_collapsed_by_default():
     assert '<details class="nav-section" open' not in html
     assert 'class="nav-section-expand">&gt;' in html
     assert 'class="nav-section-collapse">&lt;' in html
+    assert 'href="/dashboard"' in html
 
 
 def test_fill_chat_redirects_non_chat_pages_with_pending_prompt():

@@ -256,10 +256,12 @@ class ReportAgent:
             where_clauses.append("bs.strategy_slug LIKE :prefix")
             bind["prefix"] = strategy + "%"
         if user_id:
-            where_clauses.append("bs.user_id = :user_id")
+            where_clauses.append("r.user_id = :user_id")
             bind["user_id"] = user_id
         if account_id:
-            where_clauses.append("bs.account_id = :account_id")
+            # account ownership belongs to the run. Older databases do not
+            # carry account_id on backtest_summaries.
+            where_clauses.append("r.account_id = :account_id")
             bind["account_id"] = account_id
 
         where_sql = " WHERE " + " AND ".join(where_clauses)
@@ -279,6 +281,7 @@ class ReportAgent:
                         COUNT(*)                   AS total_runs,
                         AVG(bs.total_pnl)          AS avg_pnl
                     FROM alpatrade.backtest_summaries bs
+                    JOIN alpatrade.runs r ON r.run_id = bs.run_id
                     {where_sql}
                     GROUP BY bs.strategy_slug
                     ORDER BY avg_ann_return DESC

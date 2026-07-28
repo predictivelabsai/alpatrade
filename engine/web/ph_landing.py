@@ -496,7 +496,7 @@ def register(app, rt):
     @rt("/")
     def landing_home(session):
         if session.get("user_id"):
-            return RedirectResponse("/app", status_code=303)
+            return RedirectResponse("/dashboard", status_code=303)
         return home_page()
 
     @rt("/platform")

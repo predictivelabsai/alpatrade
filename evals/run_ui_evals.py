@@ -68,6 +68,7 @@ window.fetch=function(url){{
 def _cases():
     from engine.web.ph_chat import CHAT_JS
     from engine.web.ph_charts import _CHARTS_JS, _MAP_JS
+    from engine.web.ph_pnl import _JS as _DASHBOARD_JS
     chat = _shell(
         '<div id="messages"></div><div id="welcome-hero"></div>'
         '<textarea id="chat-input">Show me a market map</textarea>'
@@ -86,10 +87,26 @@ def _cases():
         '<div id="cp-plot"></div><div id="cp-status"></div>',
         _CHARTS_JS,
     )
+    dashboard_data = {
+        "history": {
+            "timestamps": ["2026-07-28T08:00:00+00:00", "2026-07-28T16:00:00+00:00"],
+            "equity": [100_000, 101_250],
+        },
+        "contributors": [
+            {"symbol": "AAPL", "pnl": 900},
+            {"symbol": "TSLA", "pnl": -250},
+        ],
+    }
+    dashboard = _shell(
+        '<div id="equity-chart"></div><div id="contrib-chart"></div>',
+        f"window.__PNL_DASH__={json.dumps(dashboard_data)};{_DASHBOARD_JS}",
+    )
     return [
         ("chat_market_map", chat, "window.sendMessage()", "#messages [data-plotly=rendered]"),
         ("market_map_page", market_map, "window.loadMap()", "#map-plot[data-plotly=rendered]"),
         ("charts_page", charts, "window.loadChart()", "#cp-plot[data-plotly=rendered]"),
+        ("dashboard_equity", dashboard, "void 0", "#equity-chart[data-plotly=rendered]"),
+        ("dashboard_contributors", dashboard, "void 0", "#contrib-chart[data-plotly=rendered]"),
     ]
 
 

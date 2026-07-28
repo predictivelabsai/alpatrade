@@ -29,7 +29,14 @@ def _session_cookie() -> str:
 
     with DatabasePool().get_session() as session:
         user_id = session.execute(
-            text("SELECT id FROM alpatrade.users ORDER BY id LIMIT 1")
+            text("""
+                SELECT u.user_id
+                FROM alpatrade.users u
+                LEFT JOIN alpatrade.user_accounts a
+                  ON a.user_id = u.user_id AND a.is_active = TRUE
+                ORDER BY (a.account_id IS NOT NULL) DESC, u.created_at
+                LIMIT 1
+            """)
         ).scalar()
     if user_id is None:
         raise RuntimeError("No existing alpatrade user is available for the local smoke test")
@@ -40,9 +47,14 @@ def _session_cookie() -> str:
 
 def run(base_url: str, screenshot: Path | None = None) -> dict[str, bool]:
     errors: list[str] = []
+    viewports = {
+        "desktop": {"width": 1400, "height": 900},
+        "tablet": {"width": 820, "height": 1180},
+        "mobile": {"width": 390, "height": 844},
+    }
     with sync_playwright() as pw:
         browser = pw.chromium.launch(channel="chrome", headless=True)
-        context = browser.new_context(viewport={"width": 1400, "height": 900})
+        context = browser.new_context(viewport=viewports["desktop"])
         context.add_cookies([{
             "name": "session_", "value": _session_cookie(),
             "url": base_url, "httpOnly": True, "sameSite": "Lax",
@@ -63,6 +75,16 @@ def run(base_url: str, screenshot: Path | None = None) -> dict[str, bool]:
             "treemap_nodes": page.locator(nodes).count() > 0,
             "no_page_errors": not errors,
         }
+        for screen, viewport in viewports.items():
+            page.set_viewport_size(viewport)
+            page.goto(f"{base_url}/dashboard", wait_until="networkidle", timeout=120_000)
+            results[f"dashboard_loaded_{screen}"] = page.get_by_text(
+                "Portfolio P&L", exact=True).is_visible()
+            results[f"dashboard_equity_plot_{screen}"] = (
+                page.locator("#equity-chart.js-plotly-plot").count() == 1)
+            results[f"dashboard_contributor_plot_{screen}"] = (
+                page.locator("#contrib-chart.js-plotly-plot").count() == 1)
+        results["dashboard_no_page_errors"] = not errors
         if screenshot:
             screenshot.parent.mkdir(parents=True, exist_ok=True)
             page.screenshot(path=str(screenshot), full_page=True)
