@@ -1,5 +1,14 @@
 # Change Log
 
+## 0.4.1 — 2026-07-28
+
+### Fixed
+
+- Fixed streamed Plotly charts being removed when the final SSE `done` event
+  rewrote the already-rendered chat bubble.
+- Added an authenticated local Playwright regression that submits “Show me a
+  market map” and requires real Plotly and treemap SVG nodes with no page errors.
+
 ## 0.4.0 — 2026-07-28
 
 ### Research workspace

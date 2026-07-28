@@ -264,6 +264,7 @@ CHAT_JS = r"""
       base.showlegend=false;
       Plotly.newPlot(div,[tr],base,{responsive:true,displayModeBar:false});
     }
+    bubble._chartRendered=true;
     delete bubble._chart;
   }
 
@@ -330,7 +331,20 @@ CHAT_JS = r"""
               bubble=addBubble('assistant','',p.agent); bubble.classList.add('streaming');
             } else if(type==='token'){
               if(!bubble){ bubble=addBubble('assistant','',''); bubble.classList.add('streaming'); }
-              acc+=p.text; bubble.innerHTML=renderMd(acc); scrollBottom();
+              acc+=p.text;
+              // Chart markers are a UI transport contract, not prose. Render as
+              // soon as a complete marker arrives instead of depending on a
+              // later `done` event (which can be lost by proxies/buffered SSE).
+              if(acc.indexOf('__CHART_DATA__')!==-1 &&
+                 acc.indexOf('__END_CHART__')!==-1){
+                var clean=extractChart(acc,bubble);
+                acc=clean;
+                bubble.innerHTML=clean.trim()?renderMd(clean):'';
+                enhanceTables(bubble); renderChart(bubble);
+              } else {
+                bubble.innerHTML=renderMd(acc);
+              }
+              scrollBottom();
             } else if(type==='tool_start'){
               appendTool(bubble||(bubble=addBubble('assistant','','')), p.name);
             } else if(type==='error'){
@@ -340,7 +354,10 @@ CHAT_JS = r"""
               if(bubble){
                 bubble.classList.remove('streaming');
                 var t=extractChart(acc,bubble);
-                bubble.innerHTML=t.trim()?renderMd(t):bubble.innerHTML;
+                // Incremental chart rendering may already have appended Plotly.
+                // Do not destroy it when the final SSE event arrives.
+                if(!bubble._chartRendered)
+                  bubble.innerHTML=t.trim()?renderMd(t):bubble.innerHTML;
                 enhanceTables(bubble); renderChart(bubble);
               }
             }

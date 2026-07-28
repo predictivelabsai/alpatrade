@@ -58,6 +58,10 @@ def test_chat_client_extracts_multiline_markers_and_renders_treemap():
     assert r"/__CHART_DATA__([\s\S]+?)__END_CHART__/" in CHAT_JS
     assert "if(data.type==='treemap')" in CHAT_JS
     assert "Plotly.newPlot(div,[tm]" in CHAT_JS
+    assert "acc.indexOf('__END_CHART__')!==-1" in CHAT_JS
+    assert "enhanceTables(bubble); renderChart(bubble);" in CHAT_JS
+    assert "if(!bubble._chartRendered)" in CHAT_JS
+    assert "bubble._chartRendered=true" in CHAT_JS
 
 
 def test_chat_client_renders_research_correlation_charts():
