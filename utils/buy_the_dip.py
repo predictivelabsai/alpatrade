@@ -160,12 +160,13 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
     # Fetch data based on source
     price_data = {}
     if data_source in {"yfinance", "alpaca"}:
+        selected_market_data = MarketDataUtil(provider=data_source)
         from datetime import datetime
         # Estimate start date for intraday if needed
         data_start = start_date - timedelta(days=60)
         for symbol in symbols:
             # For backtesting, we might need a range of dates. 
-            df = market_data_util.get_historical_data(symbol, data_start, end_date, timeframe='minute' if interval != '1d' else 'day', interval=1)
+            df = selected_market_data.get_historical_data(symbol, data_start, end_date, timeframe='minute' if interval != '1d' else 'day', interval=1)
             if not df.empty:
                 # Ensure timezone aware
                 if df.index.tz is None:
@@ -191,7 +192,7 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
         data_start_intra = start_date - timedelta(days=5)
         for symbol in symbols:
             try:
-                idf = market_data_util.get_historical_data(
+                idf = selected_market_data.get_historical_data(
                     symbol, data_start_intra, end_date,
                     timeframe='minute', interval=5,
                 )
