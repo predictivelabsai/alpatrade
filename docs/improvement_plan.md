@@ -93,6 +93,31 @@ Strict mode gives the autonomy pipeline a real quality gate.
 
 **Verified** — compile + 23 tests pass.
 
+### Phase 2a — Regime classifier (DONE)
+
+**What changed**
+- New `engine/regime.py` (provider-neutral, per AGENTS.md convention):
+  `classify_regime(date) -> RegimeLabel` with a 3-state label
+  `{low_vol, normal, high_vol}` × trend `{bull, chop, bear}`.
+- Three signals: realised vol (21d annualised, percentile vs 63d window),
+  VIX level (yfinance `^VIX`), SMA200 trend. Rule-based — no HMM dep;
+  an HMM can later replace internals behind the same interface.
+- Per-process LRU cache (`classify_regime_cached` / `current_regime`).
+- `REGIME_PARAMS` preset grids per regime for `buy_the_dip` — wider dip
+  thresholds, bigger TPs, smaller position sizes in high_vol; tighter in
+  low_vol. `regime_variations(strategy, state)` returns the grid.
+- Graceful degradation: on any data failure returns `normal/chop` so
+  callers never crash.
+- 11 DB-free tests in `tests/test_regime.py` (vol percentile, trend,
+  presets, label string).
+
+**Why** — the repo had zero regime classification. The only "regime" function
+was `is_bullish_regime = close > SMA200` in a strategy not wired into the
+orchestrator. This gives every downstream phase (2b grid, 2d sizing, Phase 4
+walk-forward/promotion) a single classification entry point.
+
+**Verified** — `python -m pytest tests/test_regime.py -q` → 11 passed.
+
 ---
 
 ## Remaining plan
