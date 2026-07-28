@@ -71,6 +71,25 @@ def _sse(name: str, data) -> str:
     return f"event: {name}\ndata: {json.dumps(data, default=str)}\n\n"
 
 
+def _tool_chart_marker(event: dict) -> str:
+    """Return a chart marker from a LangChain ``on_tool_end`` event, if any.
+
+    Tool results are context for the model, but chart markers are also a UI
+    transport contract.  Models commonly paraphrase the textual part and omit
+    the opaque JSON marker, so the server must forward it independently.
+    """
+    output = event.get("data", {}).get("output", "")
+    content = getattr(output, "content", output)
+    if isinstance(content, list):
+        content = "".join(
+            str(item.get("text", "")) if isinstance(item, dict) else str(item)
+            for item in content
+        )
+    text = str(content or "")
+    match = re.search(r"__CHART_DATA__[\s\S]+?__END_CHART__", text)
+    return match.group(0) if match else ""
+
+
 # ---------------------------------------------------------------------------
 # Client JS — defines window.sendMessage for the ph_layout composer, renders
 # markdown (marked.js), inline Plotly charts (__CHART_DATA__ markers), table
@@ -321,6 +340,11 @@ CHAT_STYLE = """
 .tool-log { margin-top:.4rem; display:flex; flex-direction:column; gap:.15rem; }
 .tool-step { font-family:var(--font-mono); font-size:.68rem; color:var(--ink-dim); }
 .tool-step .tool-name { color:var(--accent); }
+.news-category { border-bottom:1px solid var(--line); }
+.news-category-title { padding:.65rem .2rem; cursor:pointer; font-size:.74rem;
+  color:var(--ink); font-weight:650; list-style:none; }
+.news-category-title::-webkit-details-marker { display:none; }
+.pm-news-up { color:#1F7A4D; }.pm-news-down { color:#B4472F; }
 """
 
 
@@ -385,6 +409,7 @@ async def _stream(msg: str, session) -> StreamingResponse:
         ]
 
         full = ""
+        tool_chart = ""
         try:
             agent = _agui.agent_for_user(str(uid) if uid is not None else None)
             if hasattr(agent, "astream_events"):
@@ -399,6 +424,9 @@ async def _stream(msg: str, session) -> StreamingResponse:
                     elif kind == "on_tool_start":
                         yield _sse("tool_start", {"name": event.get("name", "tool")})
                     elif kind == "on_tool_end":
+                        marker = _tool_chart_marker(event)
+                        if marker:
+                            tool_chart = marker
                         yield _sse("tool_end", {"name": event.get("name", "tool")})
             else:
                 # Non-LangGraph runtime (e.g. pydantic_ai): no event stream → single-shot.
@@ -413,6 +441,9 @@ async def _stream(msg: str, session) -> StreamingResponse:
             yield _sse("done", {})
             return
 
+        if tool_chart and "__CHART_DATA__" not in full:
+            full += "\n\n" + tool_chart
+            yield _sse("token", {"text": "\n\n" + tool_chart})
         history.append({"role": "assistant", "content": full})
         yield _sse("done", {})
 
@@ -482,9 +513,55 @@ def register(app, rt):
 
     @rt("/news")
     async def news():
-        """Multi-source market news as a pehero-style HTML card fragment."""
-        from fasthtml.common import A, Div, Span, P, to_xml
+        """Categorized premarket catalysts plus multi-source market headlines."""
+        from fasthtml.common import A, Details, Div, Span, P, Summary, to_xml
         from starlette.responses import HTMLResponse
+        sections = []
+        try:
+            from engine.premarket import latest_report, top_movers
+            movers = top_movers(latest_report(), 8)["movers"]
+            if movers:
+                mover_cards = []
+                for mover in movers:
+                    direction = "up" if mover.get("movement_pct", 0) >= 0 else "down"
+                    catalyst = (mover.get("catalysts") or [{}])[0]
+                    inner = [
+                        Div(Span(mover["ticker"], cls="news-source"),
+                            Span(f"{mover['movement_pct']:+.2f}%",
+                                 cls=f"news-time pm-news-{direction}"),
+                            cls="news-item-header"),
+                        Div(catalyst.get("title") or mover.get("company_name") or
+                            "Premarket price move", cls="news-item-title"),
+                    ]
+                    mover_cards.append(A(
+                        *inner, href=catalyst.get("link") or f"/premarket#{mover['ticker']}",
+                        target="_blank" if catalyst.get("link") else None,
+                        rel="noopener", cls="news-item"))
+                sections.append(Details(
+                    Summary(f"Premarket movers · {len(mover_cards)}", cls="news-category-title"),
+                    Div(*mover_cards), cls="news-category", open=True))
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            from engine.publicmarkets.news import categorized_news
+            for category, rows in categorized_news(60).items():
+                cards = []
+                for row in rows[:8]:
+                    cards.append(A(
+                        Div(Span(row.get("ticker") or row.get("publisher") or "Release",
+                                 cls="news-source"),
+                            Span((row.get("published") or "")[:10], cls="news-time"),
+                            cls="news-item-header"),
+                        Div(row.get("title") or "", cls="news-item-title"),
+                        href=row.get("link") or "#", target="_blank", rel="noopener",
+                        cls="news-item"))
+                sections.append(Details(
+                    Summary(f"{category} · {len(rows)}", cls="news-category-title"),
+                    Div(*cards), cls="news-category"))
+        except Exception:  # noqa: BLE001
+            pass
+        if sections:
+            return HTMLResponse(to_xml(Div(*sections, cls="news-categories")))
         try:
             from utils.news_feed import fetch_news, time_ago
             articles = await fetch_news()

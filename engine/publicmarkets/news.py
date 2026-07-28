@@ -10,6 +10,30 @@ from sqlalchemy import text
 from engine.db.pool import DatabasePool
 
 
+def news_category(event: str = "", title: str = "") -> str:
+    """Normalize Finespresso event labels into compact premarket categories."""
+    text_value = f"{event} {title}".lower()
+    groups = (
+        ("Earnings & guidance", ("earning", "financial result", "guidance", "operating result")),
+        ("M&A & partnerships", ("merger", "acquisition", "partnership", "business contract")),
+        ("Clinical & regulatory", ("clinical", "fda", "regulatory", "patent")),
+        ("Capital & ownership", ("financing", "share capital", "dividend", "shareholder", "13d")),
+        ("Management", ("management change", "appoint", "resign", "chief executive")),
+        ("Products & expansion", ("product", "service announcement", "geographic expansion", "launch")),
+    )
+    return next((label for label, terms in groups if any(term in text_value for term in terms)),
+                "Other catalysts")
+
+
+def categorized_news(limit: int = 60) -> dict[str, list[dict]]:
+    """Return recent press releases grouped into premarket catalyst categories."""
+    categories: dict[str, list[dict]] = {}
+    for row in search_news(limit=limit):
+        category = news_category(row.get("event", ""), row.get("title", ""))
+        categories.setdefault(category, []).append(row)
+    return categories
+
+
 def search_news(query: str = "", ticker: str = "", limit: int = 30) -> list[dict]:
     """Recent press releases, optionally filtered by headline query and/or ticker."""
     where, params = ["1=1"], {"lim": min(limit, 60)}

@@ -1,4 +1,4 @@
-prompt,expected_answer,must_contain,agent_name,agent_type,slow
+prompt,expected_answer,must_contain,agent_name,agent_type,slow,category
 How large is my MSFT position?,States the MSFT position size in shares from the paper account.,,get_alpaca_positions,chat,
 Show me my positions,Lists the open positions with their symbols and quantities.,,get_alpaca_positions,chat,
 What's my account balance and P&L?,"Reports the account portfolio value, equity, cash and/or buying power.",,get_alpaca_account,chat,
@@ -33,3 +33,71 @@ agent:backtest lookback:1m symbols:AAPL,Runs a 1-month backtest on AAPL and repo
 agent:paper duration:1m symbols:AAPL poll:60,Starts a paper-trading agent on AAPL.,paper;Paper;start;Start;agent;running,Paper Trader,deterministic,1
 Show me a market map,"The tool builds a finviz-style S&P market map (the treemap renders in the UI). A correct answer is a short textual summary that names how many names are up/down and the best and worst sectors with their returns — this summary IS the expected answer; the visual treemap renders client-side.",,show_market_map,chat,
 Compare AAPL vs MSFT vs NVDA performance,Compares the recent performance of AAPL MSFT and NVDA and renders a chart; a brief summary that names each ticker with its percentage return is a correct answer.,,compare_stocks,chat,
+How has Apple traded over the last month?,Shows an AAPL price chart for the one-month period and gives a concise description.,,show_stock_chart,chat,,charting
+Draw a six-month candlestick chart for NVDA,Shows an NVDA candlestick chart covering six months.,,show_stock_chart,chat,,charting
+Give me a one-day sector heatmap,Builds a one-day market treemap and summarizes breadth plus leading and lagging sectors.,,show_market_map,chat,,charting
+Which sectors are green this year?,Builds a year-to-date sector market map and summarizes winners and losers.,,show_market_map,chat,,charting
+Compare AMZN and META over one year,Compares normalized one-year returns for AMZN and META and renders the comparison chart.,,compare_stocks,chat,,charting
+Plot GOOGL vs MSFT for the last three months,Compares normalized three-month returns for GOOGL and MSFT.,,compare_stocks,chat,,charting
+What is the latest MSFT share price?,Returns Microsoft's current or latest available share price.,,get_stock_price,chat,,market_data
+How has NVDA moved recently?,Returns NVIDIA's recent price and performance.,,get_stock_price,chat,,market_data
+Give me five recent Apple headlines,Returns recent dated Apple/AAPL news headlines with sources.,,get_stock_news,chat,,research
+What news is moving Nvidia today?,Returns relevant recent NVIDIA/NVDA news with dates and sources.,,get_stock_news,chat,,research
+What is Wall Street's price target for Apple?,Returns analyst ratings and price-target information for AAPL.,,get_analyst_ratings,chat,,research
+Are analysts bullish or bearish on Tesla?,Summarizes current analyst ratings or price targets for TSLA.,,get_analyst_ratings,chat,,research
+What does Nvidia do and what sector is it in?,Describes NVIDIA's business and sector.,,get_company_profile,chat,,fundamentals
+Give me Tesla's company profile,Describes Tesla's business and company details.,,get_company_profile,chat,,fundamentals
+Show Microsoft's quarterly financials,Reports quarterly Microsoft revenue earnings or margins.,,get_financials,chat,,fundamentals
+Give me Nvidia annual revenue and earnings,Reports NVIDIA annual revenue and earnings figures.,,get_financials,chat,,fundamentals
+Who are today's biggest gainers?,Lists the current top gaining stocks.,,get_market_movers,chat,,market_data
+Show today's largest losers,Lists the current top losing stocks.,,get_market_movers,chat,,market_data
+Compare the P/E ratios of NVDA and AMD,Compares valuation metrics for NVDA and AMD.,,get_valuation,chat,,fundamentals
+Which is cheaper on valuation: META or GOOGL?,Compares valuation multiples for META and GOOGL.,,get_valuation,chat,,fundamentals
+Show my paper brokerage account,Reports the paper account portfolio value cash buying power and P&L.,,get_alpaca_account,chat,,brokerage
+How much buying power do I have?,Reports available buying power from the paper brokerage account.,,get_alpaca_account,chat,,brokerage
+List every open paper position,Lists open paper positions with symbols and quantities.,,get_alpaca_positions,chat,,brokerage
+Do I currently hold AAPL?,States whether AAPL is present in the open paper positions and its size if held.,,get_alpaca_positions,chat,,brokerage
+How am I doing today?,Reports today's paper-account P&L portfolio value and open-position unrealized P&L.,,get_pnl_report,chat,,brokerage
+Give me today's P&L report,Reports day P&L and paper-account portfolio information.,,get_pnl_report,chat,,brokerage
+List my linked Alpaca accounts,Lists brokerage accounts linked to the current user.,,list_user_accounts,chat,,brokerage
+Which brokerage accounts can I trade in?,Lists the current user's linked brokerage accounts.,,list_user_accounts,chat,,brokerage
+Show the last ten paper trades,Lists up to ten recent paper trades or clearly says none exist.,,show_recent_trades,chat,,runs_and_trades
+What were my latest backtest trades?,Lists recent backtest trades or clearly says none exist.,,show_recent_trades,chat,,runs_and_trades
+Show recent strategy runs,Lists recent backtest or paper-trading runs.,,show_recent_runs,chat,,runs_and_trades
+What backtests have run lately?,Lists recent runs with backtest context.,,show_recent_runs,chat,,runs_and_trades
+Rank my top five paper strategies,Ranks paper strategies using return Sharpe or another stated performance metric.,,get_top_strategies,chat,,runs_and_trades
+Which backtest has the best Sharpe ratio?,Ranks backtest strategies and identifies the strongest result when data exists.,,get_top_strategies,chat,,runs_and_trades
+Plot the latest paper equity curve,Renders an equity curve for the latest paper run or clearly reports that no data exists.,,show_equity_curve,chat,,charting
+Show the equity curve for my latest backtest,Renders the latest backtest equity curve or clearly reports that no run data exists.,,show_equity_curve,chat,,charting
+Are any background agents active?,Clearly reports running background trading agents or that none are active.,,show_running_agents,chat,,operations
+Show agent status,Reports the status of background trading agents.,,show_running_agents,chat,,operations
+Find Apple's latest 10-K,Lists Apple's recent 10-K filing with filing details or link.,,get_company_filings,chat,,sec
+Show recent NVDA 8-K filings,Lists recent NVIDIA 8-K filings.,,get_company_filings,chat,,sec
+Search SEC filings for artificial intelligence risk,Returns relevant SEC filing search results for the query.,,search_sec_filings,chat,,sec
+Find Tesla filings mentioning layoffs,Searches Tesla SEC filings for mentions of layoffs and returns relevant results.,,search_sec_filings,chat,,sec
+Which sectors have led over five years?,Reports annual sector-ETF performance and identifies leaders and laggards.,,get_sector_performance,chat,,public_markets
+Show three years of sector performance,Reports sector performance for the requested three-year span.,,get_sector_performance,chat,,public_markets
+How are recent IPOs performing?,Lists recently priced IPOs and their post-listing performance.,,get_ipo_map,chat,,public_markets
+Show the best and worst recent IPOs,Lists recent IPO winners and laggards.,,get_ipo_map,chat,,public_markets
+Which companies are expected to IPO soon?,Lists upcoming or filed IPO candidates.,,get_ipo_pipeline,chat,,public_markets
+Show the current IPO pipeline,Lists pre-IPO private companies and upcoming or filed listings.,,get_ipo_pipeline,chat,,public_markets
+Who are the largest 13F managers?,Lists the largest institutional managers by reported 13F AUM.,,get_top_funds,chat,,public_markets
+Show the top institutional funds,Lists leading institutional funds or managers and their AUM.,,get_top_funds,chat,,public_markets
+Show recent activist 13D filings,Lists recent activist Schedule 13D filings.,,get_activist_filings,chat,,public_markets
+Are there activist filings involving TSLA?,Returns activist filings for TSLA or clearly says none were found.,,get_activist_filings,chat,,public_markets
+Find recent NVDA press releases,Returns recent NVIDIA press releases or company news with a directional read.,,get_press_releases,chat,,public_markets
+Search press releases about earnings,Returns relevant company press releases matching earnings.,,get_press_releases,chat,,public_markets
+Show SPACs ranked by trust size,Lists SPACs with trust size status NAV premium and target when available.,,get_spacs,chat,,public_markets
+What de-SPAC candidates are available?,Lists relevant SPAC or de-SPAC candidates with status details.,,get_spacs,chat,,public_markets
+Find active XSP index option contracts,Lists active paper-tradable XSP index-option contracts with expirations and symbols.,,list_index_option_contracts,chat,,options
+Show available SPXW calls,Lists active SPXW call contracts in the paper environment.,,list_index_option_contracts,chat,,options
+runs all,Lists recent runs across trade types.,run;Run;No ,CommandProcessor,deterministic,,commands
+trades paper limit:5,Lists at most five paper trades or reports none.,trade;Trade;paper;No ,CommandProcessor,deterministic,,commands
+top paper limit:3,Ranks up to three paper strategies or reports no results.,top;Top;strateg;Strateg;No ,CommandProcessor,deterministic,,commands
+pnl,Reports paper-account P&L or a clear broker data error.,P&L;pnl;profit;loss;Error,CommandProcessor,deterministic,,commands
+status,Shows application or broker status.,status;Status;connected;error;Error,CommandProcessor,deterministic,,commands
+guide,Shows the user guide or command guidance.,guide;Guide;command;Command,CommandProcessor,deterministic,,commands
+history,Shows command history or says it is empty.,history;History;No commands;empty,CommandProcessor,deterministic,,commands
+Show me the premarket movers,Reports the latest premarket scan with top gainers and fallers and their percentage moves.,,get_premarket_movers,chat,,premarket
+What are the biggest premarket gainers and fallers?,Lists ranked US premarket gainers and fallers from the latest 165-stock scan.,,get_premarket_movers,chat,,premarket
+Run a fresh premarket scan,Refreshes the 165-stock premarket scan and reports market breadth plus top movers.,,get_premarket_movers,chat,1,premarket

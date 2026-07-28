@@ -261,6 +261,7 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
 # ---------------------------------------------------------------------------
 # Natural-language prompts — the router figures out the command/tool to run.
 _SUGGESTION_CARDS = [
+    "Show me the premarket movers",
     "Show me my positions",
     "Buy 1 share of TSLA at market",
     "Show me a market map",

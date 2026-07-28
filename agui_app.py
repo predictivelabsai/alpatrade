@@ -81,7 +81,8 @@ SYSTEM_PROMPT = (
     "When users ask which strategies performed best, top strategies, or rankings, use get_top_strategies. "
     "When users ask to see/show a price chart, use show_stock_chart and reply that the chart is rendered "
     "below — do not re-describe the raw numbers. "
-    "When users ask for a market map, sector heatmap, or how the market/sectors are doing, use show_market_map "
+    "When users ask for premarket movers, premarket gainers/fallers, or what is moving before the open, "
+    "use get_premarket_movers. When users ask for a market map, sector heatmap, or how the market/sectors are doing, use show_market_map "
     "and relay the tool's summary line verbatim (it names the up/down count and the best & worst sectors) — "
     "do not collapse it to just 'rendered below'. "
     "When users ask to compare the performance/returns of several stocks (X vs Y), use compare_stocks and relay "
@@ -311,6 +312,22 @@ def get_pnl_report() -> str:
         return "\n".join(lines)
     except Exception as e:  # noqa: BLE001
         return f"Error fetching PnL report: {e}"
+
+
+def get_premarket_movers(limit: int = 10, refresh: bool = False) -> str:
+    """Show top US premarket movers, gainers and fallers with catalysts.
+
+    Set refresh only when the user explicitly asks for a fresh full-universe
+    scan; otherwise the latest persisted scan is returned immediately.
+    """
+    try:
+        from agents.premarket_agent import PremarketAgent
+        agent = PremarketAgent()
+        if refresh:
+            agent.run(refresh=True, limit=min(max(limit, 1), 20))
+        return agent.report(limit=min(max(limit, 1), 20))
+    except Exception as e:  # noqa: BLE001
+        return f"Error loading premarket movers: {e}"
 
 
 def get_press_releases(query: str = "", ticker: str = "", limit: int = 15) -> str:
@@ -812,6 +829,8 @@ TOOLS = [
         description="Submit a paper-only DAY order for an index-option contract previously returned by list_index_option_contracts."),
     StructuredTool.from_function(get_pnl_report, name="get_pnl_report",
         description="Get today's paper account P&L report: day P&L, portfolio value, and open positions with unrealised P&L. Use for 'how's my P&L', 'pnl report', 'how am I doing today', 'show my paper account'."),
+    StructuredTool.from_function(get_premarket_movers, name="get_premarket_movers",
+        description="Show top US premarket movers, gainers and fallers by sector with press-release catalysts. Set refresh=true only when explicitly asked for a fresh 165-stock scan."),
     StructuredTool.from_function(search_sec_filings, name="search_sec_filings",
         description="Search SEC EDGAR filings by full-text query. Optional ticker filter and form type (10-K, 10-Q, 8-K, S-1, DEF 14A, 13F-HR). Use for 'find SEC filings mentioning X', 'search 8-Ks about layoffs'."),
     StructuredTool.from_function(get_company_filings, name="get_company_filings",

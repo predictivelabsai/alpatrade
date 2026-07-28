@@ -1,5 +1,45 @@
 # Change Log
 
+## 0.3.0 — 2026-07-28
+
+### Added
+
+- A complete FastHTML port of the Finespresso premarket screener: 165 sector
+  memberships across 11 US sectors, prior-close versus premarket OHLC moves,
+  ranked gainers/fallers, sector breadth, mover detail, catalysts, and sources.
+- The read-only Premarket Agent and `get_premarket_movers` chat tool, with
+  persisted-scan and explicit fresh-scan modes.
+- PostgreSQL migration `16_premarket_scans.sql`, with compatible local JSON
+  fallback for environments where the migration has not yet been applied.
+- Categorized premarket catalysts in the shared right-hand news pane.
+- Agent-routing and LLM-judge eval coverage for premarket requests, plus
+  desktop/mobile Playwright smoke coverage and DB-free regression tests.
+
+### Changed
+
+- Premarket market-data acquisition is batched rather than issuing sequential
+  requests for every symbol.
+- Expanded the agent eval corpus to 102 cases with tool-trajectory validation,
+  per-category filtering, PASS/FAIL routing results, and UI eval reporting.
+- Fixed inline chart tools such as `show_market_map` by preserving chart
+  markers returned from tool events through the FastHTML SSE stream.
+
+### Tests
+
+- 59 DB-free CI tests passed.
+- Premarket Playwright smoke passed on desktop and mobile, including catalyst
+  detail and categorized-news rendering with no browser console errors.
+- The broad regression suite passed 99 tests; two pre-existing autonomy
+  promotion-threshold assertions remain failing and are unrelated to this port.
+- Syntax compilation and secret scanning passed.
+
+### Deploy Notes
+
+- Apply `python run_migration.py sql/16_premarket_scans.sql` before deployment
+  to enable PostgreSQL scan history. Without it, the feature safely uses JSON
+  reports in `PREMARKET_REPORTS_DIR` (default `data/premarket`).
+- A fresh scan is read-only and never places orders.
+
 ## 0.2.1 — 2026-07-27
 
 ### Added

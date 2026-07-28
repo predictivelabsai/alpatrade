@@ -56,6 +56,95 @@ wheels = [
 ]
 
 [[package]]
+name = "alpatrade"
+version = "0.3.0"
+source = { editable = "." }
+dependencies = [
+    { name = "alpaca-py" },
+    { name = "deepagents" },
+    { name = "feedparser" },
+    { name = "httpx" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "openai" },
+    { name = "pandas" },
+    { name = "plotly" },
+    { name = "prompt-toolkit" },
+    { name = "psycopg2-binary" },
+    { name = "python-dotenv" },
+    { name = "pyyaml" },
+    { name = "requests" },
+    { name = "rich" },
+    { name = "sqlalchemy" },
+    { name = "yfinance" },
+]
+
+[package.optional-dependencies]
+agents = [
+    { name = "langchain-core" },
+    { name = "langchain-openai" },
+    { name = "langgraph" },
+]
+agui = [
+    { name = "ag-ui-protocol" },
+    { name = "pydantic-ai" },
+]
+all = [
+    { name = "ag-ui-protocol" },
+    { name = "bcrypt" },
+    { name = "cryptography" },
+    { name = "fastapi" },
+    { name = "langchain-core" },
+    { name = "langchain-openai" },
+    { name = "langgraph" },
+    { name = "pydantic-ai" },
+    { name = "pyjwt" },
+    { name = "python-fasthtml" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+web = [
+    { name = "bcrypt" },
+    { name = "cryptography" },
+    { name = "fastapi" },
+    { name = "pyjwt" },
+    { name = "python-fasthtml" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "ag-ui-protocol", marker = "extra == 'agui'", specifier = ">=0.1" },
+    { name = "alpaca-py", specifier = ">=0.20" },
+    { name = "alpatrade", extras = ["web", "agents", "agui"], marker = "extra == 'all'" },
+    { name = "bcrypt", marker = "extra == 'web'", specifier = ">=4.0" },
+    { name = "cryptography", marker = "extra == 'web'", specifier = ">=41.0" },
+    { name = "deepagents", specifier = ">=0.6.12" },
+    { name = "fastapi", marker = "extra == 'web'", specifier = ">=0.110" },
+    { name = "feedparser", specifier = ">=6.0" },
+    { name = "httpx", specifier = ">=0.25" },
+    { name = "langchain-core", marker = "extra == 'agents'", specifier = ">=0.2" },
+    { name = "langchain-openai", marker = "extra == 'agents'", specifier = ">=0.1" },
+    { name = "langgraph", marker = "extra == 'agents'", specifier = ">=0.1" },
+    { name = "numpy", specifier = ">=1.24" },
+    { name = "openai", specifier = ">=1.0" },
+    { name = "pandas", specifier = ">=2.0" },
+    { name = "plotly", specifier = ">=5.0" },
+    { name = "prompt-toolkit", specifier = ">=3.0" },
+    { name = "psycopg2-binary", specifier = ">=2.9" },
+    { name = "pydantic-ai", marker = "extra == 'agui'", specifier = ">=1.34" },
+    { name = "pyjwt", marker = "extra == 'web'", specifier = ">=2.8" },
+    { name = "python-dotenv", specifier = ">=1.0" },
+    { name = "python-fasthtml", marker = "extra == 'web'", specifier = ">=0.6" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "requests", specifier = ">=2.31" },
+    { name = "rich", specifier = ">=13.0" },
+    { name = "sqlalchemy", specifier = ">=2.0" },
+    { name = "uvicorn", extras = ["standard"], marker = "extra == 'web'", specifier = ">=0.27" },
+    { name = "yfinance", specifier = ">=0.2" },
+]
+provides-extras = ["web", "agents", "agui", "all"]
+
+[[package]]
 name = "annotated-doc"
 version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
@@ -201,95 +290,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/95/c0/c8e94135e66fabf89
 wheels = [
     { url = "https://files.pythonhosted.org/packages/12/f6/5b8ec087cd9cfa9449491ec83f76fb6b7006b4dff57d2ba8aaab330fe8e4/argcomplete-3.7.0-py3-none-any.whl", hash = "sha256:d8f0f22d2a8a7caa383be1e22b6caf1ecaf0ebd10d8f83cc125e36540c95830c", size = 42575, upload-time = "2026-06-30T22:28:20.547Z" },
 ]
-
-[[package]]
-name = "alpatrade"
-version = "0.2.1"
-source = { editable = "." }
-dependencies = [
-    { name = "alpaca-py" },
-    { name = "deepagents" },
-    { name = "feedparser" },
-    { name = "httpx" },
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "numpy", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "openai" },
-    { name = "pandas" },
-    { name = "plotly" },
-    { name = "prompt-toolkit" },
-    { name = "psycopg2-binary" },
-    { name = "python-dotenv" },
-    { name = "pyyaml" },
-    { name = "requests" },
-    { name = "rich" },
-    { name = "sqlalchemy" },
-    { name = "yfinance" },
-]
-
-[package.optional-dependencies]
-agents = [
-    { name = "langchain-core" },
-    { name = "langchain-openai" },
-    { name = "langgraph" },
-]
-agui = [
-    { name = "ag-ui-protocol" },
-    { name = "pydantic-ai" },
-]
-all = [
-    { name = "ag-ui-protocol" },
-    { name = "bcrypt" },
-    { name = "cryptography" },
-    { name = "fastapi" },
-    { name = "langchain-core" },
-    { name = "langchain-openai" },
-    { name = "langgraph" },
-    { name = "pydantic-ai" },
-    { name = "pyjwt" },
-    { name = "python-fasthtml" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-web = [
-    { name = "bcrypt" },
-    { name = "cryptography" },
-    { name = "fastapi" },
-    { name = "pyjwt" },
-    { name = "python-fasthtml" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "ag-ui-protocol", marker = "extra == 'agui'", specifier = ">=0.1" },
-    { name = "alpaca-py", specifier = ">=0.20" },
-    { name = "alpatrade", extras = ["web", "agents", "agui"], marker = "extra == 'all'" },
-    { name = "bcrypt", marker = "extra == 'web'", specifier = ">=4.0" },
-    { name = "cryptography", marker = "extra == 'web'", specifier = ">=41.0" },
-    { name = "deepagents", specifier = ">=0.6.12" },
-    { name = "fastapi", marker = "extra == 'web'", specifier = ">=0.110" },
-    { name = "feedparser", specifier = ">=6.0" },
-    { name = "httpx", specifier = ">=0.25" },
-    { name = "langchain-core", marker = "extra == 'agents'", specifier = ">=0.2" },
-    { name = "langchain-openai", marker = "extra == 'agents'", specifier = ">=0.1" },
-    { name = "langgraph", marker = "extra == 'agents'", specifier = ">=0.1" },
-    { name = "numpy", specifier = ">=1.24" },
-    { name = "openai", specifier = ">=1.0" },
-    { name = "pandas", specifier = ">=2.0" },
-    { name = "plotly", specifier = ">=5.0" },
-    { name = "prompt-toolkit", specifier = ">=3.0" },
-    { name = "psycopg2-binary", specifier = ">=2.9" },
-    { name = "pydantic-ai", marker = "extra == 'agui'", specifier = ">=1.34" },
-    { name = "pyjwt", marker = "extra == 'web'", specifier = ">=2.8" },
-    { name = "python-dotenv", specifier = ">=1.0" },
-    { name = "python-fasthtml", marker = "extra == 'web'", specifier = ">=0.6" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "requests", specifier = ">=2.31" },
-    { name = "rich", specifier = ">=13.0" },
-    { name = "sqlalchemy", specifier = ">=2.0" },
-    { name = "uvicorn", extras = ["standard"], marker = "extra == 'web'", specifier = ">=0.27" },
-    { name = "yfinance", specifier = ">=0.2" },
-]
-provides-extras = ["web", "agents", "agui", "all"]
 
 [[package]]
 name = "attrs"

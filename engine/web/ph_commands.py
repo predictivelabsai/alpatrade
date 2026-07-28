@@ -77,6 +77,7 @@ MAIN_NAV = [
         ("agent:stop", "stop background task"),
     ]),
     ("Research", [
+        ("Show me the premarket movers", "top premarket gainers & fallers"),
         ("load:AAPL", "quote + inline chart"),
         ("load:TSLA period:1y", "custom period"),
         ("news:TSLA", "company news"),

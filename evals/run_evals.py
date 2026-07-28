@@ -36,12 +36,20 @@ _geval = None  # lazy GEval metric (grok judge)
 
 def load_rows() -> list[dict]:
     with open(GROUND_TRUTH, newline="", encoding="utf-8") as f:
-        return list(csv.DictReader(f))
+        rows = list(csv.DictReader(f))
+    for index, row in enumerate(rows, 1):
+        row["case_id"] = row.get("case_id") or f"eval-{index:03d}"
+        if not row.get("category"):
+            row["category"] = (
+                "commands" if row.get("agent_type") == "deterministic"
+                else "legacy_chat"
+            )
+    return rows
 
 
 # --------------------------------------------------------------------------- answers
-async def get_answer(row: dict) -> str:
-    """Route the prompt to the right agent and return its answer text."""
+async def get_answer(row: dict) -> tuple[str, list[str]]:
+    """Route a case and return both the final answer and observed tool trajectory."""
     prompt = row["prompt"]
     import agui_app  # builds the LangGraph agent + command interceptor
 
@@ -49,18 +57,24 @@ async def get_answer(row: dict) -> str:
         from langchain_core.messages import HumanMessage
         r = await agui_app.langgraph_agent.ainvoke({"messages": [HumanMessage(content=prompt)]})
         msg = r["messages"][-1]
-        return getattr(msg, "content", "") or ""
+        called_tools = []
+        for item in r.get("messages", []):
+            for call in getattr(item, "tool_calls", []) or []:
+                name = call.get("name") if isinstance(call, dict) else getattr(call, "name", "")
+                if name:
+                    called_tools.append(name)
+        return getattr(msg, "content", "") or "", called_tools
 
     # deterministic → run as a CLI command through the same interceptor the app uses
     from engine.ai import StreamingCommand
     result = await agui_app._command_interceptor(prompt, {"thread_id": "eval"})
     if result is None:
-        return "(command not recognised)"
+        return "(command not recognised)", []
     if isinstance(result, StreamingCommand):
         from tui.command_processor import CommandProcessor
         cp = CommandProcessor(result.app_state, user_id=None)
-        return await cp.process_command(result.raw_command) or ""
-    return str(result)
+        return await cp.process_command(result.raw_command) or "", ["CommandProcessor"]
+    return str(result), ["CommandProcessor"]
 
 
 # --------------------------------------------------------------------------- grading
@@ -105,20 +119,31 @@ async def run(rows: list[dict], include_slow: bool) -> list[dict]:
             continue
         t0 = time.time()
         try:
-            ai = await get_answer(row)
+            ai, called_tools = await get_answer(row)
         except Exception as e:  # noqa: BLE001
             ai = f"ERROR: {e}"
+            called_tools = []
         latency = round(time.time() - t0, 2)
         if row["agent_type"] == "chat":
-            ok, score, reason = grade_chat(row["prompt"], row["expected_answer"], ai)
+            judge_ok, score, reason = grade_chat(row["prompt"], row["expected_answer"], ai)
+            expected_tool = row.get("agent_name", "")
+            route_ok = not expected_tool or expected_tool in called_tools
+            ok = judge_ok and route_ok
+            if not route_ok:
+                reason = f"wrong route: expected {expected_tool}, called {called_tools}; {reason}"
         else:
             ok, score, reason = grade_deterministic(ai, row.get("must_contain", ""))
+            route_ok = "CommandProcessor" in called_tools
         results.append({
+            "case_id": row.get("case_id", ""),
+            "category": row.get("category", "uncategorized"),
             "prompt": row["prompt"],
             "expected_answer": row["expected_answer"],
             "ai_answer": (ai or "").replace("\n", " ")[:900],
             "agent_name": row["agent_name"],
             "agent_type": row["agent_type"],
+            "called_tools": ",".join(called_tools),
+            "routing_pass": "PASS" if route_ok else "FAIL",
             "result": "PASS" if ok else "FAIL",
             "score": score,
             "reason": reason,
@@ -137,8 +162,9 @@ def _accuracy(results, key=None, val=None):
     return p, n, (100.0 * p / n if n else 0.0)
 
 
-COLS = ["prompt", "expected_answer", "ai_answer", "agent_name", "agent_type",
-        "result", "score", "reason", "latency_s"]
+COLS = ["case_id", "category", "prompt", "expected_answer", "ai_answer",
+        "agent_name", "agent_type", "called_tools", "routing_pass", "result",
+        "score", "reason", "latency_s"]
 
 
 def save_and_report(results: list[dict]) -> dict:
@@ -173,8 +199,8 @@ def save_and_report(results: list[dict]) -> dict:
             ws.append([r[c] for c in COLS])
             cell = ws.cell(row=ws.max_row, column=COLS.index("result") + 1)
             cell.fill = green if r["result"] == "PASS" else red
-        for col, width in zip("ABCDEFGHI", (34, 40, 60, 20, 14, 8, 8, 40, 10)):
-            ws.column_dimensions[col].width = width
+        for i, width in enumerate((14, 20, 34, 40, 60, 24, 14, 30, 12, 8, 8, 40, 10), 1):
+            ws.column_dimensions[chr(64 + i)].width = width
         sm = wb.create_sheet("summary")
         sm.append(["Scope", "Passed", "Total", "Accuracy %"])
         sm["A1"].font = sm["B1"].font = sm["C1"].font = sm["D1"].font = Font(bold=True)
@@ -214,6 +240,8 @@ def main():
     ap = argparse.ArgumentParser(description="AlpaTrade agent/tool evals")
     ap.add_argument("--include-slow", action="store_true", help="also run slow agents (backtest/paper)")
     ap.add_argument("--only", choices=["chat", "deterministic"], help="run one agent_type only")
+    ap.add_argument("--agent", help="run one agent/tool name (for example show_market_map)")
+    ap.add_argument("--category", help="run one evaluation category")
     ap.add_argument("--limit", type=int, default=None, help="first N rows")
     ap.add_argument("--dry-run", action="store_true", help="list prompts, no calls")
     args = ap.parse_args()
@@ -221,6 +249,10 @@ def main():
     rows = load_rows()
     if args.only:
         rows = [r for r in rows if r["agent_type"] == args.only]
+    if args.agent:
+        rows = [r for r in rows if r["agent_name"] == args.agent]
+    if args.category:
+        rows = [r for r in rows if r.get("category") == args.category]
     if args.limit:
         rows = rows[: args.limit]
 
