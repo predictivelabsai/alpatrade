@@ -130,7 +130,12 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
         return result
 
     def backtest(ctx):
-        r = _check(_orch().run_backtest(ctx.get("config")), "backtest")
+        cfg = dict(ctx.get("config") or {})
+        # Closed-loop: if a prior run's refit node narrowed the grid, use it.
+        refined = cfg.get("refined_grid")
+        if refined:
+            cfg["variations"] = refined
+        r = _check(_orch().run_backtest(cfg), "backtest")
         best = (r.get("best_config") if isinstance(r, dict) else None) or {}
         return {"ctx": {"backtest_result": r, "best_config": best},
                 "variations": r.get("total_variations") if isinstance(r, dict) else None,
@@ -153,6 +158,29 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
     def reconcile(ctx):
         return _orch().run_reconciliation(ctx.get("config"))
 
+    def refit(ctx):
+        """Closed-loop feedback: narrow the next grid when paper drifts from backtest.
+
+        Reads the backtest result + the paper trades just executed, computes a
+        drift signal (paper Sharpe vs backtest Sharpe), and—if drift is
+        detected—produces a refined grid centred on the top-K variations. The
+        refined grid is threaded into ctx so the next scout tick uses it. Pure
+        logic lives in engine.autonomy.refit; this node does the I/O.
+        """
+        from engine.autonomy import refit as _refit
+        from scripts.daily_pnl_report import gather_trades
+        bt_result = ctx.get("backtest_result") or {}
+        paper_trades = gather_trades(limit=200)
+        plan = _refit.refit_plan(bt_result, paper_trades)
+        log_msg = f"refit: {plan['reason']}"
+        store.append_event(ctx.get("run_id"), log_msg)
+        out: dict = {"drift": plan["drift"], "refit_reason": plan["reason"],
+                     "paper_sharpe": plan["paper_sharpe"],
+                     "backtest_sharpe": plan["backtest_sharpe"]}
+        if plan["drift"] and plan["refined_grid"]:
+            out["ctx"] = {"refined_grid": plan["refined_grid"]}
+        return out
+
     def promote(ctx):
         from agents.report_agent import ReportAgent
         from engine.autonomy import promote as _promote, notify as _notify
@@ -171,6 +199,7 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
         ("validate_backtest", validate_backtest),
         ("paper_trade", paper_trade),
         ("reconcile", reconcile),
+        ("refit", refit),
         ("promote", promote),
     ])
 

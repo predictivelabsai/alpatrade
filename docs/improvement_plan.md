@@ -49,6 +49,31 @@ nightly PnL email thread was running. Turning it on unblocks the feedback loop
 `is_live=True` candidate (`RiskLimits.allow_live=False`). To stop: set
 `AUTONOMY_ENABLED=false` or scale the service to 0 in Coolify.
 
+### Phase 1b — Closed-loop feedback (refit node) (DONE)
+
+**What changed**
+- New `engine/autonomy/refit.py`: pure functions — `paper_sharpe()`,
+  `detect_drift()`, `refine_grid()`, `refit_plan()`. No I/O, fully unit-tested.
+- Drift signal: if `paper_sharpe < backtest_sharpe × 0.5`, the regime has
+  shifted → narrow the next grid around the top-K backtest variations ± a 20%
+  perturbation band. Integer params (hold_days) perturb ±1. Min 5 paper trades
+  to trust the signal (avoid noise).
+- New `refit` node added to `default_pipeline()` in `engine/autonomy/graph.py`,
+  after `reconcile` and before `promote`. It reads paper trades via
+  `gather_trades()` (reused from the daily report), runs `refit_plan()`, and
+  threads the refined grid into `ctx["refined_grid"]`.
+- The `backtest` node now merges `ctx["refined_grid"]` into the variations
+  passed to `BacktestAgent`, so the next scout tick uses the narrowed search.
+- 8 new DB-free tests in `tests/test_refit.py`.
+
+**Why** — the pipeline was open-loop: each autonomy tick re-ran the identical
+static 18-row grid regardless of paper outcomes. Now paper losses refit the
+search around what worked in backtest, turning the controller into a closed
+loop. This is the highest system-level leverage for adapting to regime drift.
+
+**Verified** — `python -m pytest tests/test_refit.py tests/test_objective.py
+tests/test_index_options.py tests/test_ui_navigation.py -q` → 23 passed.
+
 ---
 
 ## Remaining plan
