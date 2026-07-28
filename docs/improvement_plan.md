@@ -118,6 +118,33 @@ walk-forward/promotion) a single classification entry point.
 
 **Verified** — `python -m pytest tests/test_regime.py -q` → 11 passed.
 
+### Phase 2b + 2c — Regime-conditional grid + adaptive search (DONE)
+
+**What changed**
+- `BacktestAgent.run` now resolves variations with the precedence:
+  explicit `request["variations"]` → `request["regime"]` preset from
+  `engine.regime.regime_variations()` → static `DEFAULT_VARIATIONS`.
+  So when the autonomy pipeline sets `regime="high_vol"`, the agent
+  sweeps wider dip thresholds / bigger TPs / smaller sizes automatically.
+- New `_run_adaptive_buy_the_dip()` method: random-search + elite
+  refinement against the Phase-1 composite objective. Samples from the
+  ranges implied by the seed (or regime) variations, scores each with
+  `score_variation()`, then refines around the top-K elite. No new deps
+  (stdlib `random`, seeded for determinism). Activated via
+  `request["adaptive"]=True` + optional `adaptive_iterations` (default 40).
+- The autonomy `backtest` node (`engine/autonomy/graph.py`) now calls
+  `current_regime()` and threads the regime state into the backtest
+  request — so the pipeline automatically uses regime-aware grids.
+- Falls back to the static grid if the adaptive path errors.
+
+**Why** — the grid was static (18 rows) regardless of market conditions,
+and there was no adaptive refinement. Now the search space is
+regime-conditional (tighter in calm markets, wider + more conservative
+sizing in high-vol) and the adaptive path scales to the larger
+regime-conditional parameter space without running 1000s of variations.
+
+**Verified** — compile + 34 tests pass.
+
 ---
 
 ## Remaining plan

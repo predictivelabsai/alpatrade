@@ -135,6 +135,14 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
         refined = cfg.get("refined_grid")
         if refined:
             cfg["variations"] = refined
+        else:
+            # Regime-aware grid: classify today's regime and pass it through so
+            # BacktestAgent pulls the per-regime preset (Phase 2a/2b).
+            try:
+                from engine.regime import current_regime
+                cfg["regime"] = current_regime().state
+            except Exception:  # noqa: BLE001
+                pass
         r = _check(_orch().run_backtest(cfg), "backtest")
         best = (r.get("best_config") if isinstance(r, dict) else None) or {}
         return {"ctx": {"backtest_result": r, "best_config": best},

@@ -80,7 +80,6 @@ class BacktestAgent:
         symbols = request.get("symbols", DEFAULT_SYMBOLS)
         initial_capital = request.get("initial_capital", 10000.0)
         data_source = request.get("data_source", "massive")
-        variations = request.get("variations") or DEFAULT_VARIATIONS.get(strategy, {})
         extended_hours = request.get("extended_hours", True)
         intraday_exit = request.get("intraday_exit", False)
         pdt_protection = request.get("pdt_protection")
@@ -97,23 +96,67 @@ class BacktestAgent:
 
         run_id = request.get("run_id", str(uuid.uuid4()))
 
+        # Variations precedence: explicit request > regime preset > static default.
+        # When the autonomy pipeline detects a regime (Phase 2a) and sets
+        # request['regime'], we pull the per-regime grid from engine.regime.
+        variations = request.get("variations")
+        if not variations:
+            regime_state = request.get("regime")
+            if regime_state:
+                try:
+                    from engine.regime import regime_variations
+                    variations = regime_variations(strategy, regime_state)
+                except Exception:  # noqa: BLE001
+                    pass
+        if not variations:
+            variations = DEFAULT_VARIATIONS.get(strategy, {})
+
         logger.info(f"Backtest agent starting run {run_id}")
         logger.info(f"Strategy: {strategy}, Symbols: {symbols}")
         logger.info(f"Date range: {start_date.date()} to {end_date.date()}")
+        if request.get("regime"):
+            logger.info(f"Regime: {request['regime']}")
+
+        # Adaptive search: when request['adaptive'] is true (buy_the_dip),
+        # run a random-search + elite-refinement loop against the Phase-1
+        # objective instead of the static itertools.product grid. Falls back
+        # to the static grid if the adaptive path fails or is disabled.
+        adaptive = request.get("adaptive", False)
 
         if strategy == "buy_the_dip":
-            results = self._run_buy_the_dip_grid(
-                symbols=symbols,
-                start_date=start_date,
-                end_date=end_date,
-                initial_capital=initial_capital,
-                data_source=data_source,
-                variations=variations,
-                run_id=run_id,
-                extended_hours=extended_hours,
-                intraday_exit=intraday_exit,
-                pdt_protection=pdt_protection,
-            )
+            if adaptive:
+                try:
+                    results = self._run_adaptive_buy_the_dip(
+                        symbols=symbols, start_date=start_date, end_date=end_date,
+                        initial_capital=initial_capital, data_source=data_source,
+                        seed_variations=variations, run_id=run_id,
+                        extended_hours=extended_hours, intraday_exit=intraday_exit,
+                        pdt_protection=pdt_protection,
+                        objective=request.get("objective") or {},
+                        n_iter=int(request.get("adaptive_iterations", 40)),
+                    )
+                except Exception as e:  # noqa: BLE001
+                    logger.warning(f"Adaptive search failed ({e}); falling back to static grid.")
+                    results = self._run_buy_the_dip_grid(
+                        symbols=symbols, start_date=start_date, end_date=end_date,
+                        initial_capital=initial_capital, data_source=data_source,
+                        variations=variations, run_id=run_id,
+                        extended_hours=extended_hours, intraday_exit=intraday_exit,
+                        pdt_protection=pdt_protection,
+                    )
+            else:
+                results = self._run_buy_the_dip_grid(
+                    symbols=symbols,
+                    start_date=start_date,
+                    end_date=end_date,
+                    initial_capital=initial_capital,
+                    data_source=data_source,
+                    variations=variations,
+                    run_id=run_id,
+                    extended_hours=extended_hours,
+                    intraday_exit=intraday_exit,
+                    pdt_protection=pdt_protection,
+                )
         elif strategy == "momentum":
             results = self._run_momentum(
                 symbols=symbols,
@@ -293,6 +336,136 @@ class BacktestAgent:
                     "sharpe_ratio": 0,
                 })
 
+        return results
+
+    def _run_adaptive_buy_the_dip(
+        self,
+        symbols: List[str],
+        start_date: datetime,
+        end_date: datetime,
+        initial_capital: float,
+        data_source: str,
+        seed_variations: Dict,
+        run_id: str,
+        extended_hours: bool = True,
+        intraday_exit: bool = False,
+        pdt_protection=None,
+        objective: Optional[Dict] = None,
+        n_iter: int = 40,
+    ) -> List[Dict]:
+        """Adaptive random-search + elite refinement against the Phase-1 objective.
+
+        Instead of exhaustively enumerating a static grid, samples parameter
+        combinations from the ranges implied by ``seed_variations`` (or regime
+        presets), evaluates each via ``backtest_buy_the_dip``, scores with the
+        composite objective, and refines around the top-K elite. This scales
+        to the larger regime-conditional parameter space without running 1000s
+        of variations, and it directly optimises the PnL-maximising objective.
+
+        No new dependencies — uses stdlib ``random``. Deterministic with
+        ``random.seed(42)``.
+        """
+        import random
+        from engine.objective import ObjectiveWeights, score_variation
+
+        rng = random.Random(42)
+        weights = ObjectiveWeights.from_config(objective)
+
+        # Build sampling ranges from the seed variations
+        def _range(key, lo_default, hi_default, is_int=False):
+            vals = seed_variations.get(key)
+            if vals:
+                lo, hi = float(min(vals)), float(max(vals))
+            else:
+                lo, hi = lo_default, hi_default
+            if is_int:
+                return (int(round(lo)), int(round(hi)))
+            return (lo, hi)
+
+        dip_r = _range("dip_threshold", 0.02, 0.10)
+        tp_r = _range("take_profit", 0.005, 0.04)
+        sl_r = _range("stop_loss", 0.003, 0.02)
+        hd_r = _range("hold_days", 1, 5, is_int=True)
+        ps_r = _range("position_size", 0.05, 0.12)
+
+        def _sample():
+            return {
+                "dip_threshold": round(rng.uniform(*dip_r), 4),
+                "take_profit": round(rng.uniform(*tp_r), 4),
+                "stop_loss": round(rng.uniform(*sl_r), 4),
+                "hold_days": rng.randint(*hd_r),
+                "position_size": round(rng.uniform(*ps_r), 3),
+            }
+
+        def _perturb(base, frac=0.15):
+            p = {}
+            for k, v in base.items():
+                if isinstance(v, int):
+                    p[k] = max(1, v + rng.choice([-1, 0, 1]))
+                else:
+                    lo = max(0.001, v * (1 - frac))
+                    hi = v * (1 + frac)
+                    p[k] = round(rng.uniform(lo, hi), 4)
+            return p
+
+        def _eval(params, idx):
+            try:
+                bt_result = backtest_buy_the_dip(
+                    symbols=symbols, start_date=start_date, end_date=end_date,
+                    initial_capital=initial_capital,
+                    position_size=params["position_size"],
+                    dip_threshold=params["dip_threshold"],
+                    hold_days=params["hold_days"],
+                    take_profit=params["take_profit"],
+                    stop_loss=params["stop_loss"],
+                    data_source=data_source,
+                    extended_hours=extended_hours, intraday_exit=intraday_exit,
+                    pdt_protection=pdt_protection,
+                )
+                if bt_result is None:
+                    return {"run_id": run_id, "variation_index": idx, "params": params,
+                            "error": "no_price_data", "sharpe_ratio": 0}
+                trades_df, metrics, _ = bt_result
+                trades_list = trades_df.to_dict(orient="records") if trades_df is not None and not trades_df.empty else []
+                return {
+                    "run_id": run_id, "variation_index": idx, "params": {**params, "symbols": symbols},
+                    "total_return": metrics.get("total_return", 0),
+                    "total_pnl": metrics.get("total_pnl", 0),
+                    "win_rate": metrics.get("win_rate", 0),
+                    "total_trades": metrics.get("total_trades", 0),
+                    "sharpe_ratio": metrics.get("sharpe_ratio", 0),
+                    "max_drawdown": metrics.get("max_drawdown", 0),
+                    "annualized_return": metrics.get("annualized_return", 0),
+                    "trades_count": len(trades_df) if trades_df is not None else 0,
+                    "trades": trades_list,
+                }
+            except Exception as e:  # noqa: BLE001
+                return {"run_id": run_id, "variation_index": idx, "params": params,
+                        "error": str(e), "sharpe_ratio": 0}
+
+        results: List[Dict] = []
+        # Phase 1: random exploration (half the budget)
+        n_explore = n_iter // 2
+        for i in range(n_explore):
+            params = _sample()
+            logger.info(f"  [adaptive {i + 1}/{n_iter}] {params}")
+            results.append(_eval(params, i))
+
+        # Phase 2: elite refinement around the top-K scored results
+        scored = [(r, score_variation(r, weights)) for r in results]
+        elites = [r for r, s in sorted(scored, key=lambda x: x[1] or -1e9, reverse=True)
+                  if s is not None][:5]
+        for j in range(n_iter - n_explore):
+            if not elites:
+                params = _sample()
+            else:
+                base = rng.choice(elites).get("params", {})
+                params = _perturb({k: v for k, v in base.items() if k != "symbols"})
+            idx = n_explore + j
+            logger.info(f"  [refine {idx}/{n_iter}] {params}")
+            results.append(_eval(params, idx))
+
+        logger.info(f"Adaptive search: {len(results)} variations evaluated")
         return results
 
     def _run_momentum(self, symbols, start_date, end_date, initial_capital,
