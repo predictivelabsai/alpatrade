@@ -850,13 +850,15 @@ def _chat_role(model=None) -> RoleSpec:
 langgraph_agent = chat_runtime.build(_chat_role())
 
 
-# Per-user agents, cached by (provider, model) so a user's Settings choice takes
-# effect without rebuilding the tool graph on every request.
+# Per-user agents, cached by (provider, model, framework) so a user's Settings
+# choice takes effect without rebuilding the tool graph on every request.
+# Phase 3b: framework is now part of the cache key and resolved per-miss, so
+# changing agent_framework in the UI takes effect on the next message (no restart).
 _agent_cache: dict = {}
 
 
 def agent_for_user(user_id: str | None):
-    """Return the chat agent for a user's resolved model settings.
+    """Return the chat agent for a user's resolved model + framework settings.
 
     Falls back to the shared default agent when the user has no override or the
     override matches the default (keeping a single hot agent for anonymous use)."""
@@ -864,15 +866,22 @@ def agent_for_user(user_id: str | None):
         return langgraph_agent
     try:
         s = get_settings(user_id)
-        key = (s.model_provider, s.model_name)
+        key = (s.model_provider, s.model_name, s.agent_framework)
         default = get_settings()
-        if key == (default.model_provider, default.model_name):
+        if key == (default.model_provider, default.model_name, default.agent_framework):
             return langgraph_agent
         if key not in _agent_cache:
-            _agent_cache[key] = chat_runtime.build(_chat_role(build_chat_model(s, streaming=True)))
+            # Resolve the runtime per-miss so a framework change is picked up.
+            user_runtime = get_runtime(s.agent_framework)
+            _agent_cache[key] = user_runtime.build(_chat_role(build_chat_model(s, streaming=True)))
         return _agent_cache[key]
     except Exception:  # noqa: BLE001 — never let model selection break chat
         return langgraph_agent
+
+
+def clear_agent_cache() -> None:
+    """Evict all cached per-user agents. Call on settings change (Phase 3b)."""
+    _agent_cache.clear()
 
 
 # ---------------------------------------------------------------------------

@@ -180,6 +180,46 @@ tests/test_ui_navigation.py -q` → 41 passed. Adaptive backtest with
 `regime=normal` ran 12 variations and selected best by composite score
 (ann_ret 9.8%, max_dd 0.22%, 62 trades).
 
+### Phase 3a — Route autonomy nodes through the runtime layer (DONE)
+
+**What changed**
+- New `engine/autonomy/reason.py`: `reason(prompt)` builds a one-shot
+  agent from the configured runtime (LangGraph / deepagents / hermes /
+  pydantic-ai) via `get_runtime()` and returns the text. Best-effort:
+  returns `""` on any failure so nodes fall back to the deterministic path.
+- Module-level cache rebuilds when `agent_framework` changes, so a
+  settings swap is picked up on the next call (no restart).
+- The `promote` node in `default_pipeline()` now calls `reason()` to get
+  an LLM-annotated recommendation on which strategies are most robust,
+  while the deterministic `PromotionBar` (`promote.py`) stays as the hard
+  gate — the LLM never decides alone; `allow_live=False` is never bypassed.
+
+**Why** — the pipeline nodes called the legacy `Orchestrator`/`ReportAgent`
+directly, bypassing the runtime abstraction. Now deepagents' planning +
+subagents can drive the promotion reasoning, and the framework swap is
+real (not just for the chat agent).
+
+### Phase 3b — Hot-swap framework without restart (DONE)
+
+**What changed**
+- `agui_app.py`: the per-user agent cache key now includes
+  `agent_framework` (was `(provider, model)` only). `get_runtime()` is
+  called per cache miss instead of reusing the import-time `chat_runtime`,
+  so changing `agent_framework` in the UI takes effect on the next message.
+- New `clear_agent_cache()` in `agui_app.py` and `clear_reasoning_cache()`
+  in `engine/autonomy/reason.py`.
+- `ph_settings.py` POST `/settings/preferences` now calls both cache
+  evictions on save, so a framework/model change is live immediately —
+  no process restart.
+- Settings UI labels updated: hermes → "hermes (LangGraph + notifier)",
+  deepagents → "deepagents (planning + subagents)" (was "coming soon").
+
+**Why** — changing `agent_framework` previously required a process restart
+because `chat_runtime` was bound at import and the cache key excluded the
+framework. Now the user's choice is live on the next message/reasoning call.
+
+**Verified** — compile + 41 tests pass.
+
 ---
 
 ## Remaining plan

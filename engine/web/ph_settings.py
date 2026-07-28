@@ -167,9 +167,9 @@ def _settings_page(user, msg: str = ""):
                         cls="s-row"),
                     Div(Label("Agent framework"),
                         Select(*_opts(AGENT_FRAMEWORKS, s.agent_framework,
-                                      labels={"hermes": "hermes (coming soon)",
-                                              "deepagents": "deepagents (coming soon)"}),
-                               name="agent_framework"),
+                                      labels={"hermes": "hermes (LangGraph + notifier)",
+                                              "deepagents": "deepagents (planning + subagents)"}),
+                                name="agent_framework"),
                         cls="s-row"),
                     cls="s-grid",
                 ),
@@ -216,6 +216,18 @@ def register(app, rt):
         from engine.auth import store_user_settings, USER_SETTING_FIELDS
         store_user_settings(user["user_id"],
                             **{f: (form.get(f) or "").strip() for f in USER_SETTING_FIELDS})
+        # Phase 3b: evict cached chat + reasoning agents so the new framework/model
+        # takes effect on the next message/reasoning call (no process restart).
+        try:
+            from agui_app import clear_agent_cache
+            clear_agent_cache()
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            from engine.autonomy.reason import clear_reasoning_cache
+            clear_reasoning_cache()
+        except Exception:  # noqa: BLE001
+            pass
         return RedirectResponse("/settings?msg=saved", status_code=303)
 
     return ["/settings", "/settings/keys", "/settings/preferences"]

@@ -192,9 +192,31 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
     def promote(ctx):
         from agents.report_agent import ReportAgent
         from engine.autonomy import promote as _promote, notify as _notify
+        from engine.autonomy.reason import reason
         strategies = ReportAgent().top_strategies(trade_type="paper", limit=10) or []
         if isinstance(strategies, dict):
             strategies = strategies.get("strategies", [])
+        # Phase 3a: let the configured runtime (LangGraph/deepagents/hermes)
+        # reason about which strategies are strongest. The deterministic
+        # PromotionBar (promote.py) stays as the hard gate — the LLM never
+        # decides alone; it only annotates the recommendation.
+        if strategies and reason:
+            try:
+                summary_lines = [
+                    f"- {s.get('strategy_slug','?')}: pnl={s.get('total_pnl','?')} "
+                    f"sharpe={s.get('sharpe_ratio','?')} trades={s.get('total_trades','?')}"
+                    for s in strategies[:10]
+                ]
+                llm_note = reason(
+                    "Given these paper-trading strategies ranked by PnL, "
+                    "which 1-3 show the most robust risk-adjusted profile "
+                    "(high Sharpe, reasonable drawdown, enough trades)? "
+                    "Be concise.\n" + "\n".join(summary_lines)
+                )
+                if llm_note:
+                    store.append_event(ctx.get("run_id"), f"promote reasoning: {llm_note[:200]}")
+            except Exception:  # noqa: BLE001
+                pass
         promoted = _promote.run_promotions(strategies, run_id=ctx.get("run_id"))
         if promoted:
             _notify.send_promotion_digest(promoted)
