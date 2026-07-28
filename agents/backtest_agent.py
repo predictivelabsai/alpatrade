@@ -111,6 +111,20 @@ class BacktestAgent:
         if not variations:
             variations = DEFAULT_VARIATIONS.get(strategy, {})
 
+        # Extract scalar regime flags (vol_target, atr_exit_mult) that ride
+        # alongside the grid lists in the regime preset. They're not swept —
+        # they're mode flags applied to every variation in the grid.
+        vol_target = request.get("vol_target")
+        atr_exit_mult = request.get("atr_exit_mult")
+        if isinstance(variations.get("vol_target"), (int, float)):
+            if vol_target is None:
+                vol_target = float(variations["vol_target"])
+            variations = {k: v for k, v in variations.items() if k != "vol_target"}
+        if isinstance(variations.get("atr_exit_mult"), (int, float)):
+            if atr_exit_mult is None:
+                atr_exit_mult = float(variations["atr_exit_mult"])
+            variations = {k: v for k, v in variations.items() if k != "atr_exit_mult"}
+
         logger.info(f"Backtest agent starting run {run_id}")
         logger.info(f"Strategy: {strategy}, Symbols: {symbols}")
         logger.info(f"Date range: {start_date.date()} to {end_date.date()}")
@@ -134,6 +148,7 @@ class BacktestAgent:
                         pdt_protection=pdt_protection,
                         objective=request.get("objective") or {},
                         n_iter=int(request.get("adaptive_iterations", 40)),
+                        vol_target=vol_target, atr_exit_mult=atr_exit_mult,
                     )
                 except Exception as e:  # noqa: BLE001
                     logger.warning(f"Adaptive search failed ({e}); falling back to static grid.")
@@ -143,6 +158,7 @@ class BacktestAgent:
                         variations=variations, run_id=run_id,
                         extended_hours=extended_hours, intraday_exit=intraday_exit,
                         pdt_protection=pdt_protection,
+                        vol_target=vol_target, atr_exit_mult=atr_exit_mult,
                     )
             else:
                 results = self._run_buy_the_dip_grid(
@@ -156,6 +172,8 @@ class BacktestAgent:
                     extended_hours=extended_hours,
                     intraday_exit=intraday_exit,
                     pdt_protection=pdt_protection,
+                    vol_target=vol_target,
+                    atr_exit_mult=atr_exit_mult,
                 )
         elif strategy == "momentum":
             results = self._run_momentum(
@@ -246,6 +264,8 @@ class BacktestAgent:
         extended_hours: bool = True,
         intraday_exit: bool = False,
         pdt_protection: Optional[bool] = None,
+        vol_target: Optional[float] = None,
+        atr_exit_mult: Optional[float] = None,
     ) -> List[Dict]:
         """Run buy-the-dip backtests across a parameter grid."""
         dip_thresholds = variations.get("dip_threshold", [0.05])
@@ -280,6 +300,8 @@ class BacktestAgent:
                     extended_hours=extended_hours,
                     intraday_exit=intraday_exit,
                     pdt_protection=pdt_protection,
+                    vol_target=vol_target,
+                    atr_exit_mult=atr_exit_mult,
                 )
 
                 # backtest_buy_the_dip returns None when no price data available
@@ -352,6 +374,8 @@ class BacktestAgent:
         pdt_protection=None,
         objective: Optional[Dict] = None,
         n_iter: int = 40,
+        vol_target: Optional[float] = None,
+        atr_exit_mult: Optional[float] = None,
     ) -> List[Dict]:
         """Adaptive random-search + elite refinement against the Phase-1 objective.
 
@@ -421,6 +445,7 @@ class BacktestAgent:
                     data_source=data_source,
                     extended_hours=extended_hours, intraday_exit=intraday_exit,
                     pdt_protection=pdt_protection,
+                    vol_target=vol_target, atr_exit_mult=atr_exit_mult,
                 )
                 if bt_result is None:
                     return {"run_id": run_id, "variation_index": idx, "params": params,

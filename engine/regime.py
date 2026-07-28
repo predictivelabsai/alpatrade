@@ -218,7 +218,8 @@ REGIME_PARAMS = {
             "stop_loss": [0.01, 0.015],
             "hold_days": [3, 5],
             "position_size": [0.05, 0.06],
-            # Future: vol_scale_position: true, atr_exit: {mult: [1.5, 2.0, 3.0]}
+            "vol_target": 0.12,         # annualised — scale size ∝ 1/realised_vol
+            "atr_exit_mult": 2.0,       # TP/SL as 2×ATR multiples instead of fixed %
         },
     },
 }

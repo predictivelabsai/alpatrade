@@ -8,6 +8,28 @@ import numpy as np
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 import pytz
+import math
+
+
+def _atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
+    """Average True Range (Wilder-style SMA of true range)."""
+    high = df['High']
+    low = df['Low']
+    close = df['Close']
+    prev_close = close.shift(1)
+    tr = pd.concat([(high - low), (high - prev_close).abs(), (low - prev_close).abs()], axis=1).max(axis=1)
+    return tr.rolling(period, min_periods=1).mean()
+
+
+def _realised_vol_annualised(df: pd.DataFrame, lookback: int = 21) -> Optional[float]:
+    """Annualised realised vol from daily returns over the last `lookback` bars."""
+    closes = df['Close'].iloc[-(lookback + 1):]
+    if len(closes) < 5:
+        return None
+    rets = closes.pct_change().dropna()
+    if len(rets) < 3:
+        return None
+    return float(rets.std() * math.sqrt(252))
 from utils.massive_util import is_market_open, MassiveUtil
 from utils.pdt_tracker import PDTTracker
 from utils.data_loader import get_intraday_data, get_historical_data
@@ -73,7 +95,9 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                         include_taf_fees: bool = False, include_cat_fees: bool = False,
                         pdt_protection: Optional[bool] = None,
                         extended_hours: bool = False,
-                        intraday_exit: bool = False) -> Tuple[pd.DataFrame, Dict]:
+                        intraday_exit: bool = False,
+                        vol_target: Optional[float] = None,
+                        atr_exit_mult: Optional[float] = None) -> Tuple[pd.DataFrame, Dict]:
     """
     Backtest buy-the-dip strategy
     
@@ -98,6 +122,12 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
         extended_hours: If True, allow trades during 4AM-8PM ET (pre-market + after-hours).
         intraday_exit: If True, use 5-min intraday bars to determine exact TP/SL exit
                        within the day (determines which hits first). No same-day re-entry.
+        vol_target: If set (annualised, e.g. 0.10), scale position size inversely to
+                    realised vol: size ∝ vol_target / realised_vol (capped at position_size).
+                    None = fixed-fraction (default, back-compat).
+        atr_exit_mult: If set (e.g. 1.5 or 2.0), compute TP/SL as ATR multiples instead
+                       of fixed percentages: TP = entry + atr_exit_mult*ATR,
+                       SL = entry - atr_exit_mult*ATR. None = fixed-% (default).
 
     Returns:
         Tuple of (trades_df, metrics_dict, equity_df)
@@ -350,27 +380,47 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
             dip_pct = (recent_high - current_price) / recent_high
             
             if dip_pct >= dip_threshold:
-                # Enter trade
-                shares = int((available_capital * position_size) / current_price)
+                # Enter trade — size and exits may be vol-aware (Phase 2d)
+                effective_size = position_size
+                if vol_target is not None:
+                    rv = _realised_vol_annualised(historical)
+                    if rv and rv > 0:
+                        # size ∝ vol_target / realised_vol, capped at position_size
+                        effective_size = min(position_size, vol_target / rv)
+
+                shares = int((available_capital * effective_size) / current_price)
                 if shares <= 0:
                     continue
-                
+
                 # Check for enough capital
                 cost = current_price * shares
                 if cost > available_capital:
                     shares = int(available_capital / current_price)
                     cost = current_price * shares
                     if shares <= 0: continue
-                
+
+                # TP/SL: ATR multiples when atr_exit_mult is set, else fixed %
+                if atr_exit_mult is not None:
+                    atr_val = float(_atr(historical).iloc[-1]) if len(historical) >= 14 else None
+                    if atr_val and atr_val > 0:
+                        tp_price = current_price + atr_exit_mult * atr_val
+                        sl_price = current_price - atr_exit_mult * atr_val
+                    else:
+                        tp_price = current_price * (1 + take_profit)
+                        sl_price = current_price * (1 - stop_loss)
+                else:
+                    tp_price = current_price * (1 + take_profit)
+                    sl_price = current_price * (1 - stop_loss)
+
                 available_capital -= cost
-                
+
                 active_trades[symbol] = {
                     'entry_time': display_time,
                     'entry_date_raw': current_date.date(),
                     'entry_price': current_price,
                     'shares': shares,
-                    'target_price': current_price * (1 + take_profit),
-                    'stop_price': current_price * (1 - stop_loss),
+                    'target_price': tp_price,
+                    'stop_price': sl_price,
                     'max_exit_time': current_date + timedelta(days=hold_days),
                     'dip_pct': dip_pct
                 }

@@ -145,6 +145,41 @@ regime-conditional parameter space without running 1000s of variations.
 
 **Verified** — compile + 34 tests pass.
 
+### Phase 2d — Vol-scaled sizing + ATR exits (DONE)
+
+**What changed**
+- `utils/buy_the_dip.py`: two new optional params on
+  `backtest_buy_the_dip()`:
+  - `vol_target` (annualised, e.g. 0.12): scales position size ∝
+    `vol_target / realised_vol` (capped at `position_size`). Replaces
+    fixed-fraction sizing when set. None = back-compat fixed fraction.
+  - `atr_exit_mult` (e.g. 1.5 or 2.0): computes TP/SL as ATR multiples
+    (`entry ± atr_exit_mult × ATR`) instead of fixed percentages. Falls
+    back to fixed-% when ATR is unavailable. None = back-compat fixed %.
+- New helpers `_atr()` and `_realised_vol_annualised()` in
+  `buy_the_dip.py` (revives the ATR concept that was dead code in
+  `box_wedge.py:40-46`).
+- `BacktestAgent` threads `vol_target` / `atr_exit_mult` from the request
+  or regime preset into both the static grid and adaptive search paths.
+- The `high_vol` regime preset now sets `vol_target=0.12` and
+  `atr_exit_mult=2.0` — so high-vol regimes automatically vol-scale
+  sizing and use ATR-based exits.
+- 7 DB-free tests in `tests/test_vol_sizing.py` (ATR, realised vol,
+  regime preset wiring).
+
+**Why** — position sizing was fixed-fraction everywhere and TP/SL were
+fixed percentages, regardless of volatility. Now in high-vol regimes the
+system sizes inversely to realised vol (smaller positions when vol spikes)
+and sets exits relative to actual range (ATR), which is the standard
+risk-aware approach. This directly implements the "volatility dimensions
+as parameters" the user asked for.
+
+**Verified** — `python -m pytest tests/test_vol_sizing.py tests/test_regime.py
+tests/test_objective.py tests/test_refit.py tests/test_index_options.py
+tests/test_ui_navigation.py -q` → 41 passed. Adaptive backtest with
+`regime=normal` ran 12 variations and selected best by composite score
+(ann_ret 9.8%, max_dd 0.22%, 62 trades).
+
 ---
 
 ## Remaining plan
