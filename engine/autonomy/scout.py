@@ -27,6 +27,7 @@ _STRATEGY_NAMES = {
     "btd": "buy_the_dip", "buy_the_dip": "buy_the_dip",
     "mom": "momentum", "momentum": "momentum",
     "vix": "vix", "vix_strategy": "vix",
+    "bwg": "box_wedge", "box_wedge": "box_wedge",
 }
 
 

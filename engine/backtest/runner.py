@@ -89,6 +89,7 @@ def run_backtest(
     adjustment: str = data.DEFAULT_ADJUSTMENT,
     spread_bps: float = 0.0,
     slippage_bps: float = 5.0,
+    vol_scale: float = 0.0,
     fractional: bool = False,
     seed: int = 42,
     artifact_root: Path = ARTIFACT_ROOT,
@@ -123,7 +124,8 @@ def run_backtest(
         "adjustment": adjustment,
         "initial_capital": initial_capital,
         "fill_model": fill_model,
-        "friction": {"spread_bps": spread_bps, "slippage_bps": slippage_bps},
+        "friction": {"spread_bps": spread_bps, "slippage_bps": slippage_bps,
+                     "vol_scale": vol_scale},
         "fractional": fractional,
         "seed": seed,
         "start": start.isoformat(),
@@ -207,6 +209,8 @@ def _parse_args(argv=None):
     p.add_argument("--take-profit", type=float, default=0.03)
     p.add_argument("--stop-loss", type=float, default=0.02)
     p.add_argument("--hold-days", type=int, default=5)
+    p.add_argument("--vol-scale", type=float, default=0.0,
+                   help="Vol-dependent slippage scaling (0=off, ~0.5=moderate)")
     return p.parse_args(argv)
 
 
@@ -229,6 +233,7 @@ def main(argv=None):
         fill_model=a.fill_model,
         interval=a.interval,
         feed=a.feed,
+        vol_scale=a.vol_scale,
         request=f"CLI backtest {a.strategy} on {a.symbols}",
     )
     t5 = res.teaching_five

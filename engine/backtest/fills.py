@@ -27,6 +27,11 @@ DEFAULT_FILL_MODEL = "next_open"
 class Friction:
     spread_bps: float = 0.0
     slippage_bps: float = 5.0
+    # Vol-dependent slippage (Phase 4c): when vol_scale is set (>0), the
+    # effective slippage is scaled by (1 + vol_scale * vol_ratio), where
+    # vol_ratio is the bar's true-range / price (a proxy for intraday vol).
+    # 0.0 = fixed slippage (back-compat). ~0.5 is a reasonable starting point.
+    vol_scale: float = 0.0
 
     @property
     def pct(self) -> float:
@@ -37,6 +42,26 @@ class Friction:
 
     def sell(self, price: float) -> float:
         return price * (1 - self.pct)
+
+    def for_bar(self, bar: dict) -> "Friction":
+        """Return a Friction with slippage scaled by the bar's intraday vol.
+
+        vol_ratio = (high - low) / close — a simple true-range proxy. When
+        vol_scale > 0 and the bar has h/l/c, slippage grows in volatile bars
+        (closer to real execution). Falls back to self when bar data is missing.
+        """
+        if self.vol_scale <= 0:
+            return self
+        try:
+            h, l, c = float(bar["h"]), float(bar["l"]), float(bar["c"])
+        except (KeyError, TypeError, ValueError):
+            return self
+        if c <= 0 or h <= l:
+            return self
+        vol_ratio = (h - l) / c
+        scaled_slip = self.slippage_bps * (1.0 + self.vol_scale * vol_ratio)
+        return Friction(spread_bps=self.spread_bps, slippage_bps=scaled_slip,
+                        vol_scale=0.0)  # avoid double-scaling
 
 
 def size_shares(cash: float, fraction: float, signal_close: float, fractional: bool = False) -> float:
@@ -51,20 +76,23 @@ def fill_price_for_bar(model: str, side: str, bar: dict, friction: Friction) -> 
     """Return the friction-adjusted fill price for a market order under a fill model.
 
     `bar` is the bar at the fill timestamp (for next_open: bar t+1; for same_bar: bar t).
-    Field used: open for next_open/time_based, close for same_bar.
+    Field used: open for next_open/time_based, close for same_bar. When
+    ``friction.vol_scale > 0``, slippage is scaled by the bar's intraday vol.
     """
+    f = friction.for_bar(bar)
     base = bar["o"] if model in ("next_open", "time_based") else bar["c"]
-    return friction.buy(base) if side == "buy" else friction.sell(base)
+    return f.buy(base) if side == "buy" else f.sell(base)
 
 
 def stop_fill(side: str, stop_level: float, bar: dict, friction: Friction) -> float | None:
     """Conservative stop fill on a bar (skill stop rules). Returns fill price or None."""
+    f = friction.for_bar(bar)
     if side == "sell":  # protective stop on a long
         if bar["l"] <= stop_level:
-            return friction.sell(min(bar["o"], stop_level))
+            return f.sell(min(bar["o"], stop_level))
     else:  # buy stop
         if bar["h"] >= stop_level:
-            return friction.buy(max(bar["o"], stop_level))
+            return f.buy(max(bar["o"], stop_level))
     return None
 
 

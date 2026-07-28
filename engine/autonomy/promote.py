@@ -12,10 +12,12 @@ from typing import Optional
 
 @dataclass(frozen=True)
 class PromotionBar:
-    min_sharpe: float = 1.0
+    min_sharpe: float = 1.5          # raised from 1.0 (Phase 4d) — align with objective
     min_return_pct: float = 0.0
     max_drawdown_pct: float = 20.0   # maximum allowed drawdown (positive %)
-    min_trades: int = 5
+    min_trades: int = 20             # raised from 5 (Phase 4d) — match objective gate
+    min_sortino: float = 1.0         # new (Phase 4a) — downside-aware gate
+    min_regime_coverage: int = 2     # new (Phase 4d) — must have traded in ≥ N regimes
 
 
 def _num(metrics: dict, *keys) -> float:
@@ -32,16 +34,22 @@ def should_promote(metrics: dict, bar: PromotionBar = PromotionBar()) -> tuple[b
     """Pure gate: does this strategy's paper record clear the promotion bar?"""
     trades = int(_num(metrics, "total_trades", "trades", "num_trades"))
     sharpe = _num(metrics, "sharpe", "sharpe_ratio")
+    sortino = _num(metrics, "sortino", "sortino_ratio")
     ret = _num(metrics, "total_return", "return_pct", "total_return_pct")
     dd = abs(_num(metrics, "max_drawdown", "max_drawdown_pct", "maxdd"))
+    regimes = int(_num(metrics, "regime_coverage", "regimes_traded"))
     if trades < bar.min_trades:
         return False, f"too few trades ({trades} < {bar.min_trades})"
     if sharpe < bar.min_sharpe:
         return False, f"sharpe {sharpe:.2f} < {bar.min_sharpe}"
+    if sortino < bar.min_sortino:
+        return False, f"sortino {sortino:.2f} < {bar.min_sortino}"
     if ret < bar.min_return_pct:
         return False, f"return {ret:.2f}% < {bar.min_return_pct}%"
     if dd > bar.max_drawdown_pct:
         return False, f"drawdown {dd:.2f}% > {bar.max_drawdown_pct}%"
+    if regimes and regimes < bar.min_regime_coverage:
+        return False, f"regime coverage {regimes} < {bar.min_regime_coverage}"
     return True, "meets promotion bar"
 
 

@@ -7,11 +7,19 @@ unseen TEST window and record the **out-of-sample PnL**. Optimising and reportin
 PnL only (no Sharpe). Also runs a fixed naive-default config on each test window as a
 baseline, to show whether per-fold optimisation actually adds PnL or just over-fits.
 
-Usage: python scripts/walk_forward_btd.py
+``--by-regime`` (Phase 4b): instead of fixed calendar folds, segment the test
+windows by the market regime classifier (`engine.regime`). Each fold's test
+window covers a single regime state, and the train window is the preceding
+period of the *same* regime — so you see how a config chosen in one
+low-vol/bear window transfers to the next low-vol/bear window. This is the
+regime-conditional stability test that pure calendar folds miss.
+
+Usage: python scripts/walk_forward_btd.py [--by-regime]
 Writes docs/walk_forward_btd_<ts>.md (+ PDF rendered separately).
 """
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from datetime import datetime, timedelta, timezone
@@ -61,19 +69,78 @@ def _pin(params: dict) -> dict:
     return {k: [params[k]] for k in GRID if k in params}
 
 
-def main() -> int:
-    today = datetime.now()
-    folds = []
-    for i in range(FOLDS):
-        test_end = today - timedelta(days=i * TEST_DAYS)
-        test_start = test_end - timedelta(days=TEST_DAYS)
+def _regime_folds(today: datetime, test_days: int, folds: int) -> list:
+    """Generate folds segmented by market regime (Phase 4b).
+
+    For each of the last `folds` calendar test windows, classify the regime
+    of the test window's start date and label the fold. The train window is
+    the preceding `TRAIN_DAYS` of the *same* regime state (scanned backwards
+    from the test start until enough same-regime days are found, up to a
+    2× lookback cap). Falls back to a plain calendar train window if the
+    regime classifier is unavailable.
+    """
+    try:
+        from engine.regime import classify_regime
+    except Exception:  # noqa: BLE001
+        classify_regime = None
+
+    out = []
+    for i in range(folds):
+        test_end = today - timedelta(days=i * test_days)
+        test_start = test_end - timedelta(days=test_days)
         train_end = test_start
-        train_start = train_end - timedelta(days=TRAIN_DAYS)
-        folds.append((train_start, train_end, test_start, test_end))
-    folds.reverse()  # oldest → newest
+        # Try to find a train window in the same regime
+        regime_label = None
+        if classify_regime:
+            try:
+                regime_label = classify_regime(test_start).state
+            except Exception:  # noqa: BLE001
+                pass
+        # Scan backwards for same-regime days (up to 2x TRAIN_DAYS)
+        if regime_label and classify_regime:
+            collected = []
+            scan = train_end
+            for _ in range(TRAIN_DAYS * 2):
+                try:
+                    if classify_regime(scan).state == regime_label:
+                        collected.append(scan)
+                except Exception:  # noqa: BLE001
+                    pass
+                scan -= timedelta(days=1)
+                if len(collected) >= TRAIN_DAYS:
+                    break
+            if len(collected) >= TRAIN_DAYS // 2:
+                train_start = collected[-1] - timedelta(days=TRAIN_DAYS)
+            else:
+                train_start = train_end - timedelta(days=TRAIN_DAYS)
+        else:
+            train_start = train_end - timedelta(days=TRAIN_DAYS)
+        out.append((train_start, train_end, test_start, test_end, regime_label or "unknown"))
+    out.reverse()
+    return out
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--by-regime", action="store_true",
+                    help="Segment folds by market regime (Phase 4b)")
+    args = ap.parse_args()
+
+    today = datetime.now()
+    if args.by_regime:
+        folds = _regime_folds(today, TEST_DAYS, FOLDS)
+    else:
+        folds = [(today - timedelta(days=i * TEST_DAYS) - timedelta(days=TEST_DAYS + TRAIN_DAYS),
+                  today - timedelta(days=i * TEST_DAYS) - timedelta(days=TEST_DAYS),
+                  today - timedelta(days=i * TEST_DAYS) - timedelta(days=TEST_DAYS),
+                  today - timedelta(days=i * TEST_DAYS), None)
+                 for i in range(FOLDS)]
+        folds.reverse()
+        folds = [(tr_s, tr_e, te_s, te_e, None) for (tr_s, tr_e, te_s, te_e) in
+                 [(f[0], f[1], f[2], f[3]) for f in folds]]
 
     rows = []
-    for (tr_s, tr_e, te_s, te_e) in folds:
+    for (tr_s, tr_e, te_s, te_e, regime) in folds:
         try:
             grid = _backtest(tr_s, tr_e, GRID)
             grid = [g for g in grid if g["params"]]
@@ -88,12 +155,13 @@ def main() -> int:
             base_pnl = _pnl(base[0]["return_pct"]) if base else 0.0
             rows.append({
                 "test_period": f"{te_s.date()}→{te_e.date()}",
+                "regime": regime or "",
                 "params": {k: best["params"].get(k) for k in ("dip_threshold", "take_profit", "hold_days")},
                 "is_pnl": round(is_pnl, 0), "oos_pnl": round(oos_pnl, 0),
                 "oos_trades": oos_trades, "base_pnl": round(base_pnl, 0),
             })
-            print(f"  {te_s.date()}→{te_e.date()}  IS=${is_pnl:,.0f}  OOS=${oos_pnl:,.0f}  "
-                  f"(trades {oos_trades})  naive=${base_pnl:,.0f}")
+            print(f"  {te_s.date()}→{te_e.date()} [{regime or '?'}]  IS=${is_pnl:,.0f}  "
+                  f"OOS=${oos_pnl:,.0f}  (trades {oos_trades})  naive=${base_pnl:,.0f}")
         except Exception as e:  # noqa: BLE001
             print(f"  fold {te_s.date()} failed: {e}")
 
@@ -117,13 +185,22 @@ def main() -> int:
       "config on the next, unseen **test** window. **OOS PnL** is the honest number — money the "
       "just-optimised config made on data it never saw. Naive = a fixed default config, untouched.\n")
     a("## Fold-by-fold (out-of-sample)\n")
-    a("| Test window | Chosen dip/TP/hold | In-sample PnL | **OOS PnL** | OOS trades | Naive PnL |")
-    a("|---|---|---:|---:|---:|---:|")
-    for r in rows:
-        p = r["params"]
-        a(f"| {r['test_period']} | {p['dip_threshold']}/{p['take_profit']}/{p['hold_days']} | "
-          f"${r['is_pnl']:,.0f} | **${r['oos_pnl']:,.0f}** | {r['oos_trades']} | ${r['base_pnl']:,.0f} |")
-    a(f"| **Total** | | ${tot_is:,.0f} | **${tot_oos:,.0f}** | | ${tot_base:,.0f} |\n")
+    if any(r.get("regime") for r in rows):
+        a("| Test window | Regime | Chosen dip/TP/hold | In-sample PnL | **OOS PnL** | OOS trades | Naive PnL |")
+        a("|---|---|---|---:|---:|---:|---:|")
+        for r in rows:
+            p = r["params"]
+            a(f"| {r['test_period']} | {r.get('regime','?')} | {p['dip_threshold']}/{p['take_profit']}/{p['hold_days']} | "
+              f"${r['is_pnl']:,.0f} | **${r['oos_pnl']:,.0f}** | {r['oos_trades']} | ${r['base_pnl']:,.0f} |")
+        a(f"| **Total** | | | ${tot_is:,.0f} | **${tot_oos:,.0f}** | | ${tot_base:,.0f} |\n")
+    else:
+        a("| Test window | Chosen dip/TP/hold | In-sample PnL | **OOS PnL** | OOS trades | Naive PnL |")
+        a("|---|---|---:|---:|---:|---:|")
+        for r in rows:
+            p = r["params"]
+            a(f"| {r['test_period']} | {p['dip_threshold']}/{p['take_profit']}/{p['hold_days']} | "
+              f"${r['is_pnl']:,.0f} | **${r['oos_pnl']:,.0f}** | {r['oos_trades']} | ${r['base_pnl']:,.0f} |")
+        a(f"| **Total** | | ${tot_is:,.0f} | **${tot_oos:,.0f}** | | ${tot_base:,.0f} |\n")
     a("## Verdict (PnL)\n")
     a(f"- **Out-of-sample PnL: ${tot_oos:,.0f}** across {len(rows)} folds "
       f"(${CAPITAL:,.0f}/fold), profitable in **{oos_wins}/{len(rows)}** folds.")

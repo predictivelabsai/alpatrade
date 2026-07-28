@@ -50,7 +50,14 @@ def get_intraday_data(ticker: str, interval: str = '1d', period: str = '30d') ->
 
 def calculate_metrics(trades_df: pd.DataFrame, initial_capital: float, 
                      start_date: datetime, end_date: datetime) -> Dict:
-    """Calculate backtest performance metrics"""
+    """Calculate backtest performance metrics.
+
+    Computes the core metrics plus two risk-adjusted ratios:
+      - **Sortino** — like Sharpe but penalises only downside volatility
+        (upside vol is not penalised). More relevant for asymmetric strategies.
+      - **Calmar** — annualised return / max drawdown. A direct return-per-
+        unit-of-pain measure; higher is better.
+    """
     
     if trades_df.empty:
         return {
@@ -62,7 +69,9 @@ def calculate_metrics(trades_df: pd.DataFrame, initial_capital: float,
             'losing_trades': 0,
             'annualized_return': 0.0,
             'max_drawdown': 0.0,
-            'sharpe_ratio': 0.0
+            'sharpe_ratio': 0.0,
+            'sortino_ratio': 0.0,
+            'calmar_ratio': 0.0,
         }
     
     final_capital = trades_df['capital_after'].iloc[-1]
@@ -88,6 +97,14 @@ def calculate_metrics(trades_df: pd.DataFrame, initial_capital: float,
     returns = trades_df['pnl_pct'].values
     sharpe_ratio = (returns.mean() / returns.std()) * np.sqrt(252) if returns.std() > 0 else 0
     
+    # Sortino ratio — penalises only downside volatility (Phase 4a)
+    downside = returns[returns < 0]
+    downside_std = downside.std() if len(downside) > 1 else 0.0
+    sortino_ratio = (returns.mean() / downside_std) * np.sqrt(252) if downside_std > 0 else 0.0
+    
+    # Calmar ratio — annualised return / max drawdown (Phase 4a)
+    calmar_ratio = (annualized_return / max_drawdown) if max_drawdown > 0 else 0.0
+    
     return {
         'total_return': total_return,
         'total_pnl': total_pnl,
@@ -97,7 +114,9 @@ def calculate_metrics(trades_df: pd.DataFrame, initial_capital: float,
         'losing_trades': losing_trades,
         'annualized_return': annualized_return,
         'max_drawdown': max_drawdown,
-        'sharpe_ratio': sharpe_ratio
+        'sharpe_ratio': sharpe_ratio,
+        'sortino_ratio': sortino_ratio,
+        'calmar_ratio': calmar_ratio,
     }
 
 

@@ -192,6 +192,14 @@ class BacktestAgent:
                 initial_capital=initial_capital,
                 run_id=run_id,
             )
+        elif strategy == "box_wedge":
+            results = self._run_box_wedge(
+                symbols=symbols,
+                start_date=start_date,
+                end_date=end_date,
+                initial_capital=initial_capital,
+                run_id=run_id,
+            )
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
 
@@ -223,6 +231,8 @@ class BacktestAgent:
                 {
                     "params": r.get("params"),
                     "sharpe_ratio": r.get("sharpe_ratio", 0),
+                    "sortino_ratio": r.get("sortino_ratio", 0),
+                    "calmar_ratio": r.get("calmar_ratio", 0),
                     "total_return": r.get("total_return", 0),
                     "annualized_return": r.get("annualized_return", 0),
                     "max_drawdown": r.get("max_drawdown", 0),
@@ -340,6 +350,8 @@ class BacktestAgent:
                     "win_rate": metrics.get("win_rate", 0),
                     "total_trades": metrics.get("total_trades", 0),
                     "sharpe_ratio": metrics.get("sharpe_ratio", 0),
+                    "sortino_ratio": metrics.get("sortino_ratio", 0),
+                    "calmar_ratio": metrics.get("calmar_ratio", 0),
                     "max_drawdown": metrics.get("max_drawdown", 0),
                     "annualized_return": metrics.get("annualized_return", 0),
                     "trades_count": len(trades_df) if trades_df is not None else 0,
@@ -534,11 +546,50 @@ class BacktestAgent:
                 "params": {"strategy": "vix"},
                 "total_return": metrics.get("total_return", 0),
                 "sharpe_ratio": metrics.get("sharpe_ratio", 0),
+                "sortino_ratio": metrics.get("sortino_ratio", 0),
+                "calmar_ratio": metrics.get("calmar_ratio", 0),
                 "win_rate": metrics.get("win_rate", 0),
                 "total_trades": metrics.get("total_trades", 0),
+                "max_drawdown": metrics.get("max_drawdown", 0),
+                "annualized_return": metrics.get("annualized_return", 0),
             }]
         except Exception as e:
             logger.error(f"VIX backtest failed: {e}")
+            return [{"run_id": run_id, "error": str(e), "sharpe_ratio": 0}]
+
+    def _run_box_wedge(self, symbols, start_date, end_date, initial_capital,
+                       run_id) -> List[Dict]:
+        """Run box-wedge backtest (single configuration).
+
+        Phase 4e: box_wedge was previously unreachable from the orchestrator
+        dispatch. It's the most vol-aware strategy in the repo (R-based
+        scale-out, SMA200 regime gate, ATR computed — though the ATR is
+        currently dead code). Wiring it in makes it available via
+        ``agent:backtest strategy:box_wedge`` and the autonomy pipeline.
+        """
+        try:
+            from utils.box_wedge import backtest_box_wedge_strategy
+            trades_df, metrics = backtest_box_wedge_strategy(
+                symbols=symbols,
+                start_date=start_date,
+                end_date=end_date,
+                initial_capital=initial_capital,
+            )
+            return [{
+                "run_id": run_id,
+                "variation_index": 0,
+                "params": {"strategy": "box_wedge"},
+                "total_return": metrics.get("total_return", 0),
+                "sharpe_ratio": metrics.get("sharpe_ratio", 0),
+                "sortino_ratio": metrics.get("sortino_ratio", 0),
+                "calmar_ratio": metrics.get("calmar_ratio", 0),
+                "win_rate": metrics.get("win_rate", 0),
+                "total_trades": metrics.get("total_trades", 0),
+                "max_drawdown": metrics.get("max_drawdown", 0),
+                "annualized_return": metrics.get("annualized_return", 0),
+            }]
+        except Exception as e:
+            logger.error(f"Box-wedge backtest failed: {e}")
             return [{"run_id": run_id, "error": str(e), "sharpe_ratio": 0}]
 
     def _store_results(self, run_id: str, best: Dict, all_results: List[Dict],

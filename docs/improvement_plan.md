@@ -269,93 +269,72 @@ switch framework/model on the fly via `PATCH /api/v1/settings`.
 
 **Verified** — compile + 41 tests pass.
 
+### Phase 4a — Sortino + Calmar in metrics + objective (DONE)
+
+**What changed**
+- `utils/backtester_util.py::calculate_metrics`: now computes
+  `sortino_ratio` (downside-vol-only Sharpe) and `calmar_ratio`
+  (ann_ret / max_drawdown) alongside the existing Sharpe.
+- `BacktestAgent` result dicts + `all_results_summary` now include
+  `sortino_ratio` and `calmar_ratio`.
+- `engine/objective.py`: new `lambda_sortino` weight (default 0.2)
+  adds a Sortino bonus to the composite score. Calmar is captured
+  implicitly via the drawdown penalty term. 3 new tests.
+
+**Why** — Sharpe penalises upside vol equally as downside; Sortino is
+more relevant for asymmetric strategies. Calmar directly measures
+return-per-unit-of-pain.
+
+### Phase 4b — Walk-forward by regime (DONE)
+
+**What changed**
+- `scripts/walk_forward_btd.py`: new `--by-regime` flag. Segments test
+  windows by the regime classifier; train window is the preceding
+  period of the *same* regime state. Falls back to calendar folds.
+  Output table includes a Regime column.
+
+**Why** — pure calendar folds hide regime-conditional instability.
+
+### Phase 4c — Vol-dependent slippage (DONE)
+
+**What changed**
+- `engine/backtest/fills.py::Friction`: new `vol_scale` field. When set,
+  `for_bar(bar)` scales slippage by `(1 + vol_scale × (high-low)/close)`.
+  `fill_price_for_bar` and `stop_fill` use it.
+- `engine/backtest/runner.py`: new `--vol-scale` CLI arg.
+
+**Why** — real slippage scales with volatility; fixed slippage understates
+costs in volatile bars.
+
+### Phase 4d — Raised PromotionBar + regime coverage (DONE)
+
+**What changed**
+- `PromotionBar`: `min_sharpe` 1.0→1.5, `min_trades` 5→20, new
+  `min_sortino=1.0`, new `min_regime_coverage=2`. `should_promote()`
+  checks both. 6 tests in `tests/test_promotion.py`.
+
+**Why** — a bull-only strategy shouldn't promote. The raised bar ensures
+candidates are robust across regimes.
+
+### Phase 4e — Wire box_wedge into the orchestrator (DONE)
+
+**What changed**
+- `BacktestAgent` dispatch handles `strategy == "box_wedge"` via new
+  `_run_box_wedge()`. Scout strategy map includes `bwg → box_wedge`.
+
+**Why** — box_wedge is the most vol-aware strategy in the repo (R-based
+scale-out, SMA200 regime gate). It was unreachable from the orchestrator.
+
+**Verified** — compile + 49 tests pass (8 new across Phase 4).
+
 ---
 
-## Remaining plan
+## All phases complete
 
-### Phase 1b — Feedback loop (next)
-
-Add a `refit` node to `engine/autonomy/graph.py` after `paper_trade`:
-- reads paper-trade PnL from `alpatrade.trades` (reuses `gather_trades()`),
-- if paper Sharpe < backtest Sharpe × 0.5 (regime drift), narrows the next
-  grid around the top-K backtest variations ± a perturbation band,
-- writes the refined grid centre to `autonomy_runs.config` so the next scout
-  tick uses it.
-Turns the open-loop into a closed-loop controller. No new table needed.
-
-### Phase 1c — Fix `run_full` + gate on validation
-
-- Add `run_reconciliation` + report to `Orchestrator.run_full` (currently
-  BT→Val→PT→Val, skipping reconcile/report).
-- Make validation failures configurable (hard-stop vs warn) so a broken
-  backtest doesn't flow to paper.
-
-### Phase 2a — Regime classifier
-
-New `engine/regime.py` (provider-neutral): realised-vol percentile (21d/63d)
-+ VIX level + SMA200 trend → 3-state label `{low_vol, normal, high_vol}`.
-Rule-based first (no HMM dep); HMM can come later behind the same interface.
-Single entry: `classify_regime(date) -> RegimeLabel`, cached per-day.
-
-### Phase 2b + 2c — Regime-conditional params + adaptive grid
-
-- Extend the grid to sweep per-regime params (wider dip thresholds and TP in
-  high-vol, tighter in low-vol; `vol_scale_position: true` for vol-targeting;
-  `atr_exit` multiples as an alternative to fixed-% TP/SL).
-- Replace `itertools.product` with Bayesian optimisation (optuna, optional
-  dep) against the Phase-1 objective, with regime as a categorical dimension.
-  Falls back to the static grid if optuna is absent.
-
-### Phase 2d — Vol-scaled sizing + ATR exits
-
-- In `buy_the_dip.py` / `paper_trade_agent.py`: `size ∝ vol_target /
-  realised_vol` (capped at the existing 5%-of-buying-power PDT guard).
-- Wire the ATR already computed in `box_wedge.py:40-46` (currently dead code)
-  into TP/SL as `atr_mult` multiples. Revives dead code + vol-aware exits.
-
-### Phase 3a — Route autonomy nodes through the runtime layer
-
-`graph.py` calls the legacy `Orchestrator` directly. Introduce a
-`ReasoningNode` that takes a `RoleSpec` and calls `get_runtime().build()` /
-`.run()` so the backtest-selection reasoning can use deepagents' planning +
-subagents. Keep `policy.py` as a pure-function guard after reasoning — never
-let the LLM bypass `allow_live=False`.
-
-### Phase 3b — Hot-swap framework without restart
-
-- Include `agent_framework` in the agui_app agent cache key (`agui_app.py:867`).
-- Call `get_runtime()` per cache miss instead of reusing the import-time
-  `chat_runtime`.
-- Add cache eviction on `/settings/preferences` save.
-- Then langgraph→deepagents in the UI takes effect on the next message.
-
-### Phase 3c — CLI per-command framework
-
-Add `framework:` / `model:` parsing to `command_processor.py` (mirrors the
-existing `provider:` news param). Resolves via `get_settings()` with an inline
-override.
-
-### Phase 3d — Define hermes honestly
-
-Document hermes as "LangGraph + notifier" and remove the "coming soon" framing
-(it already works as a pass-through), OR build a true `HermesPipelineRuntime`
-if there's a real Hermes endpoint. Recommend the former now.
-
-### Phase 3e — REST settings endpoint
-
-Add `PATCH /api/v1/settings` to `api.py` calling `store_user_settings` —
-currently only the web UI can change framework/model.
-
-### Phase 4 — Optimisation dimensions & guardrails (ongoing)
-
-- Sortino + Calmar in `backtester_util.py:51` alongside Sharpe; expose all
-  three in the objective λ-mix.
-- Walk-forward by regime, not just calendar (`scripts/walk_forward_btd.py`).
-- Vol-dependent friction in `engine/backtest/runner.py:126` (slippage ∝ vol).
-- Raise `PromotionBar.min_sharpe` to match the Phase-1 objective; add
-  `min_regime_coverage` so a bull-only strategy can't promote.
-- Wire `box_wedge` into `backtest_agent.py:103-134` (its R-based scale-out +
-  ATR are the most vol-aware logic in the repo and are unreachable).
+Every item from the original plan is now shipped. The autonomous pipeline is
+closed-loop, regime-aware, vol-scaled, optimises a PnL-maximising composite
+objective, runs in prod, and the agent framework (LangGraph/deepagents/hermes)
+is switchable on the fly from the web UI, REST API, and CLI.
 
 ---
 

@@ -30,12 +30,16 @@ class ObjectiveWeights:
     """Weights for the composite ranking score.
 
     Defaults: PnL-first (annualised return dominates), with a real
-    drawdown deterrent and a downside-vol penalty. `min_trades` is a hard
-    gate, not a soft penalty — variations below it are filtered out.
+    drawdown deterrent, a downside-vol penalty, and a Sortino bonus.
+    `min_trades` is a hard gate, not a soft penalty — variations below
+    it are filtered out. The Calmar ratio (ann_ret / max_dd) is already
+    captured implicitly via the drawdown penalty; the Sortino bonus
+    directly rewards downside-aware risk-adjusted returns.
     """
     lambda_drawdown: float = 1.0
     lambda_vol: float = 0.3
     lambda_size: float = 0.0
+    lambda_sortino: float = 0.2
     min_trades: int = 20
 
     @classmethod
@@ -46,6 +50,7 @@ class ObjectiveWeights:
             lambda_drawdown=float(cfg.get("lambda_drawdown", cls().lambda_drawdown)),
             lambda_vol=float(cfg.get("lambda_vol", cls().lambda_vol)),
             lambda_size=float(cfg.get("lambda_size", cls().lambda_size)),
+            lambda_sortino=float(cfg.get("lambda_sortino", cls().lambda_sortino)),
             min_trades=int(cfg.get("min_trades", cls().min_trades)),
         )
 
@@ -72,11 +77,15 @@ def score_variation(result: Dict[str, Any], w: ObjectiveWeights) -> Optional[flo
     # Convert Sharpe into a soft vol penalty: negative Sharpe hurts, near-zero
     # mildly hurts; capped so it can't dominate the return term.
     vol_penalty = max(0.0, 5.0 - sharpe) if sharpe < 5.0 else 0.0
+    # Sortino bonus (Phase 4a): reward downside-aware risk-adjusted returns.
+    sortino = float(result.get("sortino_ratio", 0.0) or 0.0)
+    sortino_bonus = w.lambda_sortino * min(sortino, 10.0)  # cap to avoid domination
 
     score = (
         ann_ret
         - w.lambda_drawdown * max_dd
         - w.lambda_vol * vol_penalty
+        + sortino_bonus
     )
 
     # Optional size penalty (off by default — min_trades gate is the main guard)

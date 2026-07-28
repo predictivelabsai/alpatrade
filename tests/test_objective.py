@@ -93,3 +93,28 @@ def test_vol_penalty_hurts_low_sharpe():
     s_hi = score_variation(hi_sharpe, w)
     s_lo = score_variation(lo_sharpe, w)
     assert s_hi > s_lo, "higher Sharpe (less vol drag) should score higher"
+
+
+def test_sortino_bonus_rewards_high_sortino():
+    w = ObjectiveWeights(lambda_drawdown=0.0, lambda_vol=0.0, lambda_sortino=1.0, min_trades=10)
+    hi_sortino = {"annualized_return": 20.0, "max_drawdown": 0.0, "total_trades": 50,
+                  "sharpe_ratio": 2.0, "sortino_ratio": 5.0}
+    lo_sortino = {"annualized_return": 20.0, "max_drawdown": 0.0, "total_trades": 50,
+                  "sharpe_ratio": 2.0, "sortino_ratio": 0.5}
+    s_hi = score_variation(hi_sortino, w)
+    s_lo = score_variation(lo_sortino, w)
+    assert s_hi > s_lo, "higher Sortino should score higher"
+    assert abs(s_hi - s_lo - (5.0 - 0.5)) < 1e-9, f"bonus diff should be 4.5: {s_hi - s_lo}"
+
+
+def test_calmar_implicit_in_drawdown_penalty():
+    """Calmar = ann_ret / max_dd is captured via the drawdown penalty term."""
+    w = ObjectiveWeights(lambda_drawdown=1.0, lambda_vol=0.0, min_trades=10)
+    # Two strategies with the same Calmar (10/5 == 20/10) should score
+    # differently because the objective is PnL-first, not Calmar-first.
+    a = {"annualized_return": 10.0, "max_drawdown": 5.0, "total_trades": 50, "sharpe_ratio": 1.0}
+    b = {"annualized_return": 20.0, "max_drawdown": 10.0, "total_trades": 50, "sharpe_ratio": 1.0}
+    sa = score_variation(a, w)
+    sb = score_variation(b, w)
+    # b has higher return and proportionally higher dd → PnL-first → b wins
+    assert sb > sa
