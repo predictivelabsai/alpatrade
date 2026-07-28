@@ -174,6 +174,7 @@ def _nav_section(label: str, *children):
 EXPLORE_PAGES: list = []
 TOOLS_PAGES: list = []
 PUBLIC_PAGES: list = []
+RESEARCH_PAGES: list = []
 
 
 def _EXPLORE_EXTRA(active):
@@ -189,6 +190,11 @@ def _TOOLS_EXTRA(active):
 def _PUBLIC_EXTRA(active):
     return [A(lbl, href=href, cls="page-link" + (" active" if active == key else ""))
             for lbl, href, key in PUBLIC_PAGES]
+
+
+def _RESEARCH_EXTRA(active):
+    return [A(lbl, href=href, cls="page-link" + (" active" if active == key else ""))
+            for lbl, href, key in RESEARCH_PAGES]
 
 
 def _left_pane(active: Optional[str], user: Optional[dict]):
@@ -240,6 +246,10 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             _nav_section(
                 "Public Markets",
                 Div(*_PUBLIC_EXTRA(active), cls="page-links"),
+            ),
+            _nav_section(
+                "Research",
+                Div(*_RESEARCH_EXTRA(active), cls="page-links"),
             ),
             _nav_section(
                 "Admin",

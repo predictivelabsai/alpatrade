@@ -330,6 +330,37 @@ def get_premarket_movers(limit: int = 10, refresh: bool = False) -> str:
         return f"Error loading premarket movers: {e}"
 
 
+def analyze_prediction_correlation(industry: str = "", event: str = "",
+                                   min_samples: int = 5,
+                                   view: str = "heatmap") -> str:
+    """Analyze Finespresso predicted versus realized moves.
+
+    ``view`` may be ``heatmap`` (event × industry) or ``scatter``.
+    The calling user's configured provider interprets the deterministic data.
+    """
+    try:
+        import json
+        from engine.research.data import correlation_summary
+        data = correlation_summary(industry, event, min_samples)
+        corr = data["correlation"]
+        summary = (
+            f"Prediction research — {data['count']:,} matched observations; "
+            f"Pearson correlation **{corr:.3f}**; MAE **{data['mae']:.3f}%**."
+            if corr is not None and data["mae"] is not None
+            else f"Prediction research — {data['count']:,} matched observations; insufficient variance."
+        )
+        payload = {
+            "type": "research_correlation_scatter" if view.lower() == "scatter"
+                    else "research_correlation_heatmap",
+            "points": data["points"] if view.lower() == "scatter" else [],
+            "matrix": data["matrix"] if view.lower() != "scatter" else [],
+            "industry": industry, "event": event, "min_samples": min_samples,
+        }
+        return summary + "\n\n__CHART_DATA__" + json.dumps(payload) + "__END_CHART__"
+    except Exception as e:  # noqa: BLE001
+        return f"Error loading prediction research: {e}"
+
+
 def get_press_releases(query: str = "", ticker: str = "", limit: int = 15) -> str:
     """Search company press releases / news by headline keyword and/or ticker (with a modeled directional read). Use for 'press releases for NVDA', 'news about earnings', 'latest headlines on TSLA'."""
     try:
@@ -831,6 +862,8 @@ TOOLS = [
         description="Get today's paper account P&L report: day P&L, portfolio value, and open positions with unrealised P&L. Use for 'how's my P&L', 'pnl report', 'how am I doing today', 'show my paper account'."),
     StructuredTool.from_function(get_premarket_movers, name="get_premarket_movers",
         description="Show top US premarket movers, gainers and fallers by sector with press-release catalysts. Set refresh=true only when explicitly asked for a fresh 165-stock scan."),
+    StructuredTool.from_function(analyze_prediction_correlation, name="analyze_prediction_correlation",
+        description="Analyze stored Finespresso model predictions versus realized next-day moves. Filter by normalized event or industry and render an event×industry heatmap or predicted-vs-actual scatter."),
     StructuredTool.from_function(search_sec_filings, name="search_sec_filings",
         description="Search SEC EDGAR filings by full-text query. Optional ticker filter and form type (10-K, 10-Q, 8-K, S-1, DEF 14A, 13F-HR). Use for 'find SEC filings mentioning X', 'search 8-Ks about layoffs'."),
     StructuredTool.from_function(get_company_filings, name="get_company_filings",

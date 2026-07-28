@@ -229,6 +229,34 @@ CHAT_JS = r"""
         font:{size:13,color:'#14231B'}};
       Plotly.newPlot(div,[eq,cap],base,{responsive:true,displayModeBar:false});
 
+    } else if(data.type==='research_correlation_heatmap'){
+      var events=[...new Set((data.matrix||[]).map(function(x){return x.event;}))];
+      var industries=[...new Set((data.matrix||[]).map(function(x){return x.industry;}))];
+      var lookup={};(data.matrix||[]).forEach(function(x){lookup[x.event+'|'+x.industry]=x;});
+      var z=events.map(function(e){return industries.map(function(i){
+        var x=lookup[e+'|'+i];return x?x.correlation:null;});});
+      var tx=events.map(function(e){return industries.map(function(i){
+        var x=lookup[e+'|'+i];return x?(x.correlation==null?'—':x.correlation.toFixed(2))+' (n='+x.count+')':'';});});
+      Plotly.newPlot(div,[{type:'heatmap',x:industries,y:events,z:z,text:tx,
+        hovertemplate:'%{y} · %{x}<br>%{text}<extra></extra>',
+        colorscale:[[0,'#B4472F'],[.5,'#EFEDE4'],[1,'#1F5D43']],zmin:-1,zmax:1,zmid:0}],
+        {title:{text:'Prediction correlation by event and industry',font:{size:13,color:'#14231B'}},
+         height:Math.max(420,events.length*23),margin:{l:160,r:15,t:42,b:100},
+         paper_bgcolor:'#FFFFFF',font:{color:'#415046',size:10}},
+        {responsive:true,displayModeBar:false});
+
+    } else if(data.type==='research_correlation_scatter'){
+      var pts=data.points||[];
+      Plotly.newPlot(div,[{type:'scattergl',mode:'markers',
+        x:pts.map(function(x){return x.predicted;}),y:pts.map(function(x){return x.actual;}),
+        text:pts.map(function(x){return x.event+' · '+x.industry;}),
+        marker:{color:'#1F5D43',opacity:.55}}],
+        {title:{text:'Predicted vs actual next-day move',font:{size:13,color:'#14231B'}},
+         xaxis:{title:'Predicted move %',gridcolor:'#E3DFD2'},
+         yaxis:{title:'Actual move %',gridcolor:'#E3DFD2'},
+         margin:{t:42,r:15,b:55,l:55},paper_bgcolor:'#FFFFFF',plot_bgcolor:'#F7F6F1'},
+        {responsive:true,displayModeBar:false});
+
     } else {
       var tr={x:data.dates,y:data.close,type:'scatter',mode:'lines',name:data.ticker,
         line:{color:'#1F5D43',width:2},fill:'tozeroy',fillcolor:'rgba(31,93,67,0.08)'};

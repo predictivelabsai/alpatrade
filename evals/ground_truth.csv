@@ -101,3 +101,7 @@ history,Shows command history or says it is empty.,history;History;No commands;e
 Show me the premarket movers,Reports the latest premarket scan with top gainers and fallers and their percentage moves.,,get_premarket_movers,chat,,premarket
 What are the biggest premarket gainers and fallers?,Lists ranked US premarket gainers and fallers from the latest 165-stock scan.,,get_premarket_movers,chat,,premarket
 Run a fresh premarket scan,Refreshes the 165-stock premarket scan and reports market breadth plus top movers.,,get_premarket_movers,chat,1,premarket
+Show me the prediction correlation heatmap,Uses stored Finespresso predictions and realized next-day moves to report sample size correlation and render an event by industry heatmap.,,analyze_prediction_correlation,chat,,research_models
+Plot predicted versus actual news moves,Uses the Research correlation tool and renders a predicted-versus-actual scatter plot with a concise quality summary.,,analyze_prediction_correlation,chat,,research_models
+How accurate are earnings move predictions?,Filters stored prediction research to earnings and explains correlation error and sample-size limitations without inventing performance.,,analyze_prediction_correlation,chat,,research_models
+Which industries have the strongest model correlation?,Uses event by industry analytics and distinguishes correlation from causation while mentioning sample size.,,analyze_prediction_correlation,chat,,research_models

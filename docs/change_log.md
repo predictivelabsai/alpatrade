@@ -1,5 +1,27 @@
 # Change Log
 
+## 0.4.0 — 2026-07-28
+
+### Research workspace
+
+- Migrated Finespresso research into five FastHTML submenu pages: Premarket,
+  Model Analytics, News Intelligence, News Timing, and Historical Research.
+- Reads the existing database through explicitly schema-qualified `public.*`
+  relations; scheduler-owned premarket refreshes remain outside AlpaTrade.
+- Added real Plotly sector breadth, prediction scatter, event-by-industry
+  correlation heatmap, publication timing, and stored classifier/regressor metrics.
+- Added `analyze_prediction_correlation` to streaming chat. The active user's
+  configured AlpaTrade model interprets deterministic research results.
+- Preserved historical Finespresso event aliases in a shared normalization module.
+
+### Tests and deployment
+
+- Added Research data, navigation, chart-transport and schema-boundary tests.
+- Added Research-agent routing and LLM-judge eval cases.
+- Playwright-smoked every Research route at desktop and mobile widths.
+- No database migration is required. The Finespresso scheduler remains responsible
+  for updating the shared public premarket tables.
+
 ## 0.3.0 — 2026-07-28
 
 ### Added
