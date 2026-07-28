@@ -220,6 +220,55 @@ framework. Now the user's choice is live on the next message/reasoning call.
 
 **Verified** — compile + 41 tests pass.
 
+### Phase 3c — CLI per-command framework/model (DONE)
+
+**What changed**
+- `tui/command_processor.py`: parses `framework:` and `model:` from CLI
+  input (e.g. `show me AAPL analysis framework:deepagents model:grok-4-fast`).
+  The override is stripped from the prompt and applied via a temporary env
+  override (`_env_override` context manager) for that call only — no
+  permanent .env change, no restart. Falls back to the configured default
+  when not specified.
+- New `_extract_framework_model()` helper + `_env_override()` context
+  manager (both unit-tested inline).
+
+**Why** — the CLI was fixed to `.env`/defaults with no per-command switch.
+Now a user can test deepagents vs LangGraph or a different model on a single
+query without restarting or editing `.env`.
+
+### Phase 3d — Hermes documented honestly (DONE)
+
+**What changed**
+- `engine/agents/runtime/hermes_rt.py` docstring updated: clearly states
+  it's "LangGraph reasoning + Hermes channel notifier", not a separate
+  pipeline engine. Documents that selecting `AGENT_FRAMEWORK=hermes` gives
+  identical reasoning to `langgraph` plus the `notify()` side-channel, and
+  that `reason()` and the `promote` node use it when configured.
+- Settings UI labels already fixed in Phase 3b ("hermes (LangGraph +
+  notifier)", "deepagents (planning + subagents)").
+
+**Why** — hermes was labelled "coming soon" but it actually works (as a
+LangGraph pass-through + notifier). The honest framing prevents confusion.
+
+### Phase 3e — REST settings endpoint (DONE)
+
+**What changed**
+- New `GET /api/v1/settings` and `PATCH /api/v1/settings` in `api.py`
+  (the unified REST entry). GET returns the caller's effective settings
+  (per-user merged over env). PATCH writes per-user overrides for any of
+  `model_provider`, `model_name`, `market_data_provider`, `search_provider`,
+  `agent_framework` (only non-null fields are written). Both require JWT
+  auth via `api_app.get_current_user`.
+- PATCH evicts the agent + reasoning caches (same as the web UI's
+  `/settings/preferences`), so the change is live for the next request —
+  no restart.
+
+**Why** — previously only the FastHTML web UI could change settings; the
+REST API had no settings endpoint. Now programmatic/CLI consumers can
+switch framework/model on the fly via `PATCH /api/v1/settings`.
+
+**Verified** — compile + 41 tests pass.
+
 ---
 
 ## Remaining plan

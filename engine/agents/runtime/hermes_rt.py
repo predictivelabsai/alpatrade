@@ -1,12 +1,19 @@
-"""Hermes adapter — Nous Research's deployable agent *runtime* (front-end/notifier).
+"""Hermes adapter — LangGraph reasoning + Hermes channel notifier.
 
-Hermes is a runtime you deploy and talk to (Telegram/WhatsApp/CLI), not a
-build-a-pipeline framework. So for pipeline nodes this adapter delegates reasoning to
-LangGraph (a Hermes/xAI-served model still works through ``engine.config``), and adds
-a ``notify()`` path for pushing autonomy digests/alerts to a Hermes channel.
+Hermes is a runtime you deploy and talk to (Telegram/WhatsApp/CLI). It is not a
+separate pipeline engine — for ``build``/``run``/``stream`` this adapter
+inherits LangGraph (so any xAI/OpenAI-served model works through
+``engine.config``), and adds a ``notify()`` path for pushing autonomy digests
+and alerts to a Hermes channel. Selecting ``AGENT_FRAMEWORK=hermes`` therefore
+gives identical reasoning behaviour to ``langgraph`` plus the notifier side-channel.
 
-Configure with ``HERMES_WEBHOOK_URL`` (+ optional ``HERMES_TOKEN``) to enable notify;
-without it, ``notify`` is a no-op that returns False.
+The autonomy pipeline's ``promote`` node calls ``notify()`` directly
+(``engine/autonomy/notify.py``) when ``HERMES_WEBHOOK_URL`` is set. The
+``reason()`` helper (``engine/autonomy/reason.py``) uses this runtime for
+LLM-backed reasoning when it's the configured framework.
+
+Configure with ``HERMES_WEBHOOK_URL`` (+ optional ``HERMES_TOKEN``) to enable
+notify; without it, ``notify`` is a no-op that returns False.
 """
 from __future__ import annotations
 

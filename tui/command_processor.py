@@ -6,10 +6,12 @@ multi-agent orchestrator framework.
 import sys
 import asyncio
 import json
+import os
 import threading
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple, Dict, Any, Iterator
 
 from rich.console import Console
 
@@ -17,6 +19,48 @@ from rich.console import Console
 project_root = Path(__file__).parent.parent.absolute()
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
+
+
+@contextmanager
+def _env_override(**overrides: str) -> Iterator[None]:
+    """Temporarily set env vars for a per-command model/framework override.
+
+    ``get_settings()`` reads ``AGENT_FRAMEWORK`` / ``DEFAULT_MODEL`` from env,
+    so setting them here makes the chat/reasoning agents use the override for
+    this call only — no permanent .env change, no restart.
+    """
+    sentinel = object()
+    saved: Dict[str, Any] = {}
+    for k, v in overrides.items():
+        saved[k] = os.environ.get(k, sentinel)
+        os.environ[k] = v
+    try:
+        yield
+    finally:
+        for k, orig in saved.items():
+            if orig is sentinel:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = orig  # type: ignore[assignment]
+
+
+def _extract_framework_model(text: str) -> Tuple[str, str, str]:
+    """Parse ``framework:`` and ``model:`` overrides from CLI input.
+
+    Returns (cleaned_text, framework_or_empty, model_or_empty). The overrides
+    are removed from the text so they don't leak into the agent prompt.
+    """
+    import re
+    found: Dict[str, str] = {}
+
+    def _repl(m: re.Match) -> str:
+        key, val = m.group(1).lower(), m.group(2).strip()
+        found[key] = val
+        return ""
+
+    cleaned = re.sub(r"\b(framework|model):(\S+)", _repl, text).strip()
+    cleaned = re.sub(r"\s{2,}", " ", cleaned)
+    return cleaned, found.get("framework", ""), found.get("model", "")
 
 
 class CommandProcessor:
@@ -126,8 +170,22 @@ class CommandProcessor:
         return any(kw in lower for kw in self._BROKER_KEYWORDS)
 
     async def _chat_agent(self, user_input: str) -> str:
-        """Route free-form text to the appropriate LangGraph agent."""
+        """Route free-form text to the appropriate LangGraph agent.
+
+        Supports per-command ``framework:`` and ``model:`` overrides (Phase 3c),
+        e.g. ``show me AAPL analysis framework:deepagents model:grok-4-fast``.
+        The override is stripped from the prompt and applied via env vars for
+        this call only — no restart, no permanent .env change.
+        """
         import uuid
+
+        # Per-command framework/model override (Phase 3c)
+        user_input, fw_override, model_override = _extract_framework_model(user_input)
+        env_overrides: Dict[str, str] = {}
+        if fw_override:
+            env_overrides["AGENT_FRAMEWORK"] = fw_override
+        if model_override:
+            env_overrides["DEFAULT_MODEL"] = model_override
 
         # Separate thread ids per agent so conversation context doesn't bleed
         if not hasattr(self.app, '_broker_thread_id'):
@@ -146,8 +204,14 @@ class CommandProcessor:
             from utils.research_agent import get_response
             thread_id = self.app._research_thread_id
 
+        if fw_override:
+            self.console.print(f"[dim]framework: {fw_override}[/dim]")
+        if model_override:
+            self.console.print(f"[dim]model: {model_override}[/dim]")
+
         try:
-            state = await asyncio.to_thread(get_response, user_input, thread_id)
+            with _env_override(**env_overrides):
+                state = await asyncio.to_thread(get_response, user_input, thread_id)
 
             # Walk backwards to find the last AI message without tool_calls
             for msg in reversed(state.get("messages", [])):
