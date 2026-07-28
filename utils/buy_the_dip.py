@@ -30,11 +30,11 @@ def _realised_vol_annualised(df: pd.DataFrame, lookback: int = 21) -> Optional[f
     if len(rets) < 3:
         return None
     return float(rets.std() * math.sqrt(252))
-from utils.massive_util import is_market_open, MassiveUtil
+from engine.feeds.market_data import is_market_open, MarketDataUtil
 from utils.pdt_tracker import PDTTracker
 from utils.data_loader import get_intraday_data, get_historical_data
 from utils.fees import calculate_finra_taf_fee, calculate_cat_fee
-massive_util = MassiveUtil()
+market_data_util = MarketDataUtil()
 
 
 def _check_intraday_exit(symbol: str, trade: Dict, current_date,
@@ -91,7 +91,7 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                         initial_capital: float = 10000, position_size: float = 0.1,
                         dip_threshold: float = 0.02, hold_days: int = 2,
                         take_profit: float = 0.01, stop_loss: float = 0.005,
-                        interval: str = '1d', data_source: str = 'massive',
+                        interval: str = '1d', data_source: str = 'yfinance',
                         include_taf_fees: bool = False, include_cat_fees: bool = False,
                         pdt_protection: Optional[bool] = None,
                         extended_hours: bool = False,
@@ -115,7 +115,7 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
         take_profit: Take profit percentage (e.g., 0.01 = 1%)
         stop_loss: Stop loss percentage (e.g., 0.005 = 0.5%)
         interval: Data interval ('1d', '60m', '30m', '15m', '5m')
-        data_source: Data source ('yfinance' or 'massive')
+        data_source: Data source ('yfinance' or 'alpaca')
         include_taf_fees: Include FINRA TAF fees
         include_cat_fees: Include Consolidated Audit Trail fees
         pdt_protection: If True, prevents same-day exits. Defaults to True if initial_capital < $25k.
@@ -159,15 +159,13 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
     
     # Fetch data based on source
     price_data = {}
-    if data_source == 'massive':
-        # Use Massive (with yf fallback)
+    if data_source in {"yfinance", "alpaca"}:
         from datetime import datetime
         # Estimate start date for intraday if needed
         data_start = start_date - timedelta(days=60)
         for symbol in symbols:
             # For backtesting, we might need a range of dates. 
-            # MassiveUtil._get_massive_historical returns a range.
-            df = massive_util.get_historical_data(symbol, data_start, end_date, timeframe='minute' if interval != '1d' else 'day', interval=1)
+            df = market_data_util.get_historical_data(symbol, data_start, end_date, timeframe='minute' if interval != '1d' else 'day', interval=1)
             if not df.empty:
                 # Ensure timezone aware
                 if df.index.tz is None:
@@ -193,7 +191,7 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
         data_start_intra = start_date - timedelta(days=5)
         for symbol in symbols:
             try:
-                idf = massive_util.get_historical_data(
+                idf = market_data_util.get_historical_data(
                     symbol, data_start_intra, end_date,
                     timeframe='minute', interval=5,
                 )

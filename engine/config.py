@@ -39,14 +39,14 @@ MODEL_NAMES = {
     "openai": ["gpt-4o", "gpt-4o-mini"],
     "anthropic": ["claude-sonnet-5", "claude-opus-4-8", "claude-haiku-4-5"],
 }
-MARKET_DATA_PROVIDERS = ["massive", "eodhd"]
+MARKET_DATA_PROVIDERS = ["yfinance", "alpaca"]
 SEARCH_PROVIDERS = ["tavily", "exa"]
 AGENT_FRAMEWORKS = ["langgraph", "hermes", "deepagents"]
 
 _DEFAULTS = {
     "model_provider": "xai",
     "model_name": "grok-4-1-fast-reasoning",
-    "market_data_provider": "massive",
+    "market_data_provider": "yfinance",
     "search_provider": "tavily",
     "agent_framework": "langgraph",
 }
@@ -74,7 +74,7 @@ class Settings:
 
 def _norm(val: str | None) -> str | None:
     """Normalise a provider token: lowercase, drop a trailing ``.com``/``.io`` and
-    any inline comment (``massive.com  # eodhd.com`` → ``massive``)."""
+    any inline comment (``yfinance.com  # alpaca`` → ``yfinance``)."""
     if not val:
         return None
     val = val.split("#", 1)[0].strip().lower()
@@ -153,6 +153,8 @@ def get_settings(user_id: str | None = None) -> Settings:
                     data[key] = val
         except Exception:  # noqa: BLE001 — never let settings lookup break a request
             pass
+    if data.get("market_data_provider") not in MARKET_DATA_PROVIDERS:
+        data["market_data_provider"] = _DEFAULTS["market_data_provider"]
     return Settings(**data)
 
 

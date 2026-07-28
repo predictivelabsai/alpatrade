@@ -215,9 +215,7 @@ _GUARD_DISABLE_JS = "window._aguiProcessing=false;"
 # ---------------------------------------------------------------------------
 
 _LOG_SKIP_PATTERNS = frozenset({
-    "Massive API key found", "No Massive API key found",
-    "Database pool initialized", "will use Massive for price data",
-    "will use yfinance for price data",
+    "Database pool initialized", "will use yfinance for price data",
 })
 
 

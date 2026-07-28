@@ -132,7 +132,7 @@ def get_stock_news(ticker: str, limit: int = 5) -> str:
         # Honour the configured SEARCH_PROVIDER (defaults to Tavily, which returns
         # real fresh article links). Unknown providers fall back to the default order.
         sp = (get_settings().search_provider or "tavily").lower()
-        provider = sp if sp in ("tavily", "xai", "polygon") else "tavily"
+        provider = sp if sp in ("tavily", "xai") else "tavily"
         return mr.news(ticker=ticker.upper(), limit=limit, provider=provider)
     except Exception as e:
         return f"Error fetching news for {ticker}: {e}"

@@ -3,18 +3,17 @@ from datetime import datetime, timedelta
 import pandas as pd
 import sys
 import os
+from unittest.mock import patch
 
 # Add project root to sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from utils.massive_util import MassiveUtil, get_historical_data, get_intraday_prices
+from engine.feeds.market_data import MarketDataUtil, get_historical_data, get_intraday_prices
 
-class TestMassiveUtil(unittest.TestCase):
-    def test_massive_util_init(self):
-        """Test MassiveUtil initialization"""
-        util = MassiveUtil()
-        # This just ensures it doesn't crash
-        self.assertTrue(hasattr(util, 'api_key'))
+class TestMarketDataUtil(unittest.TestCase):
+    def test_yfinance_is_default(self):
+        util = MarketDataUtil()
+        self.assertEqual(util.provider, "yfinance")
 
     def test_get_historical_data_daily(self):
         """Test getting daily data for AAPL"""
@@ -48,13 +47,15 @@ class TestMassiveUtil(unittest.TestCase):
         if not df.empty:
             self.assertIn('Close', df.columns)
 
-    def test_delayed_status_handling(self):
-        """Test that the code handles 'DELAYED' status"""
-        util = MassiveUtil()
-        import inspect
-        source = inspect.getsource(util._get_massive_historical)
-        self.assertIn("data.get('resultsCount', 0) == 0", source)
-        self.assertNotIn("data['status'] != 'OK'", source)
+    def test_unknown_provider_falls_back_to_yfinance(self):
+        self.assertEqual(MarketDataUtil(provider="retired").provider, "yfinance")
+
+    def test_alpaca_provider_without_credentials_falls_back(self):
+        with patch.dict(os.environ, {
+            "ALPACA_PAPER_API_KEY": "", "ALPACA_PAPER_SECRET_KEY": "",
+        }):
+            util = MarketDataUtil(provider="alpaca")
+        self.assertEqual(util.provider, "yfinance")
 
     def test_invalid_symbol(self):
         """Test with an invalid symbol"""

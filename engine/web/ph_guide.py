@@ -643,7 +643,7 @@ def _download_body():
             Li("Python 3.11+"),
             Li("PostgreSQL (for trade history)"),
             Li("Alpaca paper trading account"),
-            Li("Massive (Polygon) API key for market data"),
+            Li("Yahoo Finance market data (default) or Alpaca market data"),
             cls="dl-req",
         ),
         cls="content guide",

@@ -76,7 +76,7 @@ DB-free unit-test files above. Add new DB-free tests to that explicit list if th
 NEVER copy/log/commit secret values — reference by variable name only. `XAI_API_KEY` is especially
 sensitive (a prior key was leaked via GitHub and revoked). Run `scripts/verify_no_secrets.sh` before
 pushing (also wired as a pre-commit hook). If a secret is ever committed, purge with `git-filter-repo`.
-Required `.env` keys: `ALPACA_PAPER_API_KEY`, `ALPACA_PAPER_SECRET_KEY`, `MASSIVE_API_KEY`,
+Required `.env` keys: `ALPACA_PAPER_API_KEY`, `ALPACA_PAPER_SECRET_KEY`,
 `DATABASE_URL`, `ENCRYPTION_KEY`, `JWT_SECRET`. See CLAUDE.md for the full optional list.
 
 ## Skills (user-invocable, in `.claude/skills/`)

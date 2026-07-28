@@ -1,1 +1,1 @@
-"""Market & news data feeds (Massive/Polygon, yfinance, EODHD)."""
+"""Market and news data feeds (Yahoo Finance and optional Alpaca)."""

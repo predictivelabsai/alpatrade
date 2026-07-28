@@ -43,7 +43,7 @@ Master index of all agent skills in the multi-agent trading system.
 - **Role**: Independent validation of backtest and paper trading results
 - **Triggers**: Portfolio Manager requests validation after BT or PT completes
 - **Capabilities**:
-  - Fetch actual market prices from Massive API for each trade
+  - Fetch actual market prices from Yahoo Finance or Alpaca for each trade
   - Price tolerance checking (configurable, default 1%)
   - P&L math validation, market hours checks, weekend trade detection
   - Self-correction loop (max n=10 iterations)

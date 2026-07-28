@@ -2128,7 +2128,7 @@ Type 'help' for available commands.
                 hold_days = params.get('hold', 1)
                 take_profit = params.get('takeprofit', 1.0)
                 stop_loss = params.get('stoploss', 0.5)
-                data_source = params.get('data_source', 'massive').replace('polygon', 'massive').replace('polymarket', 'massive')
+                data_source = params.get('data_source', 'yfinance')
 
                 return await self._run_buy_the_dip_backtest(
                     symbols=symbols, start_date=start_date, end_date=end_date,
@@ -2144,7 +2144,7 @@ Type 'help' for available commands.
                 hold_days = params.get('hold', 5)
                 take_profit = params.get('takeprofit', 10.0)
                 stop_loss = params.get('stoploss', 5.0)
-                data_source = params.get('data_source', 'massive').replace('polygon', 'massive').replace('polymarket', 'massive')
+                data_source = params.get('data_source', 'yfinance')
 
                 return await self._run_momentum_backtest(
                     symbols=symbols, start_date=start_date, end_date=end_date,

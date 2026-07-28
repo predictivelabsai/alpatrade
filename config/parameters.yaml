@@ -16,8 +16,7 @@ vix:
   capital_per_trade: 1000.0  # Capital to allocate per trade in dollars
 
 general:
-  market_data_source: "massive"  # Options: massive, alpaca, yfinance
+  market_data_source: "yfinance"  # Options: yfinance, alpaca
   check_order_status_interval: 60  # Seconds between order status checks
   polling_interval: 300  # Seconds between strategy execution checks
   storage_backend: "db"  # Options: file, db  (file stores JSON locally, db uses PostgreSQL)
-

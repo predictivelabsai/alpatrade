@@ -75,7 +75,7 @@ def load_config():
 
 # Import utilities
 from utils.alpaca_util import AlpacaAPI
-from utils.massive_util import is_market_open as market_open, get_historical_data, get_intraday_prices
+from engine.feeds.market_data import is_market_open as market_open, get_historical_data, get_intraday_prices
 from utils.backtester_util import backtest_buy_the_dip
 import time
 from datetime import datetime, timedelta, timezone
@@ -344,7 +344,7 @@ def execute_buy_the_dip_strategy(client, symbols, capital_per_trade=1000, dip_th
             logger.info(f"  ⏭️  Skipping {symbol}: Position already exists")
             continue
             
-        # Rate limit protection (avoid hitting Massive/Alpaca limits)
+        # Rate limit protection (avoid hitting Yahoo Finance/Alpaca limits)
         time.sleep(0.5)
         try:
             # Match backtester logic: Get recent high over 20 periods
@@ -666,8 +666,8 @@ def main():
     logger.info(f"Mode: {args.mode.upper()}")
     
     # Data source logging
-    data_source = config.get('general', {}).get('market_data_source', 'massive').lower()
-    source_display = "Massive" if data_source in ['massive', 'polygon'] else data_source.capitalize()
+    data_source = config.get('general', {}).get('market_data_source', 'yfinance').lower()
+    source_display = "Yahoo Finance" if data_source == "yfinance" else "Alpaca"
     logger.info(f"Data Source: {source_display}")
     
     logger.info(f"Symbols: {', '.join(symbols)}")

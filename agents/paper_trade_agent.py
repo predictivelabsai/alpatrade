@@ -21,7 +21,7 @@ if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 from utils.alpaca_util import AlpacaAPI
-from utils.massive_util import get_historical_data, get_intraday_prices, is_market_open
+from engine.feeds.market_data import get_historical_data, get_intraday_prices, is_market_open
 from utils.agent_storage import store_paper_trade, fetch_recent_day_trades
 from utils.config import load_parameters
 from utils.pdt_tracker import PDTTracker

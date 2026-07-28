@@ -593,7 +593,7 @@ class TestProviderConfig(unittest.TestCase):
 
     def test_norm_strips_domain_and_comment(self):
         from engine.config import _norm
-        self.assertEqual(_norm("massive.com  # eodhd.com"), "massive")
+        self.assertEqual(_norm("yfinance.com  # alpaca"), "yfinance")
         self.assertEqual(_norm("Tavily"), "tavily")
         self.assertEqual(_norm("eodhd.io"), "eodhd")
         self.assertIsNone(_norm(""))
@@ -617,10 +617,10 @@ class TestProviderConfig(unittest.TestCase):
         from engine.config import get_settings
         saved = {k: os.environ.get(k) for k in ("MARKED_DATA_PROVIDER", "SEARCH_PROVIDER")}
         try:
-            os.environ["MARKED_DATA_PROVIDER"] = "massive.com"
+            os.environ["MARKED_DATA_PROVIDER"] = "yfinance.com"
             os.environ["SEARCH_PROVIDER"] = "Tavily"
             s = get_settings()
-            self.assertEqual(s.market_data_provider, "massive")
+            self.assertEqual(s.market_data_provider, "yfinance")
             self.assertEqual(s.search_provider, "tavily")
         finally:
             for k, v in saved.items():

@@ -8,10 +8,10 @@ import numpy as np
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 
-from utils.massive_util import MassiveUtil
+from engine.feeds.market_data import MarketDataUtil
 from utils.data_loader import get_intraday_data
 from utils.fees import calculate_finra_taf_fee, calculate_cat_fee
-massive_util = MassiveUtil()
+market_data_util = MarketDataUtil()
 
 
 def backtest_momentum_strategy(
@@ -26,7 +26,7 @@ def backtest_momentum_strategy(
     take_profit_pct: Optional[float] = 10.0,
     stop_loss_pct: Optional[float] = 5.0,
     interval: str = '1d',
-    data_source: str = 'massive',
+    data_source: str = 'yfinance',
     include_taf_fees: bool = False,
     include_cat_fees: bool = False
 ) -> Dict:
@@ -63,11 +63,10 @@ def backtest_momentum_strategy(
     for symbol in symbols:
         try:
             # Download historical data based on source
-            if data_source == 'massive':
-                # Use Massive (with yf fallback)
+            if data_source in {"yfinance", "alpaca"}:
                 # Estimate start date for intraday if needed
                 data_start = start_date - timedelta(days=60)
-                historical = massive_util.get_historical_data(symbol, data_start, end_date, timeframe='minute' if interval != '1d' else 'day', interval=1)
+                historical = market_data_util.get_historical_data(symbol, data_start, end_date, timeframe='minute' if interval != '1d' else 'day', interval=1)
                 
             elif data_source == 'yfinance' and interval != '1d':
                 historical = get_intraday_data(symbol, interval=interval, period='30d')

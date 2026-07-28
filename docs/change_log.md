@@ -1,5 +1,23 @@
 # Change Log
 
+## 0.5.1 — 2026-07-28
+
+### Market data providers
+
+- Removed the retired Polygon/Massive implementation, credentials, endpoints,
+  configuration choices, news fallback, documentation, and legacy imports.
+- Yahoo Finance is now the default market-data provider and requires no key.
+- Alpaca market data is an optional provider using the existing Alpaca account
+  credentials; stale or unknown provider values fall back safely to Yahoo.
+- Updated validation, paper trading, backtesting, research, regime detection,
+  CLI completion, and Docker Compose services to use the shared provider adapter.
+
+### Tests
+
+- Added provider default/fallback coverage and updated the market-data feed tests.
+- Twenty focused tests and syntax compilation passed. The broad regression retains
+  its four environment `pytz` errors and two pre-existing autonomy threshold failures.
+
 ## 0.5.0 — 2026-07-28
 
 ### Portfolio dashboard

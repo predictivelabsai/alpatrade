@@ -17,7 +17,7 @@ equities research (alpha-agents) behind one `engine/` + `verticals/` structure.
 The `engine/` + `verticals/` refactor is **in progress**, done in numbered phases:
 
 - **Phase 1a (done)** — shared infra extracted into `engine/`: `engine.auth`, `engine.db.pool`,
-  `engine.brokers.alpaca`, `engine.feeds.{massive,yf,eodhd}`, `engine.agents.{message_bus,state,db_setup}`,
+  `engine.brokers.alpaca`, `engine.feeds.{market_data,yf,eodhd}`, `engine.agents.{message_bus,state,db_setup}`,
   `engine.ai.*` (LangGraph chat), `engine.web.layout`. **`engine.*` is now the canonical location.**
   The old `utils/*` paths (e.g. `utils/auth.py`, `utils/db/db_pool.py`) are **compatibility shims**
   that `sys.modules`-alias to the relocated `engine` module (removed in Phase 7). **New code should
@@ -122,7 +122,7 @@ Legacy web/api apps ───────┘                                    
 ### Package layout
 
 - **`engine/`** — asset-agnostic shared infra (canonical; `utils/*` shims redirect here). Subpackages:
-  `brokers/` (Alpaca client), `feeds/` (massive/yf/eodhd market data), `db/` (SQLAlchemy pool),
+  `brokers/` (Alpaca client), `feeds/` (Yahoo Finance/Alpaca market data), `db/` (SQLAlchemy pool),
   `auth.py`, `backtest/` (methodology backtester, below), `agents/` (message bus / state / db setup),
   `ai/` (LangGraph chat core), `web/layout.py` (house-style 3-pane shell).
 - **`verticals/`** — per-asset-class code. `verticals/equities/routes.py` is the equities web vertical;
@@ -197,7 +197,7 @@ Five agents coordinated by the Orchestrator (`agents/orchestrator.py`):
 
 ### Data Flow
 
-- **Market data**: `engine.feeds.massive` (Polygon.io), `engine.feeds.yf` (yfinance fallback), `engine.feeds.eodhd` (intraday) — old `utils/{massive,yf,eodhd}_util.py` shims still resolve
+- **Market data**: `engine.feeds.market_data` routes to Yahoo Finance by default or Alpaca when configured.
 - **Trading**: `engine.brokers.alpaca` (Alpaca paper API; old `utils/alpaca_util.py`)
 - **Strategies**: `utils/buy_the_dip.py`, `utils/vix_strategy.py`, `utils/momentum.py`, `utils/box_wedge.py` (not yet relocated)
 - **Backtesting engine**: `utils/backtester_util.py` (grid-search; runs strategies, calculates metrics)
@@ -280,7 +280,7 @@ Postmark), `scripts/generate_keys.py` (Fernet/JWT), `scripts/verify_no_secrets.s
 ```
 ALPACA_PAPER_API_KEY=...
 ALPACA_PAPER_SECRET_KEY=...
-MASSIVE_API_KEY=...        # Polygon.io compatible
+MARKET_DATA_PROVIDER=yfinance  # or alpaca
 DATABASE_URL=...           # PostgreSQL connection string
 ENCRYPTION_KEY=...         # Fernet key (generate: python scripts/generate_keys.py)
 JWT_SECRET=...             # JWT secret (generate: python scripts/generate_keys.py)
@@ -290,7 +290,7 @@ Optional:
 - **LLM / providers**: `XAI_API_KEY`, `MODEL_PROVIDER` (xai/openai/anthropic), `MODEL_NAME` /
   `DEFAULT_MODEL` (default `grok-4-1-fast-reasoning`), `XAI_VOICE_MODEL` (default `grok-4-fast`),
   `SEARCH_PROVIDER` (default tavily) + `TAVILY_API_KEY`, `MARKET_DATA_PROVIDER`/`MARKED_DATA_PROVIDER`
-  (massive/eodhd), `AGENT_FRAMEWORK`, `ANTHROPIC_API_KEY` (+ `langchain-anthropic` for Claude)
+  (yfinance/alpaca), `AGENT_FRAMEWORK`, `ANTHROPIC_API_KEY` (+ `langchain-anthropic` for Claude)
 - **Data/feeds**: `EODHD_API_KEY`
 - **Email**: `POSTMARK_API_KEY`, `TO_EMAIL`, `FROM_EMAIL`
 - **OAuth**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`

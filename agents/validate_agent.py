@@ -2,7 +2,7 @@
 Validation Agent
 
 Cross-checks backtest and paper trading results against real market data
-from the Massive API. Validates price accuracy, P&L math, market hours,
+from the configured Yahoo Finance or Alpaca feed. Validates price accuracy, P&L math, market hours,
 and strategy logic. Self-corrects up to n=10 iterations before escalating.
 """
 
@@ -21,7 +21,7 @@ project_root = Path(__file__).parent.parent.absolute()
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from utils.massive_util import MassiveUtil
+from engine.feeds.market_data import MarketDataUtil
 from utils.agent_storage import fetch_backtest_trades, fetch_paper_trades
 
 logger = logging.getLogger(__name__)
@@ -69,7 +69,7 @@ class ValidateAgent:
         self.user_id = user_id
         self.max_iterations = max_iterations
         self.price_tolerance = price_tolerance
-        self.massive = MassiveUtil()
+        self.market_data = MarketDataUtil()
         self.extended_hours = True
 
     def run(self, request: Dict[str, Any]) -> Dict[str, Any]:
@@ -419,7 +419,7 @@ class ValidateAgent:
         """Fetch actual market price at a given timestamp."""
         try:
             dt = self._parse_datetime(timestamp)
-            data = self.massive.get_intraday_prices(symbol, dt, interval="1")
+            data = self.market_data.get_intraday_prices(symbol, dt, interval="1")
             if data.empty:
                 return None
 

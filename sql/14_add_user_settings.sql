@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS alpatrade.user_settings (
     user_id UUID PRIMARY KEY REFERENCES alpatrade.users(user_id) ON DELETE CASCADE,
     model_provider       VARCHAR(64),   -- xai | openai | anthropic
     model_name           VARCHAR(128),  -- e.g. grok-4.3
-    market_data_provider VARCHAR(64),   -- massive | eodhd
+    market_data_provider VARCHAR(64),   -- yfinance | alpaca
     search_provider      VARCHAR(64),   -- tavily | exa
     agent_framework      VARCHAR(64),   -- langgraph | hermes | deepagents
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

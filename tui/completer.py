@@ -71,7 +71,7 @@ COMMANDS = {
     "agent:trades": {"run-id": None, "type": ["backtest", "paper_trade"], "limit": None},
     "agent:stop": {},
     "agent:logs": {"lines": ["20", "50", "100"]},
-    "news": {"limit": ["5", "10", "20"], "provider": ["xai", "tavily", "polygon"]},
+    "news": {"limit": ["5", "10", "20"], "provider": ["xai", "tavily"]},
     "accounts": {},
     "account:add": {},
     "account:switch": {},
@@ -93,7 +93,7 @@ COMMANDS = {
         "takeprofit": None,
         "stoploss": None,
         "interval": ["1d", "1h"],
-        "data_source": ["massive"],
+        "data_source": ["yfinance", "alpaca"],
     },
 }
 

@@ -386,9 +386,10 @@ class AlpacaAPI:
             return {"error": str(e)}
     
     def get_latest_price(self, symbol: str, use_alpaca: bool = False) -> Optional[float]:
-        """Get the latest price for a symbol using Massive API (default) or Alpaca."""
+        """Get the latest price from Yahoo Finance (default) or Alpaca."""
         try:
-            if use_alpaca:
+            provider = (os.getenv("MARKET_DATA_PROVIDER") or "yfinance").lower()
+            if use_alpaca or provider == "alpaca":
                 # Use Alpaca data API
                 from alpaca.data.historical import StockHistoricalDataClient
                 from alpaca.data.requests import StockLatestQuoteRequest
@@ -398,37 +399,11 @@ class AlpacaAPI:
                 if symbol in quote:
                     return float(quote[symbol].ask_price)
                 return None
-            else:
-                # Use Massive API (default)
-                massive_api_key = os.getenv('MASSIVE_API_KEY') or os.getenv('POLYGON_API_KEY')
-                if not massive_api_key:
-                    logger.warning("MASSIVE_API_KEY not found, falling back to Alpaca")
-                    return self.get_latest_price(symbol, use_alpaca=True)
-                
-                # Massive API call for latest price
-                url = f"https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/{symbol}"
-                params = {'apikey': massive_api_key}
-                
-                response = requests.get(url, params=params, timeout=10)
-                response.raise_for_status()
-                
-                data = response.json()
-                if 'results' in data and data['results']:
-                    # Get the latest price from the snapshot
-                    result = data['results']
-                    if 'lastTrade' in result and result['lastTrade']:
-                        return float(result['lastTrade']['p'])  # Last trade price
-                    elif 'min' in result and result['min']:
-                        return float(result['min']['c'])  # Current day's close
-                
-                logger.warning(f"No price data found for {symbol} in Massive response")
-                return None
+            from engine.feeds.yf import get_real_time_price
+            return get_real_time_price(symbol)
                 
         except Exception as e:
             logger.error(f"Failed to get latest price for {symbol}: {e}")
-            if not use_alpaca:
-                logger.info("Falling back to Alpaca API")
-                return self.get_latest_price(symbol, use_alpaca=True)
             return None
     
     def get_trades(self, symbol: str, start: Optional[str] = None, end: Optional[str] = None,

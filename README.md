@@ -43,8 +43,8 @@ uv tool install alpatrade
 cat > .env << 'EOF'
 ALPACA_PAPER_API_KEY=your_key
 ALPACA_PAPER_SECRET_KEY=your_secret
-MASSIVE_API_KEY=your_massive_key
-DATABASE_URL=postgresql://user:pass@host/dbname
+MARKET_DATA_PROVIDER=yfinance  # or alpaca
+DATABASE_URL=<postgresql-connection-url>
 EOF
 
 # Launch the CLI
@@ -77,7 +77,7 @@ graph TB
 
     subgraph External
         ALPACA["Alpaca Paper API"]
-        MARKET["Market Data<br/>Polygon / yfinance"]
+        MARKET["Market Data<br/>Yahoo Finance / Alpaca"]
         DB[("PostgreSQL<br/><code>alpatrade</code> schema")]
     end
 
@@ -240,7 +240,7 @@ Example: `bwg-2r-5ct`
 |----------|----------|-------------|
 | `ALPACA_PAPER_API_KEY` | Yes | Alpaca paper trading API key |
 | `ALPACA_PAPER_SECRET_KEY` | Yes | Alpaca paper trading secret |
-| `MASSIVE_API_KEY` | Yes | Polygon-compatible market data key |
+| `MARKET_DATA_PROVIDER` | No | `yfinance` (default) or `alpaca` |
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `XAI_API_KEY` | No | XAI Grok for AI research commands |
 | `EODHD_API_KEY` | No | EOD Historical Data (intraday prices) |

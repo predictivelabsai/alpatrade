@@ -65,12 +65,12 @@ def _fetch_history(symbol: str, days: int, end: datetime) -> pd.DataFrame:
     """Fetch `days` of daily OHLC ending at `end` via the shared feed."""
     start = end - timedelta(days=int(days * 1.6))  # buffer for weekends/holidays
     try:
-        from engine.feeds.massive import get_historical_data
+        from engine.feeds.market_data import get_historical_data
         df = get_historical_data(symbol, start, end, timeframe="day", interval=1)
         if df is not None and not df.empty:
             return df
     except Exception as e:  # noqa: BLE001
-        log.debug("massive feed failed for %s: %s", symbol, e)
+        log.debug("market-data feed failed for %s: %s", symbol, e)
     # yfinance fallback (used by the feed internally, but be explicit)
     try:
         import yfinance as yf

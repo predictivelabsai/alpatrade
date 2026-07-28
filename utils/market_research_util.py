@@ -2,7 +2,7 @@
 Market Research Utility — Bloomberg-style terminal commands.
 
 Provides news, profile, financials, price, movers, analysts, and valuation
-data using Polygon.io (via MASSIVE_API_KEY), yfinance, XAI Grok, and Tavily.
+data using Yahoo Finance, XAI Grok, and Tavily.
 """
 
 import os
@@ -21,8 +21,6 @@ class MarketResearch:
     """Bloomberg-style market research commands."""
 
     def __init__(self):
-        self.api_key = os.getenv("MASSIVE_API_KEY")
-        self.base_url = "https://api.polygon.io"
         self.xai_key = os.getenv("XAI_API_KEY")
         self.tavily_key = os.getenv("TAVILY_API_KEY")
 
@@ -74,21 +72,6 @@ class MarketResearch:
             return f"{float(val):.2f}%"
         return self._safe(val, "{:.2f}")
 
-    def _polygon_get(self, path, params=None):
-        """Make an authenticated GET to Polygon.io."""
-        if not self.api_key:
-            return None
-        p = {"apiKey": self.api_key}
-        if params:
-            p.update(params)
-        try:
-            r = requests.get(f"{self.base_url}{path}", params=p, timeout=10)
-            r.raise_for_status()
-            return r.json()
-        except Exception as e:
-            logger.debug(f"Polygon {path}: {e}")
-            return None
-
     # ------------------------------------------------------------------
     # 1. news
     # ------------------------------------------------------------------
@@ -97,20 +80,16 @@ class MarketResearch:
         """Get news for a ticker (or general market news).
 
         Args:
-            provider: Force a specific provider ("polygon", "xai", "tavily").
-                      If None, tries XAI → Tavily → Polygon in order
-                      (XAI/Tavily return fresher results than Polygon free tier).
+            provider: Force a specific provider ("xai" or "tavily").
         """
         if ticker:
             ticker = ticker.upper()
 
         # Map of provider → (fetch_fn, display_name)
-        # Tavily first — it returns real, fresh article links; XAI can hallucinate
-        # headlines/URLs and Polygon's free tier is often stale.
+        # Tavily first — it returns real, fresh article links.
         providers = [
             ("tavily", self._news_tavily, "Tavily"),
             ("xai", self._news_xai, "XAI Grok"),
-            ("polygon", self._news_polygon, "Polygon"),
         ]
 
         # If a specific provider is requested, try only that one
@@ -121,7 +100,7 @@ class MarketResearch:
                     if articles:
                         return self._format_news(ticker, articles, provider=display)
                     return f"# News{f': {ticker}' if ticker else ''}\n\nNo results from {display}."
-            return f"# News\n\nUnknown provider: `{provider}`. Use `polygon`, `xai`, or `tavily`."
+            return f"# News\n\nUnknown provider: `{provider}`. Use `xai` or `tavily`."
 
         # Default: try all in order
         for key, fetch_fn, display in providers:
@@ -130,29 +109,6 @@ class MarketResearch:
                 return self._format_news(ticker, articles, provider=display)
 
         return f"# News{f': {ticker}' if ticker else ''}\n\nNo news found."
-
-    def _news_polygon(self, ticker, limit):
-        params = {"limit": limit, "order": "desc", "sort": "published_utc"}
-        if ticker:
-            params["ticker"] = ticker.upper()
-        data = self._polygon_get("/v2/reference/news", params)
-        if not data or not data.get("results"):
-            return None
-        articles = []
-        for a in data["results"][:limit]:
-            pub = a.get("published_utc", "")
-            try:
-                dt = datetime.fromisoformat(pub.replace("Z", "+00:00"))
-                time_str = dt.strftime("%b %d %I:%M %p")
-            except Exception:
-                time_str = pub[:16]
-            articles.append({
-                "time": time_str,
-                "title": a.get("title", ""),
-                "source": a.get("publisher", {}).get("name", ""),
-                "url": a.get("article_url", ""),
-            })
-        return articles
 
     def _news_xai(self, ticker, limit):
         if not self.xai_key:
@@ -259,7 +215,7 @@ class MarketResearch:
             logger.warning(f"Tavily news failed: {e}")
         return None
 
-    def _format_news(self, ticker, articles, provider="Polygon"):
+    def _format_news(self, ticker, articles, provider="Tavily"):
         label = f": {ticker.upper()}" if ticker else ""
         md = f"# News{label}\n\n"
         md += "| # | Time | Title | Source | Provider |\n|---|------|-------|--------|----------|\n"
@@ -278,12 +234,6 @@ class MarketResearch:
         """Get company profile."""
         ticker = ticker.upper()
 
-        # Source 1: Polygon
-        data = self._polygon_get(f"/v3/reference/tickers/{ticker}")
-        if data and data.get("results"):
-            return self._format_profile_polygon(data["results"])
-
-        # Source 2: yfinance
         try:
             info = yf.Ticker(ticker).info
             if info and info.get("shortName"):
@@ -292,25 +242,6 @@ class MarketResearch:
             logger.debug(f"yfinance profile: {e}")
 
         return f"# Profile: {ticker}\n\nNo data found."
-
-    def _format_profile_polygon(self, r):
-        md = f"# {r.get('name', r.get('ticker', ''))}\n\n"
-        md += "| Field | Value |\n|-------|-------|\n"
-        md += f"| Ticker | {r.get('ticker', '')} |\n"
-        md += f"| Exchange | {r.get('primary_exchange', '')} |\n"
-        md += f"| Market Cap | {self._fmt_large(r.get('market_cap'))} |\n"
-        md += f"| Employees | {self._safe(r.get('total_employees'), '{:,.0f}')} |\n"
-        md += f"| Industry | {r.get('sic_description', '\u2014')} |\n"
-        md += f"| Website | {r.get('homepage_url', '\u2014')} |\n"
-        md += f"| Listed | {r.get('list_date', '\u2014')} |\n"
-        addr = r.get("address", {})
-        if addr:
-            loc = ", ".join(filter(None, [addr.get("city"), addr.get("state")]))
-            md += f"| Location | {loc or '\u2014'} |\n"
-        desc = r.get("description", "")
-        if desc:
-            md += f"\n{desc[:500]}{'...' if len(desc) > 500 else ''}\n"
-        return md
 
     def _format_profile_yfinance(self, ticker, info):
         md = f"# {info.get('longName', ticker)}\n\n"
@@ -334,17 +265,6 @@ class MarketResearch:
     def financials(self, ticker, period="annual") -> str:
         """Get financial statements."""
         ticker = ticker.upper()
-        tf = "annual" if period == "annual" else "quarterly"
-
-        # Source 1: Polygon
-        data = self._polygon_get("/vX/reference/financials", {
-            "ticker": ticker, "timeframe": tf, "limit": 4, "order": "desc",
-            "sort": "period_of_report_date",
-        })
-        if data and data.get("results"):
-            return self._format_financials_polygon(ticker, data["results"], period)
-
-        # Source 2: yfinance
         try:
             t = yf.Ticker(ticker)
             inc = t.income_stmt if period == "annual" else t.quarterly_income_stmt
@@ -355,39 +275,6 @@ class MarketResearch:
             logger.debug(f"yfinance financials: {e}")
 
         return f"# Financials: {ticker}\n\nNo data found."
-
-    def _format_financials_polygon(self, ticker, results, period):
-        md = f"# Financials: {ticker} ({period.title()})\n\n"
-        md += "*Source: Polygon*\n\n"
-        md += "## Income Statement\n\n"
-        md += "| Metric |"
-        periods = []
-        for r in results[:4]:
-            p = r.get("fiscal_period", "")
-            y = str(r.get("fiscal_year", ""))
-            label = f"{p} {y}" if p else y
-            periods.append(label)
-            md += f" {label} |"
-        md += "\n|--------|" + "|".join(["--------"] * len(periods)) + "|\n"
-
-        metrics = [
-            ("Revenue", "revenues"),
-            ("Gross Profit", "gross_profit"),
-            ("Operating Income", "operating_income_loss"),
-            ("Net Income", "net_income_loss"),
-            ("EPS (Basic)", "basic_earnings_per_share"),
-        ]
-        for label, key in metrics:
-            md += f"| {label} |"
-            for r in results[:4]:
-                inc = r.get("financials", {}).get("income_statement", {})
-                val = inc.get(key, {}).get("value")
-                if key == "basic_earnings_per_share":
-                    md += f" {self._safe(val, '${:.2f}')} |"
-                else:
-                    md += f" {self._fmt_large(val)} |"
-            md += "\n"
-        return md
 
     def _format_financials_yfinance(self, ticker, inc, bs, period):
         md = f"# Financials: {ticker} ({period.title()})\n\n"
@@ -480,46 +367,6 @@ class MarketResearch:
                 signal = "Above" if current and current > ma200 else "Below"
                 md += f"| 200-Day MA | ${ma200:,.2f} | {signal} |\n"
 
-        # Try Polygon technicals (RSI, MACD)
-        technicals_md = self._get_polygon_technicals(ticker)
-        if technicals_md:
-            if not (ma50 or ma200):
-                md += "\n## Technicals\n\n"
-                md += "| Indicator | Value | Signal |\n|-----------|-------|--------|\n"
-            md += technicals_md
-
-        return md
-
-    def _get_polygon_technicals(self, ticker):
-        """Try to fetch RSI and MACD from Polygon (may require paid tier)."""
-        md = ""
-        # RSI
-        data = self._polygon_get(f"/v1/indicators/rsi/{ticker}", {
-            "timespan": "day", "window": 14, "limit": 1,
-        })
-        if data and data.get("results", {}).get("values"):
-            rsi = data["results"]["values"][0].get("value")
-            if rsi is not None:
-                if rsi < 30:
-                    signal = "Oversold"
-                elif rsi > 70:
-                    signal = "Overbought"
-                else:
-                    signal = "Neutral"
-                md += f"| RSI (14) | {rsi:.1f} | {signal} |\n"
-
-        # MACD
-        data = self._polygon_get(f"/v1/indicators/macd/{ticker}", {
-            "timespan": "day", "limit": 1,
-        })
-        if data and data.get("results", {}).get("values"):
-            v = data["results"]["values"][0]
-            macd_val = v.get("value")
-            signal_val = v.get("signal")
-            if macd_val is not None and signal_val is not None:
-                sig = "Bullish" if macd_val > signal_val else "Bearish"
-                md += f"| MACD | {macd_val:.3f} | {sig} |\n"
-
         return md
 
     # ------------------------------------------------------------------
@@ -529,29 +376,10 @@ class MarketResearch:
     def movers(self, direction="both") -> str:
         """Get top gainers and/or losers."""
         md = "# Market Movers\n\n"
-        got_any = False
-
-        if direction in ("both", "gainers"):
-            data = self._polygon_get("/v2/snapshot/locale/us/markets/stocks/gainers")
-            if data and data.get("tickers"):
-                md += "## Top Gainers\n\n"
-                md += self._format_movers_table(data["tickers"][:10])
-                got_any = True
-
-        if direction in ("both", "losers"):
-            data = self._polygon_get("/v2/snapshot/locale/us/markets/stocks/losers")
-            if data and data.get("tickers"):
-                md += "\n## Top Losers\n\n"
-                md += self._format_movers_table(data["tickers"][:10])
-                got_any = True
-
-        # Polygon's gainers/losers endpoints need a paid plan. Fall back to ranking
-        # a liquid S&P universe by today's return via yfinance so movers still work.
-        if not got_any:
-            fb = self._movers_yfinance(direction)
-            if fb:
-                return fb
-            md += "No market-movers data available right now.\n"
+        fb = self._movers_yfinance(direction)
+        if fb:
+            return fb
+        md += "No market-movers data available right now.\n"
 
         return md
 

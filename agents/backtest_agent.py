@@ -71,7 +71,7 @@ class BacktestAgent:
                 - lookback: str ("1m", "3m", "6m", "1y") or start_date/end_date
                 - initial_capital: float
                 - variations: dict of param -> list of values
-                - data_source: str (default "massive")
+                - data_source: str (default "yfinance")
 
         Returns:
             Dict with run_id, total_variations, best_config, all_results_summary
@@ -79,7 +79,7 @@ class BacktestAgent:
         strategy = request.get("strategy", "buy_the_dip")
         symbols = request.get("symbols", DEFAULT_SYMBOLS)
         initial_capital = request.get("initial_capital", 10000.0)
-        data_source = request.get("data_source", "massive")
+        data_source = request.get("data_source", "yfinance")
         extended_hours = request.get("extended_hours", True)
         intraday_exit = request.get("intraday_exit", False)
         pdt_protection = request.get("pdt_protection")

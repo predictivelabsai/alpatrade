@@ -17,7 +17,7 @@ The Validator agent independently verifies backtest and paper trading results ag
 ## Responsibilities
 
 1. **Receive validation requests** from Portfolio Manager
-2. **Fetch actual market prices** from Massive API for each trade's entry/exit timestamp
+2. **Fetch actual market prices** from the configured Yahoo Finance or Alpaca feed
 3. **Run validation checks** (price tolerance, P&L math, market hours, weekends, TP/SL logic)
 4. **Self-correction loop**: If anomalies found, attempt correction up to n=10 iterations
 5. **Report results** to Portfolio Manager with anomalies, corrections, and suggestions
@@ -25,7 +25,7 @@ The Validator agent independently verifies backtest and paper trading results ag
 ## Validation Checks
 
 ### 1. Price Tolerance
-- Fetch actual OHLC bar from Massive API at trade's entry/exit timestamp
+- Fetch the actual OHLC bar at the trade's entry/exit timestamp
 - Compare recorded price vs actual price
 - Tolerance: configurable (default 1%)
 - Flag if `|recorded - actual| / actual > tolerance`

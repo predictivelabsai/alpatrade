@@ -132,7 +132,7 @@ class Orchestrator:
             "symbols": config.get("symbols", ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"]),
             "lookback": config.get("lookback", "3m"),
             "initial_capital": config.get("initial_capital", 10000),
-            "data_source": config.get("data_source", "massive"),
+            "data_source": config.get("data_source", "yfinance"),
             "variations": config.get("variations"),
             "run_id": self.run_id,
             "extended_hours": config.get("extended_hours", True),
