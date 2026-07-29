@@ -279,7 +279,7 @@ def register(app, rt):
     @rt("/signin", methods=["GET"])
     def signin_get(session, error: str = "", msg: str = ""):
         if current_user(session):
-            return RedirectResponse("/", status_code=303)
+            return RedirectResponse("/dashboard", status_code=303)
         return _signin_page(error=error, msg=msg)
 
     @app.post("/signin")
@@ -294,13 +294,13 @@ def register(app, rt):
         if not user:
             return _signin_page(email=email, error="Invalid email or password.")
         _session_login(session, user)
-        return RedirectResponse("/", status_code=303)
+        return RedirectResponse("/dashboard", status_code=303)
 
     # ---- register ---------------------------------------------------------
     @rt("/register", methods=["GET"])
     def register_get(session, error: str = ""):
         if current_user(session):
-            return RedirectResponse("/", status_code=303)
+            return RedirectResponse("/dashboard", status_code=303)
         return _register_page(error=error)
 
     @app.post("/register")
@@ -323,13 +323,13 @@ def register(app, rt):
         if not user:
             return _register_page(email=email, error="Could not create account. Please try again.")
         _session_login(session, user)
-        return RedirectResponse("/", status_code=303)
+        return RedirectResponse("/dashboard", status_code=303)
 
     # ---- forgot password --------------------------------------------------
     @rt("/forgot", methods=["GET"])
     def forgot_get(session, error: str = "", msg: str = ""):
         if current_user(session):
-            return RedirectResponse("/", status_code=303)
+            return RedirectResponse("/dashboard", status_code=303)
         return _forgot_page(error=error, msg=msg)
 
     @app.post("/forgot")
@@ -437,7 +437,7 @@ def register(app, rt):
             if not user:
                 return RedirectResponse("/signin?error=Could+not+create+account", status_code=303)
             _session_login(session, user)
-            return RedirectResponse("/", status_code=303)
+            return RedirectResponse("/dashboard", status_code=303)
     else:
         @rt("/login")
         def google_login_stub():

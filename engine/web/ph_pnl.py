@@ -17,6 +17,9 @@ _CSS = """
 .dash h1{font-size:1.35rem;margin:0}.muted{color:var(--ink-muted);font-size:.8rem}
 .dash-controls{gap:.5rem;flex-wrap:wrap}.dash select,.periods a{border:1px solid var(--line);
  background:#fff;color:var(--ink);border-radius:.45rem;padding:.48rem .7rem;font-size:.8rem}
+.dash-signout,.dash-news{border:1px solid var(--line);border-radius:.45rem;padding:.48rem .7rem;
+ color:var(--ink-muted);font-size:.8rem;text-decoration:none;background:#fff}
+.dash-news{cursor:pointer}.dash-signout:hover,.dash-news:hover{color:var(--accent);border-color:var(--accent)}
 .periods{display:flex}.periods a{border-radius:0;text-decoration:none}.periods a:first-child{border-radius:.45rem 0 0 .45rem}
 .periods a:last-child{border-radius:0 .45rem .45rem 0}.periods a.active{background:var(--accent);color:#fff}
 .metric-grid{align-items:stretch;display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem}
@@ -116,6 +119,8 @@ def _render(data: dict, selected_id: str | None) -> str:
       <form class="dash-controls" method="get" action="/dashboard">
        <select name="account_id" aria-label="Portfolio account" onchange="this.form.submit()">{''.join(options)}</select>
        <input type="hidden" name="period" value="{period}"><div class="periods">{period_links}</div>
+       <button class="dash-news" type="button" onclick="toggleNewsPane()">News</button>
+       <a class="dash-signout" href="/logout">Sign out</a>
       </form></div>
       <div class="metric-grid">
        {_metric('Equity', _money(data['equity']))}
@@ -163,7 +168,8 @@ def register(app, rt):
             cls="dash",
         )
         return page("dashboard", Style(_CSS), body, user=user,
-                    title="Portfolio P&L · AlpaTrade", right_news=False)
+                    title="Portfolio P&L · AlpaTrade", right_news=True,
+                    right_news_open=True)
 
     @rt("/pnl")
     def pnl_redirect():

@@ -383,7 +383,8 @@ def _news_pane():
 # page / auth_shell
 # ---------------------------------------------------------------------------
 def page(active, *content, user: Optional[dict] = None,
-         title: str = "AlpaTrade", right_news: bool = True):
+         title: str = "AlpaTrade", right_news: bool = True,
+         right_news_open: bool = False):
     """Full app shell. ``*content`` is the center column (usually
     :func:`chat_center`); ``active`` highlights the matching command-menu item."""
     children = [_left_pane(active, user), *content]
@@ -392,7 +393,8 @@ def page(active, *content, user: Optional[dict] = None,
     children.append(Div(id="left-overlay", cls="left-overlay", onclick="toggleLeftPane()"))
     return (
         *head(title),
-        Div(*children, cls="app pane-closed", id="app"),
+        Div(*children, cls="app" + ("" if right_news and right_news_open else " pane-closed"),
+            id="app"),
     )
 
 

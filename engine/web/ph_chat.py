@@ -539,7 +539,8 @@ def register(app, rt):
         if new == "1" or not session.get("thread_id"):
             session["thread_id"] = str(_uuid.uuid4())
         return (
-            *ph_layout.page("app", ph_layout.chat_center(), user=user, title="AlpaTrade"),
+            *ph_layout.page("app", ph_layout.chat_center(), user=user, title="AlpaTrade",
+                            right_news_open=True),
             Style(CHAT_STYLE),
             Script(CHAT_JS),
         )

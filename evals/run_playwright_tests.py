@@ -61,6 +61,8 @@ def run(base_url: str, screenshot: Path | None = None) -> dict[str, bool]:
         }])
         page = context.new_page()
         page.on("pageerror", lambda exc: errors.append(str(exc)))
+        page.goto(f"{base_url}/", wait_until="networkidle")
+        root_is_landing = page.url.rstrip("/") == base_url.rstrip("/")
         page.goto(f"{base_url}/app", wait_until="networkidle")
         page.fill("#chat-input", "Show me a market map")
         page.click("#send-btn")
@@ -69,7 +71,12 @@ def run(base_url: str, screenshot: Path | None = None) -> dict[str, bool]:
         page.wait_for_selector(chart, timeout=60_000)
         page.wait_for_selector(nodes, timeout=15_000)
         results = {
+            "authenticated_root_stays_landing": root_is_landing,
             "chat_loaded": page.locator("#chat-input").is_visible(),
+            "chat_news_open_by_default": (
+                page.locator("#right-pane").is_visible()
+                and "pane-closed" not in (page.locator("#app").get_attribute("class") or "")
+            ),
             "market_map_summary": page.get_by_text("Market map", exact=False).count() > 0,
             "plotly_chart": page.locator(chart).count() > 0,
             "treemap_nodes": page.locator(nodes).count() > 0,
@@ -84,10 +91,25 @@ def run(base_url: str, screenshot: Path | None = None) -> dict[str, bool]:
                 page.locator("#equity-chart.js-plotly-plot").count() == 1)
             results[f"dashboard_contributor_plot_{screen}"] = (
                 page.locator("#contrib-chart.js-plotly-plot").count() == 1)
+            results[f"dashboard_signout_{screen}"] = page.locator(
+                "a.dash-signout[href='/logout']").is_visible()
         results["dashboard_no_page_errors"] = not errors
         if screenshot:
             screenshot.parent.mkdir(parents=True, exist_ok=True)
             page.screenshot(path=str(screenshot), full_page=True)
+        auth_context = browser.new_context(viewport={"width": 390, "height": 500})
+        auth_page = auth_context.new_page()
+        auth_page.goto(f"{base_url}/signin", wait_until="networkidle")
+        auth_page.evaluate(
+            "document.querySelector('.auth-page').scrollTop = "
+            "document.querySelector('.auth-page').scrollHeight"
+        )
+        results["signin_short_screen_scrolls"] = auth_page.evaluate(
+            "document.querySelector('.auth-page').scrollTop > 0 || "
+            "document.querySelector('.auth-page').scrollHeight <= "
+            "document.querySelector('.auth-page').clientHeight"
+        )
+        auth_context.close()
         context.close()
         browser.close()
     return results

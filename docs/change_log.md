@@ -1,5 +1,15 @@
 # Change Log
 
+## 0.5.2 — 2026-07-29
+
+### Authentication navigation
+
+- Restored `/` as the public landing page regardless of existing session state.
+- Successful password, registration, and Google login flows now redirect directly
+  to `/dashboard`; ordinary visits to the root no longer do so.
+- Added a visible sign-out action to the dashboard header and styled the existing
+  authenticated-sidebar sign-out link.
+
 ## 0.5.1 — 2026-07-28
 
 ### Market data providers

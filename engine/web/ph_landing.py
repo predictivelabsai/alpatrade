@@ -494,9 +494,7 @@ def register(app, rt):
     """Wire the anonymous marketing routes. Returns the list of paths registered."""
 
     @rt("/")
-    def landing_home(session):
-        if session.get("user_id"):
-            return RedirectResponse("/dashboard", status_code=303)
+    def landing_home():
         return home_page()
 
     @rt("/platform")
