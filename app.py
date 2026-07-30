@@ -62,6 +62,7 @@ from engine.web import ph_press  # noqa: E402
 from engine.web import ph_spacs  # noqa: E402
 from engine.web import ph_premarket  # noqa: E402
 from engine.web import ph_research  # noqa: E402
+from engine.web import ph_monitoring  # noqa: E402
 
 ph_landing.register(app, rt)
 ph_auth.register(app, rt)
@@ -79,17 +80,16 @@ ph_press.register(app, rt)
 ph_spacs.register(app, rt)
 ph_premarket.register(app, rt)
 ph_research.register(app, rt)
+ph_monitoring.register(app, rt)
 
 # --- voice (mic button → /voice/* endpoints) --------------------------------
 from engine.voice import register_voice_routes  # noqa: E402
 
 register_voice_routes(app)
 
-# --- autonomy bootstrap (runs inside the web process) ----------------------
-# Coolify deploys this app via Dockerfile.agui → `python main.py` → app.py.
-# The docker-compose `autonomy` service is NOT started by Coolify (it builds
-# from the Dockerfile, not `docker compose up`), so we bootstrap the autonomy
-# loop here as daemon threads within the web process.
+# --- scheduler bootstrap ----------------------------------------------------
+# Compose runs autonomy in its own service. The web process only owns the PnL
+# scheduler, avoiding two competing worker loops and ambiguous heartbeats.
 #
 # 1. Nightly PnL email scheduler — always starts (disable via PNL_REPORT_FREQUENCY=off).
 #    Idempotent per process (schedule.py guards with _started).
@@ -100,7 +100,7 @@ register_voice_routes(app)
 #
 # Both are daemon threads → die with the process, never block shutdown.
 def _bootstrap_autonomy():
-    import logging, threading
+    import logging
     log = logging.getLogger("autonomy.bootstrap")
     try:
         from engine.autonomy.schedule import start as _start_scheduler
@@ -108,17 +108,6 @@ def _bootstrap_autonomy():
         log.info("PnL-report scheduler started")
     except Exception as e:  # noqa: BLE001
         log.warning("PnL scheduler failed to start: %s", e)
-    if os.getenv("AUTONOMY_ENABLED", "false").lower() in ("1", "true", "yes", "on"):
-        try:
-            from engine.autonomy.worker import loop as _worker_loop
-            wid = os.getenv("AUTONOMY_WORKER_ID", "web-1")
-            threading.Thread(target=_worker_loop, args=(wid,),
-                             name="autonomy-worker", daemon=True).start()
-            log.info("Autonomy worker started (AUTONOMY_ENABLED=true, worker_id=%s)", wid)
-        except Exception as e:  # noqa: BLE001
-            log.warning("Autonomy worker failed to start: %s", e)
-    else:
-        log.info("Autonomy worker disabled (AUTONOMY_ENABLED not true)")
 
 
 _bootstrap_autonomy()

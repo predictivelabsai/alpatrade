@@ -175,6 +175,7 @@ EXPLORE_PAGES: list = []
 TOOLS_PAGES: list = []
 PUBLIC_PAGES: list = []
 RESEARCH_PAGES: list = []
+MONITORING_PAGES: list = []
 
 
 def _EXPLORE_EXTRA(active):
@@ -195,6 +196,11 @@ def _PUBLIC_EXTRA(active):
 def _RESEARCH_EXTRA(active):
     return [A(lbl, href=href, cls="page-link" + (" active" if active == key else ""))
             for lbl, href, key in RESEARCH_PAGES]
+
+
+def _MONITORING_EXTRA(active):
+    return [A(lbl, href=href, cls="page-link" + (" active" if active == key else ""))
+            for lbl, href, key in MONITORING_PAGES]
 
 
 def _left_pane(active: Optional[str], user: Optional[dict]):
@@ -233,6 +239,10 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
                 "Agents",
                 Div(*[_menu_group(lbl, items, active) for lbl, items in AGENT_SHORTCUTS],
                     cls="agent-browser"),
+            ),
+            _nav_section(
+                "Monitoring",
+                Div(*_MONITORING_EXTRA(active), cls="page-links"),
             ),
             _nav_section(
                 "Tools",

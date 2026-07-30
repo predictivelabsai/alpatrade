@@ -44,11 +44,13 @@ def claim(worker_id: str) -> Optional[dict]:
                 FOR UPDATE SKIP LOCKED
                 LIMIT 1
             )
-            RETURNING run_id, kind, config, attempt
+            RETURNING run_id, kind, config, attempt, user_id, account_id
         """), {"w": worker_id}).fetchone()
     if not row:
         return None
-    return {"run_id": str(row[0]), "kind": row[1], "config": row[2], "attempt": row[3]}
+    return {"run_id": str(row[0]), "kind": row[1], "config": row[2], "attempt": row[3],
+            "user_id": str(row[4]) if row[4] else None,
+            "account_id": str(row[5]) if row[5] else None}
 
 
 def heartbeat(run_id: str, worker_id: str) -> None:
@@ -99,3 +101,16 @@ def requeue_unfinished(stale_seconds: int = 300) -> int:
               AND (heartbeat_at IS NULL OR heartbeat_at < NOW() - (:sec * INTERVAL '1 second'))
         """), {"sec": stale_seconds}).rowcount
     return n or 0
+
+
+def retry(run_id: str, user_id: str) -> bool:
+    """Requeue one failed run owned by ``user_id`` and retain checkpoints."""
+    with _pool().get_session() as s:
+        n = s.execute(text("""
+            UPDATE alpatrade.autonomy_runs
+            SET status = 'queued', claimed_by = NULL, heartbeat_at = NULL,
+                error = NULL, updated_at = NOW()
+            WHERE run_id = :rid AND user_id = :uid
+              AND status = 'failed'
+        """), {"rid": run_id, "uid": user_id}).rowcount
+    return bool(n)

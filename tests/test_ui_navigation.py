@@ -7,7 +7,8 @@ from engine.web.ph_layout import PH_JS, _left_pane, page
 def test_sidebar_sections_are_collapsed_by_default():
     html = to_xml(_left_pane("guide", None))
 
-    for section in ("Explore", "Chats", "Agents", "Tools", "Public Markets", "Research", "Admin"):
+    for section in ("Explore", "Chats", "Agents", "Monitoring", "Tools",
+                    "Public Markets", "Research", "Admin"):
         assert f'<span class="nav-section-name">{section}</span>' in html
     assert '<details class="nav-section" open' not in html
     assert 'class="nav-section-expand">&gt;' in html
@@ -62,3 +63,16 @@ def test_research_pages_have_separate_submenu_entries():
         "/research/premarket", "/research/models", "/research/news",
         "/research/timing", "/research/history",
     }
+
+
+def test_monitoring_has_pipeline_page_and_paper_only_controls():
+    import app
+    from engine.web import ph_layout, ph_monitoring
+
+    assert ("⚡ Agent Pipeline", "/monitoring/pipeline", "agent-pipeline") \
+        in ph_layout.MONITORING_PAGES
+    source = inspect.getsource(ph_monitoring.register)
+    assert 'action="/monitoring/pipeline/run"' in inspect.getsource(ph_monitoring._render)
+    assert 'scout.enqueue_run(user_id=' in source
+    assert "queue.retry" in source
+    assert "Paper-only" in inspect.getsource(ph_monitoring._render)

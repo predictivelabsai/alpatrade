@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 import time
 
 from engine.autonomy import queue, store
@@ -22,6 +23,7 @@ log = logging.getLogger("autonomy.worker")
 SCAN_SECONDS = int(os.getenv("AUTONOMY_SCAN_SECONDS", "300"))
 STALE_SECONDS = int(os.getenv("AUTONOMY_STALE_SECONDS", "900"))
 MAX_ATTEMPTS = int(os.getenv("AUTONOMY_MAX_ATTEMPTS", "3"))
+HEARTBEAT_SECONDS = int(os.getenv("AUTONOMY_HEARTBEAT_SECONDS", "30"))
 
 
 def _enabled() -> bool:
@@ -35,14 +37,28 @@ def run_one(worker_id: str) -> bool:
         return False
     run_id = claimed["run_id"]
     store.append_event(run_id, f"claimed by {worker_id} (attempt {claimed['attempt']})")
+    stopped = threading.Event()
+
+    def _heartbeat() -> None:
+        while not stopped.wait(HEARTBEAT_SECONDS):
+            try:
+                queue.heartbeat(run_id, worker_id)
+            except Exception as exc:  # noqa: BLE001
+                log.warning("heartbeat failed for %s: %s", run_id, exc)
+
+    pulse = threading.Thread(target=_heartbeat, name=f"heartbeat-{run_id[:8]}", daemon=True)
+    pulse.start()
     try:
-        pipeline = default_pipeline()
-        pipeline.run(run_id, ctx={"config": claimed.get("config") or {}})
+        pipeline = default_pipeline(claimed.get("user_id"), claimed.get("account_id"))
+        pipeline.run(run_id, ctx={"config": claimed.get("config") or {}, "run_id": run_id})
         queue.ack(run_id)
         store.append_event(run_id, "run complete")
     except Exception as e:  # noqa: BLE001
         status = queue.fail(run_id, str(e), max_attempts=MAX_ATTEMPTS)
         store.append_event(run_id, f"run errored → {status}: {e}", level="error")
+    finally:
+        stopped.set()
+        pulse.join(timeout=1)
     return True
 
 

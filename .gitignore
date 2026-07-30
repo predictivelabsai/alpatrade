@@ -213,6 +213,7 @@ test-results/
 reports/
 .sesskey
 .playwright-mcp/
+.playwright-cli/
 
 # eval outputs
 eval-results/
