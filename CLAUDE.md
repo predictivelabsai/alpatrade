@@ -242,7 +242,7 @@ Connection pool: `engine.db.pool` → `DatabasePool` with `get_session()` contex
 
 ## Deployment (Coolify)
 
-Prod (`alpatrade.chat` / `alpatrade.dev`) runs on **Coolify** (`https://coolify.predictivelabs.ai`)
+Prod (`alpatrade.chat` / `alpatrade.dev`) runs on **Coolify** (`https://coolify.finespresso.org` — note: **not** `coolify.predictivelabs.ai`, which is a separate instance hosting polytrade / rl-agent-swarm / macrohero / plai-crm and has different logins)
 from `docker-compose.yaml`. The web service is **`agui`** (`Dockerfile.agui` → `python main.py` →
 merged `app.py`, `ASSETHERO_WEB_PORT=5003`); the `api` service is `Dockerfile.api` (`api_app`). The old
 `web` service (`web_app.py`) is retired.
