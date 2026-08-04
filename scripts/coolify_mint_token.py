@@ -46,23 +46,60 @@ _TOKEN_RE = re.compile(r"\b\d+\|[A-Za-z0-9]{40,}\b")
 
 VALID_PERMISSIONS = ("root", "write", "deploy", "read", "read:sensitive")
 
-# Collect [livewireComponentId, method, tokenId] for every token row whose text
-# contains `match`. The id lives in the row's Alpine x-data as submitAction:'revoke(N)'.
-_REVOKE_TARGETS_JS = r"""(match) => {
-  const rows = [...document.querySelectorAll('tr')].filter(
-    tr => tr.innerText.includes('Revoke token') && tr.innerText.includes(match));
+# Every token, read from its Alpine x-data rather than from page layout: one instance
+# renders tokens as table rows and another as cards, so a `tr` selector silently found
+# nothing on the latter and reported "no tokens" for an account that had several.
+# The x-data carries both the description (confirmationText) and submitAction:'revoke(N)'.
+_TOKENS_JS = r"""() => {
   const out = [];
-  for (const tr of rows) {
-    const holder = tr.querySelector('[x-data]');
-    const xd = holder ? holder.getAttribute('x-data') : '';
-    const m = xd && xd.match(/submitAction:\s*'(\w+)\((\d+)\)'/);
+  for (const el of document.querySelectorAll('[x-data]')) {
+    const xd = el.getAttribute('x-data') || '';
+    const m = xd.match(/submitAction:\s*'(\w+)\((\d+)\)'/);
     if (!m) continue;
-    let el = tr;
-    while (el && !el.hasAttribute('wire:id')) el = el.parentElement;
-    if (!el) continue;
-    out.push([el.getAttribute('wire:id'), m[1], parseInt(m[2])]);
+    let desc = '';
+    const d = xd.match(/textarea\.innerHTML\s*=\s*'((?:[^'\\]|\\.)*)'/);
+    if (d) {
+      const ta = document.createElement('textarea');
+      ta.innerHTML = d[1].replace(/\\u0022/g, '"').replace(/\\'/g, "'");
+      desc = ta.value;
+    }
+    let owner = el;
+    while (owner && !owner.hasAttribute('wire:id')) owner = owner.parentElement;
+    let box = el;
+    for (let i = 0; i < 6 && box.parentElement; i++) {
+      box = box.parentElement;
+      if ((box.innerText || '').includes('Permissions')) break;
+    }
+    out.push({
+      id: parseInt(m[2]), method: m[1], description: desc,
+      componentId: owner ? owner.getAttribute('wire:id') : null,
+      text: (box.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 200),
+    });
   }
   return out;
+}"""
+
+
+# {visible team name: option value} from the (hidden) team switcher.
+_TEAM_OPTIONS_JS = r"""() => {
+  const sel = [...document.querySelectorAll('select')].find(
+    s => s.querySelector("option[value='default']"));
+  if (!sel) return null;
+  const out = {};
+  for (const o of sel.options) out[o.textContent.trim()] = o.value;
+  return out;
+}"""
+
+# Set selectedTeamId on the switch-team Livewire component; returns its id or null.
+_SWITCH_TEAM_JS = r"""(teamId) => {
+  for (const el of document.querySelectorAll('[wire\\:id]')) {
+    const snap = el.getAttribute('wire:snapshot') || '';
+    if (snap.includes('"switch-team"')) {
+      window.Livewire.find(el.getAttribute('wire:id')).set('selectedTeamId', teamId);
+      return el.getAttribute('wire:id');
+    }
+  }
+  return null;
 }"""
 
 
@@ -72,7 +109,8 @@ def _mask(token: str) -> str:
 
 
 def mint(url: str, email: str, password: str, description: str,
-         permissions: list[str], expires: str, headless: bool = True) -> str:
+         permissions: list[str], expires: str, headless: bool = True,
+         team: str | None = None) -> str:
     from playwright.sync_api import sync_playwright
 
     base = url.rstrip("/")
@@ -80,17 +118,9 @@ def mint(url: str, email: str, password: str, description: str,
         browser = p.chromium.launch(headless=headless)
         page = browser.new_page()
         try:
-            page.goto(f"{base}/login", wait_until="domcontentloaded", timeout=45000)
-            page.fill("input[type=email]", email)
-            page.fill("input[type=password]", password)
-            page.click("button[type=submit]")
-            page.wait_for_load_state("networkidle", timeout=45000)
-            if "/login" in page.url:
-                body = page.inner_text("body")
-                hint = next((l.strip() for l in body.splitlines()
-                             if "match our records" in l or "credential" in l.lower()), "")
-                raise SystemExit(f"Login failed on {base}. {hint}".strip())
-
+            _login(page, base, email, password)
+            if team:
+                _switch_team(page, base, team)
             page.goto(f"{base}/security/api-tokens", wait_until="networkidle", timeout=45000)
             # The page renders many hidden modals; scope to the token form itself.
             form = page.locator("form").filter(has=page.locator("input[name=description]")).first
@@ -114,6 +144,30 @@ def mint(url: str, email: str, password: str, description: str,
             browser.close()
 
 
+def _switch_team(page, base: str, team: str) -> None:
+    """Activate `team` (by visible name or numeric id) before acting.
+
+    Tokens are scoped to the team that is active when they are created. A token minted
+    under the wrong team authenticates fine but reports "Application not found" for
+    every app it cannot see, which is easy to misread as a bad token.
+    """
+    options = page.evaluate(_TEAM_OPTIONS_JS)
+    if not options:
+        raise SystemExit("Team switcher not found — is this a multi-team instance?")
+    value = options.get(team) or (team if team in options.values() else None)
+    if value is None:
+        raise SystemExit(f"Team {team!r} not found. Available: "
+                         f"{', '.join(n for n in options if n != 'Switch team')}")
+    # The switcher lives in a collapsed sidebar, so it is present but not visible and
+    # select_option() times out waiting for it. Set the Livewire property instead,
+    # which fires the same server-side switch the dropdown would.
+    switched = page.evaluate(_SWITCH_TEAM_JS, value)
+    if not switched:
+        raise SystemExit("Could not find the switch-team Livewire component.")
+    page.wait_for_timeout(2500)
+    page.wait_for_load_state("networkidle", timeout=45000)
+
+
 def _login(page, base: str, email: str, password: str) -> None:
     page.goto(f"{base}/login", wait_until="domcontentloaded", timeout=45000)
     page.fill("input[type=email]", email)
@@ -127,7 +181,8 @@ def _login(page, base: str, email: str, password: str) -> None:
         raise SystemExit(f"Login failed on {base}. {hint}".strip())
 
 
-def list_tokens(url: str, email: str, password: str, headless: bool = True) -> list[str]:
+def list_tokens(url: str, email: str, password: str, headless: bool = True,
+                team: str | None = None) -> list[str]:
     """Return one summary line per existing token."""
     from playwright.sync_api import sync_playwright
     base = url.rstrip("/")
@@ -136,19 +191,16 @@ def list_tokens(url: str, email: str, password: str, headless: bool = True) -> l
         page = browser.new_page()
         try:
             _login(page, base, email, password)
+            if team:
+                _switch_team(page, base, team)
             page.goto(f"{base}/security/api-tokens", wait_until="networkidle", timeout=45000)
-            rows = page.locator("tr").filter(has_text="Revoke token")
-            out = []
-            for i in range(rows.count()):
-                text = re.sub(r"\s*\n\s*", " | ", rows.nth(i).inner_text().strip())
-                out.append(re.sub(r"\s+", " ", text))
-            return out
+            return [f"{t['description']}  ·  {t['text']}" for t in page.evaluate(_TOKENS_JS)]
         finally:
             browser.close()
 
 
 def revoke_tokens(url: str, email: str, password: str, match: str,
-                  headless: bool = True) -> int:
+                  headless: bool = True, team: str | None = None) -> int:
     """Revoke every token whose description contains `match`. Returns the count."""
     from playwright.sync_api import sync_playwright
     base = url.rstrip("/")
@@ -158,15 +210,18 @@ def revoke_tokens(url: str, email: str, password: str, match: str,
         page = browser.new_page()
         try:
             _login(page, base, email, password)
+            if team:
+                _switch_team(page, base, team)
             page.goto(f"{base}/security/api-tokens", wait_until="networkidle", timeout=45000)
             # Clicking "Revoke token" only opens an Alpine modal that demands the
             # token's description be retyped. Rather than drive that, read each row's
             # x-data for its `submitAction: 'revoke(<id>)'` and call the Livewire
             # method directly — no modal, and it can't mis-target a re-rendered row.
-            targets = page.evaluate(_REVOKE_TARGETS_JS, match)
-            for component_id, method, token_id in targets:
+            targets = [t for t in page.evaluate(_TOKENS_JS)
+                       if match in (t["description"] or "") and t["componentId"]]
+            for t in targets:
                 page.evaluate("([c, m, i]) => window.Livewire.find(c).call(m, i)",
-                              [component_id, method, token_id])
+                              [t["componentId"], t["method"], t["id"]])
                 page.wait_for_timeout(1500)
                 revoked += 1
             return revoked
@@ -196,10 +251,24 @@ def _apply_permissions(form, wanted: list[str]) -> None:
     if missing:
         raise SystemExit(f"Permissions not found in the UI: {', '.join(missing)} "
                          f"(available: {', '.join(sorted(seen)) or 'none detected'})")
-    for perm, box in seen.items():
-        should = perm in wanted
-        if box.is_checked() != should:
-            box.click()
+
+    # Ticking one box makes Coolify rewrite the whole set server-side — selecting
+    # `deploy`, for instance, clears `read`. Each click is a Livewire round-trip, so
+    # settle after every one (reading state too early returns the pre-render value)
+    # and re-converge until the selection matches, rather than assuming one pass.
+    page = form.page
+    for _ in range(len(seen) + 2):
+        wrong = [(perm, box) for perm, box in seen.items()
+                 if box.is_checked() != (perm in wanted)]
+        if not wrong:
+            break
+        perm, box = wrong[0]
+        box.click()
+        page.wait_for_timeout(1200)
+    else:
+        actual = sorted(p for p, b in seen.items() if b.is_checked())
+        raise SystemExit(f"Could not set permissions to {sorted(wanted)}; "
+                         f"the form settled on {actual}.")
 
 
 def main() -> int:
@@ -219,6 +288,9 @@ def main() -> int:
     ap.add_argument("--secret-name", default="COOLIFY_API_TOKEN")
     ap.add_argument("--write-env", action="store_true",
                     help="append the token to .env as COOLIFY_API_TOKEN_<suffix>")
+    ap.add_argument("--team", default=os.getenv("COOLIFY_TEAM"),
+                    help="team name or id to act under (default: COOLIFY_TEAM). "
+                         "Tokens are scoped to the active team.")
     ap.add_argument("--headed", action="store_true", help="show the browser (debugging)")
     args = ap.parse_args()
 
@@ -230,12 +302,14 @@ def main() -> int:
         raise SystemExit("Set COOLIFY_EMAIL and COOLIFY_PASSWORD (e.g. in .env).")
 
     if args.list:
-        for line in list_tokens(args.url, email, password, headless=not args.headed):
+        for line in list_tokens(args.url, email, password, headless=not args.headed,
+                                team=args.team):
             print(" ", line)
         return 0
 
     if args.revoke:
-        n = revoke_tokens(args.url, email, password, args.revoke, headless=not args.headed)
+        n = revoke_tokens(args.url, email, password, args.revoke,
+                          headless=not args.headed, team=args.team)
         print(f"Revoked {n} token(s) matching {args.revoke!r} on {args.url}")
         return 0
 
@@ -250,7 +324,7 @@ def main() -> int:
     expires = "" if args.expires.lower() == "never" else args.expires
 
     token = mint(args.url, email, password, args.description, perms, expires,
-                 headless=not args.headed)
+                 headless=not args.headed, team=args.team)
     print(f"Created token on {args.url}: {args.description}")
     print(f"  permissions: {', '.join(perms)} · expires: {args.expires}")
     print(f"  value: {_mask(token)}  (not printed in full by design)")

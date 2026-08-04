@@ -53,15 +53,35 @@ As of 2026-08-04: **AlpaTrade lives on `coolify.finespresso.org`**, not
 `coolify.predictivelabs.ai` (which hosts polytrade, rl-agent-swarm, macrohero, plai-crm,
 kanvas and others). Verify rather than assuming — the two have different logins.
 
+## Teams — get this right or the token looks broken
+
+Tokens are scoped to the **team that is active when they are created**, and instances can
+have several. A token minted under the wrong team authenticates fine but answers
+`404 Application not found` for apps it cannot see — which reads like a bad token rather
+than a scoping problem.
+
+`coolify.finespresso.org` has `kaljuvee's Team` and `Finespresso Team`; **AlpaTrade is in
+`Finespresso Team`**, which is *not* the default on login. Always pass `--team`, then
+verify before storing the token anywhere:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer <token>" \
+  "$COOLIFY_URL/api/v1/applications/<app-uuid>"     # must be 200
+```
+
+`403 Missing required permissions` means the permission set didn't apply;
+`404 Application not found` means the wrong team.
+
 ## Usage
 
 ```bash
 # always look before creating or revoking
-python scripts/coolify_mint_token.py --list
+python scripts/coolify_mint_token.py --team "Finespresso Team" --list
 
 # create a deploy-scoped token and push it straight into a GitHub repo secret
 python scripts/coolify_mint_token.py \
-    --description "github-actions deploy" \
+    --team "Finespresso Team" \
+    --description "alpatrade-github-actions-deploy" \
     --permissions read,deploy \
     --github-secret predictivelabsai/alpatrade
 
@@ -83,9 +103,17 @@ Add `--headed` to watch the browser when debugging a selector break.
 1. Logs in at `/login`, fails loudly if the page stays on `/login`.
 2. Scopes to the token form on `/security/api-tokens` — the page renders many other
    hidden modals, so a bare `input[name=description]` would match the wrong form.
-3. Ticks permission checkboxes by their enclosing **label text**; they carry no name or id.
+3. Ticks permission checkboxes by their enclosing **label text** (they carry no name or
+   id). Selecting one rewrites the whole set server-side — picking `deploy` clears
+   `read` — so it re-converges after each click instead of assuming one pass, waiting
+   for the Livewire round-trip. Reading state too early returns the pre-render value and
+   silently yields a token missing `read`.
 4. Reads the new token from the page with the Sanctum pattern `<id>|<40+ chars>`,
    diffing against tokens already on screen.
+
+Listing and revoking both read each token's Alpine `x-data` rather than page layout:
+one instance renders tokens as table rows and another as cards, and a `tr` selector
+silently reported "no tokens" for an account that had fourteen.
 
 Revoking does **not** click "Revoke token" — that only opens an Alpine modal demanding
 the token's description be retyped. Instead each row's `x-data` is parsed for its
@@ -94,4 +122,5 @@ the token's description be retyped. Instead each row's `x-data` is parsed for it
 immune to mis-targeting a re-rendered row.
 
 If Coolify changes its UI these selectors are what will break — rerun with `--headed`
-and re-derive them. Verified against **Coolify v4.1.2**.
+and re-derive them. Verified against **Coolify v4.1.2** on both `coolify.finespresso.org` and
+`coolify.predictivelabs.ai` (whose token pages render differently).
