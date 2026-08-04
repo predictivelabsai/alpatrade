@@ -400,12 +400,24 @@ class PaperTradeAgent:
                     logger.debug(f"Skipping {symbol}: pending sell order exists")
                     continue
 
-                # Skip if no shares available to sell
-                if qty_available <= 0:
+                # Skip if no shares available to trade. Use magnitude: a short position
+                # reports a negative qty_available, and comparing it against 0 silently
+                # skipped every short, so shorts were never considered for exit at all.
+                if abs(qty_available) <= 0:
                     logger.debug(f"Skipping {symbol}: no qty available (held for orders)")
                     continue
 
-                unrealized_pct = ((current_price - entry_price) / entry_price) * 100
+                # Prefer the broker's own P&L percentage: it is signed correctly for both
+                # directions. Deriving it from prices alone inverts the sign on a short,
+                # which reported a winning short as a loser and would stop it out at the
+                # moment it was most profitable.
+                plpc = pos.get("unrealized_plpc")
+                if plpc not in (None, ""):
+                    unrealized_pct = float(plpc) * 100
+                else:
+                    unrealized_pct = ((current_price - entry_price) / entry_price) * 100
+                    if qty < 0:
+                        unrealized_pct = -unrealized_pct
 
                 # Check hold period from tracked positions
                 tracked = self._tracked_positions.get(symbol, {})
@@ -434,7 +446,9 @@ class PaperTradeAgent:
                         exit_reason = f"TAKE_PROFIT ({unrealized_pct:.2f}%)"
                     elif unrealized_pct <= -stop_loss:
                         exit_reason = f"STOP_LOSS ({unrealized_pct:.2f}%)"
-                if exit_reason is None and days_held >= hold_days:
+                # Time-based exit is opt-in: hold_days of 0/None means hold until the
+                # position resolves on take-profit or stop-loss, with no expiry.
+                if exit_reason is None and hold_days and days_held >= hold_days:
                     exit_reason = f"HOLD_EXPIRED ({days_held}d)"
 
                 if exit_reason:
@@ -444,15 +458,21 @@ class PaperTradeAgent:
                         continue
 
                     logger.info(f"EXIT {symbol}: {exit_reason}")
-                    # Close only available qty to avoid held_for_orders errors
-                    close_qty = int(qty_available) if qty_available < qty else None
+                    # Close only available qty to avoid held_for_orders errors. Compare
+                    # magnitudes so a partially-held short isn't mistaken for a full one,
+                    # and always pass a positive quantity to the broker.
+                    close_qty = (int(abs(qty_available))
+                                 if abs(qty_available) < abs(qty) else None)
                     result = self.client.close_position(symbol, qty=close_qty)
                     if "error" not in result:
+                        # qty_available is negative for a short, which correctly flips the
+                        # sign: a short closed below entry is a gain.
                         pnl = (current_price - entry_price) * qty_available
                         trade = {
                             "symbol": symbol,
-                            "side": "sell",
-                            "qty": qty_available,
+                            # Closing a short is a buy, not a sell.
+                            "side": "buy" if qty < 0 else "sell",
+                            "qty": abs(qty_available),
                             "entry_price": entry_price,
                             "exit_price": current_price,
                             "entry_time": entry_time_str,

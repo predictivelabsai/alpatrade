@@ -111,7 +111,8 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
         initial_capital: Starting capital
         position_size: Fraction of capital to use per trade
         dip_threshold: Percentage drop to trigger buy (e.g., 0.02 = 2%)
-        hold_days: Days/periods to hold position
+        hold_days: Max days/periods to hold before a time-based exit.
+                   0 or None = no limit; the trade runs until TP/SL hits.
         take_profit: Take profit percentage (e.g., 0.01 = 1%)
         stop_loss: Stop loss percentage (e.g., 0.005 = 0.5%)
         interval: Data interval ('1d', '60m', '30m', '15m', '5m')
@@ -297,7 +298,8 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
             else:
                 hit_tp = can_day_trade and float(current_bar['High']) >= trade['target_price']
                 hit_sl = can_day_trade and float(current_bar['Low']) <= trade['stop_price']
-                hit_end = current_date >= trade['max_exit_time']
+                hit_end = (trade['max_exit_time'] is not None
+                           and current_date >= trade['max_exit_time'])
 
                 if not (hit_tp or hit_sl or hit_end):
                     continue
@@ -420,7 +422,9 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                     'shares': shares,
                     'target_price': tp_price,
                     'stop_price': sl_price,
-                    'max_exit_time': current_date + timedelta(days=hold_days),
+                    # None = no time-based exit; the trade runs to TP/SL.
+                    'max_exit_time': (current_date + timedelta(days=hold_days)
+                                      if hold_days else None),
                     'dip_pct': dip_pct
                 }
         
