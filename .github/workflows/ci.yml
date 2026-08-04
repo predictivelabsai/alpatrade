@@ -48,6 +48,12 @@ jobs:
       - name: Regression suite (if DB secret present)
         if: ${{ env.HAS_DB_SECRET == 'true' }}
         env:
+          # The AG-UI tests only need an OpenAI-compatible client to *construct*, so a
+          # placeholder is enough and no real key goes near CI. Deliberately NOT
+          # XAI_API_KEY: TestAgentRuntime.test_build_and_run_langgraph skips while that
+          # is unset but makes a real LLM call once it is set, so a placeholder there
+          # would turn a clean skip into a failure.
+          OPENAI_API_KEY: ci-import-placeholder
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           ALPACA_PAPER_API_KEY: ${{ secrets.ALPACA_PAPER_API_KEY }}
           ALPACA_PAPER_SECRET_KEY: ${{ secrets.ALPACA_PAPER_SECRET_KEY }}

@@ -1041,17 +1041,22 @@ class TestAutonomyNoLivePath(unittest.TestCase):
 class TestPromotion(unittest.TestCase):
     """engine.autonomy.promote.should_promote — pure paper→live promotion gate."""
 
+    # Bar values track PromotionBar, raised in Phase 4d (sharpe 1.0 -> 1.5,
+    # trades 5 -> 20, plus the new sortino / regime-coverage gates). See
+    # tests/test_promotion.py for the per-gate cases.
     def test_passes_clear_winner(self):
         from engine.autonomy.promote import should_promote
-        ok, _ = should_promote({"sharpe": 1.8, "total_return": 6.2,
-                                "max_drawdown": 8.0, "total_trades": 12})
-        self.assertTrue(ok)
+        ok, reason = should_promote({"sharpe": 1.8, "sortino": 2.2, "total_return": 6.2,
+                                     "max_drawdown": 8.0, "total_trades": 25,
+                                     "regime_coverage": 3})
+        self.assertTrue(ok, reason)
 
     def test_passes_exactly_at_bar(self):
         from engine.autonomy.promote import should_promote
-        ok, _ = should_promote({"sharpe": 1.0, "total_return": 0.0,
-                                "max_drawdown": 20.0, "total_trades": 5})
-        self.assertTrue(ok)
+        ok, reason = should_promote({"sharpe": 1.5, "sortino": 1.0, "total_return": 0.0,
+                                     "max_drawdown": 20.0, "total_trades": 20,
+                                     "regime_coverage": 2})
+        self.assertTrue(ok, reason)
 
     def test_rejects_too_few_trades(self):
         from engine.autonomy.promote import should_promote
