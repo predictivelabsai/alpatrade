@@ -9,6 +9,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # `secrets` is not available in a step-level `if`, but it is here. Resolve the
+    # presence check once, at job level, so the gate below can read it via `env`.
+    env:
+      HAS_DB_SECRET: ${{ secrets.DATABASE_URL != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -42,7 +46,7 @@ jobs:
       # DB-backed regression suite (opt-in): runs only when the DATABASE_URL secret
       # is configured on the repo. Add it with:  gh secret set DATABASE_URL
       - name: Regression suite (if DB secret present)
-        if: ${{ env.DATABASE_URL != '' }}
+        if: ${{ env.HAS_DB_SECRET == 'true' }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           ALPACA_PAPER_API_KEY: ${{ secrets.ALPACA_PAPER_API_KEY }}

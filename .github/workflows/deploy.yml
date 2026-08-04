@@ -1,9 +1,15 @@
 name: Deploy (Coolify)
 
-# Triggers a Coolify redeploy after CI succeeds on main.
-# Requires one repo secret:  COOLIFY_WEBHOOK_URL  (Coolify app → Webhooks → Deploy)
-# Optional:                   COOLIFY_TOKEN        (Bearer token, if the webhook needs one)
-# If COOLIFY_WEBHOOK_URL is unset the job no-ops, so this file is safe to merge early.
+# Redeploys the prod app on Coolify after CI succeeds on main.
+#
+# Required repo secrets (same names as .env, so `gh secret set X < <(...)` is easy):
+#   COOLIFY_URL        e.g. https://coolify.example.tld
+#   COOLIFY_API_TOKEN  API token with deploy permission (Keys & Tokens -> API tokens)
+#   COOLIFY_APP_UUID   uuid from `python scripts/coolify_deploy.py list`
+#
+# If those are missing this workflow FAILS rather than skipping. An earlier version
+# exited 0 when unconfigured, so every run showed a green check while deploying
+# nothing — pushes to main silently never shipped. A red X is the point.
 
 on:
   workflow_run:
@@ -16,19 +22,59 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    env:
+      COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+      COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+      COOLIFY_APP_UUID: ${{ secrets.COOLIFY_APP_UUID }}
     steps:
-      - name: Trigger Coolify deploy
-        env:
-          WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK_URL }}
-          TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+      - name: Check deploy credentials
         run: |
-          if [ -z "$WEBHOOK" ]; then
-            echo "COOLIFY_WEBHOOK_URL not set — skipping deploy (configure it to enable CD)."
-            exit 0
+          missing=""
+          [ -n "$COOLIFY_URL" ]       || missing="$missing COOLIFY_URL"
+          [ -n "$COOLIFY_API_TOKEN" ] || missing="$missing COOLIFY_API_TOKEN"
+          [ -n "$COOLIFY_APP_UUID" ]  || missing="$missing COOLIFY_APP_UUID"
+          if [ -n "$missing" ]; then
+            echo "::error::CD not configured — missing secret(s):$missing. Add them with 'gh secret set <NAME>'."
+            exit 1
           fi
-          if [ -n "$TOKEN" ]; then
-            curl -fsSL -X GET -H "Authorization: Bearer $TOKEN" "$WEBHOOK"
-          else
-            curl -fsSL -X GET "$WEBHOOK"
+
+      - name: Trigger Coolify deploy
+        id: trigger
+        run: |
+          resp=$(curl -fsSL -X GET \
+            -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
+            "${COOLIFY_URL%/}/api/v1/deploy?uuid=${COOLIFY_APP_UUID}&force=false")
+          echo "$resp"
+          uuid=$(printf '%s' "$resp" | jq -r '.deployments[0].deployment_uuid // empty')
+          if [ -z "$uuid" ]; then
+            echo "::error::Coolify accepted the request but returned no deployment uuid."
+            exit 1
           fi
-          echo "Coolify deploy triggered."
+          echo "deployment_uuid=$uuid" >> "$GITHUB_OUTPUT"
+          echo "Queued deployment $uuid"
+
+      - name: Wait for the deployment to finish
+        run: |
+          uuid="${{ steps.trigger.outputs.deployment_uuid }}"
+          for i in $(seq 1 80); do
+            status=$(curl -fsSL -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
+              "${COOLIFY_URL%/}/api/v1/deployments/$uuid" | jq -r '.status // "unknown"')
+            echo "[$((i * 15))s] $status"
+            case "$status" in
+              finished)
+                echo "Deployment finished."
+                exit 0 ;;
+              failed|error|cancelled-by-user)
+                echo "::error::Deployment ended with status: $status"
+                exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "::error::Timed out after 20m waiting for deployment $uuid"
+          exit 1
+
+      - name: Smoke-test prod
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 --retry 3 --retry-delay 10 https://alpatrade.chat/)
+          echo "GET / -> $code"
+          [ "$code" = "200" ] || { echo "::error::Prod did not return 200 after deploy (got $code)"; exit 1; }
