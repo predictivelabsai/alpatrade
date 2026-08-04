@@ -9,6 +9,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # The suite hits live Alpaca/DB. A socket with no timeout once hung the job for
+    # 15+ minutes; without a cap it would sit on a runner for hours and, now that
+    # deploys gate on CI, silently block CD.
+    timeout-minutes: 20
     # `secrets` is not available in a step-level `if`, but it is here. Resolve the
     # presence check once, at job level, so the gate below can read it via `env`.
     env:
@@ -39,6 +43,7 @@ jobs:
           python -c "from engine.web import landing, layout; print('shell import OK')"
 
       - name: Unit tests
+        timeout-minutes: 5
         env:
           XAI_API_KEY: ci-import-placeholder
         run: python -m pytest tests/test_index_options.py tests/test_ui_navigation.py tests/test_premarket.py tests/test_research.py tests/test_chat_chart_transport.py tests/test_objective.py tests/test_refit.py tests/test_regime.py tests/test_vol_sizing.py tests/test_promotion.py tests/test_short_exits.py -q
@@ -47,6 +52,7 @@ jobs:
       # is configured on the repo. Add it with:  gh secret set DATABASE_URL
       - name: Regression suite (if DB secret present)
         if: ${{ env.HAS_DB_SECRET == 'true' }}
+        timeout-minutes: 10
         env:
           # The AG-UI tests only need an OpenAI-compatible client to *construct*, so a
           # placeholder is enough and no real key goes near CI. Deliberately NOT
