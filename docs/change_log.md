@@ -5,12 +5,16 @@
 ### Alpha Research
 
 - Added a collapsed Alpha Research sidebar section with editable Growth Agent
-  and Value Agent commands.
+  and Value Agent commands, plus a compact Combined View.
 - Ported the concise Growth and Value methodology themes from Alpha Agents into
   an in-process, read-only AlpaTrade runner using existing company, financial,
   valuation, analyst, news, and per-user model providers.
 - Added `alpha:runs` for user-scoped saved-report history and deterministic
   evidence fallback when model synthesis is unavailable.
+- Added `alpha:compare` to collect evidence once, run compact Growth and Value
+  synthesis concurrently, and save both perspectives as ordinary research runs.
+- Added `alpha:show run-id:<uuid>` and a Saved Reports sidebar group so users
+  can reopen user-scoped stored reports without new data or model calls.
 
 ### Persistence and deployment
 

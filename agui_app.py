@@ -978,7 +978,7 @@ _CLI_EXACT = {"status", "help", "guide", "positions", "account", "accounts"}
 _STREAMING_COMMANDS = {
     "agent:backtest", "agent:paper", "agent:full",
     "agent:validate", "agent:reconcile",
-    "alpha:growth", "alpha:value",
+    "alpha:growth", "alpha:value", "alpha:compare",
 }
 
 
@@ -1182,7 +1182,9 @@ Use `command:type` to filter by backtest or paper. Add optional params after.
 ## Alpha Research
 - `alpha:growth ticker:AAPL` — durable growth and moat review
 - `alpha:value ticker:BBY` — undervaluation and value-trap review
+- `alpha:compare ticker:AAPL` — compact Growth and Value perspectives
 - `alpha:runs limit:10` — recent saved Alpha Research reports
+- `alpha:show run-id:<uuid>` — open one saved Alpha Research report
 
 ## Alpaca Account
 - `positions` — open positions from Alpaca paper account

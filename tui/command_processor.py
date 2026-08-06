@@ -636,11 +636,14 @@ Plotly.newPlot('chart', [trace1], {{
     # ------------------------------------------------------------------
 
     async def _handle_alpha_command(self, user_input: str) -> str:
-        """Dispatch local alpha:growth, alpha:value, and alpha:runs commands."""
+        """Dispatch local Alpha Research analysis and history commands."""
         from engine.research.alpha_agents import (
+            normalize_run_id,
             normalize_ticker,
             recent_runs_markdown,
+            run_alpha_comparison,
             run_alpha_research,
+            saved_run_markdown,
         )
 
         parts = user_input.strip().split()
@@ -654,11 +657,32 @@ Plotly.newPlot('chart', [trace1], {{
                 return "# Alpha Research\n\nUsage: `alpha:runs limit:10`"
             return await asyncio.to_thread(recent_runs_markdown, self.user_id, limit)
 
-        if subcmd not in {"alpha:growth", "alpha:value"}:
+        if subcmd == "alpha:show":
+            run_id_parts = [
+                part.split(":", 1)[1]
+                for part in parts[1:]
+                if part.lower().startswith("run-id:")
+            ]
+            has_extra_parts = len(parts[1:]) != len(run_id_parts)
+            run_id_value = run_id_parts[0] if len(run_id_parts) == 1 else ""
+            try:
+                if has_extra_parts or len(run_id_parts) != 1:
+                    raise ValueError("exactly one run-id is required")
+                run_id = normalize_run_id(run_id_value)
+            except ValueError:
+                return (
+                    "# Alpha Research Run\n\n"
+                    "Usage: `alpha:show run-id:<uuid>`\n\n"
+                    "Provide exactly one standard UUID through `run-id:`."
+                )
+            return await asyncio.to_thread(saved_run_markdown, self.user_id, run_id)
+
+        if subcmd not in {"alpha:growth", "alpha:value", "alpha:compare"}:
             return (
                 "# Unknown Alpha Research Command\n\n"
                 "Available: `alpha:growth ticker:AAPL`, `alpha:value ticker:BBY`, "
-                "and `alpha:runs limit:10`."
+                "`alpha:compare ticker:AAPL`, `alpha:runs limit:10`, and "
+                "`alpha:show run-id:<uuid>`."
             )
 
         ticker_parts = [
@@ -673,14 +697,22 @@ Plotly.newPlot('chart', [trace1], {{
                 raise ValueError("exactly one ticker is required")
             ticker = normalize_ticker(ticker_value)
         except ValueError:
-            example = "AAPL" if subcmd == "alpha:growth" else "BBY"
+            example = "BBY" if subcmd == "alpha:value" else "AAPL"
+            heading = (
+                "Alpha Combined View"
+                if subcmd == "alpha:compare"
+                else f"Alpha {subcmd.split(':', 1)[1].title()} Agent"
+            )
             return (
-                f"# Alpha {subcmd.split(':', 1)[1].title()} Agent\n\n"
+                f"# {heading}\n\n"
                 f"Usage: `{subcmd} ticker:{example}`\n\n"
                 "Provide exactly one ticker. Letters, numbers, `.` and `-` are supported."
             )
 
         mode = subcmd.split(":", 1)[1]
+        if mode == "compare":
+            comparison = await run_alpha_comparison(ticker, self.user_id)
+            return comparison.as_markdown()
         result = await run_alpha_research(mode, ticker, self.user_id)
         return result.as_markdown()
 
@@ -2077,7 +2109,9 @@ Plotly.newPlot('chart', [trace1], {{
         col2.add_row("[bold white]Alpha Research[/bold white]", "")
         col2.add_row("alpha:growth ticker:AAPL", "growth and moat review")
         col2.add_row("alpha:value ticker:BBY", "value and trap review")
+        col2.add_row("alpha:compare ticker:AAPL", "compact growth + value")
         col2.add_row("alpha:runs limit:10", "saved research reports")
+        col2.add_row("alpha:show run-id:<uuid>", "open a saved report")
         col2.add_row("", "")
         col2.add_row("[bold white]Charts[/bold white]", "")
         col2.add_row("chart:AAPL", "stock price chart (3mo)")

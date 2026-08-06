@@ -23,10 +23,18 @@ def test_sidebar_alpha_research_shortcuts_fill_editable_commands():
         < html.index(">Monitoring<")
     assert "Growth Agent" in html
     assert "Value Agent" in html
+    assert "Combined View" in html
+    assert "Saved Reports" in html
     assert "alpha:growth ticker:AAPL" in html
     assert "alpha:value ticker:BBY" in html
+    assert "alpha:compare ticker:AAPL" in html
+    assert "alpha:runs limit:10" in html
+    assert "alpha:show run-id:&lt;uuid&gt;" in html
     assert "onclick=\"fillChat('alpha:growth ticker:AAPL')\"" in html
     assert "onclick=\"fillChat('alpha:value ticker:BBY')\"" in html
+    assert "onclick=\"fillChat('alpha:compare ticker:AAPL')\"" in html
+    assert "onclick=\"fillChat('alpha:runs limit:10')\"" in html
+    assert "onclick=\"fillChat('alpha:show run-id:&lt;uuid&gt;')\"" in html
 
 
 def test_authenticated_sidebar_has_visible_sign_out():

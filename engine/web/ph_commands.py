@@ -4,7 +4,7 @@ Three registries, each a list of ``(group_label, [(command, description), ...])`
 
 * ``AGENT_SHORTCUTS`` — agent-orchestration groups (Backtest, Validate,
   Reconcile, Paper Trade, Full Cycle) that kick off the multi-agent workflow.
-* ``ALPHA_RESEARCH_SHORTCUTS`` — local Growth and Value equity-research agents.
+* ``ALPHA_RESEARCH_SHORTCUTS`` — local Growth, Value, and combined research views.
 * ``MAIN_NAV`` — data / reporting navigation (Trades, Runs & Reports,
   Rankings & P&L, Monitor, Research, Charts & Equity, Accounts, Options).
 
@@ -56,6 +56,13 @@ ALPHA_RESEARCH_SHORTCUTS = [
     ]),
     ("Value Agent", [
         ("alpha:value ticker:BBY", "undervaluation and value-trap review"),
+    ]),
+    ("Combined View", [
+        ("alpha:compare ticker:AAPL", "compact growth and value perspectives"),
+    ]),
+    ("Saved Reports", [
+        ("alpha:runs limit:10", "recent saved reports"),
+        ("alpha:show run-id:<uuid>", "open a saved report"),
     ]),
 ]
 
