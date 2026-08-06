@@ -146,6 +146,10 @@ class CommandProcessor:
         if cmd_lower.startswith("alpaca:backtest"):
             return await self._handle_backtest(user_input)
 
+        # Local Alpha Growth/Value research commands
+        if cmd_lower.startswith("alpha:"):
+            return await self._handle_alpha_command(user_input)
+
         # Agent framework commands
         if cmd_lower.startswith("agent:"):
             return await self._handle_agent_command(user_input)
@@ -628,7 +632,60 @@ Plotly.newPlot('chart', [trace1], {{
 </body></html>"""
 
     # ------------------------------------------------------------------
-    # Agent command dispatcher
+    # Alpha Research command dispatcher
+    # ------------------------------------------------------------------
+
+    async def _handle_alpha_command(self, user_input: str) -> str:
+        """Dispatch local alpha:growth, alpha:value, and alpha:runs commands."""
+        from engine.research.alpha_agents import (
+            normalize_ticker,
+            recent_runs_markdown,
+            run_alpha_research,
+        )
+
+        parts = user_input.strip().split()
+        subcmd = parts[0].lower()
+        params = self._parse_kv_params(parts[1:])
+
+        if subcmd == "alpha:runs":
+            try:
+                limit = int(params.get("limit", "10"))
+            except ValueError:
+                return "# Alpha Research\n\nUsage: `alpha:runs limit:10`"
+            return await asyncio.to_thread(recent_runs_markdown, self.user_id, limit)
+
+        if subcmd not in {"alpha:growth", "alpha:value"}:
+            return (
+                "# Unknown Alpha Research Command\n\n"
+                "Available: `alpha:growth ticker:AAPL`, `alpha:value ticker:BBY`, "
+                "and `alpha:runs limit:10`."
+            )
+
+        ticker_parts = [
+            part.split(":", 1)[1]
+            for part in parts[1:]
+            if part.lower().startswith("ticker:")
+        ]
+        has_extra_parts = len(parts[1:]) != len(ticker_parts)
+        ticker_value = ticker_parts[0] if len(ticker_parts) == 1 else ""
+        try:
+            if has_extra_parts or len(ticker_parts) != 1:
+                raise ValueError("exactly one ticker is required")
+            ticker = normalize_ticker(ticker_value)
+        except ValueError:
+            example = "AAPL" if subcmd == "alpha:growth" else "BBY"
+            return (
+                f"# Alpha {subcmd.split(':', 1)[1].title()} Agent\n\n"
+                f"Usage: `{subcmd} ticker:{example}`\n\n"
+                "Provide exactly one ticker. Letters, numbers, `.` and `-` are supported."
+            )
+
+        mode = subcmd.split(":", 1)[1]
+        result = await run_alpha_research(mode, ticker, self.user_id)
+        return result.as_markdown()
+
+    # ------------------------------------------------------------------
+    # Trading Agent command dispatcher
     # ------------------------------------------------------------------
 
     async def _handle_agent_command(self, user_input: str) -> str:
@@ -2016,6 +2073,11 @@ Plotly.newPlot('chart', [trace1], {{
         col2.add_row("analysts:AAPL", "ratings & targets")
         col2.add_row("valuation:AAPL,MSFT", "valuation comparison")
         col2.add_row("movers", "top gainers & losers")
+        col2.add_row("", "")
+        col2.add_row("[bold white]Alpha Research[/bold white]", "")
+        col2.add_row("alpha:growth ticker:AAPL", "growth and moat review")
+        col2.add_row("alpha:value ticker:BBY", "value and trap review")
+        col2.add_row("alpha:runs limit:10", "saved research reports")
         col2.add_row("", "")
         col2.add_row("[bold white]Charts[/bold white]", "")
         col2.add_row("chart:AAPL", "stock price chart (3mo)")

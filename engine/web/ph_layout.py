@@ -33,7 +33,11 @@ from fasthtml.common import (
     Script, Style, Summary, Span, Textarea, Title,
 )
 
-from engine.web.ph_commands import AGENT_SHORTCUTS, MAIN_NAV
+from engine.web.ph_commands import (
+    AGENT_SHORTCUTS,
+    ALPHA_RESEARCH_SHORTCUTS,
+    MAIN_NAV,
+)
 
 # --- CDN assets -------------------------------------------------------------
 _MARKED_CDN = "https://cdn.jsdelivr.net/npm/marked/marked.min.js"
@@ -238,6 +242,12 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             _nav_section(
                 "Agents",
                 Div(*[_menu_group(lbl, items, active) for lbl, items in AGENT_SHORTCUTS],
+                    cls="agent-browser"),
+            ),
+            _nav_section(
+                "Alpha Research",
+                Div(*[_menu_group(lbl, items, active)
+                      for lbl, items in ALPHA_RESEARCH_SHORTCUTS],
                     cls="agent-browser"),
             ),
             _nav_section(

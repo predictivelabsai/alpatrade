@@ -1,5 +1,31 @@
 # Change Log
 
+## 0.6.0 — 2026-08-06
+
+### Alpha Research
+
+- Added a collapsed Alpha Research sidebar section with editable Growth Agent
+  and Value Agent commands.
+- Ported the concise Growth and Value methodology themes from Alpha Agents into
+  an in-process, read-only AlpaTrade runner using existing company, financial,
+  valuation, analyst, news, and per-user model providers.
+- Added `alpha:runs` for user-scoped saved-report history and deterministic
+  evidence fallback when model synthesis is unavailable.
+
+### Persistence and deployment
+
+- Added idempotent migration `sql/17_alpha_research_runs.sql` for user-scoped
+  completed, partial, and failed research reports.
+- Apply `python run_migration.py sql/17_alpha_research_runs.sql` before deployment.
+  Reports still return with a visible not-saved warning when persistence is not
+  configured or the migration has not been applied.
+
+### Tests
+
+- Added DB-free coverage for sidebar commands, routing, ticker validation,
+  methodology prompts, evidence fallback, persistence lifecycle, and user-scoped
+  recent-run queries.
+
 ## 0.5.2 — 2026-07-29
 
 ### Authentication navigation

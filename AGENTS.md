@@ -49,7 +49,7 @@ DB-free unit-test files above. Add new DB-free tests to that explicit list if th
   Validate → Report. Communication is a file-based JSON message bus (`data/agent_messages/`).
 - **Verticals**: `verticals/equities/` is the equities web vertical; `verticals/publicmarkets/` is
   the newer IPO/SEC/hedge-fund tools vertical. Provider-neutral logic stays in `engine/`.
-- **DB**: PostgreSQL with `alpatrade` schema. Migrations in `sql/` (numbered `01_`–`15_`,
+- **DB**: PostgreSQL with `alpatrade` schema. Migrations in `sql/` (numbered `01_`–`17_`,
   idempotent `CREATE TABLE IF NOT EXISTS`). Per-user Alpaca keys live in `user_accounts`
   (Fernet-encrypted BYTEA), **not** `users`. All data tables carry `user_id` (+ `account_id`).
 

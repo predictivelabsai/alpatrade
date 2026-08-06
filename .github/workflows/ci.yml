@@ -46,7 +46,7 @@ jobs:
         timeout-minutes: 5
         env:
           XAI_API_KEY: ci-import-placeholder
-        run: python -m pytest tests/test_index_options.py tests/test_ui_navigation.py tests/test_premarket.py tests/test_research.py tests/test_chat_chart_transport.py tests/test_objective.py tests/test_refit.py tests/test_regime.py tests/test_vol_sizing.py tests/test_promotion.py tests/test_short_exits.py -q
+        run: python -m pytest tests/test_alpha_research.py tests/test_index_options.py tests/test_ui_navigation.py tests/test_premarket.py tests/test_research.py tests/test_chat_chart_transport.py tests/test_objective.py tests/test_refit.py tests/test_regime.py tests/test_vol_sizing.py tests/test_promotion.py tests/test_short_exits.py -q
 
       # DB-backed regression suite (opt-in): runs only when the DATABASE_URL secret
       # is configured on the repo. Add it with:  gh secret set DATABASE_URL

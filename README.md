@@ -140,6 +140,7 @@ sequenceDiagram
 - **Parameterized backtesting** — grid search over dip threshold, take profit, hold days, and stop loss to find optimal strategy parameters ranked by Sharpe ratio
 - **Paper trading** — continuous background trading on Alpaca's paper API with daily P&L email reports, startup order sync, and PDT protection
 - **Market research** — news, company profiles, financials, technicals, analyst ratings, and valuation comparisons
+- **Alpha Research** — local Growth and Value methodology agents with user-scoped saved reports
 - **Charts** — stock price charts and backtest equity curves rendered with Plotly in the artifacts pane
 - **Alpaca integration** — live positions, account summary, and order management via Alpaca paper API
 - **Multi-agent system** — backtest, validate, paper trade, reconcile, and report via an orchestrated agent pipeline
@@ -163,6 +164,10 @@ financials:AAPL                     Income and balance sheet
 analysts:AAPL                       Ratings and price targets
 valuation:AAPL,MSFT                 Side-by-side valuation comparison
 movers                              Top market gainers and losers
+
+alpha:growth ticker:AAPL            Growth durability and moat research
+alpha:value ticker:BBY              Undervaluation and value-trap research
+alpha:runs limit:10                 Recent saved Alpha Research reports
 
 chart:AAPL                          Stock price chart (3mo default)
 chart:TSLA period:1y                Custom period chart

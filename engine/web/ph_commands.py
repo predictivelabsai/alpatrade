@@ -1,9 +1,10 @@
 """Command-menu data for the AlpaTrade in-app shell (left collapsible menu).
 
-Two registries, each a list of ``(group_label, [(command, description), ...])``:
+Three registries, each a list of ``(group_label, [(command, description), ...])``:
 
 * ``AGENT_SHORTCUTS`` — agent-orchestration groups (Backtest, Validate,
   Reconcile, Paper Trade, Full Cycle) that kick off the multi-agent workflow.
+* ``ALPHA_RESEARCH_SHORTCUTS`` — local Growth and Value equity-research agents.
 * ``MAIN_NAV`` — data / reporting navigation (Trades, Runs & Reports,
   Rankings & P&L, Monitor, Research, Charts & Equity, Accounts, Options).
 
@@ -45,6 +46,16 @@ AGENT_SHORTCUTS = [
     ("Full Cycle", [
         ("agent:full lookback:1m duration:1m", "backtest + validate + paper"),
         ("agent:full lookback:3m duration:7d", "3-month + 7-day paper"),
+    ]),
+]
+
+# Local, read-only equity research ported from the Alpha Agents methodology.
+ALPHA_RESEARCH_SHORTCUTS = [
+    ("Growth Agent", [
+        ("alpha:growth ticker:AAPL", "durable growth and moat review"),
+    ]),
+    ("Value Agent", [
+        ("alpha:value ticker:BBY", "undervaluation and value-trap review"),
     ]),
 ]
 

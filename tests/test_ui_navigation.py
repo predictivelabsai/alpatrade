@@ -7,13 +7,26 @@ from engine.web.ph_layout import PH_JS, _left_pane, page
 def test_sidebar_sections_are_collapsed_by_default():
     html = to_xml(_left_pane("guide", None))
 
-    for section in ("Explore", "Chats", "Agents", "Monitoring", "Tools",
-                    "Public Markets", "Research", "Admin"):
+    for section in ("Explore", "Chats", "Agents", "Alpha Research", "Monitoring",
+                    "Tools", "Public Markets", "Research", "Admin"):
         assert f'<span class="nav-section-name">{section}</span>' in html
     assert '<details class="nav-section" open' not in html
     assert 'class="nav-section-expand">&gt;' in html
     assert 'class="nav-section-collapse">&lt;' in html
     assert 'href="/dashboard"' in html
+
+
+def test_sidebar_alpha_research_shortcuts_fill_editable_commands():
+    html = to_xml(_left_pane("guide", None))
+
+    assert html.index(">Agents<") < html.index(">Alpha Research<") \
+        < html.index(">Monitoring<")
+    assert "Growth Agent" in html
+    assert "Value Agent" in html
+    assert "alpha:growth ticker:AAPL" in html
+    assert "alpha:value ticker:BBY" in html
+    assert "onclick=\"fillChat('alpha:growth ticker:AAPL')\"" in html
+    assert "onclick=\"fillChat('alpha:value ticker:BBY')\"" in html
 
 
 def test_authenticated_sidebar_has_visible_sign_out():
