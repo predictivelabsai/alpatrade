@@ -5,7 +5,7 @@ pattern: streaming chat over SSE + typed REST.
 
 - **Base URL:** `https://api.alpatrade.chat`
 - **Machine-readable spec:** [`docs/swagger.json`](./swagger.json) (OpenAPI 3.1, generated from the FastAPI app) — import it into Postman / codegen.
-- **Auth:** JWT bearer. `Authorization: Bearer <token>` on protected calls.
+- **Auth:** optional JWT bearer. Anonymous calls use the shared demo paper account/data.
 - **Trading is paper-only** (simulated). The default account is the primary paper account (number ending **…8CR**).
 
 ---
@@ -14,11 +14,12 @@ pattern: streaming chat over SSE + typed REST.
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| POST | `/auth/register` | `{email, password, display_name?}` | `{access_token, token_type, user}` |
-| POST | `/auth/login` | `{email, password}` | `{access_token, token_type, user}` |
+| POST | `/auth/register` | `{email, password, display_name?}` | `{token, user_id, email}` |
+| POST | `/auth/login` | `{email, password}` | `{token, user_id, email}` |
 
-Store `access_token` and send it as `Authorization: Bearer <token>` on later calls.
-Auth is **optional** for `/v2/chat` (anonymous uses the shared demo account); required for per-user data.
+Store `token` and send it as `Authorization: Bearer <token>` to scope calls to that user.
+Auth is optional on the current `/v2/*` mobile surface; anonymous callers use shared demo data and
+the server's paper account.
 
 ---
 
@@ -108,8 +109,8 @@ All return typed JSON (see `swagger.json` for schemas). Pass the bearer token to
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/v2/positions` | Open Alpaca paper positions (symbol, qty, P&L). |
-| GET | `/v2/trades` | Recent trades (`?trade_type=paper|backtest`). |
+| GET | `/v2/positions` | Live open Alpaca paper positions by default; supports `?run_id=` and `?status=` for ledger queries. |
+| GET | `/v2/trades` | Recent trades (`?type=paper|backtest`). |
 | GET | `/v2/runs` | Backtest / paper runs. |
 | GET | `/v2/report` | Strategy summaries. |
 | GET | `/v2/report/{run_id}` | One run's detail. |

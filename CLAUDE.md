@@ -64,7 +64,7 @@ Server-side proxy to x.ai's realtime agent (PCM16 mono @ 24 kHz, server VAD). `V
 |---|---|---|
 | Chat | `POST /v2/chat`, `wss .../ws/voice` | chat_*, voice_* |
 | Portfolio | `GET /v2/positions` (+ client-side totals) | position.dart, positions_* |
-| Activity | `GET /v2/trades?trade_type=`, `GET /v2/runs` | trade.dart, run.dart, activity_* |
+| Activity | `GET /v2/trades?type=`, `GET /v2/runs` | trade.dart, run.dart, activity_* |
 | Strategies | `GET /v2/top`, `/v2/report`, `/v2/pnl/{id}` | strategy.dart, pnl.dart, strategies_*, strategy_detail_screen |
 | More | `GET /news`, `/movers` (return `{result: markdown}`), `GET /v2/status` | market_*, news/movers/status/settings screens |
 

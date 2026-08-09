@@ -9,7 +9,7 @@ class ActivityService {
   Future<TradesResponse> getTrades({String tradeType = 'paper'}) async {
     final json = await _client.get(
       '/v2/trades',
-      queryParameters: {'trade_type': tradeType},
+      queryParameters: {'type': tradeType},
     );
     return TradesResponse.fromJson(json);
   }

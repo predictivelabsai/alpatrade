@@ -7,12 +7,12 @@ class MarketService {
 
   MarketService(this._client);
 
-  /// GET `/news?symbol=SYM` -> `{"result": "markdown"}` (symbol optional).
+  /// GET `/news?ticker=SYM` -> `{"result": "markdown"}` (ticker optional).
   Future<String> getNews({String? symbol}) async {
     final data = await _client.get(
       '/news',
       queryParameters: (symbol != null && symbol.isNotEmpty)
-          ? {'symbol': symbol}
+          ? {'ticker': symbol}
           : null,
     );
     return (data['result'] ?? '') as String;

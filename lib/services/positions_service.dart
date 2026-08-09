@@ -6,7 +6,10 @@ class PositionsService {
   PositionsService(this._client);
 
   Future<PositionsResponse> getPositions() async {
-    final json = await _client.get('/v2/positions');
+    final json = await _client.get(
+      '/v2/positions',
+      queryParameters: {'status': 'open'},
+    );
     return PositionsResponse.fromJson(json);
   }
 }

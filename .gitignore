@@ -130,6 +130,11 @@ app.*.symbols
 
 # Playwright MCP snapshots
 .playwright-mcp/
+.playwright-cli/
+
+# Local Play submission artifacts
+output/play-store/
+*.aab
 
 # Flutter metadata
 .metadatatest-results/
