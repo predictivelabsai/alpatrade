@@ -22,11 +22,11 @@ Routing (identical decision logic to ``agui_app``)
 Free-form text streams token-by-token from the LangGraph agent
 (``agui_app.langgraph_agent``, XAI Grok) via ``astream_events(v2)``. Recognised
 CLI commands (``trades``/``runs``/``top``/``report``/``monitor``/``research``/
-``charts``/``accounts``/``options``, ``agent:*``, ``positions``, ``news:``,
+``charts``/``accounts``/``options``, ``agent:*``, ``alpha:*``, ``positions``, ``news:``,
 ``load:``, ``equity``, ``help`` …) are intercepted by
 ``agui_app._command_interceptor`` and executed through
 ``tui.command_processor.CommandProcessor``; the markdown result is streamed as a
-single ``token`` block (long-running ``agent:*`` commands run to completion, then
+single ``token`` block (long-running ``agent:*`` and Alpha Research commands run to completion, then
 their result — with an auto-appended equity curve for backtests — is streamed).
 
 Routes registered by :func:`register`

@@ -146,6 +146,10 @@ class CommandProcessor:
         if cmd_lower.startswith("alpaca:backtest"):
             return await self._handle_backtest(user_input)
 
+        # Local Alpha Growth/Value research commands
+        if cmd_lower.startswith("alpha:"):
+            return await self._handle_alpha_command(user_input)
+
         # Agent framework commands
         if cmd_lower.startswith("agent:"):
             return await self._handle_agent_command(user_input)
@@ -628,7 +632,92 @@ Plotly.newPlot('chart', [trace1], {{
 </body></html>"""
 
     # ------------------------------------------------------------------
-    # Agent command dispatcher
+    # Alpha Research command dispatcher
+    # ------------------------------------------------------------------
+
+    async def _handle_alpha_command(self, user_input: str) -> str:
+        """Dispatch local Alpha Research analysis and history commands."""
+        from engine.research.alpha_agents import (
+            normalize_run_id,
+            normalize_ticker,
+            recent_runs_markdown,
+            run_alpha_comparison,
+            run_alpha_research,
+            saved_run_markdown,
+        )
+
+        parts = user_input.strip().split()
+        subcmd = parts[0].lower()
+        params = self._parse_kv_params(parts[1:])
+
+        if subcmd == "alpha:runs":
+            try:
+                limit = int(params.get("limit", "10"))
+            except ValueError:
+                return "# Alpha Research\n\nUsage: `alpha:runs limit:10`"
+            return await asyncio.to_thread(recent_runs_markdown, self.user_id, limit)
+
+        if subcmd == "alpha:show":
+            run_id_parts = [
+                part.split(":", 1)[1]
+                for part in parts[1:]
+                if part.lower().startswith("run-id:")
+            ]
+            has_extra_parts = len(parts[1:]) != len(run_id_parts)
+            run_id_value = run_id_parts[0] if len(run_id_parts) == 1 else ""
+            try:
+                if has_extra_parts or len(run_id_parts) != 1:
+                    raise ValueError("exactly one run-id is required")
+                run_id = normalize_run_id(run_id_value)
+            except ValueError:
+                return (
+                    "# Alpha Research Run\n\n"
+                    "Usage: `alpha:show run-id:<uuid>`\n\n"
+                    "Provide exactly one standard UUID through `run-id:`."
+                )
+            return await asyncio.to_thread(saved_run_markdown, self.user_id, run_id)
+
+        if subcmd not in {"alpha:growth", "alpha:value", "alpha:compare"}:
+            return (
+                "# Unknown Alpha Research Command\n\n"
+                "Available: `alpha:growth ticker:AAPL`, `alpha:value ticker:BBY`, "
+                "`alpha:compare ticker:AAPL`, `alpha:runs limit:10`, and "
+                "`alpha:show run-id:<uuid>`."
+            )
+
+        ticker_parts = [
+            part.split(":", 1)[1]
+            for part in parts[1:]
+            if part.lower().startswith("ticker:")
+        ]
+        has_extra_parts = len(parts[1:]) != len(ticker_parts)
+        ticker_value = ticker_parts[0] if len(ticker_parts) == 1 else ""
+        try:
+            if has_extra_parts or len(ticker_parts) != 1:
+                raise ValueError("exactly one ticker is required")
+            ticker = normalize_ticker(ticker_value)
+        except ValueError:
+            example = "BBY" if subcmd == "alpha:value" else "AAPL"
+            heading = (
+                "Alpha Combined View"
+                if subcmd == "alpha:compare"
+                else f"Alpha {subcmd.split(':', 1)[1].title()} Agent"
+            )
+            return (
+                f"# {heading}\n\n"
+                f"Usage: `{subcmd} ticker:{example}`\n\n"
+                "Provide exactly one ticker. Letters, numbers, `.` and `-` are supported."
+            )
+
+        mode = subcmd.split(":", 1)[1]
+        if mode == "compare":
+            comparison = await run_alpha_comparison(ticker, self.user_id)
+            return comparison.as_markdown()
+        result = await run_alpha_research(mode, ticker, self.user_id)
+        return result.as_markdown()
+
+    # ------------------------------------------------------------------
+    # Trading Agent command dispatcher
     # ------------------------------------------------------------------
 
     async def _handle_agent_command(self, user_input: str) -> str:
@@ -2016,6 +2105,13 @@ Plotly.newPlot('chart', [trace1], {{
         col2.add_row("analysts:AAPL", "ratings & targets")
         col2.add_row("valuation:AAPL,MSFT", "valuation comparison")
         col2.add_row("movers", "top gainers & losers")
+        col2.add_row("", "")
+        col2.add_row("[bold white]Alpha Research[/bold white]", "")
+        col2.add_row("alpha:growth ticker:AAPL", "growth and moat review")
+        col2.add_row("alpha:value ticker:BBY", "value and trap review")
+        col2.add_row("alpha:compare ticker:AAPL", "compact growth + value")
+        col2.add_row("alpha:runs limit:10", "saved research reports")
+        col2.add_row("alpha:show run-id:<uuid>", "open a saved report")
         col2.add_row("", "")
         col2.add_row("[bold white]Charts[/bold white]", "")
         col2.add_row("chart:AAPL", "stock price chart (3mo)")
