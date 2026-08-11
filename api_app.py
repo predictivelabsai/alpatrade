@@ -470,6 +470,52 @@ async def v2_pnl(run_id: str, user: Optional[Dict] = Depends(get_current_user)):
     )
 
 
+def _position_item_from_alpaca(position: Dict) -> PositionItem:
+    """Map an Alpaca paper position to the mobile/API response contract."""
+    side = position.get("side", "long")
+    side = getattr(side, "value", side)
+    side = str(side).lower().rsplit(".", 1)[-1]
+    qty = float(position.get("qty", 0) or 0)
+    unrealized_plpc = position.get("unrealized_plpc")
+    return PositionItem(
+        run_id="",
+        symbol=str(position.get("symbol", "")),
+        side=side,
+        shares=abs(qty),
+        avg_entry_price=float(position["avg_entry_price"])
+        if position.get("avg_entry_price") not in (None, "") else None,
+        current_price=float(position["current_price"])
+        if position.get("current_price") not in (None, "") else None,
+        market_value=float(position["market_value"])
+        if position.get("market_value") not in (None, "") else None,
+        unrealized_pnl=float(position["unrealized_pl"])
+        if position.get("unrealized_pl") not in (None, "") else None,
+        unrealized_pnl_pct=float(unrealized_plpc) * 100
+        if unrealized_plpc not in (None, "") else None,
+        cost_basis=float(position["cost_basis"])
+        if position.get("cost_basis") not in (None, "") else None,
+        status="open",
+    )
+
+
+def _live_position_items(user_id: Optional[str], limit: int) -> Optional[List[PositionItem]]:
+    """Read current paper positions, returning None when the broker is unavailable."""
+    try:
+        from engine.auth import get_alpaca_keys
+        from engine.brokers.alpaca import AlpacaAPI
+
+        keys = get_alpaca_keys(user_id) if user_id else None
+        client = AlpacaAPI(*keys, paper=True) if keys else AlpacaAPI(paper=True)
+        raw = client.get_positions()
+        if not isinstance(raw, list):
+            logger.warning("/v2/positions broker response was not a list: %s", raw)
+            return None
+        return [_position_item_from_alpaca(p) for p in raw[:limit]]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("/v2/positions broker lookup failed; using DB ledger: %s", exc)
+        return None
+
+
 @app.get("/v2/positions", response_model=PositionsResponse, tags=["data"])
 async def v2_positions(
     run_id: Optional[str] = None,
@@ -477,11 +523,21 @@ async def v2_positions(
     limit: int = Query(50, ge=1, le=500),
     user: Optional[Dict] = Depends(get_current_user),
 ):
-    """Query positions with optional filters."""
+    """Return live paper positions, or query historical positions by run/status.
+
+    The default request used by the mobile Portfolio screen reads Alpaca so
+    prices and unrealized P&L are current. Requests for a specific run or for
+    non-open history continue to use the database ledger.
+    """
     from utils.db.db_pool import DatabasePool
     from sqlalchemy import text
 
     uid = _uid(user)
+    if run_id is None and status in (None, "open"):
+        live_items = _live_position_items(uid, limit)
+        if live_items is not None:
+            return PositionsResponse(positions=live_items, total=len(live_items))
+
     where_parts: List[str] = []
     bind: Dict = {}
     if run_id:
