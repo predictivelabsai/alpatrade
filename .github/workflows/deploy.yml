@@ -4,7 +4,8 @@ name: Deploy (Coolify)
 #
 # Required repo secrets (same names as .env, so `gh secret set X < <(...)` is easy):
 #   COOLIFY_URL        e.g. https://coolify.example.tld
-#   COOLIFY_API_TOKEN  API token with deploy permission (Keys & Tokens -> API tokens)
+#   COOLIFY_API_TOKEN  API token with root permission (Coolify 4.1.2 requires it
+#                      to read deployment status after triggering a deploy)
 #   COOLIFY_APP_UUID   uuid from `python scripts/coolify_deploy.py list`
 #
 # If those are missing this workflow FAILS rather than skipping. An earlier version
@@ -55,6 +56,9 @@ jobs:
 
       - name: Wait for the deployment to finish
         run: |
+          # Without pipefail, a failed curl (for example a 403 from an
+          # under-permissioned token) is hidden by jq and this loop waits 20m.
+          set -o pipefail
           uuid="${{ steps.trigger.outputs.deployment_uuid }}"
           for i in $(seq 1 80); do
             status=$(curl -fsSL -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
