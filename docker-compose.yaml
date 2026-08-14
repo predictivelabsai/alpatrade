@@ -103,6 +103,12 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "from pathlib import Path; assert b'engine.autonomy.worker' in Path('/proc/1/cmdline').read_bytes()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
 
   # Observe a FIXED strategy in the wild — paper-trades the validated PDT-safe swing
@@ -141,4 +147,10 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "from pathlib import Path; assert b'run_paper_strategy.py' in Path('/proc/1/cmdline').read_bytes()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
