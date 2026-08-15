@@ -1,0 +1,243 @@
+"""Public catalogue metadata shared by the API and developer portal."""
+
+from __future__ import annotations
+
+from typing import Literal, TypedDict
+
+
+class AgentCatalogEntry(TypedDict):
+    slug: str
+    name: str
+    category: Literal["assistant", "research", "analysis", "trading", "orchestration"]
+    description: str
+    method: Literal["GET", "POST"]
+    path: str
+    access: Literal["authenticated", "public"]
+    execution: Literal["synchronous", "asynchronous", "streaming"]
+    safety: Literal["read_only", "paper_only", "orchestration"]
+    skills: tuple[str, ...]
+
+
+AGENT_CATALOG_ENTRIES: tuple[AgentCatalogEntry, ...] = (
+    {
+        "slug": "deep-agent",
+        "name": "DeepAgent Assistant",
+        "category": "assistant",
+        "description": "Primary LangChain DeepAgents harness with research and broker tools.",
+        "method": "POST",
+        "path": "/v2/agents/chat/invoke",
+        "access": "authenticated",
+        "execution": "synchronous",
+        "safety": "paper_only",
+        "skills": (
+            "Portfolio and position analysis",
+            "Market news and company research",
+            "Backtest and reporting tool routing",
+            "Paper-account workflow assistance",
+        ),
+    },
+    {
+        "slug": "deep-agent-stream",
+        "name": "DeepAgent Assistant (SSE)",
+        "category": "assistant",
+        "description": "Streaming DeepAgents chat with token, route, and tool events.",
+        "method": "POST",
+        "path": "/v2/chat",
+        "access": "public",
+        "execution": "streaming",
+        "safety": "paper_only",
+        "skills": (
+            "Token-by-token conversational responses",
+            "Agent routing events",
+            "Tool execution events",
+            "Conversation-thread continuity",
+        ),
+    },
+    {
+        "slug": "premarket",
+        "name": "Premarket Agent",
+        "category": "research",
+        "description": "Read-only premarket scan and ranked mover intelligence.",
+        "method": "POST",
+        "path": "/v2/agents/premarket/invoke",
+        "access": "authenticated",
+        "execution": "synchronous",
+        "safety": "read_only",
+        "skills": (
+            "Premarket mover discovery",
+            "Catalyst and news synthesis",
+            "Candidate ranking",
+            "Saved-scan retrieval",
+        ),
+    },
+    {
+        "slug": "alpha-growth",
+        "name": "Alpha Growth Agent",
+        "category": "research",
+        "description": "Evidence-backed growth-company research report.",
+        "method": "POST",
+        "path": "/v2/agents/alpha-growth/invoke",
+        "access": "authenticated",
+        "execution": "synchronous",
+        "safety": "read_only",
+        "skills": (
+            "Growth-quality assessment",
+            "Fundamental evidence collection",
+            "Catalyst and risk analysis",
+            "Persistent research reports",
+        ),
+    },
+    {
+        "slug": "alpha-value",
+        "name": "Alpha Value Agent",
+        "category": "research",
+        "description": "Evidence-backed value-company research report.",
+        "method": "POST",
+        "path": "/v2/agents/alpha-value/invoke",
+        "access": "authenticated",
+        "execution": "synchronous",
+        "safety": "read_only",
+        "skills": (
+            "Valuation and margin-of-safety review",
+            "Fundamental evidence collection",
+            "Catalyst and risk analysis",
+            "Persistent research reports",
+        ),
+    },
+    {
+        "slug": "alpha-compare",
+        "name": "Alpha Comparison Agent",
+        "category": "research",
+        "description": "Growth and value views generated from one shared evidence collection.",
+        "method": "POST",
+        "path": "/v2/agents/alpha-compare/invoke",
+        "access": "authenticated",
+        "execution": "synchronous",
+        "safety": "read_only",
+        "skills": (
+            "Shared-evidence company research",
+            "Growth-versus-value comparison",
+            "Thesis conflict identification",
+            "Paired persistent reports",
+        ),
+    },
+    {
+        "slug": "backtest",
+        "name": "Backtest Agent",
+        "category": "analysis",
+        "description": "Run the parameter-grid backtest and return the best configuration.",
+        "method": "POST",
+        "path": "/v2/backtest",
+        "access": "authenticated",
+        "execution": "synchronous",
+        "safety": "read_only",
+        "skills": (
+            "Strategy parameter sweeps",
+            "Historical performance analysis",
+            "Risk and drawdown metrics",
+            "Best-configuration selection",
+        ),
+    },
+    {
+        "slug": "validator",
+        "name": "Validation Agent",
+        "category": "analysis",
+        "description": "Validate stored backtest or paper trades against market data.",
+        "method": "POST",
+        "path": "/v2/validate",
+        "access": "authenticated",
+        "execution": "synchronous",
+        "safety": "read_only",
+        "skills": (
+            "Trade-price verification",
+            "Anomaly detection",
+            "Fill correction checks",
+            "Validation suggestions",
+        ),
+    },
+    {
+        "slug": "reporter",
+        "name": "Report Agent",
+        "category": "analysis",
+        "description": "Return run summaries, detail, P&L, and ranked strategies.",
+        "method": "GET",
+        "path": "/v2/report",
+        "access": "authenticated",
+        "execution": "synchronous",
+        "safety": "read_only",
+        "skills": (
+            "Run summary reporting",
+            "P&L breakdowns",
+            "Strategy ranking",
+            "Performance metric retrieval",
+        ),
+    },
+    {
+        "slug": "paper-trader",
+        "name": "Paper Trade Agent",
+        "category": "trading",
+        "description": "Start a durable paper-trading subprocess and return immediately.",
+        "method": "POST",
+        "path": "/v2/paper",
+        "access": "authenticated",
+        "execution": "asynchronous",
+        "safety": "paper_only",
+        "skills": (
+            "Durable paper-strategy execution",
+            "Configurable polling and duration",
+            "PDT-aware trade controls",
+            "Background run monitoring",
+        ),
+    },
+    {
+        "slug": "reconciler",
+        "name": "Reconciliation Agent",
+        "category": "trading",
+        "description": "Compare the position ledger with the linked Alpaca paper account.",
+        "method": "POST",
+        "path": "/v2/reconcile",
+        "access": "authenticated",
+        "execution": "synchronous",
+        "safety": "paper_only",
+        "skills": (
+            "Position-ledger reconciliation",
+            "Trade mismatch detection",
+            "Missing and extra fill checks",
+            "Broker-versus-database P&L comparison",
+        ),
+    },
+    {
+        "slug": "orchestrator",
+        "name": "Five-Agent Orchestrator",
+        "category": "orchestration",
+        "description": "Run backtest, validation, paper trading, and reporting as one workflow.",
+        "method": "POST",
+        "path": "/v2/full",
+        "access": "authenticated",
+        "execution": "synchronous",
+        "safety": "orchestration",
+        "skills": (
+            "Multi-agent workflow coordination",
+            "Backtest-to-paper promotion",
+            "Phase status aggregation",
+            "End-to-end run reporting",
+        ),
+    },
+    {
+        "slug": "autonomy-scout",
+        "name": "Autonomy Scout",
+        "category": "orchestration",
+        "description": "Scan candidates and enqueue the durable paper-only agent pipeline.",
+        "method": "POST",
+        "path": "/v2/agents/autonomy-scout/invoke",
+        "access": "authenticated",
+        "execution": "asynchronous",
+        "safety": "paper_only",
+        "skills": (
+            "Market candidate scouting",
+            "Strategy-aware candidate ranking",
+            "Durable autonomy-run enqueueing",
+            "Paper-only account isolation",
+        ),
+    },
+)

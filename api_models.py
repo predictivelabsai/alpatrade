@@ -394,12 +394,17 @@ class ApiInfoResponse(BaseModel):
 class AgentDescriptor(BaseModel):
     slug: str
     name: str
+    category: Literal["assistant", "research", "analysis", "trading", "orchestration"]
     description: str
     method: Literal["GET", "POST"]
     path: str
     access: Literal["authenticated", "public"] = "authenticated"
     execution: Literal["synchronous", "asynchronous", "streaming"]
     safety: Literal["read_only", "paper_only", "orchestration"]
+    skills: List[str] = Field(
+        ...,
+        description="Stable, human-readable capabilities exposed by this agent.",
+    )
 
 
 class AgentCatalogResponse(BaseModel):

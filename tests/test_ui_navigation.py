@@ -66,6 +66,10 @@ def test_landing_links_to_developer_docs_and_openapi():
     assert "https://api.alpatrade.chat/redoc" in developer_html
     assert "https://api.alpatrade.chat/openapi.json" in developer_html
     assert "https://api.alpatrade.chat/v2/agents" in developer_html
+    assert "Choose the right specialist for the job" in developer_html
+    assert "DeepAgent Assistant" in developer_html
+    assert "Portfolio and position analysis" in developer_html
+    assert "Machine-readable" in developer_html
 
 
 def test_signin_fields_have_accessible_names_and_autocomplete_hints():

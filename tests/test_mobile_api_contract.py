@@ -22,7 +22,7 @@ def test_openapi_includes_direct_paper_order_endpoint():
 def test_openapi_exposes_docs_auth_and_external_agents():
     spec = app.openapi()
 
-    assert spec["info"]["version"] == "0.8.2"
+    assert spec["info"]["version"] == "0.8.3"
     assert set(spec["components"]["securitySchemes"]) == {
         "BearerAuth", "ServiceApiKey",
     }
@@ -57,7 +57,8 @@ def test_api_discovery_and_documentation_routes_are_public():
 
 def test_agent_catalog_covers_core_and_specialized_agents():
     response = TestClient(app).get("/v2/agents")
-    slugs = {agent["slug"] for agent in response.json()["agents"]}
+    agents = response.json()["agents"]
+    slugs = {agent["slug"] for agent in agents}
 
     assert response.status_code == 200
     assert {
@@ -65,6 +66,41 @@ def test_agent_catalog_covers_core_and_specialized_agents():
         "alpha-compare", "backtest", "validator", "paper-trader",
         "reconciler", "reporter", "orchestrator", "autonomy-scout",
     } <= slugs
+    assert all(agent["category"] for agent in agents)
+    assert all(len(agent["skills"]) >= 4 for agent in agents)
+
+
+def test_browser_navigation_uses_formatted_docs_while_api_clients_get_json():
+    client = TestClient(app, follow_redirects=False)
+
+    catalog = client.get("/v2/agents", headers={"Accept": "text/html"})
+    schema = client.get("/openapi.json", headers={"Accept": "text/html"})
+
+    assert catalog.status_code == 307
+    assert catalog.headers["location"] == "/redoc#tag/agent-invocation"
+    assert catalog.headers["vary"] == "Accept"
+    assert schema.status_code == 307
+    assert schema.headers["location"] == "/redoc"
+    assert schema.headers["vary"] == "Accept"
+    json_catalog = client.get("/v2/agents", headers={"Accept": "application/json"})
+    json_schema = client.get("/openapi.json", headers={"Accept": "application/json"})
+    assert json_catalog.status_code == 200
+    assert json_catalog.headers["vary"] == "Accept"
+    assert json_schema.status_code == 200
+    assert json_schema.headers["vary"] == "Accept"
+
+
+def test_openapi_documents_agent_skills_and_redoc_groups():
+    spec = app.openapi()
+    operation = spec["paths"]["/v2/agents/chat/invoke"]["post"]
+
+    assert operation["x-agent-slug"] == "deep-agent"
+    assert "Portfolio and position analysis" in operation["x-agent-skills"]
+    assert "### Agent skills" in operation["description"]
+    assert spec["x-tagGroups"][0]["name"] == "Agent APIs"
+    assert spec["externalDocs"]["url"] == "https://alpatrade.chat/developers"
+    assert spec["paths"]["/health"]["get"]["security"] == []
+    assert operation["security"]
 
 
 def test_tenant_endpoints_reject_anonymous_and_spoofed_user_headers():

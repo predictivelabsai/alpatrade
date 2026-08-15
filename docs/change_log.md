@@ -1,5 +1,25 @@
 # Change Log
 
+## 0.8.3 — 2026-08-15
+
+### Developer and agent documentation
+
+- Replaced raw-JSON-first links on the Developers page with an inline catalogue
+  of all callable agents, including their skills, endpoint, execution model,
+  access requirement, and paper/read-only safety boundary.
+- Added browser-aware navigation so direct visits to the agent catalogue and
+  OpenAPI JSON open the formatted ReDoc reference, while API clients continue
+  to receive the canonical machine-readable JSON contracts.
+- Enriched OpenAPI operations with agent skills and vendor metadata, grouped
+  ReDoc navigation, deep links, and an interactive Swagger configuration suited
+  to service integrations.
+
+### Tests and deployment
+
+- Added DB-free coverage for agent skill metadata, ReDoc grouping, browser/API
+  content negotiation, and developer-page catalogue content.
+- No database migration or configuration change is required.
+
 ## 0.8.2 — 2026-08-15
 
 ### New Chat news pane

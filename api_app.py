@@ -22,9 +22,12 @@ from typing import Dict, List, Literal, Optional
 sys.path.insert(0, str(Path(__file__).parent.absolute()))
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException, Query, Request
+from fastapi import FastAPI, Depends, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse, StreamingResponse
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
+from fastapi.responses import (
+    JSONResponse, PlainTextResponse, RedirectResponse, StreamingResponse,
+)
 from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 
 from tui.command_processor import CommandProcessor
@@ -54,6 +57,7 @@ from api_models import (
     AlphaResearchRequest, AlphaResearchResponse, AlphaComparisonResponse,
     AutonomyScoutRequest, AutonomyScoutResponse,
 )
+from engine.agents.catalog import AGENT_CATALOG_ENTRIES
 
 load_dotenv()
 
@@ -195,15 +199,23 @@ async def require_tenant_user(
 # ---------------------------------------------------------------------------
 
 tags_metadata = [
-    {"name": "meta", "description": "API discovery and health"},
-    {"name": "auth", "description": "User registration and login"},
-    {"name": "agents", "description": "Agent lifecycle — backtest, paper trade, validate, reconcile, full cycle"},
-    {"name": "agent-invocation", "description": "Typed service-to-service agent invocation"},
-    {"name": "chat", "description": "DeepAgents chat, as JSON or Server-Sent Events"},
-    {"name": "data", "description": "Query runs, trades, reports, P&L"},
-    {"name": "market", "description": "Market data — news, prices, profiles, movers"},
-    {"name": "trading", "description": "Paper-only order placement"},
-    {"name": "legacy", "description": "Legacy endpoints (markdown responses via CommandProcessor)"},
+    {"name": "meta", "x-displayName": "Platform", "description": "API discovery and health"},
+    {"name": "auth", "x-displayName": "Authentication", "description": "User registration and login"},
+    {"name": "agents", "x-displayName": "Agent lifecycle", "description": "Agent lifecycle — status and cancellation"},
+    {
+        "name": "agent-invocation",
+        "x-displayName": "Agent skills & invocation",
+        "description": (
+            "Typed service-to-service invocation for the primary DeepAgent and "
+            "specialist research/autonomy agents. Each operation documents its "
+            "skills, execution model, access boundary, and safety level."
+        ),
+    },
+    {"name": "chat", "x-displayName": "Chat", "description": "DeepAgents chat, as JSON or Server-Sent Events"},
+    {"name": "data", "x-displayName": "Data & reporting", "description": "Query runs, trades, reports, P&L"},
+    {"name": "market", "x-displayName": "Market data", "description": "Market data — news, prices, profiles, movers"},
+    {"name": "trading", "x-displayName": "Paper trading", "description": "Paper-only order placement"},
+    {"name": "legacy", "x-displayName": "Legacy API", "description": "Legacy endpoints (markdown responses via CommandProcessor)"},
 ]
 
 try:
@@ -228,9 +240,9 @@ app = FastAPI(
     title="AlpaTrade API",
     version=API_VERSION,
     description=API_DESCRIPTION,
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
     openapi_tags=tags_metadata,
     contact={"name": "Predictive Labs", "url": "https://alpatrade.chat/developers"},
     license_info={"name": "MIT", "identifier": "MIT"},
@@ -317,86 +329,109 @@ def _require_linked_paper_keys(user_id: str, account_id: Optional[str] = None):
     return keys
 
 
-AGENT_CATALOG = (
-    AgentDescriptor(
-        slug="deep-agent", name="DeepAgent Assistant",
-        description="Primary LangChain DeepAgents harness with research and broker tools.",
-        method="POST", path="/v2/agents/chat/invoke", execution="synchronous",
-        safety="paper_only",
-    ),
-    AgentDescriptor(
-        slug="deep-agent-stream", name="DeepAgent Assistant (SSE)",
-        description="Streaming DeepAgents chat with token and tool events.",
-        method="POST", path="/v2/chat", access="public", execution="streaming",
-        safety="paper_only",
-    ),
-    AgentDescriptor(
-        slug="premarket", name="Premarket Agent",
-        description="Read-only premarket scan and ranked mover intelligence.",
-        method="POST", path="/v2/agents/premarket/invoke", execution="synchronous",
-        safety="read_only",
-    ),
-    AgentDescriptor(
-        slug="alpha-growth", name="Alpha Growth Agent",
-        description="Evidence-backed growth-company research report.",
-        method="POST", path="/v2/agents/alpha-growth/invoke", execution="synchronous",
-        safety="read_only",
-    ),
-    AgentDescriptor(
-        slug="alpha-value", name="Alpha Value Agent",
-        description="Evidence-backed value-company research report.",
-        method="POST", path="/v2/agents/alpha-value/invoke", execution="synchronous",
-        safety="read_only",
-    ),
-    AgentDescriptor(
-        slug="alpha-compare", name="Alpha Comparison Agent",
-        description="Growth and value views generated from one shared evidence collection.",
-        method="POST", path="/v2/agents/alpha-compare/invoke", execution="synchronous",
-        safety="read_only",
-    ),
-    AgentDescriptor(
-        slug="backtest", name="Backtest Agent",
-        description="Run the parameter-grid backtest and return the best configuration.",
-        method="POST", path="/v2/backtest", execution="synchronous",
-        safety="read_only",
-    ),
-    AgentDescriptor(
-        slug="validator", name="Validation Agent",
-        description="Validate stored backtest or paper trades against market data.",
-        method="POST", path="/v2/validate", execution="synchronous",
-        safety="read_only",
-    ),
-    AgentDescriptor(
-        slug="paper-trader", name="Paper Trade Agent",
-        description="Start a durable paper-trading subprocess and return immediately.",
-        method="POST", path="/v2/paper", execution="asynchronous",
-        safety="paper_only",
-    ),
-    AgentDescriptor(
-        slug="reconciler", name="Reconciliation Agent",
-        description="Compare the position ledger with the linked Alpaca paper account.",
-        method="POST", path="/v2/reconcile", execution="synchronous",
-        safety="paper_only",
-    ),
-    AgentDescriptor(
-        slug="reporter", name="Report Agent",
-        description="Return run summaries, detail, P&L, and ranked strategies.",
-        method="GET", path="/v2/report", execution="synchronous",
-        safety="read_only",
-    ),
-    AgentDescriptor(
-        slug="orchestrator", name="Five-Agent Orchestrator",
-        description="Run backtest, validation, paper trading, and reporting as one workflow.",
-        method="POST", path="/v2/full", execution="synchronous",
-        safety="orchestration",
-    ),
-    AgentDescriptor(
-        slug="autonomy-scout", name="Autonomy Scout",
-        description="Scan candidates and enqueue the durable paper-only agent pipeline.",
-        method="POST", path="/v2/agents/autonomy-scout/invoke", execution="asynchronous",
-        safety="paper_only",
-    ),
-)
+AGENT_CATALOG = tuple(AgentDescriptor(**entry) for entry in AGENT_CATALOG_ENTRIES)
+
+
+def _prefers_html(request: Request) -> bool:
+    """Return true only for explicit browser-style HTML navigation."""
+    return "text/html" in request.headers.get("accept", "").lower()
+
+
+def _agent_operation_docs(agent: AgentDescriptor) -> str:
+    skills = "\n".join(f"- {skill}" for skill in agent.skills)
+    return (
+        "### Agent skills\n\n"
+        f"{skills}\n\n"
+        f"**Execution:** `{agent.execution}`  \n"
+        f"**Access:** `{agent.access}`  \n"
+        f"**Safety:** `{agent.safety}`"
+    )
+
+
+_base_openapi = app.openapi
+
+
+def _documented_openapi():
+    """Enrich generated OpenAPI with agent skills and ReDoc navigation groups."""
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = _base_openapi()
+    schema["externalDocs"] = {
+        "description": "AlpaTrade developer portal and integration guide",
+        "url": "https://alpatrade.chat/developers",
+    }
+    schema["x-tagGroups"] = [
+        {"name": "Agent APIs", "tags": ["agent-invocation", "agents", "chat"]},
+        {"name": "Trading and data", "tags": ["trading", "data", "market"]},
+        {"name": "Platform", "tags": ["auth", "meta"]},
+        {"name": "Compatibility", "tags": ["legacy"]},
+    ]
+    for path_item in schema.get("paths", {}).values():
+        for method, operation in path_item.items():
+            if method.lower() in {"get", "post", "put", "patch", "delete", "options", "head"}:
+                # OpenAPI requires an explicit empty array for intentionally public
+                # operations; absence would otherwise inherit root-level security.
+                operation.setdefault("security", [])
+    for agent in AGENT_CATALOG:
+        operation = schema.get("paths", {}).get(agent.path, {}).get(agent.method.lower())
+        if not operation:
+            continue
+        verb = "Stream" if agent.execution == "streaming" else "Invoke"
+        operation["summary"] = f"{verb} {agent.name}"
+        operation["tags"] = ["agent-invocation"]
+        current = str(operation.get("description") or "").strip()
+        operation["description"] = "\n\n".join(
+            part for part in (current, _agent_operation_docs(agent)) if part
+        )
+        operation["x-agent-slug"] = agent.slug
+        operation["x-agent-category"] = agent.category
+        operation["x-agent-skills"] = agent.skills
+        operation["x-agent-execution"] = agent.execution
+        operation["x-agent-safety"] = agent.safety
+        if agent.slug == "deep-agent":
+            catalog_operation = schema["paths"]["/v2/agents"]["get"]
+            catalog_operation["responses"]["200"]["content"]["application/json"][
+                "example"
+            ] = AgentCatalogResponse(
+                agents=list(AGENT_CATALOG), total=len(AGENT_CATALOG)
+            ).model_dump()
+    app.openapi_schema = schema
+    return schema
+
+
+app.openapi = _documented_openapi
+
+
+@app.get("/docs", include_in_schema=False)
+async def swagger_ui():
+    """Interactive API explorer for human developers."""
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title="AlpaTrade API Explorer",
+        swagger_ui_parameters={
+            "deepLinking": True,
+            "displayRequestDuration": True,
+            "filter": True,
+            "persistAuthorization": True,
+        },
+    )
+
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_reference():
+    """Searchable, three-panel API reference for human developers."""
+    return get_redoc_html(
+        openapi_url="/openapi.json",
+        title="AlpaTrade API Reference",
+    )
+
+
+@app.get("/openapi.json", include_in_schema=False)
+async def openapi_document(request: Request):
+    """Serve JSON to tools and send direct browser visits to the formatted reference."""
+    if _prefers_html(request):
+        return RedirectResponse("/redoc", status_code=307, headers={"Vary": "Accept"})
+    return JSONResponse(app.openapi(), headers={"Vary": "Accept"})
 
 
 @app.get("/", response_model=ApiInfoResponse, tags=["meta"])
@@ -412,9 +447,28 @@ async def api_info():
     )
 
 
-@app.get("/v2/agents", response_model=AgentCatalogResponse, tags=["agent-invocation"])
-async def v2_agent_catalog():
+@app.get(
+    "/v2/agents",
+    response_model=AgentCatalogResponse,
+    tags=["agent-invocation"],
+    summary="Discover callable agents and their skills",
+    description=(
+        "Machine-readable catalogue of every supported agent, its canonical endpoint, "
+        "skills, access boundary, execution model, and safety level. Direct browser "
+        "visits are redirected to the formatted ReDoc reference; API clients continue "
+        "to receive this typed JSON document."
+    ),
+    responses={307: {"description": "Browser navigation to the formatted API reference"}},
+)
+async def v2_agent_catalog(request: Request, response: Response):
     """List callable agents and their canonical typed endpoints."""
+    if _prefers_html(request):
+        return RedirectResponse(
+            "/redoc#tag/agent-invocation",
+            status_code=307,
+            headers={"Vary": "Accept"},
+        )
+    response.headers["Vary"] = "Accept"
     return AgentCatalogResponse(agents=list(AGENT_CATALOG), total=len(AGENT_CATALOG))
 
 # ---------------------------------------------------------------------------

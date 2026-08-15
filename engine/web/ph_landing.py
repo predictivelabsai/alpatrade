@@ -16,10 +16,11 @@ Start (``/register``) and Continue with Google (``/login``).
 from __future__ import annotations
 
 from fasthtml.common import (
-    A, Div, Footer, H1, H2, H3, Main, Nav, NotStr, P, Section, Span, Style,
+    A, Div, Footer, H1, H2, H3, Main, Nav, NotStr, P, Section, Span, Strong, Style,
 )
 from starlette.responses import RedirectResponse
 
+from engine.agents.catalog import AGENT_CATALOG_ENTRIES
 from engine.web.ph_layout import head, TILE_MARK
 
 SITE_NAME = "AlpaTrade"
@@ -156,6 +157,38 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 .lp-code { margin-top: 1.5rem; padding: 1rem 1.15rem; background: var(--ink); color: var(--bg);
   border-radius: .75rem; font-family: var(--font-mono); font-size: .82rem; overflow-x: auto; }
 
+/* developer portal */
+.dev-actions { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1.5rem; }
+.dev-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 2rem; }
+.dev-stat { padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: .75rem;
+  background: var(--bg-elev); }
+.dev-stat strong { display: block; color: var(--ink); font-size: 1.35rem; }
+.dev-stat span { color: var(--ink-muted); font-size: .76rem; }
+.dev-group + .dev-group { margin-top: 3rem; }
+.dev-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+  margin-bottom: 1rem; }
+.dev-group-title { color: var(--ink); font-size: 1.15rem; font-weight: 600; }
+.dev-group-count { color: var(--ink-dim); font: .68rem var(--font-mono); text-transform: uppercase;
+  letter-spacing: .1em; }
+.dev-agent-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.dev-agent { padding: 1.35rem; border: 1px solid var(--line); border-radius: .9rem;
+  background: var(--bg-elev); }
+.dev-agent-top { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.dev-agent-name { color: var(--ink); font-size: 1rem; font-weight: 600; }
+.dev-method { flex-shrink: 0; padding: .16rem .45rem; border-radius: .3rem;
+  background: var(--accent-dim); color: var(--accent); font: 600 .66rem var(--font-mono); }
+.dev-agent-body { color: var(--ink-muted); font-size: .82rem; line-height: 1.5; margin-top: .5rem; }
+.dev-endpoint { margin-top: .8rem; color: var(--ink); font: .7rem var(--font-mono);
+  overflow-wrap: anywhere; }
+.dev-skills { display: flex; flex-wrap: wrap; gap: .38rem; margin-top: .85rem; }
+.dev-skill { padding: .2rem .45rem; border: 1px solid var(--line); border-radius: 999px;
+  color: var(--ink-muted); background: var(--bg); font-size: .67rem; }
+.dev-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; margin-top: .9rem;
+  color: var(--ink-dim); font: .64rem var(--font-mono); }
+.dev-meta a { margin-left: auto; color: var(--accent); }
+.dev-contracts { margin-top: 1.5rem; color: var(--ink-muted); font-size: .8rem; line-height: 1.7; }
+.dev-contracts a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
 /* pricing */
 .lp-price { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 1rem;
   padding: 1.9rem; display: flex; flex-direction: column; height: 100%; }
@@ -197,10 +230,13 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
   .lp-grid.c5 { grid-template-columns: repeat(2, 1fr); }
   .lp-grid.c3 { grid-template-columns: 1fr; }
   .lp-stats-inner { grid-template-columns: repeat(2, 1fr); }
+  .dev-summary { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 560px) {
   .lp-grid.c5 { grid-template-columns: 1fr; }
   .lp-nav-cta .lp-btn.ghost { display: none; }
+  .dev-agent-grid, .dev-summary { grid-template-columns: 1fr; }
+  .dev-group-head { align-items: flex-start; flex-direction: column; gap: .25rem; }
 }
 """
 
@@ -498,14 +534,12 @@ def pricing_page():
 
 def developers_page():
     docs = [
-        ("Swagger UI", "Explore and call every typed endpoint interactively.",
-         "https://api.alpatrade.chat/docs", "Interactive docs →"),
-        ("ReDoc", "Browse the complete API contract in a clean reference layout.",
-         "https://api.alpatrade.chat/redoc", "API reference →"),
-        ("OpenAPI 3", "Import the live JSON specification into SDK generators and API clients.",
-         "https://api.alpatrade.chat/openapi.json", "Open specification →"),
-        ("Agent catalog", "Discover the callable DeepAgent, research, trading, and workflow agents.",
-         "https://api.alpatrade.chat/v2/agents", "List agents →"),
+        ("Agent reference", "Browse agent skills, request schemas, responses, and safety boundaries.",
+         "https://api.alpatrade.chat/redoc#tag/agent-invocation", "Agent API docs →"),
+        ("Swagger UI", "Authorize, compose requests, and call every typed endpoint interactively.",
+         "https://api.alpatrade.chat/docs#/agent-invocation", "Open API explorer →"),
+        ("Complete ReDoc", "Search the complete, grouped API contract in a clean reference layout.",
+         "https://api.alpatrade.chat/redoc", "Browse all endpoints →"),
     ]
 
     def doc_card(title, body, href, label):
@@ -523,6 +557,53 @@ def developers_page():
             cls="lp-card-link",
         )
 
+    def agent_card(agent):
+        reference = "https://api.alpatrade.chat/redoc#tag/agent-invocation"
+        return Div(
+            Div(
+                H3(agent["name"], cls="dev-agent-name"),
+                Span(agent["method"], cls="dev-method"),
+                cls="dev-agent-top",
+            ),
+            P(agent["description"], cls="dev-agent-body"),
+            Div(f'{agent["method"]} {agent["path"]}', cls="dev-endpoint"),
+            Div(*[Span(skill, cls="dev-skill") for skill in agent["skills"]],
+                cls="dev-skills"),
+            Div(
+                Span(agent["access"]),
+                Span("·"),
+                Span(agent["execution"]),
+                Span("·"),
+                Span(agent["safety"].replace("_", " ")),
+                A("Schema & examples →", href=reference, target="_blank",
+                  rel="noopener noreferrer"),
+                cls="dev-meta",
+            ),
+            cls="dev-agent",
+        )
+
+    category_labels = {
+        "assistant": "DeepAgent interfaces",
+        "research": "Research agents",
+        "analysis": "Analysis and validation",
+        "trading": "Paper trading operations",
+        "orchestration": "Agent orchestration",
+    }
+    grouped_agents = []
+    for category, label in category_labels.items():
+        agents = [agent for agent in AGENT_CATALOG_ENTRIES
+                  if agent["category"] == category]
+        grouped_agents.append(
+            Div(
+                Div(H3(label, cls="dev-group-title"),
+                    Span(f"{len(agents)} agent{'s' if len(agents) != 1 else ''}",
+                         cls="dev-group-count"),
+                    cls="dev-group-head"),
+                Div(*[agent_card(agent) for agent in agents], cls="dev-agent-grid"),
+                cls="dev-group",
+            )
+        )
+
     hero = Section(
         Span("Developers", cls="lp-eyebrow"),
         H1("Build on the AlpaTrade agent desk.", cls="lp-h1"),
@@ -530,7 +611,48 @@ def developers_page():
           "paper trader, reconciler, reporter, and durable autonomy pipeline through typed APIs.",
           cls="lp-lede"),
         Div("https://api.alpatrade.chat", cls="lp-code"),
+        Div(
+            _btn("Agent API reference", "https://api.alpatrade.chat/redoc#tag/agent-invocation"),
+            _btn("Try in Swagger", "https://api.alpatrade.chat/docs#/agent-invocation", "ghost"),
+            cls="dev-actions",
+        ),
+        Div(
+            Div(Strong(str(len(AGENT_CATALOG_ENTRIES))), Span("callable agent interfaces"),
+                cls="dev-stat"),
+            Div(Strong(str(len(category_labels))), Span("capability groups"), cls="dev-stat"),
+            Div(Strong("2"), Span("JWT and service-key auth modes"), cls="dev-stat"),
+            Div(Strong("Paper"), Span("trading safety boundary"), cls="dev-stat"),
+            cls="dev-summary",
+        ),
         cls="lp-hero-inner",
+    )
+    catalogue = Section(
+        Span("Agent catalogue", cls="lp-eyebrow"),
+        H2("Choose the right specialist for the job.", cls="lp-h2",
+           style="margin-top:.75rem"),
+        P("Every agent below is callable through a typed HTTP contract. Skills describe stable "
+          "capabilities; follow the reference link for request bodies, response schemas, examples, "
+          "authentication, and error responses.", cls="lp-lede", style="margin-top:1rem"),
+        Div(*grouped_agents, style="margin-top:2.5rem"),
+        cls="lp-section lp-bordered",
+    )
+    contracts = Section(
+        Span("Documentation", cls="lp-eyebrow"),
+        H2("Human guides and machine contracts.", cls="lp-h2", style="margin-top:.75rem"),
+        P("Use ReDoc for reading and Swagger UI for interactive calls. OpenAPI and catalogue "
+          "JSON remain machine-readable for SDK generators, agents, and service discovery.",
+          cls="lp-lede", style="margin-top:1rem"),
+        Div(*[doc_card(*item) for item in docs], cls="lp-grid c3"),
+        P(
+            "Machine-readable: ",
+            A("OpenAPI JSON", href="https://api.alpatrade.chat/openapi.json",
+              target="_blank", rel="noopener noreferrer"),
+            " · ",
+            A("Agent catalogue JSON", href="https://api.alpatrade.chat/v2/agents",
+              target="_blank", rel="noopener noreferrer"),
+            cls="dev-contracts",
+        ),
+        cls="lp-section lp-bordered",
     )
     access = Section(
         Span("Authentication", cls="lp-eyebrow"),
@@ -543,8 +665,8 @@ def developers_page():
     return _shell(
         "Developers — AlpaTrade API",
         Section(hero, cls="lp-hero"),
-        Section(Div(*[doc_card(*item) for item in docs], cls="lp-grid c3", style="margin-top:0"),
-                cls="lp-section lp-bordered"),
+        catalogue,
+        contracts,
         access,
         active="developers",
     )
