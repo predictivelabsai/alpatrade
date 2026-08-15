@@ -12,7 +12,9 @@ Flutter mobile client for [AlpaTrade](https://alpatrade.chat) — an AI trading 
 - **Activity** — Executed trades (paper/backtest) and backtest/paper runs.
 - **Strategies** — Top strategy ranking plus per-run reports with a cumulative P&L chart and per-symbol breakdown (fl_chart).
 - **More** — Market news & movers, background agent status/logs, language, and settings.
-- **Anonymous** — No login; the API serves a shared demo paper account.
+- **Private account access** — Sign in or create an account to view positions,
+  activity, strategies, agent status, and place paper orders. Public chat and
+  market news remain available before sign-in.
 - **Offline detection** — Banner when connectivity drops.
 
 ## Tech Stack

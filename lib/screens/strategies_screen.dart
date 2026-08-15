@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:alpatrade/config/theme.dart';
 import 'package:alpatrade/models/strategy.dart';
 import 'package:alpatrade/providers/strategies_provider.dart';
-import 'package:alpatrade/screens/strategy_detail_screen.dart';
 import 'package:alpatrade/utils/formatters.dart';
 import 'package:alpatrade/widgets/empty_state.dart';
 import 'package:alpatrade/widgets/error_view.dart';
@@ -270,15 +270,13 @@ class _ReportTile extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => StrategyDetailScreen(
-                runId: report.runId,
-                title: Fmt.titleize(report.strategySlug ?? report.strategy),
-              ),
-            ),
-          ),
+          onTap: () {
+            final runId = Uri.encodeComponent(report.runId);
+            final title = Uri.encodeQueryComponent(
+              Fmt.titleize(report.strategySlug ?? report.strategy),
+            );
+            context.push('/strategies/run/$runId?title=$title');
+          },
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(

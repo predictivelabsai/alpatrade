@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:alpatrade/config/theme.dart';
 import 'package:alpatrade/models/chat.dart';
+import 'package:alpatrade/providers/auth_provider.dart';
 import 'package:alpatrade/providers/chat_provider.dart';
 import 'package:alpatrade/providers/voice_provider.dart';
 import 'package:alpatrade/screens/chat/widgets/chat_input_bar.dart';
@@ -26,6 +28,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final FocusNode _inputFocus = FocusNode();
 
   void _openOrderTicket(OrderPreset preset) {
+    final session = ref.read(authProvider).whenOrNull(data: (value) => value);
+    if (session == null) {
+      context.push('/auth?from=${Uri.encodeQueryComponent('/chat')}');
+      return;
+    }
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

@@ -9,6 +9,10 @@ import 'package:alpatrade/models/chat.dart';
 /// Streams POST /v2/chat as Server-Sent Events. Uses the raw `http` package
 /// because Dio does not stream POST response bodies well.
 class ChatService {
+  final String? token;
+
+  const ChatService({this.token});
+
   Stream<ChatEvent> streamChat({
     required String message,
     String? threadId,
@@ -21,6 +25,10 @@ class ChatService {
       ..body = jsonEncode(
         ChatRequest(msg: message, threadId: threadId).toJson(),
       );
+
+    if (token != null && token!.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
 
     final response = await http.Client().send(request);
 

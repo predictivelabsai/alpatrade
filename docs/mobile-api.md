@@ -5,8 +5,8 @@ pattern: streaming chat over SSE + typed REST.
 
 - **Base URL:** `https://api.alpatrade.chat`
 - **Machine-readable spec:** [`docs/swagger.json`](./swagger.json) (OpenAPI 3.1, generated from the FastAPI app) — import it into Postman / codegen.
-- **Auth:** optional JWT bearer. Anonymous calls use the shared demo paper account/data.
-- **Trading is paper-only** (simulated). The default account is the primary paper account (number ending **…8CR**).
+- **Auth:** JWT bearer. Protected account data and paper orders require `Authorization: Bearer <token>`.
+- **Trading is paper-only** (simulated) and uses the authenticated user's linked paper account.
 
 ---
 
@@ -17,9 +17,10 @@ pattern: streaming chat over SSE + typed REST.
 | POST | `/auth/register` | `{email, password, display_name?}` | `{token, user_id, email}` |
 | POST | `/auth/login` | `{email, password}` | `{token, user_id, email}` |
 
-Store `token` and send it as `Authorization: Bearer <token>` to scope calls to that user.
-Auth is optional on the current `/v2/*` mobile surface; anonymous callers use shared demo data and
-the server's paper account.
+The app stores `token` in local preferences and sends it as
+`Authorization: Bearer <token>`. Chat and market-news helpers remain public;
+positions, trades, runs, reports, status, agent actions, and orders require a
+signed-in user. A `401` clears the expired local session and prompts sign-in.
 
 ---
 
@@ -76,7 +77,7 @@ data: {}
 ```dart
 final req = http.Request('POST', Uri.parse('$base/v2/chat'))
   ..headers['Content-Type'] = 'application/json'
-  ..headers['Authorization'] = 'Bearer $token'          // optional
+  ..headers['Authorization'] = 'Bearer $token'          // when signed in
   ..body = jsonEncode({'msg': prompt, 'thread_id': threadId});
 final res = await http.Client().send(req);
 final buf = StringBuffer();
@@ -105,7 +106,7 @@ handling is required — just keep the same `thread_id`.
 
 ## Data (REST)
 
-All return typed JSON (see `swagger.json` for schemas). Pass the bearer token to scope to the user.
+All return typed JSON (see `swagger.json` for schemas) and require the bearer token.
 
 | Method | Path | Purpose |
 |---|---|---|

@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:alpatrade/config/theme.dart';
-import 'package:alpatrade/screens/news_screen.dart';
-import 'package:alpatrade/screens/movers_screen.dart';
-import 'package:alpatrade/screens/status_screen.dart';
-import 'package:alpatrade/screens/settings_screen.dart';
 
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
@@ -17,11 +14,12 @@ class MoreScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: AppTheme.bgElev,
+          Material(
+            color: AppTheme.bgElev,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.line),
+              side: BorderSide(color: AppTheme.line),
             ),
             child: Column(
               children: [
@@ -29,28 +27,28 @@ class MoreScreen extends ConsumerWidget {
                   icon: Icons.article_outlined,
                   title: 'Market news',
                   subtitle: 'Latest headlines by symbol',
-                  onTap: () => _push(context, const NewsScreen()),
+                  onTap: () => context.push('/more/news'),
                 ),
                 const _TileDivider(),
                 _MoreTile(
                   icon: Icons.trending_up,
                   title: 'Market movers',
                   subtitle: "Today's biggest gainers and losers",
-                  onTap: () => _push(context, const MoversScreen()),
+                  onTap: () => context.push('/more/movers'),
                 ),
                 const _TileDivider(),
                 _MoreTile(
                   icon: Icons.dns_outlined,
                   title: 'Agent status',
                   subtitle: 'Live trading agent run state',
-                  onTap: () => _push(context, const StatusScreen()),
+                  onTap: () => context.push('/more/status'),
                 ),
                 const _TileDivider(),
                 _MoreTile(
                   icon: Icons.settings_outlined,
                   title: 'Settings',
                   subtitle: 'Language, about and API',
-                  onTap: () => _push(context, const SettingsScreen()),
+                  onTap: () => context.push('/more/settings'),
                 ),
               ],
             ),
@@ -58,10 +56,6 @@ class MoreScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  void _push(BuildContext context, Widget screen) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
   }
 }
 

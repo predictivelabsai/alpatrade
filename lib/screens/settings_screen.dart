@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:alpatrade/config/api_config.dart';
 import 'package:alpatrade/config/constants.dart';
 import 'package:alpatrade/config/theme.dart';
 import 'package:alpatrade/providers/app_info_provider.dart';
+import 'package:alpatrade/providers/auth_provider.dart';
 import 'package:alpatrade/providers/locale_provider.dart';
 
 /// Human-readable names for the supported locale codes.
@@ -29,12 +31,57 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeProvider);
+    final auth = ref.watch(authProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
         children: [
+          const _SectionLabel('Account'),
+          _Card(
+            child: auth.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.all(20),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (_, _) => ListTile(
+                leading: const Icon(Icons.account_circle_outlined),
+                title: const Text('Session unavailable'),
+                subtitle: const Text('Sign in again to restore access.'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(
+                  '/auth?from=${Uri.encodeQueryComponent('/more/settings')}',
+                ),
+              ),
+              data: (session) => session == null
+                  ? ListTile(
+                      leading: const Icon(Icons.account_circle_outlined),
+                      title: const Text('Sign in'),
+                      subtitle: const Text(
+                        'Access positions, activity and paper orders.',
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.push(
+                        '/auth?from=${Uri.encodeQueryComponent('/more/settings')}',
+                      ),
+                    )
+                  : ListTile(
+                      leading: Icon(
+                        Icons.verified_user_outlined,
+                        color: AppTheme.accent,
+                      ),
+                      title: Text(session.email),
+                      subtitle: const Text('Signed in'),
+                      trailing: TextButton(
+                        onPressed: () =>
+                            ref.read(authProvider.notifier).signOut(),
+                        child: const Text('Sign out'),
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 24),
           const _SectionLabel('Language'),
           _Card(
             child: Column(
@@ -182,11 +229,12 @@ class _Card extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.bgElev,
+    return Material(
+      color: AppTheme.bgElev,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.line),
+        side: BorderSide(color: AppTheme.line),
       ),
       child: child,
     );

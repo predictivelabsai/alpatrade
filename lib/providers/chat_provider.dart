@@ -1,8 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:alpatrade/models/chat.dart';
+import 'package:alpatrade/providers/auth_provider.dart';
 import 'package:alpatrade/services/chat_service.dart';
 
-final chatServiceProvider = Provider<ChatService>((ref) => ChatService());
+final chatServiceProvider = Provider<ChatService>((ref) {
+  final session = ref.watch(authProvider).whenOrNull(data: (value) => value);
+  return ChatService(token: session?.token);
+});
 
 final chatProvider = NotifierProvider<ChatNotifier, ChatState>(
   ChatNotifier.new,

@@ -1,8 +1,9 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:alpatrade/config/api_config.dart';
 
-/// Kept for compatibility; the AlpaTrade API is anonymous so 401s are rare,
-/// but market/data endpoints may still surface auth errors.
+/// Raised when a protected endpoint rejects the stored bearer session.
 class UnauthorizedException implements Exception {
   final String message;
   const UnauthorizedException([this.message = 'Unauthorized']);
@@ -11,24 +12,38 @@ class UnauthorizedException implements Exception {
   String toString() => 'UnauthorizedException: $message';
 }
 
-/// Thin Dio wrapper over the AlpaTrade REST API. No auth token — the API uses
-/// a shared demo paper account for anonymous callers.
+bool isUnauthorizedError(Object error) {
+  return error is UnauthorizedException ||
+      (error is DioException && error.error is UnauthorizedException);
+}
+
+/// Thin Dio wrapper over the AlpaTrade REST API. Public calls may be anonymous;
+/// protected calls receive the persisted bearer token.
 class ApiClient {
   final Dio _dio;
 
-  ApiClient()
-    : _dio = Dio(
-        BaseOptions(
-          baseUrl: ApiConfig.baseUrl,
-          connectTimeout: ApiConfig.connectTimeout,
-          receiveTimeout: ApiConfig.receiveTimeout,
-          headers: {'Content-Type': 'application/json'},
-        ),
-      ) {
+  ApiClient({
+    String? token,
+    FutureOr<void> Function()? onUnauthorized,
+    HttpClientAdapter? adapter,
+  }) : _dio = Dio(
+         BaseOptions(
+           baseUrl: ApiConfig.baseUrl,
+           connectTimeout: ApiConfig.connectTimeout,
+           receiveTimeout: ApiConfig.receiveTimeout,
+           headers: {
+             'Content-Type': 'application/json',
+             if (token != null && token.isNotEmpty)
+               'Authorization': 'Bearer $token',
+           },
+         ),
+       ) {
+    if (adapter != null) _dio.httpClientAdapter = adapter;
     _dio.interceptors.add(
       InterceptorsWrapper(
-        onError: (error, handler) {
+        onError: (error, handler) async {
           if (error.response?.statusCode == 401) {
+            await onUnauthorized?.call();
             handler.reject(
               DioException(
                 requestOptions: error.requestOptions,
