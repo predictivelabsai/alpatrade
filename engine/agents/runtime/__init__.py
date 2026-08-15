@@ -7,7 +7,7 @@ adapter per backend (LangGraph, DeepAgents, Pydantic AI, Hermes), selected by th
 and calls agents only through :class:`~engine.agents.runtime.base.AgentRuntime`.
 
     from engine.agents.runtime import get_runtime, RoleSpec
-    rt = get_runtime()                       # AGENT_FRAMEWORK, falls back to langgraph
+    rt = get_runtime()                       # DeepAgents by default
     agent = rt.build(RoleSpec(name="scout", instructions="...", tools=[...]))
     result = rt.run(agent, "What are today's movers?")
 """

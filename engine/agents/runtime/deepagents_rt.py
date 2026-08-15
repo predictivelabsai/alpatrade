@@ -26,13 +26,23 @@ class DeepAgentsRuntime(LangGraphRuntime):
     def build(self, spec: RoleSpec) -> Any:
         # deepagents>=0.6: create_deep_agent(model, tools, *, system_prompt, subagents, …)
         from deepagents import create_deep_agent
-        kwargs = {"model": default_model(spec), "tools": list(spec.tools)}
+        model = default_model(spec)
+        kwargs = {
+            "model": model,
+            "tools": list(spec.tools),
+            "name": spec.name,
+        }
         if spec.instructions:
             kwargs["system_prompt"] = spec.instructions
         if spec.subagents:
             kwargs["subagents"] = [
-                {"name": s.name, "description": s.instructions,
-                 "system_prompt": s.instructions, "tools": list(s.tools)}
+                {
+                    "name": s.name,
+                    "description": s.instructions,
+                    "system_prompt": s.instructions,
+                    "tools": list(s.tools),
+                    "model": s.model or model,
+                }
                 for s in spec.subagents
             ]
         return create_deep_agent(**kwargs)

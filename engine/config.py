@@ -41,14 +41,14 @@ MODEL_NAMES = {
 }
 MARKET_DATA_PROVIDERS = ["yfinance", "alpaca"]
 SEARCH_PROVIDERS = ["tavily", "exa"]
-AGENT_FRAMEWORKS = ["langgraph", "hermes", "deepagents"]
+AGENT_FRAMEWORKS = ["deepagents", "langgraph", "hermes"]
 
 _DEFAULTS = {
     "model_provider": "xai",
     "model_name": "grok-4-1-fast-reasoning",
     "market_data_provider": "yfinance",
     "search_provider": "tavily",
-    "agent_framework": "langgraph",
+    "agent_framework": "deepagents",
 }
 
 # Per-provider OpenAI-compatible endpoints + API-key env var.

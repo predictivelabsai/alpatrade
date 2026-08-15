@@ -812,7 +812,7 @@ def show_equity_curve(run_id: str = "", trade_type: str = "", strategy: str = ""
 
 
 # ---------------------------------------------------------------------------
-# Build LangGraph agent from tool functions
+# Build the primary DeepAgents harness from tool functions
 # ---------------------------------------------------------------------------
 
 TOOLS = [
@@ -888,8 +888,9 @@ from engine.config import get_settings, build_chat_model
 from engine.agents.runtime import get_runtime, RoleSpec
 
 # The chat agent is built through the pluggable AgentRuntime adapter (AGENT_FRAMEWORK,
-# default LangGraph — which yields the same ReAct agent as before, so ph_chat's
-# astream_events keeps working). The LLM axis is separate: MODEL_PROVIDER / MODEL_NAME
+# default DeepAgents). DeepAgents compiles to a LangGraph-compatible graph, so the
+# existing astream_events transport keeps working. The LLM axis is separate:
+# MODEL_PROVIDER / MODEL_NAME
 # come from engine.config, which self-heals an unavailable model (region-locked
 # grok-4.5 → grok-4-1-fast-reasoning). Per-user overrides are applied by agent_for_user().
 chat_runtime = get_runtime()
@@ -899,7 +900,10 @@ def _chat_role(model=None) -> RoleSpec:
     return RoleSpec(name="alpatrade-chat", instructions=SYSTEM_PROMPT, tools=TOOLS, model=model)
 
 
-langgraph_agent = chat_runtime.build(_chat_role())
+primary_agent = chat_runtime.build(_chat_role())
+# Compatibility alias for integrations which imported this public symbol before
+# DeepAgents became the primary harness.
+langgraph_agent = primary_agent
 
 
 # Per-user agents, cached by (provider, model, framework) so a user's Settings
@@ -915,20 +919,20 @@ def agent_for_user(user_id: str | None):
     Falls back to the shared default agent when the user has no override or the
     override matches the default (keeping a single hot agent for anonymous use)."""
     if not user_id:
-        return langgraph_agent
+        return primary_agent
     try:
         s = get_settings(user_id)
         key = (s.model_provider, s.model_name, s.agent_framework)
         default = get_settings()
         if key == (default.model_provider, default.model_name, default.agent_framework):
-            return langgraph_agent
+            return primary_agent
         if key not in _agent_cache:
             # Resolve the runtime per-miss so a framework change is picked up.
             user_runtime = get_runtime(s.agent_framework)
             _agent_cache[key] = user_runtime.build(_chat_role(build_chat_model(s, streaming=True)))
         return _agent_cache[key]
     except Exception:  # noqa: BLE001 — never let model selection break chat
-        return langgraph_agent
+        return primary_agent
 
 
 def clear_agent_cache() -> None:
@@ -1203,7 +1207,7 @@ Use `command:type` to filter by backtest or paper. Add optional params after.
 Type any question to chat with AI about stocks & trading.
 """
 
-agui = setup_agui(app, langgraph_agent, command_interceptor=_command_interceptor)
+agui = setup_agui(app, primary_agent, command_interceptor=_command_interceptor)
 
 
 # ---------------------------------------------------------------------------

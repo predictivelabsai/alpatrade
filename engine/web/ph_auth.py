@@ -127,9 +127,9 @@ def _or_divider():
 def _notice(error: str = "", msg: str = ""):
     parts = []
     if msg:
-        parts.append(P(msg, cls="auth-success"))
+        parts.append(P(msg, cls="auth-success", role="status"))
     if error:
-        parts.append(P(error, cls="auth-error"))
+        parts.append(P(error, cls="auth-error", role="alert"))
     return parts
 
 
@@ -142,10 +142,12 @@ def _signin_page(email: str = "", error: str = "", msg: str = ""):
         blocks.append(_google_btn("Continue with Google"))
         blocks.append(_or_divider())
     blocks.append(Form(
-        Label("Email"),
-        Input(name="email", type="email", value=email, required=True, autofocus=True),
-        Label("Password"),
-        Input(name="password", type="password", required=True),
+        Label("Email", fr="signin-email"),
+        Input(id="signin-email", name="email", type="email", value=email,
+              autocomplete="email", required=True, autofocus=True),
+        Label("Password", fr="signin-password"),
+        Input(id="signin-password", name="password", type="password",
+              autocomplete="current-password", required=True),
         Button("Log in", type="submit", cls="auth-primary-btn", style="width:100%"),
         method="post", action="/signin",
     ))
@@ -161,12 +163,15 @@ def _register_page(email: str = "", error: str = ""):
         blocks.append(_google_btn("Sign up with Google"))
         blocks.append(_or_divider())
     blocks.append(Form(
-        Label("Display name"),
-        Input(name="display_name", type="text", placeholder="Optional"),
-        Label("Email"),
-        Input(name="email", type="email", value=email, required=True),
-        Label("Password"),
-        Input(name="password", type="password", minlength="8",
+        Label("Display name", fr="register-name"),
+        Input(id="register-name", name="display_name", type="text",
+              autocomplete="name", placeholder="Optional"),
+        Label("Email", fr="register-email"),
+        Input(id="register-email", name="email", type="email", value=email,
+              autocomplete="email", required=True),
+        Label("Password", fr="register-password"),
+        Input(id="register-password", name="password", type="password", minlength="8",
+              autocomplete="new-password",
               placeholder="At least 8 characters", required=True),
         Button("Create account", type="submit", cls="auth-primary-btn", style="width:100%"),
         method="post", action="/register",
@@ -182,8 +187,9 @@ def _forgot_page(error: str = "", msg: str = ""):
         P("Enter your email and we'll send you a reset link.", cls="signin-sub"),
         *_notice(error, msg),
         Form(
-            Label("Email"),
-            Input(name="email", type="email", required=True, autofocus=True),
+            Label("Email", fr="forgot-email"),
+            Input(id="forgot-email", name="email", type="email",
+                  autocomplete="email", required=True, autofocus=True),
             Button("Send reset link", type="submit", cls="auth-primary-btn", style="width:100%"),
             method="post", action="/forgot",
         ),
@@ -198,11 +204,13 @@ def _reset_page(token: str, error: str = ""):
         *_notice(error),
         Form(
             Input(name="token", type="hidden", value=token),
-            Label("New password"),
-            Input(name="password", type="password", minlength="8",
+            Label("New password", fr="reset-password"),
+            Input(id="reset-password", name="password", type="password", minlength="8",
+                  autocomplete="new-password",
                   placeholder="At least 8 characters", required=True, autofocus=True),
-            Label("Confirm password"),
-            Input(name="confirm_password", type="password", minlength="8", required=True),
+            Label("Confirm password", fr="reset-password-confirm"),
+            Input(id="reset-password-confirm", name="confirm_password", type="password",
+                  minlength="8", autocomplete="new-password", required=True),
             Button("Reset password", type="submit", cls="auth-primary-btn", style="width:100%"),
             method="post", action="/reset",
         ),

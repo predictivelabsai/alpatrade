@@ -5,7 +5,7 @@ each caller can serialise them however it likes (the web uses SSE named events; 
 mobile `POST /v2/chat` endpoint reuses the same). Routing is identical everywhere:
 
   1. CLI-command interception → `tui.command_processor.CommandProcessor`
-  2. otherwise free-form text → the LangGraph router agent (XAI Grok + tools)
+  2. otherwise free-form text → the primary DeepAgents harness (XAI Grok + tools)
 
 Event dicts have a ``type`` of: session · agent_route · token · tool_start ·
 tool_end · error · done.
@@ -25,7 +25,7 @@ async def stream_chat_events(
     from engine.ai import StreamingCommand
     from langchain_core.messages import HumanMessage, AIMessage
 
-    langgraph_agent = _agui.langgraph_agent
+    primary_agent = _agui.primary_agent
     command_interceptor = _agui._command_interceptor
 
     yield {"type": "session", "sid": thread_id}
@@ -58,7 +58,7 @@ async def stream_chat_events(
         yield {"type": "done"}
         return
 
-    # 2) Free-form text → LangGraph router agent
+    # 2) Free-form text → primary agent harness
     yield {"type": "agent_route", "slug": "ai", "agent": "AlpaTrade AI"}
     history.append({"role": "user", "content": msg})
     lc = [
@@ -69,7 +69,7 @@ async def stream_chat_events(
 
     full = ""
     try:
-        async for event in langgraph_agent.astream_events({"messages": lc}, version="v2"):
+        async for event in primary_agent.astream_events({"messages": lc}, version="v2"):
             kind = event.get("event", "")
             if kind == "on_chat_model_stream":
                 chunk = event.get("data", {}).get("chunk")

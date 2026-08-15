@@ -68,6 +68,7 @@ def clear_reasoning_cache() -> None:
 def reason(prompt: str) -> str:
     """Ask the configured runtime a reasoning question. Returns '' on any failure."""
     try:
+        from engine.config import get_settings
         from engine.agents.runtime.registry import get_runtime
         s = get_settings()
         runtime = get_runtime(s.agent_framework)

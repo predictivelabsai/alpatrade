@@ -77,6 +77,8 @@ def scout_node(ctx: dict) -> dict:
     """Populate ctx['candidates'] + ctx['portfolio'] for the policy gate.
 
     Uses symbols the Scout put in the run config; falls back to a fresh scan.
+    Annotates the deterministic ranking with an LLM sanity check when the
+    configured runtime is reachable (best-effort; never alters the list).
     """
     from engine.autonomy import scout
     from engine.autonomy.policy import Candidate
@@ -90,6 +92,21 @@ def scout_node(ctx: dict) -> dict:
     else:
         candidates = scout.scan(strategy=cfg.get("strategy", "btd"),
                                 equity=portfolio.equity)
+    # LLM annotation (best-effort): flag anything a price-move ranker can't see.
+    if candidates:
+        try:
+            from engine.autonomy.reason import reason
+            tickers = ", ".join(c.symbol for c in candidates[:5])
+            note = reason(
+                "These symbols were picked by a deterministic price-move scanner for a "
+                f"{cfg.get('strategy', 'btd')} paper strategy: {tickers}. In one or two "
+                "sentences, flag any near-term binary risk (earnings, FDA, delisting) "
+                "or say they look unremarkable. Plain text."
+            )
+            if note:
+                store.append_event(ctx.get("run_id"), f"scout reasoning: {note[:200]}")
+        except Exception:  # noqa: BLE001
+            pass
     return {"ctx": {"candidates": candidates, "portfolio": portfolio},
             "scouted": len(candidates)}
 
@@ -145,6 +162,23 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
                 pass
         r = _check(_orch().run_backtest(cfg), "backtest")
         best = (r.get("best_config") if isinstance(r, dict) else None) or {}
+        # LLM rationale for the selected config (best-effort; selection stays
+        # deterministic — the note only annotates the run log).
+        if best.get("params"):
+            try:
+                from engine.autonomy.reason import reason
+                note = reason(
+                    "A grid-search backtest selected this config as best: "
+                    f"params={best.get('params')}, sharpe={best.get('sharpe_ratio')}, "
+                    f"out of {r.get('total_variations')} variations"
+                    + (f" in a {cfg.get('regime')} regime" if cfg.get("regime") else "")
+                    + ". In one sentence, state why these params plausibly won and one "
+                      "risk to watch. Plain text."
+                )
+                if note:
+                    store.append_event(ctx.get("run_id"), f"backtest reasoning: {note[:200]}")
+            except Exception:  # noqa: BLE001
+                pass
         return {"ctx": {"backtest_result": r, "best_config": best},
                 "variations": r.get("total_variations") if isinstance(r, dict) else None,
                 "has_strategy": bool(best.get("params"))}
@@ -182,6 +216,20 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
         plan = _refit.refit_plan(bt_result, paper_trades)
         log_msg = f"refit: {plan['reason']}"
         store.append_event(ctx.get("run_id"), log_msg)
+        # LLM explanation of drift (best-effort; plan logic stays deterministic).
+        try:
+            from engine.autonomy.reason import reason
+            note = reason(
+                "A paper-trading refit check produced this signal: "
+                f"{plan['reason']} (paper Sharpe={plan['paper_sharpe']}, "
+                f"backtest Sharpe={plan['backtest_sharpe']}). In one sentence, "
+                "explain the most plausible market cause and whether narrowing "
+                "the parameter grid is the right response. Plain text."
+            )
+            if note:
+                store.append_event(ctx.get("run_id"), f"refit reasoning: {note[:200]}")
+        except Exception:  # noqa: BLE001
+            pass
         out: dict = {"drift": plan["drift"], "refit_reason": plan["reason"],
                      "paper_sharpe": plan["paper_sharpe"],
                      "backtest_sharpe": plan["backtest_sharpe"]}

@@ -96,3 +96,46 @@ def test_refit_plan_drift_with_no_refinable_params():
     assert plan["drift"] is True
     assert plan["refined_grid"] == {}  # no refinable params
     assert "no refinable" in plan["reason"]
+
+
+def test_refit_node_logs_llm_explanation_on_drift():
+    from unittest.mock import patch
+    from engine.autonomy import graph
+
+    plan = {"drift": True, "refined_grid": {"dip_threshold": [0.04, 0.05, 0.06]},
+            "paper_sharpe": 0.4, "backtest_sharpe": 1.2,
+            "reason": "drift: paper Sharpe 0.40 < backtest 1.20×0.5"}
+    ctx = {"run_id": "run-x", "config": {},
+           "backtest_result": {"best_config": {"sharpe_ratio": 1.2, "params": {}}}}
+
+    with patch("engine.autonomy.refit.refit_plan", return_value=plan), \
+         patch("scripts.daily_pnl_report.gather_trades", return_value=[]), \
+         patch("engine.autonomy.graph.store.append_event") as ev, \
+         patch("engine.autonomy.reason.reason",
+               return_value="dip threshold likely too shallow for current vol regime") as r:
+        nodes = dict(graph.default_pipeline().nodes)
+        out = nodes["refit"](ctx)
+        r.assert_called_once()
+        assert any("refit reasoning" in (c.args[1] if len(c.args) > 1 else "")
+                   for c in ev.call_args_list)
+        assert out["drift"] is True
+
+
+def test_refit_node_skips_llm_silently_on_empty_response():
+    from unittest.mock import patch
+    from engine.autonomy import graph
+
+    plan = {"drift": False, "refined_grid": {},
+            "paper_sharpe": 1.3, "backtest_sharpe": 1.2,
+            "reason": "paper tracks backtest (no drift)"}
+    ctx = {"run_id": "run-x", "config": {}, "backtest_result": {}}
+
+    with patch("engine.autonomy.refit.refit_plan", return_value=plan), \
+         patch("scripts.daily_pnl_report.gather_trades", return_value=[]), \
+         patch("engine.autonomy.graph.store.append_event") as ev, \
+         patch("engine.autonomy.reason.reason", return_value=""):
+        nodes = dict(graph.default_pipeline().nodes)
+        out = nodes["refit"](ctx)
+        assert not any("refit reasoning" in (c.args[1] if len(c.args) > 1 else "")
+                       for c in ev.call_args_list)
+        assert out["drift"] is False

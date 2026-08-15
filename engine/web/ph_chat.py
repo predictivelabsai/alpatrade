@@ -19,8 +19,8 @@ module uses the pehero SSE contract instead so it can live inside the shared
 
 Routing (identical decision logic to ``agui_app``)
 --------------------------------------------------
-Free-form text streams token-by-token from the LangGraph agent
-(``agui_app.langgraph_agent``, XAI Grok) via ``astream_events(v2)``. Recognised
+Free-form text streams token-by-token from the primary DeepAgents harness
+(``agui_app.primary_agent``, XAI Grok) via ``astream_events(v2)``. Recognised
 CLI commands (``trades``/``runs``/``top``/``report``/``monitor``/``research``/
 ``charts``/``accounts``/``options``, ``agent:*``, ``alpha:*``, ``positions``, ``news:``,
 ``load:``, ``equity``, ``help`` …) are intercepted by
@@ -48,17 +48,19 @@ from starlette.responses import RedirectResponse, StreamingResponse
 from engine.web import ph_layout
 
 # --- reuse the legacy AG-UI wiring verbatim --------------------------------
-# Importing agui_app builds the LangGraph agent (XAI Grok + StructuredTool
+# Importing agui_app builds the primary DeepAgents harness (XAI Grok + StructuredTool
 # wrappers), the command-interception logic and the CLI help text. We reuse
 # those directly so the routing decisions stay identical to the old app.
 import agui_app as _agui
 from engine.ai import StreamingCommand
 
-langgraph_agent = _agui.langgraph_agent
+primary_agent = _agui.primary_agent
+# Compatibility alias for local helpers/tests written before the harness migration.
+langgraph_agent = primary_agent
 _command_interceptor = _agui._command_interceptor
 _app_state = _agui._app_state
 
-# In-memory per-thread AI history (context for the LangGraph agent). Keyed by the
+# In-memory per-thread AI history (context for the primary agent). Keyed by the
 # thread id stored on the session cookie. Command results are stateless.
 _HISTORY: dict[str, list[dict]] = {}
 
@@ -401,7 +403,7 @@ async def _stream(msg: str, session) -> StreamingResponse:
 
     Snapshot the session up front (the generator runs after the request scope),
     build a legacy-shaped compat session for the reused interceptor, then either
-    stream the LangGraph agent (free-form) or a single command result.
+    stream the primary agent harness (free-form) or a single command result.
     """
     uid = session.get("user_id")
     thread_id = session.get("thread_id") or str(_uuid.uuid4())
@@ -441,7 +443,7 @@ async def _stream(msg: str, session) -> StreamingResponse:
             yield _sse("done", {})
             return
 
-        # 2) Free-form text → stream the LangGraph agent
+        # 2) Free-form text → stream the primary agent harness
         yield _sse("agent_route", {"slug": "ai", "agent": "AlpaTrade AI"})
         history = _HISTORY.setdefault(thread_id, [])
         history.append({"role": "user", "content": msg})

@@ -29,7 +29,7 @@ The `engine/` + `verticals/` refactor is **in progress**, done in numbered phase
   `ph_guide`, `ph_charts`, `ph_settings`), each exposing `register(app, rt)` — see **Web layer** below.
 - **Phase 0 (done)** — the methodology-faithful backtest layer `engine.backtest` (see Architecture).
 - **`engine.config`** is the canonical model/provider resolver (model, market-data, search, agent-framework),
-  layering per-user DB overrides over env defaults; the LangGraph agent and tools resolve through it. See
+  layering per-user DB overrides over env defaults; the DeepAgents harness and tools resolve through it. See
   **Model & provider configuration** below.
 
 Not everything has moved: strategies, the grid-search backtester, and the multi-agent orchestrator
@@ -47,8 +47,8 @@ prefer `engine.*`.
 - **Config**: `config/parameters.yaml` (strategy params), `.env` (API keys)
 
 `main.py` is a thin shim that imports the merged `app.py` and `serve()`s it — **this is what prod runs**
-(see **Deployment**). `agui_app.py` still exists and defines the shared LangGraph agent
-(`agui_app.langgraph_agent`, `agent_for_user()`) + tools that `engine/web/ph_chat.py` imports; it is no
+(see **Deployment**). `agui_app.py` still exists and defines the shared DeepAgents harness
+(`agui_app.primary_agent`, `agent_for_user()`) + tools that `engine/web/ph_chat.py` imports; it is no
 longer the prod web server. Ports are overridable via `ASSETHERO_WEB_PORT` / `ASSETHERO_API_PORT`.
 
 **Legacy `api_app.py`** (FastAPI, port 5001) is still mounted by `api.py` under `/api/v1/equities`.
@@ -133,7 +133,7 @@ Legacy web/api apps ───────┘                                    
 ### Command Flow
 
 1. **CLI**: `cli.py` → `tui/pt_cli.py` (prompt_toolkit REPL) → `tui/command_processor.py` dispatches commands
-2. **AG-UI**: `agui_app.py` intercepts CLI commands via `_CLI_BASES`/`_CLI_EXACT` sets, routes to `CommandProcessor`; free-form text goes to LangGraph agent with `StructuredTool` wrappers
+2. **AG-UI**: `agui_app.py` intercepts CLI commands via `_CLI_BASES`/`_CLI_EXACT` sets, routes to `CommandProcessor`; free-form text goes to the DeepAgents harness with `StructuredTool` wrappers
 3. **Web/API**: route handlers call `Orchestrator` or `CommandProcessor` directly
 
 `CommandProcessor` is the central dispatcher. It parses positional params (e.g., `trades paper btd-3dp`) and routes to handler methods (`_agent_trades`, `_agent_runs`, `_agent_top`, etc.). Unknown input falls through to the AI chat agent.
@@ -150,7 +150,7 @@ env vars → `_DEFAULTS`. `build_chat_model(settings)` turns that into a LangCha
 - **Self-heal:** for XAI, `build_chat_model` probes the model and falls back to the first working entry in
   `MODEL_NAMES["xai"]` if it's unavailable — this is why a stale/region-locked `MODEL_NAME` (e.g. the
   region-locked `grok-4.5`) still yields a working agent. Keep the preferred model first in that list.
-- `agui_app.agent_for_user(user_id)` returns a per-user LangGraph agent cached by `(provider, model)`.
+- `agui_app.agent_for_user(user_id)` returns a per-user agent cached by `(provider, model, framework)`; DeepAgents is the default harness.
 - **Voice** (`engine/voice.py`) has its OWN model (`XAI_VOICE_MODEL`, default `grok-4-fast`) and is NOT
   routed through this self-heal (realtime models differ from chat-completion models).
 - `get_stock_news` (chat tool) forces the configured `SEARCH_PROVIDER` (default **Tavily**).

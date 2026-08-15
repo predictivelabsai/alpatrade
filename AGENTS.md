@@ -9,7 +9,7 @@ provider config, and deployment notes. This file only captures what an agent wou
 |-----|-------|------|-------|
 | Web (prod) | `python main.py` → `app.py` | 5001 (env `ASSETHERO_WEB_PORT`) | Thin shim; this is what Coolify runs via `Dockerfile.agui` |
 | REST API | `python api.py` | 5002 (env `ASSETHERO_API_PORT`) | Mounts legacy `api_app.py` under `/api/v1/equities` |
-| AG-UI chat | `uvicorn agui_app:app --port 5003 --reload` | 5003 | Also defines `langgraph_agent` / `agent_for_user()` imported by `engine/web/ph_chat.py` |
+| AG-UI chat | `uvicorn agui_app:app --port 5003 --reload` | 5003 | Defines the DeepAgents-backed `primary_agent` / `agent_for_user()`; `langgraph_agent` remains a compatibility alias |
 | CLI | `python cli.py` (or `alpatrade` console script) | — | `cli.py` → `tui/pt_cli.py` → `tui/command_processor.py` |
 
 `web_app.py` is **retired** (don't target it for new work). `api_app.py` is legacy but still mounted.
@@ -17,22 +17,24 @@ provider config, and deployment notes. This file only captures what an agent wou
 ## Commands
 
 ```bash
-uv sync --all-extras                 # install (extras: web, agents, agui, all)
+uv sync --all-extras                 # install (extras: web, agents, agui, e2e, all)
 uv run python cli.py                 # interactive CLI
 uv run python app.py                 # web UI
 python -m compileall -q app.py api.py engine verticals tui utils agents   # fast syntax check (matches CI)
 python -m pytest tests/regression_suite.py -v            # full suite — requires DB + .env + Alpaca/XAI
 python -m pytest tests/regression_suite.py::TestStrategySlug -v   # single class
-python -m pytest tests/test_index_options.py tests/test_ui_navigation.py -q   # DB-free unit tests (CI default)
+python -m pytest tests/test_index_options.py tests/test_ui_navigation.py tests/test_premarket.py tests/test_research.py tests/test_chat_chart_transport.py tests/test_objective.py tests/test_refit.py tests/test_regime.py tests/test_vol_sizing.py tests/test_promotion.py tests/test_agent_framework_default.py tests/test_scout_reasoning.py tests/test_backtest_reasoning.py -q   # DB-free unit tests (CI default)
+python -m engine.autonomy.worker                          # autonomy worker loop (needs AUTONOMY_ENABLED=true + DB)
 python -m engine.backtest.runner --symbols AAPL --start 2024-01-01 --end 2024-06-30  # methodology backtest → backtest-results/
 python run_migration.py sql/NN_name.sql                  # apply a migration (no tracking table; idempotent)
 python scripts/coolify_deploy.py deploy --name agui      # deploy to prod (needs COOLIFY_* in .env)
 scripts/verify_no_secrets.sh                            # pre-commit gate — run before pushing
 ```
 
-CI (`.github/workflows/ci.yml`) uses **pip**, not uv: `pip install -e ".[all]"`. The regression
-suite step only runs when the `DATABASE_URL` repo secret is set; otherwise CI runs only the two
-DB-free unit-test files above. Add new DB-free tests to that explicit list if they should run in CI.
+CI (`.github/workflows/ci.yml`) uses **pip**, not uv: `pip install -e ".[all]"` plus
+`authlib pytest`. The regression suite step only runs when the `DATABASE_URL` repo secret is set;
+otherwise CI runs only the explicit DB-free unit-test list above (mirrors the "Unit tests" step in
+ci.yml). Add new DB-free tests to that explicit list if they should run in CI.
 
 ## Architecture facts that aren't obvious from filenames
 
@@ -49,6 +51,10 @@ DB-free unit-test files above. Add new DB-free tests to that explicit list if th
   Validate → Report. Communication is a file-based JSON message bus (`data/agent_messages/`).
 - **Verticals**: `verticals/equities/` is the equities web vertical; `verticals/publicmarkets/` is
   the newer IPO/SEC/hedge-fund tools vertical. Provider-neutral logic stays in `engine/`.
+- **Autonomy engine** (`engine/autonomy/`): Postgres-backed durable run engine over the
+  Orchestrator phases — DB queue (`FOR UPDATE SKIP LOCKED`), checkpointed pipeline, continuous
+  worker gated by `AUTONOMY_ENABLED` (paper-only by design). Controls surfaced in
+  `engine/web/ph_monitoring.py`.
 - **DB**: PostgreSQL with `alpatrade` schema. Migrations in `sql/` (numbered `01_`–`17_`,
   idempotent `CREATE TABLE IF NOT EXISTS`). Per-user Alpaca keys live in `user_accounts`
   (Fernet-encrypted BYTEA), **not** `users`. All data tables carry `user_id` (+ `account_id`).

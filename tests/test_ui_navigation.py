@@ -52,6 +52,18 @@ def test_root_stays_landing_and_login_redirects_to_dashboard():
     assert 'return RedirectResponse("/dashboard", status_code=303)' in auth_source
 
 
+def test_signin_fields_have_accessible_names_and_autocomplete_hints():
+    from engine.web.ph_auth import _signin_page
+
+    html = to_xml(_signin_page())
+    assert 'for="signin-email"' in html
+    assert 'id="signin-email"' in html
+    assert 'autocomplete="email"' in html
+    assert 'for="signin-password"' in html
+    assert 'id="signin-password"' in html
+    assert 'autocomplete="current-password"' in html
+
+
 def test_news_pane_can_be_open_by_default():
     html = to_xml(page("app", user={"email": "user@example.com"},
                        right_news=True, right_news_open=True))

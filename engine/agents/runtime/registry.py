@@ -1,8 +1,9 @@
 """Select an :class:`AgentRuntime` from ``AGENT_FRAMEWORK`` with graceful fallback.
 
 Resolution: requested name (or ``engine.config`` setting) → normalise aliases →
-if that backend's library isn't installed (``available()`` is False), fall back to
-LangGraph. So an unset/typo'd/uninstalled framework never breaks — same philosophy as
+if that backend's library isn't installed (``available()`` is False), select the
+first available safe fallback (DeepAgents, then LangGraph, then Hermes). So an
+unset/typo'd/uninstalled framework never breaks — the same philosophy as
 ``engine.config.build_chat_model``'s model fallback.
 """
 from __future__ import annotations
@@ -25,7 +26,8 @@ _ALIASES = {
     "nous": "hermes", "hermes-runtime": "hermes", "nous-hermes": "hermes",
     "lang-graph": "langgraph", "lang_graph": "langgraph",
 }
-_FALLBACK = "langgraph"
+_FALLBACK = "deepagents"
+_FALLBACK_ORDER = ("deepagents", "langgraph", "hermes")
 
 
 def _load(key: str):
@@ -50,9 +52,23 @@ def get_runtime(name: str | None = None):
     key = _canonical(name)
     cls = _load(key)
     if not getattr(cls, "available", lambda: True)():
-        logger.warning("AGENT_FRAMEWORK %r unavailable (library not installed) → %s",
-                       key, _FALLBACK)
-        cls = _load(_FALLBACK)
+        replacement = next(
+            (
+                candidate
+                for candidate in _FALLBACK_ORDER
+                if candidate != key
+                and getattr(_load(candidate), "available", lambda: True)()
+            ),
+            None,
+        )
+        if replacement is None:
+            raise RuntimeError(f"No available agent runtime (requested {key!r})")
+        logger.warning(
+            "AGENT_FRAMEWORK %r unavailable (library not installed) → %s",
+            key,
+            replacement,
+        )
+        cls = _load(replacement)
     return cls()
 
 

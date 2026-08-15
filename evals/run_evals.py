@@ -51,11 +51,11 @@ def load_rows() -> list[dict]:
 async def get_answer(row: dict) -> tuple[str, list[str]]:
     """Route a case and return both the final answer and observed tool trajectory."""
     prompt = row["prompt"]
-    import agui_app  # builds the LangGraph agent + command interceptor
+    import agui_app  # builds the primary agent harness + command interceptor
 
     if row["agent_type"] == "chat":
         from langchain_core.messages import HumanMessage
-        r = await agui_app.langgraph_agent.ainvoke({"messages": [HumanMessage(content=prompt)]})
+        r = await agui_app.primary_agent.ainvoke({"messages": [HumanMessage(content=prompt)]})
         msg = r["messages"][-1]
         called_tools = []
         for item in r.get("messages", []):

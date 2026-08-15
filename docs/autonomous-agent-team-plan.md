@@ -169,8 +169,8 @@ engine/autonomy/
 
 ## 8. Config & deployment
 
-- `AGENT_FRAMEWORK` (already an `engine.config` field/stub) selects the runtime adapter; default
-  `langgraph`. `engine.config.MODEL_*` continues to pick the LLM. Both per-user overridable via the
+- `AGENT_FRAMEWORK` selects the runtime adapter; default `deepagents` (with LangGraph as the safe
+  installed fallback). `engine.config.MODEL_*` continues to pick the LLM. Both per-user overridable via the
   Settings page — a user could run their autonomy on `deepagents` + `claude-sonnet-5`.
 - Deploy: add an **`autonomy` service** to `docker-compose.yaml` (own container running
   `python -m engine.autonomy.worker`), `AUTONOMY_ENABLED` off in prod until validated — mirrors

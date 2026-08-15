@@ -214,6 +214,7 @@ reports/
 .sesskey
 .playwright-mcp/
 .playwright-cli/
+output/playwright/
 
 # eval outputs
 eval-results/
