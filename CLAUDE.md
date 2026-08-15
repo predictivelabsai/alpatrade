@@ -22,9 +22,10 @@ The `engine/` + `verticals/` refactor is **in progress**, done in numbered phase
   The old `utils/*` paths (e.g. `utils/auth.py`, `utils/db/db_pool.py`) are **compatibility shims**
   that `sys.modules`-alias to the relocated `engine` module (removed in Phase 7). **New code should
   import from `engine.*`, not `utils.*`.**
-- **Phase 1b (done)** — unified entry points `app.py` (web) and `api.py` (REST) with a house-style
-  3-pane shell and asset-class switcher; the equities web vertical lives in `verticals/equities/routes.py`,
-  mounted under `/equities/*`. Crypto / FX / prediction / research are stubs until their merge phases.
+- **Phase 1b (done)** — unified web entry point `app.py` plus the namespaced `api.py` compatibility
+  shell; production REST traffic uses the canonical `api_app.py` `/v2/*` contract. The equities web
+  vertical lives in `verticals/equities/routes.py`, mounted under `/equities/*`. Crypto / FX /
+  prediction / research are stubs until their merge phases.
   The web app is composed of feature modules under `engine/web/` (`ph_landing`, `ph_auth`, `ph_chat`,
   `ph_guide`, `ph_charts`, `ph_settings`), each exposing `register(app, rt)` — see **Web layer** below.
 - **Phase 0 (done)** — the methodology-faithful backtest layer `engine.backtest` (see Architecture).
@@ -40,7 +41,8 @@ prefer `engine.*`.
 
 - **Python 3.13**, virtualenv at `.venv/`, managed with `uv`
 - **Unified web app** (`app.py`, port 5001) — FastHTML house-style shell + verticals switcher; mounts the equities vertical
-- **Unified REST API** (`api.py`, port 5002) — FastAPI; mounts each vertical under `/api/v1/<vertical>`
+- **Production REST API** (`api_app.py`, port 5001) — FastAPI; typed `/v2/*` contract, agent catalog, Swagger and ReDoc
+- **Namespaced API shell** (`api.py`, port 5002) — optional compatibility mount under `/api/v1/equities`
 - **AG-UI Chat** (`agui_app.py`, port 5003) — LangGraph chat agent (XAI Grok) with WebSocket streaming
 - **Rich CLI** (entry point: `cli.py` → `tui/pt_cli.py` → `tui/command_processor.py`; console script `alpatrade`)
 - **PostgreSQL** with `alpatrade` schema, accessed via SQLAlchemy (`engine.db.pool`)
@@ -51,7 +53,8 @@ prefer `engine.*`.
 (`agui_app.primary_agent`, `agent_for_user()`) + tools that `engine/web/ph_chat.py` imports; it is no
 longer the prod web server. Ports are overridable via `ASSETHERO_WEB_PORT` / `ASSETHERO_API_PORT`.
 
-**Legacy `api_app.py`** (FastAPI, port 5001) is still mounted by `api.py` under `/api/v1/equities`.
+**`api_app.py` is the canonical production API** and is also mounted by the optional `api.py`
+compatibility shell under `/api/v1/equities`.
 **`web_app.py` is retired** in the container topology (do not target it for new work).
 
 ## Commands

@@ -4,9 +4,11 @@ Contract for the **alpatrade-mobile** (Flutter) client. Mirrors the kanvas-mobil
 pattern: streaming chat over SSE + typed REST.
 
 - **Base URL:** `https://api.alpatrade.chat`
+- **Developers:** `https://alpatrade.chat/developers`
+- **Swagger / ReDoc:** `https://api.alpatrade.chat/docs` · `https://api.alpatrade.chat/redoc`
 - **Machine-readable spec:** [`docs/swagger.json`](./swagger.json) (OpenAPI 3.1, generated from the FastAPI app) — import it into Postman / codegen.
 - **Auth:** JWT bearer. `Authorization: Bearer <token>` on protected calls.
-- **Trading is paper-only** (simulated). The default account is the primary paper account (number ending **…8CR**).
+- **Trading is paper-only** (simulated) and uses the authenticated user's linked Alpaca paper account.
 
 ---
 
@@ -14,10 +16,10 @@ pattern: streaming chat over SSE + typed REST.
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| POST | `/auth/register` | `{email, password, display_name?}` | `{access_token, token_type, user}` |
-| POST | `/auth/login` | `{email, password}` | `{access_token, token_type, user}` |
+| POST | `/auth/register` | `{email, password, display_name?}` | `{token, user_id, email}` |
+| POST | `/auth/login` | `{email, password}` | `{token, user_id, email}` |
 
-Store `access_token` and send it as `Authorization: Bearer <token>` on later calls.
+Store `token` and send it as `Authorization: Bearer <token>` on later calls.
 Auth is **optional** for `/v2/chat` (anonymous uses the shared demo account); required for per-user data.
 
 ---
@@ -121,8 +123,8 @@ All return typed JSON (see `swagger.json` for schemas). Pass the bearer token to
 
 ## Trading (REST) — `POST /v2/order`
 
-Place a **paper** (simulated) order directly, without going through chat. On the primary
-paper account (…8CR). No real money.
+Place a **paper** (simulated) order directly, without going through chat, on the
+authenticated user's linked paper account. No real money.
 
 - **Body (JSON):**
   ```json
@@ -130,7 +132,7 @@ paper account (…8CR). No real money.
     "order_type": "limit", "limit_price": 180.0, "time_in_force": "day" }
   ```
   - `side`: `buy` | `sell` · `order_type`: `market` | `limit` (limit needs `limit_price`) · `time_in_force`: `day` | `gtc`
-- **Auth:** optional bearer.
+- **Auth:** required bearer.
 - **Returns:**
   ```json
   { "ok": true, "order_id": "…", "symbol": "AAPL", "qty": 10, "side": "buy",
@@ -152,6 +154,27 @@ paper account (…8CR). No real money.
 | POST | `/v2/stop` | Stop a running agent. |
 
 Market helpers: `GET /news`, `GET /price`, `GET /movers`, `GET /profile`.
+
+## External agent APIs
+
+`GET /v2/agents` is the public machine-readable catalog. The canonical typed agent
+invocations are:
+
+| Method | Path | Agent |
+|---|---|---|
+| POST | `/v2/agents/chat/invoke` | Primary LangChain DeepAgent; non-streaming JSON response. |
+| POST | `/v2/agents/premarket/invoke` | Read-only premarket scan. |
+| POST | `/v2/agents/alpha-growth/invoke` | Growth research methodology. |
+| POST | `/v2/agents/alpha-value/invoke` | Value research methodology. |
+| POST | `/v2/agents/alpha-compare/invoke` | Combined Growth + Value report. |
+| POST | `/v2/agents/autonomy-scout/invoke` | Queue the paper-only durable autonomy pipeline. |
+
+The Backtest, Validation, Paper Trade, Reconciliation, Report, and Orchestrator agents
+use the typed action/data endpoints above rather than duplicate wrapper routes.
+
+Trusted services authenticate with `X-API-Key`. Set `API_SERVICE_KEY` or a comma-separated
+`API_SERVICE_KEYS` value on the API deployment, then include `X-User-Id` for endpoints that
+read or mutate one user's data. User-facing clients should continue to use JWT bearer auth.
 
 ---
 

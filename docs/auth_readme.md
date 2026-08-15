@@ -87,12 +87,25 @@ Both return:
 {"token": "eyJ...", "user_id": "uuid", "email": "user@example.com"}
 ```
 
-**Authenticated requests:**
+**Authenticated user requests:**
 ```bash
 curl -H "Authorization: Bearer eyJ..." http://localhost:5001/trades
 ```
 
-All API endpoints accept optional JWT auth. Unauthenticated requests see all data (CLI-compatible). Authenticated requests filter to the user's own data.
+Tenant data and agent-action endpoints require authentication and filter to the supplied
+user identity. Public discovery, health, market helpers, and streaming `/v2/chat` remain
+available without authentication.
+
+**Trusted service requests:**
+```bash
+curl -H "X-API-Key: $API_SERVICE_KEY" \
+     -H "X-User-Id: <user-uuid>" \
+     https://api.alpatrade.chat/v2/status
+```
+
+Configure one key with `API_SERVICE_KEY` or rotate multiple comma-separated values with
+`API_SERVICE_KEYS`. `X-User-Id` is rejected unless the request has a valid service key or
+the web container's short-lived internal signature; it is never trusted on its own.
 
 ### CLI
 
@@ -106,12 +119,12 @@ The CLI does not require authentication. It operates with `user_id=None`, which 
 Users can configure their own Alpaca paper trading keys via the web profile page. Keys are:
 
 1. **Encrypted at rest** using Fernet symmetric encryption (`ENCRYPTION_KEY`)
-2. **Stored as BYTEA** in `alpatrade.users.alpaca_api_key_enc` / `alpaca_secret_key_enc`
+2. **Stored as BYTEA** in `alpatrade.user_accounts.alpaca_api_key_enc` / `alpaca_secret_key_enc`
 3. **Decrypted on demand** when the orchestrator or broker agent needs them
 
-Resolution order:
-1. Per-user keys from DB (if user is authenticated and has configured keys)
-2. Environment variables (`ALPACA_PAPER_API_KEY`, `ALPACA_PAPER_SECRET_KEY`)
+User-scoped API order placement requires per-user keys from the database. CLI and explicit
+anonymous/demo workflows may use the environment variables (`ALPACA_PAPER_API_KEY`,
+`ALPACA_PAPER_SECRET_KEY`).
 
 ## Data Isolation
 
@@ -129,7 +142,7 @@ When `user_id` is `None` (CLI):
 
 | File | Purpose |
 |------|---------|
-| `utils/auth.py` | Password hashing, key encryption, user CRUD, JWT |
+| `engine/auth.py` | Password hashing, key encryption, user CRUD, JWT |
 | `sql/07_create_users_table.sql` | Users table schema |
 | `sql/08_add_user_id_columns.sql` | Add user_id to existing tables |
 | `sql/09_migrate_existing_data.sql` | Migrate data to admin user |

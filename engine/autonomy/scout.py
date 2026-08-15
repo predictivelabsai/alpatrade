@@ -36,11 +36,20 @@ def strategy_name(strategy: str) -> str:
     return _STRATEGY_NAMES.get((strategy or "").lower(), strategy)
 
 
-def portfolio_state(account_id: Optional[str] = None) -> PortfolioState:
+def portfolio_state(account_id: Optional[str] = None,
+                    user_id: Optional[str] = None) -> PortfolioState:
     """Live PAPER-account snapshot for the RiskPolicy gate."""
     try:
         from engine.brokers.alpaca import AlpacaAPI
-        api = AlpacaAPI(paper=True)
+        if user_id:
+            from engine.auth import get_alpaca_keys
+            keys = get_alpaca_keys(user_id, account_id)
+            if not keys:
+                log.warning("portfolio_state: no linked paper account for user")
+                return PortfolioState(equity=0.0, open_positions=0, gross_exposure=0.0)
+            api = AlpacaAPI(*keys, paper=True)
+        else:
+            api = AlpacaAPI(paper=True)
         acct = api.get_account() or {}
         positions = api.get_positions() or []
     except Exception as e:  # noqa: BLE001
@@ -57,7 +66,9 @@ def portfolio_state(account_id: Optional[str] = None) -> PortfolioState:
 
 
 def scan(strategy: str = "btd", limit: int = 5, position_pct: float = 0.10,
-         period: str = "1d", equity: Optional[float] = None) -> list[Candidate]:
+         period: str = "1d", equity: Optional[float] = None,
+         account_id: Optional[str] = None,
+         user_id: Optional[str] = None) -> list[Candidate]:
     """Rank the universe by today's move and propose candidates for ``strategy``.
 
     Dip strategies target the biggest decliners; momentum targets the biggest gainers.
@@ -77,7 +88,7 @@ def scan(strategy: str = "btd", limit: int = 5, position_pct: float = 0.10,
     dip = strategy.lower() in _DIP_STRATEGIES
     stocks.sort(key=lambda s: s["return"], reverse=not dip)  # decliners first for dips
     if equity is None:
-        equity = portfolio_state().equity
+        equity = portfolio_state(account_id=account_id, user_id=user_id).equity
     notional = round(max(0.0, equity) * position_pct, 2)
 
     out = []
@@ -93,7 +104,9 @@ def enqueue_run(strategy: str = "btd", limit: int = 5,
 
     Returns the run_id, or None if nothing was found.
     """
-    candidates = scan(strategy=strategy, limit=limit)
+    candidates = scan(
+        strategy=strategy, limit=limit, account_id=account_id, user_id=user_id,
+    )
     if not candidates:
         return None
     from engine.autonomy import queue

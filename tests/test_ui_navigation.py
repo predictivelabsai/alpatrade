@@ -52,6 +52,19 @@ def test_root_stays_landing_and_login_redirects_to_dashboard():
     assert 'return RedirectResponse("/dashboard", status_code=303)' in auth_source
 
 
+def test_landing_links_to_developer_docs_and_openapi():
+    from engine.web.ph_landing import developers_page, home_page
+
+    home_html = to_xml(home_page())
+    developer_html = to_xml(developers_page())
+
+    assert 'href="/developers"' in home_html
+    assert "https://api.alpatrade.chat/docs" in developer_html
+    assert "https://api.alpatrade.chat/redoc" in developer_html
+    assert "https://api.alpatrade.chat/openapi.json" in developer_html
+    assert "https://api.alpatrade.chat/v2/agents" in developer_html
+
+
 def test_signin_fields_have_accessible_names_and_autocomplete_hints():
     from engine.web.ph_auth import _signin_page
 

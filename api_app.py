@@ -1,14 +1,22 @@
 """FastAPI REST server for AlpaTrade — exposes CLI commands as JSON endpoints."""
 import asyncio
+import hashlib
+import hmac
 import logging
+import os
+import secrets
 import sys
 import threading
+import time
+import tomllib
+import uuid
+from importlib.metadata import PackageNotFoundError, version
 
 logger = logging.getLogger(__name__)
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Literal, Optional
 
 # Ensure project root is importable
 sys.path.insert(0, str(Path(__file__).parent.absolute()))
@@ -17,7 +25,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, StreamingResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 
 from tui.command_processor import CommandProcessor
 from api_models import (
@@ -39,6 +47,12 @@ from api_models import (
     PnlSymbolBreakdown, DailyPnl, PnlResponse,
     ReportSummaryItem, ReportDetail, TopStrategyItem,
     PositionItem, PositionsResponse,
+    ApiInfoResponse, ApiLinks,
+    AgentDescriptor, AgentCatalogResponse,
+    AgentChatRequest, AgentChatResponse,
+    PremarketAgentRequest, PremarketAgentResponse,
+    AlphaResearchRequest, AlphaResearchResponse, AlphaComparisonResponse,
+    AutonomyScoutRequest, AutonomyScoutResponse,
 )
 
 load_dotenv()
@@ -70,56 +84,194 @@ def _get_app_state(user_id: Optional[str] = None) -> _AppState:
 # Auth dependency
 # ---------------------------------------------------------------------------
 
-_bearer = HTTPBearer(auto_error=False)
+_bearer = HTTPBearer(
+    auto_error=False,
+    scheme_name="BearerAuth",
+    description="User JWT returned by POST /auth/login or /auth/register.",
+)
+_service_api_key = APIKeyHeader(
+    name="X-API-Key",
+    auto_error=False,
+    scheme_name="ServiceApiKey",
+    description="Trusted service key. Add X-User-Id for tenant-scoped endpoints.",
+)
+
+
+def _configured_service_keys() -> tuple[str, ...]:
+    """Return configured service keys without ever logging their values."""
+    raw = os.getenv("API_SERVICE_KEYS") or os.getenv("API_SERVICE_KEY") or ""
+    return tuple(key.strip() for key in raw.split(",") if key.strip())
+
+
+def _valid_service_key(candidate: Optional[str]) -> bool:
+    if not candidate:
+        return False
+    return any(secrets.compare_digest(candidate, key) for key in _configured_service_keys())
+
+
+def _valid_internal_signature(request: Request, user_id: str) -> bool:
+    """Verify the web container's short-lived, JWT-secret-backed identity proof."""
+    timestamp = request.headers.get("X-Internal-Timestamp", "")
+    signature = request.headers.get("X-Internal-Signature", "")
+    secret = os.getenv("JWT_SECRET", "")
+    if not timestamp or not signature or not secret:
+        return False
+    try:
+        if abs(time.time() - int(timestamp)) > 60:
+            return False
+    except ValueError:
+        return False
+    expected = hmac.new(
+        secret.encode(),
+        f"{timestamp}:{request.method.upper()}:{request.url.path}:{user_id}".encode(),
+        hashlib.sha256,
+    ).hexdigest()
+    return secrets.compare_digest(signature, expected)
+
+
+def _normalize_user_id(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    try:
+        return str(uuid.UUID(str(value)))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="user_id must be a UUID") from exc
 
 async def get_current_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
+    api_key: Optional[str] = Depends(_service_api_key),
 ) -> Optional[Dict]:
-    """
-    Decode JWT from Authorization header.
-    Also accepts X-User-Id header for internal service-to-service calls
-    (agui/web containers calling the API container within Docker network).
-    Returns user payload dict or None.
-    """
+    """Resolve an optional JWT, service API key, or signed internal identity."""
     if credentials:
-        from utils.auth import decode_jwt_token
+        from engine.auth import decode_jwt_token
         payload = decode_jwt_token(credentials.credentials)
         if payload:
+            payload["user_id"] = _normalize_user_id(payload.get("user_id"))
+            payload["auth_type"] = "jwt"
             return payload
+        raise HTTPException(status_code=401, detail="Invalid or expired bearer token")
 
-    # Internal service-to-service: accept X-User-Id header
-    internal_uid = request.headers.get("X-User-Id")
-    if internal_uid:
-        return {"user_id": internal_uid}
+    requested_uid = request.headers.get("X-User-Id")
+    if api_key:
+        if not _valid_service_key(api_key):
+            raise HTTPException(status_code=401, detail="Invalid service API key")
+        return {"user_id": _normalize_user_id(requested_uid), "auth_type": "service"}
+
+    if requested_uid and _valid_internal_signature(request, requested_uid):
+        return {"user_id": _normalize_user_id(requested_uid), "auth_type": "internal"}
+
+    if requested_uid:
+        raise HTTPException(
+            status_code=401,
+            detail="X-User-Id requires a service API key or valid internal signature",
+        )
 
     return None
+
+
+async def require_current_user(
+    user: Optional[Dict] = Depends(get_current_user),
+) -> Dict:
+    """Require an authenticated user or service principal."""
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return user
+
+
+async def require_tenant_user(
+    user: Dict = Depends(require_current_user),
+) -> Dict:
+    """Require a concrete user identity for tenant-scoped data or actions."""
+    if not user.get("user_id"):
+        raise HTTPException(
+            status_code=400,
+            detail="Service requests to this endpoint must include X-User-Id",
+        )
+    return user
 
 # ---------------------------------------------------------------------------
 # FastAPI app
 # ---------------------------------------------------------------------------
 
 tags_metadata = [
+    {"name": "meta", "description": "API discovery and health"},
     {"name": "auth", "description": "User registration and login"},
     {"name": "agents", "description": "Agent lifecycle — backtest, paper trade, validate, reconcile, full cycle"},
+    {"name": "agent-invocation", "description": "Typed service-to-service agent invocation"},
+    {"name": "chat", "description": "DeepAgents chat, as JSON or Server-Sent Events"},
     {"name": "data", "description": "Query runs, trades, reports, P&L"},
     {"name": "market", "description": "Market data — news, prices, profiles, movers"},
+    {"name": "trading", "description": "Paper-only order placement"},
     {"name": "legacy", "description": "Legacy endpoints (markdown responses via CommandProcessor)"},
 ]
 
+try:
+    with (Path(__file__).parent / "pyproject.toml").open("rb") as pyproject_file:
+        API_VERSION = str(tomllib.load(pyproject_file)["project"]["version"])
+except (OSError, KeyError, tomllib.TOMLDecodeError):
+    try:
+        API_VERSION = version("alpatrade")
+    except PackageNotFoundError:
+        API_VERSION = "0.8.0"
+
+API_DESCRIPTION = """
+AlpaTrade's production REST API for research, backtesting, validation, paper trading,
+reconciliation, reporting, and the primary LangChain DeepAgents assistant.
+
+Use `Authorization: Bearer <JWT>` for user clients. Trusted services may use
+`X-API-Key`; include `X-User-Id` only when acting on behalf of a specific user.
+All order and autonomy endpoints are paper-only.
+""".strip()
+
 app = FastAPI(
     title="AlpaTrade API",
-    version="2.0.0",
-    description="Trading strategy simulator, backtester, and paper trader.",
+    version=API_VERSION,
+    description=API_DESCRIPTION,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
     openapi_tags=tags_metadata,
+    contact={"name": "Predictive Labs", "url": "https://alpatrade.chat/developers"},
+    license_info={"name": "MIT", "identifier": "MIT"},
+    servers=[{"url": "https://api.alpatrade.chat", "description": "Production"}],
 )
+
+
+def _cors_origins() -> list[str]:
+    configured = os.getenv("API_CORS_ORIGINS", "")
+    if configured.strip():
+        return [origin.strip() for origin in configured.split(",") if origin.strip()]
+    return [
+        "https://alpatrade.chat",
+        "https://www.alpatrade.chat",
+        "https://alpatrade.dev",
+        "https://www.alpatrade.dev",
+        "http://localhost:3000",
+        "http://localhost:5001",
+    ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_cors_origins(),
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=[
+        "Authorization", "Content-Type", "X-API-Key", "X-User-Id",
+        "X-Request-ID",
+    ],
+    expose_headers=["X-Request-ID"],
 )
+
+
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    """Propagate a bounded request id for service tracing."""
+    request_id = (request.headers.get("X-Request-ID") or "").strip()[:128]
+    request_id = request_id or str(uuid.uuid4())
+    request.state.request_id = request_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -134,7 +286,8 @@ async def _run_command(command: str, user_id: Optional[str] = None) -> ApiRespon
         state.command_history.append(command)
         return ApiResponse(result=result, status="ok")
     except Exception as e:
-        return ApiResponse(result=f"# Error\n\n```\n{e}\n```", status="error")
+        logger.warning("Legacy command failed for user %s: %s", user_id, e)
+        return ApiResponse(result="# Error\n\nCommand execution failed.", status="error")
 
 def _build_cmd(base: str, params: dict) -> str:
     """Build a command string from base and optional key:value params."""
@@ -150,6 +303,119 @@ def _build_cmd(base: str, params: dict) -> str:
 def _uid(user: Optional[Dict]) -> Optional[str]:
     """Extract user_id from auth payload."""
     return user.get("user_id") if user else None
+
+
+def _require_linked_paper_keys(user_id: str, account_id: Optional[str] = None):
+    """Resolve an owned paper account or reject the user-scoped action."""
+    from engine.auth import get_alpaca_keys
+
+    keys = get_alpaca_keys(user_id, account_id)
+    if not keys:
+        detail = "Paper account is not linked to this user" if account_id else \
+            "No linked Alpaca paper account"
+        raise HTTPException(status_code=409, detail=detail)
+    return keys
+
+
+AGENT_CATALOG = (
+    AgentDescriptor(
+        slug="deep-agent", name="DeepAgent Assistant",
+        description="Primary LangChain DeepAgents harness with research and broker tools.",
+        method="POST", path="/v2/agents/chat/invoke", execution="synchronous",
+        safety="paper_only",
+    ),
+    AgentDescriptor(
+        slug="deep-agent-stream", name="DeepAgent Assistant (SSE)",
+        description="Streaming DeepAgents chat with token and tool events.",
+        method="POST", path="/v2/chat", access="public", execution="streaming",
+        safety="paper_only",
+    ),
+    AgentDescriptor(
+        slug="premarket", name="Premarket Agent",
+        description="Read-only premarket scan and ranked mover intelligence.",
+        method="POST", path="/v2/agents/premarket/invoke", execution="synchronous",
+        safety="read_only",
+    ),
+    AgentDescriptor(
+        slug="alpha-growth", name="Alpha Growth Agent",
+        description="Evidence-backed growth-company research report.",
+        method="POST", path="/v2/agents/alpha-growth/invoke", execution="synchronous",
+        safety="read_only",
+    ),
+    AgentDescriptor(
+        slug="alpha-value", name="Alpha Value Agent",
+        description="Evidence-backed value-company research report.",
+        method="POST", path="/v2/agents/alpha-value/invoke", execution="synchronous",
+        safety="read_only",
+    ),
+    AgentDescriptor(
+        slug="alpha-compare", name="Alpha Comparison Agent",
+        description="Growth and value views generated from one shared evidence collection.",
+        method="POST", path="/v2/agents/alpha-compare/invoke", execution="synchronous",
+        safety="read_only",
+    ),
+    AgentDescriptor(
+        slug="backtest", name="Backtest Agent",
+        description="Run the parameter-grid backtest and return the best configuration.",
+        method="POST", path="/v2/backtest", execution="synchronous",
+        safety="read_only",
+    ),
+    AgentDescriptor(
+        slug="validator", name="Validation Agent",
+        description="Validate stored backtest or paper trades against market data.",
+        method="POST", path="/v2/validate", execution="synchronous",
+        safety="read_only",
+    ),
+    AgentDescriptor(
+        slug="paper-trader", name="Paper Trade Agent",
+        description="Start a durable paper-trading subprocess and return immediately.",
+        method="POST", path="/v2/paper", execution="asynchronous",
+        safety="paper_only",
+    ),
+    AgentDescriptor(
+        slug="reconciler", name="Reconciliation Agent",
+        description="Compare the position ledger with the linked Alpaca paper account.",
+        method="POST", path="/v2/reconcile", execution="synchronous",
+        safety="paper_only",
+    ),
+    AgentDescriptor(
+        slug="reporter", name="Report Agent",
+        description="Return run summaries, detail, P&L, and ranked strategies.",
+        method="GET", path="/v2/report", execution="synchronous",
+        safety="read_only",
+    ),
+    AgentDescriptor(
+        slug="orchestrator", name="Five-Agent Orchestrator",
+        description="Run backtest, validation, paper trading, and reporting as one workflow.",
+        method="POST", path="/v2/full", execution="synchronous",
+        safety="orchestration",
+    ),
+    AgentDescriptor(
+        slug="autonomy-scout", name="Autonomy Scout",
+        description="Scan candidates and enqueue the durable paper-only agent pipeline.",
+        method="POST", path="/v2/agents/autonomy-scout/invoke", execution="asynchronous",
+        safety="paper_only",
+    ),
+)
+
+
+@app.get("/", response_model=ApiInfoResponse, tags=["meta"])
+async def api_info():
+    """Human- and machine-readable API discovery document."""
+    return ApiInfoResponse(
+        name="AlpaTrade API",
+        version=API_VERSION,
+        links=ApiLinks(
+            swagger="/docs", redoc="/redoc", openapi="/openapi.json",
+            health="/health", agents="/v2/agents",
+        ),
+    )
+
+
+@app.get("/v2/agents", response_model=AgentCatalogResponse, tags=["agent-invocation"])
+async def v2_agent_catalog():
+    """List callable agents and their canonical typed endpoints."""
+    return AgentCatalogResponse(agents=list(AGENT_CATALOG), total=len(AGENT_CATALOG))
 
 # ---------------------------------------------------------------------------
 # Auth endpoints
@@ -190,7 +456,7 @@ async def auth_login(req: AuthRequest):
 @app.get("/v2/runs", response_model=RunsResponse, tags=["data"])
 async def v2_runs(
     limit: int = Query(20, ge=1, le=200),
-    user: Optional[Dict] = Depends(get_current_user),
+    user: Dict = Depends(require_tenant_user),
 ):
     """List recent orchestrator runs."""
     from utils.db.db_pool import DatabasePool
@@ -237,7 +503,7 @@ async def v2_trades(
     trade_type: Optional[str] = Query(None, alias="type"),
     symbol: Optional[str] = None,
     limit: int = Query(50, ge=1, le=500),
-    user: Optional[Dict] = Depends(get_current_user),
+    user: Dict = Depends(require_tenant_user),
 ):
     """Query trades with optional filters."""
     from utils.db.db_pool import DatabasePool
@@ -301,7 +567,7 @@ async def v2_report_summary(
     trade_type: Optional[str] = Query(None, alias="type"),
     strategy: Optional[str] = None,
     limit: int = Query(10, ge=1, le=100),
-    user: Optional[Dict] = Depends(get_current_user),
+    user: Dict = Depends(require_tenant_user),
 ):
     """List run summaries (performance overview)."""
     from agents.report_agent import ReportAgent
@@ -311,7 +577,7 @@ async def v2_report_summary(
 
 
 @app.get("/v2/report/{run_id}", response_model=ReportDetail, tags=["data"])
-async def v2_report_detail(run_id: str, user: Optional[Dict] = Depends(get_current_user)):
+async def v2_report_detail(run_id: str, user: Dict = Depends(require_tenant_user)):
     """Detailed performance report for a single run."""
     from agents.report_agent import ReportAgent
     agent = ReportAgent()
@@ -325,7 +591,7 @@ async def v2_report_detail(run_id: str, user: Optional[Dict] = Depends(get_curre
 async def v2_top(
     strategy: Optional[str] = None,
     limit: int = Query(20, ge=1, le=100),
-    user: Optional[Dict] = Depends(get_current_user),
+    user: Dict = Depends(require_tenant_user),
 ):
     """Rank strategy slugs by average performance."""
     from agents.report_agent import ReportAgent
@@ -337,7 +603,7 @@ async def v2_top(
 @app.get("/v2/logs", response_model=LogsResponse, tags=["data"])
 async def v2_logs(
     lines: int = Query(50, ge=1, le=500),
-    user: Optional[Dict] = Depends(get_current_user),
+    user: Dict = Depends(require_current_user),
 ):
     """Read paper trading log tail."""
     log_path = Path("data/paper_trade.log")
@@ -350,7 +616,7 @@ async def v2_logs(
 
 
 @app.get("/v2/pnl/{run_id}", response_model=PnlResponse, tags=["data"])
-async def v2_pnl(run_id: str, user: Optional[Dict] = Depends(get_current_user)):
+async def v2_pnl(run_id: str, user: Dict = Depends(require_tenant_user)):
     """P&L breakdown for a specific run — per-symbol and daily."""
     from utils.db.db_pool import DatabasePool
     from sqlalchemy import text
@@ -505,6 +771,8 @@ def _live_position_items(user_id: Optional[str], limit: int) -> Optional[List[Po
         from engine.brokers.alpaca import AlpacaAPI
 
         keys = get_alpaca_keys(user_id) if user_id else None
+        if user_id and not keys:
+            return None
         client = AlpacaAPI(*keys, paper=True) if keys else AlpacaAPI(paper=True)
         raw = client.get_positions()
         if not isinstance(raw, list):
@@ -521,7 +789,7 @@ async def v2_positions(
     run_id: Optional[str] = None,
     status: Optional[str] = Query(None, description="'open' or 'closed'"),
     limit: int = Query(50, ge=1, le=500),
-    user: Optional[Dict] = Depends(get_current_user),
+    user: Dict = Depends(require_tenant_user),
 ):
     """Return live paper positions, or query historical positions by run/status.
 
@@ -590,7 +858,7 @@ async def v2_positions(
 # ---------------------------------------------------------------------------
 
 @app.get("/v2/status", response_model=StatusResponse, tags=["agents"])
-async def v2_status(user: Optional[Dict] = Depends(get_current_user)):
+async def v2_status(user: Dict = Depends(require_tenant_user)):
     """Current orchestrator / agent status."""
     import time as _time
     from utils.agent_runner import get_all_running_agents
@@ -719,7 +987,7 @@ async def v2_status(user: Optional[Dict] = Depends(get_current_user)):
 @app.post("/v2/stop", response_model=StopResponse, tags=["agents"])
 async def v2_stop(
     run_id: Optional[str] = Query(None, description="Specific run_id to stop. If omitted, stops the most recent agent."),
-    user: Optional[Dict] = Depends(get_current_user),
+    user: Dict = Depends(require_tenant_user),
 ):
     """Stop a running background agent (subprocess or in-memory task)."""
     from utils.agent_runner import stop_agent, get_all_running_agents
@@ -751,11 +1019,13 @@ async def v2_stop(
 
 
 @app.post("/v2/backtest", response_model=BacktestResponse, tags=["agents"])
-async def v2_backtest(req: BacktestRequest, user: Optional[Dict] = Depends(get_current_user)):
+async def v2_backtest(req: BacktestRequest, user: Dict = Depends(require_tenant_user)):
     """Run a parameterized backtest. Synchronous — may take minutes."""
     from agents.orchestrator import Orchestrator
 
     uid = _uid(user)
+    if req.account_id:
+        _require_linked_paper_keys(uid, req.account_id)
     config = {
         "lookback": req.lookback,
         "strategy": req.strategy,
@@ -801,11 +1071,13 @@ async def v2_backtest(req: BacktestRequest, user: Optional[Dict] = Depends(get_c
 
 
 @app.post("/v2/validate", response_model=ValidationResponse, tags=["agents"])
-async def v2_validate(req: ValidateRequest, user: Optional[Dict] = Depends(get_current_user)):
+async def v2_validate(req: ValidateRequest, user: Dict = Depends(require_tenant_user)):
     """Validate trades for a given run. Synchronous."""
     from agents.orchestrator import Orchestrator
 
     uid = _uid(user)
+    if req.account_id:
+        _require_linked_paper_keys(uid, req.account_id)
     orch = Orchestrator(user_id=uid, account_id=req.account_id)
     state = _get_app_state(uid)
     state._orch = orch
@@ -824,12 +1096,13 @@ async def v2_validate(req: ValidateRequest, user: Optional[Dict] = Depends(get_c
 
 
 @app.post("/v2/paper", response_model=PaperStartResponse, tags=["agents"])
-async def v2_paper(req: PaperRequest, user: Optional[Dict] = Depends(get_current_user)):
+async def v2_paper(req: PaperRequest, user: Dict = Depends(require_tenant_user)):
     """Start paper trading as an autonomous subprocess. Returns immediately."""
     from agents.orchestrator import Orchestrator, parse_duration
     from utils.agent_runner import spawn_agent, get_all_running_agents
 
     uid = _uid(user)
+    _require_linked_paper_keys(uid, req.account_id)
     state = _get_app_state(uid)
 
     # Check for already-running paper agent (subprocess-based)
@@ -878,11 +1151,12 @@ async def v2_paper(req: PaperRequest, user: Optional[Dict] = Depends(get_current
 
 
 @app.post("/v2/full", response_model=FullCycleResponse, tags=["agents"])
-async def v2_full(req: FullCycleRequest, user: Optional[Dict] = Depends(get_current_user)):
+async def v2_full(req: FullCycleRequest, user: Dict = Depends(require_tenant_user)):
     """Run full cycle: backtest -> validate -> paper -> validate. Synchronous — long-running."""
     from agents.orchestrator import Orchestrator, parse_duration
 
     uid = _uid(user)
+    _require_linked_paper_keys(uid, req.account_id)
     config = {
         "lookback": req.lookback,
         "strategy": req.strategy,
@@ -927,11 +1201,12 @@ async def v2_full(req: FullCycleRequest, user: Optional[Dict] = Depends(get_curr
 
 
 @app.post("/v2/reconcile", response_model=ReconcileResponse, tags=["agents"])
-async def v2_reconcile(req: ReconcileRequest, user: Optional[Dict] = Depends(get_current_user)):
+async def v2_reconcile(req: ReconcileRequest, user: Dict = Depends(require_tenant_user)):
     """Reconcile DB positions vs Alpaca holdings. Synchronous."""
     from agents.orchestrator import Orchestrator
 
     uid = _uid(user)
+    _require_linked_paper_keys(uid, req.account_id)
     orch = Orchestrator(user_id=uid, account_id=req.account_id)
     state = _get_app_state(uid)
     state._orch = orch
@@ -951,26 +1226,201 @@ async def v2_reconcile(req: ReconcileRequest, user: Optional[Dict] = Depends(get
     )
 
 
+# ---------------------------------------------------------------------------
+# Typed external agent invocation
+# ---------------------------------------------------------------------------
+
+@app.post(
+    "/v2/agents/chat/invoke",
+    response_model=AgentChatResponse,
+    tags=["agent-invocation"],
+    summary="Invoke the primary DeepAgent and return one JSON response",
+)
+async def v2_invoke_chat(
+    req: AgentChatRequest,
+    user: Dict = Depends(require_current_user),
+):
+    """Run the same DeepAgents harness as web/mobile without requiring SSE parsing."""
+    from engine.ai.chat_stream import api_history, stream_chat_events
+
+    uid = str(user["user_id"]) if user.get("user_id") else None
+    history = api_history(f"{uid}:{req.thread_id}")
+    chunks: List[str] = []
+    tools_used: List[str] = []
+    route = None
+    async for event in stream_chat_events(req.message, uid, req.thread_id, history):
+        event_type = event.get("type")
+        if event_type == "token" and event.get("text"):
+            chunks.append(str(event["text"]))
+        elif event_type == "agent_route":
+            route = str(
+                event.get("slug") or event.get("route") or event.get("agent") or ""
+            ) or route
+        elif event_type == "tool_start":
+            tool = str(event.get("name") or event.get("tool") or "").strip()
+            if tool and tool not in tools_used:
+                tools_used.append(tool)
+        elif event_type == "error":
+            logger.warning("DeepAgent invocation failed: %s", event.get("message", "unknown"))
+            raise HTTPException(status_code=502, detail="Agent invocation failed")
+    return AgentChatResponse(
+        thread_id=req.thread_id,
+        response="".join(chunks).strip(),
+        route=route,
+        tools_used=tools_used,
+    )
+
+
+@app.post(
+    "/v2/agents/premarket/invoke",
+    response_model=PremarketAgentResponse,
+    tags=["agent-invocation"],
+)
+async def v2_invoke_premarket(
+    req: PremarketAgentRequest,
+    user: Dict = Depends(require_current_user),
+):
+    """Run the read-only Premarket Agent."""
+    from agents.premarket_agent import PremarketAgent
+
+    result = await asyncio.to_thread(
+        PremarketAgent().run, refresh=req.refresh, limit=req.limit,
+    )
+    return PremarketAgentResponse(**result)
+
+
+def _alpha_response(result) -> AlphaResearchResponse:
+    return AlphaResearchResponse(
+        run_id=result.run_id,
+        mode=result.mode,
+        ticker=result.ticker,
+        status=result.status,
+        report=result.report,
+        saved=result.saved,
+        persistence_warning=result.persistence_warning,
+    )
+
+
+@app.post(
+    "/v2/agents/alpha-growth/invoke",
+    response_model=AlphaResearchResponse,
+    tags=["agent-invocation"],
+)
+async def v2_invoke_alpha_growth(
+    req: AlphaResearchRequest,
+    user: Dict = Depends(require_current_user),
+):
+    """Run a read-only Growth methodology report."""
+    from engine.research.alpha_agents import run_alpha_research
+
+    try:
+        result = await run_alpha_research("growth", req.ticker, _uid(user))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return _alpha_response(result)
+
+
+@app.post(
+    "/v2/agents/alpha-value/invoke",
+    response_model=AlphaResearchResponse,
+    tags=["agent-invocation"],
+)
+async def v2_invoke_alpha_value(
+    req: AlphaResearchRequest,
+    user: Dict = Depends(require_current_user),
+):
+    """Run a read-only Value methodology report."""
+    from engine.research.alpha_agents import run_alpha_research
+
+    try:
+        result = await run_alpha_research("value", req.ticker, _uid(user))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return _alpha_response(result)
+
+
+@app.post(
+    "/v2/agents/alpha-compare/invoke",
+    response_model=AlphaComparisonResponse,
+    tags=["agent-invocation"],
+)
+async def v2_invoke_alpha_compare(
+    req: AlphaResearchRequest,
+    user: Dict = Depends(require_current_user),
+):
+    """Run Growth and Value agents over a shared evidence collection."""
+    from engine.research.alpha_agents import run_alpha_comparison
+
+    try:
+        result = await run_alpha_comparison(req.ticker, _uid(user))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return AlphaComparisonResponse(
+        ticker=result.ticker,
+        status=result.status,
+        growth=_alpha_response(result.growth),
+        value=_alpha_response(result.value),
+    )
+
+
+@app.post(
+    "/v2/agents/autonomy-scout/invoke",
+    response_model=AutonomyScoutResponse,
+    tags=["agent-invocation"],
+)
+async def v2_invoke_autonomy_scout(
+    req: AutonomyScoutRequest,
+    user: Dict = Depends(require_current_user),
+):
+    """Scan candidates and enqueue the durable paper-only autonomy pipeline."""
+    uid = _uid(user)
+    if not uid:
+        raise HTTPException(status_code=400, detail="X-User-Id is required for autonomy runs")
+    from engine.auth import get_user_accounts
+
+    accounts = get_user_accounts(uid)
+    owned = {str(account["account_id"]) for account in accounts}
+    account_id = req.account_id or (str(accounts[0]["account_id"]) if accounts else None)
+    if not account_id:
+        raise HTTPException(status_code=409, detail="No linked Alpaca paper account")
+    if account_id not in owned:
+        raise HTTPException(status_code=403, detail="Paper account is not owned by this user")
+
+    from engine.autonomy import scout
+
+    run_id = await asyncio.to_thread(
+        scout.enqueue_run,
+        strategy=req.strategy,
+        limit=req.limit,
+        user_id=uid,
+        account_id=account_id,
+    )
+    return AutonomyScoutResponse(
+        status="queued" if run_id else "no_candidates",
+        run_id=run_id,
+    )
+
+
 # ===========================================================================
 # LEGACY ENDPOINTS (unchanged — return markdown via CommandProcessor)
 # ===========================================================================
 
-@app.get("/health")
+@app.get("/health", tags=["meta"], summary="Liveness check")
 async def health():
     return {"status": "ok"}
 
 @app.post("/cmd", response_model=ApiResponse, tags=["legacy"])
-async def cmd(req: CmdRequest, user: Optional[Dict] = Depends(get_current_user)):
+async def cmd(req: CmdRequest, user: Dict = Depends(require_tenant_user)):
     """Execute an arbitrary CLI command (returns markdown)."""
     return await _run_command(req.command.strip(), user_id=_uid(user))
 
 @app.get("/runs", response_model=ApiResponse, tags=["legacy"])
-async def runs(limit: int = 20, user: Optional[Dict] = Depends(get_current_user)):
+async def runs(limit: int = 20, user: Dict = Depends(require_tenant_user)):
     return await _run_command("runs", user_id=_uid(user))
 
 @app.get("/trades", response_model=ApiResponse, tags=["legacy"])
 async def trades(run_id: Optional[str] = None, type: Optional[str] = None,
-                 limit: int = 20, user: Optional[Dict] = Depends(get_current_user)):
+                 limit: int = 20, user: Dict = Depends(require_tenant_user)):
     parts = {"run-id": run_id, "type": type, "limit": limit}
     cmd_str = _build_cmd("agent:trades", parts)
     return await _run_command(cmd_str, user_id=_uid(user))
@@ -978,20 +1428,20 @@ async def trades(run_id: Optional[str] = None, type: Optional[str] = None,
 @app.get("/report", response_model=ApiResponse, tags=["legacy"])
 async def report(run_id: Optional[str] = None, type: Optional[str] = None,
                  strategy: Optional[str] = None, limit: int = 10,
-                 user: Optional[Dict] = Depends(get_current_user)):
+                 user: Dict = Depends(require_tenant_user)):
     parts = {"run-id": run_id, "type": type, "strategy": strategy, "limit": limit}
     cmd_str = _build_cmd("agent:report", parts)
     return await _run_command(cmd_str, user_id=_uid(user))
 
 @app.get("/top", response_model=ApiResponse, tags=["legacy"])
 async def top(strategy: Optional[str] = None, limit: int = 20,
-              user: Optional[Dict] = Depends(get_current_user)):
+              user: Dict = Depends(require_tenant_user)):
     parts = {"strategy": strategy, "limit": limit}
     cmd_str = _build_cmd("agent:top", parts)
     return await _run_command(cmd_str, user_id=_uid(user))
 
 @app.post("/backtest", response_model=ApiResponse, tags=["legacy"])
-async def backtest(req: BacktestRequest, user: Optional[Dict] = Depends(get_current_user)):
+async def backtest(req: BacktestRequest, user: Dict = Depends(require_tenant_user)):
     parts = {
         "lookback": req.lookback, "symbols": req.symbols, "strategy": req.strategy,
         "capital": req.capital, "hours": req.hours, "intraday_exit": req.intraday_exit,
@@ -1001,7 +1451,7 @@ async def backtest(req: BacktestRequest, user: Optional[Dict] = Depends(get_curr
     return await _run_command(cmd_str, user_id=_uid(user))
 
 @app.post("/paper", response_model=ApiResponse, tags=["legacy"])
-async def paper(req: PaperRequest, user: Optional[Dict] = Depends(get_current_user)):
+async def paper(req: PaperRequest, user: Dict = Depends(require_tenant_user)):
     parts = {
         "duration": req.duration, "symbols": req.symbols, "strategy": req.strategy,
         "poll": req.poll, "hours": req.hours, "email": req.email, "pdt": req.pdt,
@@ -1010,7 +1460,7 @@ async def paper(req: PaperRequest, user: Optional[Dict] = Depends(get_current_us
     return await _run_command(cmd_str, user_id=_uid(user))
 
 @app.get("/status", response_model=ApiResponse, tags=["legacy"])
-async def status(user: Optional[Dict] = Depends(get_current_user)):
+async def status(user: Dict = Depends(require_tenant_user)):
     return await _run_command("agent:status", user_id=_uid(user))
 
 @app.get("/news", response_model=ApiResponse, tags=["market"])
@@ -1072,6 +1522,7 @@ async def chat_stream(question: str, thread_id: str = "api_default"):
     tags=["chat"],
     summary="Streaming chat (SSE) — same router as the web chat",
     openapi_extra={
+        "security": [{}],
         "requestBody": {
             "required": True,
             "content": {
@@ -1142,21 +1593,27 @@ async def v2_chat(
         msg = (form.get("msg") or form.get("message") or "").strip()
         thread_id = form.get("thread_id") or form.get("sid") or thread_id
 
+    thread_id = str(thread_id).strip()
+    if not msg:
+        raise HTTPException(status_code=422, detail="msg is required")
+    if len(msg) > 20_000:
+        raise HTTPException(status_code=413, detail="msg exceeds 20000 characters")
+    if not thread_id or len(thread_id) > 200:
+        raise HTTPException(status_code=422, detail="thread_id must be 1 to 200 characters")
+
     uid = str(user["user_id"]) if user and user.get("user_id") else None
 
     from engine.ai.chat_stream import stream_chat_events, api_history
     hist = api_history(f"{uid}:{thread_id}")
 
     async def gen():
-        if not msg:
-            yield "event: done\ndata: {}\n\n"
-            return
         try:
             async for ev in stream_chat_events(msg, uid, thread_id, hist):
                 etype = ev.pop("type", "token")
                 yield f"event: {etype}\ndata: {_json.dumps(ev, default=str)}\n\n"
         except Exception as e:  # noqa: BLE001
-            yield f"event: error\ndata: {_json.dumps({'message': str(e)})}\n\n"
+            logger.warning("Streaming agent request failed: %s", e)
+            yield f"event: error\ndata: {_json.dumps({'message': 'Agent request failed'})}\n\n"
             yield "event: done\ndata: {}\n\n"
 
     return StreamingResponse(gen(), media_type="text/event-stream",
@@ -1170,13 +1627,13 @@ from pydantic import BaseModel, Field  # noqa: E402
 
 
 class OrderRequest(BaseModel):
-    symbol: str = Field(..., example="AAPL")
-    qty: float = Field(..., gt=0, example=1)
-    side: str = Field("buy", example="buy", description="buy | sell")
-    order_type: str = Field("market", example="limit", description="market | limit")
-    limit_price: Optional[float] = Field(None, example=180.0,
+    symbol: str = Field(..., min_length=1, max_length=16, pattern=r"^[A-Za-z0-9][A-Za-z0-9.-]*$", examples=["AAPL"])
+    qty: float = Field(..., gt=0, examples=[1])
+    side: Literal["buy", "sell"] = Field("buy", examples=["buy"])
+    order_type: Literal["market", "limit"] = Field("market", examples=["limit"])
+    limit_price: Optional[float] = Field(None, gt=0, examples=[180.0],
                                          description="Required for a limit order.")
-    time_in_force: str = Field("day", example="day", description="day | gtc")
+    time_in_force: Literal["day", "gtc"] = Field("day", examples=["day"])
 
 
 class OrderResponse(BaseModel):
@@ -1194,9 +1651,9 @@ class OrderResponse(BaseModel):
 
 @app.post("/v2/order", response_model=OrderResponse, tags=["trading"],
           summary="Place a PAPER order (market or limit)")
-async def v2_order(req: OrderRequest, user: Optional[Dict] = Depends(get_current_user)):
+async def v2_order(req: OrderRequest, user: Dict = Depends(require_tenant_user)):
     """Place a **paper** (simulated) market or limit order on the primary paper
-    account (…8CR). No real money. For a limit order set `order_type=limit` and
+    account linked to the authenticated user. No real money. For a limit order set `order_type=limit` and
     `limit_price`. Returns the created order id + status."""
     side = (req.side or "buy").lower()
     otype = (req.order_type or "market").lower()
@@ -1208,7 +1665,8 @@ async def v2_order(req: OrderRequest, user: Optional[Dict] = Depends(get_current
         return OrderResponse(ok=False, error="limit_price is required for a limit order")
     try:
         from engine.brokers.alpaca import AlpacaAPI
-        client = AlpacaAPI(paper=True)  # primary paper account (…8CR)
+        keys = _require_linked_paper_keys(_uid(user))
+        client = AlpacaAPI(*keys, paper=True)
         order = client.create_order(
             symbol=req.symbol.upper(), qty=req.qty, side=side, type=otype,
             time_in_force=(req.time_in_force or "day").lower(),
@@ -1223,8 +1681,11 @@ async def v2_order(req: OrderRequest, user: Optional[Dict] = Depends(get_current
             limit_price=req.limit_price if otype == "limit" else None,
             status=str(o.get("status", "submitted")),
         )
+    except HTTPException:
+        raise
     except Exception as e:  # noqa: BLE001
-        return OrderResponse(ok=False, error=str(e))
+        logger.warning("Paper order failed for user %s: %s", _uid(user), e)
+        return OrderResponse(ok=False, error="Broker request failed")
 
 
 # ---------------------------------------------------------------------------

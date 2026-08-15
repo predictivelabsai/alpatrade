@@ -8,11 +8,13 @@ provider config, and deployment notes. This file only captures what an agent wou
 | App | Entry | Port | Notes |
 |-----|-------|------|-------|
 | Web (prod) | `python main.py` → `app.py` | 5001 (env `ASSETHERO_WEB_PORT`) | Thin shim; this is what Coolify runs via `Dockerfile.agui` |
-| REST API | `python api.py` | 5002 (env `ASSETHERO_API_PORT`) | Mounts legacy `api_app.py` under `/api/v1/equities` |
+| REST API (prod) | `python api_app.py` | 5001 | Coolify runs this via `Dockerfile.api`; Swagger `/docs`, ReDoc `/redoc`, OpenAPI `/openapi.json` |
+| Namespaced API | `python api.py` | 5002 (env `ASSETHERO_API_PORT`) | Compatibility shell mounting the production API under `/api/v1/equities` |
 | AG-UI chat | `uvicorn agui_app:app --port 5003 --reload` | 5003 | Defines the DeepAgents-backed `primary_agent` / `agent_for_user()`; `langgraph_agent` remains a compatibility alias |
 | CLI | `python cli.py` (or `alpatrade` console script) | — | `cli.py` → `tui/pt_cli.py` → `tui/command_processor.py` |
 
-`web_app.py` is **retired** (don't target it for new work). `api_app.py` is legacy but still mounted.
+`web_app.py` is **retired** (don't target it for new work). `api_app.py` is the canonical production
+API contract; `api.py` is the optional namespaced compatibility shell.
 
 ## Commands
 

@@ -13,14 +13,14 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
-from fastapi import FastAPI, Depends, HTTPException  # noqa: E402
+from fastapi import Depends, FastAPI  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
 import api_app  # noqa: E402  (existing equities FastAPI app)
 
 app = FastAPI(
     title="AlpaTrade API",
-    version="0.2.0",
+    version=api_app.API_VERSION,
     description="Multi-asset trading platform API. Verticals mount under /api/v1/<vertical>.",
 )
 
@@ -30,7 +30,7 @@ def health():
     return {
         "status": "ok",
         "service": "alpatrade",
-        "version": "0.2.0",
+        "version": api_app.API_VERSION,
         "verticals": {
             "equities": "/api/v1/equities",
             "crypto": "pending",
@@ -54,10 +54,8 @@ class SettingsUpdate(BaseModel):
 
 
 @app.get("/api/v1/settings", tags=["settings"])
-async def get_settings_endpoint(user: dict | None = Depends(api_app.get_current_user)):
+async def get_settings_endpoint(user: dict = Depends(api_app.require_tenant_user)):
     """Return the caller's effective settings (per-user overrides merged over env defaults)."""
-    if not user:
-        raise HTTPException(status_code=401, detail="Authentication required")
     from engine.config import get_settings
     s = get_settings(user["user_id"])
     return {
@@ -72,7 +70,7 @@ async def get_settings_endpoint(user: dict | None = Depends(api_app.get_current_
 @app.patch("/api/v1/settings", tags=["settings"])
 async def patch_settings_endpoint(
     req: SettingsUpdate,
-    user: dict | None = Depends(api_app.get_current_user),
+    user: dict = Depends(api_app.require_tenant_user),
 ):
     """Update the caller's per-user settings (model, framework, providers).
 
@@ -81,8 +79,6 @@ async def patch_settings_endpoint(
     /settings/preferences does the same and evicts the agent cache; for the
     REST path the next agent invocation picks up the new settings lazily).
     """
-    if not user:
-        raise HTTPException(status_code=401, detail="Authentication required")
     from engine.auth import store_user_settings, USER_SETTING_FIELDS
     updates = {f: getattr(req, f) for f in USER_SETTING_FIELDS if getattr(req, f) is not None}
     if not updates:

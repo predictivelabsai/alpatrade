@@ -1,7 +1,7 @@
 """Pydantic request/response models for AlpaTrade API v2."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -174,7 +174,7 @@ class ValidationResponse(BaseModel):
     anomalies_found: int = 0
     anomalies_corrected: int = 0
     iterations_used: int = 0
-    suggestions: List[str] = []
+    suggestions: List[str] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -203,7 +203,7 @@ class FullCyclePhase(BaseModel):
 class FullCycleResponse(BaseModel):
     run_id: str
     status: str
-    phases: Dict[str, FullCyclePhase] = {}
+    phases: Dict[str, FullCyclePhase] = Field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -214,11 +214,11 @@ class ReconcileResponse(BaseModel):
     run_id: str
     status: str
     total_issues: int = 0
-    position_mismatches: List[Dict[str, Any]] = []
-    trade_mismatches: List[Dict[str, Any]] = []
+    position_mismatches: List[Dict[str, Any]] = Field(default_factory=list)
+    trade_mismatches: List[Dict[str, Any]] = Field(default_factory=list)
     pnl_comparison: Optional[Dict[str, Any]] = None
-    missing_trades: List[Dict[str, Any]] = []
-    extra_trades: List[Dict[str, Any]] = []
+    missing_trades: List[Dict[str, Any]] = Field(default_factory=list)
+    extra_trades: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -235,7 +235,7 @@ class StatusResponse(BaseModel):
     run_id: Optional[str] = None
     mode: Optional[str] = None
     status: str
-    agents: List[AgentStatus] = []
+    agents: List[AgentStatus] = Field(default_factory=list)
     started_at: Optional[datetime] = None
     elapsed_seconds: Optional[float] = None
     best_config: Optional[BestConfig] = None
@@ -287,8 +287,8 @@ class PnlResponse(BaseModel):
     losing_trades: int = 0
     total_trades: int = 0
     sharpe_ratio: Optional[float] = None
-    per_symbol: List[PnlSymbolBreakdown] = []
-    daily_pnl: List[DailyPnl] = []
+    per_symbol: List[PnlSymbolBreakdown] = Field(default_factory=list)
+    daily_pnl: List[DailyPnl] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -370,3 +370,99 @@ class PositionItem(BaseModel):
 class PositionsResponse(BaseModel):
     positions: List[PositionItem]
     total: int
+
+
+# ---------------------------------------------------------------------------
+# API discovery and external agent contracts
+# ---------------------------------------------------------------------------
+
+class ApiLinks(BaseModel):
+    swagger: str
+    redoc: str
+    openapi: str
+    health: str
+    agents: str
+
+
+class ApiInfoResponse(BaseModel):
+    name: str
+    version: str
+    status: Literal["ok"] = "ok"
+    links: ApiLinks
+
+
+class AgentDescriptor(BaseModel):
+    slug: str
+    name: str
+    description: str
+    method: Literal["GET", "POST"]
+    path: str
+    access: Literal["authenticated", "public"] = "authenticated"
+    execution: Literal["synchronous", "asynchronous", "streaming"]
+    safety: Literal["read_only", "paper_only", "orchestration"]
+
+
+class AgentCatalogResponse(BaseModel):
+    agents: List[AgentDescriptor]
+    total: int
+
+
+class AgentChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=20_000)
+    thread_id: str = Field("service_default", min_length=1, max_length=200)
+
+    model_config = {"json_schema_extra": {
+        "examples": [{"message": "Summarize my open positions", "thread_id": "portfolio-review-1"}]
+    }}
+
+
+class AgentChatResponse(BaseModel):
+    thread_id: str
+    response: str
+    route: Optional[str] = None
+    tools_used: List[str] = Field(default_factory=list)
+
+
+class PremarketAgentRequest(BaseModel):
+    refresh: bool = Field(False, description="Fetch a new scan instead of using the latest saved report")
+    limit: int = Field(10, ge=1, le=50)
+
+
+class PremarketAgentResponse(BaseModel):
+    agent: str
+    status: str
+    report: Optional[Dict[str, Any]] = None
+    top: Dict[str, Any] = Field(default_factory=dict)
+
+
+class AlphaResearchRequest(BaseModel):
+    ticker: str = Field(..., min_length=1, max_length=16, examples=["AAPL"])
+
+
+class AlphaResearchResponse(BaseModel):
+    run_id: str
+    mode: Literal["growth", "value"]
+    ticker: str
+    status: str
+    report: str
+    saved: bool
+    persistence_warning: Optional[str] = None
+
+
+class AlphaComparisonResponse(BaseModel):
+    ticker: str
+    status: str
+    growth: AlphaResearchResponse
+    value: AlphaResearchResponse
+
+
+class AutonomyScoutRequest(BaseModel):
+    strategy: str = Field("btd", description="Strategy slug or registered strategy name")
+    limit: int = Field(5, ge=1, le=20)
+    account_id: Optional[str] = Field(None, description="Owned paper account UUID")
+
+
+class AutonomyScoutResponse(BaseModel):
+    status: Literal["queued", "no_candidates"]
+    run_id: Optional[str] = None
+    paper_only: bool = True

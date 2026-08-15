@@ -150,6 +150,11 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 .lp-card .body { font-size: .86rem; line-height: 1.55; color: var(--ink-muted); margin-top: .55rem; }
 .lp-card .prefix { font-family: var(--font-mono); font-size: .68rem; color: var(--accent);
   background: var(--accent-dim); padding: .1rem .4rem; border-radius: 4px; align-self: flex-start; margin-top: .75rem; }
+.lp-card-link { color: inherit; }
+.lp-card-link .lp-card { min-height: 12rem; }
+.lp-card-link:hover .title { color: var(--accent); }
+.lp-code { margin-top: 1.5rem; padding: 1rem 1.15rem; background: var(--ink); color: var(--bg);
+  border-radius: .75rem; font-family: var(--font-mono); font-size: .82rem; overflow-x: auto; }
 
 /* pricing */
 .lp-price { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 1rem;
@@ -259,6 +264,7 @@ def _nav(active="home"):
             _brand(),
             Div(link("Platform", "/platform", "platform"),
                 link("Pricing", "/pricing", "pricing"),
+                link("Developers", "/developers", "developers"),
                 cls="lp-nav-links"),
             Div(_btn("Sign in", "/signin", "ghost", sm=True),
                 _btn("Start", "/register", "primary", sm=True, arrow=True),
@@ -298,6 +304,7 @@ def _footer():
                 Div(
                     A("Platform", href="/platform"),
                     A("Pricing", href="/pricing"),
+                    A("Developers", href="/developers"),
                     A("Sign in", href="/signin"),
                     A("Start free", href="/register"),
                     cls="lp-footer-links",
@@ -489,6 +496,60 @@ def pricing_page():
     )
 
 
+def developers_page():
+    docs = [
+        ("Swagger UI", "Explore and call every typed endpoint interactively.",
+         "https://api.alpatrade.chat/docs", "Interactive docs →"),
+        ("ReDoc", "Browse the complete API contract in a clean reference layout.",
+         "https://api.alpatrade.chat/redoc", "API reference →"),
+        ("OpenAPI 3", "Import the live JSON specification into SDK generators and API clients.",
+         "https://api.alpatrade.chat/openapi.json", "Open specification →"),
+        ("Agent catalog", "Discover the callable DeepAgent, research, trading, and workflow agents.",
+         "https://api.alpatrade.chat/v2/agents", "List agents →"),
+    ]
+
+    def doc_card(title, body, href, label):
+        return A(
+            Div(
+                Div("API", cls="num"),
+                Div(title, cls="title"),
+                Div(body, cls="body"),
+                Div(label, cls="prefix"),
+                cls="lp-card",
+            ),
+            href=href,
+            target="_blank",
+            rel="noopener noreferrer",
+            cls="lp-card-link",
+        )
+
+    hero = Section(
+        Span("Developers", cls="lp-eyebrow"),
+        H1("Build on the AlpaTrade agent desk.", cls="lp-h1"),
+        P("Call the primary LangChain DeepAgent, research analysts, backtester, validator, "
+          "paper trader, reconciler, reporter, and durable autonomy pipeline through typed APIs.",
+          cls="lp-lede"),
+        Div("https://api.alpatrade.chat", cls="lp-code"),
+        cls="lp-hero-inner",
+    )
+    access = Section(
+        Span("Authentication", cls="lp-eyebrow"),
+        H2("User JWTs and service API keys.", cls="lp-h2", style="margin-top:.75rem"),
+        P("User clients send an Authorization bearer token obtained from /auth/login. Trusted "
+          "services send X-API-Key and include X-User-Id when acting for a user. All trading and "
+          "autonomy routes are paper-only.", cls="lp-lede"),
+        cls="lp-section lp-bordered",
+    )
+    return _shell(
+        "Developers — AlpaTrade API",
+        Section(hero, cls="lp-hero"),
+        Section(Div(*[doc_card(*item) for item in docs], cls="lp-grid c3", style="margin-top:0"),
+                cls="lp-section lp-bordered"),
+        access,
+        active="developers",
+    )
+
+
 # --------------------------------------------------------------------------- register
 def register(app, rt):
     """Wire the anonymous marketing routes. Returns the list of paths registered."""
@@ -505,9 +566,13 @@ def register(app, rt):
     def landing_pricing(session):
         return pricing_page()
 
+    @rt("/developers")
+    def landing_developers(session):
+        return developers_page()
+
     @rt("/download/android")
     def download_android():
         # Always resolves to the newest release's APK — no need to update the link per version.
         return RedirectResponse(latest_apk_url(), status_code=302)
 
-    return ["/", "/platform", "/pricing", "/download/android"]
+    return ["/", "/platform", "/pricing", "/developers", "/download/android"]

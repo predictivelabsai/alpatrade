@@ -2,10 +2,68 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AlpaTrade API",
-    "description": "AlpaTrade REST + streaming-chat API (used by alpatrade-mobile). Base URL: https://api.alpatrade.chat",
-    "version": "2.0.0"
+    "description": "AlpaTrade's production REST API for research, backtesting, validation, paper trading,\nreconciliation, reporting, and the primary LangChain DeepAgents assistant.\n\nUse `Authorization: Bearer <JWT>` for user clients. Trusted services may use\n`X-API-Key`; include `X-User-Id` only when acting on behalf of a specific user.\nAll order and autonomy endpoints are paper-only.",
+    "contact": {
+      "name": "Predictive Labs",
+      "url": "https://alpatrade.chat/developers"
+    },
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    },
+    "version": "0.8.0"
   },
+  "servers": [
+    {
+      "url": "https://api.alpatrade.chat",
+      "description": "Production"
+    }
+  ],
   "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Api Info",
+        "description": "Human- and machine-readable API discovery document.",
+        "operationId": "api_info__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInfoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/agents": {
+      "get": {
+        "tags": [
+          "agent-invocation"
+        ],
+        "summary": "V2 Agent Catalog",
+        "description": "List callable agents and their canonical typed endpoints.",
+        "operationId": "v2_agent_catalog_v2_agents_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentCatalogResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/register": {
       "post": {
         "tags": [
@@ -100,7 +158,10 @@
         "operationId": "v2_runs_v2_runs_get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -151,7 +212,10 @@
         "operationId": "v2_trades_v2_trades_get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -250,7 +314,10 @@
         "operationId": "v2_report_summary_v2_report_get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -337,7 +404,10 @@
         "operationId": "v2_report_detail_v2_report__run_id__get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -385,7 +455,10 @@
         "operationId": "v2_top_v2_top_get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -456,7 +529,10 @@
         "operationId": "v2_logs_v2_logs_get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -507,7 +583,10 @@
         "operationId": "v2_pnl_v2_pnl__run_id__get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -551,11 +630,14 @@
           "data"
         ],
         "summary": "V2 Positions",
-        "description": "Query positions with optional filters.",
+        "description": "Return live paper positions, or query historical positions by run/status.\n\nThe default request used by the mobile Portfolio screen reads Alpaca so\nprices and unrealized P&L are current. Requests for a specific run or for\nnon-open history continue to use the database ledger.",
         "operationId": "v2_positions_v2_positions_get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -652,7 +734,10 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ]
       }
@@ -667,7 +752,10 @@
         "operationId": "v2_stop_v2_stop_post",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -756,7 +844,10 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ]
       }
@@ -803,7 +894,10 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ]
       }
@@ -850,7 +944,10 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ]
       }
@@ -897,7 +994,10 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ]
       }
@@ -944,14 +1044,320 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ]
+      }
+    },
+    "/v2/agents/chat/invoke": {
+      "post": {
+        "tags": [
+          "agent-invocation"
+        ],
+        "summary": "Invoke the primary DeepAgent and return one JSON response",
+        "description": "Run the same DeepAgents harness as web/mobile without requiring SSE parsing.",
+        "operationId": "v2_invoke_chat_v2_agents_chat_invoke_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentChatResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ]
+      }
+    },
+    "/v2/agents/premarket/invoke": {
+      "post": {
+        "tags": [
+          "agent-invocation"
+        ],
+        "summary": "V2 Invoke Premarket",
+        "description": "Run the read-only Premarket Agent.",
+        "operationId": "v2_invoke_premarket_v2_agents_premarket_invoke_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PremarketAgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PremarketAgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ]
+      }
+    },
+    "/v2/agents/alpha-growth/invoke": {
+      "post": {
+        "tags": [
+          "agent-invocation"
+        ],
+        "summary": "V2 Invoke Alpha Growth",
+        "description": "Run a read-only Growth methodology report.",
+        "operationId": "v2_invoke_alpha_growth_v2_agents_alpha_growth_invoke_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlphaResearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlphaResearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ]
+      }
+    },
+    "/v2/agents/alpha-value/invoke": {
+      "post": {
+        "tags": [
+          "agent-invocation"
+        ],
+        "summary": "V2 Invoke Alpha Value",
+        "description": "Run a read-only Value methodology report.",
+        "operationId": "v2_invoke_alpha_value_v2_agents_alpha_value_invoke_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlphaResearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlphaResearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ]
+      }
+    },
+    "/v2/agents/alpha-compare/invoke": {
+      "post": {
+        "tags": [
+          "agent-invocation"
+        ],
+        "summary": "V2 Invoke Alpha Compare",
+        "description": "Run Growth and Value agents over a shared evidence collection.",
+        "operationId": "v2_invoke_alpha_compare_v2_agents_alpha_compare_invoke_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlphaResearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlphaComparisonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ]
+      }
+    },
+    "/v2/agents/autonomy-scout/invoke": {
+      "post": {
+        "tags": [
+          "agent-invocation"
+        ],
+        "summary": "V2 Invoke Autonomy Scout",
+        "description": "Scan candidates and enqueue the durable paper-only autonomy pipeline.",
+        "operationId": "v2_invoke_autonomy_scout_v2_agents_autonomy_scout_invoke_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutonomyScoutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutonomyScoutResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ]
       }
     },
     "/health": {
       "get": {
-        "summary": "Health",
+        "tags": [
+          "meta"
+        ],
+        "summary": "Liveness check",
         "operationId": "health_health_get",
         "responses": {
           "200": {
@@ -1007,7 +1413,10 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ]
       }
@@ -1021,7 +1430,10 @@
         "operationId": "runs_runs_get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -1069,7 +1481,10 @@
         "operationId": "trades_trades_get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -1149,7 +1564,10 @@
         "operationId": "report_report_get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -1245,7 +1663,10 @@
         "operationId": "top_top_get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -1341,7 +1762,10 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ]
       }
@@ -1387,7 +1811,10 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ]
       }
@@ -1413,7 +1840,10 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ]
       }
@@ -1427,7 +1857,10 @@
         "operationId": "news_news_get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -1507,7 +1940,10 @@
         "operationId": "price_price_get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -1554,7 +1990,10 @@
         "operationId": "profile_profile_get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -1601,7 +2040,10 @@
         "operationId": "movers_movers_get",
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ],
         "parameters": [
@@ -1761,8 +2203,12 @@
         },
         "security": [
           {
-            "HTTPBearer": []
-          }
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          },
+          {}
         ]
       }
     },
@@ -1772,7 +2218,7 @@
           "trading"
         ],
         "summary": "Place a PAPER order (market or limit)",
-        "description": "Place a **paper** (simulated) market or limit order on the primary paper\naccount (\u20268CR). No real money. For a limit order set `order_type=limit` and\n`limit_price`. Returns the created order id + status.",
+        "description": "Place a **paper** (simulated) market or limit order on the primary paper\naccount linked to the authenticated user. No real money. For a limit order set `order_type=limit` and\n`limit_price`. Returns the created order id + status.",
         "operationId": "v2_order_v2_order_post",
         "requestBody": {
           "content": {
@@ -1808,7 +2254,10 @@
         },
         "security": [
           {
-            "HTTPBearer": []
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
           }
         ]
       }
@@ -1832,6 +2281,157 @@
   },
   "components": {
     "schemas": {
+      "AgentCatalogResponse": {
+        "properties": {
+          "agents": {
+            "items": {
+              "$ref": "#/components/schemas/AgentDescriptor"
+            },
+            "type": "array",
+            "title": "Agents"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agents",
+          "total"
+        ],
+        "title": "AgentCatalogResponse"
+      },
+      "AgentChatRequest": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Message"
+          },
+          "thread_id": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Thread Id",
+            "default": "service_default"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "AgentChatRequest",
+        "examples": [
+          {
+            "message": "Summarize my open positions",
+            "thread_id": "portfolio-review-1"
+          }
+        ]
+      },
+      "AgentChatResponse": {
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "title": "Thread Id"
+          },
+          "response": {
+            "type": "string",
+            "title": "Response"
+          },
+          "route": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route"
+          },
+          "tools_used": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tools Used"
+          }
+        },
+        "type": "object",
+        "required": [
+          "thread_id",
+          "response"
+        ],
+        "title": "AgentChatResponse"
+      },
+      "AgentDescriptor": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST"
+            ],
+            "title": "Method"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "authenticated",
+              "public"
+            ],
+            "title": "Access",
+            "default": "authenticated"
+          },
+          "execution": {
+            "type": "string",
+            "enum": [
+              "synchronous",
+              "asynchronous",
+              "streaming"
+            ],
+            "title": "Execution"
+          },
+          "safety": {
+            "type": "string",
+            "enum": [
+              "read_only",
+              "paper_only",
+              "orchestration"
+            ],
+            "title": "Safety"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "description",
+          "method",
+          "path",
+          "execution",
+          "safety"
+        ],
+        "title": "AgentDescriptor"
+      },
       "AgentStatus": {
         "properties": {
           "name": {
@@ -1860,6 +2460,164 @@
           "status"
         ],
         "title": "AgentStatus"
+      },
+      "AlphaComparisonResponse": {
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "title": "Ticker"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "growth": {
+            "$ref": "#/components/schemas/AlphaResearchResponse"
+          },
+          "value": {
+            "$ref": "#/components/schemas/AlphaResearchResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ticker",
+          "status",
+          "growth",
+          "value"
+        ],
+        "title": "AlphaComparisonResponse"
+      },
+      "AlphaResearchRequest": {
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "maxLength": 16,
+            "minLength": 1,
+            "title": "Ticker",
+            "examples": [
+              "AAPL"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "ticker"
+        ],
+        "title": "AlphaResearchRequest"
+      },
+      "AlphaResearchResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "growth",
+              "value"
+            ],
+            "title": "Mode"
+          },
+          "ticker": {
+            "type": "string",
+            "title": "Ticker"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "report": {
+            "type": "string",
+            "title": "Report"
+          },
+          "saved": {
+            "type": "boolean",
+            "title": "Saved"
+          },
+          "persistence_warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persistence Warning"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "mode",
+          "ticker",
+          "status",
+          "report",
+          "saved"
+        ],
+        "title": "AlphaResearchResponse"
+      },
+      "ApiInfoResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status",
+            "default": "ok"
+          },
+          "links": {
+            "$ref": "#/components/schemas/ApiLinks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "links"
+        ],
+        "title": "ApiInfoResponse"
+      },
+      "ApiLinks": {
+        "properties": {
+          "swagger": {
+            "type": "string",
+            "title": "Swagger"
+          },
+          "redoc": {
+            "type": "string",
+            "title": "Redoc"
+          },
+          "openapi": {
+            "type": "string",
+            "title": "Openapi"
+          },
+          "health": {
+            "type": "string",
+            "title": "Health"
+          },
+          "agents": {
+            "type": "string",
+            "title": "Agents"
+          }
+        },
+        "type": "object",
+        "required": [
+          "swagger",
+          "redoc",
+          "openapi",
+          "health",
+          "agents"
+        ],
+        "title": "ApiLinks"
       },
       "ApiResponse": {
         "properties": {
@@ -1920,6 +2678,70 @@
           "email"
         ],
         "title": "AuthResponse"
+      },
+      "AutonomyScoutRequest": {
+        "properties": {
+          "strategy": {
+            "type": "string",
+            "title": "Strategy",
+            "description": "Strategy slug or registered strategy name",
+            "default": "btd"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 5
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id",
+            "description": "Owned paper account UUID"
+          }
+        },
+        "type": "object",
+        "title": "AutonomyScoutRequest"
+      },
+      "AutonomyScoutResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "no_candidates"
+            ],
+            "title": "Status"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "paper_only": {
+            "type": "boolean",
+            "title": "Paper Only",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "AutonomyScoutResponse"
       },
       "BacktestRequest": {
         "properties": {
@@ -2336,8 +3158,7 @@
               "$ref": "#/components/schemas/FullCyclePhase"
             },
             "type": "object",
-            "title": "Phases",
-            "default": {}
+            "title": "Phases"
           }
         },
         "type": "object",
@@ -2385,33 +3206,51 @@
         "properties": {
           "symbol": {
             "type": "string",
+            "maxLength": 16,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9.-]*$",
             "title": "Symbol",
-            "example": "AAPL"
+            "examples": [
+              "AAPL"
+            ]
           },
           "qty": {
             "type": "number",
             "exclusiveMinimum": 0.0,
             "title": "Qty",
-            "example": 1
+            "examples": [
+              1
+            ]
           },
           "side": {
             "type": "string",
+            "enum": [
+              "buy",
+              "sell"
+            ],
             "title": "Side",
-            "description": "buy | sell",
             "default": "buy",
-            "example": "buy"
+            "examples": [
+              "buy"
+            ]
           },
           "order_type": {
             "type": "string",
+            "enum": [
+              "market",
+              "limit"
+            ],
             "title": "Order Type",
-            "description": "market | limit",
             "default": "market",
-            "example": "limit"
+            "examples": [
+              "limit"
+            ]
           },
           "limit_price": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "exclusiveMinimum": 0.0
               },
               {
                 "type": "null"
@@ -2419,14 +3258,21 @@
             ],
             "title": "Limit Price",
             "description": "Required for a limit order.",
-            "example": 180.0
+            "examples": [
+              180.0
+            ]
           },
           "time_in_force": {
             "type": "string",
+            "enum": [
+              "day",
+              "gtc"
+            ],
             "title": "Time In Force",
-            "description": "day | gtc",
             "default": "day",
-            "example": "day"
+            "examples": [
+              "day"
+            ]
           }
         },
         "type": "object",
@@ -2778,16 +3624,14 @@
               "$ref": "#/components/schemas/PnlSymbolBreakdown"
             },
             "type": "array",
-            "title": "Per Symbol",
-            "default": []
+            "title": "Per Symbol"
           },
           "daily_pnl": {
             "items": {
               "$ref": "#/components/schemas/DailyPnl"
             },
             "type": "array",
-            "title": "Daily Pnl",
-            "default": []
+            "title": "Daily Pnl"
           }
         },
         "type": "object",
@@ -3000,6 +3844,60 @@
         ],
         "title": "PositionsResponse"
       },
+      "PremarketAgentRequest": {
+        "properties": {
+          "refresh": {
+            "type": "boolean",
+            "title": "Refresh",
+            "description": "Fetch a new scan instead of using the latest saved report",
+            "default": false
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 10
+          }
+        },
+        "type": "object",
+        "title": "PremarketAgentRequest"
+      },
+      "PremarketAgentResponse": {
+        "properties": {
+          "agent": {
+            "type": "string",
+            "title": "Agent"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "report": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report"
+          },
+          "top": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Top"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent",
+          "status"
+        ],
+        "title": "PremarketAgentResponse"
+      },
       "ReconcileRequest": {
         "properties": {
           "account_id": {
@@ -3044,8 +3942,7 @@
               "type": "object"
             },
             "type": "array",
-            "title": "Position Mismatches",
-            "default": []
+            "title": "Position Mismatches"
           },
           "trade_mismatches": {
             "items": {
@@ -3053,8 +3950,7 @@
               "type": "object"
             },
             "type": "array",
-            "title": "Trade Mismatches",
-            "default": []
+            "title": "Trade Mismatches"
           },
           "pnl_comparison": {
             "anyOf": [
@@ -3074,8 +3970,7 @@
               "type": "object"
             },
             "type": "array",
-            "title": "Missing Trades",
-            "default": []
+            "title": "Missing Trades"
           },
           "extra_trades": {
             "items": {
@@ -3083,8 +3978,7 @@
               "type": "object"
             },
             "type": "array",
-            "title": "Extra Trades",
-            "default": []
+            "title": "Extra Trades"
           }
         },
         "type": "object",
@@ -3595,8 +4489,7 @@
               "$ref": "#/components/schemas/AgentStatus"
             },
             "type": "array",
-            "title": "Agents",
-            "default": []
+            "title": "Agents"
           },
           "started_at": {
             "anyOf": [
@@ -4069,8 +4962,7 @@
               "type": "string"
             },
             "type": "array",
-            "title": "Suggestions",
-            "default": []
+            "title": "Suggestions"
           }
         },
         "type": "object",
@@ -4082,13 +4974,24 @@
       }
     },
     "securitySchemes": {
-      "HTTPBearer": {
+      "BearerAuth": {
         "type": "http",
+        "description": "User JWT returned by POST /auth/login or /auth/register.",
         "scheme": "bearer"
+      },
+      "ServiceApiKey": {
+        "type": "apiKey",
+        "description": "Trusted service key. Add X-User-Id for tenant-scoped endpoints.",
+        "in": "header",
+        "name": "X-API-Key"
       }
     }
   },
   "tags": [
+    {
+      "name": "meta",
+      "description": "API discovery and health"
+    },
     {
       "name": "auth",
       "description": "User registration and login"
@@ -4096,6 +4999,14 @@
     {
       "name": "agents",
       "description": "Agent lifecycle \u2014 backtest, paper trade, validate, reconcile, full cycle"
+    },
+    {
+      "name": "agent-invocation",
+      "description": "Typed service-to-service agent invocation"
+    },
+    {
+      "name": "chat",
+      "description": "DeepAgents chat, as JSON or Server-Sent Events"
     },
     {
       "name": "data",
@@ -4106,14 +5017,12 @@
       "description": "Market data \u2014 news, prices, profiles, movers"
     },
     {
+      "name": "trading",
+      "description": "Paper-only order placement"
+    },
+    {
       "name": "legacy",
       "description": "Legacy endpoints (markdown responses via CommandProcessor)"
-    }
-  ],
-  "servers": [
-    {
-      "url": "https://api.alpatrade.chat",
-      "description": "production"
     }
   ]
 }

@@ -1,5 +1,34 @@
 # Change Log
 
+## 0.8.0 — 2026-08-15
+
+### External API and agent access
+
+- Added a public agent catalog plus typed JSON invocation endpoints for the primary
+  LangChain DeepAgent, Premarket Agent, Growth and Value research agents, their
+  combined view, and the paper-only autonomy scout.
+- Documented the existing Backtest, Validation, Paper Trade, Reconciliation,
+  Report, and Orchestrator endpoints as canonical external agent interfaces.
+- Added API discovery at `/`, production server metadata, explicit Swagger UI,
+  ReDoc, and OpenAPI routes, stable package-version metadata, and request IDs.
+
+### Security and developer experience
+
+- Replaced spoofable standalone `X-User-Id` trust with JWT, configured service API
+  keys, or a short-lived signed internal identity; tenant data and actions now
+  require a concrete user identity.
+- Restricted browser CORS to configured AlpaTrade origins and made direct order
+  placement use only the authenticated user's linked Alpaca paper account.
+- Added a public `/developers` page and homepage/footer navigation to Swagger,
+  ReDoc, the live OpenAPI JSON contract, and the machine-readable agent catalog.
+
+### Tests and deployment
+
+- Added DB-free API discovery, authentication-boundary, request-ID, agent-catalog,
+  and developer-navigation regression coverage.
+- No database migration is required. Configure `API_SERVICE_KEY` or
+  `API_SERVICE_KEYS` before onboarding trusted service clients.
+
 ## 0.7.0 — 2026-08-15
 
 ### DeepAgents and autonomy

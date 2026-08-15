@@ -6,8 +6,11 @@ to the API container instead of running locally. This keeps paper trading
 alive even when UI containers restart on deploy.
 """
 
+import hashlib
+import hmac
 import logging
 import os
+import time
 from typing import Any, Dict, Optional
 
 import httpx
@@ -22,11 +25,29 @@ def is_api_mode() -> bool:
     return bool(API_URL)
 
 
-def _headers(user_id: Optional[str] = None) -> Dict[str, str]:
-    """Build request headers."""
+def _headers(user_id: Optional[str] = None, *, method: str = "GET",
+             path: str = "/") -> Dict[str, str]:
+    """Build authenticated internal-service headers without sending JWT_SECRET."""
     h: Dict[str, str] = {"Content-Type": "application/json"}
     if user_id:
         h["X-User-Id"] = str(user_id)
+        service_key = os.getenv("API_SERVICE_KEY", "").strip()
+        if service_key:
+            h["X-API-Key"] = service_key
+        else:
+            secret = os.getenv("JWT_SECRET", "")
+            if not secret:
+                raise RuntimeError(
+                    "JWT_SECRET or API_SERVICE_KEY is required for user-scoped API calls"
+                )
+            timestamp = str(int(time.time()))
+            signature = hmac.new(
+                secret.encode(),
+                f"{timestamp}:{method.upper()}:{path}:{user_id}".encode(),
+                hashlib.sha256,
+            ).hexdigest()
+            h["X-Internal-Timestamp"] = timestamp
+            h["X-Internal-Signature"] = signature
     return h
 
 
@@ -35,7 +56,10 @@ def _post(path: str, payload: Dict, user_id: Optional[str] = None,
     """POST to API and return JSON response."""
     url = f"{API_URL}{path}"
     logger.info(f"API POST {url}")
-    resp = httpx.post(url, json=payload, headers=_headers(user_id), timeout=timeout)
+    resp = httpx.post(
+        url, json=payload, headers=_headers(user_id, method="POST", path=path),
+        timeout=timeout,
+    )
     resp.raise_for_status()
     return resp.json()
 
@@ -45,7 +69,10 @@ def _get(path: str, params: Optional[Dict] = None,
     """GET from API and return JSON response."""
     url = f"{API_URL}{path}"
     logger.info(f"API GET {url}")
-    resp = httpx.get(url, params=params, headers=_headers(user_id), timeout=timeout)
+    resp = httpx.get(
+        url, params=params, headers=_headers(user_id, method="GET", path=path),
+        timeout=timeout,
+    )
     resp.raise_for_status()
     return resp.json()
 

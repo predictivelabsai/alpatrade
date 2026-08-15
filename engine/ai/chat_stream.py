@@ -12,7 +12,10 @@ tool_end · error · done.
 """
 from __future__ import annotations
 
+import logging
 from typing import AsyncIterator, Optional
+
+logger = logging.getLogger(__name__)
 
 
 async def stream_chat_events(
@@ -25,7 +28,7 @@ async def stream_chat_events(
     from engine.ai import StreamingCommand
     from langchain_core.messages import HumanMessage, AIMessage
 
-    primary_agent = _agui.primary_agent
+    primary_agent = _agui.agent_for_user(user_id)
     command_interceptor = _agui._command_interceptor
 
     yield {"type": "session", "sid": thread_id}
@@ -39,7 +42,8 @@ async def stream_chat_events(
     try:
         result = await command_interceptor(msg, compat)
     except Exception as e:  # noqa: BLE001
-        yield {"type": "error", "message": f"command failed: {e}"}
+        logger.warning("Chat command interception failed: %s", e)
+        yield {"type": "error", "message": "Command failed"}
         yield {"type": "done"}
         return
 
@@ -53,7 +57,8 @@ async def stream_chat_events(
             else:
                 md = result
         except Exception as e:  # noqa: BLE001
-            md = f"# Error\n\n```\n{e}\n```"
+            logger.warning("Chat command execution failed: %s", e)
+            md = "# Error\n\nCommand execution failed."
         yield {"type": "token", "text": md}
         yield {"type": "done"}
         return
@@ -81,8 +86,9 @@ async def stream_chat_events(
             elif kind == "on_tool_end":
                 yield {"type": "tool_end", "name": event.get("name", "tool")}
     except Exception as e:  # noqa: BLE001
-        yield {"type": "error", "message": str(e)}
-        history.append({"role": "assistant", "content": f"Error: {e}"})
+        logger.warning("Primary chat agent failed: %s", e)
+        yield {"type": "error", "message": "Agent request failed"}
+        history.append({"role": "assistant", "content": "Agent request failed"})
         yield {"type": "done"}
         return
 
@@ -92,7 +98,14 @@ async def stream_chat_events(
 
 # Simple in-memory per-thread history for API callers (mobile). Web keeps its own.
 _API_HISTORY: dict[str, list[dict]] = {}
+_MAX_API_THREADS = 500
+_MAX_HISTORY_MESSAGES = 40
 
 
 def api_history(thread_id: str) -> list[dict]:
-    return _API_HISTORY.setdefault(thread_id, [])
+    if thread_id not in _API_HISTORY and len(_API_HISTORY) >= _MAX_API_THREADS:
+        _API_HISTORY.pop(next(iter(_API_HISTORY)))
+    history = _API_HISTORY.setdefault(thread_id, [])
+    if len(history) > _MAX_HISTORY_MESSAGES:
+        del history[:-_MAX_HISTORY_MESSAGES]
+    return history
