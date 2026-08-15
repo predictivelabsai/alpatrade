@@ -407,7 +407,11 @@ def page(active, *content, user: Optional[dict] = None,
          right_news_open: bool = False):
     """Full app shell. ``*content`` is the center column (usually
     :func:`chat_center`); ``active`` highlights the matching command-menu item."""
-    children = [_left_pane(active, user), *content]
+    # Keep one constrained grid item between the sidebar and fixed overlays.
+    # The document itself intentionally does not scroll, so every feature page
+    # needs this shared viewport instead of relying on route-specific overflow.
+    center = Div(*content, cls="page-pane")
+    children = [_left_pane(active, user), center]
     if right_news:
         children.append(_news_pane())
     children.append(Div(id="left-overlay", cls="left-overlay", onclick="toggleLeftPane()"))

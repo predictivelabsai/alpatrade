@@ -45,6 +45,17 @@ a { color: var(--accent); }
 }
 .app.pane-closed { padding-right: 0; }
 
+/* Every route renders inside this constrained grid viewport.  The document is
+   fixed so chat composers remain visible; long tool/research pages scroll here. */
+.page-pane {
+    min-width: 0;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.page-pane > .center-pane { height: 100%; min-height: 0; }
+
 /* ── Topbar / brand ── */
 .left-header {
     padding: .9rem 1.1rem;

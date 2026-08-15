@@ -1,5 +1,8 @@
-from fastcore.xml import to_xml
 import inspect
+from pathlib import Path
+
+from fasthtml.common import Div
+from fastcore.xml import to_xml
 
 from engine.web.ph_layout import PH_JS, _left_pane, page
 
@@ -83,6 +86,19 @@ def test_news_pane_can_be_open_by_default():
     assert 'id="app" class="app"' in html
     assert 'id="app" class="app pane-closed"' not in html
     assert 'id="right-pane"' in html
+
+
+def test_pages_share_a_constrained_scroll_viewport():
+    html = to_xml(page("guide", Div("Long page", cls="content"), right_news=False))
+    css = (Path(__file__).parents[1] / "static" / "app.css").read_text()
+
+    assert 'class="page-pane"' in html
+    assert 'class="content">Long page</div>' in html
+    assert html.index('class="page-pane"') < html.index('class="content">Long page')
+    assert ".page-pane {" in css
+    assert "overflow-x: auto" in css
+    assert "overflow-y: auto" in css
+    assert ".page-pane > .center-pane" in css
 
 
 def test_fill_chat_redirects_non_chat_pages_with_pending_prompt():

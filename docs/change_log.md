@@ -1,5 +1,23 @@
 # Change Log
 
+## 0.8.1 — 2026-08-15
+
+### Web layout
+
+- Added a shared, constrained scrolling viewport to every application route so
+  long tool, research, monitoring, and public-market pages remain scrollable on
+  desktop and mobile while the sidebar and chat composer stay fixed.
+- Kept wide tables and data views horizontally accessible on narrow screens
+  without introducing document-level overflow.
+- Preserved the chat and guide views' internal scrolling within the new shared
+  center-column container.
+
+### Tests and deployment
+
+- Added DB-free regression coverage for the shared page viewport and verified
+  route scrolling locally in Chromium at desktop and mobile viewport sizes.
+- No database migration or configuration change is required.
+
 ## 0.8.0 — 2026-08-15
 
 ### External API and agent access
