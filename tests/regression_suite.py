@@ -907,7 +907,7 @@ class TestAgentRuntime(unittest.TestCase):
 
     def test_unknown_framework_falls_back(self):
         from engine.agents.runtime import get_runtime
-        self.assertEqual(get_runtime("does-not-exist").name, "langgraph")
+        self.assertEqual(get_runtime("does-not-exist").name, "deepagents")
 
     def test_alias_normalisation(self):
         from engine.agents.runtime import get_runtime
