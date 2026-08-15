@@ -69,7 +69,7 @@ function fillChat(t){var i=document.getElementById('chat-input');
   sessionStorage.setItem('alpatrade.pendingPrompt',t);window.location.href='/app';}
 function autoResize(el){if(!el)return;el.style.height='auto';
   el.style.height=Math.min(el.scrollHeight,192)+'px';}
-function newChat(){var m=document.getElementById('messages');if(m)m.innerHTML='';
+function newChat(){setNewsPane(true);var m=document.getElementById('messages');if(m)m.innerHTML='';
   var w=document.getElementById('welcome-hero');if(w)w.style.display='';
   var i=document.getElementById('chat-input');if(i){i.value='';autoResize(i);i.focus();return;}
   window.location.href='/app';}
@@ -77,18 +77,20 @@ function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();
   var f=document.getElementById('chat-form');
   if(typeof window.sendMessage==='function'){window.sendMessage(e);}
   else if(f&&f.requestSubmit){f.requestSubmit();}}}
-function toggleNewsPane(){var p=document.getElementById('right-pane');
+function setNewsPane(open){var p=document.getElementById('right-pane');
   var a=document.getElementById('app');var b=document.getElementById('news-btn');
-  if(!p)return;var open=p.classList.toggle('open');
-  if(a)a.classList.toggle('pane-closed',!open);
-  if(b)b.classList.toggle('active',open);}
+  if(!p)return;if(open===undefined)open=!p.classList.contains('open');
+  p.classList.toggle('open',open);if(a)a.classList.toggle('pane-closed',!open);
+  if(b){b.classList.toggle('active',open);b.setAttribute('aria-expanded',String(open));}}
+function toggleNewsPane(){setNewsPane();}
 function toggleLeftPane(){var p=document.getElementById('left-pane');
   var o=document.getElementById('left-overlay');
   if(p)p.classList.toggle('open');if(o)o.classList.toggle('visible');}
 window.fillChat=fillChat;window.newChat=newChat;window.autoResize=autoResize;
-window.handleKey=handleKey;window.toggleNewsPane=toggleNewsPane;
+window.handleKey=handleKey;window.toggleNewsPane=toggleNewsPane;window.setNewsPane=setNewsPane;
 window.toggleLeftPane=toggleLeftPane;
 document.addEventListener('DOMContentLoaded',function(){
+  var p=document.getElementById('right-pane');if(p)setNewsPane(p.classList.contains('open'));
   var t=sessionStorage.getItem('alpatrade.pendingPrompt');
   if(t&&document.getElementById('chat-input')){
     sessionStorage.removeItem('alpatrade.pendingPrompt');fillChat(t);
@@ -346,8 +348,9 @@ def chat_center():
             cls="chat-header-left",
         ),
         Div(
-            Button("News", id="news-btn", cls="news-toggle-btn", type="button",
-                   onclick="toggleNewsPane()"),
+            Button(NotStr('&lt; <span>News</span>'), id="news-btn", cls="news-toggle-btn",
+                   type="button", title="Maximize News", aria_expanded="false",
+                   aria_controls="right-pane", onclick="toggleNewsPane()"),
             cls="chat-header-right",
         ),
         cls="chat-header",
@@ -377,13 +380,14 @@ def chat_center():
 # ---------------------------------------------------------------------------
 # Right pane — NEWS only (loads /news via htmx; no Trace tab)
 # ---------------------------------------------------------------------------
-def _news_pane():
+def _news_pane(open_by_default: bool = False):
     return Div(
         Div(
             Div(H3("News", cls="right-title"),
                 Span("market headlines", cls="right-subtitle"),
                 cls="right-header-left"),
-            Button("✕", cls="right-close", type="button", onclick="toggleNewsPane()"),
+            Button(">", cls="right-close", type="button", title="Minimize News",
+                   aria_label="Minimize News", onclick="setNewsPane(false)"),
             cls="right-header",
         ),
         Div(
@@ -395,7 +399,7 @@ def _news_pane():
                 hx_swap="innerHTML", hx_indicator="#news-loading"),
             cls="right-body",
         ),
-        id="right-pane", cls="right-pane",
+        id="right-pane", cls="right-pane" + (" open" if open_by_default else ""),
     )
 
 
@@ -413,7 +417,7 @@ def page(active, *content, user: Optional[dict] = None,
     center = Div(*content, cls="page-pane")
     children = [_left_pane(active, user), center]
     if right_news:
-        children.append(_news_pane())
+        children.append(_news_pane(right_news_open))
     children.append(Div(id="left-overlay", cls="left-overlay", onclick="toggleLeftPane()"))
     return (
         *head(title),

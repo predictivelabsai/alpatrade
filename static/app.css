@@ -251,6 +251,7 @@ details.agent-group[open] .agent-list { display: flex; flex-direction: column; g
 }
 .news-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
 .news-toggle-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.app:not(.pane-closed) .news-toggle-btn { visibility: hidden; }
 
 /* Voice mic button (chat header) */
 .voice-btn {
@@ -387,7 +388,7 @@ details.agent-group[open] .agent-list { display: flex; flex-direction: column; g
 .right-header-left { display: flex; flex-direction: column; }
 .right-title { color: var(--ink); font-size: .92rem; font-weight: 600; }
 .right-subtitle { color: var(--ink-dim); font-size: .68rem; margin-top: .1rem; font-family: var(--font-mono); }
-.right-close { background: transparent; border: 1px solid var(--line); color: var(--ink-dim); border-radius: .4rem; padding: .15rem .5rem; cursor: pointer; }
+.right-close { background: transparent; border: 1px solid var(--line); color: var(--ink-dim); border-radius: .4rem; padding: .15rem .55rem; cursor: pointer; font-family: var(--font-mono); font-weight: 700; }
 .right-close:hover { color: var(--accent); border-color: var(--accent); }
 .right-body { flex: 1; overflow-y: auto; padding: .75rem; }
 

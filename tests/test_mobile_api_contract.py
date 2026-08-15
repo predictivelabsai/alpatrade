@@ -22,7 +22,7 @@ def test_openapi_includes_direct_paper_order_endpoint():
 def test_openapi_exposes_docs_auth_and_external_agents():
     spec = app.openapi()
 
-    assert spec["info"]["version"] == "0.8.1"
+    assert spec["info"]["version"] == "0.8.2"
     assert set(spec["components"]["securitySchemes"]) == {
         "BearerAuth", "ServiceApiKey",
     }

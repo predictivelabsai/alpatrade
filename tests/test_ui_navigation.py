@@ -4,7 +4,7 @@ from pathlib import Path
 from fasthtml.common import Div
 from fastcore.xml import to_xml
 
-from engine.web.ph_layout import PH_JS, _left_pane, page
+from engine.web.ph_layout import PH_JS, _left_pane, chat_center, page
 
 
 def test_sidebar_sections_are_collapsed_by_default():
@@ -85,7 +85,18 @@ def test_news_pane_can_be_open_by_default():
                        right_news=True, right_news_open=True))
     assert 'id="app" class="app"' in html
     assert 'id="app" class="app pane-closed"' not in html
-    assert 'id="right-pane"' in html
+    assert 'id="right-pane" class="right-pane open"' in html
+    assert 'title="Minimize News"' in html
+    assert '&gt;</button>' in html
+
+
+def test_new_chat_opens_news_and_toggle_uses_directional_controls():
+    html = to_xml(page("app", chat_center(), right_news_open=True))
+
+    assert "function newChat(){setNewsPane(true)" in PH_JS
+    assert "function setNewsPane(open)" in PH_JS
+    assert 'title="Maximize News"' in html
+    assert 'aria-controls="right-pane"' in html
 
 
 def test_pages_share_a_constrained_scroll_viewport():

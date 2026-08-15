@@ -1,5 +1,21 @@
 # Change Log
 
+## 0.8.2 — 2026-08-15
+
+### New Chat news pane
+
+- Opened the News pane by default on New Chat and restored it whenever the New
+  Chat action resets an existing conversation.
+- Replaced the close icon with directional controls: `>` minimizes the open
+  News pane and `< News` maximizes it again.
+- Added accessible control labels and synchronized expanded state.
+
+### Tests and deployment
+
+- Added DB-free coverage for the default-open state, New Chat reset behavior,
+  directional controls, and their accessibility attributes.
+- No database migration or configuration change is required.
+
 ## 0.8.1 — 2026-08-15
 
 ### Web layout
