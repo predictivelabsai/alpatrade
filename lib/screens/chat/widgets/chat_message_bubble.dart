@@ -1,8 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:alpatrade/config/theme.dart';
 import 'package:alpatrade/models/chat.dart';
+import 'package:alpatrade/screens/chat/widgets/responsive_markdown.dart';
 import 'package:alpatrade/screens/chat/widgets/tool_execution_card.dart';
 
 class ChatMessageBubble extends StatelessWidget {
@@ -35,7 +36,9 @@ class ChatMessageBubble extends StatelessWidget {
             ),
           Container(
             constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.82,
+              maxWidth: _isUser
+                  ? MediaQuery.sizeOf(context).width * 0.82
+                  : math.min(MediaQuery.sizeOf(context).width - 32, 720),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
@@ -59,19 +62,7 @@ class ChatMessageBubble extends StatelessWidget {
                       height: 1.45,
                     ),
                   )
-                : MarkdownBody(
-                    data: message.content,
-                    selectable: true,
-                    styleSheet: _markdownStyle(context),
-                    onTapLink: (text, href, title) {
-                      if (href != null) {
-                        launchUrl(
-                          Uri.parse(href),
-                          mode: LaunchMode.externalApplication,
-                        );
-                      }
-                    },
-                  ),
+                : ResponsiveMarkdown(data: message.content, selectable: true),
           ),
           if (message.toolCalls.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -83,43 +74,4 @@ class ChatMessageBubble extends StatelessWidget {
       ),
     );
   }
-
-  MarkdownStyleSheet _markdownStyle(BuildContext context) => MarkdownStyleSheet(
-    p: TextStyle(color: AppTheme.ink, fontSize: 14, height: 1.5),
-    h1: TextStyle(
-      color: AppTheme.ink,
-      fontSize: 20,
-      fontWeight: FontWeight.w700,
-      height: 1.3,
-    ),
-    h2: TextStyle(
-      color: AppTheme.ink,
-      fontSize: 17,
-      fontWeight: FontWeight.w600,
-      height: 1.3,
-    ),
-    h3: TextStyle(
-      color: AppTheme.ink,
-      fontSize: 15,
-      fontWeight: FontWeight.w600,
-      height: 1.3,
-    ),
-    code: TextStyle(
-      backgroundColor: AppTheme.bgRaise,
-      color: AppTheme.accentDeep,
-      fontFamily: AppTheme.monoFont,
-      fontSize: 13,
-    ),
-    codeblockDecoration: BoxDecoration(
-      color: AppTheme.bgRaise,
-      borderRadius: BorderRadius.circular(6),
-    ),
-    blockquoteDecoration: BoxDecoration(
-      border: Border(left: BorderSide(color: AppTheme.accent, width: 3)),
-    ),
-    listBullet: TextStyle(color: AppTheme.ink, fontSize: 14),
-    tableHead: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.ink),
-    tableBorder: TableBorder.all(color: AppTheme.line, width: 1),
-    a: TextStyle(color: AppTheme.accent, decoration: TextDecoration.underline),
-  );
 }

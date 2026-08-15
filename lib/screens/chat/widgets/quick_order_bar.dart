@@ -30,24 +30,46 @@ class QuickOrderBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 40,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(8, 0, 8, 6),
-        itemCount: _cards.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 6),
-        itemBuilder: (context, i) {
-          final c = _cards[i];
-          final buy = c.preset.side == 'buy';
-          return _OrderCard(
-            icon: c.icon,
-            label: c.label,
-            accent: buy ? AppTheme.gain : AppTheme.loss,
-            onTap: () => onSelect(c.preset),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 480) {
+          return SizedBox(
+            height: 40,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 6),
+              child: Row(
+                children: [
+                  for (var i = 0; i < _cards.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 5),
+                    Expanded(child: _buildCard(_cards[i], compact: true)),
+                  ],
+                ],
+              ),
+            ),
           );
-        },
-      ),
+        }
+        return SizedBox(
+          height: 40,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 6),
+            itemCount: _cards.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 6),
+            itemBuilder: (context, i) => _buildCard(_cards[i]),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCard(_Card card, {bool compact = false}) {
+    final buy = card.preset.side == 'buy';
+    return _OrderCard(
+      icon: card.icon,
+      label: card.label,
+      accent: buy ? AppTheme.gain : AppTheme.loss,
+      compact: compact,
+      onTap: () => onSelect(card.preset),
     );
   }
 }
@@ -56,12 +78,14 @@ class _OrderCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color accent;
+  final bool compact;
   final VoidCallback onTap;
 
   const _OrderCard({
     required this.icon,
     required this.label,
     required this.accent,
+    this.compact = false,
     required this.onTap,
   });
 
@@ -74,24 +98,45 @@ class _OrderCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          alignment: Alignment.center,
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 4 : 12,
+            vertical: 8,
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppTheme.line),
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: compact ? MainAxisSize.max : MainAxisSize.min,
             children: [
-              Icon(icon, size: 15, color: accent),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.ink,
+              if (!compact) ...[
+                Icon(icon, size: 15, color: accent),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.ink,
+                  ),
                 ),
-              ),
+              ] else
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.ink,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

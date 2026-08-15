@@ -1,7 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:alpatrade/config/theme.dart';
+import 'package:alpatrade/screens/chat/widgets/responsive_markdown.dart';
 
 /// Live assistant bubble shown while tokens stream in, with a blinking cursor.
 class StreamingText extends StatefulWidget {
@@ -36,7 +37,7 @@ class _StreamingTextState extends State<StreamingText>
   Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(
-        maxWidth: MediaQuery.of(context).size.width * 0.82,
+        maxWidth: math.min(MediaQuery.sizeOf(context).width - 32, 720),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -53,48 +54,7 @@ class _StreamingTextState extends State<StreamingText>
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          MarkdownBody(
-            data: widget.text,
-            selectable: false,
-            styleSheet: MarkdownStyleSheet(
-              p: TextStyle(color: AppTheme.ink, fontSize: 14, height: 1.5),
-              h1: TextStyle(
-                color: AppTheme.ink,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                height: 1.3,
-              ),
-              h2: TextStyle(
-                color: AppTheme.ink,
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                height: 1.3,
-              ),
-              code: TextStyle(
-                backgroundColor: AppTheme.bgRaise,
-                color: AppTheme.accentDeep,
-                fontFamily: AppTheme.monoFont,
-                fontSize: 13,
-              ),
-              codeblockDecoration: BoxDecoration(
-                color: AppTheme.bgRaise,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              listBullet: TextStyle(color: AppTheme.ink, fontSize: 14),
-              a: TextStyle(
-                color: AppTheme.accent,
-                decoration: TextDecoration.underline,
-              ),
-            ),
-            onTapLink: (text, href, title) {
-              if (href != null) {
-                launchUrl(
-                  Uri.parse(href),
-                  mode: LaunchMode.externalApplication,
-                );
-              }
-            },
-          ),
+          ResponsiveMarkdown(data: widget.text, selectable: false),
           AnimatedBuilder(
             animation: _cursorController,
             builder: (context, child) {

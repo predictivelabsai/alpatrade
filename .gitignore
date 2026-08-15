@@ -131,6 +131,7 @@ app.*.symbols
 # Playwright MCP snapshots
 .playwright-mcp/
 .playwright-cli/
+output/playwright/
 
 # Local Play submission artifacts
 output/play-store/

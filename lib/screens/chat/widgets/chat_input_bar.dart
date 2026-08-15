@@ -45,9 +45,11 @@ class _ChatInputBarState extends State<ChatInputBar> {
   void _send() {
     final text = _controller.text.trim();
     if (text.isEmpty || widget.isStreaming) return;
-    widget.onSend(text);
     _controller.clear();
-    _focusNode.requestFocus();
+    // The stream state rebuilds this field immediately. Releasing focus first
+    // avoids Flutter Web trying to reconfigure a DOM input it just detached.
+    _focusNode.unfocus();
+    widget.onSend(text);
   }
 
   @override
@@ -87,7 +89,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
               child: TextField(
                 controller: _controller,
                 focusNode: _focusNode,
-                enabled: !widget.isStreaming,
+                readOnly: widget.isStreaming,
                 maxLines: null,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _send(),
