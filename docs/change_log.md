@@ -1,5 +1,29 @@
 # Change Log
 
+## 0.7.0 — 2026-08-15
+
+### DeepAgents and autonomy
+
+- Made LangChain DeepAgents the primary chat and reasoning harness while retaining
+  the existing LangGraph-compatible streaming interface and compatibility alias.
+- Added a safe runtime fallback chain from DeepAgents to LangGraph and Hermes.
+- Added best-effort LLM annotations to autonomy scouting, backtest selection, and
+  refit decisions without changing deterministic paper-trading risk gates.
+
+### Interface
+
+- Improved authentication form accessibility with associated labels, browser
+  autofill metadata, and announced success/error notices.
+- Updated the Settings framework selector and architecture documentation to show
+  DeepAgents as the default.
+
+### Tests and deployment
+
+- Added DB-free runtime-default, subagent construction, scout, backtest, refit,
+  and authentication accessibility coverage to the CI unit suite.
+- Verified syntax compilation, 101 DB-free tests, and the secret scan. No database
+  migration is required for this release.
+
 ## 0.6.0 — 2026-08-06
 
 ### Alpha Research
