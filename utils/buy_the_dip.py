@@ -5,7 +5,7 @@ Buys when stock drops by threshold from recent high, holds for specified days or
 
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from typing import Dict, List, Tuple, Optional
 import pytz
 import math
@@ -250,11 +250,8 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
         display_time = current_date
         if interval == '1d':
             eastern = pytz.timezone('US/Eastern')
-            if display_time.tzinfo is None:
-                display_time = pytz.utc.localize(display_time).astimezone(eastern)
-            else:
-                display_time = display_time.astimezone(eastern)
-            display_time = display_time.replace(hour=9, minute=30)
+            et_date = current_date.date()
+            display_time = eastern.localize(datetime.combine(et_date, time(9, 30)))
 
         # Reset daily exit tracking on date change
         if prev_date is None or current_date.date() != prev_date.date():
@@ -271,12 +268,9 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
             exit_display_time = current_date
             if interval == '1d':
                 eastern = pytz.timezone('US/Eastern')
-                if exit_display_time.tzinfo is None:
-                    exit_display_time = pytz.utc.localize(exit_display_time).astimezone(eastern)
-                else:
-                    exit_display_time = exit_display_time.astimezone(eastern)
-                exit_display_time = exit_display_time.replace(hour=16, minute=0)
-
+                et_date = current_date.date()
+                exit_display_time = eastern.localize(datetime.combine(et_date, time(16, 0)))
+                
             # PDT Check using tracker
             is_same_day = current_date.date() == trade['entry_date_raw']
             can_day_trade = not is_same_day or (pdt_tracker is None or pdt_tracker.can_day_trade(current_date))

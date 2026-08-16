@@ -32,7 +32,7 @@ LOOK_AHEAD_WARNING = (
 
 
 def _w(path: Path, text: str) -> None:
-    path.write_text(text)
+    path.write_text(text, encoding="utf-8")
 
 
 def write_run(folder: Path, ctx: Dict) -> None:
@@ -179,9 +179,10 @@ def _run_py() -> str:
         '            break\n'
         '    from engine.backtest.runner import reproduce\n\n'
         'folder = Path(__file__).resolve().parent\n'
-        'stored = json.loads((folder / "summary.json").read_text())["reproducible_core"]\n'
+        'stored = json.loads((folder / "summary.json").read_text(encoding="utf-8"))["reproducible_core"]\n'
         'recomputed = reproduce(folder)\n'
         'match = json.dumps(stored, sort_keys=True) == json.dumps(recomputed, sort_keys=True)\n'
         'print("REPRODUCIBLE: PASS" if match else "REPRODUCIBLE: FAIL")\n'
         'sys.exit(0 if match else 1)\n'
     )
+

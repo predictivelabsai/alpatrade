@@ -13,7 +13,9 @@ from typing import Optional, Dict, Tuple
 
 import bcrypt as _bcrypt
 from cryptography.fernet import Fernet
+from dotenv import load_dotenv
 
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 

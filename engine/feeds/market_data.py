@@ -44,6 +44,11 @@ class MarketDataUtil:
                 frame = frame.xs(symbol, level=0)
             except (KeyError, ValueError):
                 frame = frame.droplevel(0)
+        # yfinance 1.5+ returns MultiIndex columns even for a single symbol,
+        # e.g. [('Close', 'AAPL'), ('High', 'AAPL'), ...]. Flatten to plain
+        # field names so `df['Close']` yields a Series, not a DataFrame.
+        if isinstance(frame.columns, pd.MultiIndex):
+            frame.columns = frame.columns.droplevel(1)
         frame.rename(columns={
             "open": "Open", "high": "High", "low": "Low",
             "close": "Close", "volume": "Volume",
