@@ -53,6 +53,8 @@ def get_historical_data(symbols: List[str], start_date: datetime,
         try:
             df = yf.download(symbol, start=start_date, end=end_date, progress=False)
             if not df.empty:
+                if isinstance(df.columns, pd.MultiIndex):
+                    df.columns = df.columns.droplevel(1)
                 data[symbol] = df
         except Exception as e:
             logger.error(f"Error fetching data for {symbol}: {e}")

@@ -191,12 +191,12 @@ def calculate_buy_and_hold(symbols: List[str], start_date: datetime, end_date: d
             if len(entry_data) == 0:
                 continue
             
-            entry_price = float(entry_data['Close'].iloc[0])
+            entry_price = float(entry_data['Close'].iloc[0].squeeze())
             entry_date = entry_data.index[0]
             
             # Only calculate if we've passed entry date
             if date >= entry_date:
-                current_price = float(historical['Close'].iloc[-1])
+                current_price = float(historical['Close'].iloc[-1].squeeze())
                 shares = capital_per_symbol / entry_price
                 total_value += shares * current_price
                 valid_date = True
@@ -290,7 +290,7 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                         include_taf_fees: bool = False, include_cat_fees: bool = False,
                         pdt_protection: Optional[bool] = None,
                         extended_hours: bool = False,
-                        intraday_exit: bool = False) -> Tuple[pd.DataFrame, Dict, pd.DataFrame]:
+                        intraday_exit: bool = False, **kwargs) -> Tuple[pd.DataFrame, Dict, pd.DataFrame]:
     """
     Backtest buy-the-dip strategy (wrapper for backward compatibility)
 
@@ -341,7 +341,7 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
 
 def backtest_vix_strategy(symbols: List[str], start_date: datetime, end_date: datetime,
                          initial_capital: float = 10000, position_size: float = 0.1,
-                         vix_threshold: float = 20, hold_overnight: bool = True) -> Tuple[pd.DataFrame, Dict]:
+                         vix_threshold: float = 20, hold_overnight: bool = True, **kwargs) -> Tuple[pd.DataFrame, Dict]:
     """
     Backtest VIX fear index strategy (wrapper for backward compatibility)
     
@@ -385,7 +385,7 @@ def backtest_momentum_strategy(
     interval: str = '1d',
     data_source: str = 'yfinance',
     include_taf_fees: bool = False,
-    include_cat_fees: bool = False
+    include_cat_fees: bool = False, **kwargs
 ) -> Dict:
     """
     Backtest momentum trading strategy (wrapper for backward compatibility)
@@ -426,3 +426,6 @@ def backtest_momentum_strategy(
         include_taf_fees=include_taf_fees,
         include_cat_fees=include_cat_fees
     )
+
+
+
