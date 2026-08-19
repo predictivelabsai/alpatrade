@@ -11,7 +11,7 @@ from engine.reporting.pnl_dashboard import commentary, dashboard_data
 from engine.web.ph_layout import page
 
 _CSS = """
-.app{padding-right:0}.dash{width:100%;max-width:1180px;margin:auto;padding:0 1rem 3rem}
+.dash{width:100%;max-width:1180px;margin:auto;padding:0 1rem 3rem}
 .dash-head,.dash-controls,.metric-grid,.panel-grid,.panel-head{display:flex;align-items:center}
 .dash-head{justify-content:space-between;gap:1rem;flex-wrap:wrap;margin:.4rem 0 1rem}
 .dash h1{font-size:1.35rem;margin:0}.muted{color:var(--ink-muted);font-size:.8rem}

@@ -78,9 +78,9 @@ def _e(v) -> str:
     return _html.escape(str(v if v is not None else ""))
 
 
-def gather(day: str | None = None) -> dict:
+def gather(day: str | None = None, keys: tuple[str, str] | None = None) -> dict:
     from engine.brokers.alpaca import AlpacaAPI
-    api = AlpacaAPI(paper=True)
+    api = AlpacaAPI(*keys, paper=True) if keys else AlpacaAPI(paper=True)
     acct = api.get_account() or {}
     positions = api.get_positions() or []
     equity = _f(acct.get("equity"))

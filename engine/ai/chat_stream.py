@@ -31,6 +31,10 @@ async def stream_chat_events(
     primary_agent = _agui.agent_for_user(user_id)
     command_interceptor = _agui._command_interceptor
 
+    # Bind the signed-in user so the shared agent's Alpaca tools resolve
+    # per-user keys (never the shared env account).
+    _agui.set_request_user(str(user_id) if user_id is not None else None)
+
     yield {"type": "session", "sid": thread_id}
 
     # The interceptor + CommandProcessor read session["user"]["user_id"].

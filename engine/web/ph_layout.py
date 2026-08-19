@@ -86,9 +86,22 @@ function toggleNewsPane(){setNewsPane();}
 function toggleLeftPane(){var p=document.getElementById('left-pane');
   var o=document.getElementById('left-overlay');
   if(p)p.classList.toggle('open');if(o)o.classList.toggle('visible');}
+function filterNews(el){var cat=el.getAttribute('data-cat');
+  var pills=document.querySelectorAll('#news-body .news-pill');
+  for(var i=0;i<pills.length;i++){pills[i].classList.toggle('active',pills[i]===el);}
+  var items=document.querySelectorAll('#news-body .news-item');
+  var visible=0;
+  for(var j=0;j<items.length;j++){
+    var show=(cat==='latest')||(items[j].getAttribute('data-cat')===cat);
+    items[j].style.display=show?'':'none';
+    if(show)visible++;
+  }
+  var empty=document.getElementById('news-empty-filter');
+  if(empty)empty.style.display=visible?'none':'block';
+}
 window.fillChat=fillChat;window.newChat=newChat;window.autoResize=autoResize;
 window.handleKey=handleKey;window.toggleNewsPane=toggleNewsPane;window.setNewsPane=setNewsPane;
-window.toggleLeftPane=toggleLeftPane;
+window.toggleLeftPane=toggleLeftPane;window.filterNews=filterNews;
 document.addEventListener('DOMContentLoaded',function(){
   var p=document.getElementById('right-pane');if(p)setNewsPane(p.classList.contains('open'));
   var t=sessionStorage.getItem('alpatrade.pendingPrompt');
