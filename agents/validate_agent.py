@@ -63,10 +63,11 @@ class ValidateAgent:
     """Agent that validates trades against market data with self-correction."""
 
     def __init__(self, message_bus=None, state=None, max_iterations: int = 10,
-                 price_tolerance: float = 0.01, user_id=None):
+                 price_tolerance: float = 0.01, user_id=None, account_id=None):
         self.message_bus = message_bus
         self.state = state
         self.user_id = user_id
+        self.account_id = account_id
         self.max_iterations = max_iterations
         self.price_tolerance = price_tolerance
         self.market_data = MarketDataUtil()
@@ -163,9 +164,13 @@ class ValidateAgent:
         """Fetch trades using the configured backend (file or DB)."""
         try:
             if source == "backtest":
-                return fetch_backtest_trades(run_id, user_id=self.user_id)
+                return fetch_backtest_trades(
+                    run_id, user_id=self.user_id, account_id=self.account_id
+                )
             else:
-                return fetch_paper_trades(run_id, user_id=self.user_id)
+                return fetch_paper_trades(
+                    run_id, user_id=self.user_id, account_id=self.account_id
+                )
         except Exception as e:
             logger.error(f"Failed to fetch trades: {e}")
             return []

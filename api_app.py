@@ -53,6 +53,7 @@ from api_models import (
     ApiInfoResponse, ApiLinks,
     AgentDescriptor, AgentCatalogResponse,
     AgentChatRequest, AgentChatResponse,
+    DeepAgentRequest, DeepAgentResponse,
     PremarketAgentRequest, PremarketAgentResponse,
     AlphaResearchRequest, AlphaResearchResponse, AlphaComparisonResponse,
     AutonomyScoutRequest, AutonomyScoutResponse,
@@ -225,7 +226,7 @@ except (OSError, KeyError, tomllib.TOMLDecodeError):
     try:
         API_VERSION = version("alpatrade")
     except PackageNotFoundError:
-        API_VERSION = "0.8.0"
+        API_VERSION = "0.9.0"
 
 API_DESCRIPTION = """
 AlpaTrade's production REST API for research, backtesting, validation, paper trading,
@@ -273,6 +274,15 @@ app.add_middleware(
     ],
     expose_headers=["X-Request-ID"],
 )
+
+
+async def _close_deepagent_pool() -> None:
+    from engine.ai.deepagents import close_deepagent_service
+
+    await close_deepagent_service()
+
+
+app.router.add_event_handler("shutdown", _close_deepagent_pool)
 
 
 @app.middleware("http")
@@ -1285,6 +1295,91 @@ async def v2_reconcile(req: ReconcileRequest, user: Dict = Depends(require_tenan
 # ---------------------------------------------------------------------------
 
 @app.post(
+    "/v2/deepagents",
+    response_model=DeepAgentResponse,
+    tags=["agent-invocation"],
+    summary="Invoke the canonical tenant-safe DeepAgent",
+    responses={
+        200: {
+            "description": "Completed JSON response or Server-Sent Events when stream=true.",
+            "content": {
+                "text/event-stream": {
+                    "schema": {"type": "string"},
+                    "example": (
+                        "event: session\ndata: {\"thread_id\":\"...\"}\n\n"
+                        "event: token\ndata: {\"content\":\"...\"}\n\n"
+                        "event: done\ndata: {\"response\":{}}\n\n"
+                    ),
+                }
+            },
+        },
+        409: {"description": "Duplicate response is still running or thread is busy."},
+        503: {"description": "DeepAgents, its model, or PostgreSQL checkpoints are unavailable."},
+    },
+)
+async def v2_deepagents(
+    req: DeepAgentRequest,
+    request: Request,
+    user: Dict = Depends(require_tenant_user),
+):
+    """Append messages to an owned durable thread and invoke DeepAgents.
+
+    Client message UUIDs are idempotency keys. Completed and failed requests
+    replay their recorded response; running duplicates and concurrent calls on
+    the same thread return 409. Tool traces are deliberately metadata-only.
+    """
+    from engine.ai.deepagents import (
+        AccountAccessError,
+        DeepAgentsUnavailable,
+        MessageConflictError,
+        ResponseInProgressError,
+        ThreadAccessError,
+        get_deepagent_service,
+        sse_encode,
+    )
+
+    service = get_deepagent_service()
+    try:
+        await service.initialize()
+        invocation = await service.prepare(
+            req,
+            user_id=str(user["user_id"]),
+            auth_type=str(user.get("auth_type") or "authenticated"),
+            request_id=str(request.state.request_id),
+        )
+    except ResponseInProgressError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "response_in_progress", "message": "A response is already running."},
+        ) from exc
+    except (ThreadAccessError, AccountAccessError) as exc:
+        raise HTTPException(status_code=404, detail="Thread or account not found") from exc
+    except MessageConflictError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "message_id_conflict", "message": str(exc)},
+        ) from exc
+    except DeepAgentsUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    if req.stream:
+        async def generate():
+            async for event in service.events(invocation):
+                yield sse_encode(event["event"], event["data"])
+
+        return StreamingResponse(
+            generate(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache, no-transform",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive",
+            },
+        )
+
+    return await service.invoke(invocation)
+
+@app.post(
     "/v2/agents/chat/invoke",
     response_model=AgentChatResponse,
     tags=["agent-invocation"],
@@ -1587,7 +1682,11 @@ async def chat_stream(question: str, thread_id: str = "api_default"):
                             "msg": {"type": "string", "description": "The user message / prompt.",
                                     "example": "Show me my positions"},
                             "thread_id": {"type": "string",
-                                          "description": "Conversation id for history continuity.",
+                                          "description": (
+                                              "Conversation id. Authenticated callers receive "
+                                              "durable continuity; anonymous calls use it only "
+                                              "as a correlation label."
+                                          ),
                                           "example": "mobile-1"},
                         },
                         "required": ["msg"],
@@ -1623,8 +1722,9 @@ async def v2_chat(
 ):
     """Streaming chat for the mobile app — the SAME router as the web chat.
 
-    Auth: optional `Authorization: Bearer <JWT>` (authed users trade under their own
-    linked Alpaca account; anonymous falls back to the server's paper keys).
+    Auth: optional `Authorization: Bearer <JWT>`. Authenticated users may use
+    caller-owned portfolio and paper-action tools. Anonymous callers receive
+    public market/research tools only and never use server broker credentials.
 
     Body (JSON or form-encoded): `msg` (or `message`), `thread_id` (or `sid`).
 

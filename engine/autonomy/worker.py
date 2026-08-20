@@ -16,7 +16,7 @@ import threading
 import time
 
 from engine.autonomy import queue, store
-from engine.autonomy.graph import default_pipeline
+from engine.autonomy.graph import JobCancelled, deepagent_job_pipeline, default_pipeline
 
 log = logging.getLogger("autonomy.worker")
 
@@ -38,24 +38,51 @@ def run_one(worker_id: str) -> bool:
     run_id = claimed["run_id"]
     store.append_event(run_id, f"claimed by {worker_id} (attempt {claimed['attempt']})")
     stopped = threading.Event()
+    cancel_requested = threading.Event()
 
     def _heartbeat() -> None:
         while not stopped.wait(HEARTBEAT_SECONDS):
             try:
                 queue.heartbeat(run_id, worker_id)
+                if queue.is_cancelled(run_id, claimed.get("user_id")):
+                    cancel_requested.set()
             except Exception as exc:  # noqa: BLE001
                 log.warning("heartbeat failed for %s: %s", run_id, exc)
 
     pulse = threading.Thread(target=_heartbeat, name=f"heartbeat-{run_id[:8]}", daemon=True)
     pulse.start()
     try:
-        pipeline = default_pipeline(claimed.get("user_id"), claimed.get("account_id"))
-        pipeline.run(run_id, ctx={"config": claimed.get("config") or {}, "run_id": run_id})
+        kind = claimed.get("kind") or "full"
+        if kind.startswith("deepagent_"):
+            if not claimed.get("user_id"):
+                raise ValueError("DeepAgent jobs require a tenant user")
+            pipeline = deepagent_job_pipeline(
+                kind,
+                claimed["user_id"],
+                claimed.get("account_id"),
+                stop_event=cancel_requested,
+            )
+        else:
+            pipeline = default_pipeline(
+                claimed.get("user_id"),
+                claimed.get("account_id"),
+                stop_event=cancel_requested,
+            )
+        pipeline.run(
+            run_id,
+            ctx={"config": claimed.get("config") or {}, "run_id": run_id},
+            stop_event=cancel_requested,
+        )
+        if cancel_requested.is_set():
+            raise JobCancelled("job cancelled")
         queue.ack(run_id)
         store.append_event(run_id, "run complete")
+    except JobCancelled:
+        store.append_event(run_id, "run cancelled")
     except Exception as e:  # noqa: BLE001
-        status = queue.fail(run_id, str(e), max_attempts=MAX_ATTEMPTS)
-        store.append_event(run_id, f"run errored → {status}: {e}", level="error")
+        no_retry = claimed.get("kind") in {"full", "deepagent_paper", "deepagent_full"}
+        status = queue.fail(run_id, str(e), max_attempts=1 if no_retry else MAX_ATTEMPTS)
+        store.append_event(run_id, f"run errored → {status}", level="error")
     finally:
         stopped.set()
         pulse.join(timeout=1)
@@ -79,8 +106,11 @@ def loop(worker_id: str = "worker-1") -> None:
             continue
         try:
             reclaimed = queue.requeue_unfinished(STALE_SECONDS)
+            uncertain = queue.fail_uncertain_trading_jobs(STALE_SECONDS)
             if reclaimed:
                 log.info("requeued %d stale run(s)", reclaimed)
+            if uncertain:
+                log.warning("failed %d uncertain paper-capable run(s)", uncertain)
             # Self-feed: when the queue is idle, the Scout enqueues one new run.
             if queue.pending_count() == 0:
                 from engine.autonomy import scout

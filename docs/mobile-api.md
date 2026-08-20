@@ -20,17 +20,82 @@ pattern: streaming chat over SSE + typed REST.
 | POST | `/auth/login` | `{email, password}` | `{token, user_id, email}` |
 
 Store `token` and send it as `Authorization: Bearer <token>` on later calls.
-Auth is **optional** for `/v2/chat` (anonymous uses the shared demo account); required for per-user data.
+Auth is **optional** for the compatibility `/v2/chat` endpoint. Anonymous chat is
+restricted to public market/research tools and never receives account or action tools.
+The canonical `/v2/deepagents` endpoint requires a JWT or a service key plus `X-User-Id`.
 
 ---
 
-## Chat (streaming) — `POST /v2/chat`
+## Canonical DeepAgent — `POST /v2/deepagents`
 
-The heart of the app. Same router as the web chat: plain-English prompts are routed to
-tools/commands (positions, account, P&L, news, quotes, backtests, reports, **paper orders**).
+This is the primary API for new clients. It always uses DeepAgents, appends new
+messages to a durable caller-owned thread, and supports JSON or SSE from the same
+request contract.
+
+```json
+{
+  "messages": [
+    {
+      "id": "68d8968b-4ec1-44c3-9d0d-a3d519c8086b",
+      "role": "user",
+      "content": "Backtest buy the dip on AAPL and MSFT"
+    }
+  ],
+  "thread_id": "optional-thread-uuid",
+  "account_id": "optional-owned-account-uuid",
+  "stream": false
+}
+```
+
+- Message IDs are required UUIDs and are stable idempotency keys.
+- `messages` contains only new messages to append, not the full transcript.
+- Roles may be `user` or `assistant`; the final message must be `user`.
+- Each call accepts at most 20 messages, 20,000 characters per message, and
+  50,000 characters total.
+- Omit `thread_id` to create one. A supplied thread/account must belong to the caller.
+- A completed or failed duplicate is replayed with `cached: true`. A running
+  duplicate or concurrent request on the thread returns `409 response_in_progress`.
+  Reusing an ID with changed message content or account scope returns
+  `409 message_id_conflict`.
+
+JSON mode returns the assistant message plus sanitized tool/subagent traces:
+
+```json
+{
+  "id": "response-uuid",
+  "thread_id": "thread-uuid",
+  "status": "completed",
+  "framework": "deepagents",
+  "model": {"provider": "xai", "name": "grok-4-1-fast-reasoning"},
+  "messages": [{"id": "message-uuid", "role": "assistant", "content": "..."}],
+  "tools": [{"call_id": "...", "name": "queue_backtest", "status": "completed"}],
+  "subagents": [{"call_id": "...", "name": "strategy-lab", "status": "completed"}],
+  "cached": false
+}
+```
+
+Set `stream: true` for named SSE events: `session`, `agent_route`,
+`message_start`, `token`, `tool_start`, `tool_end`, `subagent_start`,
+`subagent_end`, `message_end`, `error`, periodic `ping`, and `done`. Tool and
+subagent events contain IDs, names, status, and timestamps only; inputs,
+results, credentials, and raw exceptions are never emitted.
+
+Mutating tools require an explicit imperative request. They queue long backtest,
+paper, full-cycle, and autonomy work and return a job ID immediately. Paper
+orders use the caller's linked paper account. Hypothetical or advisory wording
+cannot trigger an action.
+
+---
+
+## Compatibility chat (streaming) — `POST /v2/chat`
+
+This older SSE shape remains for existing clients and now uses the shared
+DeepAgents service. Authenticated callers receive tenant-scoped tools; anonymous
+callers receive public market/research tools only.
 
 - **Content-Type:** `application/json` (or `application/x-www-form-urlencoded`)
-- **Body:** `msg` (string, required) · `thread_id` (string, optional — keeps conversation history)
+- **Body:** `msg` (string, required) · `thread_id` (string, optional). Authenticated
+  calls use it for durable continuity; anonymous calls use it only as a correlation label.
 - **Auth:** optional bearer
 - **Response:** `text/event-stream` (SSE). Keep the connection open and read events until `done`.
 
@@ -53,7 +118,7 @@ Each event is `event: <type>\n` + `data: <json>\n\n`.
 ```bash
 curl -N -X POST https://api.alpatrade.chat/v2/chat \
   -H "Content-Type: application/json" \
-  -d '{"msg":"how large is my MSFT position?","thread_id":"m1"}'
+  -d '{"msg":"what is the latest MSFT price?","thread_id":"m1"}'
 ```
 ```
 event: session
@@ -63,10 +128,10 @@ event: agent_route
 data: {"slug": "ai", "agent": "AlpaTrade AI"}
 
 event: tool_start
-data: {"name": "get_alpaca_positions"}
+data: {"name": "get_market_price"}
 
 event: token
-data: {"text": "**MSFT position: 2 shares**"}
+data: {"text": "**MSFT** is trading at ..."}
 ...
 event: done
 data: {}
@@ -92,13 +157,12 @@ await for (final line in res.stream.transform(utf8.decoder).transform(const Line
 // buf.toString() is the full markdown reply — render with a markdown widget.
 ```
 
-### Placing trades from chat (2-step confirm)
+### Placing trades from chat
 
-Trading is **paper**. When the user asks to buy/sell (e.g. *"buy 1 share of TSLA"*), the
-agent **first replies with a preview** ("BUY 1 TSLA @ ~$X — reply confirm to place, or
-correct it") and **does not execute**. Only after the user sends a confirming message
-(*"yes"* / *"confirm"*) in the same `thread_id` does it place the order. No special client
-handling is required — just keep the same `thread_id`.
+Trading is paper-only. An authenticated caller's explicit imperative request may
+execute a paper action; advisory or hypothetical wording cannot. Anonymous callers
+never receive trading or portfolio tools. New integrations should use
+`POST /v2/deepagents` for durable idempotency and full action/subagent traces.
 
 > There is also a legacy `GET /chat?question=…&thread_id=…` SSE endpoint (old agents). Prefer `POST /v2/chat`.
 
@@ -150,7 +214,7 @@ authenticated user's linked paper account. No real money.
 | POST | `/v2/paper` | Start paper trading. |
 | POST | `/v2/validate` | Validate a run. |
 | POST | `/v2/reconcile` | Reconcile DB vs broker. |
-| POST | `/v2/full` | Full cycle (backtest → validate → paper). |
+| POST | `/v2/full` | Full cycle (backtest → validate → paper → validate → reconcile → report). |
 | POST | `/v2/stop` | Stop a running agent. |
 
 Market helpers: `GET /news`, `GET /price`, `GET /movers`, `GET /profile`.
@@ -162,7 +226,9 @@ invocations are:
 
 | Method | Path | Agent |
 |---|---|---|
-| POST | `/v2/agents/chat/invoke` | Primary LangChain DeepAgent; non-streaming JSON response. |
+| POST | `/v2/deepagents` | **Canonical** authenticated DeepAgent; durable JSON or SSE. |
+| POST | `/v2/agents/chat/invoke` | Compatibility non-streaming JSON chat response. |
+| POST | `/v2/chat` | Compatibility SSE; anonymous public research only. |
 | POST | `/v2/agents/premarket/invoke` | Read-only premarket scan. |
 | POST | `/v2/agents/alpha-growth/invoke` | Growth research methodology. |
 | POST | `/v2/agents/alpha-value/invoke` | Value research methodology. |

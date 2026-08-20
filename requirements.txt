@@ -8,10 +8,12 @@ openai
 alpaca-py
 sqlalchemy
 psycopg2-binary
+psycopg[binary,pool]>=3.2,<4
 langchain-openai
 langgraph
 langchain-core
-deepagents  # pluggable AGENT_FRAMEWORK=deepagents (planning + subagents on LangGraph)
+deepagents>=0.6.12,<0.7  # pluggable AGENT_FRAMEWORK=deepagents (planning + subagents on LangGraph)
+langgraph-checkpoint-postgres>=3.0,<4
 pyyaml
 textual
 rich

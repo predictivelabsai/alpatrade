@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -426,6 +426,107 @@ class AgentChatResponse(BaseModel):
     response: str
     route: Optional[str] = None
     tools_used: List[str] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Canonical DeepAgents API
+# ---------------------------------------------------------------------------
+
+class DeepAgentMessageRequest(BaseModel):
+    """One append-only client message for a durable DeepAgent thread."""
+
+    id: str = Field(..., description="Stable client-generated UUID used for idempotency")
+    role: Literal["user", "assistant"]
+    content: str = Field(..., min_length=1, max_length=20_000)
+
+    @field_validator("id")
+    @classmethod
+    def validate_message_id(cls, value: str) -> str:
+        import uuid
+
+        try:
+            return str(uuid.UUID(value))
+        except (TypeError, ValueError, AttributeError) as exc:
+            raise ValueError("id must be a UUID") from exc
+
+    @field_validator("content")
+    @classmethod
+    def validate_content(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("content must not be blank")
+        return value
+
+
+class DeepAgentRequest(BaseModel):
+    messages: List[DeepAgentMessageRequest] = Field(..., min_length=1, max_length=20)
+    thread_id: Optional[str] = Field(None, description="Existing owned thread UUID")
+    account_id: Optional[str] = Field(None, description="Optional owned Alpaca account UUID")
+    stream: bool = False
+
+    @field_validator("thread_id", "account_id")
+    @classmethod
+    def validate_optional_uuid(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        import uuid
+
+        try:
+            return str(uuid.UUID(value))
+        except (TypeError, ValueError, AttributeError) as exc:
+            raise ValueError("must be a UUID") from exc
+
+    @model_validator(mode="after")
+    def validate_message_batch(self):
+        if self.messages[-1].role != "user":
+            raise ValueError("the final message must have role 'user'")
+        if sum(len(message.content) for message in self.messages) > 50_000:
+            raise ValueError("messages may contain at most 50,000 characters total")
+        identifiers = [message.id for message in self.messages]
+        if len(identifiers) != len(set(identifiers)):
+            raise ValueError("message ids must be unique within the request")
+        return self
+
+    model_config = {"json_schema_extra": {
+        "examples": [{
+            "messages": [{
+                "id": "68d8968b-4ec1-44c3-9d0d-a3d519c8086b",
+                "role": "user",
+                "content": "Backtest buy the dip on AAPL and MSFT",
+            }],
+            "stream": False,
+        }]
+    }}
+
+
+class DeepAgentOutputMessage(BaseModel):
+    id: str
+    role: Literal["assistant"] = "assistant"
+    content: str
+
+
+class DeepAgentTrace(BaseModel):
+    call_id: str
+    name: str
+    status: Literal["started", "completed", "failed"]
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+
+
+class DeepAgentModelInfo(BaseModel):
+    provider: str
+    name: str
+
+
+class DeepAgentResponse(BaseModel):
+    id: str
+    thread_id: str
+    status: Literal["completed", "failed"]
+    framework: Literal["deepagents"] = "deepagents"
+    model: DeepAgentModelInfo
+    messages: List[DeepAgentOutputMessage] = Field(default_factory=list)
+    tools: List[DeepAgentTrace] = Field(default_factory=list)
+    subagents: List[DeepAgentTrace] = Field(default_factory=list)
+    cached: bool = False
 
 
 class PremarketAgentRequest(BaseModel):

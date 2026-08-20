@@ -101,16 +101,21 @@ class AlpacaAPI:
 
             side_enum = OrderSide.BUY if side.lower() == 'buy' else OrderSide.SELL
             tif_enum = TimeInForce.DAY if time_in_force.lower() == 'day' else TimeInForce.GTC
+            client_order_id = kwargs.get('client_order_id')
+            request_kwargs = {'client_order_id': client_order_id} if client_order_id else {}
 
             if otype == 'limit':
                 if limit_price is None:
                     raise ValueError("limit_price is required for a limit order.")
                 req = LimitOrderRequest(symbol=symbol, qty=qty, side=side_enum,
-                                        time_in_force=tif_enum, limit_price=float(limit_price))
+                                        time_in_force=tif_enum, limit_price=float(limit_price),
+                                        **request_kwargs)
             elif notional is not None:
-                req = MarketOrderRequest(symbol=symbol, notional=notional, side=side_enum, time_in_force=tif_enum)
+                req = MarketOrderRequest(symbol=symbol, notional=notional, side=side_enum,
+                                         time_in_force=tif_enum, **request_kwargs)
             else:
-                req = MarketOrderRequest(symbol=symbol, qty=qty, side=side_enum, time_in_force=tif_enum)
+                req = MarketOrderRequest(symbol=symbol, qty=qty, side=side_enum,
+                                         time_in_force=tif_enum, **request_kwargs)
 
             order = self.trading_client.submit_order(req)
             order_dict = order.dict()

@@ -129,7 +129,11 @@ class PaperTradeAgent:
                         "session_id": self.session_id}
 
             # 2. Bootstrap from DB (recent same-day round-trips)
-            db_day_trades = fetch_recent_day_trades(window_days=7, user_id=self.user_id)
+            db_day_trades = fetch_recent_day_trades(
+                window_days=7,
+                user_id=self.user_id,
+                account_id=self.account_id,
+            )
             if db_day_trades:
                 self.pdt_tracker.bootstrap(db_day_trades)
                 logger.info(f"PDT tracker bootstrapped with {len(db_day_trades)} DB day trades")
@@ -172,7 +176,11 @@ class PaperTradeAgent:
                 # Check if market is open
                 if not is_market_open(now, extended_hours=extended_hours):
                     logger.debug("Market closed, sleeping...")
-                    time.sleep(min(poll_interval, 60))
+                    wait_seconds = min(poll_interval, 60)
+                    if stop_event and stop_event.wait(wait_seconds):
+                        break
+                    if not stop_event:
+                        time.sleep(wait_seconds)
                     continue
 
                 # Periodic PDT re-check (every ~10 cycles)
@@ -217,7 +225,10 @@ class PaperTradeAgent:
                         self._send_daily_email(last_daily_report.isoformat())
                     last_daily_report = today
 
-                time.sleep(poll_interval)
+                if stop_event and stop_event.wait(poll_interval):
+                    break
+                if not stop_event:
+                    time.sleep(poll_interval)
 
         except KeyboardInterrupt:
             logger.info("Paper trading interrupted by user")
