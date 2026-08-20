@@ -72,6 +72,11 @@ enforces a single running response per tenant/thread and a unique response per
 final client message ID. The graph is cached by effective model provider/name;
 tenant identity travels separately through `DeepAgentContext` and `ToolRuntime`.
 
+For the complete Mermaid.js walkthrough—including transport routing, replay and
+idempotency, all six specialists, action safety, durable job kinds, the scheduled
+advisor, delivery, and persistence—see
+[`docs/deepagent_flow.md`](deepagent_flow.md).
+
 ```mermaid
 sequenceDiagram
     participant U as Client
