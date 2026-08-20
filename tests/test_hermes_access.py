@@ -1,5 +1,6 @@
 """Security-contract tests for the restricted Hermes broker."""
 from pathlib import Path
+import asyncio
 
 import pytest
 
@@ -43,8 +44,7 @@ def test_system_instructions_forbid_direct_db_and_live(monkeypatch):
     assert "/v2/hermes/" in text
 
 
-@pytest.mark.asyncio
-async def test_api_dependency_requires_dedicated_key(monkeypatch):
+def test_api_dependency_requires_dedicated_key(monkeypatch):
     pytest.importorskip("fastapi")
     from fastapi import HTTPException
     from api_app import require_hermes_user
@@ -54,12 +54,12 @@ async def test_api_dependency_requires_dedicated_key(monkeypatch):
     token = create_hermes_delegation(
         "11111111-1111-1111-1111-111111111111", "thread-7"
     )
-    user = await require_hermes_user("broker-only-secret", token)
+    user = asyncio.run(require_hermes_user("broker-only-secret", token))
     assert user["user_id"] == "11111111-1111-1111-1111-111111111111"
     assert user["auth_type"] == "hermes"
 
     with pytest.raises(HTTPException) as error:
-        await require_hermes_user("wrong", token)
+        asyncio.run(require_hermes_user("wrong", token))
     assert error.value.status_code == 401
 
 
