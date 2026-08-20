@@ -1128,6 +1128,13 @@ async def _command_interceptor(msg: str, session):
 
 _AGUI_HELP = """# AlpaTrade Commands
 
+## Choose an AI Runtime
+- `/hermes your request` — use Hermes for one message
+- `/deepagents your request` — use DeepAgents for one message
+- `/langgraph your request` — use LangGraph for one message
+
+An unprefixed message continues using the framework selected in Settings.
+
 ## Backtest
 - `agent:backtest lookback:1m` — 1-month backtest
 - `agent:backtest lookback:3m symbols:AAPL,TSLA` — custom symbols

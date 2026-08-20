@@ -68,6 +68,11 @@ ALPHA_RESEARCH_SHORTCUTS = [
 
 # (group, [(command, description), ...]) — data / reporting navigation.
 MAIN_NAV = [
+    ("AI Runtime", [
+        ("/hermes ", "use Hermes for one message"),
+        ("/deepagents ", "use DeepAgents for one message"),
+        ("/langgraph ", "use LangGraph for one message"),
+    ]),
     ("Trades", [
         ("trades:backtest", "backtest trades"),
         ("trades:paper", "paper trades"),
