@@ -430,7 +430,9 @@ CHAT_JS = r"""
   var lastHistoryId=null;
   async function loadSavedMessages(force){
     var host=$('#messages');if(!host||streaming)return;
-    try{var r=await fetch('/app/chat/history');if(!r.ok)return;var data=await r.json();
+    var tid=window.ALPA_THREAD_ID||'';
+    try{var r=await fetch('/app/chat/history?thread='+encodeURIComponent(tid),{cache:'no-store'});
+      if(!r.ok)return;var data=await r.json();
       var messages=data.messages||[],last=messages.length?messages[messages.length-1].message_id:null;
       if(!force&&last===lastHistoryId)return;
       host.innerHTML='';
@@ -972,10 +974,10 @@ def register(app, rt):
         return Div(*rows, cls="session-items")
 
     @app.get("/app/chat/history")
-    async def app_chat_history(session):
+    async def app_chat_history(session, thread: str = ""):
         """Return only the active thread when it belongs to this account."""
         uid = session.get("user_id")
-        thread_id = session.get("thread_id")
+        thread_id = thread or session.get("thread_id")
         if not uid or not thread_id:
             return JSONResponse({"messages": []})
         try:

@@ -17,7 +17,8 @@ def test_sidebar_loads_account_chat_history_and_new_chat_gets_new_thread():
 
 
 def test_chat_client_loads_saved_messages_and_supports_owned_delete():
-    assert "fetch('/app/chat/history')" in CHAT_JS
+    assert "fetch('/app/chat/history?thread='+encodeURIComponent(tid)" in CHAT_JS
+    assert "window.ALPA_THREAD_ID||''" in CHAT_JS
     assert "fetch('/app/chats/'+encodeURIComponent(tid),{method:'DELETE'})" in CHAT_JS
     assert "window.ALPA_THREAD_ID" in CHAT_JS
     assert "fetch('/app/chats',{cache:'no-store'})" in CHAT_JS
@@ -48,6 +49,7 @@ def test_app_routes_apply_user_ownership_to_history_and_delete():
     assert 'delete_conversation(thread_id, user_id=str(uid))' in source
     assert 'recent = list_conversations(user_id=uid, limit=1)' in source
     assert 'conversation_belongs_to_user(current, uid)' in source
+    assert 'thread_id = thread or session.get("thread_id")' in source
 
 
 def test_chat_store_qualifies_schema_and_filters_owner():
