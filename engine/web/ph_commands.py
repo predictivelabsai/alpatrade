@@ -6,7 +6,7 @@ Three registries, each a list of ``(group_label, [(command, description), ...])`
   Reconcile, Paper Trade, Full Cycle) that kick off the multi-agent workflow.
 * ``ALPHA_RESEARCH_SHORTCUTS`` — local Growth, Value, and combined research views.
 * ``MAIN_NAV`` — data / reporting navigation (Trades, Runs & Reports,
-  Rankings & P&L, Monitor, Research, Charts & Equity, Accounts, Options).
+  Rankings & P&L, Monitor, Research, Charts & Equity, Accounts).
 
 Every command string is a real ``CommandProcessor`` input (see
 ``tui/command_processor.py`` / ``agui_app.py`` routing). Clicking a menu item
@@ -120,10 +120,5 @@ MAIN_NAV = [
         ("accounts", "list linked accounts"),
         ("account:add <KEY> <SECRET>", "add a new account"),
         ("account:switch <num>", "switch active account"),
-    ]),
-    ("Options", [
-        ("hours:extended", "pre / after-market hours"),
-        ("pdt:false", "disable PDT rule (>$25k)"),
-        ("intraday_exit:true", "intraday TP/SL exits"),
     ]),
 ]

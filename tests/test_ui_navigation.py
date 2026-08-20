@@ -10,7 +10,7 @@ from engine.web.ph_layout import PH_JS, _left_pane, chat_center, page
 def test_sidebar_sections_are_collapsed_by_default():
     html = to_xml(_left_pane("guide", None))
 
-    for section in ("Explore", "Chats", "Agents", "Alpha Research", "Monitoring",
+    for section in ("Explore", "Chats", "Agents", "Monitoring",
                     "Tools", "Public Markets", "Research", "Admin"):
         assert f'<span class="nav-section-name">{section}</span>' in html
     assert '<details class="nav-section" open' not in html
@@ -22,8 +22,8 @@ def test_sidebar_sections_are_collapsed_by_default():
 def test_sidebar_alpha_research_shortcuts_fill_editable_commands():
     html = to_xml(_left_pane("guide", None))
 
-    assert html.index(">Agents<") < html.index(">Alpha Research<") \
-        < html.index(">Monitoring<")
+    # Alpha Research shortcuts now live inside the merged "Research" section.
+    assert 'nav-section-name">Research<' in html
     assert "Growth Agent" in html
     assert "Value Agent" in html
     assert "Combined View" in html
@@ -153,3 +153,59 @@ def test_monitoring_has_pipeline_page_and_paper_only_controls():
     assert 'scout.enqueue_run(user_id=' in source
     assert "queue.retry" in source
     assert "Paper-only" in inspect.getsource(ph_monitoring._render)
+
+
+def test_pipeline_snapshot_orders_accounts_by_created_at_not_is_default():
+    """Regression guard: user_accounts has no ``is_default`` column (see
+    ``sql/11_add_user_accounts.sql``). Referencing it raised UndefinedColumn and
+    turned /monitoring/pipeline into a 500."""
+    from engine.web import ph_monitoring
+
+    source = inspect.getsource(ph_monitoring.pipeline_snapshot)
+    assert "is_default" not in source
+    assert "ORDER BY created_at" in source
+
+
+def test_monitoring_render_handles_empty_state():
+    """The pipeline page must render a graceful empty state, not crash, when a
+    user has no autonomy runs and no linked accounts."""
+    from engine.web import ph_monitoring
+
+    data = {
+        "counts": {"queued": 0, "running": 0, "done": 0, "failed": 0},
+        "accounts": [],
+        "configured": False,
+        "fresh_heartbeat": False,
+        "runs": [],
+    }
+    html = ph_monitoring._render(data)
+    assert "Autonomous agent pipeline" in html
+    assert "No pipeline runs for this user yet." in html
+    assert "Worker config" in html
+
+
+def test_no_duplicate_nav_routes():
+    """The sidebar must not register the same route or label twice.
+
+    Guards against regressions like "Premarket" appearing under both Explore
+    and Research, or a mislabeled "Options" group duplicating "Index Options".
+    """
+    import app  # noqa: F401  (registers feature modules)
+    from engine.web import ph_layout
+    from engine.web.ph_commands import (
+        AGENT_SHORTCUTS, ALPHA_RESEARCH_SHORTCUTS, MAIN_NAV,
+    )
+
+    # Page links: no duplicate hrefs or labels across all registered sections.
+    all_pages = (ph_layout.EXPLORE_PAGES + ph_layout.TOOLS_PAGES +
+                 ph_layout.PUBLIC_PAGES + ph_layout.RESEARCH_PAGES +
+                 ph_layout.MONITORING_PAGES)
+    hrefs = [href for _label, href, _key in all_pages]
+    labels = [label for label, _href, _key in all_pages]
+    assert len(hrefs) == len(set(hrefs)), f"duplicate hrefs: {hrefs}"
+    assert len(labels) == len(set(labels)), f"duplicate labels: {labels}"
+
+    # Command groups: no duplicate group labels.
+    group_labels = [lbl for lbl, _ in AGENT_SHORTCUTS + ALPHA_RESEARCH_SHORTCUTS + MAIN_NAV]
+    assert len(group_labels) == len(set(group_labels)), \
+        f"duplicate group labels: {group_labels}"

@@ -153,7 +153,6 @@ def _menu_group(label: str, items, active: Optional[str]):
     for cmd, desc in items:
         cls = "agent-item" + (" active" if cmd == active else "")
         rows.append(Button(
-            Span("›", cls="aitem-icon"),
             Span(cmd, cls="aitem-name"),
             Span(desc, cls="aitem-prefix"),
             cls=cls, type="button", title=desc,
@@ -161,9 +160,7 @@ def _menu_group(label: str, items, active: Optional[str]):
         ))
     return Details(
         Summary(
-            Span("▸", cls="cat-icon"),
             Span(label, cls="cat-name"),
-            Span(str(len(items)), cls="cat-count"),
             Span("›", cls="cat-arrow"),
             cls="cat-toggle",
         ),
@@ -260,12 +257,6 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
                     cls="agent-browser"),
             ),
             _nav_section(
-                "Alpha Research",
-                Div(*[_menu_group(lbl, items, active)
-                      for lbl, items in ALPHA_RESEARCH_SHORTCUTS],
-                    cls="agent-browser"),
-            ),
-            _nav_section(
                 "Monitoring",
                 Div(*_MONITORING_EXTRA(active), cls="page-links"),
             ),
@@ -285,6 +276,9 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             _nav_section(
                 "Research",
                 Div(*_RESEARCH_EXTRA(active), cls="page-links"),
+                Div(*[_menu_group(lbl, items, active)
+                      for lbl, items in ALPHA_RESEARCH_SHORTCUTS],
+                    cls="agent-browser"),
             ),
             _nav_section(
                 "Admin",

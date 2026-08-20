@@ -146,9 +146,7 @@ a { color: var(--accent); }
     transition: background .15s; font-family: var(--font-body);
 }
 .cat-toggle:hover { background: var(--bg-raise); }
-.cat-icon { color: var(--accent); width: 1rem; }
 .cat-name { flex: 1; text-align: left; }
-.cat-count { color: var(--ink-dim); font-size: .68rem; font-weight: 400; }
 .cat-arrow { color: var(--ink-dim); font-size: .62rem; transition: transform .2s; }
 details.agent-group > summary { list-style: none; cursor: pointer; }
 details.agent-group > summary::-webkit-details-marker { display: none; }
@@ -165,7 +163,6 @@ details.agent-group[open] .agent-list { display: flex; flex-direction: column; g
 }
 .agent-item:hover { background: var(--bg-raise); color: var(--ink); }
 .agent-item.active { background: var(--accent-dim); color: var(--accent); font-weight: 600; }
-.aitem-icon { color: var(--accent); width: .9rem; flex-shrink: 0; }
 .aitem-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .aitem-prefix { color: var(--ink-dim); font-family: var(--font-mono); font-size: .62rem; }
 
