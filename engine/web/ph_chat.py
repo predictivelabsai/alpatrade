@@ -418,6 +418,15 @@ CHAT_JS = r"""
       else if(window.htmx)htmx.ajax('GET','/app/chats',{target:'#session-list',swap:'innerHTML'});}
   };
 
+  async function loadConversationList(){
+    var host=$('#session-list');if(!host)return;
+    try{var r=await fetch('/app/chats',{cache:'no-store'});if(!r.ok)return;
+      host.innerHTML=await r.text();
+    }catch(e){console.warn('chat list unavailable',e);}
+  }
+  loadConversationList();
+  window.addEventListener('pageshow',loadConversationList);
+
   var lastHistoryId=null;
   async function loadSavedMessages(force){
     var host=$('#messages');if(!host||streaming)return;
@@ -901,8 +910,26 @@ def register(app, rt):
                 selected_thread = None
         if selected_thread:
             session["thread_id"] = selected_thread
-        elif new == "1" or not session.get("thread_id") or thread:
+        elif new == "1" or thread:
             session["thread_id"] = str(_uuid.uuid4())
+        else:
+            current = str(session.get("thread_id") or "")
+            try:
+                from engine.ai.chat_store import (
+                    conversation_belongs_to_user,
+                    list_conversations,
+                )
+                if current and conversation_belongs_to_user(current, uid):
+                    session["thread_id"] = current
+                else:
+                    recent = list_conversations(user_id=uid, limit=1)
+                    session["thread_id"] = (
+                        recent[0]["thread_id"] if recent else str(_uuid.uuid4())
+                    )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Could not resolve active chat for %s: %s", uid, exc)
+                if not current:
+                    session["thread_id"] = str(_uuid.uuid4())
         thread_id = str(session["thread_id"])
         return (
             *ph_layout.page("app", ph_layout.chat_center(), user=user, title="AlpaTrade",
@@ -993,6 +1020,8 @@ def register(app, rt):
         if not msg.strip():
             return StreamingResponse(
                 iter([_sse("done", {})]), media_type="text/event-stream")
+        if not session.get("thread_id"):
+            session["thread_id"] = str(_uuid.uuid4())
         return await _stream(msg, session)
 
     @rt("/news")

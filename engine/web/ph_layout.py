@@ -157,7 +157,7 @@ def _menu_group(label: str, items, active: Optional[str]):
     )
 
 
-def _nav_section(label: str, *children):
+def _nav_section(label: str, *children, opened: bool = False):
     """A compact top-level sidebar section, collapsed on every page load."""
     return Details(
         Summary(
@@ -168,6 +168,7 @@ def _nav_section(label: str, *children):
         ),
         Div(*children, cls="nav-section-body"),
         cls="nav-section",
+        **({"open": True} if opened else {}),
     )
 
 
@@ -238,6 +239,7 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
                 Div(Div("No chats yet.", cls="sessions-empty"),
                     cls="session-list", id="session-list",
                     hx_get="/app/chats", hx_trigger="load", hx_swap="innerHTML"),
+                opened=active == "app",
             ),
             _nav_section(
                 "Agents",

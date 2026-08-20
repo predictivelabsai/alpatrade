@@ -13,12 +13,15 @@ def test_sidebar_loads_account_chat_history_and_new_chat_gets_new_thread():
     assert 'hx-get="/app/chats"' in html
     assert 'id="session-list"' in html
     assert "window.location.href='/app?new=1'" in PH_JS
+    assert '<details open class="nav-section">' in html
 
 
 def test_chat_client_loads_saved_messages_and_supports_owned_delete():
     assert "fetch('/app/chat/history')" in CHAT_JS
     assert "fetch('/app/chats/'+encodeURIComponent(tid),{method:'DELETE'})" in CHAT_JS
     assert "window.ALPA_THREAD_ID" in CHAT_JS
+    assert "fetch('/app/chats',{cache:'no-store'})" in CHAT_JS
+    assert "window.addEventListener('pageshow',loadConversationList)" in CHAT_JS
 
 
 def test_chat_client_shows_remote_progress_instead_of_silent_dots():
@@ -43,6 +46,8 @@ def test_app_routes_apply_user_ownership_to_history_and_delete():
     assert 'load_conversation_messages(thread_id, user_id=str(uid))' in source
     assert 'conversation_belongs_to_user(thread_id, str(uid))' in source
     assert 'delete_conversation(thread_id, user_id=str(uid))' in source
+    assert 'recent = list_conversations(user_id=uid, limit=1)' in source
+    assert 'conversation_belongs_to_user(current, uid)' in source
 
 
 def test_chat_store_qualifies_schema_and_filters_owner():
