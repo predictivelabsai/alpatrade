@@ -190,7 +190,8 @@ After redeploying, run `hermes setup tools` in the Hermes terminal, enable
 /hermes backtest AAPL and MSFT for 3 months with buy_the_dip; maximize Sharpe
 ```
 
-Hermes should return a `run_id`, best metrics, and `candidate_id`. Then test:
+Hermes should immediately return `job_id`, `run_id`, and `status=queued`. When
+the saved chat receives the completion message, copy its `candidate_id` and test:
 
 ```text
 /hermes start candidate <candidate_id> in paper trading for 1 hour
@@ -211,16 +212,42 @@ logged-in `user_id`. The **Chats** sidebar loads only that user's threads and
 supports resume and delete. **New chat** creates a new browser thread and a new
 Hermes gateway session.
 
-While Hermes is silent during model work or a synchronous backtest, AlpaTrade
-emits progress heartbeats with elapsed time and tool status. These are
-operational updates, not private model chain-of-thought. Browser history is not
-resent to Hermes because the gateway already persists its thread; avoiding that
-duplication prevents premature context compression.
+While Hermes is preparing a request, AlpaTrade emits progress heartbeats with
+elapsed time and tool status. Long backtests and paper sessions leave the chat
+stream after queue acknowledgement and continue in the dedicated worker. These
+are operational updates, not private model chain-of-thought. Browser history is
+not resent to Hermes because the gateway already persists its thread; avoiding
+that duplication prevents premature context compression.
 
 If a broker call reports an expired delegation, start a new chat and retry once.
 Each message now receives a fresh thirty-minute delegation. Repeated expiry or
 `pending_approval` logs indicate that the latest Compose configuration has not
 been deployed.
+
+## Asynchronous backtest and paper jobs
+
+Apply the durable jobs migration before deploying version 0.11.0:
+
+```bash
+python run_migration.py sql/19_hermes_jobs.sql
+```
+
+Redeploy the complete Compose resource so the `hermes-jobs` service is created.
+Hermes backtest and paper endpoints now return immediately with `job_id`,
+`run_id`, and `status=queued`. The AlpaTrade-owned worker—not the Hermes model
+container—claims the row, executes under its signed `user_id` and optional
+`account_id`, and records progress in `alpatrade.hermes_jobs`.
+
+Successful backtests create an owned `strategy_candidates` row and append the
+metrics and `candidate_id` to the originating chat. Paper jobs load only an
+owned candidate and require an account linked to the same user. Both continue
+when the browser closes. An open chat synchronizes saved messages every five
+seconds, while `/hermes show my running jobs` reads `/v2/hermes/jobs`.
+
+Backtests interrupted by a worker restart are safe to requeue. Paper sessions
+are deliberately marked failed after an interrupted worker heartbeat; they are
+never automatically replayed because doing so could duplicate orders. No live
+execution route exists.
 
 ## Moving from the feature branch to `main`
 

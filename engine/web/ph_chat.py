@@ -418,14 +418,20 @@ CHAT_JS = r"""
       else if(window.htmx)htmx.ajax('GET','/app/chats',{target:'#session-list',swap:'innerHTML'});}
   };
 
-  async function loadSavedMessages(){
-    var host=$('#messages');if(!host||host.children.length)return;
+  var lastHistoryId=null;
+  async function loadSavedMessages(force){
+    var host=$('#messages');if(!host||streaming)return;
     try{var r=await fetch('/app/chat/history');if(!r.ok)return;var data=await r.json();
-      (data.messages||[]).forEach(function(m){var b=addBubble(m.role,m.content,m.metadata&&m.metadata.agent);
+      var messages=data.messages||[],last=messages.length?messages[messages.length-1].message_id:null;
+      if(!force&&last===lastHistoryId)return;
+      host.innerHTML='';
+      messages.forEach(function(m){var b=addBubble(m.role,m.content,m.metadata&&m.metadata.agent);
         if(m.role==='assistant'){var clean=extractChart(m.content,b);b.innerHTML=renderMd(clean);enhanceTables(b);renderChart(b);}});
+      lastHistoryId=last;
     }catch(e){console.warn('chat history unavailable',e);}
   }
-  loadSavedMessages();
+  loadSavedMessages(true);
+  setInterval(function(){loadSavedMessages(false);},5000);
 
   // News pane now returns ready-made HTML cards (see /news) — no markdown step.
 })();

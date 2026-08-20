@@ -1,5 +1,27 @@
 # Change Log
 
+## 0.11.0 — 2026-08-20
+
+### Durable asynchronous Hermes jobs
+
+- Changed scoped Hermes backtests and paper sessions from blocking HTTP calls
+  to PostgreSQL-backed jobs that immediately return `job_id` and `run_id`.
+- Added an isolated AlpaTrade `hermes-jobs` worker, owned job status endpoints,
+  candidate creation on successful backtests, and completion/failure messages
+  written into the originating saved chat.
+- Added five-second chat synchronization so results appear while a chat remains
+  open; users may navigate away, close the browser, or inspect jobs later.
+- Interrupted backtests are safely requeued. Interrupted paper sessions are
+  failed rather than replayed, preventing duplicate paper orders.
+- Removed every documented fallback to general backtest, paper, authentication,
+  or generated test-user routes. Live trading remains unavailable.
+
+### Tests and deployment
+
+- Added DB-free contracts for delegated ownership, queue submission, worker
+  attribution, candidate output, recovery policy, and service isolation.
+- Apply `sql/19_hermes_jobs.sql` before redeploying the complete Compose resource.
+
 ## 0.10.0 — 2026-08-20
 
 ### Hermes Agent integration — Phase 2

@@ -68,6 +68,41 @@ services:
       start_period: 15s
     restart: unless-stopped
 
+  # Durable executor for scoped Hermes backtest and paper jobs. This is an
+  # AlpaTrade service, not the Hermes model container; it owns DB/broker access
+  # and derives every job's user_id from the API's validated delegation.
+  hermes-jobs:
+    build:
+      context: .
+      dockerfile: Dockerfile.agui
+    command: ["python", "-m", "engine.agents.hermes_jobs"]
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - DB_POOL_SIZE=${HERMES_JOBS_DB_POOL_SIZE:-2}
+      - DB_MAX_OVERFLOW=${HERMES_JOBS_DB_MAX_OVERFLOW:-1}
+      - DB_POOL_TIMEOUT=${DB_POOL_TIMEOUT:-5}
+      - DB_APPLICATION_NAME=alpatrade-hermes-jobs
+      - HERMES_JOBS_POLL_SECONDS=${HERMES_JOBS_POLL_SECONDS:-2}
+      - ALPACA_PAPER_API_KEY=${ALPACA_PAPER_API_KEY}
+      - ALPACA_PAPER_SECRET_KEY=${ALPACA_PAPER_SECRET_KEY}
+      - MARKET_DATA_PROVIDER=${MARKET_DATA_PROVIDER:-yfinance}
+      - XAI_API_KEY=${XAI_API_KEY:-}
+      - EODHD_API_KEY=${EODHD_API_KEY:-}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+      - POSTMARK_API_KEY=${POSTMARK_API_KEY:-}
+      - TO_EMAIL=${TO_EMAIL:-}
+      - FROM_EMAIL=${FROM_EMAIL:-}
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "from pathlib import Path; assert b'engine.agents.hermes_jobs' in Path('/proc/1/cmdline').read_bytes()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
   # Merged single FastHTML app (landing + auth + chat + guide + voice).
   # Serves BOTH alpatrade.chat and alpatrade.dev via `python main.py` on port 5003.
   # (The legacy `web` service running web_app.py has been retired.)

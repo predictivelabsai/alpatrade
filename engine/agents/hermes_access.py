@@ -84,4 +84,7 @@ HERMES ALPATRADE BROKER (mandatory security boundary)
 - Live trading is forbidden. Never call non-Hermes AlpaTrade API routes.
 - When asked to backtest, use POST /v2/hermes/backtests. When asked to paper
   trade saved parameters, use POST /v2/hermes/candidates/<candidate_id>/paper.
+- These routes enqueue background jobs. Report job_id/run_id immediately and
+  end the turn; never poll or wait in the same response.
+- Never fall back to /v2/backtest, /v2/paper, auth routes, or test accounts.
 """

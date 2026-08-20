@@ -18,6 +18,8 @@ Live trading is not supported.
 Use the terminal with `curl` exactly as shown. Do not use Python, heredocs,
 temporary files, package discovery, or OpenAPI downloads. Do not retry a failed
 command with a different execution method; report the broker error to the user.
+Never call `/v2/backtest`, `/v2/paper`, `/auth/*`, or create a test user as a
+fallback. A failed scoped request must remain failed.
 
 ```bash
 curl -sS -X POST "$ALPATRADE_API_URL/v2/hermes/backtests" \
@@ -27,7 +29,14 @@ curl -sS -X POST "$ALPATRADE_API_URL/v2/hermes/backtests" \
   -d '{"strategy":"buy_the_dip","symbols":"AAPL,MSFT","lookback":"3m","objective":{"maximize":"sharpe_ratio"}}'
 ```
 
-The response includes `candidate_id`. Use it to start paper trading:
+The response immediately includes `job_id`, `run_id`, and `status: queued`.
+Tell the user the job was accepted and that they may leave the page. Do not wait
+or poll in the same turn. The worker writes the final result into the originating
+saved chat and creates `candidate_id` when the backtest finishes.
+
+Use `GET /v2/hermes/jobs` to answer requests such as "show my running jobs" and
+`GET /v2/hermes/jobs/<job_id>` for one job. Use the resulting `candidate_id` to
+start paper trading:
 
 ```bash
 curl -sS -X POST "$ALPATRADE_API_URL/v2/hermes/candidates/<candidate_id>/paper" \
@@ -39,3 +48,5 @@ curl -sS -X POST "$ALPATRADE_API_URL/v2/hermes/candidates/<candidate_id>/paper" 
 
 List saved candidates with `GET /v2/hermes/candidates` and inspect an owned run
 with `GET /v2/hermes/runs/<run_id>`. Summarize metrics and IDs for the user.
+Paper submission is also asynchronous: report its `job_id` immediately. Never
+wait for the paper duration inside a chat turn.

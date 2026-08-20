@@ -1242,65 +1242,55 @@ async def v2_paper(req: PaperRequest, user: Dict = Depends(require_tenant_user))
 # Restricted Hermes broker
 # ---------------------------------------------------------------------------
 
-def _save_hermes_candidate(
-    user_id: str,
-    request: HermesBacktestRequest,
-    response: BacktestResponse,
-) -> Optional[str]:
-    """Attribute a Hermes backtest and save its best parameters for this user."""
-    from sqlalchemy import text
-    from utils.db.db_pool import DatabasePool
-
-    best = response.best_config.model_dump() if response.best_config else {}
-    params = best.pop("params", None) or {}
-    symbols = [s.strip() for s in (request.symbols or "").split(",") if s.strip()]
-    with DatabasePool().get_session() as session:
-        session.execute(
-            text("""
-                UPDATE alpatrade.runs
-                SET agent_name = 'Hermes', agent_framework = 'hermes'
-                WHERE run_id = :run_id AND user_id = CAST(:user_id AS UUID)
-            """),
-            {"run_id": response.run_id, "user_id": user_id},
-        )
-        if not response.best_config:
-            return None
-        candidate_id = session.execute(
-            text("""
-                INSERT INTO alpatrade.strategy_candidates
-                    (user_id, account_id, source_run_id, agent_name,
-                     agent_framework, strategy, symbols, params, metrics, objective)
-                VALUES
-                    (CAST(:user_id AS UUID), CAST(:account_id AS UUID), :run_id,
-                     'Hermes', 'hermes', :strategy, CAST(:symbols AS JSONB),
-                     CAST(:params AS JSONB), CAST(:metrics AS JSONB),
-                     CAST(:objective AS JSONB))
-                RETURNING candidate_id
-            """),
-            {
-                "user_id": user_id,
-                "account_id": request.account_id,
-                "run_id": response.run_id,
-                "strategy": request.strategy,
-                "symbols": json.dumps(symbols),
-                "params": json.dumps(params, default=str),
-                "metrics": json.dumps(best, default=str),
-                "objective": json.dumps(request.objective, default=str),
-            },
-        ).scalar_one()
-    return str(candidate_id)
-
-
 @app.post("/v2/hermes/backtests", tags=["hermes"])
 async def hermes_backtest(
     req: HermesBacktestRequest,
     user: Dict = Depends(require_hermes_user),
 ):
-    """Run an owned backtest and persist its best configuration as a candidate."""
-    response = await v2_backtest(req, user)
-    candidate_id = _save_hermes_candidate(_uid(user), req, response)
-    return {**response.model_dump(mode="json"), "candidate_id": candidate_id,
-            "agent_name": "Hermes", "agent_framework": "hermes"}
+    """Queue an owned backtest and return immediately."""
+    from engine.agents.hermes_jobs import enqueue
+
+    uid = _uid(user)
+    if req.account_id:
+        _require_linked_paper_keys(uid, req.account_id)
+    config = {
+        "lookback": req.lookback,
+        "strategy": req.strategy,
+        "symbols": [s.strip() for s in (req.symbols or "").split(",") if s.strip()],
+        "objective": req.objective,
+        "agent_name": "Hermes",
+        "agent_framework": "hermes",
+    }
+    if req.capital is not None:
+        config["initial_capital"] = req.capital
+    if req.hours:
+        config["extended_hours"] = req.hours == "extended"
+    if req.intraday_exit is not None:
+        config["intraday_exit"] = req.intraday_exit
+    if req.pdt is not None:
+        config["pdt_protection"] = req.pdt
+    return enqueue(
+        "backtest", uid, str(user["thread_id"]), config,
+        account_id=req.account_id,
+    )
+
+
+@app.get("/v2/hermes/jobs", tags=["hermes"])
+async def hermes_jobs(user: Dict = Depends(require_hermes_user)):
+    """List queued, running, and completed jobs owned by this user."""
+    from engine.agents.hermes_jobs import list_owned
+    jobs = list_owned(_uid(user))
+    return {"jobs": jobs, "total": len(jobs)}
+
+
+@app.get("/v2/hermes/jobs/{job_id}", tags=["hermes"])
+async def hermes_job(job_id: str, user: Dict = Depends(require_hermes_user)):
+    """Inspect one job only when it belongs to the delegated user."""
+    from engine.agents.hermes_jobs import get_owned
+    job = get_owned(job_id, _uid(user))
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
 
 
 @app.get("/v2/hermes/candidates", tags=["hermes"])
@@ -1355,7 +1345,9 @@ async def hermes_candidate_paper(
     req: HermesPaperRequest,
     user: Dict = Depends(require_hermes_user),
 ):
-    """Promote an owned saved candidate to paper trading; live is not exposed."""
+    """Queue owned candidate parameters for paper trading; live is not exposed."""
+    from agents.orchestrator import parse_duration
+    from engine.agents.hermes_jobs import enqueue
     from sqlalchemy import text
     from utils.db.db_pool import DatabasePool
 
@@ -1376,21 +1368,32 @@ async def hermes_candidate_paper(
     account_id = req.account_id or (
         str(candidate["account_id"]) if candidate.get("account_id") else None
     )
-    paper_req = PaperRequest(
-        account_id=account_id,
-        duration=req.duration,
-        symbols=",".join(candidate["symbols"] or []),
-        strategy=candidate["strategy"],
-        params=candidate["params"] or {},
-        agent_name="Hermes",
-        agent_framework="hermes",
-        source_run_id=candidate["source_run_id"],
-        poll=req.poll,
-        hours=req.hours,
-        email=req.email,
-        pdt=req.pdt,
+    if not account_id:
+        from engine.auth import get_user_accounts
+        accounts = get_user_accounts(uid)
+        account_id = accounts[0]["account_id"] if accounts else None
+    _require_linked_paper_keys(uid, account_id)
+    config = {
+        "duration_seconds": parse_duration(req.duration),
+        "symbols": candidate["symbols"] or [],
+        "strategy": candidate["strategy"],
+        "params": candidate["params"] or {},
+        "source_run_id": candidate["source_run_id"],
+        "agent_name": "Hermes",
+        "agent_framework": "hermes",
+    }
+    if req.poll:
+        config["poll_interval_seconds"] = req.poll
+    if req.hours:
+        config["extended_hours"] = req.hours == "extended"
+    if req.email is not None:
+        config["email_notifications"] = req.email
+    if req.pdt is not None:
+        config["pdt_protection"] = req.pdt
+    job = enqueue(
+        "paper", uid, str(user["thread_id"]), config,
+        account_id=account_id, candidate_id=candidate_id,
     )
-    response = await v2_paper(paper_req, user)
     with DatabasePool().get_session() as session:
         session.execute(
             text("""
@@ -1400,17 +1403,7 @@ async def hermes_candidate_paper(
             """),
             {"candidate_id": candidate_id, "user_id": uid},
         )
-        session.execute(
-            text("""
-                UPDATE alpatrade.runs
-                SET agent_name = 'Hermes', agent_framework = 'hermes',
-                    source_run_id = :source_run_id
-                WHERE run_id = :run_id AND user_id = CAST(:user_id AS UUID)
-            """),
-            {"run_id": response.run_id, "source_run_id": candidate["source_run_id"],
-             "user_id": uid},
-        )
-    return {**response.model_dump(mode="json"), "candidate_id": candidate_id,
+    return {**job, "candidate_id": candidate_id,
             "agent_name": "Hermes", "agent_framework": "hermes"}
 
 
