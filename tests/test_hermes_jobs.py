@@ -36,6 +36,42 @@ def test_backtest_endpoint_enqueues_and_preserves_delegated_identity(monkeypatch
     assert captured["config"]["initial_capital"] == 25000
 
 
+def test_chat_dispatch_parses_background_backtest_without_remote_model():
+    from engine.web.ph_chat import _hermes_backtest_config
+
+    config = _hermes_backtest_config(
+        "start a background buy_the_dip backtest for AAPL, MSFT, GOOGL, AMZN, "
+        "META, TSLA and NVDA over the last 3 months; maximize Sharpe"
+    )
+    assert config["strategy"] == "buy_the_dip"
+    assert config["lookback"] == "3m"
+    assert config["symbols"] == ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"]
+
+
+def test_chat_dispatch_returns_queue_ack_immediately(monkeypatch):
+    from engine.agents import hermes_jobs
+    from engine.web.ph_chat import _dispatch_hermes_job_command
+
+    monkeypatch.setattr(hermes_jobs, "enqueue", lambda *args, **kwargs: {
+        "job_id": "job-1", "run_id": "run-1", "status": "queued",
+    })
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        "run a buy_the_dip backtest for AAPL over 1 month",
+        "11111111-1111-1111-1111-111111111111",
+        "22222222-2222-2222-2222-222222222222",
+    ))
+    assert "Hermes backtest queued" in reply
+    assert "`job-1`" in reply
+    assert "You may leave this page" in reply
+
+
+def test_durable_dispatch_precedes_remote_hermes_runtime():
+    from engine.web import ph_chat
+
+    source = inspect.getsource(ph_chat._stream)
+    assert source.index("_dispatch_hermes_job_command") < source.index("get_runtime")
+
+
 def test_worker_uses_owned_orchestrator_and_creates_candidate(monkeypatch):
     from agents import orchestrator as orchestrator_module
     from engine.agents import hermes_jobs

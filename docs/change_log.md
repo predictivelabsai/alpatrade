@@ -6,6 +6,8 @@
 
 - Changed scoped Hermes backtests and paper sessions from blocking HTTP calls
   to PostgreSQL-backed jobs that immediately return `job_id` and `run_id`.
+- Added a deterministic `/hermes ... backtest` dispatcher in the AlpaTrade web
+  tier, so queue creation occurs before remote model planning or terminal tools.
 - Added an isolated AlpaTrade `hermes-jobs` worker, owned job status endpoints,
   candidate creation on successful backtests, and completion/failure messages
   written into the originating saved chat.

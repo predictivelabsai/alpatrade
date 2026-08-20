@@ -491,6 +491,78 @@ def _save_chat_message(
         logger.warning("Could not persist chat %s message: %s", thread_id, exc)
 
 
+def _hermes_backtest_config(message: str) -> Optional[dict]:
+    """Parse the stable subset of natural-language Hermes backtest commands."""
+    if not re.search(r"\bbacktest\b", message, re.IGNORECASE):
+        return None
+    symbols = []
+    for symbol in re.findall(r"\b[A-Z]{1,5}\b", message):
+        if symbol not in symbols and symbol not in {"HERMES", "USD", "PDT"}:
+            symbols.append(symbol)
+    period = re.search(
+        r"\b(\d+)\s*(day|days|month|months|year|years)\b", message, re.IGNORECASE
+    )
+    lookback = "3m"
+    if period:
+        amount, unit = int(period.group(1)), period.group(2).lower()
+        suffix = "d" if unit.startswith("day") else "m" if unit.startswith("month") else "y"
+        lookback = f"{amount}{suffix}"
+    strategy = "buy_the_dip"
+    for supported in ("buy_the_dip", "momentum", "vix", "box_wedge"):
+        if supported in message.lower():
+            strategy = supported
+            break
+    return {
+        "lookback": lookback,
+        "strategy": strategy,
+        "symbols": symbols or ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"],
+        "objective": {"maximize": "sharpe_ratio"},
+        "agent_name": "Hermes",
+        "agent_framework": "hermes",
+    }
+
+
+async def _dispatch_hermes_job_command(
+    message: str, user_id: str, thread_id: str
+) -> Optional[str]:
+    """Handle durable Hermes operations before invoking the remote model."""
+    lowered = message.lower()
+    if "job" in lowered and any(word in lowered for word in ("show", "list", "running", "status")):
+        from engine.agents.hermes_jobs import list_owned
+        jobs = await asyncio.to_thread(list_owned, user_id)
+        if not jobs:
+            return "## Hermes jobs\n\nNo queued, running, or completed jobs were found for your account."
+        lines = ["## Hermes jobs", ""]
+        for job in jobs[:20]:
+            progress = (job.get("progress") or {}).get("message", "")
+            candidate = f" · candidate `{job['candidate_id']}`" if job.get("candidate_id") else ""
+            lines.append(
+                f"- **{job['kind']} · {job['status']}** — job `{job['job_id']}` · "
+                f"run `{job['run_id']}`{candidate}"
+                + (f" · {progress}" if progress else "")
+            )
+        return "\n".join(lines)
+
+    config = _hermes_backtest_config(message)
+    if config is None:
+        return None
+    from engine.agents.hermes_jobs import enqueue
+    job = await asyncio.to_thread(
+        enqueue, "backtest", user_id, thread_id, config
+    )
+    return (
+        "## Hermes backtest queued\n\n"
+        f"- **Job ID:** `{job['job_id']}`\n"
+        f"- **Run ID:** `{job['run_id']}`\n"
+        f"- **Status:** `{job['status']}`\n"
+        f"- **Strategy:** `{config['strategy']}`\n"
+        f"- **Lookback:** `{config['lookback']}`\n"
+        f"- **Symbols:** {', '.join(config['symbols'])}\n\n"
+        "The backtest is running in the background. You may leave this page; "
+        "Hermes will add the candidate and metrics to this saved chat when it finishes."
+    )
+
+
 async def _stream(msg: str, session) -> StreamingResponse:
     """Return an SSE StreamingResponse for one user message.
 
@@ -515,6 +587,36 @@ async def _stream(msg: str, session) -> StreamingResponse:
             history = _load_owned_history(thread_id, user_key) if user_key else []
             _HISTORY[thread_id] = history
         _save_chat_message(thread_id, user_key, "user", msg)
+
+        # Durable trading commands are deterministic: queue them before asking
+        # the remote Hermes model, so job creation never waits on model planning,
+        # terminal approvals, retries, or context compression.
+        if runtime_override == "hermes" and routed_msg:
+            try:
+                broker_reply = await _dispatch_hermes_job_command(
+                    routed_msg, user_key, thread_id
+                )
+            except Exception as exc:  # noqa: BLE001
+                message = f"Could not queue Hermes job: {exc}"
+                yield _sse("agent_route", {"slug": "hermes", "agent": "Hermes"})
+                yield _sse("error", {"message": message})
+                _save_chat_message(
+                    thread_id, user_key, "assistant", f"Error: {message}",
+                    {"agent": "Hermes", "framework": "hermes", "error": True},
+                )
+                yield _sse("done", {})
+                return
+            if broker_reply is not None:
+                yield _sse("agent_route", {"slug": "hermes", "agent": "Hermes"})
+                yield _sse("token", {"text": broker_reply})
+                history.append({"role": "user", "content": routed_msg})
+                history.append({"role": "assistant", "content": broker_reply})
+                _save_chat_message(
+                    thread_id, user_key, "assistant", broker_reply,
+                    {"agent": "Hermes", "framework": "hermes", "dispatch": "job"},
+                )
+                yield _sse("done", {})
+                return
 
         if runtime_override and not routed_msg:
             yield _sse("agent_route", {

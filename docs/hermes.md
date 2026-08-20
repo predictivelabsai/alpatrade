@@ -238,6 +238,11 @@ Hermes backtest and paper endpoints now return immediately with `job_id`,
 container—claims the row, executes under its signed `user_id` and optional
 `account_id`, and records progress in `alpatrade.hermes_jobs`.
 
+The AlpaTrade chat recognizes `/hermes` backtest requests before invoking the
+remote model and queues them deterministically. This prevents model planning,
+tool approvals, or context compression from delaying the acknowledgement.
+Ordinary `/hermes` questions still use the remote Hermes model.
+
 Successful backtests create an owned `strategy_candidates` row and append the
 metrics and `candidate_id` to the originating chat. Paper jobs load only an
 owned candidate and require an account linked to the same user. Both continue
