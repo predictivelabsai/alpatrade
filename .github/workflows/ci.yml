@@ -50,12 +50,6 @@ jobs:
 
       # DB-backed regression suite (opt-in): runs only when the DATABASE_URL secret
       # is configured on the repo. Add it with:  gh secret set DATABASE_URL
-      - name: Apply DeepAgents migration (if DB secret present)
-        if: ${{ env.HAS_DB_SECRET == 'true' }}
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: python run_migration.py sql/18_deepagent_responses.sql
-
       - name: Regression suite (if DB secret present)
         if: ${{ env.HAS_DB_SECRET == 'true' }}
         timeout-minutes: 10
