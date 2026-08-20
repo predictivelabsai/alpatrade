@@ -48,6 +48,37 @@ def test_chat_dispatch_parses_background_backtest_without_remote_model():
     assert config["symbols"] == ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"]
 
 
+def test_chat_result_question_does_not_queue_another_backtest():
+    from engine.web.ph_chat import _hermes_backtest_config
+
+    assert _hermes_backtest_config(
+        "show me result of this backtest and params used and the period of data"
+    ) is None
+
+
+def test_chat_result_question_returns_latest_completed_job(monkeypatch):
+    from engine.agents import hermes_jobs
+    from engine.web.ph_chat import _dispatch_hermes_job_command
+
+    monkeypatch.setattr(hermes_jobs, "list_owned", lambda *args, **kwargs: [{
+        "job_id": "33333333-3333-3333-3333-333333333333",
+        "run_id": "44444444-4444-4444-4444-444444444444",
+        "candidate_id": "55555555-5555-5555-5555-555555555555",
+        "kind": "backtest", "status": "completed",
+        "config": {"strategy": "buy_the_dip", "lookback": "3m", "symbols": ["AAPL"]},
+        "result": {"best_config": {"params": {"dip_threshold": 0.03},
+                                    "sharpe_ratio": 2.5, "total_trades": 10}},
+    }])
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        "show me result of this backtest and params used and the period of data",
+        "11111111-1111-1111-1111-111111111111",
+        "22222222-2222-2222-2222-222222222222",
+    ))
+    assert "Hermes backtest result" in reply
+    assert "Data period:** `3m`" in reply
+    assert "dip_threshold" in reply
+
+
 def test_chat_dispatch_returns_queue_ack_immediately(monkeypatch):
     from engine.agents import hermes_jobs
     from engine.web.ph_chat import _dispatch_hermes_job_command

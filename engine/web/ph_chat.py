@@ -506,6 +506,16 @@ def _hermes_backtest_config(message: str) -> Optional[dict]:
     """Parse the stable subset of natural-language Hermes backtest commands."""
     if not re.search(r"\bbacktest\b", message, re.IGNORECASE):
         return None
+    lowered = message.lower().strip()
+    read_words = ("show", "result", "details", "parameters", "params", "period", "status")
+    if any(word in lowered for word in read_words):
+        return None
+    action = re.search(
+        r"\b(start|run|queue|launch|execute|perform|optimi[sz]e)\b",
+        lowered,
+    )
+    if not action and not lowered.startswith("backtest"):
+        return None
     symbols = []
     for symbol in re.findall(r"\b[A-Z]{1,5}\b", message):
         if symbol not in symbols and symbol not in {"HERMES", "USD", "PDT"}:
@@ -553,6 +563,43 @@ async def _dispatch_hermes_job_command(
                 + (f" · {progress}" if progress else "")
             )
         return "\n".join(lines)
+
+    if "backtest" in lowered and any(
+        word in lowered for word in ("show", "result", "details", "parameters", "params", "period")
+    ):
+        from engine.agents.hermes_jobs import list_owned
+        jobs = await asyncio.to_thread(list_owned, user_id)
+        ids = set(re.findall(
+            r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b",
+            lowered,
+        ))
+        matches = [
+            job for job in jobs
+            if job.get("kind") == "backtest"
+            and (not ids or str(job.get("job_id")) in ids or str(job.get("run_id")) in ids)
+        ]
+        job = next((item for item in matches if item.get("status") == "completed"), None)
+        if job is None:
+            return "## Hermes backtest result\n\nNo matching completed backtest was found."
+        config = job.get("config") or {}
+        result = job.get("result") or {}
+        best = result.get("best_config") or {}
+        return (
+            "## Hermes backtest result\n\n"
+            f"- **Job ID:** `{job['job_id']}`\n"
+            f"- **Run ID:** `{job['run_id']}`\n"
+            f"- **Candidate ID:** `{job.get('candidate_id') or 'not created'}`\n"
+            f"- **Status:** `{job['status']}`\n"
+            f"- **Strategy:** `{config.get('strategy', 'buy_the_dip')}`\n"
+            f"- **Data period:** `{config.get('lookback', 'not recorded')}`\n"
+            f"- **Symbols:** {', '.join(config.get('symbols') or [])}\n"
+            f"- **Best parameters:** `{json.dumps(best.get('params') or {}, default=str)}`\n"
+            f"- **Sharpe ratio:** {best.get('sharpe_ratio', 'n/a')}\n"
+            f"- **Total return:** {best.get('total_return', 'n/a')}\n"
+            f"- **Maximum drawdown:** {best.get('max_drawdown', 'n/a')}\n"
+            f"- **Win rate:** {best.get('win_rate', 'n/a')}\n"
+            f"- **Trades:** {best.get('total_trades', 'n/a')}"
+        )
 
     config = _hermes_backtest_config(message)
     if config is None:

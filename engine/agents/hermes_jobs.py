@@ -56,7 +56,7 @@ def list_owned(user_id: str, *, limit: int = 50) -> list[dict]:
     with _pool().get_session() as session:
         rows = session.execute(text("""
             SELECT job_id, run_id, kind, status, account_id, thread_id,
-                   candidate_id, progress, result, error, created_at,
+                   candidate_id, config, progress, result, error, created_at,
                    started_at, completed_at
             FROM alpatrade.hermes_jobs
             WHERE user_id = CAST(:uid AS UUID)
@@ -69,7 +69,7 @@ def get_owned(job_id: str, user_id: str) -> Optional[dict]:
     with _pool().get_session() as session:
         row = session.execute(text("""
             SELECT job_id, run_id, kind, status, account_id, thread_id,
-                   candidate_id, progress, result, error, created_at,
+                   candidate_id, config, progress, result, error, created_at,
                    started_at, completed_at
             FROM alpatrade.hermes_jobs
             WHERE job_id = CAST(:job_id AS UUID)
