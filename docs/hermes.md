@@ -81,6 +81,51 @@ Choose the same provider configured in Coolify and select the intended model.
 The wizard writes the profile to `/opt/data`, so it survives normal redeploys.
 Restart the Hermes service afterward.
 
+### Recommended Phase 1 wizard choices
+
+Run the wizard once:
+
+```bash
+hermes setup
+```
+
+Use these selections for the minimum-privilege Phase 1 configuration:
+
+1. **Setup mode:** `Full Setup`.
+2. **Provider:** `xAI Grok`, followed by `xAI` (API key), not SuperGrok OAuth.
+3. **Existing xAI key:** `Keep` when the key from Coolify is detected.
+4. **Base URL:** press Enter to retain `https://api.x.ai/v1`.
+5. **Model:** `grok-build-0.1` for the documented lowest token price among
+   the listed general/code models. A stronger model can be selected later with
+   `hermes setup model`.
+6. **Terminal backend:** `Keep current (local)`. In this deployment, local means
+   inside the isolated Hermes Coolify container, not the operator's computer.
+7. **Messaging platforms:** select nothing and press Enter. Telegram, WhatsApp,
+   or another platform can be configured later with `hermes setup gateway`.
+8. **Tools to keep enabled:** Web Search & Scraping, Vision/Image Analysis,
+   Skills, Task Planning, Memory, Session Search, and Clarifying Questions.
+9. **Tools to disable for Phase 1:** Browser Automation, Terminal & Processes,
+   File Operations, Code Execution, Image Generation, Text-to-Speech, Task
+   Delegation, Cron Jobs, and Computer Use. Restricted execution capabilities
+   can be reviewed when scoped AlpaTrade API tools are added in Phase 2.
+10. **Browser provider:** `Skip`.
+11. **Image provider:** `Skip`.
+12. **Text-to-speech provider:** `Skip`.
+13. **Search provider:** `DuckDuckGo (ddgs)` for free, keyless search.
+
+After the wizard reports **Setup Complete**, the expected locations are:
+
+```text
+/opt/data/config.yaml
+/opt/data/.env
+/opt/data/cron/
+/opt/data/sessions/
+/opt/data/logs/
+```
+
+Do not display or copy the contents of `/opt/data/.env` into logs, issues, pull
+requests, or chat.
+
 `hermes gateway setup` is unnecessary for AlpaTrade web chat. Run it only when
 deliberately adding Telegram, Discord, or another messaging platform, and always
 configure a platform allowlist.
@@ -105,6 +150,22 @@ one-message overrides are `/deepagents` and `/langgraph`.
 
 If Hermes fails before returning output, AlpaTrade automatically routes the
 message to DeepAgents and labels the fallback in chat.
+
+## Moving from the feature branch to `main`
+
+After the feature-branch deployment passes its health and chat checks:
+
+1. Merge the reviewed pull request into `main`.
+2. Change the existing AlpaTrade Coolify resource's Git source branch from
+   `feat/hermes-agent-phase-1` back to `main`.
+3. Redeploy the same Coolify resource.
+4. Do not delete, rename, or recreate the `hermes-data` volume.
+5. Repeat the health check and one `/hermes` chat message.
+
+The setup wizard does **not** need to be run again. Its configuration survives
+because both branch deployments use the same `/opt/data` volume. Rerun
+`hermes setup` only when deliberately changing the provider, model, tools, or
+messaging configuration, or when the volume has been lost.
 
 ## Troubleshooting
 
