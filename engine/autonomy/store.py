@@ -118,10 +118,11 @@ def set_status(run_id: str, status: str, error: Optional[str] = None) -> bool:
 
 
 def mark_running(run_id: str) -> bool:
+    """Start or explicitly resume a runnable job without reviving cancellation."""
     with _pool().get_session() as s:
         changed = s.execute(text("""
             UPDATE alpatrade.autonomy_runs SET status = 'running', updated_at = NOW()
-            WHERE run_id = :rid AND status IN ('queued', 'running')
+            WHERE run_id = :rid AND status IN ('queued', 'running', 'failed')
         """), {"rid": run_id}).rowcount
     return bool(changed)
 
