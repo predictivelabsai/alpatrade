@@ -58,6 +58,7 @@ def test_chat_store_qualifies_schema_and_filters_owner():
     assert "alpatrade.chat_messages" in source
     assert "c.user_id = CAST(:uid AS UUID)" in source
     assert "user_id = CAST(:uid AS UUID)" in source
+    assert "SELECT m.message_id, m.role, m.content, m.metadata, m.created_at" in source
 
 
 def test_gateway_approval_is_disabled_only_inside_isolated_hermes_service():

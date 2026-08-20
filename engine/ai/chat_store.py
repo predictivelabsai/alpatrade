@@ -73,7 +73,7 @@ def load_conversation_messages(
         )
         owner_filter = "" if user_id is None else " AND c.user_id = CAST(:uid AS UUID)"
         rows = session.execute(text(f"""
-            SELECT message_id, role, content, metadata, created_at
+            SELECT m.message_id, m.role, m.content, m.metadata, m.created_at
             FROM alpatrade.chat_messages m{owner_join}
             WHERE m.thread_id = CAST(:tid AS UUID){owner_filter}
             ORDER BY m.created_at ASC
