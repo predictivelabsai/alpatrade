@@ -14,8 +14,13 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      # Dedicated broker credentials only. Never add DATABASE_URL, broker keys,
+      # JWT_SECRET, or AlpaTrade's general API service key to this container.
+      - ALPATRADE_API_URL=http://api:5001
+      - ALPATRADE_HERMES_API_KEY=${HERMES_API_SERVER_KEY}
     volumes:
       - hermes-data:/opt/data
+      - ./hermes/skills/alpatrade:/opt/data/skills/alpatrade:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8642/health', timeout=5)"]
       interval: 30s
@@ -45,6 +50,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:-}
       - API_SERVICE_KEY=${API_SERVICE_KEY:-}
       - API_SERVICE_KEYS=${API_SERVICE_KEYS:-}
+      - ALPATRADE_HERMES_API_KEY=${HERMES_API_SERVER_KEY:-}
       - API_CORS_ORIGINS=${API_CORS_ORIGINS:-}
       - POSTMARK_API_KEY=${POSTMARK_API_KEY:-}
       - TO_EMAIL=${TO_EMAIL:-}

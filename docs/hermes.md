@@ -17,10 +17,10 @@ authentication. Hermes stores its profile, sessions, memory, and skills in the
 `hermes-data` volume at `/opt/data`. Never connect two Hermes containers to this
 same volume.
 
-Phase 1 provides chat routing only. Hermes receives no database credentials,
-Alpaca credentials, or unrestricted AlpaTrade execution access. Scoped
-backtest, optimization, and paper-trading tools are added in Phase 2. Autonomous
-live trading remains unavailable.
+Hermes receives no database credentials, Alpaca credentials, or unrestricted
+AlpaTrade execution access. Phase 2 adds a dedicated API broker for scoped
+backtests, optimization candidates, run inspection, and paper trading.
+Autonomous live trading remains unavailable.
 
 ## The two required keys
 
@@ -113,6 +113,12 @@ Use these selections for the minimum-privilege Phase 1 configuration:
 12. **Text-to-speech provider:** `Skip`.
 13. **Search provider:** `DuckDuckGo (ddgs)` for free, keyless search.
 
+For Phase 2, rerun `hermes setup tools` once and enable **Terminal & Processes**.
+It is required only so the read-only mounted AlpaTrade skill can call the
+restricted HTTP broker with `curl`. Keep File Operations, Code Execution, Cron,
+Computer Use, and Task Delegation disabled. Terminal runs inside the isolated
+Hermes container, not on the operator's computer.
+
 After the wizard reports **Setup Complete**, the expected locations are:
 
 ```text
@@ -150,6 +156,46 @@ one-message overrides are `/deepagents` and `/langgraph`.
 
 If Hermes fails before returning output, AlpaTrade automatically routes the
 message to DeepAgents and labels the fallback in chat.
+
+## Phase 2 database and broker deployment
+
+The order matters because the updated application writes the new attribution
+columns. From the repository branch, apply the idempotent migration first:
+
+```bash
+python run_migration.py sql/18_hermes_agent_attribution.sql
+```
+
+Then redeploy the complete Coolify Compose resource. No new secret is required:
+the existing `HERMES_API_SERVER_KEY` is also injected under the broker-specific
+name into only the `hermes` and `api` services. Never add `DATABASE_URL`,
+`API_SERVICE_KEY`, `JWT_SECRET`, or Alpaca keys to the Hermes service.
+
+The web app creates a ten-minute delegation for the logged-in user on each
+`/hermes` request. The API accepts it only together with the dedicated broker
+key and only on `/v2/hermes/*`. Every query is explicitly scoped to
+`alpatrade.*` and the delegated `user_id`; Hermes cannot issue SQL or access
+another schema.
+
+After redeploying, run `hermes setup tools` in the Hermes terminal, enable
+**Terminal & Processes**, and keep the other execution tools disabled. Test:
+
+```text
+/hermes backtest AAPL and MSFT for 3 months with buy_the_dip; maximize Sharpe
+```
+
+Hermes should return a `run_id`, best metrics, and `candidate_id`. Then test:
+
+```text
+/hermes start candidate <candidate_id> in paper trading for 1 hour
+```
+
+This can start paper trading only. There is deliberately no Hermes live-order
+route. Candidates are saved in `alpatrade.strategy_candidates` under the
+logged-in `user_id` and optional `account_id`, with `agent_name=Hermes` and
+`agent_framework=hermes`. Candidate reads join that ID to
+`alpatrade.users.display_name`, so results show the login owner without copying
+identity data into every candidate row.
 
 ## Moving from the feature branch to `main`
 

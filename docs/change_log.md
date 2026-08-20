@@ -1,5 +1,23 @@
 # Change Log
 
+## 0.10.0 — 2026-08-20
+
+### Hermes Agent integration — Phase 2
+
+- Added a dedicated Hermes broker with short-lived, per-user delegation and no
+  database, Alpaca, JWT, or general service credentials in the Hermes service.
+- Added user-owned backtest execution, best-parameter candidate persistence,
+  run inspection, and candidate-to-paper promotion under `/v2/hermes/*`.
+- Added `agent_name` and `agent_framework` attribution plus the
+  `alpatrade.strategy_candidates` store. Live execution remains unavailable.
+
+### Tests and deployment
+
+- Added security-contract coverage for delegation signing, key separation,
+  Compose credential isolation, and schema-qualified migration objects.
+- Apply `sql/18_hermes_agent_attribution.sql` before redeploying, then enable
+  only **Terminal & Processes** with `hermes setup tools` for the mounted skill.
+
 ## 0.9.0 — 2026-08-20
 
 ### Hermes Agent integration — Phase 1

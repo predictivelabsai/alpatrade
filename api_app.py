@@ -22,7 +22,7 @@ from typing import Dict, List, Literal, Optional
 sys.path.insert(0, str(Path(__file__).parent.absolute()))
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException, Query, Request, Response
+from fastapi import FastAPI, Depends, Header, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import (
@@ -33,7 +33,8 @@ from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBea
 from tui.command_processor import CommandProcessor
 from api_models import (
     # Existing / legacy
-    CmdRequest, BacktestRequest, PaperRequest, ApiResponse,
+    CmdRequest, BacktestRequest, PaperRequest, HermesBacktestRequest,
+    HermesPaperRequest, ApiResponse,
     AuthRequest, RegisterRequest, AuthResponse,
     # V2 request models
     ValidateRequest, FullCycleRequest, ReconcileRequest,
@@ -181,6 +182,31 @@ async def require_current_user(
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
     return user
+
+
+async def require_hermes_user(
+    x_hermes_key: Optional[str] = Header(None, alias="X-Hermes-Key"),
+    x_hermes_delegation: Optional[str] = Header(None, alias="X-Hermes-Delegation"),
+) -> Dict:
+    """Authenticate Hermes without granting it the general AlpaTrade API key."""
+    configured = os.getenv("ALPATRADE_HERMES_API_KEY", "")
+    if not configured or not x_hermes_key or not secrets.compare_digest(
+        configured, x_hermes_key
+    ):
+        raise HTTPException(status_code=401, detail="Invalid Hermes service key")
+    if not x_hermes_delegation:
+        raise HTTPException(status_code=401, detail="Missing Hermes delegation")
+    try:
+        from engine.agents.hermes_access import decode_hermes_delegation
+        claims = decode_hermes_delegation(x_hermes_delegation)
+        user_id = _normalize_user_id(claims.get("sub"))
+    except Exception as exc:  # token details must not leak to the caller
+        raise HTTPException(status_code=401, detail="Invalid or expired Hermes delegation") from exc
+    return {
+        "user_id": user_id,
+        "auth_type": "hermes",
+        "thread_id": claims.get("thread_id"),
+    }
 
 
 async def require_tenant_user(
@@ -1173,6 +1199,14 @@ async def v2_paper(req: PaperRequest, user: Dict = Depends(require_tenant_user))
         "strategy": req.strategy,
         "duration_seconds": duration_sec,
     }
+    if req.params:
+        config["params"] = req.params
+    if req.agent_name:
+        config["agent_name"] = req.agent_name
+    if req.agent_framework:
+        config["agent_framework"] = req.agent_framework
+    if req.source_run_id:
+        config["source_run_id"] = req.source_run_id
     if req.symbols:
         config["symbols"] = [s.strip() for s in req.symbols.split(",")]
     if req.poll:
@@ -1202,6 +1236,182 @@ async def v2_paper(req: PaperRequest, user: Dict = Depends(require_tenant_user))
         duration=req.duration,
         poll_interval=req.poll,
     )
+
+
+# ---------------------------------------------------------------------------
+# Restricted Hermes broker
+# ---------------------------------------------------------------------------
+
+def _save_hermes_candidate(
+    user_id: str,
+    request: HermesBacktestRequest,
+    response: BacktestResponse,
+) -> Optional[str]:
+    """Attribute a Hermes backtest and save its best parameters for this user."""
+    from sqlalchemy import text
+    from utils.db.db_pool import DatabasePool
+
+    best = response.best_config.model_dump() if response.best_config else {}
+    params = best.pop("params", None) or {}
+    symbols = [s.strip() for s in (request.symbols or "").split(",") if s.strip()]
+    with DatabasePool().get_session() as session:
+        session.execute(
+            text("""
+                UPDATE alpatrade.runs
+                SET agent_name = 'Hermes', agent_framework = 'hermes'
+                WHERE run_id = :run_id AND user_id = CAST(:user_id AS UUID)
+            """),
+            {"run_id": response.run_id, "user_id": user_id},
+        )
+        if not response.best_config:
+            return None
+        candidate_id = session.execute(
+            text("""
+                INSERT INTO alpatrade.strategy_candidates
+                    (user_id, account_id, source_run_id, agent_name,
+                     agent_framework, strategy, symbols, params, metrics, objective)
+                VALUES
+                    (CAST(:user_id AS UUID), CAST(:account_id AS UUID), :run_id,
+                     'Hermes', 'hermes', :strategy, CAST(:symbols AS JSONB),
+                     CAST(:params AS JSONB), CAST(:metrics AS JSONB),
+                     CAST(:objective AS JSONB))
+                RETURNING candidate_id
+            """),
+            {
+                "user_id": user_id,
+                "account_id": request.account_id,
+                "run_id": response.run_id,
+                "strategy": request.strategy,
+                "symbols": json.dumps(symbols),
+                "params": json.dumps(params, default=str),
+                "metrics": json.dumps(best, default=str),
+                "objective": json.dumps(request.objective, default=str),
+            },
+        ).scalar_one()
+    return str(candidate_id)
+
+
+@app.post("/v2/hermes/backtests", tags=["hermes"])
+async def hermes_backtest(
+    req: HermesBacktestRequest,
+    user: Dict = Depends(require_hermes_user),
+):
+    """Run an owned backtest and persist its best configuration as a candidate."""
+    response = await v2_backtest(req, user)
+    candidate_id = _save_hermes_candidate(_uid(user), req, response)
+    return {**response.model_dump(mode="json"), "candidate_id": candidate_id,
+            "agent_name": "Hermes", "agent_framework": "hermes"}
+
+
+@app.get("/v2/hermes/candidates", tags=["hermes"])
+async def hermes_candidates(user: Dict = Depends(require_hermes_user)):
+    """List only the delegated user's saved candidates."""
+    from sqlalchemy import text
+    from utils.db.db_pool import DatabasePool
+
+    with DatabasePool().get_session() as session:
+        result = session.execute(
+            text("""
+                SELECT c.candidate_id, c.source_run_id, c.agent_name,
+                       c.agent_framework, c.strategy, c.symbols, c.params,
+                       c.metrics, c.objective, c.status, c.account_id,
+                       c.user_id, u.display_name AS owner_name,
+                       c.created_at, c.updated_at
+                FROM alpatrade.strategy_candidates c
+                JOIN alpatrade.users u ON u.user_id = c.user_id
+                WHERE c.user_id = CAST(:user_id AS UUID)
+                ORDER BY c.created_at DESC LIMIT 100
+            """),
+            {"user_id": _uid(user)},
+        )
+        rows = [dict(row) for row in result.mappings().all()]
+    return {"candidates": rows, "total": len(rows)}
+
+
+@app.get("/v2/hermes/runs/{run_id}", tags=["hermes"])
+async def hermes_run(run_id: str, user: Dict = Depends(require_hermes_user)):
+    """Inspect one run only when it belongs to the delegated user."""
+    from sqlalchemy import text
+    from utils.db.db_pool import DatabasePool
+
+    with DatabasePool().get_session() as session:
+        row = session.execute(
+            text("""
+                SELECT run_id, mode, strategy, strategy_slug, status, config,
+                       results, agent_name, agent_framework, started_at, completed_at
+                FROM alpatrade.runs
+                WHERE run_id = :run_id AND user_id = CAST(:user_id AS UUID)
+            """),
+            {"run_id": run_id, "user_id": _uid(user)},
+        ).mappings().first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Run not found")
+    return dict(row)
+
+
+@app.post("/v2/hermes/candidates/{candidate_id}/paper", tags=["hermes"])
+async def hermes_candidate_paper(
+    candidate_id: str,
+    req: HermesPaperRequest,
+    user: Dict = Depends(require_hermes_user),
+):
+    """Promote an owned saved candidate to paper trading; live is not exposed."""
+    from sqlalchemy import text
+    from utils.db.db_pool import DatabasePool
+
+    uid = _uid(user)
+    with DatabasePool().get_session() as session:
+        candidate = session.execute(
+            text("""
+                SELECT strategy, symbols, params, account_id, source_run_id
+                FROM alpatrade.strategy_candidates
+                WHERE candidate_id = CAST(:candidate_id AS UUID)
+                  AND user_id = CAST(:user_id AS UUID)
+            """),
+            {"candidate_id": candidate_id, "user_id": uid},
+        ).mappings().first()
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    account_id = req.account_id or (
+        str(candidate["account_id"]) if candidate.get("account_id") else None
+    )
+    paper_req = PaperRequest(
+        account_id=account_id,
+        duration=req.duration,
+        symbols=",".join(candidate["symbols"] or []),
+        strategy=candidate["strategy"],
+        params=candidate["params"] or {},
+        agent_name="Hermes",
+        agent_framework="hermes",
+        source_run_id=candidate["source_run_id"],
+        poll=req.poll,
+        hours=req.hours,
+        email=req.email,
+        pdt=req.pdt,
+    )
+    response = await v2_paper(paper_req, user)
+    with DatabasePool().get_session() as session:
+        session.execute(
+            text("""
+                UPDATE alpatrade.strategy_candidates SET status = 'paper', updated_at = NOW()
+                WHERE candidate_id = CAST(:candidate_id AS UUID)
+                  AND user_id = CAST(:user_id AS UUID)
+            """),
+            {"candidate_id": candidate_id, "user_id": uid},
+        )
+        session.execute(
+            text("""
+                UPDATE alpatrade.runs
+                SET agent_name = 'Hermes', agent_framework = 'hermes',
+                    source_run_id = :source_run_id
+                WHERE run_id = :run_id AND user_id = CAST(:user_id AS UUID)
+            """),
+            {"run_id": response.run_id, "source_run_id": candidate["source_run_id"],
+             "user_id": uid},
+        )
+    return {**response.model_dump(mode="json"), "candidate_id": candidate_id,
+            "agent_name": "Hermes", "agent_framework": "hermes"}
 
 
 @app.post("/v2/full", response_model=FullCycleResponse, tags=["agents"])

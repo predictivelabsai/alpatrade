@@ -40,6 +40,7 @@ from __future__ import annotations
 import json
 import re
 import uuid as _uuid
+from dataclasses import replace
 from typing import Optional
 
 from fasthtml.common import Script, Style
@@ -489,7 +490,18 @@ async def _stream(msg: str, session) -> StreamingResponse:
                 model = None if selected_framework == "hermes" else build_chat_model(
                     settings, streaming=True
                 )
-                agent = runtime.build(_agui._chat_role(model))
+                role = _agui._chat_role(model)
+                if selected_framework == "hermes":
+                    if uid is None:
+                        raise PermissionError("Sign in before using Hermes trading tools")
+                    from engine.agents.hermes_access import hermes_system_instructions
+                    role = replace(
+                        role,
+                        instructions=role.instructions + hermes_system_instructions(
+                            str(uid), thread_id
+                        ),
+                    )
+                agent = runtime.build(role)
             else:
                 agent = _agui.agent_for_user(str(uid) if uid is not None else None)
             if hasattr(agent, "astream_events"):
