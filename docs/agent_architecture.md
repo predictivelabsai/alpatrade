@@ -14,7 +14,7 @@ flowchart LR
     Auth[JWT or service authentication]
     API[FastAPI v2 API]
     Chat[Tenant-safe DeepAgents service]
-    Specialists[Five native specialist subagents]
+    Specialists[Six native specialist subagents]
     Tools[Runtime-context tools]
     Checkpoint[(Postgres checkpoints)]
     Orch[Five-Agent Orchestrator]
@@ -54,6 +54,7 @@ flowchart LR
 | Backtest Agent | `POST /v2/backtest` | synchronous | read-only | Parameter sweeps and best-configuration selection |
 | Validation Agent | `POST /v2/validate` | synchronous | read-only | Trade-price checks, anomalies, and corrections |
 | Report Agent | `GET /v2/report` | synchronous | read-only | Run summaries, P&L, and strategy rankings |
+| Daily Trading Advisor | `GET /v2/advisor/reports` | synchronous | read-only | Persisted, evidence-gated paper strategy and risk reviews |
 | Paper Trade Agent | `POST /v2/paper` | asynchronous | paper-only | Durable background paper execution |
 | Reconciliation Agent | `POST /v2/reconcile` | synchronous | paper-only | Database-versus-broker position checks |
 | Five-Agent Orchestrator | `POST /v2/full` | synchronous | orchestration | End-to-end backtest-to-paper workflow |
@@ -111,6 +112,7 @@ account summary, positions, recent runs, and job status) plus DeepAgents'
 | `strategy-lab` | Durable backtest queueing, owned-run validation, and strategy comparison |
 | `paper-trader` | Caller-owned equity/index-option paper orders, paper sessions, reconciliation, cancellation, and monitoring |
 | `orchestrator` | Durable full-cycle/autonomy queueing and phase inspection |
+| `trading-advisor` | Read-only persisted daily evidence, recommendations, and report history |
 
 DeepAgents' default general-purpose subagent is disabled. `ls`, `read_file`,
 `write_file`, `edit_file`, `glob`, `grep`, and `execute` are excluded and rejected.
@@ -230,12 +232,26 @@ flowchart TD
     T -. node error .-> Retry
 ```
 
-The worker dispatches by job kind. DeepAgent backtest, paper, and full-cycle jobs
+The worker dispatches by job kind. DeepAgent backtest, paper, full-cycle, and daily-advisor jobs
 share the queue with autonomy runs. The DeepAgent full-cycle checkpoints the
 sequence Backtest → Validate → Paper → Validate → Reconcile → Report. A stale
 paper-capable job is marked failed and is never automatically retried after an
 uncertain worker failure; cancellation is tenant-scoped and signals active paper
 sessions through their stop event.
+
+The same worker is the sole owner of the daily-advisor scheduler. It reads the
+actual Alpaca/NYSE calendar and enqueues one deduplicated tenant batch after the
+session close plus 15 minutes, including holidays, early closes, and DST. Each
+usable linked paper account gets a separate `advisor_reports` row; one
+`advisor_deliveries` row consolidates those report IDs for the user's login email.
+Email remains disabled until `ADVISOR_EMAIL_ENABLED=true`.
+
+Advisor severity is deterministic: fewer than five closed paper trades is
+`insufficient_data`; confirmed paper/backtest Sharpe drift, three losing
+sessions, or 5% rolling drawdown is `review`; a 2% daily equity loss or existing
+risk-limit breach is `urgent`; other losses remain `monitor`. DeepAgents only
+ranks eligible server-generated next steps. Scheduled execution never queues those
+tests, alters parameters, restarts a strategy, or places an order.
 
 The hard safety boundary is `engine/autonomy/policy.py`: live candidates are
 rejected, sizing is deterministic, and the autonomy package only wires the paper
@@ -258,6 +274,8 @@ DeepAgent API responses and sanitized traces live in `deepagent_responses`,
 `deepagent_events`, and `deepagent_actions`; user-visible transcripts remain in
 `chat_conversations` and `chat_messages`. LangGraph checkpoints use the official
 PostgreSQL saver in the `alpatrade` search path with pickle fallback disabled.
+Daily evidence and cross-surface advisory content live in `advisor_reports`; email
+attempts and dedupe state live in `advisor_deliveries`.
 
 Implementation references: [LangChain runtime context](https://docs.langchain.com/oss/python/langchain/runtime),
 [DeepAgents 0.6.12 security model](https://pypi.org/project/deepagents/0.6.12/), and the

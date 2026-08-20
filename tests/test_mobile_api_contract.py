@@ -22,7 +22,7 @@ def test_openapi_includes_direct_paper_order_endpoint():
 def test_openapi_exposes_docs_auth_and_external_agents():
     spec = app.openapi()
 
-    assert spec["info"]["version"] == "0.9.0"
+    assert spec["info"]["version"] == "0.10.0"
     assert set(spec["components"]["securitySchemes"]) == {
         "BearerAuth", "ServiceApiKey",
     }
@@ -35,6 +35,7 @@ def test_openapi_exposes_docs_auth_and_external_agents():
         "/v2/agents/alpha-value/invoke",
         "/v2/agents/alpha-compare/invoke",
         "/v2/agents/autonomy-scout/invoke",
+        "/v2/advisor/reports",
     ):
         assert path in spec["paths"]
 

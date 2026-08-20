@@ -10,7 +10,6 @@ import sys
 import uuid
 import time
 import logging
-import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -81,7 +80,10 @@ class PaperTradeAgent:
         duration = request.get("duration_seconds", 604800)
         poll_interval = request.get("poll_interval_seconds", yaml_general.get("polling_interval", 300))
         extended_hours = request.get("extended_hours", True)
-        email_notifications = request.get("email_notifications", True)
+        # Kept for request compatibility. Per-session email is retired; the
+        # autonomy worker owns one consolidated post-close advisor delivery.
+        if "email_notifications" in request:
+            logger.info("email_notifications is deprecated; daily advisor delivery owns email")
 
         # PDT protection: default True, disable with pdt:false for accounts >$25k
         pdt_protection = request.get("pdt_protection")
@@ -217,12 +219,11 @@ class PaperTradeAgent:
                             payload={"error": str(e), "session_id": self.session_id},
                         )
 
-                # Daily P&L report + email
+                # Retain the in-memory day boundary snapshot. Email delivery is
+                # consolidated by the worker-owned daily advisor.
                 today = datetime.now(timezone.utc).date()
                 if today > last_daily_report:
                     self._record_daily_pnl()
-                    if email_notifications:
-                        self._send_daily_email(last_daily_report.isoformat())
                     last_daily_report = today
 
                 if stop_event and stop_event.wait(poll_interval):
@@ -659,54 +660,6 @@ class PaperTradeAgent:
                 })
         except Exception as e:
             logger.warning(f"Could not record daily P&L: {e}")
-
-    def _send_daily_email(self, date: str):
-        """Send daily P&L email report via Postmark."""
-        try:
-            from utils.email_util import send_daily_pnl_report
-
-            # Gather positions
-            positions = []
-            try:
-                pos_list = self.client.get_positions()
-                if isinstance(pos_list, list):
-                    positions = pos_list
-            except Exception:
-                pass
-
-            # Calculate daily P&L from today's sell trades
-            sell_trades = [t for t in self.trades if t.get("side") == "sell"]
-            today_trades = [t for t in self.trades
-                           if t.get("timestamp", "").startswith(date)]
-            daily_pnl = sum(t.get("pnl", 0) for t in sell_trades
-                           if t.get("timestamp", "").startswith(date))
-            cumulative_pnl = sum(t.get("pnl", 0) for t in sell_trades)
-            win_count = sum(1 for t in sell_trades if (t.get("pnl") or 0) > 0)
-            win_rate = (win_count / len(sell_trades) * 100) if sell_trades else 0.0
-
-            # Resolve user display name
-            user_name = ""
-            if self.user_id:
-                try:
-                    from utils.auth import get_user_by_id
-                    user = get_user_by_id(self.user_id)
-                    if user:
-                        user_name = user.get("display_name") or user.get("email", "")
-                except Exception:
-                    pass
-
-            send_daily_pnl_report(
-                date=date,
-                pnl=daily_pnl,
-                positions=positions,
-                trades=today_trades,
-                cumulative_pnl=cumulative_pnl,
-                win_rate=win_rate,
-                account_name=self.account_name,
-                user_name=user_name,
-            )
-        except Exception as e:
-            logger.warning(f"Could not send daily email: {e}")
 
     def _generate_summary(self, start_time: datetime) -> Dict[str, Any]:
         """Generate session summary."""

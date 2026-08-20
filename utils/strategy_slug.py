@@ -54,6 +54,8 @@ def build_slug(strategy: str, params: dict, lookback: str = "") -> str:
             tokens.append(f"{_fmt_pct(params['take_profit'])}tp")
         if "hold_days" in params:
             tokens.append(f"{int(params['hold_days'])}d")
+        if int(params.get("min_hold_days") or 0) > 0:
+            tokens.append(f"{int(params['min_hold_days'])}min")
 
     elif strategy == "momentum":
         if "lookback_period" in params:

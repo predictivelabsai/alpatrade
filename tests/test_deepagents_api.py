@@ -26,6 +26,7 @@ from engine.ai.deepagent_store import (
     ThreadAccessError,
 )
 from engine.ai.deepagent_tools import (
+    ADVISOR_TOOLS,
     COORDINATOR_TOOLS,
     DeepAgentContext,
     MARKET_RESEARCH_TOOLS,
@@ -108,6 +109,8 @@ def test_request_contract_limits_batch_and_total_characters():
 def test_action_intent_guard_rejects_advisory_or_hypothetical_language():
     assert explicit_action_intent("Run a backtest for AAPL now")
     assert explicit_action_intent("Can you place a paper order to buy 2 AAPL?")
+    assert explicit_action_intent("Apply the stored advisor recommendation now")
+    assert explicit_action_intent("I approve this paper-only next step")
     assert not explicit_action_intent("What if I run a backtest for AAPL?")
     assert not explicit_action_intent("Should I buy AAPL?")
     assert not explicit_action_intent("Explain how to place an order")
@@ -125,13 +128,14 @@ def test_only_named_specialists_and_safe_tool_categories_are_registered():
     specialists = specialist_subagents()
     assert [item["name"] for item in specialists] == [
         "market-research", "portfolio-analyst", "strategy-lab",
-        "paper-trader", "orchestrator",
+        "paper-trader", "orchestrator", "trading-advisor",
     ]
     all_names = {
         tool.name
         for group in (
             COORDINATOR_TOOLS, MARKET_RESEARCH_TOOLS, PORTFOLIO_TOOLS,
             STRATEGY_TOOLS, PAPER_TRADING_TOOLS, ORCHESTRATOR_TOOLS,
+            ADVISOR_TOOLS,
         )
         for tool in group
     }
@@ -615,7 +619,7 @@ async def test_service_injects_context_and_sanitizes_tool_and_subagent_events():
     assert captures["checkpointer"] is service.checkpoint_manager.checkpoint
     assert [item["name"] for item in captures["subagents"]] == [
         "market-research", "portfolio-analyst", "strategy-lab",
-        "paper-trader", "orchestrator",
+        "paper-trader", "orchestrator", "trading-advisor",
     ]
     assert payload["status"] == "completed"
     assert payload["messages"][0]["content"] == "Hello"
@@ -1072,4 +1076,5 @@ def test_deepagent_full_job_preserves_six_phase_sequence(monkeypatch):
     assert calls[1] == ("validate", "bt-run", "backtest")
     assert calls[2][0] == "paper"
     assert calls[2][1] == {"params": {"dip": 5}}
+    assert calls[2][2]["approved_best_config"] == {"params": {"dip": 5}}
     assert calls[3] == ("validate", "paper-run", "paper_trade")

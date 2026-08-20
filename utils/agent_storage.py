@@ -482,7 +482,9 @@ def store_validation(run_id: str, result: Dict,
                 "run_id": run_id,
                 "source": result.get("source"),
                 "status": result.get("status"),
-                "total_checked": result.get("total_checked", 0),
+                "total_checked": result.get(
+                    "total_checked", result.get("total_trades_checked", 0)
+                ),
                 "anomalies_found": result.get("anomalies_found", 0),
                 "anomalies_corrected": result.get("anomalies_corrected", 0),
                 "iterations_used": result.get("iterations_used", 0),

@@ -58,7 +58,7 @@ account:add <API_KEY> <SECRET_KEY>
 **Example:**
 
 ```
-raslen > account:add PKYQEEOELIVJJQY6VEGZKJIRUN ECp7ZgbqPurrLif14GYTdkD5DgAVnoJCXnGcyNEvHZZv
+raslen > account:add <ALPACA_PAPER_API_KEY> <ALPACA_PAPER_SECRET_KEY>
 ```
 
 **What happens:**

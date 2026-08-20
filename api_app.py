@@ -49,6 +49,7 @@ from api_models import (
     StopResponse, LogsResponse,
     PnlSymbolBreakdown, DailyPnl, PnlResponse,
     ReportSummaryItem, ReportDetail, TopStrategyItem,
+    AdvisorRecommendation, AdvisorReport,
     PositionItem, PositionsResponse,
     ApiInfoResponse, ApiLinks,
     AgentDescriptor, AgentCatalogResponse,
@@ -226,7 +227,7 @@ except (OSError, KeyError, tomllib.TOMLDecodeError):
     try:
         API_VERSION = version("alpatrade")
     except PackageNotFoundError:
-        API_VERSION = "0.9.0"
+        API_VERSION = "0.10.0"
 
 API_DESCRIPTION = """
 AlpaTrade's production REST API for research, backtesting, validation, paper trading,
@@ -649,6 +650,97 @@ async def v2_report_detail(run_id: str, user: Dict = Depends(require_tenant_user
     if not data:
         raise HTTPException(status_code=404, detail=f"Run {run_id} not found")
     return ReportDetail(**data)
+
+
+def _advisor_response(record: Dict) -> AdvisorReport:
+    evidence = record.get("evidence") or {}
+    advisory = record.get("advisory") or {}
+    paper = evidence.get("paper") or {}
+    account = evidence.get("account") or {}
+    return AdvisorReport(
+        report_id=str(record["report_id"]),
+        account_id=str(record["account_id"]),
+        account_name=str(account.get("account_name") or "Paper account"),
+        session_date=record["session_date"],
+        status=record.get("status") or "failed",
+        severity=record.get("severity") or "insufficient_data",
+        evidence_window={
+            "start": paper.get("window_start"),
+            "end": paper.get("window_end") or record.get("session_date"),
+        },
+        evidence=evidence,
+        headline=str(advisory.get("headline") or ""),
+        summary=str(advisory.get("summary") or record.get("narrative") or ""),
+        drivers=list(advisory.get("drivers") or []),
+        recommendations=[
+            AdvisorRecommendation(**item)
+            for item in (advisory.get("recommendations") or [])
+        ],
+        why_no_change=str(advisory.get("why_no_change") or ""),
+        data_warnings=list(advisory.get("data_warnings") or []),
+        ai_status=advisory.get("ai_status") or "unavailable",
+        generation_note=str(advisory.get("generation_note") or ""),
+        approval_required=bool(advisory.get("approval_required")),
+        disclaimer=str(advisory.get("disclaimer") or ""),
+        model_provider=record.get("model_provider"),
+        model_name=record.get("model_name"),
+        error_code=record.get("error_code"),
+        created_at=record.get("created_at"),
+        completed_at=record.get("completed_at"),
+    )
+
+
+@app.get(
+    "/v2/advisor/reports",
+    response_model=List[AdvisorReport],
+    tags=["data"],
+)
+async def v2_advisor_reports(
+    account_id: Optional[str] = None,
+    limit: int = Query(20, ge=1, le=100),
+    user: Dict = Depends(require_tenant_user),
+):
+    """List the authenticated tenant's persisted daily paper-advisor reports."""
+    from engine.auth import get_user_accounts
+    from engine.reporting.advisor import list_reports_for_user
+
+    uid = str(_uid(user))
+    if account_id:
+        try:
+            account_id = str(uuid.UUID(account_id))
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail="account_id must be a UUID") from exc
+        owned = {item["account_id"] for item in get_user_accounts(uid)}
+        if account_id not in owned:
+            raise HTTPException(status_code=404, detail="Account not found")
+    rows = await asyncio.to_thread(
+        list_reports_for_user, uid, account_id, limit
+    )
+    return [_advisor_response(row) for row in rows]
+
+
+@app.get(
+    "/v2/advisor/reports/{report_id}",
+    response_model=AdvisorReport,
+    tags=["data"],
+)
+async def v2_advisor_report(
+    report_id: str,
+    user: Dict = Depends(require_tenant_user),
+):
+    """Return one owned persisted daily paper-advisor report."""
+    from engine.reporting.advisor import get_report_for_user
+
+    try:
+        report_id = str(uuid.UUID(report_id))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="report_id must be a UUID") from exc
+    record = await asyncio.to_thread(
+        get_report_for_user, report_id, str(_uid(user))
+    )
+    if not record:
+        raise HTTPException(status_code=404, detail="Advisor report not found")
+    return _advisor_response(record)
 
 
 @app.get("/v2/top", response_model=List[TopStrategyItem], tags=["data"])

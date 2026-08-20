@@ -1,12 +1,9 @@
-"""Account-scoped portfolio dashboard data and grounded AI commentary."""
+"""Account-scoped portfolio dashboard data and persisted advisor reports."""
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
 from collections import defaultdict
 from datetime import datetime, time, timedelta, timezone
-from threading import Lock
 from typing import Any
 
 from alpaca.trading.requests import GetPortfolioHistoryRequest
@@ -16,8 +13,6 @@ from engine.auth import get_alpaca_keys, get_user_accounts
 from engine.brokers.alpaca import AlpacaAPI
 
 logger = logging.getLogger(__name__)
-_COMMENTARY: dict[str, str] = {}
-_COMMENTARY_LOCK = Lock()
 
 
 def period_bounds(period: str, now: datetime | None = None) -> tuple[datetime, datetime]:
@@ -191,6 +186,26 @@ def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[st
     )
     ranking_account = None if selected["account_id"] == "all" else selected["account_id"]
     reporter = ReportAgent()
+    advisor_history: list[dict[str, Any]] = []
+    latest_advisors: list[dict[str, Any]] = []
+    try:
+        from engine.reporting.advisor import list_reports_for_user
+
+        advisor_history = list_reports_for_user(
+            user_id, account_id=ranking_account,
+            limit=100 if ranking_account is None else 20,
+        )
+        if selected["account_id"] == "all":
+            seen_accounts = set()
+            for report in advisor_history:
+                if report["account_id"] not in seen_accounts:
+                    latest_advisors.append(report)
+                    seen_accounts.add(report["account_id"])
+        elif advisor_history:
+            latest_advisors = advisor_history[:1]
+    except Exception as exc:  # noqa: BLE001
+        # The dashboard remains available before migration 19 is applied.
+        logger.warning("Daily advisor reports unavailable: %s", type(exc).__name__)
     return {
         **selected,
         "needs_account": False,
@@ -201,42 +216,18 @@ def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[st
             trade_type="paper", limit=8, user_id=user_id, account_id=ranking_account),
         "backtest_rankings": reporter.top_strategies(
             trade_type="backtest", limit=8, user_id=user_id, account_id=ranking_account),
+        "advisor_report": latest_advisors[0] if latest_advisors else None,
+        "advisor_reports": latest_advisors,
+        "advisor_history": advisor_history,
         "as_of": datetime.now(timezone.utc).isoformat(),
     }
 
 
 def commentary(user_id: str, data: dict[str, Any]) -> str:
-    """Generate cached, fact-grounded commentary through the user's provider."""
-    facts = {
-        key: data.get(key) for key in
-        ("account_name", "period", "equity", "period_pnl", "period_pct", "unrealized_pnl")
-    }
-    facts["contributors"] = data.get("contributors", [])[:3] + data.get("contributors", [])[-3:]
-    facts["paper_rankings"] = data.get("paper_rankings", [])[:3]
-    fingerprint = hashlib.sha256(json.dumps(facts, sort_keys=True, default=str).encode()).hexdigest()
-    key = f"{user_id}:{fingerprint}"
-    with _COMMENTARY_LOCK:
-        if key in _COMMENTARY:
-            return _COMMENTARY[key]
-    fallback = (
-        f"{data.get('account_name')} is {data.get('period_pnl', 0):+,.2f} "
-        f"({data.get('period_pct', 0):+.2f}%) for the current {data.get('period')} period."
-    )
-    try:
-        from langchain_core.messages import HumanMessage, SystemMessage
-        from engine.config import build_chat_model, get_settings
-        model = build_chat_model(get_settings(user_id), streaming=False, temperature=0.2, max_tokens=350)
-        response = model.invoke([
-            SystemMessage(content=(
-                "You are a portfolio reporting analyst. Explain only facts in the supplied JSON. "
-                "In 2-4 concise sentences identify what lifted and hurt P&L, then mention the best "
-                "paper strategy if present. Never give trading advice or invent causality.")),
-            HumanMessage(content=json.dumps(facts, default=str)),
-        ])
-        result = str(response.content).strip() or fallback
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("Dashboard commentary fallback: %s", exc)
-        result = fallback
-    with _COMMENTARY_LOCK:
-        _COMMENTARY[key] = result
-    return result
+    """Return the exact persisted advisor summary used by email and chat."""
+    del user_id  # retained for compatibility with existing callers
+    report = data.get("advisor_report") or {}
+    advisory = report.get("advisory") or {}
+    if advisory.get("summary"):
+        return str(advisory["summary"])
+    return "No post-close daily advisor report has been generated for this paper account yet."

@@ -46,7 +46,7 @@ def _reset_deepagent_context(token: Token) -> None:
 
 _ACTION_VERBS = re.compile(
     r"\b(run|queue|start|execute|place|submit|buy|sell|trade|cancel|stop|"
-    r"reconcile|validate|launch|backtest)\b",
+    r"reconcile|validate|launch|backtest|apply|approve|proceed)\b",
     re.IGNORECASE,
 )
 _ADVISORY_PATTERNS = re.compile(
@@ -137,6 +137,13 @@ def _sanitize_job_output(value: Any) -> Any:
     return _json_safe(value)
 
 
+def _sanitize_advisor_report(value: dict[str, Any]) -> dict[str, Any]:
+    """Sanitize a report without turning its generation error_code into job failure."""
+    report = dict(value)
+    report.pop("error_code", None)
+    return _sanitize_job_output(report)
+
+
 def _call_id(runtime: ToolRuntime[DeepAgentContext], tool_name: str) -> str:
     provided = getattr(runtime, "tool_call_id", None)
     if provided:
@@ -217,6 +224,7 @@ def _enqueue(
     tool_name: str,
     kind: str,
     config: dict[str, Any],
+    account_id_override: Optional[str] = None,
 ) -> dict[str, Any]:
     from engine.autonomy import queue
 
@@ -230,7 +238,7 @@ def _enqueue(
             "cached": True,
             "paper_only": paper_capable,
         }
-    account_id = (
+    account_id = account_id_override or (
         _effective_account_id(context) if paper_capable else context.account_id
     )
     # A process may have died between queue insertion and linking the action row.
@@ -673,6 +681,41 @@ def get_job_results(job_id: str,
     return [_sanitize_job_output(row) for row in rows]
 
 
+@tool
+def get_latest_advisor_report(
+    runtime: ToolRuntime[DeepAgentContext] = None,
+) -> dict[str, Any]:
+    """Get the latest persisted daily advisor report for the selected paper account."""
+    from engine.reporting.advisor import list_reports_for_user
+
+    context = _require_tenant(runtime)
+    account_id = _effective_account_id(context)
+    rows = list_reports_for_user(
+        context.user_id or "", account_id=account_id, limit=1
+    )
+    return _sanitize_advisor_report(rows[0]) if rows else {
+        "status": "unavailable",
+        "message": "No daily advisor report has been generated for this account yet.",
+    }
+
+
+@tool
+def get_advisor_history(
+    limit: int = 10,
+    runtime: ToolRuntime[DeepAgentContext] = None,
+) -> list[dict[str, Any]]:
+    """List persisted daily advisor reports for the selected paper account."""
+    from engine.reporting.advisor import list_reports_for_user
+
+    context = _require_tenant(runtime)
+    rows = list_reports_for_user(
+        context.user_id or "",
+        account_id=_effective_account_id(context),
+        limit=max(1, min(int(limit), 50)),
+    )
+    return [_sanitize_advisor_report(row) for row in rows]
+
+
 # ---------------------------------------------------------------------------
 # Strategy, paper-trading, and orchestration actions
 # ---------------------------------------------------------------------------
@@ -693,10 +736,38 @@ def queue_backtest(strategy: str = "buy_the_dip", symbols: list[str] | None = No
 
 
 @tool
+def queue_advisor_backtest(
+    report_id: str,
+    recommendation_id: str,
+    runtime: ToolRuntime[DeepAgentContext] = None,
+) -> dict:
+    """Queue the exact stored advisor test grid after an explicit user instruction."""
+    from engine.reporting.advisor import recommendation_config
+
+    context = _require_action(runtime)
+    config = recommendation_config(
+        report_id,
+        recommendation_id,
+        context.user_id or "",
+        account_id=context.account_id,
+    )
+    source_account_id = str(
+        config.pop("_advisor_account_id", context.account_id or "") or ""
+    ) or None
+    return _enqueue(
+        runtime,
+        "queue_advisor_backtest",
+        "deepagent_backtest",
+        config,
+        account_id_override=source_account_id,
+    )
+
+
+@tool
 def validate_run(run_id: str, source: str = "backtest",
                  runtime: ToolRuntime[DeepAgentContext] = None) -> dict:
     """Synchronously validate an owned backtest or paper run after explicit intent."""
-    from agents.validate_agent import ValidateAgent
+    from agents.orchestrator import Orchestrator
 
     context = _require_action(runtime)
     if source not in {"backtest", "paper_trade", "paper"}:
@@ -710,12 +781,12 @@ def validate_run(run_id: str, source: str = "backtest",
                "aid": context.account_id}).scalar()
     if not owned:
         raise ValueError("run not found")
-    return ValidateAgent(
+    normalized_source = (
+        "paper_trade" if source in {"paper", "paper_trade"} else "backtest"
+    )
+    return Orchestrator(
         user_id=context.user_id, account_id=context.account_id
-    ).run({
-        "run_id": run_id,
-        "source": "paper_trade" if source in {"paper", "paper_trade"} else "backtest",
-    })
+    ).run_validation(run_id=run_id, source=normalized_source)
 
 
 @tool
@@ -863,6 +934,72 @@ def queue_paper_session(strategy: str = "buy_the_dip",
 
 
 @tool
+def queue_paper_from_backtest(
+    run_id: str,
+    duration_seconds: int = 3600,
+    runtime: ToolRuntime[DeepAgentContext] = None,
+) -> dict:
+    """Queue paper trading from an owned, completed, non-empty validated backtest."""
+    context = _require_action(runtime)
+    _broker(context)
+    effective_account_id = _effective_account_id(context)
+    with DatabasePool().get_session() as session:
+        row = session.execute(text("""
+            SELECT r.strategy, r.config, bs.params
+            FROM alpatrade.runs r
+            JOIN alpatrade.backtest_summaries bs
+              ON bs.run_id = r.run_id AND bs.is_best = TRUE
+            WHERE r.run_id = :rid AND r.user_id = :uid
+              AND r.mode = 'backtest' AND r.status = 'completed'
+              AND COALESCE(bs.total_trades, 0) > 0
+              AND (r.account_id IS NULL OR r.account_id = CAST(:aid AS UUID))
+              AND EXISTS (
+                  SELECT 1 FROM alpatrade.validations v
+                  WHERE v.run_id = r.run_id AND v.user_id = r.user_id
+                    AND v.source = 'backtest'
+                    AND v.status IN ('passed', 'corrected')
+                    AND COALESCE(v.total_checked, 0) > 0
+              )
+            ORDER BY bs.created_at DESC LIMIT 1
+        """), {
+            "rid": run_id,
+            "uid": context.user_id,
+            "aid": effective_account_id,
+        }).fetchone()
+    if not row:
+        raise ValueError(
+            "backtest must be owned, completed, non-empty, and validated before paper trading"
+        )
+    stored_config = dict(row[1] or {}) if isinstance(row[1], dict) else {}
+    best_params = dict(row[2] or {}) if isinstance(row[2], dict) else {}
+    strategy_name = str(
+        row[0] or stored_config.get("strategy") or "buy_the_dip"
+    )
+    if strategy_name != "buy_the_dip":
+        raise ValueError(
+            "paper-from-backtest currently supports only buy_the_dip; no session was queued"
+        )
+    if not best_params:
+        raise ValueError("the validated backtest has no stored best parameters")
+    config = {
+        "strategy": strategy_name,
+        "lookback": str(stored_config.get("lookback") or "3m")[:16],
+        "duration_seconds": max(30, min(int(duration_seconds), 604800)),
+        "approved_best_config": {"params": best_params},
+        "source_backtest_run_id": str(run_id),
+        "email_notifications": False,
+    }
+    symbols = best_params.get("symbols") or stored_config.get("symbols") or []
+    if isinstance(symbols, str):
+        symbols = [item.strip() for item in symbols.split(",") if item.strip()]
+    if symbols:
+        config["symbols"] = [_ticker(symbol) for symbol in list(symbols)[:25]]
+    return _enqueue(
+        runtime, "queue_paper_from_backtest", "deepagent_paper", config
+    )
+
+
+@tool
 def reconcile_account(window_days: int = 7,
                       runtime: ToolRuntime[DeepAgentContext] = None) -> dict:
     """Synchronously reconcile caller-owned DB records with the linked paper account."""
@@ -930,6 +1067,7 @@ COORDINATOR_TOOLS = (
     get_positions,
     get_recent_runs,
     get_job_status,
+    get_latest_advisor_report,
 )
 
 MARKET_RESEARCH_TOOLS = (
@@ -945,16 +1083,18 @@ PORTFOLIO_TOOLS = (
     list_linked_accounts, get_account_summary, get_positions, get_recent_runs,
     get_recent_trades, get_run_report, get_strategy_rankings, get_pnl_summary,
     get_job_status, get_job_events, get_job_results,
+    get_latest_advisor_report, get_advisor_history,
 )
 
 STRATEGY_TOOLS = (
-    queue_backtest, validate_run, compare_strategy_results,
+    queue_backtest, queue_advisor_backtest, validate_run, compare_strategy_results,
     get_recent_runs, get_run_report, get_job_status, get_job_events, get_job_results,
 )
 
 PAPER_TRADING_TOOLS = (
     place_paper_order, list_index_option_contracts, place_index_option_paper_order,
-    queue_paper_session, reconcile_account, cancel_job, get_account_summary,
+    queue_paper_session, queue_paper_from_backtest, reconcile_account, cancel_job,
+    get_account_summary,
     get_positions, get_job_status, get_job_events,
     get_job_results,
 )
@@ -963,6 +1103,34 @@ ORCHESTRATOR_TOOLS = (
     queue_full_cycle, queue_autonomy_scout, cancel_job, get_job_status,
     get_job_events, get_job_results, get_run_report,
 )
+
+ADVISOR_TOOLS = (
+    get_latest_advisor_report,
+    get_advisor_history,
+)
+
+
+def advisor_subagent_spec(*, include_report_tools: bool = True) -> dict[str, Any]:
+    """Return the read-only advisor used by interactive and scheduled DeepAgents."""
+    return {
+        "name": "trading-advisor",
+        "description": (
+            "Read-only daily paper-strategy and risk advisor grounded in persisted reports."
+        ),
+        "system_prompt": (
+            "You are the tenant-scoped trading advisor. Review paper strategy and risk "
+            "evidence, never issue instrument-level buy/sell calls, and never claim an "
+            "action occurred. When JSON evidence and allowed candidate IDs are supplied, "
+            "use only those facts and IDs; never invent parameter values or causal claims. "
+            "Copy a selected candidate's supplied rationale exactly into its explanation. "
+            "For review or urgent evidence, rank every supplied candidate exactly once. "
+            "Always distinguish broker-account P&L from AlpaTrade-attributed P&L and explain "
+            "why no parameter change is justified when no candidate is eligible. When "
+            "presenting a persisted report, include its account name, session date, evidence "
+            "window, data-quality warnings, approval requirement, and paper-trading disclaimer."
+        ),
+        "tools": ADVISOR_TOOLS if include_report_tools else (),
+    }
 
 
 def specialist_subagents() -> list[dict[str, Any]]:
@@ -1002,6 +1170,7 @@ def specialist_subagents() -> list[dict[str, Any]]:
             "system_prompt": f"You coordinate durable paper-only workflows. {common}",
             "tools": ORCHESTRATOR_TOOLS,
         },
+        advisor_subagent_spec(),
     ]
 
 

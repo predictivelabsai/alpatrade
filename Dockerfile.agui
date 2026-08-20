@@ -10,8 +10,8 @@ COPY . .
 ENV AGUI_RELOAD=false
 # Serve the merged single FastHTML app (landing + auth + chat + guide + voice).
 ENV ASSETHERO_WEB_PORT=5003
-# Autonomy worker runs as a daemon thread inside the web process (app.py
-# bootstraps it). Set AUTONOMY_ENABLED=false in Coolify env to disable.
+# The same image also powers the separate Compose autonomy service. The web
+# process does not start worker or scheduler threads.
 ENV AUTONOMY_ENABLED=true
 
 EXPOSE 5003

@@ -59,9 +59,6 @@ services:
       - API_SERVICE_KEY=${API_SERVICE_KEY:-}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
-      - PNL_REPORT_FREQUENCY=${PNL_REPORT_FREQUENCY:-daily}
-      - PNL_REPORT_HOUR_UTC=${PNL_REPORT_HOUR_UTC:-21}
-      - PNL_REPORT_TO=${PNL_REPORT_TO:-}
     depends_on:
       api:
         condition: service_healthy
@@ -74,8 +71,8 @@ services:
     restart: unless-stopped
 
   # Autonomous agent-team worker (Phase C). Paper-only. Runs in prod alongside
-  # paper-strategy; the loop itself is gated by AUTONOMY_ENABLED (default true).
-  # Set AUTONOMY_ENABLED=false or scale the service to 0 in Coolify to stop it.
+  # paper-strategy; full autonomy is gated by AUTONOMY_ENABLED (default true),
+  # while ADVISOR_ENABLED separately controls the post-close advisor scheduler.
   autonomy:
     build:
       context: .
@@ -86,9 +83,16 @@ services:
       - AUTONOMY_SCAN_SECONDS=${AUTONOMY_SCAN_SECONDS:-300}
       - AUTONOMY_STRATEGY=${AUTONOMY_STRATEGY:-btd}
       - AUTONOMY_HEARTBEAT_SECONDS=${AUTONOMY_HEARTBEAT_SECONDS:-30}
-      - PNL_REPORT_FREQUENCY=${PNL_REPORT_FREQUENCY:-daily}
-      - PNL_REPORT_HOUR_UTC=${PNL_REPORT_HOUR_UTC:-21}
-      - PNL_REPORT_TO=${PNL_REPORT_TO:-}
+      - ADVISOR_ENABLED=${ADVISOR_ENABLED:-true}
+      - ADVISOR_EMAIL_ENABLED=${ADVISOR_EMAIL_ENABLED:-false}
+      - ADVISOR_CLOSE_DELAY_MINUTES=${ADVISOR_CLOSE_DELAY_MINUTES:-15}
+      - ADVISOR_SCHEDULER_POLL_SECONDS=${ADVISOR_SCHEDULER_POLL_SECONDS:-60}
+      - ADVISOR_WORKER_POLL_SECONDS=${ADVISOR_WORKER_POLL_SECONDS:-10}
+      - ADVISOR_MIN_CLOSED_TRADES=${ADVISOR_MIN_CLOSED_TRADES:-5}
+      - ADVISOR_DRIFT_RATIO=${ADVISOR_DRIFT_RATIO:-0.5}
+      - ADVISOR_LOSING_SESSIONS=${ADVISOR_LOSING_SESSIONS:-3}
+      - ADVISOR_DRAWDOWN_PCT=${ADVISOR_DRAWDOWN_PCT:-5}
+      - ADVISOR_URGENT_DAILY_LOSS_PCT=${ADVISOR_URGENT_DAILY_LOSS_PCT:-2}
       - DATABASE_URL=${DATABASE_URL}
       - DB_POOL_SIZE=${AUTONOMY_DB_POOL_SIZE:-1}
       - DB_MAX_OVERFLOW=${AUTONOMY_DB_MAX_OVERFLOW:-1}
@@ -116,8 +120,8 @@ services:
     restart: unless-stopped
 
   # Observe a FIXED strategy in the wild — paper-trades the validated PDT-safe swing
-  # (buy 7% dips / TP 6% / SL 10% / hold 3-20d) on the paper account, and fires the
-  # nightly PnL report. Runs in prod (paper only — no real money). Stop it by setting
+  # (buy 7% dips / TP 6% / SL 10% / hold 3-20d) on the paper account. The autonomy
+  # worker owns post-close advisor reporting. Stop this strategy by setting
   # PAPER_DURATION_SECONDS=0 or scaling the service to 0 in Coolify.
   paper-strategy:
     build:
@@ -130,13 +134,13 @@ services:
       - PAPER_SL=${PAPER_SL:-10}
       - PAPER_HOLD=${PAPER_HOLD:-20}
       - PAPER_MIN_HOLD=${PAPER_MIN_HOLD:-3}
+      - PAPER_SOURCE_LOOKBACK=${PAPER_SOURCE_LOOKBACK:-1y}
+      - PAPER_USER_ID=${PAPER_USER_ID:-}
+      - PAPER_ACCOUNT_ID=${PAPER_ACCOUNT_ID:-}
       - PAPER_CAPITAL_PER_TRADE=${PAPER_CAPITAL_PER_TRADE:-1000}
       - PAPER_SYMBOLS=${PAPER_SYMBOLS:-AAPL,MSFT,GOOGL,AMZN,META,TSLA,NVDA}
       - PAPER_DURATION_SECONDS=${PAPER_DURATION_SECONDS:-604800}
       - PAPER_POLL_SECONDS=${PAPER_POLL_SECONDS:-300}
-      - PNL_REPORT_FREQUENCY=${PNL_REPORT_FREQUENCY:-daily}
-      - PNL_REPORT_HOUR_UTC=${PNL_REPORT_HOUR_UTC:-21}
-      - PNL_REPORT_TO=${PNL_REPORT_TO:-}
       - DATABASE_URL=${DATABASE_URL}
       - DB_POOL_SIZE=${PAPER_DB_POOL_SIZE:-1}
       - DB_MAX_OVERFLOW=${PAPER_DB_MAX_OVERFLOW:-1}

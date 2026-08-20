@@ -230,6 +230,10 @@ def default_pipeline(user_id: Optional[str] = None,
             return {"skipped": "no viable backtest strategy (no trades) — nothing to paper-trade"}
         dur = int(os.getenv("AUTONOMY_PAPER_SECONDS", DEFAULT_PAPER_SECONDS))
         cfg = build_paper_config(ctx.get("config"), ctx.get("admitted", []), default_duration=dur)
+        # Each pipeline phase constructs a fresh Orchestrator. Carry the exact
+        # server-produced backtest winner explicitly instead of relying on
+        # in-memory Orchestrator state from a prior phase.
+        cfg["approved_best_config"] = ctx["best_config"]
         return _check(
             _orch().run_paper_trade(cfg, stop_event=stop_event),
             "paper_trade",
@@ -355,11 +359,16 @@ def deepagent_job_pipeline(
 
     def paper(ctx: dict) -> dict:
         paper_orchestrator = orchestrator()
-        best_config = (ctx.get("backtest_result") or {}).get("best_config")
+        best_config = (
+            (ctx.get("backtest_result") or {}).get("best_config")
+            or (ctx.get("config") or {}).get("approved_best_config")
+        )
+        paper_config = dict(ctx.get("config") or {})
         if best_config:
             paper_orchestrator.state.best_config = best_config
+            paper_config["approved_best_config"] = best_config
         result = checked(paper_orchestrator.run_paper_trade(
-            dict(ctx.get("config") or {}), stop_event=stop_event
+            paper_config, stop_event=stop_event
         ), "paper trade")
         return {"ctx": {"paper_result": result}, "result": result}
 
@@ -383,6 +392,40 @@ def deepagent_job_pipeline(
         )
         return {"result": result}
 
+    def daily_advisor(ctx: dict) -> dict:
+        from engine.reporting.advisor import run_user_batch_sync
+
+        session_date = str((ctx.get("config") or {}).get("session_date") or "")
+        if not session_date:
+            raise ValueError("daily advisor session_date is required")
+        account_ids = (ctx.get("config") or {}).get("account_ids") or None
+        result = run_user_batch_sync(user_id, session_date, account_ids=account_ids)
+        if result.get("status") in {"failed", "partial"}:
+            raise RuntimeError("daily advisor batch or delivery failed")
+        # The canonical evidence/narrative stays only in advisor_reports. The
+        # queue checkpoint records references and delivery state, not a second
+        # copy that could drift from the dashboard/email/chat payload.
+        delivery = result.get("delivery") or {}
+        delivery_summary = {
+            key: delivery.get(key)
+            for key in ("delivery_id", "status", "attempts")
+            if delivery.get(key) is not None
+        }
+        if delivery.get("sent_at") is not None:
+            sent_at = delivery["sent_at"]
+            delivery_summary["sent_at"] = (
+                sent_at.isoformat() if hasattr(sent_at, "isoformat") else str(sent_at)
+            )
+        return {"result": {
+            "status": result.get("status"),
+            "report_ids": [
+                str(report.get("report_id"))
+                for report in (result.get("reports") or [])
+                if report.get("report_id")
+            ],
+            "delivery": delivery_summary,
+        }}
+
     if kind == "deepagent_backtest":
         return Pipeline([("backtest", backtest)])
     if kind == "deepagent_paper":
@@ -396,6 +439,8 @@ def deepagent_job_pipeline(
             ("reconcile", reconcile),
             ("report", report),
         ])
+    if kind == "deepagent_advisor":
+        return Pipeline([("daily_advisor", daily_advisor)])
     raise ValueError(f"unsupported DeepAgent job kind: {kind}")
 
 
