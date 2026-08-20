@@ -46,6 +46,7 @@ from fasthtml.common import Script, Style
 from starlette.responses import RedirectResponse, StreamingResponse
 
 from engine.web import ph_layout
+from engine.agents.routing import agent_override
 
 # --- reuse the legacy AG-UI wiring verbatim --------------------------------
 # Importing agui_app builds the primary DeepAgents harness (XAI Grok + StructuredTool
@@ -407,6 +408,7 @@ async def _stream(msg: str, session) -> StreamingResponse:
     """
     uid = session.get("user_id")
     thread_id = session.get("thread_id") or str(_uuid.uuid4())
+    runtime_override, routed_msg = agent_override(msg)
 
     # agui_app's interceptor + CommandProcessor read session["user"]["user_id"].
     compat = dict(session)
@@ -416,13 +418,26 @@ async def _stream(msg: str, session) -> StreamingResponse:
     async def gen():
         yield _sse("session", {"sid": thread_id})
 
-        # 1) CLI command interception (identical logic to agui_app)
-        try:
-            result = await _command_interceptor(msg, compat)
-        except Exception as e:  # noqa: BLE001
-            yield _sse("error", {"message": f"command failed: {e}"})
+        if runtime_override and not routed_msg:
+            yield _sse("agent_route", {
+                "slug": runtime_override,
+                "agent": runtime_override.title(),
+            })
+            yield _sse("token", {
+                "text": f"Usage: `/{runtime_override} your request`",
+            })
             yield _sse("done", {})
             return
+
+        # 1) CLI command interception (identical logic to agui_app)
+        result = None
+        if runtime_override is None:
+            try:
+                result = await _command_interceptor(msg, compat)
+            except Exception as e:  # noqa: BLE001
+                yield _sse("error", {"message": f"command failed: {e}"})
+                yield _sse("done", {})
+                return
 
         if result is not None:
             yield _sse("agent_route", {"slug": "command", "agent": "Command"})
@@ -444,9 +459,20 @@ async def _stream(msg: str, session) -> StreamingResponse:
             return
 
         # 2) Free-form text → stream the primary agent harness
-        yield _sse("agent_route", {"slug": "ai", "agent": "AlpaTrade AI"})
+        from engine.agents.runtime import get_runtime
+        from engine.config import build_chat_model, get_settings
+
+        settings = get_settings(str(uid) if uid is not None else None)
+        selected_framework = runtime_override or settings.agent_framework
+        display_name = "Hermes" if selected_framework == "hermes" else "AlpaTrade AI"
+        yield _sse("agent_route", {
+            "slug": selected_framework,
+            "agent": display_name,
+        })
+        # Framework overrides share the same thread context, so a user can ask
+        # Hermes to inspect the preceding discussion and then return to the default.
         history = _HISTORY.setdefault(thread_id, [])
-        history.append({"role": "user", "content": msg})
+        history.append({"role": "user", "content": routed_msg})
 
         from langchain_core.messages import HumanMessage, AIMessage
         lc = [
@@ -458,7 +484,14 @@ async def _stream(msg: str, session) -> StreamingResponse:
         full = ""
         tool_chart = ""
         try:
-            agent = _agui.agent_for_user(str(uid) if uid is not None else None)
+            runtime = get_runtime(selected_framework)
+            if runtime_override:
+                model = None if selected_framework == "hermes" else build_chat_model(
+                    settings, streaming=True
+                )
+                agent = runtime.build(_agui._chat_role(model))
+            else:
+                agent = _agui.agent_for_user(str(uid) if uid is not None else None)
             if hasattr(agent, "astream_events"):
                 # LangGraph-family runtimes: fine-grained token + tool events (default path).
                 async for event in agent.astream_events({"messages": lc}, version="v2"):
@@ -475,18 +508,54 @@ async def _stream(msg: str, session) -> StreamingResponse:
                         if marker:
                             tool_chart = marker
                         yield _sse("tool_end", {"name": event.get("name", "tool")})
+            elif hasattr(runtime, "astream"):
+                async for chunk in runtime.astream(
+                    agent,
+                    routed_msg,
+                    history=history[:-1],
+                    session_id=f"alpatrade:{thread_id}",
+                    session_key=f"alpatrade-user:{uid or 'anonymous'}",
+                ):
+                    full += chunk
+                    yield _sse("token", {"text": chunk})
             else:
                 # Non-LangGraph runtime (e.g. pydantic_ai): no event stream → single-shot.
                 import asyncio as _asyncio
                 res = await _asyncio.to_thread(
-                    _agui.chat_runtime.run, agent, msg, history=history[:-1])
+                    runtime.run, agent, routed_msg, history=history[:-1])
                 full = res.text
                 yield _sse("token", {"text": full})
         except Exception as e:  # noqa: BLE001
-            yield _sse("error", {"message": str(e)})
-            history.append({"role": "assistant", "content": f"Error: {e}"})
-            yield _sse("done", {})
-            return
+            # Hermes is an optional sidecar. If it fails before emitting content,
+            # transparently return to DeepAgents so chat remains available.
+            if selected_framework == "hermes" and not full:
+                yield _sse("agent_route", {
+                    "slug": "deepagents",
+                    "agent": "AlpaTrade AI (Hermes unavailable)",
+                })
+                try:
+                    fallback_runtime = get_runtime("deepagents")
+                    fallback = fallback_runtime.build(
+                        _agui._chat_role(build_chat_model(settings, streaming=True))
+                    )
+                    async for event in fallback.astream_events({"messages": lc}, version="v2"):
+                        if event.get("event", "") == "on_chat_model_stream":
+                            chunk = event.get("data", {}).get("chunk")
+                            text = getattr(chunk, "content", "") if chunk is not None else ""
+                            if text:
+                                full += text
+                                yield _sse("token", {"text": text})
+                except Exception as fallback_error:  # noqa: BLE001
+                    message = f"Hermes unavailable ({e}); fallback failed ({fallback_error})"
+                    yield _sse("error", {"message": message})
+                    history.append({"role": "assistant", "content": f"Error: {message}"})
+                    yield _sse("done", {})
+                    return
+            else:
+                yield _sse("error", {"message": str(e)})
+                history.append({"role": "assistant", "content": f"Error: {e}"})
+                yield _sse("done", {})
+                return
 
         if tool_chart and "__CHART_DATA__" not in full:
             full += "\n\n" + tool_chart

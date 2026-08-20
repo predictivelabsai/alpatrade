@@ -1,5 +1,25 @@
 # Change Log
 
+## 0.9.0 — 2026-08-20
+
+### Hermes Agent integration — Phase 1
+
+- Replaced the Hermes-as-LangGraph placeholder with an authenticated client for
+  Nous Hermes Agent's OpenAI-compatible gateway, including SSE streaming and
+  stable per-user and per-thread memory scopes.
+- Added one-message `/hermes`, `/deepagents`, and `/langgraph` chat overrides;
+  unprefixed messages continue using the user's saved framework.
+- Added a private, persistent Hermes service to the Coolify Compose topology and
+  retained DeepAgents as the automatic fallback when Hermes is unavailable.
+
+### Tests and deployment
+
+- Added DB-free tests for Hermes request construction, authentication, remote
+  invocation, and runtime-prefix routing, and included them in CI.
+- No database migration is required. Coolify requires `HERMES_API_SERVER_KEY`,
+  one supported Hermes model-provider credential (including XAI/Grok), and
+  one-time profile setup.
+
 ## 0.8.3 — 2026-08-15
 
 ### Developer and agent documentation
