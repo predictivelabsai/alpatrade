@@ -119,6 +119,12 @@ restricted HTTP broker with `curl`. Keep File Operations, Code Execution, Cron,
 Computer Use, and Task Delegation disabled. Terminal runs inside the isolated
 Hermes container, not on the operator's computer.
 
+Gateway requests cannot display Hermes's interactive terminal approval modal.
+The Compose service therefore sets `HERMES_EXEC_ASK=false` and caps tool loops
+at 20 iterations. This is acceptable only because the Hermes container has no
+database URL, Alpaca credentials, JWT secret, or general AlpaTrade service key;
+its mounted skill is instructed to use one scoped internal broker command.
+
 After the wizard reports **Setup Complete**, the expected locations are:
 
 ```text
@@ -171,7 +177,7 @@ the existing `HERMES_API_SERVER_KEY` is also injected under the broker-specific
 name into only the `hermes` and `api` services. Never add `DATABASE_URL`,
 `API_SERVICE_KEY`, `JWT_SECRET`, or Alpaca keys to the Hermes service.
 
-The web app creates a ten-minute delegation for the logged-in user on each
+The web app creates a thirty-minute delegation for the logged-in user on each
 `/hermes` request. The API accepts it only together with the dedicated broker
 key and only on `/v2/hermes/*`. Every query is explicitly scoped to
 `alpatrade.*` and the delegated `user_id`; Hermes cannot issue SQL or access
@@ -196,6 +202,25 @@ logged-in `user_id` and optional `account_id`, with `agent_name=Hermes` and
 `agent_framework=hermes`. Candidate reads join that ID to
 `alpatrade.users.display_name`, so results show the login owner without copying
 identity data into every candidate row.
+
+## Chat history and long-running feedback
+
+The `/app` chat saves user and assistant messages in
+`alpatrade.chat_conversations` and `alpatrade.chat_messages`, keyed by the
+logged-in `user_id`. The **Chats** sidebar loads only that user's threads and
+supports resume and delete. **New chat** creates a new browser thread and a new
+Hermes gateway session.
+
+While Hermes is silent during model work or a synchronous backtest, AlpaTrade
+emits progress heartbeats with elapsed time and tool status. These are
+operational updates, not private model chain-of-thought. Browser history is not
+resent to Hermes because the gateway already persists its thread; avoiding that
+duplication prevents premature context compression.
+
+If a broker call reports an expired delegation, start a new chat and retry once.
+Each message now receives a fresh thirty-minute delegation. Repeated expiry or
+`pending_approval` logs indicate that the latest Compose configuration has not
+been deployed.
 
 ## Moving from the feature branch to `main`
 

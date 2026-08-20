@@ -125,6 +125,16 @@ a { color: var(--accent); }
 /* Session history */
 .session-list { display: flex; flex-direction: column; gap: .2rem; }
 .sessions-empty { font-size: .72rem; color: var(--ink-dim); padding: .4rem; }
+.session-items { display:flex;flex-direction:column;gap:.18rem; }
+.session-row { display:flex;align-items:center;border-radius:.42rem;border:1px solid transparent; }
+.session-row:hover,.session-row.active { background:var(--bg-raise);border-color:var(--line); }
+.session-link { flex:1;min-width:0;padding:.42rem .48rem;color:var(--ink-muted);
+  text-decoration:none;font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.session-row.active .session-link { color:var(--accent);font-weight:650; }
+.session-delete { border:0;background:transparent;color:var(--ink-dim);padding:.3rem .45rem;
+  cursor:pointer;font:700 .7rem var(--font-mono);opacity:.45; }
+.session-row:hover .session-delete { opacity:1; }
+.session-delete:hover { color:var(--danger,#B4472F); }
 .chat-history-item {
     display: flex; align-items: center; gap: .45rem; padding: .35rem .5rem;
     background: transparent; border: none; color: var(--ink-muted); text-align: left;

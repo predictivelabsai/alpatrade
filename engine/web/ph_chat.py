@@ -37,14 +37,17 @@ Routes registered by :func:`register`
 """
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 import re
+import time
 import uuid as _uuid
 from dataclasses import replace
 from typing import Optional
 
-from fasthtml.common import Script, Style
-from starlette.responses import RedirectResponse, StreamingResponse
+from fasthtml.common import A, Button, Div, Script, Span, Style
+from starlette.responses import JSONResponse, RedirectResponse, StreamingResponse
 
 from engine.web import ph_layout
 from engine.agents.routing import agent_override
@@ -65,6 +68,7 @@ _app_state = _agui._app_state
 # In-memory per-thread AI history (context for the primary agent). Keyed by the
 # thread id stored on the session cookie. Command results are stateless.
 _HISTORY: dict[str, list[dict]] = {}
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -132,6 +136,19 @@ CHAT_JS = r"""
     step.className='tool-step';
     step.innerHTML='→ <span class="tool-name">'+name+'</span>';
     log.appendChild(step);
+  }
+
+  function setProgress(bubble, message, seconds){
+    if(!bubble) return;
+    var wrap=bubble.parentElement, p=wrap.querySelector('.chat-progress');
+    if(!p){ p=document.createElement('div');p.className='chat-progress';
+      p.innerHTML='<span class="progress-dot"></span><span class="progress-text"></span><span class="progress-secs"></span>';
+      wrap.insertBefore(p,bubble); }
+    p.querySelector('.progress-text').textContent=message||'Working';
+    p.querySelector('.progress-secs').textContent=seconds!=null?' '+seconds+'s':'';
+  }
+  function clearProgress(bubble){
+    if(!bubble)return;var p=bubble.parentElement.querySelector('.chat-progress');if(p)p.remove();
   }
 
   function renderMd(text){ return window.marked ? marked.parse(text) : text; }
@@ -316,12 +333,16 @@ CHAT_JS = r"""
     addBubble('user', msg);
     ta.value=''; ta.style.height='';
 
-    var bubble=null, acc='';
+    var requestedHermes=/^\s*\/hermes(?:\s|$)/i.test(msg);
+    var bubble=addBubble('assistant','',requestedHermes?'Hermes':'AlpaTrade AI'), acc='';
+    bubble.classList.add('streaming');
+    setProgress(bubble,requestedHermes?'Connecting to Hermes...':'Sending request...',0);
     try{
       var resp=await fetch('/app/chat',{method:'POST',
         headers:{'Content-Type':'application/x-www-form-urlencoded'},
         body:new URLSearchParams({msg:msg})});
-      if(!resp.ok){ addBubble('assistant','Error: '+resp.status); streaming=false; if(sb) sb.disabled=false; return false; }
+      if(!resp.ok){ clearProgress(bubble);bubble.textContent='Error: '+resp.status;
+        bubble.classList.remove('streaming');streaming=false;if(sb)sb.disabled=false;return false; }
       var reader=resp.body.getReader(), dec=new TextDecoder(), buf='';
       while(true){
         var r=await reader.read(); if(r.done) break;
@@ -332,9 +353,12 @@ CHAT_JS = r"""
           handleEvent(raw,function(type,p){
             if(type==='agent_route'){
               var lbl=$('#current-agent-label'); if(lbl) lbl.textContent=p.agent||p.slug||'AlpaTrade';
-              bubble=addBubble('assistant','',p.agent); bubble.classList.add('streaming');
+              var al=bubble.parentElement.querySelector('.msg-agent-label');if(al)al.textContent=p.agent||p.slug||'AlpaTrade';
+              setProgress(bubble,p.slug==='hermes'?'Hermes connected; preparing request...':'Preparing response...',0);
+            } else if(type==='progress'){
+              setProgress(bubble,p.message,p.elapsed_seconds);
             } else if(type==='token'){
-              if(!bubble){ bubble=addBubble('assistant','',''); bubble.classList.add('streaming'); }
+              clearProgress(bubble);
               acc+=p.text;
               // Chart markers are a UI transport contract, not prose. Render as
               // soon as a complete marker arrives instead of depending on a
@@ -351,10 +375,15 @@ CHAT_JS = r"""
               scrollBottom();
             } else if(type==='tool_start'){
               appendTool(bubble||(bubble=addBubble('assistant','','')), p.name);
+              setProgress(bubble,'Using '+(p.name||'tool')+'...');
+            } else if(type==='tool_end'){
+              setProgress(bubble,'Tool finished; preparing answer...');
             } else if(type==='error'){
+              clearProgress(bubble);
               if(!bubble) bubble=addBubble('assistant','','');
               bubble.textContent='Error: '+(p.message||'unknown');
             } else if(type==='done'){
+              clearProgress(bubble);
               if(bubble){
                 bubble.classList.remove('streaming');
                 var t=extractChart(acc,bubble);
@@ -369,15 +398,34 @@ CHAT_JS = r"""
         }
       }
     }catch(e){
+      clearProgress(bubble);
       if(!bubble) bubble=addBubble('assistant','','');
       bubble.textContent='Error: '+e;
     }
     streaming=false; if(sb) sb.disabled=false;
+    if(window.htmx) htmx.ajax('GET','/app/chats',{target:'#session-list',swap:'innerHTML'});
     var ta2=$('#chat-input'); if(ta2) ta2.focus();
     scrollBottom();
     return false;
   }
   window.sendMessage=sendMessage;
+
+  window.deleteChat=async function(tid,evt){
+    if(evt){evt.preventDefault();evt.stopPropagation();}
+    if(!confirm('Delete this chat?'))return;
+    var r=await fetch('/app/chats/'+encodeURIComponent(tid),{method:'DELETE'});
+    if(r.ok){var active=window.ALPA_THREAD_ID;if(active===tid)window.location.href='/app?new=1';
+      else if(window.htmx)htmx.ajax('GET','/app/chats',{target:'#session-list',swap:'innerHTML'});}
+  };
+
+  async function loadSavedMessages(){
+    var host=$('#messages');if(!host||host.children.length)return;
+    try{var r=await fetch('/app/chat/history');if(!r.ok)return;var data=await r.json();
+      (data.messages||[]).forEach(function(m){var b=addBubble(m.role,m.content,m.metadata&&m.metadata.agent);
+        if(m.role==='assistant'){var clean=extractChart(m.content,b);b.innerHTML=renderMd(clean);enhanceTables(b);renderChart(b);}});
+    }catch(e){console.warn('chat history unavailable',e);}
+  }
+  loadSavedMessages();
 
   // News pane now returns ready-made HTML cards (see /news) — no markdown step.
 })();
@@ -389,6 +437,11 @@ CHAT_STYLE = """
 .tool-log { margin-top:.4rem; display:flex; flex-direction:column; gap:.15rem; }
 .tool-step { font-family:var(--font-mono); font-size:.68rem; color:var(--ink-dim); }
 .tool-step .tool-name { color:var(--accent); }
+.chat-progress { display:flex;align-items:center;gap:.42rem;margin:.1rem 0 .45rem;
+  color:var(--ink-dim);font:600 .67rem var(--font-mono); }
+.progress-dot { width:7px;height:7px;border-radius:50%;background:var(--accent);
+  animation:pulse 1.1s ease-in-out infinite; }
+.progress-secs { color:var(--ink-muted);font-weight:400; }
 .news-category { border-bottom:1px solid var(--line); }
 .news-category-title { padding:.65rem .2rem; cursor:pointer; font-size:.74rem;
   color:var(--ink); font-weight:650; list-style:none; }
@@ -400,6 +453,38 @@ CHAT_STYLE = """
 # ---------------------------------------------------------------------------
 # SSE streaming send handler
 # ---------------------------------------------------------------------------
+def _load_owned_history(thread_id: str, user_id: str) -> list[dict]:
+    """Load one user's persisted thread without making DB failure fatal."""
+    try:
+        from engine.ai.chat_store import load_conversation_messages
+        return [
+            {"role": row["role"], "content": row["content"]}
+            for row in load_conversation_messages(thread_id, user_id=user_id)
+            if row["role"] in {"user", "assistant"}
+        ]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not load chat %s: %s", thread_id, exc)
+        return []
+
+
+def _save_chat_message(
+    thread_id: str,
+    user_id: str,
+    role: str,
+    content: str,
+    metadata: Optional[dict] = None,
+) -> None:
+    """Persist one account-owned message without taking chat offline on errors."""
+    if not user_id or not content:
+        return
+    try:
+        from engine.ai.chat_store import save_conversation, save_message
+        save_conversation(thread_id, user_id=user_id)
+        save_message(thread_id, role, content, metadata=metadata)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not persist chat %s message: %s", thread_id, exc)
+
+
 async def _stream(msg: str, session) -> StreamingResponse:
     """Return an SSE StreamingResponse for one user message.
 
@@ -418,6 +503,12 @@ async def _stream(msg: str, session) -> StreamingResponse:
 
     async def gen():
         yield _sse("session", {"sid": thread_id})
+        user_key = str(uid) if uid is not None else ""
+        history = _HISTORY.get(thread_id)
+        if history is None:
+            history = _load_owned_history(thread_id, user_key) if user_key else []
+            _HISTORY[thread_id] = history
+        _save_chat_message(thread_id, user_key, "user", msg)
 
         if runtime_override and not routed_msg:
             yield _sse("agent_route", {
@@ -427,6 +518,11 @@ async def _stream(msg: str, session) -> StreamingResponse:
             yield _sse("token", {
                 "text": f"Usage: `/{runtime_override} your request`",
             })
+            _save_chat_message(
+                thread_id, user_key, "assistant",
+                f"Usage: `/{runtime_override} your request`",
+                {"agent": runtime_override.title(), "framework": runtime_override},
+            )
             yield _sse("done", {})
             return
 
@@ -456,6 +552,10 @@ async def _stream(msg: str, session) -> StreamingResponse:
             except Exception as e:  # noqa: BLE001
                 md = f"# Error\n\n```\n{e}\n```"
             yield _sse("token", {"text": md})
+            _save_chat_message(
+                thread_id, user_key, "assistant", md,
+                {"agent": "Command", "framework": "command"},
+            )
             yield _sse("done", {})
             return
 
@@ -470,9 +570,16 @@ async def _stream(msg: str, session) -> StreamingResponse:
             "slug": selected_framework,
             "agent": display_name,
         })
+        yield _sse("progress", {
+            "message": (
+                "Hermes connected; preparing tools"
+                if selected_framework == "hermes"
+                else "Preparing model and tools"
+            ),
+            "elapsed_seconds": 0,
+        })
         # Framework overrides share the same thread context, so a user can ask
         # Hermes to inspect the preceding discussion and then return to the default.
-        history = _HISTORY.setdefault(thread_id, [])
         history.append({"role": "user", "content": routed_msg})
 
         from langchain_core.messages import HumanMessage, AIMessage
@@ -521,15 +628,57 @@ async def _stream(msg: str, session) -> StreamingResponse:
                             tool_chart = marker
                         yield _sse("tool_end", {"name": event.get("name", "tool")})
             elif hasattr(runtime, "astream"):
-                async for chunk in runtime.astream(
-                    agent,
-                    routed_msg,
-                    history=history[:-1],
-                    session_id=f"alpatrade:{thread_id}",
-                    session_key=f"alpatrade-user:{uid or 'anonymous'}",
-                ):
-                    full += chunk
-                    yield _sse("token", {"text": chunk})
+                # Remote gateways may be silent while their model or tools work.
+                # Pump chunks in the background so the UI still receives honest
+                # elapsed-time status events instead of an unexplained cursor.
+                queue: asyncio.Queue = asyncio.Queue()
+
+                async def pump_remote() -> None:
+                    try:
+                        async for item in runtime.astream(
+                            agent,
+                            routed_msg,
+                            # Hermes already persists this stable session. Sending
+                            # browser history again duplicates context every turn.
+                            history=None,
+                            session_id=f"alpatrade:{thread_id}",
+                            session_key=f"alpatrade-user:{uid or 'anonymous'}",
+                        ):
+                            await queue.put(("chunk", item))
+                    except Exception as remote_error:  # noqa: BLE001
+                        await queue.put(("error", remote_error))
+                    finally:
+                        await queue.put(("done", None))
+
+                started = time.monotonic()
+                remote_task = asyncio.create_task(pump_remote())
+                try:
+                    while True:
+                        try:
+                            kind, value = await asyncio.wait_for(queue.get(), timeout=2.0)
+                        except TimeoutError:
+                            elapsed = int(time.monotonic() - started)
+                            if elapsed < 8:
+                                status = "Hermes is planning the request"
+                            elif elapsed < 30:
+                                status = "Hermes is running tools or waiting for data"
+                            else:
+                                status = "Backtest still running; waiting for results"
+                            yield _sse("progress", {
+                                "message": status,
+                                "elapsed_seconds": elapsed,
+                            })
+                            continue
+                        if kind == "chunk":
+                            full += str(value)
+                            yield _sse("token", {"text": str(value)})
+                        elif kind == "error":
+                            raise value
+                        else:
+                            break
+                finally:
+                    if not remote_task.done():
+                        remote_task.cancel()
             else:
                 # Non-LangGraph runtime (e.g. pydantic_ai): no event stream → single-shot.
                 import asyncio as _asyncio
@@ -561,11 +710,20 @@ async def _stream(msg: str, session) -> StreamingResponse:
                     message = f"Hermes unavailable ({e}); fallback failed ({fallback_error})"
                     yield _sse("error", {"message": message})
                     history.append({"role": "assistant", "content": f"Error: {message}"})
+                    _save_chat_message(
+                        thread_id, user_key, "assistant", f"Error: {message}",
+                        {"agent": "Hermes", "framework": "hermes", "error": True},
+                    )
                     yield _sse("done", {})
                     return
             else:
                 yield _sse("error", {"message": str(e)})
                 history.append({"role": "assistant", "content": f"Error: {e}"})
+                _save_chat_message(
+                    thread_id, user_key, "assistant", f"Error: {e}",
+                    {"agent": display_name, "framework": selected_framework,
+                     "error": True},
+                )
                 yield _sse("done", {})
                 return
 
@@ -573,6 +731,10 @@ async def _stream(msg: str, session) -> StreamingResponse:
             full += "\n\n" + tool_chart
             yield _sse("token", {"text": "\n\n" + tool_chart})
         history.append({"role": "assistant", "content": full})
+        _save_chat_message(
+            thread_id, user_key, "assistant", full,
+            {"agent": display_name, "framework": selected_framework},
+        )
         yield _sse("done", {})
 
     return StreamingResponse(gen(), media_type="text/event-stream")
@@ -615,18 +777,103 @@ def register(app, rt):
             return {"user_id": uid, "email": ""}
 
     @rt("/app")
-    def app_home(session, new: str = ""):
+    def app_home(session, new: str = "", thread: str = ""):
         user = _current_user(session)
         if not user:
             return RedirectResponse("/signin", status_code=303)
-        if new == "1" or not session.get("thread_id"):
+        uid = str(user["user_id"])
+        selected_thread = None
+        if thread:
+            try:
+                _uuid.UUID(thread)
+                from engine.ai.chat_store import conversation_belongs_to_user
+                if conversation_belongs_to_user(thread, uid):
+                    selected_thread = thread
+            except Exception:  # noqa: BLE001
+                selected_thread = None
+        if selected_thread:
+            session["thread_id"] = selected_thread
+        elif new == "1" or not session.get("thread_id") or thread:
             session["thread_id"] = str(_uuid.uuid4())
+        thread_id = str(session["thread_id"])
         return (
             *ph_layout.page("app", ph_layout.chat_center(), user=user, title="AlpaTrade",
                             right_news_open=True),
+            Script(f"window.ALPA_THREAD_ID={json.dumps(thread_id)};"),
             Style(CHAT_STYLE),
             Script(CHAT_JS),
         )
+
+    @rt("/app/chats")
+    def app_chats(session):
+        """Return the logged-in user's persisted conversation list."""
+        uid = session.get("user_id")
+        if not uid:
+            return Div("Sign in to view chats.", cls="sessions-empty")
+        try:
+            from engine.ai.chat_store import list_conversations
+            conversations = list_conversations(user_id=str(uid), limit=30)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Could not list chats for %s: %s", uid, exc)
+            conversations = []
+        if not conversations:
+            return Div("No chats yet.", cls="sessions-empty")
+        current = str(session.get("thread_id") or "")
+        rows = []
+        for conversation in conversations:
+            tid = conversation["thread_id"]
+            title = conversation.get("first_msg") or conversation.get("title") or "New chat"
+            title = " ".join(str(title).split())
+            if len(title) > 46:
+                title = title[:43] + "..."
+            rows.append(Div(
+                A(title, href=f"/app?thread={tid}", cls="session-link",
+                  title=str(conversation.get("first_msg") or title)),
+                Button("x", type="button", cls="session-delete",
+                       aria_label="Delete chat",
+                       onclick=f"deleteChat({json.dumps(tid)},event)"),
+                cls="session-row" + (" active" if tid == current else ""),
+            ))
+        return Div(*rows, cls="session-items")
+
+    @app.get("/app/chat/history")
+    async def app_chat_history(session):
+        """Return only the active thread when it belongs to this account."""
+        uid = session.get("user_id")
+        thread_id = session.get("thread_id")
+        if not uid or not thread_id:
+            return JSONResponse({"messages": []})
+        try:
+            from engine.ai.chat_store import load_conversation_messages
+            messages = load_conversation_messages(thread_id, user_id=str(uid))
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Could not load active chat %s: %s", thread_id, exc)
+            messages = []
+        return JSONResponse({"messages": [
+            {
+                "message_id": row["message_id"],
+                "role": row["role"],
+                "content": row["content"],
+                "metadata": row.get("metadata") or {},
+            }
+            for row in messages
+        ]})
+
+    @app.delete("/app/chats/{thread_id}")
+    async def app_delete_chat(thread_id: str, session):
+        """Delete an owned conversation; another user's thread is untouched."""
+        uid = session.get("user_id")
+        if not uid:
+            return JSONResponse({"deleted": False}, status_code=401)
+        try:
+            from engine.ai.chat_store import conversation_belongs_to_user, delete_conversation
+            if not conversation_belongs_to_user(thread_id, str(uid)):
+                return JSONResponse({"deleted": False}, status_code=404)
+            delete_conversation(thread_id, user_id=str(uid))
+            _HISTORY.pop(thread_id, None)
+            return JSONResponse({"deleted": True})
+        except Exception:  # noqa: BLE001
+            return JSONResponse({"deleted": False}, status_code=404)
 
     @app.post("/app/chat")
     async def app_chat(session, msg: str = ""):

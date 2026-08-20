@@ -10,11 +10,17 @@
   run inspection, and candidate-to-paper promotion under `/v2/hermes/*`.
 - Added `agent_name` and `agent_framework` attribution plus the
   `alpatrade.strategy_candidates` store. Live execution remains unavailable.
+- Persisted `/app` conversations per account with sidebar resume/delete, and
+  added visible elapsed-time/tool progress for long Hermes operations.
+- Removed duplicated browser history from persistent Hermes sessions, extended
+  per-message delegation to 30 minutes, and disabled non-renderable gateway
+  approval prompts inside the credential-isolated Hermes container.
 
 ### Tests and deployment
 
 - Added security-contract coverage for delegation signing, key separation,
-  Compose credential isolation, and schema-qualified migration objects.
+  Compose credential isolation, schema-qualified migration objects, owned chat
+  history, and long-running progress behavior.
 - Apply `sql/18_hermes_agent_attribution.sql` before redeploying, then enable
   only **Terminal & Processes** with `hermes setup tools` for the mounted skill.
 

@@ -10,11 +10,14 @@ candidate, or start paper trading. The system message supplies a short-lived
 delegation token. The container supplies `ALPATRADE_API_URL` and
 `ALPATRADE_HERMES_API_KEY`.
 
-Every request must use both headers shown in the system message. Never call a
-route outside `/v2/hermes/`. Never request database credentials. Live trading
-is not supported.
+Every request must use both headers shown in the system message and the exact
+internal base URL `http://api:5001`. Never use the public AlpaTrade domain and
+never call a route outside `/v2/hermes/`. Never request database credentials.
+Live trading is not supported.
 
-Use the terminal with `curl`:
+Use the terminal with `curl` exactly as shown. Do not use Python, heredocs,
+temporary files, package discovery, or OpenAPI downloads. Do not retry a failed
+command with a different execution method; report the broker error to the user.
 
 ```bash
 curl -sS -X POST "$ALPATRADE_API_URL/v2/hermes/backtests" \

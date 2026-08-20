@@ -19,7 +19,7 @@ ISSUER = "alpatrade-web"
 AUDIENCE = "alpatrade-hermes-broker"
 
 
-def create_hermes_delegation(user_id: str, thread_id: str, *, minutes: int = 10) -> str:
+def create_hermes_delegation(user_id: str, thread_id: str, *, minutes: int = 30) -> str:
     """Create a short-lived token tied to one authenticated AlpaTrade user."""
     secret = os.getenv("JWT_SECRET", "")
     if not secret:
@@ -74,11 +74,12 @@ def hermes_system_instructions(user_id: str, thread_id: str) -> str:
 
 HERMES ALPATRADE BROKER (mandatory security boundary)
 - You have no direct database access. Never request or search for DATABASE_URL.
-- AlpaTrade operations are allowed only at $ALPATRADE_API_URL/v2/hermes/*.
+- AlpaTrade operations are allowed only at the internal container URL
+  http://api:5001/v2/hermes/*. Never use the public api.alpatrade.chat host.
 - Send both headers on every broker request:
   X-Hermes-Key: $ALPATRADE_HERMES_API_KEY
   X-Hermes-Delegation: {token}
-- The delegation expires in 10 minutes and represents only the logged-in user.
+- The delegation expires in 30 minutes and represents only the logged-in user.
 - Backtests, candidate storage, run inspection, and PAPER trading are allowed.
 - Live trading is forbidden. Never call non-Hermes AlpaTrade API routes.
 - When asked to backtest, use POST /v2/hermes/backtests. When asked to paper

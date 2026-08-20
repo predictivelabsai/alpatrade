@@ -21,7 +21,7 @@ def test_delegation_is_user_scoped_and_short_lived(monkeypatch):
     assert claims["sub"] == "11111111-1111-1111-1111-111111111111"
     assert claims["thread_id"] == "thread-7"
     assert claims["scope"] == "hermes:alpatrade"
-    assert claims["exp"] - claims["iat"] == 600
+    assert claims["exp"] - claims["iat"] == 1800
 
 
 def test_delegation_rejects_wrong_secret(monkeypatch):

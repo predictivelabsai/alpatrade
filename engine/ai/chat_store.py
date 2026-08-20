@@ -2,6 +2,7 @@
 Chat persistence — save/load conversations and messages to PostgreSQL.
 """
 
+import json
 import uuid
 import logging
 from typing import Optional
@@ -51,26 +52,32 @@ def save_message(thread_id: str, role: str, content: str,
     with pool.get_session() as session:
         session.execute(text("""
             INSERT INTO alpatrade.chat_messages (thread_id, message_id, role, content, metadata)
-            VALUES (:tid, :mid, :role, :content, :meta)
+            VALUES (:tid, :mid, :role, :content, CAST(:meta AS JSONB))
         """), {
             "tid": thread_id,
             "mid": mid,
             "role": role,
             "content": content,
-            "meta": metadata,
+            "meta": json.dumps(metadata) if metadata is not None else None,
         })
 
 
-def load_conversation_messages(thread_id: str) -> list[dict]:
-    """Load all messages for a thread, ordered by creation time."""
+def load_conversation_messages(
+    thread_id: str, user_id: Optional[str] = None
+) -> list[dict]:
+    """Load messages, optionally enforcing ownership by ``user_id``."""
     pool = _get_pool()
     with pool.get_session() as session:
-        rows = session.execute(text("""
+        owner_join = "" if user_id is None else (
+            " JOIN alpatrade.chat_conversations c ON c.thread_id = m.thread_id"
+        )
+        owner_filter = "" if user_id is None else " AND c.user_id = CAST(:uid AS UUID)"
+        rows = session.execute(text(f"""
             SELECT message_id, role, content, metadata, created_at
-            FROM alpatrade.chat_messages
-            WHERE thread_id = :tid
-            ORDER BY created_at ASC
-        """), {"tid": thread_id}).fetchall()
+            FROM alpatrade.chat_messages m{owner_join}
+            WHERE m.thread_id = CAST(:tid AS UUID){owner_filter}
+            ORDER BY m.created_at ASC
+        """), {"tid": thread_id, "uid": user_id}).fetchall()
     return [
         {
             "message_id": str(r[0]),
@@ -120,10 +127,23 @@ def list_conversations(user_id: Optional[str] = None, limit: int = 20) -> list[d
     ]
 
 
-def delete_conversation(thread_id: str):
-    """Delete a conversation and its messages (cascade)."""
+def conversation_belongs_to_user(thread_id: str, user_id: str) -> bool:
+    """Return whether a thread belongs to the specified logged-in user."""
     pool = _get_pool()
     with pool.get_session() as session:
-        session.execute(text("""
-            DELETE FROM alpatrade.chat_conversations WHERE thread_id = :tid
-        """), {"tid": thread_id})
+        return bool(session.execute(text("""
+            SELECT 1 FROM alpatrade.chat_conversations
+            WHERE thread_id = CAST(:tid AS UUID)
+              AND user_id = CAST(:uid AS UUID)
+        """), {"tid": thread_id, "uid": user_id}).scalar())
+
+
+def delete_conversation(thread_id: str, user_id: Optional[str] = None):
+    """Delete a conversation, optionally enforcing account ownership."""
+    pool = _get_pool()
+    with pool.get_session() as session:
+        owner_filter = "" if user_id is None else " AND user_id = CAST(:uid AS UUID)"
+        session.execute(text(f"""
+            DELETE FROM alpatrade.chat_conversations
+            WHERE thread_id = CAST(:tid AS UUID){owner_filter}
+        """), {"tid": thread_id, "uid": user_id})
