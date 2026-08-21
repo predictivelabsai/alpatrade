@@ -111,6 +111,7 @@ def send_daily_pnl_report(
     win_rate: float = 0.0,
     account_name: str = "",
     user_name: str = "",
+    to_email: str = "",
 ) -> bool:
     """
     Send a daily P&L report email.
@@ -229,4 +230,4 @@ def send_daily_pnl_report(
     </div>
     """
 
-    return send_email(subject, body_html)
+    return send_email_to(to_email, subject, body_html) if to_email else send_email(subject, body_html)

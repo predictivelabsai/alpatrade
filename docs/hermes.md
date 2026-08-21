@@ -249,10 +249,40 @@ owned candidate and require an account linked to the same user. Both continue
 when the browser closes. An open chat synchronizes saved messages every five
 seconds, while `/hermes show my running jobs` reads `/v2/hermes/jobs`.
 
-Backtests interrupted by a worker restart are safe to requeue. Paper sessions
-are deliberately marked failed after an interrupted worker heartbeat; they are
-never automatically replayed because doing so could duplicate orders. No live
-execution route exists.
+Backtests interrupted by a worker restart are safe to requeue. Finite paper
+sessions are deliberately marked failed after an interrupted worker heartbeat.
+Only paper jobs explicitly started as continuous are requeued; the paper agent
+resynchronizes broker orders and positions before continuing. No live execution
+route exists.
+
+## Paper controls, reports, and voice
+
+Apply the paper-control migration before deploying version 0.12.0:
+
+```bash
+python run_migration.py sql/20_hermes_paper_controls.sql
+```
+
+Use an owned candidate ID returned by a completed Hermes backtest:
+
+```text
+/hermes start candidate <candidate-id> in continuous paper trading and email daily reports
+/hermes show my recent jobs
+/hermes pause paper job <job-id>
+/hermes resume paper job <job-id>
+/hermes stop paper job <job-id>
+/hermes enable daily email reports for paper job <job-id>
+/hermes disable daily email reports for paper job <job-id>
+```
+
+Daily reports go only to the authenticated account's login email. The recipient
+is resolved server-side and is never accepted from chat text. Controls update
+only paper jobs belonging to the same `user_id`; live trading is not exposed.
+
+Voice advertises the same paper-only Hermes dispatcher as a realtime function
+tool. The WebSocket requires a signed-in browser session, uses that user's linked
+Alpaca paper account for positions, and saves successful Hermes voice commands
+to the active owned chat.
 
 ## Moving from the feature branch to `main`
 

@@ -56,7 +56,8 @@ def list_owned(user_id: str, *, limit: int = 50) -> list[dict]:
     with _pool().get_session() as session:
         rows = session.execute(text("""
             SELECT job_id, run_id, kind, status, account_id, thread_id,
-                   candidate_id, config, progress, result, error, created_at,
+                   candidate_id, config, progress, result, error, control_requested,
+                   paused_at, created_at,
                    started_at, completed_at
             FROM alpatrade.hermes_jobs
             WHERE user_id = CAST(:uid AS UUID)
@@ -69,7 +70,8 @@ def get_owned(job_id: str, user_id: str) -> Optional[dict]:
     with _pool().get_session() as session:
         row = session.execute(text("""
             SELECT job_id, run_id, kind, status, account_id, thread_id,
-                   candidate_id, config, progress, result, error, created_at,
+                   candidate_id, config, progress, result, error, control_requested,
+                   paused_at, created_at,
                    started_at, completed_at
             FROM alpatrade.hermes_jobs
             WHERE job_id = CAST(:job_id AS UUID)
@@ -82,6 +84,139 @@ def _job_dict(row) -> dict:
     return {key: (str(value) if key in {"job_id", "account_id", "thread_id",
                                         "candidate_id"} and value is not None else value)
             for key, value in dict(row).items()}
+
+
+def request_control(job_id: str, user_id: str, action: str) -> Optional[dict]:
+    """Pause, resume, or stop one owned paper job without touching other users."""
+    if action not in {"pause", "resume", "stop"}:
+        raise ValueError("action must be pause, resume, or stop")
+    with _pool().get_session() as session:
+        if action == "pause":
+            row = session.execute(text("""
+                UPDATE alpatrade.hermes_jobs
+                SET control_requested = 'pause', status = 'paused', paused_at = NOW(),
+                    progress = '{"message":"Paused by user"}'::jsonb, updated_at = NOW()
+                WHERE job_id = CAST(:job_id AS UUID) AND user_id = CAST(:uid AS UUID)
+                  AND kind = 'paper' AND status IN ('queued', 'running')
+                RETURNING *
+            """), {"job_id": job_id, "uid": user_id}).mappings().first()
+        elif action == "resume":
+            row = session.execute(text("""
+                UPDATE alpatrade.hermes_jobs
+                SET control_requested = 'none',
+                    status = CASE WHEN claimed_by IS NULL THEN 'queued' ELSE 'running' END,
+                    paused_at = NULL, progress = '{"message":"Resumed by user"}'::jsonb,
+                    updated_at = NOW()
+                WHERE job_id = CAST(:job_id AS UUID) AND user_id = CAST(:uid AS UUID)
+                  AND kind = 'paper' AND status = 'paused'
+                RETURNING *
+            """), {"job_id": job_id, "uid": user_id}).mappings().first()
+        else:
+            row = session.execute(text("""
+                UPDATE alpatrade.hermes_jobs
+                SET control_requested = 'stop',
+                    status = CASE WHEN status IN ('queued', 'paused') AND claimed_by IS NULL
+                                  THEN 'stopped' ELSE status END,
+                    completed_at = CASE WHEN status IN ('queued', 'paused') AND claimed_by IS NULL
+                                        THEN NOW() ELSE completed_at END,
+                    progress = '{"message":"Stop requested by user"}'::jsonb,
+                    updated_at = NOW()
+                WHERE job_id = CAST(:job_id AS UUID) AND user_id = CAST(:uid AS UUID)
+                  AND kind = 'paper' AND status IN ('queued', 'running', 'paused')
+                RETURNING *
+            """), {"job_id": job_id, "uid": user_id}).mappings().first()
+    return _job_dict(row) if row else None
+
+
+def set_email_reports(job_id: str, user_id: str, enabled: bool) -> Optional[dict]:
+    """Enable daily reports for one owned paper job using its owner's login email."""
+    from engine.auth import get_user_by_id
+
+    user = get_user_by_id(user_id) or {}
+    recipient = str(user.get("email") or "") if enabled else ""
+    if enabled and not recipient:
+        raise ValueError("Your login account has no report email")
+    patch = json.dumps({"email_notifications": enabled})
+    with _pool().get_session() as session:
+        row = session.execute(text("""
+            UPDATE alpatrade.hermes_jobs
+            SET config = config || CAST(:patch AS JSONB), updated_at = NOW()
+            WHERE job_id = CAST(:job_id AS UUID) AND user_id = CAST(:uid AS UUID)
+              AND kind = 'paper' AND status IN ('queued', 'running', 'paused')
+            RETURNING *
+        """), {"job_id": job_id, "uid": user_id, "patch": patch}).mappings().first()
+    return _job_dict(row) if row else None
+
+
+def enqueue_candidate_paper(
+    candidate_id: str,
+    user_id: str,
+    thread_id: str,
+    *,
+    duration: str = "365d",
+    poll: int = 60,
+    email_reports: bool = False,
+    account_id: Optional[str] = None,
+    extended_hours: Optional[bool] = None,
+    pdt_protection: bool = True,
+) -> dict:
+    """Validate ownership/account credentials and queue an owned paper candidate."""
+    from agents.orchestrator import parse_duration
+    from engine.auth import get_alpaca_keys, get_user_accounts, get_user_by_id
+
+    with _pool().get_session() as session:
+        candidate = session.execute(text("""
+            SELECT strategy, symbols, params, account_id, source_run_id
+            FROM alpatrade.strategy_candidates
+            WHERE candidate_id = CAST(:candidate_id AS UUID)
+              AND user_id = CAST(:uid AS UUID)
+        """), {"candidate_id": candidate_id, "uid": user_id}).mappings().first()
+    if not candidate:
+        raise ValueError("Candidate was not found under your account")
+    owned_accounts = get_user_accounts(user_id)
+    owned_ids = {str(item["account_id"]) for item in owned_accounts}
+    if account_id and account_id not in owned_ids:
+        raise ValueError("Paper account was not found under your account")
+    account_id = account_id or (
+        str(candidate["account_id"]) if candidate.get("account_id") else None
+    )
+    if not account_id:
+        account_id = str(owned_accounts[0]["account_id"]) if owned_accounts else None
+    if not account_id or not get_alpaca_keys(user_id, account_id):
+        raise ValueError("Link an Alpaca paper account before starting paper trading")
+    user = get_user_by_id(user_id) or {}
+    report_email = str(user.get("email") or "") if email_reports else ""
+    if email_reports and not report_email:
+        raise ValueError("Your login account has no report email")
+    config = {
+        "duration_seconds": parse_duration(duration),
+        "continuous": duration == "365d",
+        "symbols": candidate["symbols"] or [],
+        "strategy": candidate["strategy"],
+        "params": candidate["params"] or {},
+        "source_run_id": candidate["source_run_id"],
+        "poll_interval_seconds": poll,
+        "email_notifications": email_reports,
+        "report_hour_utc": 21,
+        "agent_name": "Hermes",
+        "agent_framework": "hermes",
+        "pdt_protection": pdt_protection,
+    }
+    if extended_hours is not None:
+        config["extended_hours"] = extended_hours
+    job = enqueue(
+        "paper", user_id, thread_id, config,
+        account_id=account_id, candidate_id=candidate_id,
+    )
+    with _pool().get_session() as session:
+        session.execute(text("""
+            UPDATE alpatrade.strategy_candidates
+            SET status = 'paper', updated_at = NOW()
+            WHERE candidate_id = CAST(:candidate_id AS UUID)
+              AND user_id = CAST(:uid AS UUID)
+        """), {"candidate_id": candidate_id, "uid": user_id})
+    return {**job, "candidate_id": candidate_id, "account_id": account_id,
+            "email_reports": email_reports}
 
 
 def claim(worker_id: str) -> Optional[dict]:
@@ -110,21 +245,70 @@ def heartbeat(job_id: str, message: str) -> None:
             UPDATE alpatrade.hermes_jobs
             SET heartbeat_at = NOW(), updated_at = NOW(),
                 progress = CAST(:progress AS JSONB)
-            WHERE job_id = CAST(:job_id AS UUID) AND status = 'running'
+            WHERE job_id = CAST(:job_id AS UUID) AND status IN ('running', 'paused')
         """), {"job_id": job_id,
                 "progress": json.dumps({"message": message})})
 
 
-def finish(job_id: str, result: dict, candidate_id: Optional[str] = None) -> None:
+class DatabaseJobControl:
+    """Cooperative paper control that survives web/worker process boundaries."""
+
+    def __init__(self, job_id: str):
+        self.job_id = job_id
+
+    def _state(self) -> tuple[str, str]:
+        with _pool().get_session() as session:
+            row = session.execute(text("""
+                SELECT status, control_requested FROM alpatrade.hermes_jobs
+                WHERE job_id = CAST(:job_id AS UUID)
+            """), {"job_id": self.job_id}).first()
+        return (str(row[0]), str(row[1])) if row else ("stopped", "stop")
+
+    def is_set(self) -> bool:
+        status, control = self._state()
+        return control == "stop" or status in {"stopped", "cancelled", "failed"}
+
+    def wait_if_paused(self) -> bool:
+        """Block cooperatively while paused; return False when stop is requested."""
+        while True:
+            status, control = self._state()
+            if control == "stop" or status in {"stopped", "cancelled", "failed"}:
+                return False
+            if control != "pause" and status != "paused":
+                return True
+            heartbeat(self.job_id, "Paper trading paused")
+            time.sleep(2)
+
+    def report_target(self) -> tuple[bool, str]:
+        with _pool().get_session() as session:
+            row = session.execute(text("""
+                SELECT j.config, u.email
+                FROM alpatrade.hermes_jobs j
+                JOIN alpatrade.users u ON u.user_id = j.user_id
+                WHERE j.job_id = CAST(:job_id AS UUID)
+            """), {"job_id": self.job_id}).first()
+        config = row[0] if row else {}
+        return bool(config.get("email_notifications")), str(row[1] or "") if row else ""
+
+
+def finish(
+    job_id: str,
+    result: dict,
+    candidate_id: Optional[str] = None,
+    *,
+    status: str = "completed",
+) -> None:
+    progress = json.dumps({"message": "Stopped" if status == "stopped" else "Completed"})
     with _pool().get_session() as session:
         session.execute(text("""
             UPDATE alpatrade.hermes_jobs
-            SET status = 'completed', result = CAST(:result AS JSONB),
+            SET status = :status, result = CAST(:result AS JSONB),
                 candidate_id = COALESCE(CAST(:candidate_id AS UUID), candidate_id),
-                progress = '{"message":"Completed"}'::jsonb,
+                progress = CAST(:progress AS JSONB),
                 completed_at = NOW(), heartbeat_at = NOW(), updated_at = NOW()
             WHERE job_id = CAST(:job_id AS UUID)
-        """), {"job_id": job_id, "result": json.dumps(result, default=str),
+        """), {"job_id": job_id, "status": status, "progress": progress,
+                "result": json.dumps(result, default=str),
                 "candidate_id": candidate_id})
 
 
@@ -140,7 +324,7 @@ def fail(job_id: str, error: str) -> None:
 
 
 def recover_stale(stale_seconds: int = 900) -> None:
-    """Retry interrupted backtests; fail paper safely instead of replaying orders."""
+    """Retry backtests and explicitly continuous paper jobs after worker restarts."""
     with _pool().get_session() as session:
         session.execute(text("""
             UPDATE alpatrade.hermes_jobs
@@ -152,11 +336,22 @@ def recover_stale(stale_seconds: int = 900) -> None:
         """), {"seconds": stale_seconds})
         session.execute(text("""
             UPDATE alpatrade.hermes_jobs
+            SET status = 'queued', claimed_by = NULL,
+                progress = '{"message":"Continuous paper job requeued after worker restart"}'::jsonb,
+                updated_at = NOW()
+            WHERE status = 'running' AND kind = 'paper'
+              AND COALESCE((config->>'continuous')::boolean, FALSE) = TRUE
+              AND control_requested = 'none'
+              AND heartbeat_at < NOW() - (CAST(:seconds AS INTEGER) * INTERVAL '1 second')
+        """), {"seconds": stale_seconds})
+        session.execute(text("""
+            UPDATE alpatrade.hermes_jobs
             SET status = 'failed',
                 error = 'Paper worker interrupted; not replayed to avoid duplicate orders',
                 progress = '{"message":"Stopped safely after worker interruption"}'::jsonb,
                 completed_at = NOW(), updated_at = NOW()
             WHERE status = 'running' AND kind = 'paper'
+              AND COALESCE((config->>'continuous')::boolean, FALSE) = FALSE
               AND heartbeat_at < NOW() - (CAST(:seconds AS INTEGER) * INTERVAL '1 second')
         """), {"seconds": stale_seconds})
 
@@ -241,7 +436,7 @@ def _paper(job: dict) -> tuple[dict, Optional[str], str]:
     orch.run_id = job["run_id"]
     orch.state.run_id = job["run_id"]
     orch.state.best_config = {"params": config.get("params") or {}}
-    result = orch.run_paper_trade(config)
+    result = orch.run_paper_trade(config, stop_event=DatabaseJobControl(str(job["job_id"])))
     if result.get("error"):
         raise RuntimeError(result["error"])
     markdown = (
@@ -273,7 +468,12 @@ def run_one(worker_id: str) -> bool:
             result, candidate_id, markdown = _backtest(job)
         else:
             result, candidate_id, markdown = _paper(job)
-        finish(job_id, result, candidate_id)
+        final_status = "stopped" if job["kind"] == "paper" and DatabaseJobControl(job_id).is_set() else "completed"
+        if final_status == "stopped":
+            markdown = markdown.replace(
+                "## Hermes paper session completed", "## Hermes paper session stopped", 1
+            )
+        finish(job_id, result, candidate_id, status=final_status)
         _notify(job, markdown)
     except Exception as exc:  # noqa: BLE001
         log.exception("Hermes job %s failed", job_id)

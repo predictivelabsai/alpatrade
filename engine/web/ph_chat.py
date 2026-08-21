@@ -548,6 +548,107 @@ async def _dispatch_hermes_job_command(
 ) -> Optional[str]:
     """Handle durable Hermes operations before invoking the remote model."""
     lowered = message.lower()
+    uuids = re.findall(
+        r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b",
+        lowered,
+    )
+    control_match = re.search(r"\b(pause|resume|stop)\b", lowered)
+    if control_match and "paper" in lowered and uuids:
+        from engine.agents.hermes_jobs import request_control
+        action = control_match.group(1)
+        job = await asyncio.to_thread(request_control, uuids[0], user_id, action)
+        if not job:
+            return (
+                "## Hermes paper control\n\nNo matching active paper job was found "
+                "under your account."
+            )
+        action_label = {"pause": "paused", "resume": "resumed", "stop": "stop requested"}[action]
+        return (
+            f"## Hermes paper job {action_label}\n\n"
+            f"- **Job ID:** `{job['job_id']}`\n"
+            f"- **Run ID:** `{job['run_id']}`\n"
+            f"- **Status:** `{job['status']}`\n"
+            f"- **Candidate ID:** `{job.get('candidate_id') or 'n/a'}`"
+        )
+
+    candidate_action = re.search(r"\b(start|run|launch|trade|promote)\b", lowered)
+    starting_candidate = (
+        ("candidate" in lowered or "best param" in lowered)
+        and "paper" in lowered
+        and bool(candidate_action)
+        and (
+            candidate_action.group(1) != "run"
+            or bool(uuids)
+            or lowered.startswith("run ")
+        )
+    )
+    if (
+        "paper" in lowered and "email" in lowered and "report" in lowered
+        and uuids and not starting_candidate
+    ):
+        from engine.agents.hermes_jobs import set_email_reports
+        disabled = any(word in lowered for word in ("disable", "off", "stop email", "cancel email"))
+        job = await asyncio.to_thread(set_email_reports, uuids[0], user_id, not disabled)
+        if not job:
+            return "## Hermes reports\n\nNo matching active paper job was found under your account."
+        state = "disabled" if disabled else "enabled daily for your login email"
+        return (
+            "## Hermes paper reports updated\n\n"
+            f"- **Job ID:** `{job['job_id']}`\n"
+            f"- **Status:** `{job['status']}`\n"
+            f"- **Email reports:** {state}"
+        )
+
+    if starting_candidate:
+        from engine.agents.hermes_jobs import enqueue_candidate_paper
+        candidate_id = uuids[0] if uuids else ""
+        if not candidate_id:
+            from engine.agents.hermes_jobs import list_owned
+            completed = [
+                item for item in await asyncio.to_thread(list_owned, user_id)
+                if item.get("kind") == "backtest" and item.get("status") == "completed"
+                and item.get("candidate_id")
+            ]
+            completed.sort(
+                key=lambda item: float(
+                    ((item.get("result") or {}).get("best_config") or {}).get("sharpe_ratio")
+                    or float("-inf")
+                ),
+                reverse=True,
+            )
+            if not completed:
+                return "## Hermes paper trading\n\nNo completed owned candidate was found."
+            candidate_id = str(completed[0]["candidate_id"])
+        period = re.search(r"\b(\d+)\s*(day|days|week|weeks|month|months|year|years)\b", lowered)
+        duration = "365d" if "continuous" in lowered or "continuously" in lowered else "7d"
+        if period:
+            amount, unit = int(period.group(1)), period.group(2)
+            multiplier = 1 if unit.startswith("day") else 7 if unit.startswith("week") else 30 if unit.startswith("month") else 365
+            duration = f"{amount * multiplier}d"
+        poll_match = re.search(r"\b(?:every|poll)\s+(\d+)\s*(?:seconds?|secs?|s)\b", lowered)
+        poll = max(15, int(poll_match.group(1))) if poll_match else 60
+        email_reports = "email" in lowered and any(
+            word in lowered for word in ("report", "daily", "notify", "notification")
+        )
+        job = await asyncio.to_thread(
+            enqueue_candidate_paper,
+            candidate_id, user_id, thread_id,
+            duration=duration, poll=poll, email_reports=email_reports,
+        )
+        report = "daily reports enabled for your login email" if email_reports else "email reports disabled"
+        return (
+            "## Hermes paper trading queued\n\n"
+            f"- **Job ID:** `{job['job_id']}`\n"
+            f"- **Run ID:** `{job['run_id']}`\n"
+            f"- **Candidate ID:** `{job['candidate_id']}`\n"
+            f"- **Status:** `{job['status']}`\n"
+            f"- **Duration:** `{duration}`\n"
+            f"- **Poll interval:** `{poll}s`\n"
+            f"- **Reports:** {report}\n\n"
+            "Paper mode only. Use `/hermes pause paper job <job-id>`, "
+            "`resume`, or `stop` to control it."
+        )
+
     if "job" in lowered and any(word in lowered for word in ("show", "list", "running", "status")):
         from engine.agents.hermes_jobs import list_owned
         jobs = await asyncio.to_thread(list_owned, user_id)
@@ -557,10 +658,13 @@ async def _dispatch_hermes_job_command(
         for job in jobs[:20]:
             progress = (job.get("progress") or {}).get("message", "")
             candidate = f" · candidate `{job['candidate_id']}`" if job.get("candidate_id") else ""
+            reports = ""
+            if job.get("kind") == "paper" and (job.get("config") or {}).get("email_notifications"):
+                reports = " · daily email on"
             lines.append(
                 f"- **{job['kind']} · {job['status']}** — job `{job['job_id']}` · "
                 f"run `{job['run_id']}`{candidate}"
-                + (f" · {progress}" if progress else "")
+                + reports + (f" · {progress}" if progress else "")
             )
         return "\n".join(lines)
 
@@ -569,10 +673,7 @@ async def _dispatch_hermes_job_command(
     ):
         from engine.agents.hermes_jobs import list_owned
         jobs = await asyncio.to_thread(list_owned, user_id)
-        ids = set(re.findall(
-            r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b",
-            lowered,
-        ))
+        ids = set(uuids)
         matches = [
             job for job in jobs
             if job.get("kind") == "backtest"

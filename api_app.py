@@ -1346,65 +1346,58 @@ async def hermes_candidate_paper(
     user: Dict = Depends(require_hermes_user),
 ):
     """Queue owned candidate parameters for paper trading; live is not exposed."""
-    from agents.orchestrator import parse_duration
-    from engine.agents.hermes_jobs import enqueue
-    from sqlalchemy import text
-    from utils.db.db_pool import DatabasePool
-
+    from engine.agents.hermes_jobs import enqueue_candidate_paper
     uid = _uid(user)
-    with DatabasePool().get_session() as session:
-        candidate = session.execute(
-            text("""
-                SELECT strategy, symbols, params, account_id, source_run_id
-                FROM alpatrade.strategy_candidates
-                WHERE candidate_id = CAST(:candidate_id AS UUID)
-                  AND user_id = CAST(:user_id AS UUID)
-            """),
-            {"candidate_id": candidate_id, "user_id": uid},
-        ).mappings().first()
-    if not candidate:
-        raise HTTPException(status_code=404, detail="Candidate not found")
-
-    account_id = req.account_id or (
-        str(candidate["account_id"]) if candidate.get("account_id") else None
-    )
-    if not account_id:
-        from engine.auth import get_user_accounts
-        accounts = get_user_accounts(uid)
-        account_id = accounts[0]["account_id"] if accounts else None
-    _require_linked_paper_keys(uid, account_id)
-    config = {
-        "duration_seconds": parse_duration(req.duration),
-        "symbols": candidate["symbols"] or [],
-        "strategy": candidate["strategy"],
-        "params": candidate["params"] or {},
-        "source_run_id": candidate["source_run_id"],
-        "agent_name": "Hermes",
-        "agent_framework": "hermes",
-    }
-    if req.poll:
-        config["poll_interval_seconds"] = req.poll
-    if req.hours:
-        config["extended_hours"] = req.hours == "extended"
-    if req.email is not None:
-        config["email_notifications"] = req.email
-    if req.pdt is not None:
-        config["pdt_protection"] = req.pdt
-    job = enqueue(
-        "paper", uid, str(user["thread_id"]), config,
-        account_id=account_id, candidate_id=candidate_id,
-    )
-    with DatabasePool().get_session() as session:
-        session.execute(
-            text("""
-                UPDATE alpatrade.strategy_candidates SET status = 'paper', updated_at = NOW()
-                WHERE candidate_id = CAST(:candidate_id AS UUID)
-                  AND user_id = CAST(:user_id AS UUID)
-            """),
-            {"candidate_id": candidate_id, "user_id": uid},
+    try:
+        job = await asyncio.to_thread(
+            enqueue_candidate_paper,
+            candidate_id, uid, str(user["thread_id"]),
+            duration=req.duration, poll=req.poll or 60,
+            email_reports=bool(req.email),
+            account_id=req.account_id,
+            extended_hours=(req.hours == "extended") if req.hours else None,
+            pdt_protection=True if req.pdt is None else req.pdt,
         )
-    return {**job, "candidate_id": candidate_id,
-            "agent_name": "Hermes", "agent_framework": "hermes"}
+    except ValueError as exc:
+        detail = str(exc)
+        raise HTTPException(
+            status_code=404 if "not found" in detail.lower() else 400,
+            detail=detail,
+        ) from exc
+    return {**job, "agent_name": "Hermes", "agent_framework": "hermes"}
+
+
+async def _hermes_paper_control(job_id: str, action: str, user: Dict) -> Dict:
+    from engine.agents.hermes_jobs import request_control
+
+    job = await asyncio.to_thread(request_control, job_id, _uid(user), action)
+    if not job:
+        raise HTTPException(status_code=404, detail="Active owned paper job not found")
+    return job
+
+
+@app.post("/v2/hermes/jobs/{job_id}/pause", tags=["hermes"])
+async def hermes_pause_paper_job(
+    job_id: str, user: Dict = Depends(require_hermes_user),
+):
+    """Pause one active paper job owned by the delegated user."""
+    return await _hermes_paper_control(job_id, "pause", user)
+
+
+@app.post("/v2/hermes/jobs/{job_id}/resume", tags=["hermes"])
+async def hermes_resume_paper_job(
+    job_id: str, user: Dict = Depends(require_hermes_user),
+):
+    """Resume one paused paper job owned by the delegated user."""
+    return await _hermes_paper_control(job_id, "resume", user)
+
+
+@app.post("/v2/hermes/jobs/{job_id}/stop", tags=["hermes"])
+async def hermes_stop_paper_job(
+    job_id: str, user: Dict = Depends(require_hermes_user),
+):
+    """Request a cooperative stop for one owned paper job."""
+    return await _hermes_paper_control(job_id, "stop", user)
 
 
 @app.post("/v2/full", response_model=FullCycleResponse, tags=["agents"])

@@ -1,5 +1,26 @@
 # Change Log
 
+## 0.12.0 — 2026-08-21
+
+### Hermes paper operations and voice
+
+- Added deterministic, account-owned `/hermes` commands to start a saved
+  candidate in paper mode and pause, resume, or stop its durable job.
+- Added daily report opt-in stored on the owned paper job; recipients resolve
+  from the authenticated user's login email instead of the global `TO_EMAIL`.
+- Added durable controls and responsive worker polling. Explicitly continuous
+  paper jobs requeue after worker restarts; finite jobs retain fail-safe recovery.
+- Added an authenticated Hermes command tool to voice mode and changed voice
+  position lookup to use the logged-in user's linked Alpaca paper account.
+- Live-order routes remain unavailable.
+
+### Tests and deployment
+
+- Added command-intent, ownership, paper-control, report, worker-recovery, and
+  voice-tool contracts.
+- Apply `sql/20_hermes_paper_controls.sql`, then redeploy the full Compose
+  resource so both `agui` and `hermes-jobs` use version 0.12.0.
+
 ## 0.11.0 — 2026-08-20
 
 ### Durable asynchronous Hermes jobs

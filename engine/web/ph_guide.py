@@ -163,6 +163,11 @@ def _guide_chat():
           "the default saved in Settings:"),
         Pre(Code(
             "/hermes explain this portfolio\n"
+            "/hermes start my best candidate in continuous paper trading and email daily reports\n"
+            "/hermes show my recent jobs\n"
+            "/hermes pause paper job <job-id>\n"
+            "/hermes resume paper job <job-id>\n"
+            "/hermes stop paper job <job-id>\n"
             "/deepagents compare these strategies\n"
             "/langgraph summarize the last run"
         )),

@@ -82,6 +82,8 @@ class PaperTradeAgent:
         poll_interval = request.get("poll_interval_seconds", yaml_general.get("polling_interval", 300))
         extended_hours = request.get("extended_hours", True)
         email_notifications = request.get("email_notifications", True)
+        report_email = request.get("report_email", "")
+        report_hour_utc = int(request.get("report_hour_utc", 21))
 
         # PDT protection: default True, disable with pdt:false for accounts >$25k
         pdt_protection = request.get("pdt_protection")
@@ -97,6 +99,7 @@ class PaperTradeAgent:
         hold_days = params.get("hold_days", yaml_cfg.get("hold_days", 2))
         min_hold_days = params.get("min_hold_days", yaml_cfg.get("min_hold_days", 0))
         capital_per_trade = params.get("capital_per_trade", yaml_cfg.get("capital_per_trade", 1000.0))
+        position_size = params.get("position_size")
 
         logger.info(f"Paper trade agent starting session {self.session_id}")
         logger.info(f"Strategy: {strategy}, Symbols: {symbols}")
@@ -114,6 +117,12 @@ class PaperTradeAgent:
             account = self.client.get_account()
             if "error" in account:
                 raise RuntimeError(f"Alpaca API error: {account['error']}")
+            if position_size is not None:
+                fraction = float(position_size)
+                if not 0 < fraction <= 0.25:
+                    raise ValueError("position_size must be greater than 0 and no more than 0.25")
+                equity = float(account.get("equity") or account.get("portfolio_value") or 0)
+                capital_per_trade = equity * fraction
             logger.info(f"Connected to Alpaca paper. Portfolio value: ${float(account.get('portfolio_value', 0)):,.2f}")
         except Exception as e:
             logger.error(f"Failed to initialize Alpaca client: {e}")
@@ -155,13 +164,17 @@ class PaperTradeAgent:
 
         start_time = datetime.now(timezone.utc)
         end_time = start_time + timedelta(seconds=duration)
-        last_daily_report = start_time.date()
+        last_daily_report = None
         cycle_count = 0
 
         logger.info(f"Trading until {end_time.isoformat()}")
 
         try:
             while datetime.now(timezone.utc) < end_time:
+                if stop_event and hasattr(stop_event, "wait_if_paused"):
+                    if not stop_event.wait_if_paused():
+                        logger.info("Paper trading stopped while paused")
+                        break
                 # Check for external stop request
                 if stop_event and stop_event.is_set():
                     logger.info("Paper trading stopped via stop event")
@@ -169,10 +182,21 @@ class PaperTradeAgent:
 
                 now = datetime.now(timezone.utc)
 
+                # Send at most one owned report per UTC trading date after the
+                # configured post-close hour, even while the market is closed.
+                if now.hour >= report_hour_utc and last_daily_report != now.date():
+                    if stop_event and hasattr(stop_event, "report_target"):
+                        email_notifications, report_email = stop_event.report_target()
+                    if email_notifications:
+                        self._record_daily_pnl()
+                        self._send_daily_email(now.date().isoformat(), report_email)
+                    last_daily_report = now.date()
+
                 # Check if market is open
                 if not is_market_open(now, extended_hours=extended_hours):
                     logger.debug("Market closed, sleeping...")
-                    time.sleep(min(poll_interval, 60))
+                    if self._interruptible_wait(min(poll_interval, 60), stop_event):
+                        break
                     continue
 
                 # Periodic PDT re-check (every ~10 cycles)
@@ -209,21 +233,27 @@ class PaperTradeAgent:
                             payload={"error": str(e), "session_id": self.session_id},
                         )
 
-                # Daily P&L report + email
-                today = datetime.now(timezone.utc).date()
-                if today > last_daily_report:
-                    self._record_daily_pnl()
-                    if email_notifications:
-                        self._send_daily_email(last_daily_report.isoformat())
-                    last_daily_report = today
-
-                time.sleep(poll_interval)
+                if self._interruptible_wait(poll_interval, stop_event):
+                    break
 
         except KeyboardInterrupt:
             logger.info("Paper trading interrupted by user")
 
         # Final summary
         return self._generate_summary(start_time)
+
+    @staticmethod
+    def _interruptible_wait(seconds: float, stop_event=None) -> bool:
+        """Sleep responsively so durable pause/stop requests take effect quickly."""
+        deadline = time.monotonic() + max(0, seconds)
+        while time.monotonic() < deadline:
+            if stop_event and hasattr(stop_event, "wait_if_paused"):
+                if not stop_event.wait_if_paused():
+                    return True
+            if stop_event and stop_event.is_set():
+                return True
+            time.sleep(min(1, max(0, deadline - time.monotonic())))
+        return False
 
     def _execute_cycle(self, symbols, dip_threshold, take_profit, stop_loss,
                        hold_days, capital_per_trade, min_hold_days=0):
@@ -649,7 +679,7 @@ class PaperTradeAgent:
         except Exception as e:
             logger.warning(f"Could not record daily P&L: {e}")
 
-    def _send_daily_email(self, date: str):
+    def _send_daily_email(self, date: str, to_email: str = ""):
         """Send daily P&L email report via Postmark."""
         try:
             from utils.email_util import send_daily_pnl_report
@@ -693,6 +723,7 @@ class PaperTradeAgent:
                 win_rate=win_rate,
                 account_name=self.account_name,
                 user_name=user_name,
+                to_email=to_email,
             )
         except Exception as e:
             logger.warning(f"Could not send daily email: {e}")

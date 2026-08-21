@@ -286,11 +286,14 @@ class Orchestrator:
                 "stop_loss_threshold": params.get("stop_loss", yaml_cfg.get("stop_loss_threshold", 0.5)) * 100 if params.get("stop_loss", 1) < 1 else params.get("stop_loss", yaml_cfg.get("stop_loss_threshold", 0.5)),
                 "hold_days": params.get("hold_days", yaml_cfg.get("hold_days", 2)),
                 "capital_per_trade": config.get("capital_per_trade", yaml_cfg.get("capital_per_trade", 1000.0)),
+                "position_size": params.get("position_size"),
             },
             "duration_seconds": config.get("duration_seconds", 604800),
             "poll_interval_seconds": config.get("poll_interval_seconds", yaml_general.get("polling_interval", 300)),
             "extended_hours": config.get("extended_hours", True),
             "email_notifications": config.get("email_notifications", True),
+            "report_email": config.get("report_email", ""),
+            "report_hour_utc": config.get("report_hour_utc", 21),
             "pdt_protection": config.get("pdt_protection"),
         }
 

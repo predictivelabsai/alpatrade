@@ -1130,6 +1130,8 @@ _AGUI_HELP = """# AlpaTrade Commands
 
 ## Choose an AI Runtime
 - `/hermes your request` — use Hermes for one message
+- `/hermes start my best candidate in continuous paper trading and email daily reports`
+- `/hermes show my recent jobs` or pause/resume/stop an owned paper job by ID
 - `/deepagents your request` — use DeepAgents for one message
 - `/langgraph your request` — use LangGraph for one message
 

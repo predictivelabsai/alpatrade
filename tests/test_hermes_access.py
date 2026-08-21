@@ -70,6 +70,9 @@ def test_broker_exposes_paper_but_no_live_route():
     paths = app.openapi()["paths"]
     assert "/v2/hermes/backtests" in paths
     assert "/v2/hermes/candidates/{candidate_id}/paper" in paths
+    assert "/v2/hermes/jobs/{job_id}/pause" in paths
+    assert "/v2/hermes/jobs/{job_id}/resume" in paths
+    assert "/v2/hermes/jobs/{job_id}/stop" in paths
     assert all("live" not in path for path in paths if path.startswith("/v2/hermes/"))
 
 
