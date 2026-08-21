@@ -294,6 +294,9 @@ class Orchestrator:
             "email_notifications": config.get("email_notifications", True),
             "report_email": config.get("report_email", ""),
             "report_hour_utc": config.get("report_hour_utc", 21),
+            "advice_enabled": (config.get("advice_enabled", False)
+                               if config.get("agent_framework") == "hermes" else False),
+            "advice_interval_seconds": config.get("advice_interval_seconds", 900),
             "pdt_protection": config.get("pdt_protection"),
         }
 

@@ -552,6 +552,88 @@ async def _dispatch_hermes_job_command(
         r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b",
         lowered,
     )
+    if lowered.strip() in {"help", "commands", "show commands"}:
+        return (
+            "## Hermes commands\n\n"
+            "- `/hermes show my recent jobs`\n"
+            "- `/hermes show my recent advice`\n"
+            "- `/hermes construct a portfolio from candidate <candidate-id>`\n"
+            "- `/hermes start candidate <candidate-id> in continuous paper trading`\n"
+            "- `/hermes notify me in app|by email|both for paper job <job-id>`\n"
+            "- `/hermes enable daily email reports for paper job <job-id>`\n"
+            "- `/hermes pause|resume|stop paper job <job-id>`\n\n"
+            "Hermes advice does not place extra orders. Trading remains paper-only."
+        )
+
+    if "portfolio" in lowered and any(
+        word in lowered for word in ("construct", "build", "recommend", "optimal")
+    ):
+        from engine.agents.hermes_advice import construct_portfolio
+        candidate_id = uuids[0] if uuids else ""
+        if not candidate_id:
+            from engine.agents.hermes_jobs import list_owned
+            completed = [item for item in await asyncio.to_thread(list_owned, user_id)
+                         if item.get("kind") == "backtest" and
+                         item.get("status") == "completed" and item.get("candidate_id")]
+            if not completed:
+                return "## Hermes portfolio advice\n\nNo completed owned candidate was found."
+            completed.sort(
+                key=lambda item: float(
+                    ((item.get("result") or {}).get("best_config") or {}).get("sharpe_ratio")
+                    or float("-inf")
+                ), reverse=True,
+            )
+            candidate_id = str(completed[0]["candidate_id"])
+        advice = await asyncio.to_thread(
+            construct_portfolio, candidate_id, user_id, thread_id
+        )
+        snapshot = advice["snapshot"]
+        allocations = ", ".join(
+            f"{symbol} {float(weight):.1%}"
+            for symbol, weight in snapshot["allocations"].items()
+        )
+        return (
+            "## Hermes portfolio recommendation\n\n"
+            f"- **Advice ID:** `{advice['advice_id']}`\n"
+            f"- **Candidate ID:** `{candidate_id}`\n"
+            f"- **Allocations:** {allocations}\n"
+            f"- **Cash reserve:** {float(snapshot['cash_reserve']):.1%}\n"
+            f"- **Construction method:** `{snapshot['construction_method']}`\n"
+            f"- **Entry parameters:** `{json.dumps(snapshot['entry'])}`\n"
+            f"- **Exit parameters:** `{json.dumps(snapshot['exit'])}`\n\n"
+            f"{advice['rationale']}"
+        )
+
+    if "advice" in lowered and any(word in lowered for word in ("show", "list", "recent")):
+        from engine.agents.hermes_advice import list_owned as list_advice
+        items = await asyncio.to_thread(list_advice, user_id, limit=20)
+        if not items:
+            return "## Hermes advice\n\nNo saved portfolio or entry/exit advice was found."
+        return "\n".join(
+            ["## Hermes recent advice", ""] + [
+                f"- **{item['summary']}** — {item['rationale']} "
+                f"(`{item['created_at']}`)" for item in items
+            ]
+        )
+
+    if "notif" in lowered and uuids and any(
+        word in lowered for word in ("app", "email", "both", "none", "off", "disable")
+    ):
+        from engine.agents.hermes_jobs import set_notification_channel
+        channel = ("both" if "both" in lowered else "email" if "email" in lowered
+                   else "none" if any(word in lowered for word in ("none", "off", "disable"))
+                   else "in_app")
+        job = await asyncio.to_thread(
+            set_notification_channel, uuids[0], user_id, channel
+        )
+        if not job:
+            return "## Hermes notifications\n\nNo matching active paper job was found under your account."
+        return (
+            "## Hermes notifications updated\n\n"
+            f"- **Job ID:** `{job['job_id']}`\n"
+            f"- **Delivery:** `{channel}`\n"
+            "- **Scope:** your authenticated account only"
+        )
     control_match = re.search(r"\b(pause|resume|stop)\b", lowered)
     if control_match and "paper" in lowered and uuids:
         from engine.agents.hermes_jobs import request_control
@@ -630,10 +712,16 @@ async def _dispatch_hermes_job_command(
         email_reports = "email" in lowered and any(
             word in lowered for word in ("report", "daily", "notify", "notification")
         )
+        notification_channel = (
+            "both" if "both" in lowered else
+            "email" if "email only" in lowered else
+            "in_app"
+        )
         job = await asyncio.to_thread(
             enqueue_candidate_paper,
             candidate_id, user_id, thread_id,
             duration=duration, poll=poll, email_reports=email_reports,
+            notification_channel=notification_channel,
         )
         report = "daily reports enabled for your login email" if email_reports else "email reports disabled"
         return (
@@ -645,6 +733,7 @@ async def _dispatch_hermes_job_command(
             f"- **Duration:** `{duration}`\n"
             f"- **Poll interval:** `{poll}s`\n"
             f"- **Reports:** {report}\n\n"
+            f"- **Advice notifications:** `{notification_channel}`\n\n"
             "Paper mode only. Use `/hermes pause paper job <job-id>`, "
             "`resume`, or `stop` to control it."
         )
@@ -661,10 +750,15 @@ async def _dispatch_hermes_job_command(
             reports = ""
             if job.get("kind") == "paper" and (job.get("config") or {}).get("email_notifications"):
                 reports = " · daily email on"
+            advice = ""
+            if job.get("kind") == "paper" and (job.get("config") or {}).get("advice_enabled"):
+                advice = (" · advice " + str(
+                    (job.get("config") or {}).get("notification_channel", "in_app")
+                ))
             lines.append(
                 f"- **{job['kind']} · {job['status']}** — job `{job['job_id']}` · "
                 f"run `{job['run_id']}`{candidate}"
-                + reports + (f" · {progress}" if progress else "")
+                + reports + advice + (f" · {progress}" if progress else "")
             )
         return "\n".join(lines)
 

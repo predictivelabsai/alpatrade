@@ -1,5 +1,18 @@
 # Change Log
 
+## 0.13.0 — 2026-08-21
+
+- Added user-scoped Hermes portfolio recommendations and persisted entry, exit,
+  hold, and watch advice in `alpatrade.hermes_advice` (migration 21).
+- Added selectable in-app, email, both, or disabled advice delivery per active
+  Hermes paper job, with duplicate-alert suppression and daily-email advice.
+- Added deterministic `/hermes help`, portfolio construction, advice history,
+  and notification commands. Advice is paper-only and never places extra orders.
+- Kept DeepAgents, LangGraph compatibility routing, and default chat behavior
+  unchanged.
+- Tests: focused Hermes contracts, CI-default DB-free suite, compile/import,
+  migration transaction, secret scan, and regression suite.
+
 ## 0.12.0 — 2026-08-21
 
 ### Hermes paper operations and voice

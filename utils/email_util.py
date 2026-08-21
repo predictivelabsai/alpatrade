@@ -112,6 +112,7 @@ def send_daily_pnl_report(
     account_name: str = "",
     user_name: str = "",
     to_email: str = "",
+    agent_advice: List[Dict[str, Any]] | None = None,
 ) -> bool:
     """
     Send a daily P&L report email.
@@ -165,6 +166,11 @@ def send_daily_pnl_report(
 
     if not trades_rows:
         trades_rows = "<tr><td colspan='6'>No trades today</td></tr>"
+
+    advice_html = ""
+    if agent_advice:
+        from engine.agents.hermes_advice import advice_email_html
+        advice_html = advice_email_html(agent_advice)
 
     acct_label = f" — {account_name}" if account_name else ""
     subject = f"AlpaTrade Daily Report{acct_label} — {date} — P&L: {pnl_sign}${abs(pnl):.2f}"
@@ -222,6 +228,8 @@ def send_daily_pnl_report(
         </tr>
         {trades_rows}
       </table>
+
+      {advice_html}
 
       <hr style="margin-top:24px; border:none; border-top:1px solid #dee2e6;">
       <p style="color:#6c757d; font-size:12px;">

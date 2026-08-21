@@ -73,6 +73,9 @@ def test_broker_exposes_paper_but_no_live_route():
     assert "/v2/hermes/jobs/{job_id}/pause" in paths
     assert "/v2/hermes/jobs/{job_id}/resume" in paths
     assert "/v2/hermes/jobs/{job_id}/stop" in paths
+    assert "/v2/hermes/advice" in paths
+    assert "/v2/hermes/candidates/{candidate_id}/portfolio" in paths
+    assert "/v2/hermes/jobs/{job_id}/notifications/{channel}" in paths
     assert all("live" not in path for path in paths if path.startswith("/v2/hermes/"))
 
 

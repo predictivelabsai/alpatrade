@@ -62,6 +62,25 @@ def test_candidate_paper_endpoint_uses_owned_helper(monkeypatch):
     assert captured["user_id"] == user["user_id"]
     assert captured["duration"] == "30d"
     assert captured["email_reports"] is True
+    assert captured["notification_channel"] == "in_app"
+
+
+def test_candidate_paper_endpoint_forwards_both_notification_channel(monkeypatch):
+    from api_app import hermes_candidate_paper
+    from api_models import HermesPaperRequest
+    from engine.agents import hermes_jobs
+
+    captured = {}
+    monkeypatch.setattr(hermes_jobs, "enqueue_candidate_paper", lambda *args, **kwargs: (
+        captured.update(kwargs) or {"job_id": "job", "run_id": "run", "status": "queued"}
+    ))
+    asyncio.run(hermes_candidate_paper(
+        "55555555-5555-5555-5555-555555555555",
+        HermesPaperRequest(notification_channel="both"),
+        {"user_id": "11111111-1111-1111-1111-111111111111",
+         "thread_id": "22222222-2222-2222-2222-222222222222"},
+    ))
+    assert captured["notification_channel"] == "both"
 
 
 def test_paper_control_api_forwards_delegated_owner(monkeypatch):
@@ -245,6 +264,134 @@ def test_chat_dispatch_updates_owned_paper_email_schedule(monkeypatch):
     assert "enabled daily for your login email" in reply
 
 
+def test_hermes_help_is_deterministic_and_paper_only():
+    from engine.web.ph_chat import _dispatch_hermes_job_command
+
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        "help", "11111111-1111-1111-1111-111111111111",
+        "22222222-2222-2222-2222-222222222222",
+    ))
+    assert "Hermes commands" in reply
+    assert "construct a portfolio" in reply
+    assert "notify me in app|by email|both" in reply
+    assert "paper-only" in reply
+
+
+def test_chat_constructs_owned_portfolio_advice(monkeypatch):
+    from engine.agents import hermes_advice
+    from engine.web.ph_chat import _dispatch_hermes_job_command
+
+    monkeypatch.setattr(hermes_advice, "construct_portfolio", lambda *args: {
+        "advice_id": "advice-1",
+        "snapshot": {"allocations": {"AAPL": 0.25, "MSFT": 0.25},
+                     "cash_reserve": 0.5, "entry": {"dip_threshold_pct": 3},
+                     "exit": {"take_profit_pct": 1.5},
+                     "construction_method": "inverse_120d_volatility"},
+        "rationale": "Paper advice only.",
+    })
+    candidate = "55555555-5555-5555-5555-555555555555"
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        f"construct an optimal portfolio from candidate {candidate}",
+        "11111111-1111-1111-1111-111111111111",
+        "22222222-2222-2222-2222-222222222222",
+    ))
+    assert "Hermes portfolio recommendation" in reply
+    assert "AAPL 25.0%" in reply
+    assert "Paper advice only" in reply
+
+
+def test_chat_updates_owned_notification_channel(monkeypatch):
+    from engine.agents import hermes_jobs
+    from engine.web.ph_chat import _dispatch_hermes_job_command
+
+    captured = {}
+    monkeypatch.setattr(hermes_jobs, "set_notification_channel", lambda *args: (
+        captured.update(job_id=args[0], user_id=args[1], channel=args[2]) or
+        {"job_id": args[0]}
+    ))
+    job_id = "66666666-6666-6666-6666-666666666666"
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        f"notify me both in app and email for paper job {job_id}",
+        "11111111-1111-1111-1111-111111111111",
+        "22222222-2222-2222-2222-222222222222",
+    ))
+    assert captured["channel"] == "both"
+    assert captured["user_id"] == "11111111-1111-1111-1111-111111111111"
+    assert "Delivery:** `both`" in reply
+
+
+def test_position_advice_uses_approved_entry_exit_thresholds():
+    from engine.agents.hermes_advice import position_advice
+
+    items = position_advice(
+        [{"symbol": "AAPL", "unrealized_plpc": "0.016"},
+         {"symbol": "MSFT", "unrealized_plpc": "-0.006"}],
+        ["AAPL", "MSFT", "NVDA"],
+        {"take_profit_threshold": 1.5, "stop_loss_threshold": 0.5,
+         "dip_threshold": 3.0},
+    )
+    by_symbol = {item["symbol"]: item for item in items}
+    assert by_symbol["AAPL"]["action"] == "EXIT"
+    assert by_symbol["MSFT"]["action"] == "EXIT"
+    assert by_symbol["NVDA"]["action"] == "WATCH_ENTRY"
+    assert all("order" not in item for item in items)
+
+
+def test_trade_advice_reports_confirmed_paper_entry_without_ordering():
+    from agents.paper_trade_agent import PaperTradeAgent
+
+    items = PaperTradeAgent._trade_advice([
+        {"symbol": "AAPL", "side": "buy", "dip_pct": 3.2, "qty": 2}
+    ])
+    assert items[0]["action"] == "ENTRY_EXECUTED"
+    assert "3.20%" in items[0]["rationale"]
+    assert "client" not in inspect.getsource(PaperTradeAgent._trade_advice)
+
+
+def test_advice_email_html_escapes_model_or_market_text():
+    from engine.agents.hermes_advice import advice_email_html
+
+    body = advice_email_html([{"summary": "AAPL <EXIT>",
+                               "rationale": "price & risk"}])
+    assert "&lt;EXIT&gt;" in body
+    assert "price &amp; risk" in body
+
+
+def test_portfolio_risk_weights_fall_back_without_complete_market_data(monkeypatch):
+    from engine.agents import hermes_advice
+
+    monkeypatch.setattr(
+        "engine.feeds.market_data.get_historical_data", lambda *args, **kwargs: None
+    )
+    weights, method = hermes_advice._risk_weights(["AAPL", "MSFT"], 0.5, 0.25)
+    assert weights == {"AAPL": 0.25, "MSFT": 0.25}
+    assert method == "capped_equal_weight"
+
+
+def test_default_agent_does_not_enable_hermes_advice():
+    from agents.orchestrator import Orchestrator
+
+    source = inspect.getsource(Orchestrator.run_paper_trade)
+    assert 'config.get("agent_framework") == "hermes"' in source
+    assert 'else False' in source
+
+
+def test_advice_channel_does_not_change_daily_report_schedule():
+    from engine.agents import hermes_jobs
+
+    source = inspect.getsource(hermes_jobs.set_notification_channel)
+    assert '"notification_channel": channel' in source
+    assert '"email_notifications"' not in source
+
+
+def test_running_paper_agent_refreshes_advice_preferences():
+    from agents.paper_trade_agent import PaperTradeAgent
+
+    source = inspect.getsource(PaperTradeAgent.run)
+    assert 'stop_event.advice_settings()' in source
+    assert 'live_advice.get("enabled"' in source
+
+
 def test_durable_dispatch_precedes_remote_hermes_runtime():
     from engine.web import ph_chat
 
@@ -337,6 +484,10 @@ def test_async_job_schema_and_worker_are_alpatrade_scoped():
     assert "alpatrade.hermes_jobs" in controls
     assert "control_requested" in controls
     assert "'paused'" in controls and "'stopped'" in controls
+    advice = Path("sql/21_hermes_portfolio_advice.sql").read_text(encoding="utf-8")
+    assert "alpatrade.hermes_advice" in advice
+    assert "REFERENCES alpatrade.users" in advice
+    assert "CREATE SCHEMA" not in advice.upper()
 
 
 def test_compose_keeps_executor_credentials_out_of_hermes_model_service():
@@ -375,6 +526,23 @@ def test_daily_report_uses_explicit_owned_recipient(monkeypatch):
         to_email="owner@example.com",
     ) is True
     assert captured["to"] == "owner@example.com"
+
+
+def test_daily_report_includes_hermes_advice(monkeypatch):
+    from utils import email_util
+
+    captured = {}
+    monkeypatch.setattr(email_util, "send_email_to", lambda to, subject, body: (
+        captured.update(to=to, body=body) or True
+    ))
+    assert email_util.send_daily_pnl_report(
+        date="2026-08-21", pnl=1.0, positions=[], trades=[],
+        to_email="owner@example.com",
+        agent_advice=[{"summary": "AAPL: WATCH_EXIT",
+                       "rationale": "Near take-profit."}],
+    )
+    assert "Hermes Agent Advice" in captured["body"]
+    assert "AAPL: WATCH_EXIT" in captured["body"]
 
 
 def test_hermes_job_config_does_not_duplicate_login_email():

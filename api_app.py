@@ -1357,6 +1357,7 @@ async def hermes_candidate_paper(
             account_id=req.account_id,
             extended_hours=(req.hours == "extended") if req.hours else None,
             pdt_protection=True if req.pdt is None else req.pdt,
+            notification_channel=req.notification_channel,
         )
     except ValueError as exc:
         detail = str(exc)
@@ -1398,6 +1399,47 @@ async def hermes_stop_paper_job(
 ):
     """Request a cooperative stop for one owned paper job."""
     return await _hermes_paper_control(job_id, "stop", user)
+
+
+@app.get("/v2/hermes/advice", tags=["hermes"])
+async def hermes_advice(
+    job_id: Optional[str] = None, user: Dict = Depends(require_hermes_user),
+):
+    """List only portfolio and entry/exit advice owned by the delegated user."""
+    from engine.agents.hermes_advice import list_owned
+    items = await asyncio.to_thread(list_owned, _uid(user), job_id=job_id)
+    return {"advice": items, "total": len(items)}
+
+
+@app.post("/v2/hermes/candidates/{candidate_id}/portfolio", tags=["hermes"])
+async def hermes_construct_portfolio(
+    candidate_id: str, user: Dict = Depends(require_hermes_user),
+):
+    """Persist paper-only portfolio construction advice for an owned candidate."""
+    from engine.agents.hermes_advice import construct_portfolio
+    try:
+        return await asyncio.to_thread(
+            construct_portfolio, candidate_id, _uid(user), str(user["thread_id"])
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.post("/v2/hermes/jobs/{job_id}/notifications/{channel}", tags=["hermes"])
+async def hermes_notifications(
+    job_id: str, channel: str, user: Dict = Depends(require_hermes_user),
+):
+    """Set advice delivery for one active paper job owned by this user."""
+    from engine.agents.hermes_jobs import set_notification_channel
+    try:
+        job = await asyncio.to_thread(
+            set_notification_channel, job_id, _uid(user), channel
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not job:
+        raise HTTPException(status_code=404, detail="Active owned paper job not found")
+    return job
 
 
 @app.post("/v2/full", response_model=FullCycleResponse, tags=["agents"])

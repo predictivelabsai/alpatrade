@@ -216,7 +216,7 @@ PostgreSQL with `alpatrade` schema. Key tables: `runs`, `trades`, `backtest_summ
 `strategy_candidates`/`hermes_jobs` (`sql/18`–`sql/20`), and the autonomy engine tables
 `autonomy_runs`/`autonomy_run_steps`/`autonomy_events`/`autonomy_promotions` (`sql/15`), plus
 `alpha_research_runs` for user-scoped Growth/Value reports (`sql/17`). Migrations in
-`sql/` (numbered `01_` through `20_`, idempotent migrations). Apply one with
+`sql/` (numbered `01_` through `21_`, idempotent migrations). Apply one with
 `python run_migration.py sql/NN_name.sql` (no migration-tracking table). All data tables carry `user_id`
 (and `account_id`) for isolation.
 

@@ -168,6 +168,9 @@ def _guide_chat():
             "/hermes pause paper job <job-id>\n"
             "/hermes resume paper job <job-id>\n"
             "/hermes stop paper job <job-id>\n"
+            "/hermes construct an optimal portfolio from candidate <candidate-id>\n"
+            "/hermes show my recent advice\n"
+            "/hermes notify me both in app and email for paper job <job-id>\n"
             "/deepagents compare these strategies\n"
             "/langgraph summarize the last run"
         )),

@@ -148,6 +148,29 @@ def set_email_reports(job_id: str, user_id: str, enabled: bool) -> Optional[dict
     return _job_dict(row) if row else None
 
 
+def set_notification_channel(job_id: str, user_id: str, channel: str) -> Optional[dict]:
+    """Choose in-app, email, both, or no Hermes advice alerts for an owned job."""
+    from engine.agents.hermes_advice import normalize_channel
+    from engine.auth import get_user_by_id
+
+    channel = normalize_channel(channel)
+    if channel in {"email", "both"} and not (get_user_by_id(user_id) or {}).get("email"):
+        raise ValueError("Your login account has no notification email")
+    patch = json.dumps({
+        "advice_enabled": channel != "none",
+        "notification_channel": channel,
+    })
+    with _pool().get_session() as session:
+        row = session.execute(text("""
+            UPDATE alpatrade.hermes_jobs
+            SET config = config || CAST(:patch AS JSONB), updated_at = NOW()
+            WHERE job_id = CAST(:job_id AS UUID) AND user_id = CAST(:uid AS UUID)
+              AND kind = 'paper' AND status IN ('queued', 'running', 'paused')
+            RETURNING *
+        """), {"job_id": job_id, "uid": user_id, "patch": patch}).mappings().first()
+    return _job_dict(row) if row else None
+
+
 def enqueue_candidate_paper(
     candidate_id: str,
     user_id: str,
@@ -159,6 +182,7 @@ def enqueue_candidate_paper(
     account_id: Optional[str] = None,
     extended_hours: Optional[bool] = None,
     pdt_protection: bool = True,
+    notification_channel: str = "in_app",
 ) -> dict:
     """Validate ownership/account credentials and queue an owned paper candidate."""
     from agents.orchestrator import parse_duration
@@ -184,9 +208,13 @@ def enqueue_candidate_paper(
         account_id = str(owned_accounts[0]["account_id"]) if owned_accounts else None
     if not account_id or not get_alpaca_keys(user_id, account_id):
         raise ValueError("Link an Alpaca paper account before starting paper trading")
+    from engine.agents.hermes_advice import normalize_channel
+    notification_channel = normalize_channel(notification_channel)
     user = get_user_by_id(user_id) or {}
-    report_email = str(user.get("email") or "") if email_reports else ""
-    if email_reports and not report_email:
+    report_email = str(user.get("email") or "") if (
+        email_reports or notification_channel in {"email", "both"}
+    ) else ""
+    if (email_reports or notification_channel in {"email", "both"}) and not report_email:
         raise ValueError("Your login account has no report email")
     config = {
         "duration_seconds": parse_duration(duration),
@@ -197,6 +225,9 @@ def enqueue_candidate_paper(
         "source_run_id": candidate["source_run_id"],
         "poll_interval_seconds": poll,
         "email_notifications": email_reports,
+        "advice_enabled": notification_channel != "none",
+        "notification_channel": notification_channel,
+        "advice_interval_seconds": 900,
         "report_hour_utc": 21,
         "agent_name": "Hermes",
         "agent_framework": "hermes",
@@ -289,6 +320,85 @@ class DatabaseJobControl:
             """), {"job_id": self.job_id}).first()
         config = row[0] if row else {}
         return bool(config.get("email_notifications")), str(row[1] or "") if row else ""
+
+    def advice_settings(self) -> dict:
+        """Resolve mutable advice preferences and owner context at delivery time."""
+        with _pool().get_session() as session:
+            row = session.execute(text("""
+                SELECT j.user_id, j.account_id, j.thread_id, j.candidate_id, j.config, u.email
+                FROM alpatrade.hermes_jobs j
+                JOIN alpatrade.users u ON u.user_id = j.user_id
+                WHERE j.job_id = CAST(:job_id AS UUID)
+            """), {"job_id": self.job_id}).mappings().first()
+        if not row:
+            return {"enabled": False}
+        config = dict(row["config"] or {})
+        return {
+            "enabled": bool(config.get("advice_enabled", False)),
+            "channel": config.get("notification_channel", "in_app"),
+            "interval_seconds": max(60, int(config.get("advice_interval_seconds", 900))),
+            "user_id": str(row["user_id"]),
+            "account_id": str(row["account_id"]) if row["account_id"] else None,
+            "thread_id": str(row["thread_id"]) if row["thread_id"] else None,
+            "candidate_id": str(row["candidate_id"]) if row["candidate_id"] else None,
+            "email": str(row["email"] or ""),
+        }
+
+    def publish_advice(self, items: list[dict]) -> list[dict]:
+        """Persist new advice and deliver actionable changes via the selected channels."""
+        from engine.agents.hermes_advice import advice_email_html, save_advice, mark_delivered
+        settings = self.advice_settings()
+        if not settings.get("enabled") or not items:
+            return []
+        saved = []
+        with _pool().get_session() as session:
+            for item in items:
+                duplicate = session.execute(text("""
+                    SELECT 1 FROM alpatrade.hermes_advice
+                    WHERE job_id = CAST(:job_id AS UUID) AND symbol IS NOT DISTINCT FROM :symbol
+                      AND action = :action AND created_at > NOW() - INTERVAL '6 hours'
+                    LIMIT 1
+                """), {"job_id": self.job_id, "symbol": item.get("symbol"),
+                        "action": item["action"]}).first()
+                if not duplicate:
+                    saved.append(item)
+        ids = []
+        for item in saved:
+            ids.append(save_advice(
+                user_id=settings["user_id"], account_id=settings["account_id"],
+                job_id=self.job_id, candidate_id=settings["candidate_id"],
+                thread_id=settings["thread_id"], symbol=item.get("symbol"),
+                advice_type=item["advice_type"], action=item["action"],
+                severity=item["severity"], summary=item["summary"],
+                rationale=item["rationale"], snapshot=item.get("snapshot") or {},
+            ))
+        actionable = [(item, aid) for item, aid in zip(saved, ids)
+                      if item.get("severity") in {"watch", "action"}
+                      and item.get("action") != "WATCH_ENTRY"]
+        channel = settings["channel"]
+        if actionable and channel in {"in_app", "both"} and settings["thread_id"]:
+            from engine.ai.chat_store import save_message
+            body = "## Hermes portfolio advice\n\n" + "\n".join(
+                f"- **{item['summary']}** — {item['rationale']}" for item, _ in actionable
+            ) + "\n\nAdvice only; no additional order was placed."
+            save_message(settings["thread_id"], "assistant", body, metadata={
+                "agent": "Hermes", "framework": "hermes", "job_id": self.job_id,
+                "event": "portfolio_advice",
+            })
+            mark_delivered([aid for _, aid in actionable], in_app=True)
+        if actionable and channel in {"email", "both"} and settings["email"]:
+            from utils.email_util import send_email_to
+            if send_email_to(settings["email"], "AlpaTrade Hermes entry/exit advice",
+                             advice_email_html([item for item, _ in actionable])):
+                mark_delivered([aid for _, aid in actionable], email=True)
+        return saved
+
+    def recent_advice(self, limit: int = 20) -> list[dict]:
+        settings = self.advice_settings()
+        if not settings.get("user_id"):
+            return []
+        from engine.agents.hermes_advice import list_owned
+        return list_owned(settings["user_id"], job_id=self.job_id, limit=limit)
 
 
 def finish(

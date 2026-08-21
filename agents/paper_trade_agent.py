@@ -84,6 +84,8 @@ class PaperTradeAgent:
         email_notifications = request.get("email_notifications", True)
         report_email = request.get("report_email", "")
         report_hour_utc = int(request.get("report_hour_utc", 21))
+        advice_enabled = bool(request.get("advice_enabled", False))
+        advice_interval = max(60, int(request.get("advice_interval_seconds", 900)))
 
         # PDT protection: default True, disable with pdt:false for accounts >$25k
         pdt_protection = request.get("pdt_protection")
@@ -165,6 +167,7 @@ class PaperTradeAgent:
         start_time = datetime.now(timezone.utc)
         end_time = start_time + timedelta(seconds=duration)
         last_daily_report = None
+        last_advice_at = 0.0
         cycle_count = 0
 
         logger.info(f"Trading until {end_time.isoformat()}")
@@ -181,6 +184,12 @@ class PaperTradeAgent:
                     break
 
                 now = datetime.now(timezone.utc)
+                if stop_event and hasattr(stop_event, "advice_settings"):
+                    live_advice = stop_event.advice_settings()
+                    advice_enabled = bool(live_advice.get("enabled", advice_enabled))
+                    advice_interval = int(
+                        live_advice.get("interval_seconds", advice_interval)
+                    )
 
                 # Send at most one owned report per UTC trading date after the
                 # configured post-close hour, even while the market is closed.
@@ -189,7 +198,11 @@ class PaperTradeAgent:
                         email_notifications, report_email = stop_event.report_target()
                     if email_notifications:
                         self._record_daily_pnl()
-                        self._send_daily_email(now.date().isoformat(), report_email)
+                        daily_advice = (stop_event.recent_advice() if stop_event and
+                                        hasattr(stop_event, "recent_advice") else [])
+                        self._send_daily_email(
+                            now.date().isoformat(), report_email, advice=daily_advice
+                        )
                     last_daily_report = now.date()
 
                 # Check if market is open
@@ -214,6 +227,7 @@ class PaperTradeAgent:
 
                 # Execute one trading cycle
                 try:
+                    trades_before_cycle = len(self.trades)
                     self._execute_cycle(
                         symbols=symbols,
                         dip_threshold=dip_threshold,
@@ -223,6 +237,17 @@ class PaperTradeAgent:
                         min_hold_days=min_hold_days,
                         capital_per_trade=capital_per_trade,
                     )
+                    if advice_enabled and stop_event and hasattr(stop_event, "publish_advice"):
+                        trade_advice = self._trade_advice(self.trades[trades_before_cycle:])
+                        if trade_advice:
+                            stop_event.publish_advice(trade_advice)
+                    if (advice_enabled and stop_event and
+                            hasattr(stop_event, "publish_advice") and
+                            time.monotonic() - last_advice_at >= advice_interval):
+                        stop_event.publish_advice(
+                            self._build_hermes_advice(symbols, params)
+                        )
+                        last_advice_at = time.monotonic()
                 except Exception as e:
                     logger.error(f"Trading cycle error: {e}")
                     if self.message_bus:
@@ -263,6 +288,38 @@ class PaperTradeAgent:
 
         # 2. Process entries
         self._process_entries(symbols, dip_threshold, capital_per_trade)
+
+    def _build_hermes_advice(self, symbols: List[str], params: Dict) -> List[Dict]:
+        """Build paper-only observations; delivery and ownership stay in Hermes control."""
+        from engine.agents.hermes_advice import position_advice
+        try:
+            positions = self.client.get_positions()
+            if not isinstance(positions, list):
+                positions = []
+        except Exception as exc:
+            logger.warning("Could not gather positions for Hermes advice: %s", exc)
+            positions = []
+        return position_advice(positions, symbols, params)
+
+    @staticmethod
+    def _trade_advice(trades: List[Dict]) -> List[Dict]:
+        """Describe strategy-confirmed paper entries/exits without creating orders."""
+        items = []
+        for trade in trades:
+            symbol = str(trade.get("symbol") or "").upper()
+            side = str(trade.get("side") or "").lower()
+            is_entry = side == "buy" and "exit_price" not in trade
+            action = "ENTRY_EXECUTED" if is_entry else "EXIT_EXECUTED"
+            reason = (f"Approved dip signal confirmed at {float(trade.get('dip_pct', 0)):.2f}%."
+                      if is_entry else str(trade.get("reason") or "Approved exit rule triggered."))
+            items.append({
+                "symbol": symbol,
+                "advice_type": "entry" if is_entry else "exit",
+                "action": action, "severity": "action",
+                "summary": f"{symbol}: {action}", "rationale": reason,
+                "snapshot": dict(trade),
+            })
+        return items
 
     def _is_pdt_blocked(self) -> bool:
         """Check if account is PDT-blocked right now."""
@@ -679,7 +736,8 @@ class PaperTradeAgent:
         except Exception as e:
             logger.warning(f"Could not record daily P&L: {e}")
 
-    def _send_daily_email(self, date: str, to_email: str = ""):
+    def _send_daily_email(self, date: str, to_email: str = "",
+                          advice: Optional[List[Dict]] = None):
         """Send daily P&L email report via Postmark."""
         try:
             from utils.email_util import send_daily_pnl_report
@@ -724,6 +782,7 @@ class PaperTradeAgent:
                 account_name=self.account_name,
                 user_name=user_name,
                 to_email=to_email,
+                agent_advice=advice or [],
             )
         except Exception as e:
             logger.warning(f"Could not send daily email: {e}")

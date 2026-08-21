@@ -3,6 +3,177 @@
 This runbook is the permanent setup, deployment, verification, and recovery
 guide for the Nous Hermes Agent integration.
 
+## Service roles: do not confuse these containers
+
+| Service | Responsibility | Sensitive access |
+|---|---|---|
+| `hermes` | Nous model gateway, memory, skills, and free-form `/hermes` reasoning on private port 8642 | Model-provider key and dedicated restricted broker key only |
+| `hermes-jobs` | AlpaTrade-owned durable executor for backtests, paper sessions, portfolio monitoring, advice persistence, and notifications | Database, encrypted per-user Alpaca paper credentials, and Postmark |
+| `agui` | Authenticated browser chat, history, voice, deterministic Hermes command routing, and in-app messages | User session, database, and internal Hermes gateway key |
+| `api` | Restricted `/v2/hermes/*` broker that validates the short-lived user delegation and enforces ownership | Database and encrypted account credentials |
+
+The `hermes` model container does **not** run the paper loop and does not receive
+`DATABASE_URL`, Alpaca keys, `JWT_SECRET`, or the general API service key.
+`hermes-jobs` is not a second Hermes model: it is the trusted AlpaTrade worker
+that executes already-authorized paper tasks and writes their results. The
+normal DeepAgents/LangGraph runtime is separate and remains unchanged.
+
+## Complete installation checklist
+
+### 1. Configure Coolify variables
+
+Set these on the AlpaTrade Compose resource, using secret values from your own
+secret manager. Never put their values in Git or a PR:
+
+```text
+HERMES_API_SERVER_KEY     required; random 64-character internal key
+HERMES_IMAGE_TAG          optional; defaults to the reviewed pinned image
+HERMES_API_MODEL          optional gateway model label
+XAI_API_KEY               required when xAI is the selected provider
+DATABASE_URL              used by api/agui/hermes-jobs, never by hermes
+ENCRYPTION_KEY            decrypts owned Alpaca credentials in trusted services
+JWT_SECRET                used by api/agui, never by hermes
+POSTMARK_API_KEY          required for email delivery
+FROM_EMAIL                verified Postmark sender
+```
+
+Keep the existing Alpaca paper variables and linked per-user account setup. Do
+not expose port 8642 publicly.
+
+### 2. Deploy the branch
+
+In Coolify, select `feat/hermes-agent-phase-1` as the Git source branch and
+deploy the complete Compose resource. Confirm these services are healthy:
+
+```text
+hermes
+api
+agui
+hermes-jobs
+paper-strategy
+```
+
+### 3. Configure Hermes once
+
+Open the `hermes` container terminal:
+
+```bash
+hermes setup
+```
+
+Choose `Full Setup`, `xAI Grok`, `xAI` API-key authentication, keep the detected
+key, keep `https://api.x.ai/v1`, select the desired Grok model, and keep the
+local terminal backend. Here, local means inside the isolated Coolify container.
+Select no messaging gateway. Enable Terminal & Processes for the restricted
+AlpaTrade skill; keep File Operations, Code Execution, Cron, Computer Use, and
+Task Delegation disabled. Configuration persists in `/opt/data` and normal
+redeploys do not require another wizard run.
+
+### 4. Apply database migrations
+
+Open the newly deployed `api` container terminal and run each missing migration
+in numeric order. They are idempotent:
+
+```bash
+cd /app
+python run_migration.py sql/18_hermes_agent_attribution.sql
+python run_migration.py sql/19_hermes_jobs.sql
+python run_migration.py sql/20_hermes_paper_controls.sql
+python run_migration.py sql/21_hermes_portfolio_advice.sql
+```
+
+Migration 21 creates only `alpatrade.hermes_advice`. None of these commands
+grants Hermes direct SQL access or modifies another PostgreSQL schema.
+
+### 5. Restart trusted application services
+
+Restart or redeploy `api`, `agui`, and `hermes-jobs` after migrations. Preserve
+the `hermes-data` volume. A continuous paper job may briefly show `running`
+while its old worker heartbeat becomes stale; it is safely requeued and broker
+positions/orders are reconciled before execution continues.
+
+### 6. Verify and test end to end
+
+From the `agui` terminal:
+
+```bash
+python -c "import urllib.request; print(urllib.request.urlopen('http://hermes:8642/health', timeout=10).read().decode())"
+```
+
+Then sign in to AlpaTrade and run these one at a time:
+
+```text
+/hermes help
+/hermes run a buy_the_dip backtest for AAPL, MSFT, GOOGL, AMZN, META, TSLA and NVDA over 3 months and optimize Sharpe
+/hermes show my recent jobs
+/hermes construct an optimal portfolio from candidate <candidate-id>
+/hermes start candidate <candidate-id> in continuous paper trading and email daily reports
+/hermes notify me both in app and email for paper job <paper-job-id>
+/hermes show my recent advice
+```
+
+Expected behavior: backtest and paper starts return immediately; completion and
+advice messages appear in the originating saved chat; refreshing or reopening
+the thread retains them; the paper job remains active when the page closes.
+Use these control tests only after copying the paper job ID:
+
+```text
+/hermes pause paper job <paper-job-id>
+/hermes resume paper job <paper-job-id>
+/hermes stop paper job <paper-job-id>
+```
+
+Do not run `stop` during initial continuous-operation testing unless you intend
+to terminate that job.
+
+## What is saved and where
+
+All application records are in the `alpatrade` schema and carry the authenticated
+`user_id`; account-bound records also carry `account_id`:
+
+| Data | Table/location |
+|---|---|
+| Saved browser threads and messages | `alpatrade.chat_conversations`, `alpatrade.chat_messages` |
+| Backtest and paper job status/config/results | `alpatrade.hermes_jobs` |
+| Optimized strategy parameters and metrics | `alpatrade.strategy_candidates` |
+| Backtest/paper run records | `alpatrade.runs` and existing trade/result tables |
+| Portfolio, entry, exit, hold, and risk advice | `alpatrade.hermes_advice` |
+| Hermes model profile, memory, sessions, and skills | `hermes-data` volume mounted at `/opt/data` |
+
+Email addresses are resolved server-side from the authenticated login and are
+not copied into Hermes job configuration. Advice is saved before delivery.
+In-app alerts are saved into the originating owned chat; email alerts use only
+that login email. `both` enables both channels. Daily-email enablement remains a
+separate setting from immediate advice delivery.
+
+## Command reference
+
+```text
+/hermes help
+/hermes show my recent jobs
+/hermes show my recent advice
+/hermes show the result of backtest <job-or-run-id>
+/hermes construct an optimal portfolio from candidate <candidate-id>
+/hermes start candidate <candidate-id> in continuous paper trading
+/hermes enable daily email reports for paper job <job-id>
+/hermes disable daily email reports for paper job <job-id>
+/hermes notify me in app for paper job <job-id>
+/hermes notify me by email for paper job <job-id>
+/hermes notify me both in app and email for paper job <job-id>
+/hermes pause paper job <job-id>
+/hermes resume paper job <job-id>
+/hermes stop paper job <job-id>
+```
+
+Portfolio construction attempts inverse 120-day volatility weighting while
+respecting the candidate position limit and a 25% per-symbol cap. If complete
+market history is unavailable, the saved recommendation explicitly reports a
+capped equal-weight fallback. Monitoring refreshes approximately every 15
+minutes during market operation and suppresses identical alerts for six hours.
+It reports strategy-confirmed paper entries, exits, near-exit thresholds, and
+hold observations. Advice never creates an extra order, and no Hermes live-order
+route exists.
+
 ## Architecture and safety boundary
 
 Hermes runs as a separate service in the AlpaTrade Coolify Compose resource.
@@ -273,7 +444,22 @@ Use an owned candidate ID returned by a completed Hermes backtest:
 /hermes stop paper job <job-id>
 /hermes enable daily email reports for paper job <job-id>
 /hermes disable daily email reports for paper job <job-id>
+/hermes help
+/hermes construct an optimal portfolio from candidate <candidate-id>
+/hermes show my recent advice
+/hermes notify me in app for paper job <job-id>
+/hermes notify me by email for paper job <job-id>
+/hermes notify me both in app and email for paper job <job-id>
 ```
+
+Apply `sql/21_hermes_portfolio_advice.sql` before using portfolio advice. It creates
+only `alpatrade.hermes_advice`. Recommendations are scoped by `user_id`, account,
+candidate, paper job, and chat thread. The paper worker reviews positions every 15
+minutes by default, suppresses identical alerts for six hours, and saves advice
+before attempting delivery. `in_app` writes to the originating saved chat; `email`
+uses the account login email; `both` does both. Daily P&L email includes recent
+Hermes advice. Advice never submits an additional order and all execution remains
+under the already approved paper strategy.
 
 Daily reports go only to the authenticated account's login email. The recipient
 is resolved server-side and is never accepted from chat text. Controls update

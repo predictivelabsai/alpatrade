@@ -65,6 +65,9 @@ class HermesPaperRequest(BaseModel):
     hours: Optional[str] = None
     email: Optional[bool] = None
     pdt: Optional[bool] = None
+    notification_channel: str = Field(
+        "in_app", description="Hermes advice delivery: in_app, email, both, or none"
+    )
 
 
 class ValidateRequest(BaseModel):
