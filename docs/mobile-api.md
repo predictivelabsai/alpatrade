@@ -237,7 +237,7 @@ invocations are:
 | POST | `/v2/deepagents` | **Canonical** authenticated DeepAgent; durable JSON or SSE. |
 | POST | `/v2/agents/chat/invoke` | Compatibility non-streaming JSON chat response. |
 | POST | `/v2/chat` | Compatibility SSE; anonymous public research only. |
-| POST | `/v2/agents/premarket/invoke` | Read-only premarket scan. |
+| POST | `/v2/agents/premarket/invoke` | Read-only scheduler-backed premarket screening. |
 | POST | `/v2/agents/alpha-growth/invoke` | Growth research methodology. |
 | POST | `/v2/agents/alpha-value/invoke` | Value research methodology. |
 | POST | `/v2/agents/alpha-compare/invoke` | Combined Growth + Value report. |
@@ -245,6 +245,15 @@ invocations are:
 
 The Backtest, Validation, Paper Trade, Reconciliation, Report, and Orchestrator agents
 use the typed action/data endpoints above rather than duplicate wrapper routes.
+
+Premarket requests accept an exact optional `date` (`YYYY-MM-DD`), either
+`sector` or `ticker` (not both), `limit` from 1–50, and `chart` set to `auto`,
+`breadth`, `movers`, or `none`. Responses preserve `report` and `top`, and add
+`effective_date`, the 09:00 ET `as_of` timestamp, explicit `freshness`,
+non-prescriptive commentary, and optional Plotly chart data. Exact historical
+dates never fall forward or backward. The deprecated `refresh=true` form returns
+HTTP 409 with `detail.code = "scheduler_managed"` because Finespresso is the sole
+snapshot writer.
 
 Trusted services authenticate with `X-API-Key`. Set `API_SERVICE_KEY` or a comma-separated
 `API_SERVICE_KEYS` value on the API deployment, then include `X-User-Id` for endpoints that

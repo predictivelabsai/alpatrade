@@ -367,6 +367,8 @@ class DeepAgentService:
             "filesystem and shell are unavailable. Do not ask for or reveal secrets, "
             "credentials, raw exceptions, or internal logs. Mutating tools enforce an "
             "explicit-intent gate; if rejected, explain that no action occurred. "
+            "For premarket results, preserve the tool's facts/evidence/watch/risk framing "
+            "and do not add prescriptive trading guidance. "
             f"{boundary}"
         )
 

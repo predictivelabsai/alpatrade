@@ -32,6 +32,14 @@ def premarket_runs(limit: int = 30) -> list[dict]:
                  {"limit": max(1, min(limit, 100))})
 
 
+def premarket_run(run_id: str) -> dict | None:
+    rows = _rows("""SELECT run_id, timestamp, scan_type, total_stocks_scanned,
+        total_up_movements, total_down_movements
+        FROM public.premarket_scan_runs WHERE run_id=:run_id LIMIT 1""",
+                 {"run_id": run_id})
+    return rows[0] if rows else None
+
+
 def premarket_snapshot(run_id: str | None = None, limit: int = 1000) -> list[dict]:
     clause = "r.run_id=:run_id" if run_id else (
         "r.run_id=(SELECT run_id FROM public.premarket_scan_runs ORDER BY timestamp DESC LIMIT 1)"

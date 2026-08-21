@@ -22,7 +22,7 @@ def test_openapi_includes_direct_paper_order_endpoint():
 def test_openapi_exposes_docs_auth_and_external_agents():
     spec = app.openapi()
 
-    assert spec["info"]["version"] == "0.10.0"
+    assert spec["info"]["version"] == "0.11.0"
     assert set(spec["components"]["securitySchemes"]) == {
         "BearerAuth", "ServiceApiKey",
     }
@@ -103,6 +103,31 @@ def test_openapi_documents_agent_skills_and_redoc_groups():
     assert spec["externalDocs"]["url"] == "https://alpatrade.chat/developers"
     assert spec["paths"]["/health"]["get"]["security"] == []
     assert operation["security"]
+
+
+def test_openapi_documents_premarket_filters_and_additive_response_fields():
+    spec = app.openapi()
+    request = spec["components"]["schemas"]["PremarketAgentRequest"]["properties"]
+    response = spec["components"]["schemas"]["PremarketAgentResponse"]["properties"]
+
+    assert {"refresh", "limit", "date", "sector", "ticker", "chart"} <= set(request)
+    assert request["chart"]["enum"] == ["auto", "breadth", "movers", "none"]
+    assert {"report", "top", "effective_date", "as_of", "freshness", "commentary", "chart"} <= set(response)
+
+
+def test_premarket_refresh_returns_scheduler_managed_conflict(monkeypatch):
+    monkeypatch.setenv("API_SERVICE_KEY", "premarket-service-key")
+    response = TestClient(app).post(
+        "/v2/agents/premarket/invoke",
+        json={"refresh": True},
+        headers={
+            "X-API-Key": "premarket-service-key",
+            "X-User-Id": "11111111-1111-4111-8111-111111111111",
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "scheduler_managed"
 
 
 def test_tenant_endpoints_reject_anonymous_and_spoofed_user_headers():

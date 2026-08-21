@@ -37,6 +37,7 @@ from engine.web.ph_commands import (
     AGENT_SHORTCUTS,
     ALPHA_RESEARCH_SHORTCUTS,
     MAIN_NAV,
+    PREMARKET_AGENT_PROMPT,
 )
 
 # --- CDN assets -------------------------------------------------------------
@@ -160,6 +161,19 @@ def _menu_group(label: str, items, active: Optional[str]):
     )
 
 
+def _premarket_agent_shortcut():
+    """Always-visible entry that fills, but never submits, the chat prompt."""
+    return Button(
+        Span("☀ Premarket Agent", cls="cat-name"),
+        Span("›", cls="cat-arrow"),
+        cls="cat-toggle premarket-agent-shortcut",
+        type="button",
+        title="Open the latest scheduler-backed premarket overview in chat",
+        aria_label="☀ Premarket Agent",
+        onclick=f"fillChat({PREMARKET_AGENT_PROMPT!r})",
+    )
+
+
 def _nav_section(label: str, *children):
     """A compact top-level sidebar section, collapsed on every page load."""
     return Details(
@@ -243,7 +257,8 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             ),
             _nav_section(
                 "Agents",
-                Div(*[_menu_group(lbl, items, active) for lbl, items in AGENT_SHORTCUTS],
+                Div(_premarket_agent_shortcut(),
+                    *[_menu_group(lbl, items, active) for lbl, items in AGENT_SHORTCUTS],
                     cls="agent-browser"),
             ),
             _nav_section(

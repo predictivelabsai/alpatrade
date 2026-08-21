@@ -1,6 +1,6 @@
 """Pydantic request/response models for AlpaTrade API v2."""
 
-from datetime import date, datetime
+from datetime import date as Date, datetime
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -373,7 +373,7 @@ class AdvisorReport(BaseModel):
     report_id: str
     account_id: str
     account_name: str
-    session_date: date
+    session_date: Date
     status: Literal["generating", "completed", "partial", "failed"]
     severity: Literal["insufficient_data", "monitor", "review", "urgent"]
     evidence_window: Dict[str, Any] = Field(default_factory=dict)
@@ -579,8 +579,24 @@ class DeepAgentResponse(BaseModel):
 
 
 class PremarketAgentRequest(BaseModel):
-    refresh: bool = Field(False, description="Fetch a new scan instead of using the latest saved report")
+    refresh: bool = Field(
+        False,
+        description="Deprecated. True returns 409 because the external scheduler owns refreshes.",
+        deprecated=True,
+    )
     limit: int = Field(10, ge=1, le=50)
+    date: Optional[Date] = Field(
+        None, description="Exact scheduler snapshot date (YYYY-MM-DD); never falls back."
+    )
+    sector: Optional[str] = Field(None, min_length=1, max_length=100)
+    ticker: Optional[str] = Field(None, min_length=1, max_length=16)
+    chart: Literal["auto", "breadth", "movers", "none"] = "auto"
+
+    @model_validator(mode="after")
+    def validate_filter_scope(self):
+        if self.sector and self.ticker:
+            raise ValueError("sector and ticker are mutually exclusive")
+        return self
 
 
 class PremarketAgentResponse(BaseModel):
@@ -588,6 +604,11 @@ class PremarketAgentResponse(BaseModel):
     status: str
     report: Optional[Dict[str, Any]] = None
     top: Dict[str, Any] = Field(default_factory=dict)
+    effective_date: Optional[Date] = None
+    as_of: Optional[datetime] = None
+    freshness: Dict[str, Any] = Field(default_factory=dict)
+    commentary: str = ""
+    chart: Optional[Dict[str, Any]] = None
 
 
 class AlphaResearchRequest(BaseModel):

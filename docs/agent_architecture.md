@@ -47,7 +47,7 @@ flowchart LR
 | DeepAgent Assistant | `POST /v2/deepagents` | JSON or SSE | paper-only | Canonical durable, idempotent, tenant-safe coordinator |
 | DeepAgent JSON compatibility | `POST /v2/agents/chat/invoke` | synchronous | paper-only | Older single-message JSON contract over the shared service |
 | DeepAgent SSE compatibility | `POST /v2/chat` | streaming | scoped | Older event shape; anonymous sessions are public-research-only |
-| Premarket Agent | `POST /v2/agents/premarket/invoke` | synchronous | read-only | Movers, catalysts, rankings, and saved scans |
+| Premarket Agent | `POST /v2/agents/premarket/invoke` | synchronous | read-only | Scheduler snapshots, breadth/mover charts, stored catalysts, and freshness risk |
 | Alpha Growth Agent | `POST /v2/agents/alpha-growth/invoke` | synchronous | read-only | Evidence-backed growth research |
 | Alpha Value Agent | `POST /v2/agents/alpha-value/invoke` | synchronous | read-only | Valuation and margin-of-safety research |
 | Alpha Comparison Agent | `POST /v2/agents/alpha-compare/invoke` | synchronous | read-only | Growth and value views over shared evidence |

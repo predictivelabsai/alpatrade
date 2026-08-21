@@ -82,7 +82,9 @@ SYSTEM_PROMPT = (
     "When users ask to see/show a price chart, use show_stock_chart and reply that the chart is rendered "
     "below — do not re-describe the raw numbers. "
     "When users ask for premarket movers, premarket gainers/fallers, or what is moving before the open, "
-    "use get_premarket_movers. When users ask for a market map, sector heatmap, or how the market/sectors are doing, use show_market_map "
+    "use get_premarket_movers. Keep its observed facts, stored catalyst evidence, watch conditions, and "
+    "liquidity/gap-reversal risks separate; never add prescriptive trade guidance. When users ask for a "
+    "market map, sector heatmap, or how the market/sectors are doing, use show_market_map "
     "and relay the tool's summary line verbatim (it names the up/down count and the best & worst sectors) — "
     "do not collapse it to just 'rendered below'. "
     "When users ask to compare the performance/returns of several stocks (X vs Y), use compare_stocks and relay "
@@ -314,20 +316,34 @@ def get_pnl_report() -> str:
         return f"Error fetching PnL report: {e}"
 
 
-def get_premarket_movers(limit: int = 10, refresh: bool = False) -> str:
-    """Show top US premarket movers, gainers and fallers with catalysts.
+def get_premarket_movers(
+    limit: int = 10,
+    refresh: bool = False,
+    date: str = "",
+    sector: str = "",
+    ticker: str = "",
+    chart: str = "auto",
+) -> str:
+    """Read scheduler snapshots with optional date, sector, ticker, and chart."""
+    from agents.premarket_agent import PremarketAgent
+    from engine.research.premarket import PremarketValidationError, SchedulerManagedError
 
-    Set refresh only when the user explicitly asks for a fresh full-universe
-    scan; otherwise the latest persisted scan is returned immediately.
-    """
     try:
-        from agents.premarket_agent import PremarketAgent
-        agent = PremarketAgent()
-        if refresh:
-            agent.run(refresh=True, limit=min(max(limit, 1), 20))
-        return agent.report(limit=min(max(limit, 1), 20))
-    except Exception as e:  # noqa: BLE001
-        return f"Error loading premarket movers: {e}"
+        return PremarketAgent().report(
+            limit=min(max(limit, 1), 50),
+            refresh=refresh,
+            date=date or None,
+            sector=sector or None,
+            ticker=ticker or None,
+            chart=chart,
+        )
+    except SchedulerManagedError as exc:
+        return f"# Premarket screening\n\n`{exc.code}`: {exc}"
+    except PremarketValidationError as exc:
+        return f"# Premarket screening\n\nRequest error: {exc}"
+    except Exception:  # noqa: BLE001
+        logger.warning("Premarket scheduler data is unavailable")
+        return "# Premarket screening\n\nPremarket scheduler data is unavailable."
 
 
 def analyze_prediction_correlation(industry: str = "", event: str = "",
@@ -861,7 +877,7 @@ TOOLS = [
     StructuredTool.from_function(get_pnl_report, name="get_pnl_report",
         description="Get today's paper account P&L report: day P&L, portfolio value, and open positions with unrealised P&L. Use for 'how's my P&L', 'pnl report', 'how am I doing today', 'show my paper account'."),
     StructuredTool.from_function(get_premarket_movers, name="get_premarket_movers",
-        description="Show top US premarket movers, gainers and fallers by sector with press-release catalysts. Set refresh=true only when explicitly asked for a fresh 165-stock scan."),
+        description="Read scheduler-owned US premarket snapshots: latest or exact YYYY-MM-DD date, optional sector or ticker, and auto/breadth/movers/none chart. Refresh is scheduler-managed."),
     StructuredTool.from_function(analyze_prediction_correlation, name="analyze_prediction_correlation",
         description="Analyze stored Finespresso model predictions versus realized next-day moves. Filter by normalized event or industry and render an event×industry heatmap or predicted-vs-actual scatter."),
     StructuredTool.from_function(search_sec_filings, name="search_sec_filings",

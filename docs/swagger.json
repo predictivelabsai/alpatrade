@@ -11,7 +11,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "0.10.0"
+    "version": "0.11.0"
   },
   "servers": [
     {
@@ -116,17 +116,17 @@
                       "slug": "premarket",
                       "name": "Premarket Agent",
                       "category": "research",
-                      "description": "Read-only premarket scan and ranked mover intelligence.",
+                      "description": "Read-only normalized premarket snapshots, charts, and evidence commentary.",
                       "method": "POST",
                       "path": "/v2/agents/premarket/invoke",
                       "access": "authenticated",
                       "execution": "synchronous",
                       "safety": "read_only",
                       "skills": [
-                        "Premarket mover discovery",
-                        "Catalyst and news synthesis",
-                        "Candidate ranking",
-                        "Saved-scan retrieval"
+                        "Latest and exact-date snapshot retrieval",
+                        "Sector breadth and ranked movers",
+                        "Ticker catalyst evidence and risk commentary",
+                        "Interactive Plotly chart payloads"
                       ]
                     },
                     {
@@ -1652,7 +1652,7 @@
           "agent-invocation"
         ],
         "summary": "Invoke Premarket Agent",
-        "description": "Run the read-only Premarket Agent.\n\n### Agent skills\n\n- Premarket mover discovery\n- Catalyst and news synthesis\n- Candidate ranking\n- Saved-scan retrieval\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `read_only`",
+        "description": "Read a scheduler-owned premarket snapshot without refreshing or trading.\n\n### Agent skills\n\n- Latest and exact-date snapshot retrieval\n- Sector breadth and ranked movers\n- Ticker catalyst evidence and risk commentary\n- Interactive Plotly chart payloads\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `read_only`",
         "operationId": "v2_invoke_premarket_v2_agents_premarket_invoke_post",
         "requestBody": {
           "content": {
@@ -1697,10 +1697,10 @@
         "x-agent-slug": "premarket",
         "x-agent-category": "research",
         "x-agent-skills": [
-          "Premarket mover discovery",
-          "Catalyst and news synthesis",
-          "Candidate ranking",
-          "Saved-scan retrieval"
+          "Latest and exact-date snapshot retrieval",
+          "Sector breadth and ranked movers",
+          "Ticker catalyst evidence and risk commentary",
+          "Interactive Plotly chart payloads"
         ],
         "x-agent-execution": "synchronous",
         "x-agent-safety": "read_only"
@@ -4994,8 +4994,9 @@
           "refresh": {
             "type": "boolean",
             "title": "Refresh",
-            "description": "Fetch a new scan instead of using the latest saved report",
-            "default": false
+            "description": "Deprecated. True returns 409 because the external scheduler owns refreshes.",
+            "default": false,
+            "deprecated": true
           },
           "limit": {
             "type": "integer",
@@ -5003,6 +5004,56 @@
             "minimum": 1.0,
             "title": "Limit",
             "default": 10
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date",
+            "description": "Exact scheduler snapshot date (YYYY-MM-DD); never falls back."
+          },
+          "sector": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sector"
+          },
+          "ticker": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 16,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ticker"
+          },
+          "chart": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "breadth",
+              "movers",
+              "none"
+            ],
+            "title": "Chart",
+            "default": "auto"
           }
         },
         "type": "object",
@@ -5034,6 +5085,52 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Top"
+          },
+          "effective_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Date"
+          },
+          "as_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "freshness": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Freshness"
+          },
+          "commentary": {
+            "type": "string",
+            "title": "Commentary",
+            "default": ""
+          },
+          "chart": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chart"
           }
         },
         "type": "object",

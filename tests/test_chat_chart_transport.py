@@ -1,7 +1,9 @@
+import asyncio
 import json
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
 
-from engine.web.ph_chat import CHAT_JS, _tool_chart_marker
+from engine.web.ph_chat import CHAT_JS, _stream, _tool_chart_marker
 
 
 def _marker():
@@ -67,6 +69,69 @@ def test_chat_client_extracts_multiline_markers_and_renders_treemap():
 def test_chat_client_renders_research_correlation_charts():
     assert "data.type==='research_correlation_heatmap'" in CHAT_JS
     assert "data.type==='research_correlation_scatter'" in CHAT_JS
+
+
+def test_chat_client_renders_premarket_breadth_and_mover_panels_once():
+    assert "data.type==='premarket_overview'" in CHAT_JS
+    assert "Sector breadth (count)" in CHAT_JS
+    assert "Top movers (%)" in CHAT_JS
+    assert "premarket-overview" in CHAT_JS
+    assert "Plotly.downloadImage" in CHAT_JS
+    assert "responsive:true" in CHAT_JS
+    assert "bubble._chartRendered) return" in CHAT_JS
+
+
+def test_premarket_tool_keeps_chart_transport_marker():
+    payload = {
+        "type": "premarket_overview",
+        "mode": "auto",
+        "breadth": [{"sector": "Technology", "gainers": 2, "fallers": 1}],
+        "gainers": [{"ticker": "AAPL", "movement_pct": 2.0}],
+        "fallers": [{"ticker": "PFE", "movement_pct": -1.0}],
+    }
+    marker = f"__CHART_DATA__{json.dumps(payload)}__END_CHART__"
+    with patch("agents.premarket_agent.PremarketAgent.report",
+               return_value=f"# Premarket screening\n\n{marker}"):
+        from agui_app import get_premarket_movers
+        result = get_premarket_movers()
+
+    assert '"type": "premarket_overview"' in result
+    assert _tool_chart_marker({"data": {"output": result}}) == marker
+
+
+def test_sse_forwards_premarket_tool_chart_when_model_omits_it():
+    payload = {
+        "type": "premarket_overview", "mode": "auto", "breadth": [],
+        "gainers": [], "fallers": [],
+    }
+    marker = f"__CHART_DATA__{json.dumps(payload)}__END_CHART__"
+
+    class _Agent:
+        async def astream_events(self, _input, version):
+            assert version == "v2"
+            yield {"event": "on_tool_end", "name": "get_premarket_movers",
+                   "data": {"output": f"tool commentary\n\n{marker}"}}
+            yield {"event": "on_chat_model_stream",
+                   "data": {"chunk": SimpleNamespace(content="Observed facts and risks.")}}
+
+    async def collect():
+        with patch("engine.web.ph_chat._command_interceptor", new=AsyncMock(return_value=None)), \
+             patch("engine.web.ph_chat._agui.agent_for_user", return_value=_Agent()):
+            response = await _stream(
+                "Show me the latest premarket overview",
+                {"user_id": "user-1", "thread_id": "premarket-sse-test"},
+            )
+            chunks = []
+            async for chunk in response.body_iterator:
+                chunks.append(chunk.decode() if isinstance(chunk, bytes) else chunk)
+            return "".join(chunks)
+
+    stream = asyncio.run(collect())
+
+    assert "Observed facts and risks." in stream
+    assert stream.count("__CHART_DATA__") == 1
+    assert stream.count("__END_CHART__") == 1
+    assert "event: done" in stream
 
 
 def test_research_tool_keeps_chart_transport_marker():

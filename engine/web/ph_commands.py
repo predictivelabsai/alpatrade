@@ -2,8 +2,8 @@
 
 Three registries, each a list of ``(group_label, [(command, description), ...])``:
 
-* ``AGENT_SHORTCUTS`` — agent-orchestration groups (Backtest, Validate,
-  Reconcile, Paper Trade, Full Cycle) that kick off the multi-agent workflow.
+* ``AGENT_SHORTCUTS`` — premarket research plus agent-orchestration groups
+  (Backtest, Validate, Reconcile, Paper Trade, Full Cycle).
 * ``ALPHA_RESEARCH_SHORTCUTS`` — local Growth, Value, and combined research views.
 * ``MAIN_NAV`` — data / reporting navigation (Trades, Runs & Reports,
   Rankings & P&L, Monitor, Research, Charts & Equity, Accounts, Options).
@@ -17,7 +17,19 @@ surface.
 from __future__ import annotations
 
 # (group, [(command, description), ...]) — agent orchestration shortcuts.
+PREMARKET_AGENT_PROMPT = "Show me the latest premarket overview with an interactive chart."
+
 AGENT_SHORTCUTS = [
+    ("Premarket Agent", [
+        ("Show me the top premarket gainers and fallers with an interactive chart.",
+         "rank both sides of the tape"),
+        ("Show me premarket signals for the Technology sector with an interactive chart.",
+         "edit the sector before sending"),
+        ("Show me the premarket overview for 2026-08-07 with an interactive chart.",
+         "edit the exact historical date"),
+        ("Explain AAPL's premarket movement and stored catalyst evidence.",
+         "edit the ticker before sending"),
+    ]),
     ("Backtest", [
         ("agent:backtest lookback:1m", "1-month grid-search backtest"),
         ("agent:backtest symbols:AAPL,TSLA", "custom symbols"),
@@ -95,7 +107,6 @@ MAIN_NAV = [
         ("agent:stop", "stop background task"),
     ]),
     ("Research", [
-        ("Show me the premarket movers", "top premarket gainers & fallers"),
         ("load:AAPL", "quote + inline chart"),
         ("load:TSLA period:1y", "custom period"),
         ("news:TSLA", "company news"),

@@ -227,7 +227,7 @@ except (OSError, KeyError, tomllib.TOMLDecodeError):
     try:
         API_VERSION = version("alpatrade")
     except PackageNotFoundError:
-        API_VERSION = "0.10.0"
+        API_VERSION = "0.11.0"
 
 API_DESCRIPTION = """
 AlpaTrade's production REST API for research, backtesting, validation, paper trading,
@@ -1521,12 +1521,31 @@ async def v2_invoke_premarket(
     req: PremarketAgentRequest,
     user: Dict = Depends(require_current_user),
 ):
-    """Run the read-only Premarket Agent."""
+    """Read a scheduler-owned premarket snapshot without refreshing or trading."""
     from agents.premarket_agent import PremarketAgent
-
-    result = await asyncio.to_thread(
-        PremarketAgent().run, refresh=req.refresh, limit=req.limit,
+    from engine.research.premarket import (
+        PremarketValidationError,
+        SchedulerManagedError,
     )
+
+    try:
+        refresh = req.model_dump()["refresh"]
+        result = await asyncio.to_thread(
+            PremarketAgent().run,
+            refresh=refresh,
+            limit=req.limit,
+            date=req.date,
+            sector=req.sector,
+            ticker=req.ticker,
+            chart=req.chart,
+        )
+    except SchedulerManagedError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": exc.code, "message": str(exc)},
+        ) from exc
+    except PremarketValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return PremarketAgentResponse(**result)
 
 

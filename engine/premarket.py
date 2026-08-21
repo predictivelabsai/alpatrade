@@ -1,18 +1,13 @@
-"""Premarket intelligence engine ported from Finespresso.
+"""Legacy premarket helpers retained behind the scheduler-owned reader.
 
-The public contract intentionally retains the Finespresso report shape:
-``summary`` plus sector buckets containing ``up`` and ``down`` movers.  Fetching
-is batched to keep an on-demand web scan practical; persisted database reports
-and legacy JSON reports remain readable.
+New surfaces use :mod:`engine.research.premarket`. On-demand scans and local
+persistence are intentionally blocked so Finespresso remains the sole writer.
 """
 from __future__ import annotations
 
-import json
 import logging
-import os
 import uuid
 from datetime import datetime
-from pathlib import Path
 from typing import Any, Iterable
 from zoneinfo import ZoneInfo
 
@@ -162,84 +157,36 @@ def build_report(movements: list[dict[str, Any]], top_n: int = 10) -> dict[str, 
 
 
 def scan_premarket(top_n: int = 10) -> dict[str, Any]:
-    """Run a batched extended-hours scan and return a Finespresso-shaped report."""
-    import yfinance as yf
-    universe = symbols()
-    data = yf.download(
-        " ".join(universe), period="5d", interval="5m", prepost=True,
-        group_by="ticker", auto_adjust=False, threads=True, progress=False,
-    )
-    movements = []
-    for sector, ticker in universe_entries():
-        row = _movement(ticker, _ticker_frame(data, ticker))
-        if row is not None:
-            row["sector"] = sector
-            movements.append(row)
-    report = build_report(movements, top_n=top_n)
-    save_report(report)
-    return report
+    """Reject legacy on-demand scans; the external scheduler owns refreshes."""
+    from engine.research.premarket import SchedulerManagedError
+
+    raise SchedulerManagedError()
 
 
-def _report_dir() -> Path:
-    return Path(os.getenv("PREMARKET_REPORTS_DIR", "data/premarket"))
+def save_report(report: dict[str, Any]) -> None:
+    """Reject legacy persistence; retained only as an import compatibility hook."""
+    from engine.research.premarket import SchedulerManagedError
 
-
-def save_report(report: dict[str, Any]) -> Path:
-    directory = _report_dir()
-    directory.mkdir(parents=True, exist_ok=True)
-    path = directory / f"premarket-screener_{datetime.now():%Y%m%d_%H%M%S}.json"
-    path.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
-    try:
-        _save_database(report)
-    except Exception as exc:  # noqa: BLE001
-        logger.info("Premarket database persistence unavailable: %s", exc)
-    return path
-
-
-def _save_database(report: dict[str, Any]) -> None:
-    from sqlalchemy import text
-    from engine.db.pool import DatabasePool
-    summary = report["summary"]
-    with DatabasePool().get_session() as session:
-        session.execute(text("""
-            INSERT INTO alpatrade.premarket_scan_runs
-              (run_id, scan_timestamp, scan_type, status, total_sectors,
-               total_stocks_attempted, total_stocks_failed, total_stocks_scanned,
-               total_up_movements, total_down_movements, report)
-            VALUES (:run_id, :scan_timestamp, :scan_type, :status, :total_sectors,
-              :total_stocks_attempted, :total_stocks_failed, :total_stocks_scanned,
-              :total_up_movements, :total_down_movements, CAST(:report AS jsonb))
-            ON CONFLICT (run_id) DO UPDATE SET report = EXCLUDED.report
-        """), report | summary | {"report": json.dumps(report, default=str)})
+    raise SchedulerManagedError()
 
 
 def latest_report() -> dict[str, Any] | None:
-    """Load the newest database report, falling back to compatible JSON."""
+    """Return the latest normalized scheduler snapshot for legacy callers."""
     try:
-        from sqlalchemy import text
-        from engine.db.pool import DatabasePool
-        with DatabasePool().get_session() as session:
-            value = session.execute(text("""
-                SELECT report FROM alpatrade.premarket_scan_runs
-                ORDER BY scan_timestamp DESC LIMIT 1
-            """)).scalar()
-            if value:
-                return value if isinstance(value, dict) else json.loads(value)
+        from engine.research.premarket import read_premarket
+
+        result = read_premarket()
+        return result if result.get("status") == "complete" else None
     except Exception as exc:  # noqa: BLE001
         logger.info("Premarket database read unavailable: %s", exc)
-    files = sorted(_report_dir().glob("premarket-screener_*.json"),
-                   key=lambda path: path.stat().st_mtime, reverse=True)
-    if not files:
-        return None
-    try:
-        return json.loads(files[0].read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
         return None
 
 
 def flatten(report: dict[str, Any] | None) -> list[dict[str, Any]]:
     if not report:
         return []
+    if "rows" in report:
+        return list(report.get("rows") or [])
     rows = []
     for sector, bucket in report.get("sectors", {}).items():
         for direction in ("up", "down"):
@@ -250,7 +197,11 @@ def flatten(report: dict[str, Any] | None) -> list[dict[str, Any]]:
 
 
 def top_movers(report: dict[str, Any] | None = None, limit: int = 10) -> dict[str, list[dict]]:
-    rows = flatten(report or latest_report())
+    value = report or latest_report()
+    if value and value.get("top"):
+        return {key: list(value["top"].get(key, []))[:limit]
+                for key in ("gainers", "fallers", "movers")}
+    rows = flatten(value)
     return {
         "gainers": sorted((row for row in rows if row.get("movement_pct", 0) > 0),
                           key=lambda row: row["movement_pct"], reverse=True)[:limit],
@@ -262,28 +213,6 @@ def top_movers(report: dict[str, Any] | None = None, limit: int = 10) -> dict[st
 
 
 def summary_markdown(limit: int = 8) -> str:
-    report = latest_report()
-    if not report:
-        return ("# Premarket movers\n\nNo scan is available yet. Open **Premarket** "
-                "and run a scan during or after the 04:00–09:30 ET session.")
-    top = top_movers(report, limit)
-    summary = report.get("summary", {})
-    lines = [
-        "# Premarket movers",
-        "",
-        f"Scan: {str(report.get('scan_timestamp', ''))[:19]} ET · "
-        f"{summary.get('total_stocks_scanned', 0)} stocks · "
-        f"{summary.get('total_up_movements', 0)} up / "
-        f"{summary.get('total_down_movements', 0)} down",
-        "",
-        "| Gainers | Move | Fallers | Move |",
-        "|---|---:|---|---:|",
-    ]
-    for index in range(max(len(top["gainers"]), len(top["fallers"]))):
-        up = top["gainers"][index] if index < len(top["gainers"]) else {}
-        down = top["fallers"][index] if index < len(top["fallers"]) else {}
-        lines.append(
-            f"| {up.get('ticker', '')} | {up.get('movement_pct', 0):+.2f}% | "
-            f"{down.get('ticker', '')} | {down.get('movement_pct', 0):+.2f}% |"
-        )
-    return "\n".join(lines)
+    from engine.research.premarket import PremarketReader, report_markdown
+
+    return report_markdown(PremarketReader().read(top_n=limit), chart="none")

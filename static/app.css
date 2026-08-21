@@ -146,6 +146,11 @@ a { color: var(--accent); }
     transition: background .15s; font-family: var(--font-body);
 }
 .cat-toggle:hover { background: var(--bg-raise); }
+.premarket-agent-shortcut {
+    border: 1px solid var(--line); color: var(--accent); background: var(--accent-dim);
+    margin-bottom: .1rem;
+}
+.premarket-agent-shortcut:hover { border-color: var(--accent); background: var(--bg-raise); }
 .cat-icon { color: var(--accent); width: 1rem; }
 .cat-name { flex: 1; text-align: left; }
 .cat-count { color: var(--ink-dim); font-size: .68rem; font-weight: 400; }

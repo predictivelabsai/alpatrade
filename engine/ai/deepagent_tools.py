@@ -431,11 +431,37 @@ def compare_valuation(tickers: list[str]) -> str:
 
 
 @tool
-def get_premarket_movers(limit: int = 10) -> str:
-    """Read the latest persisted premarket mover report without launching a scan."""
-    from agents.premarket_agent import PremarketAgent
+def get_premarket_movers(
+    limit: int = 10,
+    date: str = "",
+    sector: str = "",
+    ticker: str = "",
+    chart: str = "auto",
+    refresh: bool = False,
+) -> str:
+    """Read latest/historical premarket breadth, movers, or one ticker.
 
-    return PremarketAgent().report(limit=max(1, min(limit, 20)))
+    Dates use YYYY-MM-DD. ``sector`` and ``ticker`` cannot be combined. Charts
+    are auto, breadth, movers, or none. The external scheduler owns refreshes.
+    """
+    from agents.premarket_agent import PremarketAgent
+    from engine.research.premarket import PremarketValidationError, SchedulerManagedError
+
+    try:
+        return PremarketAgent().report(
+            limit=max(1, min(limit, 50)),
+            date=date or None,
+            sector=sector or None,
+            ticker=ticker or None,
+            chart=chart,
+            refresh=refresh,
+        )
+    except SchedulerManagedError as exc:
+        return f"# Premarket screening\n\n`{exc.code}`: {exc}"
+    except PremarketValidationError as exc:
+        return f"# Premarket screening\n\nRequest error: {exc}"
+    except Exception:  # noqa: BLE001
+        return "# Premarket screening\n\nPremarket scheduler data is unavailable."
 
 
 @tool
@@ -1143,7 +1169,11 @@ def specialist_subagents() -> list[dict[str, Any]]:
         {
             "name": "market-research",
             "description": "Public market, company, SEC, institutional, IPO, and prediction research.",
-            "system_prompt": f"You are the market research specialist. {common}",
+            "system_prompt": (
+                f"You are the market research specialist. {common} For premarket work, "
+                "separate observed facts, stored catalyst evidence, watch conditions, and "
+                "liquidity or gap-reversal risks. Do not provide trade calls, levels, or instructions."
+            ),
             "tools": MARKET_RESEARCH_TOOLS,
         },
         {

@@ -151,15 +151,16 @@ CHAT_JS = r"""
   var PALETTE=['#1F5D43','#B4472F','#3E7CB1','#C89B3C','#7A5FA0','#4C9A82','#B4657A','#6E8C4E'];
 
   function renderChart(bubble){
-    if(!bubble || !bubble._chart || !window.Plotly) return;
+    if(!bubble || !bubble._chart || !window.Plotly || bubble._chartRendered) return;
     var data; try{ data=JSON.parse(bubble._chart); }catch(e){ return; }
-    var tall=(data.type==='treemap');
+    var tall=(data.type==='treemap'||(data.type==='premarket_overview'&&data.mode==='auto'));
     var wrap=document.createElement('div'); wrap.style.cssText='width:100%;margin:.6rem 0;';
     var div=document.createElement('div'); div.style.cssText='width:100%;min-height:'+(tall?'480px':'360px')+';';
     wrap.appendChild(div);
     var dl=document.createElement('button'); dl.textContent='Download PNG'; dl.className='table-action-btn';
     dl.style.marginTop='.4rem';
-    var fname={equity_curve:'equity',treemap:'market-map',compare:'compare'}[data.type]||(data.ticker||'chart');
+    var fname={equity_curve:'equity',treemap:'market-map',compare:'compare',
+      premarket_overview:'premarket-overview'}[data.type]||(data.ticker||'chart');
     dl.onclick=function(){ Plotly.downloadImage(div,{format:'png',width:1200,height:tall?720:600,filename:fname}); };
     wrap.appendChild(dl);
     bubble.appendChild(wrap);
@@ -230,6 +231,47 @@ CHAT_JS = r"""
       base.title={text:'Equity Curve  ('+sign+'$'+fin.toFixed(0)+' / '+sign+pct+'%)',
         font:{size:13,color:'#14231B'}};
       Plotly.newPlot(div,[eq,cap],base,{responsive:true,displayModeBar:false});
+
+    } else if(data.type==='premarket_overview'){
+      var mode=data.mode||'auto',traces=[],breadth=data.breadth||[];
+      var movers=(data.gainers||[]).concat(data.fallers||[])
+        .sort(function(a,b){return a.movement_pct-b.movement_pct;});
+      var layout={paper_bgcolor:'#FFFFFF',plot_bgcolor:'#F7F6F1',
+        title:{text:data.title||'Premarket overview',font:{size:13,color:'#14231B'}},
+        font:{color:'#415046',family:'Inter,sans-serif',size:10},showlegend:true,
+        legend:{orientation:'h',y:-.12},margin:{t:48,r:20,b:50,l:125}};
+      if(mode!=='movers'){
+        var names=breadth.map(function(x){return x.sector;}).reverse();
+        var lookup={};breadth.forEach(function(x){lookup[x.sector]=x;});
+        traces.push({type:'bar',orientation:'h',name:'Fallers',x:names.map(function(n){return -lookup[n].fallers;}),
+          y:names,marker:{color:'#B4472F'},xaxis:'x',yaxis:'y',hovertemplate:'%{y}<br>%{x} fallers<extra></extra>'});
+        traces.push({type:'bar',orientation:'h',name:'Gainers',x:names.map(function(n){return lookup[n].gainers;}),
+          y:names,marker:{color:'#1F5D43'},xaxis:'x',yaxis:'y',hovertemplate:'%{y}<br>%{x} gainers<extra></extra>'});
+        layout.barmode='relative';layout.xaxis={title:'Sector breadth (count)',gridcolor:'#E3DFD2',zerolinecolor:'#7A867E'};
+        layout.yaxis={automargin:true};
+      }
+      if(mode!=='breadth'){
+        traces.push({type:'bar',orientation:'h',name:'Mover %',x:movers.map(function(x){return x.movement_pct;}),
+          y:movers.map(function(x){return x.ticker;}),xaxis:mode==='auto'?'x2':'x',yaxis:mode==='auto'?'y2':'y',
+          marker:{color:movers.map(function(x){return x.movement_pct>=0?'#1F5D43':'#B4472F';})},
+          text:movers.map(function(x){return (x.movement_pct>=0?'+':'')+x.movement_pct.toFixed(2)+'%';}),
+          textposition:'outside',cliponaxis:false,hovertemplate:'%{y}<br>%{x:.2f}%<extra></extra>'});
+        if(mode==='auto'){
+          layout.yaxis.domain=[.55,1];layout.xaxis.domain=[0,1];
+          layout.yaxis2={domain:[0,.38],automargin:true};
+          layout.xaxis2={title:'Top movers (%)',gridcolor:'#E3DFD2',zerolinecolor:'#7A867E'};
+          layout.height=620;layout.margin.b=65;
+        }else{
+          layout.xaxis={title:'Premarket move (%)',gridcolor:'#E3DFD2',zerolinecolor:'#7A867E'};
+          layout.yaxis={automargin:true};layout.barmode='group';
+        }
+      }
+      if(data.freshness&&data.freshness.stale){
+        layout.annotations=[{xref:'paper',yref:'paper',x:1,y:1.08,xanchor:'right',showarrow:false,
+          text:'Stale snapshot · '+data.freshness.stale_sessions+' completed session(s) behind',
+          font:{size:10,color:'#B4472F'}}];
+      }
+      Plotly.newPlot(div,traces,layout,{responsive:true,displayModeBar:false});
 
     } else if(data.type==='research_correlation_heatmap'){
       var events=[...new Set((data.matrix||[]).map(function(x){return x.event;}))];
@@ -566,25 +608,27 @@ def register(app, rt):
         from starlette.responses import HTMLResponse
         sections = []
         try:
-            from engine.premarket import latest_report, top_movers
-            movers = top_movers(latest_report(), 8)["movers"]
+            from urllib.parse import urlencode
+            from engine.research.premarket import read_premarket
+            snapshot = read_premarket(top_n=8)
+            movers = snapshot["top"]["movers"]
             if movers:
                 mover_cards = []
                 for mover in movers:
                     direction = "up" if mover.get("movement_pct", 0) >= 0 else "down"
-                    catalyst = (mover.get("catalysts") or [{}])[0]
                     inner = [
                         Div(Span(mover["ticker"], cls="news-source"),
                             Span(f"{mover['movement_pct']:+.2f}%",
                                  cls=f"news-time pm-news-{direction}"),
                             cls="news-item-header"),
-                        Div(catalyst.get("title") or mover.get("company_name") or
+                        Div(mover.get("company_name") or
                             "Premarket price move", cls="news-item-title"),
                     ]
+                    query = urlencode({
+                        "date": snapshot["effective_date"], "ticker": mover["ticker"],
+                    })
                     mover_cards.append(A(
-                        *inner, href=catalyst.get("link") or f"/premarket#{mover['ticker']}",
-                        target="_blank" if catalyst.get("link") else None,
-                        rel="noopener", cls="news-item"))
+                        *inner, href=f"/research/premarket?{query}", cls="news-item"))
                 sections.append(Details(
                     Summary(f"Premarket movers · {len(mover_cards)}", cls="news-category-title"),
                     Div(*mover_cards), cls="news-category", open=True))

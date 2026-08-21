@@ -4,6 +4,7 @@ from pathlib import Path
 from fasthtml.common import Div
 from fastcore.xml import to_xml
 
+from engine.web.ph_commands import PREMARKET_AGENT_PROMPT
 from engine.web.ph_layout import PH_JS, _left_pane, chat_center, page
 
 
@@ -38,6 +39,21 @@ def test_sidebar_alpha_research_shortcuts_fill_editable_commands():
     assert "onclick=\"fillChat('alpha:compare ticker:AAPL')\"" in html
     assert "onclick=\"fillChat('alpha:runs limit:10')\"" in html
     assert "onclick=\"fillChat('alpha:show run-id:&lt;uuid&gt;')\"" in html
+
+
+def test_sidebar_premarket_agent_shortcut_is_first_and_only_fills_chat():
+    html = to_xml(_left_pane("guide", None))
+
+    assert "☀ Premarket Agent" in html
+    assert html.index("☀ Premarket Agent") < html.index("Backtest") < html.index("Validate")
+    assert html.count(PREMARKET_AGENT_PROMPT) == 1
+    assert f'onclick="fillChat(\'{PREMARKET_AGENT_PROMPT}\')"' in html
+    assert "Show me the top premarket gainers and fallers with an interactive chart." in html
+    assert "Show me premarket signals for the Technology sector" in html
+    assert "Show me the premarket overview for 2026-08-07" in html
+    assert "Explain AAPL&#39;s premarket movement" in html
+    assert "Show me the premarket movers" not in html
+    assert "requestSubmit" not in html
 
 
 def test_authenticated_sidebar_has_visible_sign_out():
@@ -120,6 +136,7 @@ def test_fill_chat_redirects_non_chat_pages_with_pending_prompt():
     assert "sessionStorage.setItem('alpatrade.pendingPrompt',t)" in PH_JS
     assert "window.location.href='/app'" in PH_JS
     assert "sessionStorage.removeItem('alpatrade.pendingPrompt')" in PH_JS
+    assert "i.value=t;i.focus();autoResize(i);return" in PH_JS
 
 
 def test_public_market_pages_are_registered_in_their_own_section():
@@ -139,6 +156,9 @@ def test_research_pages_have_separate_submenu_entries():
     assert paths == {
         "/research/premarket", "/research/models", "/research/news",
         "/research/timing", "/research/history",
+    }
+    assert "/premarket" not in {
+        href for _label, href, _key in ph_layout.EXPLORE_PAGES
     }
 
 

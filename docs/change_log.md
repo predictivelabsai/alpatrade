@@ -1,5 +1,39 @@
 # Change Log
 
+## 0.11.0 — 2026-08-21
+
+### Scheduler-backed Premarket Agent
+
+- Made `premarket_screener.*` the canonical, read-only source for latest and
+  exact-date 09:00 ET snapshots. The shared reader joins company, sector,
+  prior-close, accumulated-volume, and stored Grok analysis data; filters
+  invalid prices; ranks both sides; counts unchanged names; and reports
+  completed-US-session staleness without silently substituting historical dates.
+- Upgraded `/research/premarket` with date, sector, and top-N filters, summary
+  metrics, ticker drill-downs, chat handoffs, and a responsive Plotly view that
+  combines sector breadth with ranked movers. Legacy `run_id` archive links stay
+  readable, while `/premarket` now redirects permanently to the Research page.
+- Added the always-visible **☀ Premarket Agent** sidebar shortcut and a secondary
+  prompt group for movers, sectors, historical dates, and ticker catalysts. The
+  shortcut fills and focuses global chat without submitting the prompt.
+
+### Chat, API, and rollout
+
+- Added `premarket_overview` to the existing chart-marker/SSE transport with
+  responsive breadth and mover panels plus PNG export. Both chat tool stacks now
+  use the normalized reader and deterministic commentary that separates facts,
+  stored evidence, watch conditions, and liquidity/gap-reversal risk.
+- Extended `POST /v2/agents/premarket/invoke` with `date`, `sector`, `ticker`, and
+  chart selection. Deprecated refresh requests and `/premarket/scan` return
+  `409 scheduler_managed`; AlpaTrade performs no provider scan or analysis write.
+- No migration is required. Deploy the web and API services together. The latest
+  observed scheduler snapshot was 2026-08-07 at implementation time, so verify
+  the stale-data warning and repair scheduler operations separately before
+  treating newer sessions as available.
+- Security follow-up outside this release: rotate/revoke any provider credentials
+  exposed in tracked Finespresso documentation and purge them from its history;
+  no credential value was copied into AlpaTrade.
+
 ## 0.10.0 — 2026-08-20
 
 ### Daily DeepAgent trading advisor

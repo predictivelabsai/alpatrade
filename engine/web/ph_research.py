@@ -24,6 +24,11 @@ font:inherit;font-size:.78rem;border:1px solid var(--line);border-radius:.4rem;p
 .r-controls button{background:var(--accent);color:#fff;cursor:pointer}.r-plot{min-height:390px;width:100%}
 .r-table{width:100%;border-collapse:collapse;font-size:.76rem}.r-table th,.r-table td{padding:.4rem;border-bottom:1px solid var(--line);text-align:left}
 .r-up{color:#1F5D43}.r-down{color:#B4472F}.r-empty{padding:1.5rem;color:var(--ink-muted);text-align:center}
+.r-warning{grid-column:1/-1;padding:.65rem .8rem;border:1px solid #D9A441;border-radius:.5rem;background:#FFF8E7;
+color:#765512;font-size:.78rem}.r-ask{font:inherit;font-size:.7rem;border:1px solid var(--line);border-radius:.35rem;
+padding:.28rem .42rem;background:#fff;color:var(--accent);cursor:pointer;white-space:nowrap}.r-ask:hover{border-color:var(--accent)}
+.r-detail{font-size:.8rem;line-height:1.5}.r-detail b{color:var(--ink)}.r-catalyst{white-space:pre-wrap;
+padding:.65rem;border:1px solid var(--line);border-radius:.45rem;background:var(--bg-raise);margin-top:.55rem}
 @media(max-width:760px){.r-grid{grid-template-columns:1fr}.r-card.wide{grid-column:auto}.r-metrics{grid-template-columns:repeat(2,1fr)}}
 """
 
@@ -79,21 +84,41 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const pct=n=>n==null?'—':(n>=0?'+':'')+Number(n).toFixed(2)+'%';
 const metric=(v,l)=>`<div class="r-metric"><b>${esc(v)}</b><span>${esc(l)}</span></div>`;
 const card=(title,body,wide='')=>`<section class="r-card ${wide}"><h2>${esc(title)}</h2>${body}</section>`;
-async function get(url){let r=await fetch(url);let d=await r.json();if(!r.ok||d.error)throw Error(d.error||r.statusText);return d}
+async function get(url){let r=await fetch(url);let d=await r.json();if(!r.ok||d.error){let e=d.message||d.error;
+ if(e&&typeof e==='object')e=e.message||e.code;throw Error(e||r.statusText)}return d}
 """
 
 _PREMARKET_JS = _COMMON_JS + """
+const money=n=>n==null?'—':'$'+Number(n).toFixed(2);
+const volume=n=>n==null?'—':Number(n).toLocaleString();
+function scopeUrl(kind,value,d){let p=new URLSearchParams();if(d.source==='public.premarket_scan_results')p.set('run_id',new URLSearchParams(location.search).get('run_id'));
+ else if(d.effective_date)p.set('date',d.effective_date);p.set(kind,value);p.set('top_n',new URLSearchParams(location.search).get('top_n')||'10');return '/research/premarket?'+p.toString()}
+function askPrompt(x,d){return `Explain ${x.ticker}'s premarket movement and stored catalyst evidence for ${d.effective_date}. Include watch conditions and liquidity or gap-reversal risks.`}
+function moverTable(items,d){if(!items.length)return '<div class="r-empty">No matching movers.</div>';
+ return `<table class="r-table"><thead><tr><th>Ticker</th><th>Company</th><th>Sector</th><th>Move</th><th>09:00 price</th><th>Volume</th><th></th></tr></thead><tbody>`+
+ items.map(x=>`<tr><td><a href="${esc(scopeUrl('ticker',x.ticker,d))}">${esc(x.ticker)}</a></td><td>${esc(x.company_name)}</td><td><a href="${esc(scopeUrl('sector',x.sector,d))}">${esc(x.sector)}</a></td><td class="${x.movement_pct>=0?'r-up':'r-down'}">${pct(x.movement_pct)}</td><td>${money(x.premarket_close)}</td><td>${volume(x.volume)}</td><td><button type="button" class="r-ask" data-prompt="${esc(askPrompt(x,d))}">Ask Premarket Agent</button></td></tr>`).join('')+'</tbody></table>'}
+function plotPremarket(c){if(!c||!window.Plotly)return;let breadth=c.breadth||[],names=breadth.map(x=>x.sector).reverse(),by={};breadth.forEach(x=>by[x.sector]=x);
+ let movers=(c.gainers||[]).concat(c.fallers||[]).sort((a,b)=>a.movement_pct-b.movement_pct),traces=[
+ {type:'bar',orientation:'h',name:'Fallers',x:names.map(n=>-by[n].fallers),y:names,xaxis:'x',yaxis:'y',marker:{color:'#B4472F'},hovertemplate:'%{y}<br>%{x} fallers<extra></extra>'},
+ {type:'bar',orientation:'h',name:'Gainers',x:names.map(n=>by[n].gainers),y:names,xaxis:'x',yaxis:'y',marker:{color:'#1F5D43'},hovertemplate:'%{y}<br>%{x} gainers<extra></extra>'},
+ {type:'bar',orientation:'h',name:'Mover %',x:movers.map(x=>x.movement_pct),y:movers.map(x=>x.ticker),xaxis:'x2',yaxis:'y2',marker:{color:movers.map(x=>x.movement_pct>=0?'#1F5D43':'#B4472F')},text:movers.map(x=>(x.movement_pct>=0?'+':'')+Number(x.movement_pct).toFixed(2)+'%'),textposition:'outside',cliponaxis:false,hovertemplate:'%{y}<br>%{x:.2f}%<extra></extra>'}
+ ];
+ let layout={height:650,barmode:'relative',margin:{l:150,r:30,t:35,b:65},paper_bgcolor:'#fff',plot_bgcolor:'#F7F6F1',font:{color:'#415046',size:10},legend:{orientation:'h',y:-.1},
+ xaxis:{title:'Sector breadth (count)',domain:[0,1],gridcolor:'#E3DFD2',zerolinecolor:'#7A867E'},yaxis:{domain:[.55,1],automargin:true},xaxis2:{title:'Top movers (%)',gridcolor:'#E3DFD2',zerolinecolor:'#7A867E'},yaxis2:{domain:[0,.38],automargin:true}};
+ Plotly.newPlot('premarket-overview',traces,layout,{responsive:true,displayModeBar:true,displaylogo:false,modeBarButtonsToRemove:['lasso2d','select2d'],toImageButtonOptions:{format:'png',filename:'premarket-overview',width:1200,height:760}})}
 async function load(){
- try{let run=new URLSearchParams(location.search).get('run_id')||'',d=await get('/research/api/premarket?run_id='+encodeURIComponent(run)),rows=d.rows||[],up=rows.filter(x=>x.movement_pct>0),dn=rows.filter(x=>x.movement_pct<0);
- let tr=a=>`<table class="r-table"><thead><tr><th>Ticker</th><th>Company</th><th>Sector</th><th>Move</th><th>Price</th></tr></thead><tbody>`+
- a.slice(0,20).map(x=>`<tr><td><a href="/research/history?ticker=${esc(x.ticker)}">${esc(x.ticker)}</a></td><td>${esc(x.company_name)}</td><td>${esc(x.sector)}</td><td class="${x.movement_pct>=0?'r-up':'r-down'}">${pct(x.movement_pct)}</td><td>$${Number(x.premarket_close||0).toFixed(2)}</td></tr>`).join('')+'</tbody></table>';
- root.innerHTML=`<div class="r-metrics wide">${metric(rows.length,'Stocks scanned')}${metric(up.length,'Gainers')}${metric(dn.length,'Fallers')}${metric(d.run?.timestamp||'—','Snapshot')}</div>`+
- card('Sector breadth','<div id="breadth" class="r-plot"></div>','wide')+card('Top gainers',tr(up.sort((a,b)=>b.movement_pct-a.movement_pct)))+card('Top fallers',tr(dn.sort((a,b)=>a.movement_pct-b.movement_pct)));
- let sectors={};rows.forEach(x=>{let s=x.sector||'Unknown';sectors[s]??={up:0,down:0};sectors[s][x.movement_pct>=0?'up':'down']++});
- let ys=Object.keys(sectors).sort(),ups=ys.map(y=>sectors[y].up),downs=ys.map(y=>-sectors[y].down);
- Plotly.newPlot('breadth',[{type:'bar',orientation:'h',y:ys,x:downs,name:'Fallers',marker:{color:'#B4472F'}},{type:'bar',orientation:'h',y:ys,x:ups,name:'Gainers',marker:{color:'#1F5D43'}}],
- {barmode:'relative',margin:{l:150,r:20,t:15,b:35},paper_bgcolor:'#fff',plot_bgcolor:'#F7F6F1',legend:{orientation:'h'}},{responsive:true,displayModeBar:false});
- status.textContent='Read-only snapshot supplied by the Finespresso scheduler.';
+ try{let q=new URLSearchParams(location.search),api=new URLSearchParams();['run_id','date','sector','ticker','top_n'].forEach(k=>{if(q.get(k))api.set(k,q.get(k))});api.set('chart','auto');
+ let d=await get('/research/api/premarket?'+api.toString()),s=d.summary||{},top=d.top||{gainers:[],fallers:[]},filters=d.filters||{},isArchive=d.source==='public.premarket_scan_results';
+ let sectorOptions=['<option value="">All sectors</option>'].concat((d.available_sectors||[]).map(x=>`<option value="${esc(x)}" ${filters.sector===x?'selected':''}>${esc(x)}</option>`)).join('');
+ let hidden=isArchive?`<input type="hidden" name="run_id" value="${esc(q.get('run_id')||'')}">`:'';
+ let dateControl=isArchive?'':`<input type="date" name="date" value="${esc(q.get('date')||d.effective_date||'')}">`;
+ let controls=`<form class="r-controls" method="get">${hidden}${dateControl}<select name="sector">${sectorOptions}</select><select name="top_n">${[5,10,20,50].map(n=>`<option value="${n}" ${Number(q.get('top_n')||10)===n?'selected':''}>Top ${n}</option>`).join('')}</select><button>Apply</button><a class="r-ask" href="/research/premarket">Latest available</a></form>`;
+ let warning=d.freshness?.stale||isArchive?`<div class="r-warning">${esc(d.freshness?.message||'Historical archive')}</div>`:'';
+ let detail='';if(filters.ticker&&d.rows?.length){let x=d.rows[0];detail=card(`${x.ticker} snapshot`,`<div class="r-detail"><b>${esc(x.company_name)}</b> · ${esc(x.sector)}<br>Prior close ${money(x.prev_close)} → 09:00 ET ${money(x.premarket_close)} (${pct(x.movement_pct)}) · accumulated volume ${volume(x.volume)}<div class="r-catalyst">${esc(x.analysis_excerpt||'No matching stored Grok catalyst analysis for this date.')}</div><button type="button" class="r-ask" data-prompt="${esc(askPrompt(x,d))}">Ask Premarket Agent</button></div>`,'wide')}
+ root.innerHTML=warning+card('Snapshot filters',controls,'wide')+`<div class="r-metrics wide">${metric(s.total_stocks_scanned||0,'Valid names')}${metric(s.total_up_movements||0,'Gainers')}${metric(s.total_down_movements||0,'Fallers')}${metric(s.total_unchanged||0,'Unchanged')}</div>`+
+ card('Sector breadth and ranked movers','<div id="premarket-overview" class="r-plot"></div>','wide')+detail+card('Top gainers',moverTable(top.gainers||[],d))+card('Top fallers',moverTable(top.fallers||[],d));
+ document.querySelectorAll('[data-prompt]').forEach(b=>b.onclick=()=>fillChat(b.dataset.prompt));plotPremarket(d.chart);
+ status.textContent=`${isArchive?'Legacy archive':'Read-only scheduler snapshot'} · ${d.as_of?String(d.as_of).slice(0,16).replace('T',' ')+' ET':'no observation'} · ${d.freshness?.state||'unknown'} freshness.`;
  }catch(e){root.innerHTML=card('No scheduler snapshot',`<div class="r-empty">${esc(e.message)}</div>`,'wide');status.textContent='No data was written or refreshed.'}}
 load();
 """
@@ -191,14 +216,56 @@ def register(app, rt):
                       _HISTORY_JS, _user(session))
 
     @rt("/research/api/premarket", methods=["GET"])
-    def api_premarket(run_id: str = ""):
-        from engine.research.data import premarket_runs, premarket_snapshot
+    def api_premarket(
+        run_id: str = "",
+        date: str = "",
+        sector: str = "",
+        ticker: str = "",
+        top_n: int = 10,
+        chart: str = "auto",
+    ):
+        from engine.research.data import premarket_run, premarket_snapshot
+        from engine.research.premarket import (
+            PremarketValidationError,
+            build_chart_payload,
+            legacy_archive_snapshot,
+            read_premarket,
+        )
         try:
-            runs = premarket_runs(1)
-            return JSONResponse(_json_content({"run": runs[0] if runs else None,
-                                               "rows": premarket_snapshot(run_id or None)}))
-        except Exception as exc:  # noqa: BLE001
-            return JSONResponse({"error": str(exc)}, status_code=503)
+            if run_id and date:
+                return JSONResponse(
+                    {"error": "run_id cannot be combined with date"}, status_code=400,
+                )
+            if run_id:
+                run = premarket_run(run_id)
+                if not run:
+                    return JSONResponse({"error": "Legacy premarket run not found"}, status_code=404)
+                snapshot = legacy_archive_snapshot(
+                    premarket_snapshot(run_id),
+                    run,
+                    top_n=top_n,
+                    sector=sector or None,
+                    ticker=ticker or None,
+                )
+            else:
+                run = None
+                snapshot = read_premarket(
+                    selected_date=date or None,
+                    sector=sector or None,
+                    ticker=ticker or None,
+                    top_n=top_n,
+                )
+            return JSONResponse(_json_content({
+                **snapshot,
+                "run": run,
+                "chart": build_chart_payload(snapshot, chart),
+            }))
+        except PremarketValidationError as exc:
+            return JSONResponse({"error": str(exc)}, status_code=400)
+        except Exception:  # noqa: BLE001
+            return JSONResponse(
+                {"error": "Premarket scheduler data is unavailable."}, status_code=503,
+            )
 
     @rt("/research/api/runs", methods=["GET"])
     def api_runs():
