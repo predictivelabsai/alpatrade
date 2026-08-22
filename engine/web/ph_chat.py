@@ -668,6 +668,9 @@ async def _dispatch_hermes_job_command(
 
     if "notif" in lowered and uuids and any(
         word in lowered for word in ("app", "email", "both", "none", "off", "disable")
+    ) and not (
+        "candidate" in lowered and "paper" in lowered
+        and re.search(r"\b(start|run|launch|trade|promote)\b", lowered)
     ):
         from engine.agents.hermes_jobs import set_notification_channel
         channel = ("both" if "both" in lowered else "email" if "email" in lowered

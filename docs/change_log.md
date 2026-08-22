@@ -15,6 +15,8 @@
   candidates without validation evidence can no longer start a Hermes paper job.
 - Tests: conservative metric math, objective plumbing, train/validation isolation,
   promotion gates, worker cleanup, default-agent isolation, and full CI suite.
+- Fixed combined candidate-start commands containing `notify me both` so they
+  queue the validated paper job instead of being mistaken for an update request.
 
 ## 0.14.0 — 2026-08-22
 

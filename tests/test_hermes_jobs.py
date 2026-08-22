@@ -198,6 +198,32 @@ def test_chat_dispatch_starts_owned_candidate_in_paper(monkeypatch):
     assert captured["poll"] == 60
 
 
+def test_combined_start_and_notify_both_routes_to_paper_start(monkeypatch):
+    from engine.agents import hermes_jobs
+    from engine.web.ph_chat import _dispatch_hermes_job_command
+
+    captured = {}
+
+    def fake_start(candidate_id, *args, **kwargs):
+        captured.update(candidate_id=candidate_id, **kwargs)
+        return {
+            "job_id": "job", "run_id": "run", "candidate_id": candidate_id,
+            "status": "queued",
+        }
+
+    monkeypatch.setattr(hermes_jobs, "enqueue_candidate_paper", fake_start)
+    candidate_id = "55555555-5555-5555-5555-555555555555"
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        f"start candidate {candidate_id} in continuous paper trading and "
+        "email daily reports and notify me both",
+        "11111111-1111-1111-1111-111111111111",
+        "22222222-2222-2222-2222-222222222222",
+    ))
+    assert "Hermes paper trading queued" in reply
+    assert captured["email_reports"] is True
+    assert captured["notification_channel"] == "both"
+
+
 def test_chat_dispatch_selects_highest_sharpe_candidate(monkeypatch):
     from engine.agents import hermes_jobs
     from engine.web.ph_chat import _dispatch_hermes_job_command
