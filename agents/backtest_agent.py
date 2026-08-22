@@ -461,6 +461,7 @@ class BacktestAgent:
                     "calmar_ratio": metrics.get("calmar_ratio", 0),
                     "max_drawdown": metrics.get("max_drawdown", 0),
                     "annualized_return": metrics.get("annualized_return", 0),
+                    "equity_days": metrics.get("equity_days"),
                     "trades_count": len(trades_df) if trades_df is not None else 0,
                     "trades": trades_list,
                 }
@@ -588,8 +589,11 @@ class BacktestAgent:
                     "win_rate": metrics.get("win_rate", 0),
                     "total_trades": metrics.get("total_trades", 0),
                     "sharpe_ratio": metrics.get("sharpe_ratio", 0),
+                    "sortino_ratio": metrics.get("sortino_ratio", 0),
+                    "calmar_ratio": metrics.get("calmar_ratio", 0),
                     "max_drawdown": metrics.get("max_drawdown", 0),
                     "annualized_return": metrics.get("annualized_return", 0),
+                    "equity_days": metrics.get("equity_days"),
                     "trades_count": len(trades_df) if trades_df is not None else 0,
                     "trades": trades_list,
                 }

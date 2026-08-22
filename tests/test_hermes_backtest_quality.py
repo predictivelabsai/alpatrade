@@ -65,6 +65,13 @@ def test_orchestrator_forwards_objective_and_quality_flags():
         assert f'"{field}"' in source
 
 
+def test_result_rows_preserve_equity_day_count():
+    from agents.backtest_agent import BacktestAgent
+
+    source = inspect.getsource(BacktestAgent._run_buy_the_dip_grid)
+    assert '"equity_days": metrics.get("equity_days")' in source
+
+
 def test_sharpe_selection_is_validated_out_of_sample(monkeypatch):
     from agents.backtest_agent import BacktestAgent
 

@@ -42,8 +42,10 @@ import json
 import logging
 import re
 import time
+import tomllib
 import uuid as _uuid
 from dataclasses import replace
+from pathlib import Path
 from typing import Optional
 
 from fasthtml.common import A, Button, Div, Script, Span, Style
@@ -568,7 +570,12 @@ async def _dispatch_hermes_job_command(
             from importlib.metadata import version
             broker_version = version("alpatrade")
         except Exception:  # noqa: BLE001
-            broker_version = "unknown"
+            try:
+                project = Path(__file__).resolve().parents[2] / "pyproject.toml"
+                with project.open("rb") as handle:
+                    broker_version = tomllib.load(handle)["project"]["version"]
+            except Exception:  # noqa: BLE001
+                broker_version = "unknown"
         return (
             "## Hermes commands\n\n"
             f"- **AlpaTrade Hermes broker:** `{broker_version}`\n"
