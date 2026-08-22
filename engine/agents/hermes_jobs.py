@@ -190,13 +190,19 @@ def enqueue_candidate_paper(
 
     with _pool().get_session() as session:
         candidate = session.execute(text("""
-            SELECT strategy, symbols, params, account_id, source_run_id
+            SELECT strategy, symbols, params, metrics, account_id, source_run_id
             FROM alpatrade.strategy_candidates
             WHERE candidate_id = CAST(:candidate_id AS UUID)
               AND user_id = CAST(:uid AS UUID)
         """), {"candidate_id": candidate_id, "uid": user_id}).mappings().first()
     if not candidate:
         raise ValueError("Candidate was not found under your account")
+    metrics = candidate.get("metrics") or {}
+    if metrics.get("promotion_eligible") is not True:
+        reasons = metrics.get("promotion_reasons") or [
+            "candidate has not passed Hermes out-of-sample validation"
+        ]
+        raise ValueError("Candidate is not eligible for paper promotion: " + "; ".join(reasons))
     owned_accounts = get_user_accounts(user_id)
     owned_ids = {str(item["account_id"]) for item in owned_accounts}
     if account_id and account_id not in owned_ids:
@@ -533,6 +539,26 @@ def _notify(job: dict, markdown: str, *, failed: bool = False) -> None:
 
 def _backtest(job: dict) -> tuple[dict, Optional[str], str]:
     from agents.orchestrator import Orchestrator
+    if not job.get("account_id"):
+        try:
+            from engine.auth import get_user_accounts
+            accounts = get_user_accounts(str(job["user_id"]))
+            if accounts:
+                job = dict(job)
+                job["account_id"] = str(accounts[0]["account_id"])
+                with _pool().get_session() as session:
+                    session.execute(text("""
+                        UPDATE alpatrade.hermes_jobs
+                        SET account_id = CAST(:aid AS UUID), updated_at = NOW()
+                        WHERE job_id = CAST(:job_id AS UUID)
+                          AND user_id = CAST(:uid AS UUID)
+                    """), {
+                        "aid": job["account_id"], "job_id": str(job["job_id"]),
+                        "uid": str(job["user_id"]),
+                    })
+        except Exception as exc:  # noqa: BLE001
+            log.warning("Could not attribute backtest %s to an account: %s",
+                        job.get("job_id"), exc)
     config = dict(job.get("config") or {})
     config.update({"agent_name": "Hermes", "agent_framework": "hermes"})
     orch = Orchestrator(user_id=str(job["user_id"]),
@@ -544,6 +570,13 @@ def _backtest(job: dict) -> tuple[dict, Optional[str], str]:
         raise RuntimeError(result["error"])
     candidate_id = _save_candidate(job, result)
     best = result.get("best_config") or {}
+    validation = best.get("validation_metrics") or {}
+    eligible = bool(best.get("promotion_eligible"))
+    promotion = (
+        "This candidate passed validation and may be started in paper trading."
+        if eligible else
+        "This candidate failed validation and cannot be started in paper trading."
+    )
     markdown = (
         "## Hermes backtest completed\n\n"
         f"- **Job ID:** `{job['job_id']}`\n- **Run ID:** `{job['run_id']}`\n"
@@ -554,7 +587,15 @@ def _backtest(job: dict) -> tuple[dict, Optional[str], str]:
         f"- **Maximum drawdown:** {best.get('max_drawdown', 'n/a')}\n"
         f"- **Win rate:** {best.get('win_rate', 'n/a')}\n"
         f"- **Trades:** {best.get('total_trades', 'n/a')}\n\n"
-        "You can now ask Hermes to start this candidate in paper trading."
+        f"### Out-of-sample validation\n\n"
+        f"- **Period:** `{(best.get('validation_period') or {}).get('start', 'n/a')}` "
+        f"to `{(best.get('validation_period') or {}).get('end', 'n/a')}`\n"
+        f"- **Sharpe:** {validation.get('sharpe_ratio', 'n/a')}\n"
+        f"- **Return:** {validation.get('total_return', 'n/a')}\n"
+        f"- **Maximum drawdown:** {validation.get('max_drawdown', 'n/a')}\n"
+        f"- **Trades:** {validation.get('total_trades', 'n/a')}\n"
+        f"- **Paper promotion:** {'eligible' if eligible else 'blocked'}\n\n"
+        f"{promotion}"
     )
     return result, candidate_id, markdown
 

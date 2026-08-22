@@ -483,6 +483,21 @@ Use `/hermes analyze paper job <job-id>` before acting on a report. The response
 is scoped to the signed-in owner and returns supported follow-up commands. It
 does not pause, optimize, or change a running paper strategy automatically.
 
+## Conservative research and paper promotion
+
+Hermes backtests use stricter assumptions than the legacy/default agent path:
+five basis points of adverse slippage on entries and exits, FINRA/CAT fees,
+stop-loss-first resolution when a daily bar touches both exit thresholds, and
+risk statistics calculated from end-of-day portfolio equity. The saved result
+records the methodology, training dates, validation dates, and both metric sets.
+
+The first 70% of the requested period selects parameters; the final 30% is held
+out and evaluated exactly once. A Hermes candidate is paper-eligible only when
+validation has at least 20 closed trades, positive return, Sharpe of at least
+0.50, maximum drawdown no greater than 10%, and positive top-training stability.
+Candidates created before this evidence was introduced are not promotable.
+These gates reduce false confidence but do not guarantee future profit.
+
 Daily reports go only to the authenticated account's login email. The recipient
 is resolved server-side and is never accepted from chat text. Controls update
 only paper jobs belonging to the same `user_id`; live trading is not exposed.

@@ -204,9 +204,9 @@ def test_chat_dispatch_selects_highest_sharpe_candidate(monkeypatch):
 
     monkeypatch.setattr(hermes_jobs, "list_owned", lambda *args, **kwargs: [
         {"kind": "backtest", "status": "completed", "candidate_id": "candidate-low",
-         "result": {"best_config": {"sharpe_ratio": 1.2}}},
+         "result": {"best_config": {"sharpe_ratio": 1.2, "promotion_eligible": True}}},
         {"kind": "backtest", "status": "completed", "candidate_id": "candidate-best",
-         "result": {"best_config": {"sharpe_ratio": 4.8}}},
+         "result": {"best_config": {"sharpe_ratio": 4.8, "promotion_eligible": True}}},
     ])
     captured = {}
 

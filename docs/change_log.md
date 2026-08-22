@@ -1,5 +1,21 @@
 # Change Log
 
+## 0.15.0 — 2026-08-22
+
+- Added Hermes-only conservative backtests with five-basis-point entry/exit
+  slippage, regulatory fees, stop-first ambiguous daily bars, close-time entry
+  attribution, and portfolio daily-equity Sharpe, Sortino, and drawdown.
+- Split Hermes research into 70% training and 30% untouched validation, persist
+  both date ranges and validation metrics, and block paper promotion unless the
+  validation return, Sharpe, drawdown, trade-count, and stability gates pass.
+- Forward the requested objective and methodology flags through the orchestrator,
+  attribute research jobs/candidates to the user's linked account when available,
+  and release worker claims on terminal states.
+- Added explicit methodology and promotion status to saved chat results. Legacy
+  candidates without validation evidence can no longer start a Hermes paper job.
+- Tests: conservative metric math, objective plumbing, train/validation isolation,
+  promotion gates, worker cleanup, default-agent isolation, and full CI suite.
+
 ## 0.14.0 — 2026-08-22
 
 - Added Hermes-only performance emails with reconciled signed P&L, grouped

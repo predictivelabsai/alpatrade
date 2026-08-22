@@ -138,6 +138,13 @@ class Orchestrator:
             "extended_hours": config.get("extended_hours", True),
             "intraday_exit": config.get("intraday_exit", False),
             "pdt_protection": config.get("pdt_protection"),
+            "objective": config.get("objective") or {},
+            "conservative_metrics": config.get("conservative_metrics", False),
+            "conservative_execution": config.get("conservative_execution", False),
+            "include_taf_fees": config.get("include_taf_fees", False),
+            "include_cat_fees": config.get("include_cat_fees", False),
+            "slippage_bps": config.get("slippage_bps", 0.0),
+            "validation_fraction": config.get("validation_fraction", 0.0),
         }
 
         # Publish request to bus

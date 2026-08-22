@@ -543,6 +543,12 @@ def _hermes_backtest_config(message: str) -> Optional[dict]:
         "strategy": strategy,
         "symbols": symbols or ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"],
         "objective": {"maximize": "sharpe_ratio"},
+        "conservative_metrics": True,
+        "conservative_execution": True,
+        "include_taf_fees": True,
+        "include_cat_fees": True,
+        "slippage_bps": 5.0,
+        "validation_fraction": 0.30,
         "agent_name": "Hermes",
         "agent_framework": "hermes",
     }
@@ -558,8 +564,14 @@ async def _dispatch_hermes_job_command(
         lowered,
     )
     if lowered.strip() in {"help", "commands", "show commands"}:
+        try:
+            from importlib.metadata import version
+            broker_version = version("alpatrade")
+        except Exception:  # noqa: BLE001
+            broker_version = "unknown"
         return (
             "## Hermes commands\n\n"
+            f"- **AlpaTrade Hermes broker:** `{broker_version}`\n"
             "- `/hermes show my recent jobs`\n"
             "- `/hermes show my recent advice`\n"
             "- `/hermes analyze paper job <job-id>`\n"
@@ -568,6 +580,7 @@ async def _dispatch_hermes_job_command(
             "- `/hermes notify me in app|by email|both for paper job <job-id>`\n"
             "- `/hermes enable daily email reports for paper job <job-id>`\n"
             "- `/hermes pause|resume|stop paper job <job-id>`\n\n"
+            "Hermes research uses conservative costs and 70/30 out-of-sample validation. "
             "Hermes advice does not place extra orders. Trading remains paper-only."
         )
 
@@ -720,6 +733,9 @@ async def _dispatch_hermes_job_command(
                 item for item in await asyncio.to_thread(list_owned, user_id)
                 if item.get("kind") == "backtest" and item.get("status") == "completed"
                 and item.get("candidate_id")
+                and ((item.get("result") or {}).get("best_config") or {}).get(
+                    "promotion_eligible"
+                ) is True
             ]
             completed.sort(
                 key=lambda item: float(
@@ -824,6 +840,10 @@ async def _dispatch_hermes_job_command(
             f"- **Maximum drawdown:** {best.get('max_drawdown', 'n/a')}\n"
             f"- **Win rate:** {best.get('win_rate', 'n/a')}\n"
             f"- **Trades:** {best.get('total_trades', 'n/a')}"
+            f"\n- **Validation metrics:** `{json.dumps(best.get('validation_metrics') or {}, default=str)}`"
+            f"\n- **Paper promotion:** `"
+            f"{'eligible' if best.get('promotion_eligible') is True else 'blocked' if best.get('promotion_eligible') is False else 'not evaluated'}`"
+            f"\n- **Methodology:** `{json.dumps(result.get('methodology') or {}, default=str)}`"
         )
 
     config = _hermes_backtest_config(message)

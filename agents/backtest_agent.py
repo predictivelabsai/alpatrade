@@ -10,6 +10,7 @@ import sys
 import uuid
 import logging
 import itertools
+import statistics
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -83,6 +84,11 @@ class BacktestAgent:
         extended_hours = request.get("extended_hours", True)
         intraday_exit = request.get("intraday_exit", False)
         pdt_protection = request.get("pdt_protection")
+        conservative_metrics = bool(request.get("conservative_metrics", False))
+        conservative_execution = bool(request.get("conservative_execution", False))
+        include_taf_fees = bool(request.get("include_taf_fees", False))
+        include_cat_fees = bool(request.get("include_cat_fees", False))
+        slippage_bps = float(request.get("slippage_bps", 0.0) or 0.0)
 
         # Determine date range
         end_date = datetime.now()
@@ -93,6 +99,14 @@ class BacktestAgent:
             lookback = request.get("lookback", "3m")
             days = LOOKBACK_PERIODS.get(lookback, 90)
             start_date = end_date - timedelta(days=days)
+
+        full_end_date = end_date
+        validation_start = None
+        validation_fraction = float(request.get("validation_fraction", 0.0) or 0.0)
+        if strategy == "buy_the_dip" and 0.0 < validation_fraction < 0.5:
+            span = full_end_date - start_date
+            validation_start = start_date + span * (1.0 - validation_fraction)
+            end_date = validation_start - timedelta(seconds=1)
 
         run_id = request.get("run_id", str(uuid.uuid4()))
 
@@ -149,6 +163,11 @@ class BacktestAgent:
                         objective=request.get("objective") or {},
                         n_iter=int(request.get("adaptive_iterations", 40)),
                         vol_target=vol_target, atr_exit_mult=atr_exit_mult,
+                        conservative_metrics=conservative_metrics,
+                        conservative_execution=conservative_execution,
+                        include_taf_fees=include_taf_fees,
+                        include_cat_fees=include_cat_fees,
+                        slippage_bps=slippage_bps,
                     )
                 except Exception as e:  # noqa: BLE001
                     logger.warning(f"Adaptive search failed ({e}); falling back to static grid.")
@@ -159,6 +178,11 @@ class BacktestAgent:
                         extended_hours=extended_hours, intraday_exit=intraday_exit,
                         pdt_protection=pdt_protection,
                         vol_target=vol_target, atr_exit_mult=atr_exit_mult,
+                        conservative_metrics=conservative_metrics,
+                        conservative_execution=conservative_execution,
+                        include_taf_fees=include_taf_fees,
+                        include_cat_fees=include_cat_fees,
+                        slippage_bps=slippage_bps,
                     )
             else:
                 results = self._run_buy_the_dip_grid(
@@ -174,6 +198,11 @@ class BacktestAgent:
                     pdt_protection=pdt_protection,
                     vol_target=vol_target,
                     atr_exit_mult=atr_exit_mult,
+                    conservative_metrics=conservative_metrics,
+                    conservative_execution=conservative_execution,
+                    include_taf_fees=include_taf_fees,
+                    include_cat_fees=include_cat_fees,
+                    slippage_bps=slippage_bps,
                 )
         elif strategy == "momentum":
             results = self._run_momentum(
@@ -215,6 +244,65 @@ class BacktestAgent:
         best = select_best(results, weights, maximize=maximize)
         ranked = rank_variations(results, weights, maximize=maximize)
 
+        validation = None
+        if validation_start is not None and best.get("params"):
+            params = best["params"]
+            validation_grid = {
+                "dip_threshold": [params["dip_threshold"]],
+                "take_profit": [params["take_profit"]],
+                "hold_days": [params["hold_days"]],
+                "stop_loss": [params["stop_loss"]],
+                "position_size": [params["position_size"]],
+            }
+            validation_rows = self._run_buy_the_dip_grid(
+                symbols=symbols, start_date=validation_start, end_date=full_end_date,
+                initial_capital=initial_capital, data_source=data_source,
+                variations=validation_grid, run_id=run_id,
+                extended_hours=extended_hours, intraday_exit=intraday_exit,
+                pdt_protection=pdt_protection, vol_target=vol_target,
+                atr_exit_mult=atr_exit_mult,
+                conservative_metrics=conservative_metrics,
+                conservative_execution=conservative_execution,
+                include_taf_fees=include_taf_fees,
+                include_cat_fees=include_cat_fees,
+                slippage_bps=slippage_bps,
+            )
+            validation = next(
+                (row for row in validation_rows if not row.get("error")), {}
+            )
+            reasons = []
+            if int(validation.get("total_trades", 0) or 0) < 20:
+                reasons.append("validation has fewer than 20 closed trades")
+            if float(validation.get("total_return", 0) or 0) <= 0:
+                reasons.append("validation total return is not positive")
+            if float(validation.get("sharpe_ratio", 0) or 0) < 0.5:
+                reasons.append("validation Sharpe is below 0.50")
+            validation_drawdown = validation.get("max_drawdown")
+            if validation_drawdown is None or float(validation_drawdown) > 10:
+                reasons.append("validation drawdown exceeds 10%")
+            top_sharpes = [float(row.get("sharpe_ratio", 0) or 0) for row in ranked[:3]]
+            if len(top_sharpes) < 3 or statistics.median(top_sharpes) <= 0:
+                reasons.append("top training variations are not stable")
+            best = {
+                **best,
+                "promotion_eligible": not reasons,
+                "promotion_reasons": reasons,
+                "training_period": {
+                    "start": start_date.isoformat(), "end": end_date.isoformat(),
+                },
+                "validation_period": {
+                    "start": validation_start.isoformat(),
+                    "end": full_end_date.isoformat(),
+                },
+                "validation_metrics": {
+                    key: validation.get(key) for key in (
+                        "total_return", "annualized_return", "max_drawdown",
+                        "sharpe_ratio", "sortino_ratio", "calmar_ratio",
+                        "win_rate", "total_trades", "total_pnl", "equity_days",
+                    )
+                },
+            }
+
         # Store results to DB if available
         lookback = request.get("lookback", "3m")
         self._store_results(run_id, best, results,
@@ -227,6 +315,14 @@ class BacktestAgent:
             "strategy": strategy,
             "total_variations": len(results),
             "best_config": best,
+            "methodology": {
+                "conservative_execution": conservative_execution,
+                "portfolio_daily_metrics": conservative_metrics,
+                "slippage_bps": slippage_bps,
+                "taf_fees": include_taf_fees,
+                "cat_fees": include_cat_fees,
+                "validation_fraction": validation_fraction,
+            },
             "trades": best_trades,
             "all_results_summary": [
                 {
@@ -277,6 +373,11 @@ class BacktestAgent:
         pdt_protection: Optional[bool] = None,
         vol_target: Optional[float] = None,
         atr_exit_mult: Optional[float] = None,
+        conservative_metrics: bool = False,
+        conservative_execution: bool = False,
+        include_taf_fees: bool = False,
+        include_cat_fees: bool = False,
+        slippage_bps: float = 0.0,
     ) -> List[Dict]:
         """Run buy-the-dip backtests across a parameter grid."""
         dip_thresholds = variations.get("dip_threshold", [0.05])
@@ -313,6 +414,11 @@ class BacktestAgent:
                     pdt_protection=pdt_protection,
                     vol_target=vol_target,
                     atr_exit_mult=atr_exit_mult,
+                    conservative_metrics=conservative_metrics,
+                    conservative_execution=conservative_execution,
+                    include_taf_fees=include_taf_fees,
+                    include_cat_fees=include_cat_fees,
+                    slippage_bps=slippage_bps,
                 )
 
                 # backtest_buy_the_dip returns None when no price data available
@@ -389,6 +495,11 @@ class BacktestAgent:
         n_iter: int = 40,
         vol_target: Optional[float] = None,
         atr_exit_mult: Optional[float] = None,
+        conservative_metrics: bool = False,
+        conservative_execution: bool = False,
+        include_taf_fees: bool = False,
+        include_cat_fees: bool = False,
+        slippage_bps: float = 0.0,
     ) -> List[Dict]:
         """Adaptive random-search + elite refinement against the Phase-1 objective.
 
@@ -459,6 +570,11 @@ class BacktestAgent:
                     extended_hours=extended_hours, intraday_exit=intraday_exit,
                     pdt_protection=pdt_protection,
                     vol_target=vol_target, atr_exit_mult=atr_exit_mult,
+                    conservative_metrics=conservative_metrics,
+                    conservative_execution=conservative_execution,
+                    include_taf_fees=include_taf_fees,
+                    include_cat_fees=include_cat_fees,
+                    slippage_bps=slippage_bps,
                 )
                 if bt_result is None:
                     return {"run_id": run_id, "variation_index": idx, "params": params,
