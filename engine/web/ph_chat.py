@@ -557,12 +557,37 @@ async def _dispatch_hermes_job_command(
             "## Hermes commands\n\n"
             "- `/hermes show my recent jobs`\n"
             "- `/hermes show my recent advice`\n"
+            "- `/hermes analyze paper job <job-id>`\n"
             "- `/hermes construct a portfolio from candidate <candidate-id>`\n"
             "- `/hermes start candidate <candidate-id> in continuous paper trading`\n"
             "- `/hermes notify me in app|by email|both for paper job <job-id>`\n"
             "- `/hermes enable daily email reports for paper job <job-id>`\n"
             "- `/hermes pause|resume|stop paper job <job-id>`\n\n"
             "Hermes advice does not place extra orders. Trading remains paper-only."
+        )
+
+    if "analyze" in lowered and "paper" in lowered and uuids:
+        from engine.agents.hermes_advice import analyze_owned_paper_job
+        report = await asyncio.to_thread(analyze_owned_paper_job, uuids[0], user_id)
+        if not report:
+            return "## Hermes paper analysis\n\nNo matching paper job was found under your account."
+        reasons = "\n".join(f"- {reason}" for reason in report["reasons"])
+        commands = "\n".join(f"- `{command}`" for command in report["commands"])
+        return (
+            "## Hermes paper analysis\n\n"
+            f"- **Status:** `{report['status']}`\n"
+            f"- **Job:** `{report['job_id']}` · `{report['job_status']}`\n"
+            f"- **Run:** `{report['run_id']}`\n"
+            f"- **Realized today:** `${report['realized_today']:+,.2f}`\n"
+            f"- **Session realized:** `${report['realized_session']:+,.2f}`\n"
+            f"- **Completed exits:** {report['completed_exits']}\n"
+            f"- **Win rate:** {report['win_rate']:.1f}%\n"
+            f"- **Duplicate active jobs:** {report['active_duplicate_jobs']}\n\n"
+            f"- **Other active account runs:** {report['other_active_account_runs']}\n\n"
+            f"### Why\n{reasons}\n\n"
+            f"### Decision\n{report['decision']}\n\n"
+            f"### Suggested commands\n{commands}\n\n"
+            "No parameters or orders were changed automatically."
         )
 
     if "portfolio" in lowered and any(

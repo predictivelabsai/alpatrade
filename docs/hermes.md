@@ -450,6 +450,7 @@ Use an owned candidate ID returned by a completed Hermes backtest:
 /hermes notify me in app for paper job <job-id>
 /hermes notify me by email for paper job <job-id>
 /hermes notify me both in app and email for paper job <job-id>
+/hermes analyze paper job <job-id>
 ```
 
 Apply `sql/21_hermes_portfolio_advice.sql` before using portfolio advice. It creates
@@ -460,6 +461,27 @@ before attempting delivery. `in_app` writes to the originating saved chat; `emai
 uses the account login email; `both` does both. Daily P&L email includes recent
 Hermes advice. Advice never submits an additional order and all execution remains
 under the already approved paper strategy.
+
+Hermes immediate alerts identify the confirmed paper event, quantity, price,
+approved threshold, P&L when an exit closes, and the reason for the decision.
+An entry is informational rather than a profit signal. Exit gains render green,
+losses render red, and watch/hold events render amber.
+
+The Hermes daily report is separate from the existing AlpaTrade daily report.
+It derives realized P&L from the owned paper run's persisted trades, groups
+repeated entry fills, and labels broker positions/unrealized P&L as account-wide
+because other strategies can share the linked paper account. It never adds
+account-wide unrealized P&L to run-only realized P&L. The report includes one of:
+
+- **GREEN**: profitable closed activity without stop-loss exits; keep the
+  approved configuration while monitoring consistency.
+- **AMBER**: insufficient or mixed closed activity; inspect before changing it.
+- **RED**: a loss, repeated stop exits/fills, or overlapping active account runs;
+  pause and diagnose before another optimization.
+
+Use `/hermes analyze paper job <job-id>` before acting on a report. The response
+is scoped to the signed-in owner and returns supported follow-up commands. It
+does not pause, optimize, or change a running paper strategy automatically.
 
 Daily reports go only to the authenticated account's login email. The recipient
 is resolved server-side and is never accepted from chat text. Controls update

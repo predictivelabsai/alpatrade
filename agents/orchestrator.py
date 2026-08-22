@@ -297,6 +297,8 @@ class Orchestrator:
             "advice_enabled": (config.get("advice_enabled", False)
                                if config.get("agent_framework") == "hermes" else False),
             "advice_interval_seconds": config.get("advice_interval_seconds", 900),
+            "report_format": ("hermes" if config.get("agent_framework") == "hermes"
+                              else "default"),
             "pdt_protection": config.get("pdt_protection"),
         }
 

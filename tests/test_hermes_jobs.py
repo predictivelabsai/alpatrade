@@ -342,9 +342,10 @@ def test_trade_advice_reports_confirmed_paper_entry_without_ordering():
 
     items = PaperTradeAgent._trade_advice([
         {"symbol": "AAPL", "side": "buy", "dip_pct": 3.2, "qty": 2}
-    ])
+    ], {"dip_threshold": 3.0})
     assert items[0]["action"] == "ENTRY_EXECUTED"
     assert "3.20%" in items[0]["rationale"]
+    assert items[0]["snapshot"]["dip_threshold_pct"] == 3.0
     assert "client" not in inspect.getsource(PaperTradeAgent._trade_advice)
 
 
@@ -355,6 +356,127 @@ def test_advice_email_html_escapes_model_or_market_text():
                                "rationale": "price & risk"}])
     assert "&lt;EXIT&gt;" in body
     assert "price &amp; risk" in body
+
+
+def test_hermes_daily_report_reconciles_loss_and_groups_fills():
+    from engine.agents.hermes_advice import build_performance_report
+
+    trades = [
+        {"symbol": "AAPL", "side": "buy", "qty": 4, "price": 311.30,
+         "timestamp": "2026-08-21T10:00:00+00:00"},
+        {"symbol": "AAPL", "side": "buy", "qty": 3, "price": 310.30,
+         "timestamp": "2026-08-21T10:05:00+00:00"},
+        {"symbol": "AAPL", "side": "sell", "qty": 7, "exit_price": 309.0,
+         "exit_time": "2026-08-21T15:00:00+00:00", "pnl": -665.87,
+         "reason": "STOP_LOSS (-0.82%)"},
+        {"symbol": "AMZN", "side": "sell", "qty": 5, "exit_price": 259.0,
+         "exit_time": "2026-08-21T15:05:00+00:00", "pnl": -411.88,
+         "reason": "STOP_LOSS (-0.56%)"},
+        {"symbol": "NVDA", "side": "sell", "qty": 5, "exit_price": 217.0,
+         "exit_time": "2026-08-21T15:10:00+00:00", "pnl": -374.93,
+         "reason": "STOP_LOSS (-0.51%)"},
+    ]
+    report = build_performance_report(
+        date="2026-08-21", positions=[], trades=trades, advice=[],
+        job_id="job-1", run_id="run-1", candidate_id="candidate-1",
+    )
+    assert report["realized_today"] == -1452.68
+    assert report["realized_session"] == -1452.68
+    assert report["status"] == "RED"
+    assert report["win_rate"] == 0.0
+    assert report["validated"] is True
+    assert report["grouped_entries"][0]["fills"] == 2
+    assert report["grouped_entries"][0]["quantity"] == 7
+    assert "pause paper job job-1" in report["commands"][0]
+
+
+def test_hermes_green_report_explains_gain_and_keeps_strategy():
+    from engine.agents.hermes_advice import build_performance_report
+
+    report = build_performance_report(
+        date="2026-08-21",
+        positions=[{"symbol": "AAPL", "unrealized_pl": 25}],
+        trades=[{"symbol": "MSFT", "side": "sell", "exit_price": 102,
+                 "exit_time": "2026-08-21T15:00:00+00:00", "pnl": 50,
+                 "reason": "TAKE_PROFIT"}],
+        advice=[], job_id="job-1", run_id="run-1", candidate_id="candidate-1",
+    )
+    assert report["status"] == "GREEN"
+    assert report["realized_today"] == 50
+    assert "Keep the approved configuration" in report["decision"]
+    assert any("AAPL" in reason for reason in report["reasons"])
+    assert any("without changing my running paper job" in command
+               for command in report["commands"])
+
+
+def test_immediate_alert_has_reason_context_and_loss_color():
+    from engine.agents.hermes_advice import build_advice_alert_email
+
+    subject, body = build_advice_alert_email([{
+        "summary": "NVDA: EXIT_EXECUTED", "action": "EXIT_EXECUTED",
+        "rationale": "Approved stop loss crossed.",
+        "snapshot": {"pnl": -374.93, "reason": "STOP_LOSS"},
+    }], {"job_id": "job-1", "run_id": "run-1", "candidate_id": "candidate-1"})
+    assert "RED" in subject
+    assert "-$374.93" in body
+    assert "#c53b3b" in body
+    assert "Approved stop loss crossed" in body
+    assert "job-1" in body and "run-1" in body and "candidate-1" in body
+
+
+def test_hermes_daily_email_uses_one_report_and_red_loss(monkeypatch):
+    from utils import email_util
+
+    captured = {}
+    monkeypatch.setattr(email_util, "send_email_to", lambda to, subject, body: (
+        captured.update(to=to, subject=subject, body=body) or True
+    ))
+    report = {
+        "date": "2026-08-21", "status": "RED", "status_color": "#c53b3b",
+        "decision": "Pause and review.", "reasons": ["Three stop-loss exits."],
+        "realized_today": -1452.68, "realized_session": -1452.68,
+        "unrealized": 100.0, "combined_current": -1352.68,
+        "completed_exits": 3, "wins": 0, "losses": 3, "win_rate": 0,
+        "positions": [], "closed_today": [], "grouped_entries": [], "advice": [],
+        "commands": ["/hermes pause paper job job-1"],
+        "job_id": "job-1", "run_id": "run-1", "candidate_id": "candidate-1",
+    }
+    assert email_util.send_hermes_daily_report(
+        report, account_name="Raslen", user_name="raslen",
+        to_email="owner@example.com",
+    )
+    assert "-$1,452.68 realized" in captured["subject"]
+    assert "#c53b3b" in captured["body"]
+    assert "-$1,452.68" in captured["body"]
+    assert "/hermes pause paper job job-1" in captured["body"]
+    assert captured["to"] == "owner@example.com"
+
+
+def test_chat_analyzes_only_owned_paper_job(monkeypatch):
+    from engine.agents import hermes_advice
+    from engine.web.ph_chat import _dispatch_hermes_job_command
+
+    captured = {}
+    monkeypatch.setattr(hermes_advice, "analyze_owned_paper_job", lambda job, user: (
+        captured.update(job=job, user=user) or {
+            "status": "RED", "job_id": job, "job_status": "running",
+            "run_id": "run-1", "realized_today": -10, "realized_session": -10,
+            "completed_exits": 1, "win_rate": 0, "active_duplicate_jobs": 0,
+            "other_active_account_runs": 0,
+            "reasons": ["Loss detected."], "decision": "Pause and review.",
+            "commands": [f"/hermes pause paper job {job}"],
+        }
+    ))
+    job_id = "66666666-6666-6666-6666-666666666666"
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        f"analyze paper job {job_id}",
+        "11111111-1111-1111-1111-111111111111",
+        "22222222-2222-2222-2222-222222222222",
+    ))
+    assert captured["user"] == "11111111-1111-1111-1111-111111111111"
+    assert "Hermes paper analysis" in reply
+    assert "Loss detected" in reply
+    assert "No parameters or orders were changed automatically" in reply
 
 
 def test_portfolio_risk_weights_fall_back_without_complete_market_data(monkeypatch):
@@ -390,6 +512,34 @@ def test_running_paper_agent_refreshes_advice_preferences():
     source = inspect.getsource(PaperTradeAgent.run)
     assert 'stop_event.advice_settings()' in source
     assert 'live_advice.get("enabled"' in source
+
+
+def test_hermes_daily_report_loads_durable_owned_run_trades():
+    from agents.paper_trade_agent import PaperTradeAgent
+
+    source = inspect.getsource(PaperTradeAgent._send_daily_email)
+    assert "fetch_paper_trades" in source
+
+
+def test_daily_email_keeps_default_and_hermes_templates_separate():
+    """Hermes reporting must not replace the established default-agent email."""
+    import inspect
+    from agents.paper_trade_agent import PaperTradeAgent
+
+    source = inspect.getsource(PaperTradeAgent._send_daily_email)
+    assert 'if report_format != "hermes"' in source
+    assert "send_daily_pnl_report" in source
+    assert "send_hermes_daily_report" in source
+    assert "user_id=self.user_id" in source
+
+
+def test_analysis_checks_all_account_paper_runs_not_only_hermes():
+    from engine.agents import hermes_advice
+
+    source = inspect.getsource(hermes_advice.analyze_owned_paper_job)
+    assert "FROM alpatrade.runs" in source
+    assert "mode = 'paper'" in source
+    assert "other_active_account_runs" in source
 
 
 def test_durable_dispatch_precedes_remote_hermes_runtime():

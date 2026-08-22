@@ -1,5 +1,18 @@
 # Change Log
 
+## 0.14.0 — 2026-08-22
+
+- Added Hermes-only performance emails with reconciled signed P&L, grouped
+  fills, green/amber/red status, concise reasons, and supported next commands.
+- Added detailed entry/exit alerts with quantities, prices, thresholds, P&L,
+  rationale, and owned job/run/candidate attribution.
+- Added `/hermes analyze paper job <job-id>` for an owner-scoped diagnosis of
+  results, repeated fills, duplicate Hermes jobs, and overlapping account runs.
+- Kept the established AlpaTrade daily email and the DeepAgents/LangGraph
+  execution paths unchanged; all Hermes execution remains paper-only.
+- Tests: Hermes report calculations, alert rendering, durable trade loading,
+  ownership, overlap detection, command routing, and default-template isolation.
+
 ## 0.13.0 — 2026-08-21
 
 - Added user-scoped Hermes portfolio recommendations and persisted entry, exit,

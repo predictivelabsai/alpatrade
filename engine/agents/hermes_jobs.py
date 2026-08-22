@@ -325,7 +325,8 @@ class DatabaseJobControl:
         """Resolve mutable advice preferences and owner context at delivery time."""
         with _pool().get_session() as session:
             row = session.execute(text("""
-                SELECT j.user_id, j.account_id, j.thread_id, j.candidate_id, j.config, u.email
+                SELECT j.user_id, j.account_id, j.thread_id, j.candidate_id,
+                       j.run_id, j.config, u.email
                 FROM alpatrade.hermes_jobs j
                 JOIN alpatrade.users u ON u.user_id = j.user_id
                 WHERE j.job_id = CAST(:job_id AS UUID)
@@ -341,12 +342,17 @@ class DatabaseJobControl:
             "account_id": str(row["account_id"]) if row["account_id"] else None,
             "thread_id": str(row["thread_id"]) if row["thread_id"] else None,
             "candidate_id": str(row["candidate_id"]) if row["candidate_id"] else None,
+            "job_id": self.job_id,
+            "run_id": str(row["run_id"]),
+            "config": config,
             "email": str(row["email"] or ""),
         }
 
     def publish_advice(self, items: list[dict]) -> list[dict]:
         """Persist new advice and deliver actionable changes via the selected channels."""
-        from engine.agents.hermes_advice import advice_email_html, save_advice, mark_delivered
+        from engine.agents.hermes_advice import (
+            build_advice_alert_email, save_advice, mark_delivered,
+        )
         settings = self.advice_settings()
         if not settings.get("enabled") or not items:
             return []
@@ -388,8 +394,10 @@ class DatabaseJobControl:
             mark_delivered([aid for _, aid in actionable], in_app=True)
         if actionable and channel in {"email", "both"} and settings["email"]:
             from utils.email_util import send_email_to
-            if send_email_to(settings["email"], "AlpaTrade Hermes entry/exit advice",
-                             advice_email_html([item for item, _ in actionable])):
+            subject, body = build_advice_alert_email(
+                [item for item, _ in actionable], settings
+            )
+            if send_email_to(settings["email"], subject, body):
                 mark_delivered([aid for _, aid in actionable], email=True)
         return saved
 
