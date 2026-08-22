@@ -211,8 +211,9 @@ class BacktestAgent:
         # are disqualified. Objective weights are configurable per-run.
         obj_cfg = request.get("objective") or {}
         weights = ObjectiveWeights.from_config(obj_cfg)
-        best = select_best(results, weights)
-        ranked = rank_variations(results, weights)
+        maximize = obj_cfg.get("maximize")
+        best = select_best(results, weights, maximize=maximize)
+        ranked = rank_variations(results, weights, maximize=maximize)
 
         # Store results to DB if available
         lookback = request.get("lookback", "3m")

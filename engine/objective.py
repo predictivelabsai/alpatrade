@@ -96,7 +96,8 @@ def score_variation(result: Dict[str, Any], w: ObjectiveWeights) -> Optional[flo
 
 
 def rank_variations(results: List[Dict[str, Any]],
-                    weights: Optional[ObjectiveWeights] = None) -> List[Dict[str, Any]]:
+                    weights: Optional[ObjectiveWeights] = None,
+                    maximize: Optional[str] = None) -> List[Dict[str, Any]]:
     """Return results sorted by score descending; disqualified ones excluded.
 
     Each result gets a `_score` field injected for transparency. Pure: does
@@ -109,21 +110,25 @@ def rank_variations(results: List[Dict[str, Any]],
         if s is None:
             continue
         rc = dict(r)
-        rc["_score"] = s
+        rc["_score"] = (
+            float(r.get("sharpe_ratio", 0.0) or 0.0)
+            if maximize == "sharpe_ratio" else s
+        )
         scored.append(rc)
     scored.sort(key=lambda x: x["_score"], reverse=True)
     return scored
 
 
 def select_best(results: List[Dict[str, Any]],
-                weights: Optional[ObjectiveWeights] = None) -> Dict[str, Any]:
+                weights: Optional[ObjectiveWeights] = None,
+                maximize: Optional[str] = None) -> Dict[str, Any]:
     """Select the best variation by the composite objective.
 
     Falls back to the old max-Sharpe behaviour only if every variation is
     disqualified (e.g. all errored) AND the caller still needs *something* —
     in that case returns the highest-Sharpe non-error row, or `{}` if none.
     """
-    ranked = rank_variations(results, weights)
+    ranked = rank_variations(results, weights, maximize=maximize)
     if ranked:
         return ranked[0]
     # Last-resort fallback: highest Sharpe among non-error rows, no min-trade gate

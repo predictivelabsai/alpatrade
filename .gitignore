@@ -214,6 +214,7 @@ reports/
 .sesskey
 .playwright-mcp/
 .playwright-cli/
+.codex-browser-profile/
 output/playwright/
 
 # eval outputs

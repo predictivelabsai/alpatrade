@@ -422,6 +422,7 @@ def finish(
             UPDATE alpatrade.hermes_jobs
             SET status = :status, result = CAST(:result AS JSONB),
                 candidate_id = COALESCE(CAST(:candidate_id AS UUID), candidate_id),
+                claimed_by = NULL,
                 progress = CAST(:progress AS JSONB),
                 completed_at = NOW(), heartbeat_at = NOW(), updated_at = NOW()
             WHERE job_id = CAST(:job_id AS UUID)
@@ -435,6 +436,7 @@ def fail(job_id: str, error: str) -> None:
         session.execute(text("""
             UPDATE alpatrade.hermes_jobs
             SET status = 'failed', error = :error,
+                claimed_by = NULL,
                 progress = '{"message":"Failed"}'::jsonb,
                 completed_at = NOW(), heartbeat_at = NOW(), updated_at = NOW()
             WHERE job_id = CAST(:job_id AS UUID)

@@ -622,6 +622,13 @@ def test_worker_finalizes_orphaned_stop_request():
     assert "INTERVAL '30 seconds'" in source
 
 
+def test_completed_worker_releases_claim():
+    from engine.agents import hermes_jobs
+
+    assert "claimed_by = NULL" in inspect.getsource(hermes_jobs.finish)
+    assert "claimed_by = NULL" in inspect.getsource(hermes_jobs.fail)
+
+
 def test_paper_wait_obeys_durable_stop_without_sleeping_full_poll(monkeypatch):
     from agents.paper_trade_agent import PaperTradeAgent
 

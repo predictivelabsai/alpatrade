@@ -12,6 +12,8 @@
   preventing an orphaned job from remaining incorrectly marked as running.
 - Accept compact Hermes backtest periods such as `lookback:6m` and
   `lookback=1y` instead of silently applying the three-month default.
+- Honor the explicit `objective:sharpe_ratio` contract when selecting the best
+  eligible variation, and release worker claims when jobs finish or fail.
 - Kept the established AlpaTrade daily email and the DeepAgents/LangGraph
   execution paths unchanged; all Hermes execution remains paper-only.
 - Tests: Hermes report calculations, alert rendering, durable trade loading,
