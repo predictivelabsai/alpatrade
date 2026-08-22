@@ -8,6 +8,8 @@
   rationale, and owned job/run/candidate attribution.
 - Added `/hermes analyze paper job <job-id>` for an owner-scoped diagnosis of
   results, repeated fills, duplicate Hermes jobs, and overlapping account runs.
+- Finalize stop requests whose paper worker was interrupted during deployment,
+  preventing an orphaned job from remaining incorrectly marked as running.
 - Kept the established AlpaTrade daily email and the DeepAgents/LangGraph
   execution paths unchanged; all Hermes execution remains paper-only.
 - Tests: Hermes report calculations, alert rendering, durable trade loading,

@@ -600,6 +600,15 @@ def test_worker_requeues_only_explicitly_continuous_paper_jobs():
     assert "not replayed to avoid duplicate orders" in source
 
 
+def test_worker_finalizes_orphaned_stop_request():
+    from engine.agents import hermes_jobs
+
+    source = inspect.getsource(hermes_jobs.recover_stale)
+    assert "control_requested = 'stop'" in source
+    assert "status = 'stopped'" in source
+    assert "INTERVAL '30 seconds'" in source
+
+
 def test_paper_wait_obeys_durable_stop_without_sleeping_full_poll(monkeypatch):
     from agents.paper_trade_agent import PaperTradeAgent
 

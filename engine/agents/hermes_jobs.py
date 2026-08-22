@@ -444,6 +444,18 @@ def fail(job_id: str, error: str) -> None:
 def recover_stale(stale_seconds: int = 900) -> None:
     """Retry backtests and explicitly continuous paper jobs after worker restarts."""
     with _pool().get_session() as session:
+        # A live worker normally acknowledges stop within seconds. Finalize a
+        # persisted stop when deployment interrupted that worker, rather than
+        # leaving the owned job permanently marked as running.
+        session.execute(text("""
+            UPDATE alpatrade.hermes_jobs
+            SET status = 'stopped', claimed_by = NULL,
+                progress = '{"message":"Stopped after worker interruption"}'::jsonb,
+                completed_at = NOW(), updated_at = NOW()
+            WHERE status = 'running' AND kind = 'paper'
+              AND control_requested = 'stop'
+              AND heartbeat_at < NOW() - INTERVAL '30 seconds'
+        """))
         session.execute(text("""
             UPDATE alpatrade.hermes_jobs
             SET status = 'queued', claimed_by = NULL,
