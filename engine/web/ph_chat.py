@@ -520,11 +520,16 @@ def _hermes_backtest_config(message: str) -> Optional[dict]:
     for symbol in re.findall(r"\b[A-Z]{1,5}\b", message):
         if symbol not in symbols and symbol not in {"HERMES", "USD", "PDT"}:
             symbols.append(symbol)
+    compact_period = re.search(
+        r"\blookback\s*[:=]\s*(\d+)\s*([dmy])\b", message, re.IGNORECASE
+    )
     period = re.search(
         r"\b(\d+)\s*(day|days|month|months|year|years)\b", message, re.IGNORECASE
     )
     lookback = "3m"
-    if period:
+    if compact_period:
+        lookback = f"{int(compact_period.group(1))}{compact_period.group(2).lower()}"
+    elif period:
         amount, unit = int(period.group(1)), period.group(2).lower()
         suffix = "d" if unit.startswith("day") else "m" if unit.startswith("month") else "y"
         lookback = f"{amount}{suffix}"

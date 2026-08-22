@@ -110,6 +110,19 @@ def test_chat_dispatch_parses_background_backtest_without_remote_model():
     assert config["symbols"] == ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"]
 
 
+def test_chat_dispatch_parses_compact_lookback_parameter():
+    from engine.web.ph_chat import _hermes_backtest_config
+
+    colon = _hermes_backtest_config(
+        "backtest lookback:6m symbols:AAPL,MSFT objective:sharpe_ratio"
+    )
+    equals = _hermes_backtest_config(
+        "run backtest lookback=1y symbols:AAPL objective:sharpe_ratio"
+    )
+    assert colon["lookback"] == "6m"
+    assert equals["lookback"] == "1y"
+
+
 def test_chat_result_question_does_not_queue_another_backtest():
     from engine.web.ph_chat import _hermes_backtest_config
 

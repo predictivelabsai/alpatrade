@@ -10,6 +10,8 @@
   results, repeated fills, duplicate Hermes jobs, and overlapping account runs.
 - Finalize stop requests whose paper worker was interrupted during deployment,
   preventing an orphaned job from remaining incorrectly marked as running.
+- Accept compact Hermes backtest periods such as `lookback:6m` and
+  `lookback=1y` instead of silently applying the three-month default.
 - Kept the established AlpaTrade daily email and the DeepAgents/LangGraph
   execution paths unchanged; all Hermes execution remains paper-only.
 - Tests: Hermes report calculations, alert rendering, durable trade loading,
