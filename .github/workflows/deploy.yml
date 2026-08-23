@@ -42,9 +42,18 @@ jobs:
       - name: Trigger Coolify deploy
         id: trigger
         run: |
+          # Coolify's deploy trigger used to be GET /api/v1/deploy, but a server
+          # upgrade (~2026-08-18) started returning 405 to GET; it now expects POST
+          # with a JSON body. Try GET first for older instances, then fall back to
+          # POST — the same fallback scripts/coolify_deploy.py already uses.
           resp=$(curl -fsSL -X GET \
             -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
-            "${COOLIFY_URL%/}/api/v1/deploy?uuid=${COOLIFY_APP_UUID}&force=false")
+            "${COOLIFY_URL%/}/api/v1/deploy?uuid=${COOLIFY_APP_UUID}&force=false") \
+          || resp=$(curl -fsSL -X POST \
+            -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"uuid\":\"${COOLIFY_APP_UUID}\",\"force\":false}" \
+            "${COOLIFY_URL%/}/api/v1/deploy")
           echo "$resp"
           uuid=$(printf '%s' "$resp" | jq -r '.deployments[0].deployment_uuid // empty')
           if [ -z "$uuid" ]; then
