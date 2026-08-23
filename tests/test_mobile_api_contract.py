@@ -8,7 +8,7 @@ from enum import Enum
 import pytest
 from fastapi.testclient import TestClient
 
-from api_app import _position_item_from_alpaca, app
+from api_app import API_VERSION, _position_item_from_alpaca, app
 
 
 class _Side(Enum):
@@ -22,7 +22,7 @@ def test_openapi_includes_direct_paper_order_endpoint():
 def test_openapi_exposes_docs_auth_and_external_agents():
     spec = app.openapi()
 
-    assert spec["info"]["version"] == "0.10.0"
+    assert spec["info"]["version"] == API_VERSION
     assert set(spec["components"]["securitySchemes"]) == {
         "BearerAuth", "ServiceApiKey",
     }

@@ -420,7 +420,7 @@ def test_store_enforces_account_thread_and_append_only_ownership():
 
 
 def test_deepagent_migration_uses_idempotent_ddl_and_dedupe_constraints():
-    sql = (Path(__file__).parents[1] / "sql" / "18_deepagent_responses.sql").read_text()
+    sql = (Path(__file__).parents[1] / "sql" / "22_deepagent_responses.sql").read_text()
     assert sql.count("CREATE TABLE IF NOT EXISTS") == 3
     assert "ADD COLUMN IF NOT EXISTS dedupe_key" in sql
     assert "request_fingerprint VARCHAR(64) NOT NULL" in sql

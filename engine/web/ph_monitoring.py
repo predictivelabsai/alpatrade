@@ -61,7 +61,7 @@ def pipeline_snapshot(user_id: str) -> dict:
         """), {"uid": user_id}).mappings().all()
         accounts = session.execute(text("""
             SELECT account_id, account_name FROM alpatrade.user_accounts
-            WHERE user_id = :uid AND is_active = TRUE ORDER BY is_default DESC, created_at
+            WHERE user_id = :uid AND is_active = TRUE ORDER BY created_at ASC
         """), {"uid": user_id}).mappings().all()
     runs = [dict(row) for row in rows]
     counts = {key: sum(r["status"] == key for r in runs)

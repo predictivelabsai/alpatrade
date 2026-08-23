@@ -78,6 +78,27 @@ def test_select_best_returns_empty_when_all_errored():
     assert select_best(results, w) == {}
 
 
+def test_explicit_sharpe_objective_selects_highest_eligible_sharpe():
+    w = ObjectiveWeights(min_trades=20)
+    pnl_winner = {
+        "annualized_return": 120.0, "max_drawdown": 1.0,
+        "total_trades": 100, "sharpe_ratio": 4.0,
+    }
+    sharpe_winner = {
+        "annualized_return": 80.0, "max_drawdown": 1.0,
+        "total_trades": 100, "sharpe_ratio": 7.5,
+    }
+    fluke = {
+        "annualized_return": 999.0, "max_drawdown": 0.0,
+        "total_trades": 1, "sharpe_ratio": 99.0,
+    }
+    best = select_best(
+        [pnl_winner, sharpe_winner, fluke], w, maximize="sharpe_ratio"
+    )
+    assert best["sharpe_ratio"] == 7.5
+    assert best["_score"] == 7.5
+
+
 def test_objective_weights_from_config():
     w = ObjectiveWeights.from_config({"lambda_drawdown": 2.5, "min_trades": 50})
     assert w.lambda_drawdown == 2.5

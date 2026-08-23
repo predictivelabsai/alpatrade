@@ -62,7 +62,7 @@ ci.yml). Add new DB-free tests to that explicit list if they should run in CI.
   worker with full autonomy gated by `AUTONOMY_ENABLED` (paper-only by design). The same
   worker still drains scheduled advisor jobs when full autonomy is off. Controls surface in
   `engine/web/ph_monitoring.py`.
-- **DB**: PostgreSQL with `alpatrade` schema. Migrations in `sql/` (numbered `01_`–`19_`,
+- **DB**: PostgreSQL with `alpatrade` schema. Migrations in `sql/` (numbered `01_`–`23_`,
   idempotent `CREATE TABLE IF NOT EXISTS`). Per-user Alpaca keys live in `user_accounts`
   (Fernet-encrypted BYTEA), **not** `users`. All data tables carry `user_id` (+ `account_id`).
 

@@ -158,6 +158,25 @@ def _guide_chat():
             "Buy 1 share of AAPL at market   (paper)\n"
             "What's my account balance and P&L?"
         )),
+        H3("Choose the agent runtime", id="chat-runtime"),
+        P("Prefix one message to choose a specific AI runtime without changing "
+          "the default saved in Settings:"),
+        Pre(Code(
+            "/hermes explain this portfolio\n"
+            "/hermes start my best candidate in continuous paper trading and email daily reports\n"
+            "/hermes show my recent jobs\n"
+            "/hermes pause paper job <job-id>\n"
+            "/hermes resume paper job <job-id>\n"
+            "/hermes stop paper job <job-id>\n"
+            "/hermes construct an optimal portfolio from candidate <candidate-id>\n"
+            "/hermes show my recent advice\n"
+            "/hermes notify me both in app and email for paper job <job-id>\n"
+            "/deepagents compare these strategies\n"
+            "/langgraph summarize the last run"
+        )),
+        P("A prefix must include a request. Typing only ", Code("/hermes"),
+          " displays its usage hint. The next unprefixed message returns to the "
+          "runtime selected in Settings."),
         H3("Charts & the market map", id="chat-charts"),
         P("Charts render inline in the chat, and there are full-screen pages too: ",
           A("🗺 Market Map", href="/map"), " (finviz-style S&P sector/stock treemap) and ",

@@ -1117,7 +1117,7 @@ def test_validation_persistence_maps_nonempty_validator_count(monkeypatch):
 
 
 def test_advisor_migration_has_account_and_delivery_dedupe_constraints():
-    sql = (Path(__file__).parents[1] / "sql" / "19_daily_advisor.sql").read_text()
+    sql = (Path(__file__).parents[1] / "sql" / "23_daily_advisor.sql").read_text()
     assert "uq_advisor_reports_user_account_session" in sql
     assert "ON alpatrade.advisor_reports (user_id, account_id, session_date)" in sql
     assert "uq_advisor_deliveries_user_session_channel_recipient" in sql

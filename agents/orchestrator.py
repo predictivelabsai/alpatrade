@@ -145,6 +145,13 @@ class Orchestrator:
             "extended_hours": config.get("extended_hours", True),
             "intraday_exit": config.get("intraday_exit", False),
             "pdt_protection": config.get("pdt_protection"),
+            "objective": config.get("objective") or {},
+            "conservative_metrics": config.get("conservative_metrics", False),
+            "conservative_execution": config.get("conservative_execution", False),
+            "include_taf_fees": config.get("include_taf_fees", False),
+            "include_cat_fees": config.get("include_cat_fees", False),
+            "slippage_bps": config.get("slippage_bps", 0.0),
+            "validation_fraction": config.get("validation_fraction", 0.0),
         }
 
         # Publish request to bus
@@ -306,6 +313,11 @@ class Orchestrator:
                 "capital_per_trade", yaml_cfg.get("capital_per_trade", 1000.0)
             ),
         }
+        # Preserve optional fractional sizing when a caller/backtest set it
+        # (PaperTradeAgent uses it over capital_per_trade); omit the key entirely
+        # otherwise so the resolved-param contract stays unchanged.
+        if params.get("position_size") is not None:
+            resolved_params["position_size"] = params.get("position_size")
 
         request = {
             "strategy": config.get("strategy", "buy_the_dip"),
@@ -315,9 +327,14 @@ class Orchestrator:
             "duration_seconds": config.get("duration_seconds", 604800),
             "poll_interval_seconds": config.get("poll_interval_seconds", yaml_general.get("polling_interval", 300)),
             "extended_hours": config.get("extended_hours", True),
-            # Deprecated/ignored by PaperTradeAgent; retained on the wire for
-            # compatibility with older API and CLI clients.
-            "email_notifications": config.get("email_notifications", False),
+            "email_notifications": config.get("email_notifications", True),
+            "report_email": config.get("report_email", ""),
+            "report_hour_utc": config.get("report_hour_utc", 21),
+            "advice_enabled": (config.get("advice_enabled", False)
+                               if config.get("agent_framework") == "hermes" else False),
+            "advice_interval_seconds": config.get("advice_interval_seconds", 900),
+            "report_format": ("hermes" if config.get("agent_framework") == "hermes"
+                              else "default"),
             "pdt_protection": config.get("pdt_protection"),
         }
 

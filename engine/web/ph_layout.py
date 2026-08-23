@@ -69,10 +69,7 @@ function fillChat(t){var i=document.getElementById('chat-input');
   sessionStorage.setItem('alpatrade.pendingPrompt',t);window.location.href='/app';}
 function autoResize(el){if(!el)return;el.style.height='auto';
   el.style.height=Math.min(el.scrollHeight,192)+'px';}
-function newChat(){setNewsPane(true);var m=document.getElementById('messages');if(m)m.innerHTML='';
-  var w=document.getElementById('welcome-hero');if(w)w.style.display='';
-  var i=document.getElementById('chat-input');if(i){i.value='';autoResize(i);i.focus();return;}
-  window.location.href='/app';}
+function newChat(){setNewsPane(true);window.location.href='/app?new=1';}
 function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();
   var f=document.getElementById('chat-form');
   if(typeof window.sendMessage==='function'){window.sendMessage(e);}
@@ -86,9 +83,22 @@ function toggleNewsPane(){setNewsPane();}
 function toggleLeftPane(){var p=document.getElementById('left-pane');
   var o=document.getElementById('left-overlay');
   if(p)p.classList.toggle('open');if(o)o.classList.toggle('visible');}
+function filterNews(el){var cat=el.getAttribute('data-cat');
+  var pills=document.querySelectorAll('#news-body .news-pill');
+  for(var i=0;i<pills.length;i++){pills[i].classList.toggle('active',pills[i]===el);}
+  var items=document.querySelectorAll('#news-body .news-item');
+  var visible=0;
+  for(var j=0;j<items.length;j++){
+    var show=(cat==='latest')||(items[j].getAttribute('data-cat')===cat);
+    items[j].style.display=show?'':'none';
+    if(show)visible++;
+  }
+  var empty=document.getElementById('news-empty-filter');
+  if(empty)empty.style.display=visible?'none':'block';
+}
 window.fillChat=fillChat;window.newChat=newChat;window.autoResize=autoResize;
 window.handleKey=handleKey;window.toggleNewsPane=toggleNewsPane;window.setNewsPane=setNewsPane;
-window.toggleLeftPane=toggleLeftPane;
+window.toggleLeftPane=toggleLeftPane;window.filterNews=filterNews;
 document.addEventListener('DOMContentLoaded',function(){
   var p=document.getElementById('right-pane');if(p)setNewsPane(p.classList.contains('open'));
   var t=sessionStorage.getItem('alpatrade.pendingPrompt');
@@ -140,7 +150,6 @@ def _menu_group(label: str, items, active: Optional[str]):
     for cmd, desc in items:
         cls = "agent-item" + (" active" if cmd == active else "")
         rows.append(Button(
-            Span("›", cls="aitem-icon"),
             Span(cmd, cls="aitem-name"),
             Span(desc, cls="aitem-prefix"),
             cls=cls, type="button", title=desc,
@@ -148,9 +157,7 @@ def _menu_group(label: str, items, active: Optional[str]):
         ))
     return Details(
         Summary(
-            Span("▸", cls="cat-icon"),
             Span(label, cls="cat-name"),
-            Span(str(len(items)), cls="cat-count"),
             Span("›", cls="cat-arrow"),
             cls="cat-toggle",
         ),
@@ -160,7 +167,7 @@ def _menu_group(label: str, items, active: Optional[str]):
     )
 
 
-def _nav_section(label: str, *children):
+def _nav_section(label: str, *children, opened: bool = False):
     """A compact top-level sidebar section, collapsed on every page load."""
     return Details(
         Summary(
@@ -171,6 +178,7 @@ def _nav_section(label: str, *children):
         ),
         Div(*children, cls="nav-section-body"),
         cls="nav-section",
+        **({"open": True} if opened else {}),
     )
 
 
@@ -239,17 +247,13 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             _nav_section(
                 "Chats",
                 Div(Div("No chats yet.", cls="sessions-empty"),
-                    cls="session-list", id="session-list"),
+                    cls="session-list", id="session-list",
+                    hx_get="/app/chats", hx_trigger="load", hx_swap="innerHTML"),
+                opened=active == "app",
             ),
             _nav_section(
                 "Agents",
                 Div(*[_menu_group(lbl, items, active) for lbl, items in AGENT_SHORTCUTS],
-                    cls="agent-browser"),
-            ),
-            _nav_section(
-                "Alpha Research",
-                Div(*[_menu_group(lbl, items, active)
-                      for lbl, items in ALPHA_RESEARCH_SHORTCUTS],
                     cls="agent-browser"),
             ),
             _nav_section(
@@ -272,6 +276,9 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             _nav_section(
                 "Research",
                 Div(*_RESEARCH_EXTRA(active), cls="page-links"),
+                Div(*[_menu_group(lbl, items, active)
+                      for lbl, items in ALPHA_RESEARCH_SHORTCUTS],
+                    cls="agent-browser"),
             ),
             _nav_section(
                 "Admin",

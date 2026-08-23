@@ -1,4 +1,4 @@
--- 18_deepagent_responses.sql
+-- 22_deepagent_responses.sql
 -- Durable, tenant-scoped API response/idempotency records and sanitized traces.
 
 CREATE SCHEMA IF NOT EXISTS alpatrade;

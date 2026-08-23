@@ -556,4 +556,4 @@ Operationally important fallbacks are:
 - Queue, worker, and checkpointed pipelines: [`engine/autonomy/queue.py`](../engine/autonomy/queue.py), [`engine/autonomy/worker.py`](../engine/autonomy/worker.py), and [`engine/autonomy/graph.py`](../engine/autonomy/graph.py)
 - NYSE-aware scheduling: [`engine/autonomy/schedule.py`](../engine/autonomy/schedule.py)
 - Advisor evidence and delivery engine: [`engine/reporting/advisor.py`](../engine/reporting/advisor.py)
-- Database definitions: [`sql/18_deepagent_responses.sql`](../sql/18_deepagent_responses.sql) and [`sql/19_daily_advisor.sql`](../sql/19_daily_advisor.sql)
+- Database definitions: [`sql/22_deepagent_responses.sql`](../sql/22_deepagent_responses.sql) and [`sql/23_daily_advisor.sql`](../sql/23_daily_advisor.sql)

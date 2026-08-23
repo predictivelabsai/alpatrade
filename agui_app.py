@@ -13,6 +13,7 @@ import os
 import sys
 import uuid as _uuid
 import logging
+import contextvars
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -71,6 +72,11 @@ SYSTEM_PROMPT = (
     "Be concise and use markdown formatting with tables where appropriate. "
     "Users can type CLI commands directly in chat (e.g. agent:backtest lookback:1m, "
     "news:TSLA, trades, runs) and they will be executed automatically. "
+    "You have NO tool to run a backtest, paper trade, or the full backtest→paper cycle. "
+    "When a user asks for one in natural language (e.g. 'backtest AAPL', 'run a backtest on TSLA', "
+    "'paper trade this strategy'), do NOT ask for more parameters or pretend to run it — reply with the "
+    "exact CLI command they should type, e.g. `agent:backtest symbols:AAPL lookback:3m` (or "
+    "`agent:paper duration:7d` for paper trading, `agent:full lookback:1m duration:1m` for the full cycle). "
     "For stock queries, always use the appropriate tool to get real data. "
     "When users ask for a graph or chart of a backtest run, use the show_equity_curve tool with the run_id. "
     "For stock price charts, use show_stock_chart. "
@@ -221,11 +227,59 @@ def get_top_strategies(trade_type: str = "backtest", limit: int = 5) -> str:
 
 
 
+# ---------------------------------------------------------------------------
+# Per-request user context for Alpaca tool resolution
+# ---------------------------------------------------------------------------
+# The chat agent is built once and shared across users, so its Alpaca tools
+# cannot capture a user_id at construction time. Instead, each request binds
+# the signed-in user to a contextvar (set_request_user) and the tools resolve
+# per-user keys from user_accounts via get_alpaca_keys. A signed-in user with
+# no linked account raises _NoLinkedAccount so we never silently fall back to
+# the shared env account (which would leak another user's positions/orders).
+
+_current_user_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+    "agui_user_id", default=None
+)
+_current_account_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+    "agui_account_id", default=None
+)
+
+
+def set_request_user(user_id: Optional[str], account_id: Optional[str] = None) -> None:
+    """Bind the current request's user/account for Alpaca tool resolution."""
+    _current_user_id.set(user_id)
+    _current_account_id.set(account_id)
+
+
+class _NoLinkedAccount(Exception):
+    """A signed-in user has no linked Alpaca account (never fall back to env)."""
+
+
+def _alpaca_client(account_id: Optional[str] = None):
+    """Build an AlpacaAPI client for the current request's user.
+
+    - Signed-in user with a linked account → their keys.
+    - Signed-in user with no linked account → raise _NoLinkedAccount.
+    - Anonymous (no user in context) → env keys (legacy / eval / CLI path).
+    """
+    from utils.alpaca_util import AlpacaAPI
+    user_id = _current_user_id.get()
+    if user_id:
+        from utils.auth import get_alpaca_keys
+        try:
+            keys = get_alpaca_keys(user_id, account_id or _current_account_id.get())
+        except Exception:
+            keys = None
+        if not keys:
+            raise _NoLinkedAccount(user_id)
+        return AlpacaAPI(api_key=keys[0], secret_key=keys[1], paper=True)
+    return AlpacaAPI(paper=True)
+
+
 def get_alpaca_positions(account_id: Optional[str] = None) -> str:
     """Get current open positions from the Alpaca paper trading account. Shows symbol, qty, entry price, current price, and unrealized P&L."""
     try:
-        from utils.alpaca_util import AlpacaAPI
-        client = AlpacaAPI(paper=True)  # primary paper account (…8CR) via .env
+        client = _alpaca_client(account_id)
         positions = client.get_positions()
         if isinstance(positions, dict) and "error" in positions:
             return f"Error fetching positions: {positions['error']}"
@@ -243,6 +297,8 @@ def get_alpaca_positions(account_id: Optional[str] = None) -> str:
             sign = "+" if pnl >= 0 else ""
             md += f"| {symbol} | {qty} | ${entry:.2f} | ${current:.2f} | {sign}${pnl:.2f} | {sign}{pnl_pct:.2f}% |\n"
         return md + f"\n*{len(positions)} open positions*"
+    except _NoLinkedAccount:
+        return "No linked Alpaca account. Use `account:add <API_KEY> <SECRET_KEY>` to connect your paper account."
     except Exception as e:
         return f"Error fetching positions: {e}"
 
@@ -251,8 +307,7 @@ def get_alpaca_positions(account_id: Optional[str] = None) -> str:
 def get_alpaca_account(account_id: Optional[str] = None) -> str:
     """Get Alpaca paper trading account summary — portfolio value, cash, buying power, and P&L."""
     try:
-        from utils.alpaca_util import AlpacaAPI
-        client = AlpacaAPI(paper=True)  # primary paper account (…8CR) via .env
+        client = _alpaca_client(account_id)
         # Alpaca's REST API occasionally returns a transient error; retry once
         # before surfacing a failure so a blip doesn't read as "unavailable".
         acct = client.get_account()
@@ -279,6 +334,8 @@ def get_alpaca_account(account_id: Optional[str] = None) -> str:
             f"| Unrealized P&L | ${pnl:,.2f} |\n"
             f"| Day Trades (5d) | {daytrade_count} |\n"
         )
+    except _NoLinkedAccount:
+        return "No linked Alpaca account. Use `account:add <API_KEY> <SECRET_KEY>` to connect your paper account."
     except Exception as e:
         return f"Error fetching account: {e}"
 
@@ -287,7 +344,17 @@ def get_pnl_report() -> str:
     """Get today's paper-trading account P&L summary: day P&L, portfolio value, and open positions with unrealised P&L."""
     try:
         from scripts.daily_pnl_report import gather
-        d = gather()
+        user_id = _current_user_id.get()
+        keys = None
+        if user_id:
+            from utils.auth import get_alpaca_keys
+            try:
+                keys = get_alpaca_keys(user_id, _current_account_id.get())
+            except Exception:
+                keys = None
+            if not keys:
+                return "No linked Alpaca account. Use `account:add <API_KEY> <SECRET_KEY>` to connect your paper account."
+        d = gather(keys=keys)
         lines = [
             f"**Paper account** — day P&L **{'+' if d['day_pnl'] >= 0 else ''}${d['day_pnl']:,.2f} "
             f"({d['day_pct']:+.2f}%)**",
@@ -511,8 +578,7 @@ def place_paper_order(symbol: str, qty: float, side: str = "buy",
                 f"This is a paper trade — no real money. Reply **confirm** to place it.")
 
     try:
-        from utils.alpaca_util import AlpacaAPI
-        client = AlpacaAPI(paper=True)  # primary paper account (…8CR) via .env
+        client = _alpaca_client(account_id)
         order = client.create_order(symbol=symbol, qty=qty, side=side, type=order_type,
                                     limit_price=limit_price if order_type == "limit" else None)
         if isinstance(order, dict) and order.get("error"):
@@ -521,6 +587,8 @@ def place_paper_order(symbol: str, qty: float, side: str = "buy",
         status = (order or {}).get("status", "submitted") if isinstance(order, dict) else "submitted"
         return (f"✅ **Paper order placed** — {side.upper()} {qty:g} {symbol}{price_txt}.\n\n"
                 f"Order id `{oid}`, status: {status}. Simulated paper trade — no real money.")
+    except _NoLinkedAccount:
+        return "No linked Alpaca account. Use `account:add <API_KEY> <SECRET_KEY>` to connect your paper account."
     except Exception as e:  # noqa: BLE001
         msg = str(e)
         if "wash trade" in msg.lower():
@@ -535,32 +603,20 @@ def list_user_accounts() -> str:
     """List all Alpaca brokerage accounts linked to the current user. Shows account name, API key hint, and status."""
     try:
         from utils.auth import get_user_accounts
-        # Use a placeholder — the interceptor will inject the real user_id
-        # This tool is mainly for the AI to describe what accounts exist
-        from utils.db.db_pool import DatabasePool
-        from sqlalchemy import text
-        pool = DatabasePool()
-        with pool.get_session() as session:
-            result = session.execute(
-                text("""
-                    SELECT ua.account_name, ua.account_id, ua.created_at
-                    FROM alpatrade.user_accounts ua
-                    WHERE ua.is_active = TRUE
-                    ORDER BY ua.created_at ASC
-                    LIMIT 20
-                """)
-            )
-            rows = result.fetchall()
-        if not rows:
+        user_id = _current_user_id.get()
+        if not user_id:
+            return "Not logged in. Sign in to see your linked Alpaca accounts."
+        accounts = get_user_accounts(user_id)
+        if not accounts:
             return "No accounts found. Use `account:add <API_KEY> <SECRET_KEY>` to add one."
         md = "**Your Alpaca Accounts**\n\n"
         md += "| # | Name | Account ID | Added |\n"
         md += "|---|------|------------|-------|\n"
-        for i, r in enumerate(rows, 1):
-            created = str(r[2])[:10] if r[2] else "-"
-            short_id = str(r[1])[:8]
-            md += f"| {i} | {r[0]} | `{short_id}` | {created} |\n"
-        md += f"\n*{len(rows)} accounts*\n"
+        for i, acc in enumerate(accounts, 1):
+            created = str(acc.get("created_at", ""))[:10] if acc.get("created_at") else "-"
+            short_id = str(acc.get("account_id", ""))[:8]
+            md += f"| {i} | {acc.get('account_name', '')} | `{short_id}` | {created} |\n"
+        md += f"\n*{len(accounts)} accounts*\n"
         md += "\nUse `account:switch <number>` to change active account."
         return md
     except Exception as e:
@@ -760,8 +816,7 @@ def list_index_option_contracts(
     """List active Alpaca PAPER contracts for SPX/SPXW/VIX/VIXW/DJX/XSP."""
     try:
         from engine.brokers.index_options import list_contracts
-        from utils.alpaca_util import AlpacaAPI
-        client = AlpacaAPI(paper=True)
+        client = _alpaca_client()
         contracts = list_contracts(
             client.trading_client, underlying, contract_type=contract_type or None,
             min_expiration=min_expiration or None, max_expiration=max_expiration or None,
@@ -777,6 +832,8 @@ def list_index_option_contracts(
                 f"{contract.get('style', '')} |"
             )
         return "\n".join(lines)
+    except _NoLinkedAccount:
+        return "No linked Alpaca account. Use `account:add <API_KEY> <SECRET_KEY>` to connect your paper account."
     except Exception as e:  # noqa: BLE001
         return f"Error listing index-option contracts: {e}"
 
@@ -787,8 +844,7 @@ def place_index_option_paper_order(
     """Submit a paper-only index-option DAY order using a discovered contract symbol."""
     try:
         from engine.brokers.index_options import submit_order
-        from utils.alpaca_util import AlpacaAPI
-        client = AlpacaAPI(paper=True)
+        client = _alpaca_client()
         order = submit_order(
             client.trading_client, symbol, qty, side, limit_price=limit_price,
         )
@@ -800,6 +856,8 @@ def place_index_option_paper_order(
             f"- Order ID: `{order.get('id', 'unknown')}`\n\n"
             "Cash-settled, European-style contract; submission does not guarantee a fill."
         )
+    except _NoLinkedAccount:
+        return "No linked Alpaca account. Use `account:add <API_KEY> <SECRET_KEY>` to connect your paper account."
     except Exception as e:  # noqa: BLE001
         return f"Error placing index-option paper order: {e}"
 
@@ -988,6 +1046,10 @@ _STREAMING_COMMANDS = {
 
 async def _command_interceptor(msg: str, session):
     """Detect CLI commands and route to CommandProcessor. Returns markdown or None."""
+    # Bind the signed-in user so Alpaca tools (positions/account) resolve
+    # per-user keys even when the interceptor is invoked directly.
+    _uid = session.get("user", {}).get("user_id") if session.get("user") else None
+    set_request_user(_uid)
     cmd_lower = msg.strip().lower()
     first_word = cmd_lower.split()[0] if cmd_lower.split() else ""
     base = first_word.split(":")[0]
@@ -1127,6 +1189,17 @@ async def _command_interceptor(msg: str, session):
 
 
 _AGUI_HELP = """# AlpaTrade Commands
+
+## Choose an AI Runtime
+- `/hermes your request` — use Hermes for one message
+- `/hermes start my best candidate in continuous paper trading and email daily reports`
+- `/hermes show my recent jobs` or pause/resume/stop an owned paper job by ID
+- `/hermes help` — portfolio advice, notification, and paper-control commands
+- `/hermes notify me both in app and email for paper job <job-id>`
+- `/deepagents your request` — use DeepAgents for one message
+- `/langgraph your request` — use LangGraph for one message
+
+An unprefixed message continues using the framework selected in Settings.
 
 ## Backtest
 - `agent:backtest lookback:1m` — 1-month backtest

@@ -1,4 +1,39 @@
 services:
+  # Nous Hermes Agent gateway. Port 8642 remains private to the Compose network;
+  # authenticated users enter through AlpaTrade's existing /app chat route.
+  hermes:
+    image: nousresearch/hermes-agent:${HERMES_IMAGE_TAG:-v2026.7.7.2}
+    command: ["gateway", "run"]
+    environment:
+      - API_SERVER_ENABLED=true
+      - API_SERVER_HOST=0.0.0.0
+      - API_SERVER_PORT=8642
+      - API_SERVER_KEY=${HERMES_API_SERVER_KEY}
+      - API_SERVER_MODEL_NAME=${HERMES_API_MODEL:-hermes-agent}
+      # Gateway chat cannot render Hermes's interactive terminal approval modal.
+      # This container is isolated and receives no DB, Alpaca, JWT, or general
+      # API credentials; the only enabled execution use is the scoped broker curl.
+      - HERMES_EXEC_ASK=false
+      - HERMES_MAX_ITERATIONS=${HERMES_MAX_ITERATIONS:-20}
+      - XAI_API_KEY=${XAI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      # Dedicated broker credentials only. Never add DATABASE_URL, broker keys,
+      # JWT_SECRET, or AlpaTrade's general API service key to this container.
+      - ALPATRADE_API_URL=http://api:5001
+      - ALPATRADE_HERMES_API_KEY=${HERMES_API_SERVER_KEY}
+    volumes:
+      - hermes-data:/opt/data
+      - ./hermes/skills/alpatrade:/opt/data/skills/alpatrade:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8642/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
   api:
     build:
       context: .
@@ -20,12 +55,48 @@ services:
       - JWT_SECRET=${JWT_SECRET:-}
       - API_SERVICE_KEY=${API_SERVICE_KEY:-}
       - API_SERVICE_KEYS=${API_SERVICE_KEYS:-}
+      - ALPATRADE_HERMES_API_KEY=${HERMES_API_SERVER_KEY:-}
       - API_CORS_ORIGINS=${API_CORS_ORIGINS:-}
       - POSTMARK_API_KEY=${POSTMARK_API_KEY:-}
       - TO_EMAIL=${TO_EMAIL:-}
       - FROM_EMAIL=${FROM_EMAIL:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  # Durable executor for scoped Hermes backtest and paper jobs. This is an
+  # AlpaTrade service, not the Hermes model container; it owns DB/broker access
+  # and derives every job's user_id from the API's validated delegation.
+  hermes-jobs:
+    build:
+      context: .
+      dockerfile: Dockerfile.agui
+    command: ["python", "-m", "engine.agents.hermes_jobs"]
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - DB_POOL_SIZE=${HERMES_JOBS_DB_POOL_SIZE:-2}
+      - DB_MAX_OVERFLOW=${HERMES_JOBS_DB_MAX_OVERFLOW:-1}
+      - DB_POOL_TIMEOUT=${DB_POOL_TIMEOUT:-5}
+      - DB_APPLICATION_NAME=alpatrade-hermes-jobs
+      - HERMES_JOBS_POLL_SECONDS=${HERMES_JOBS_POLL_SECONDS:-2}
+      - ALPACA_PAPER_API_KEY=${ALPACA_PAPER_API_KEY}
+      - ALPACA_PAPER_SECRET_KEY=${ALPACA_PAPER_SECRET_KEY}
+      - MARKET_DATA_PROVIDER=${MARKET_DATA_PROVIDER:-yfinance}
+      - XAI_API_KEY=${XAI_API_KEY:-}
+      - EODHD_API_KEY=${EODHD_API_KEY:-}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+      - POSTMARK_API_KEY=${POSTMARK_API_KEY:-}
+      - TO_EMAIL=${TO_EMAIL:-}
+      - FROM_EMAIL=${FROM_EMAIL:-}
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "from pathlib import Path; assert b'engine.agents.hermes_jobs' in Path('/proc/1/cmdline').read_bytes()"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -59,6 +130,12 @@ services:
       - API_SERVICE_KEY=${API_SERVICE_KEY:-}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - HERMES_API_URL=http://hermes:8642/v1
+      - HERMES_API_SERVER_KEY=${HERMES_API_SERVER_KEY:-}
+      - HERMES_API_MODEL=${HERMES_API_MODEL:-hermes-agent}
+      - PNL_REPORT_FREQUENCY=${PNL_REPORT_FREQUENCY:-daily}
+      - PNL_REPORT_HOUR_UTC=${PNL_REPORT_HOUR_UTC:-21}
+      - PNL_REPORT_TO=${PNL_REPORT_TO:-}
     depends_on:
       api:
         condition: service_healthy
@@ -162,3 +239,6 @@ services:
       retries: 3
       start_period: 15s
     restart: unless-stopped
+
+volumes:
+  hermes-data:

@@ -11,7 +11,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "0.10.0"
+    "version": "0.17.0"
   },
   "servers": [
     {
@@ -991,7 +991,7 @@
           "data"
         ],
         "summary": "V2 Pnl",
-        "description": "P&L breakdown for a specific run \u2014 per-symbol and daily.",
+        "description": "P&L breakdown for a specific run — per-symbol and daily.",
         "operationId": "v2_pnl_v2_pnl__run_id__get",
         "security": [
           {
@@ -1220,7 +1220,7 @@
           "agent-invocation"
         ],
         "summary": "Invoke Backtest Agent",
-        "description": "Run a parameterized backtest. Synchronous \u2014 may take minutes.\n\n### Agent skills\n\n- Strategy parameter sweeps\n- Historical performance analysis\n- Risk and drawdown metrics\n- Best-configuration selection\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `read_only`",
+        "description": "Run a parameterized backtest. Synchronous — may take minutes.\n\n### Agent skills\n\n- Strategy parameter sweeps\n- Historical performance analysis\n- Risk and drawdown metrics\n- Best-configuration selection\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `read_only`",
         "operationId": "v2_backtest_v2_backtest_post",
         "requestBody": {
           "content": {
@@ -1394,13 +1394,910 @@
         "x-agent-safety": "paper_only"
       }
     },
+    "/v2/hermes/backtests": {
+      "post": {
+        "tags": [
+          "hermes"
+        ],
+        "summary": "Hermes Backtest",
+        "description": "Queue an owned backtest and return immediately.",
+        "operationId": "hermes_backtest_v2_hermes_backtests_post",
+        "parameters": [
+          {
+            "name": "X-Hermes-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Key"
+            }
+          },
+          {
+            "name": "X-Hermes-Delegation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Delegation"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HermesBacktestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/v2/hermes/jobs": {
+      "get": {
+        "tags": [
+          "hermes"
+        ],
+        "summary": "Hermes Jobs",
+        "description": "List queued, running, and completed jobs owned by this user.",
+        "operationId": "hermes_jobs_v2_hermes_jobs_get",
+        "parameters": [
+          {
+            "name": "X-Hermes-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Key"
+            }
+          },
+          {
+            "name": "X-Hermes-Delegation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Delegation"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/v2/hermes/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "hermes"
+        ],
+        "summary": "Hermes Job",
+        "description": "Inspect one job only when it belongs to the delegated user.",
+        "operationId": "hermes_job_v2_hermes_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "X-Hermes-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Key"
+            }
+          },
+          {
+            "name": "X-Hermes-Delegation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Delegation"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/v2/hermes/candidates": {
+      "get": {
+        "tags": [
+          "hermes"
+        ],
+        "summary": "Hermes Candidates",
+        "description": "List only the delegated user's saved candidates.",
+        "operationId": "hermes_candidates_v2_hermes_candidates_get",
+        "parameters": [
+          {
+            "name": "X-Hermes-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Key"
+            }
+          },
+          {
+            "name": "X-Hermes-Delegation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Delegation"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/v2/hermes/runs/{run_id}": {
+      "get": {
+        "tags": [
+          "hermes"
+        ],
+        "summary": "Hermes Run",
+        "description": "Inspect one run only when it belongs to the delegated user.",
+        "operationId": "hermes_run_v2_hermes_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "X-Hermes-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Key"
+            }
+          },
+          {
+            "name": "X-Hermes-Delegation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Delegation"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/v2/hermes/candidates/{candidate_id}/paper": {
+      "post": {
+        "tags": [
+          "hermes"
+        ],
+        "summary": "Hermes Candidate Paper",
+        "description": "Queue owned candidate parameters for paper trading; live is not exposed.",
+        "operationId": "hermes_candidate_paper_v2_hermes_candidates__candidate_id__paper_post",
+        "parameters": [
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Candidate Id"
+            }
+          },
+          {
+            "name": "X-Hermes-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Key"
+            }
+          },
+          {
+            "name": "X-Hermes-Delegation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Delegation"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HermesPaperRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/v2/hermes/jobs/{job_id}/pause": {
+      "post": {
+        "tags": [
+          "hermes"
+        ],
+        "summary": "Hermes Pause Paper Job",
+        "description": "Pause one active paper job owned by the delegated user.",
+        "operationId": "hermes_pause_paper_job_v2_hermes_jobs__job_id__pause_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "X-Hermes-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Key"
+            }
+          },
+          {
+            "name": "X-Hermes-Delegation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Delegation"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/v2/hermes/jobs/{job_id}/resume": {
+      "post": {
+        "tags": [
+          "hermes"
+        ],
+        "summary": "Hermes Resume Paper Job",
+        "description": "Resume one paused paper job owned by the delegated user.",
+        "operationId": "hermes_resume_paper_job_v2_hermes_jobs__job_id__resume_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "X-Hermes-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Key"
+            }
+          },
+          {
+            "name": "X-Hermes-Delegation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Delegation"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/v2/hermes/jobs/{job_id}/stop": {
+      "post": {
+        "tags": [
+          "hermes"
+        ],
+        "summary": "Hermes Stop Paper Job",
+        "description": "Request a cooperative stop for one owned paper job.",
+        "operationId": "hermes_stop_paper_job_v2_hermes_jobs__job_id__stop_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "X-Hermes-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Key"
+            }
+          },
+          {
+            "name": "X-Hermes-Delegation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Delegation"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/v2/hermes/advice": {
+      "get": {
+        "tags": [
+          "hermes"
+        ],
+        "summary": "Hermes Advice",
+        "description": "List only portfolio and entry/exit advice owned by the delegated user.",
+        "operationId": "hermes_advice_v2_hermes_advice_get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "X-Hermes-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Key"
+            }
+          },
+          {
+            "name": "X-Hermes-Delegation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Delegation"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/v2/hermes/candidates/{candidate_id}/portfolio": {
+      "post": {
+        "tags": [
+          "hermes"
+        ],
+        "summary": "Hermes Construct Portfolio",
+        "description": "Persist paper-only portfolio construction advice for an owned candidate.",
+        "operationId": "hermes_construct_portfolio_v2_hermes_candidates__candidate_id__portfolio_post",
+        "parameters": [
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Candidate Id"
+            }
+          },
+          {
+            "name": "X-Hermes-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Key"
+            }
+          },
+          {
+            "name": "X-Hermes-Delegation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Delegation"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/v2/hermes/jobs/{job_id}/notifications/{channel}": {
+      "post": {
+        "tags": [
+          "hermes"
+        ],
+        "summary": "Hermes Notifications",
+        "description": "Set advice delivery for one active paper job owned by this user.",
+        "operationId": "hermes_notifications_v2_hermes_jobs__job_id__notifications__channel__post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "channel",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Channel"
+            }
+          },
+          {
+            "name": "X-Hermes-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Key"
+            }
+          },
+          {
+            "name": "X-Hermes-Delegation",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hermes-Delegation"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
     "/v2/full": {
       "post": {
         "tags": [
           "agent-invocation"
         ],
         "summary": "Invoke Five-Agent Orchestrator",
-        "description": "Run full cycle: backtest -> validate -> paper -> validate. Synchronous \u2014 long-running.\n\n### Agent skills\n\n- Multi-agent workflow coordination\n- Backtest-to-paper promotion\n- Phase status aggregation\n- End-to-end run reporting\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `orchestration`",
+        "description": "Run full cycle: backtest -> validate -> paper -> validate. Synchronous — long-running.\n\n### Agent skills\n\n- Multi-agent workflow coordination\n- Backtest-to-paper promotion\n- Phase status aggregation\n- End-to-end run reporting\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `orchestration`",
         "operationId": "v2_full_v2_full_post",
         "requestBody": {
           "content": {
@@ -2738,7 +3635,7 @@
           "agent-invocation"
         ],
         "summary": "Stream DeepAgent Assistant (SSE)",
-        "description": "Streaming chat for the mobile app \u2014 the SAME router as the web chat.\n\nAuth: optional `Authorization: Bearer <JWT>`. Authenticated users may use\ncaller-owned portfolio and paper-action tools. Anonymous callers receive\npublic market/research tools only and never use server broker credentials.\n\nBody (JSON or form-encoded): `msg` (or `message`), `thread_id` (or `sid`).\n\nResponse: `text/event-stream` with named SSE events \u2014\n  session \u00b7 agent_route \u00b7 token \u00b7 tool_start \u00b7 tool_end \u00b7 error \u00b7 done\n(`data:` is JSON). This matches the web chat event contract.\n\n### Agent skills\n\n- Token-by-token conversational responses\n- Agent routing events\n- Tool execution events\n- Conversation-thread continuity\n\n**Execution:** `streaming`  \n**Access:** `public`  \n**Safety:** `paper_only`",
+        "description": "Streaming chat for the mobile app — the SAME router as the web chat.\n\nAuth: optional `Authorization: Bearer <JWT>`. Authenticated users may use\ncaller-owned portfolio and paper-action tools. Anonymous callers receive\npublic market/research tools only and never use server broker credentials.\n\nBody (JSON or form-encoded): `msg` (or `message`), `thread_id` (or `sid`).\n\nResponse: `text/event-stream` with named SSE events —\n  session · agent_route · token · tool_start · tool_end · error · done\n(`data:` is JSON). This matches the web chat event contract.\n\n### Agent skills\n\n- Token-by-token conversational responses\n- Agent routing events\n- Tool execution events\n- Conversation-thread continuity\n\n**Execution:** `streaming`  \n**Access:** `public`  \n**Safety:** `paper_only`",
         "operationId": "v2_chat_v2_chat_post",
         "requestBody": {
           "content": {
@@ -2783,7 +3680,7 @@
         },
         "responses": {
           "200": {
-            "description": "Server-Sent Events stream. Each event is `event: <type>` + `data: <json>`. Types: session \u00b7 agent_route \u00b7 token \u00b7 tool_start \u00b7 tool_end \u00b7 error \u00b7 done. `token.text` chunks concatenate into the assistant reply (markdown).",
+            "description": "Server-Sent Events stream. Each event is `event: <type>` + `data: <json>`. Types: session · agent_route · token · tool_start · tool_end · error · done. `token.text` chunks concatenate into the assistant reply (markdown).",
             "content": {
               "application/json": {
                 "schema": {}
@@ -4325,6 +5222,182 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "HermesBacktestRequest": {
+        "properties": {
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id",
+            "description": "Specific AlpaTrade account_id snippet to run the backtest under (optional)"
+          },
+          "lookback": {
+            "type": "string",
+            "title": "Lookback",
+            "description": "Lookback period, e.g. '3m', '6m', '1y'",
+            "default": "3m"
+          },
+          "symbols": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Symbols",
+            "description": "Comma-separated symbols, e.g. 'AAPL,MSFT'"
+          },
+          "strategy": {
+            "type": "string",
+            "title": "Strategy",
+            "description": "Strategy name: buy_the_dip, vix, momentum, box_wedge",
+            "default": "buy_the_dip"
+          },
+          "capital": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capital",
+            "description": "Initial capital in USD"
+          },
+          "hours": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hours",
+            "description": "'regular' or 'extended'"
+          },
+          "intraday_exit": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intraday Exit",
+            "description": "Use 5-min intraday bars for TP/SL exits"
+          },
+          "pdt": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pdt",
+            "description": "Enforce PDT rule (default True, set False for >$25k accounts)"
+          },
+          "objective": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Objective"
+          }
+        },
+        "type": "object",
+        "title": "HermesBacktestRequest",
+        "description": "Backtest request accepted by the restricted Hermes broker.",
+        "examples": [
+          {
+            "capital": 10000,
+            "lookback": "3m",
+            "strategy": "buy_the_dip"
+          }
+        ]
+      },
+      "HermesPaperRequest": {
+        "properties": {
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id"
+          },
+          "duration": {
+            "type": "string",
+            "title": "Duration",
+            "default": "7d"
+          },
+          "poll": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poll"
+          },
+          "hours": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hours"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "pdt": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pdt"
+          },
+          "notification_channel": {
+            "type": "string",
+            "title": "Notification Channel",
+            "description": "Hermes advice delivery: in_app, email, both, or none",
+            "default": "in_app"
+          }
+        },
+        "type": "object",
+        "title": "HermesPaperRequest",
+        "description": "Start a saved candidate in paper mode only."
+      },
       "LogsResponse": {
         "properties": {
           "lines": {
@@ -4614,6 +5687,52 @@
               }
             ],
             "title": "Pdt"
+          },
+          "params": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Params",
+            "description": "Validated strategy parameters (used by scoped agent promotion)"
+          },
+          "agent_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Name"
+          },
+          "agent_framework": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Framework"
+          },
+          "source_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Run Id"
           }
         },
         "type": "object",
@@ -6145,7 +7264,7 @@
     },
     {
       "name": "agents",
-      "description": "Agent lifecycle \u2014 status and cancellation",
+      "description": "Agent lifecycle — status and cancellation",
       "x-displayName": "Agent lifecycle"
     },
     {
@@ -6165,7 +7284,7 @@
     },
     {
       "name": "market",
-      "description": "Market data \u2014 news, prices, profiles, movers",
+      "description": "Market data — news, prices, profiles, movers",
       "x-displayName": "Market data"
     },
     {

@@ -1,4 +1,4 @@
--- 19_daily_advisor.sql
+-- 23_daily_advisor.sql
 -- Tenant-scoped, paper-only daily advisor reports and consolidated delivery state.
 
 CREATE SCHEMA IF NOT EXISTS alpatrade;
