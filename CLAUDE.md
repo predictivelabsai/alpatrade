@@ -266,11 +266,17 @@ merged `app.py`, `ASSETHERO_WEB_PORT=5003`); the `api` service is `Dockerfile.ap
 `web` service (`web_app.py`) is retired.
 
 - **Detecting a live deploy:** new routes 404 on the old image — `curl -s -o /dev/null -w '%{http_code}'
-  https://alpatrade.chat/map` should be `200` once the current build is live.
-- **Auto-deploy on git push has NOT been firing** — pushes to `main` did not redeploy. Trigger manually
-  with the `coolify-deploy` skill / `scripts/coolify_deploy.py deploy --name agui` (needs `COOLIFY_URL` +
-  `COOLIFY_API_TOKEN`), or fix the GitHub App webhook (see `docs/`/the deep-research findings: Auto-Deploy
-  toggle, FQDN-vs-IPv4 webhook endpoint bug, `repository_project_id` null regression).
+  https://alpatrade.chat/map` should be `200` once the current build is live. To check the **api** service
+  specifically, compare `curl -s https://api.alpatrade.chat/openapi.json | jq '.info.version'` to
+  `pyproject.toml`.
+- **CD via GitHub Actions** (`.github/workflows/deploy.yml`): runs after CI succeeds on `main`, triggers a
+  Coolify deploy over the API, waits, and smoke-tests prod. Needs repo secrets `COOLIFY_URL` /
+  `COOLIFY_API_TOKEN` / `COOLIFY_APP_UUID`. Two bugs are fixed: it POSTs to `/api/v1/deploy` (a Coolify
+  upgrade made GET return 405), and it **forces a no-cache rebuild by default** (`force=true`) — a
+  cache-reusing deploy had been silently serving stale images (e.g. the `api` service sat several versions
+  behind while reporting a newer version string). Manual run: `gh workflow run deploy.yml` (add
+  `-f force=false` for a fast cache-reusing deploy), or the `coolify-deploy` skill /
+  `scripts/coolify_deploy.py deploy --name agui`.
 - Never deploy with the Coolify **account password** — use an API token only.
 
 ## Skills & operational scripts
