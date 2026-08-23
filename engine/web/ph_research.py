@@ -148,10 +148,10 @@ async function load(){try{let runs=await get('/research/api/runs');let ticker=ne
 def register(app, rt):
     from engine.web import ph_layout
     for entry in [
-        ("☀ Premarket", "/research/premarket", "research-premarket"),
-        ("◫ Model Analytics", "/research/models", "research-models"),
+        ("☀ Premarket Snapshots", "/research/premarket", "research-premarket"),
+        ("🧮 Model Analytics", "/research/models", "research-models"),
         ("📰 News Intelligence", "/research/news", "research-news"),
-        ("◷ News Timing", "/research/timing", "research-timing"),
+        ("🕐 News Timing", "/research/timing", "research-timing"),
         ("⌛ Historical Research", "/research/history", "research-history"),
     ]:
         if entry not in ph_layout.RESEARCH_PAGES:
