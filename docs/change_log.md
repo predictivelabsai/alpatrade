@@ -1,5 +1,20 @@
 # Change Log
 
+## 0.19.0 — 2026-08-23
+
+### Daily report: period returns
+
+- Added month-to-date, year-to-date, and overall (since-inception) arithmetic
+  returns to the daily paper-PnL report, alongside the existing day change.
+  Each window's baseline is the first available equity point from Alpaca's
+  portfolio history; the return is `equity_now / baseline - 1`.
+- Added an `AlpacaAPI.get_portfolio_history()` wrapper (normalized equity/PnL
+  series, null/zero padding dropped) used by the report.
+- Deposits/withdrawals are not modelled — for a paper account funded once (the
+  norm) this equals the true cumulative return; missing windows render as `n/a`.
+- Tests: history normalization, arithmetic-return math, graceful empty history,
+  and Performance-table rendering (DB-free).
+
 ## 0.18.0 — 2026-08-23
 
 ### Stale paper-run cleanup ("zombie" runs)

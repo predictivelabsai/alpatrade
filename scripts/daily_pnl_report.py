@@ -73,6 +73,39 @@ def _e(v) -> str:
     return _html.escape(str(v if v is not None else ""))
 
 
+def _period_returns(api, equity_now: float, now: datetime | None = None) -> dict:
+    """Month-to-date, year-to-date, and since-inception arithmetic returns.
+
+    Each window's baseline is the first available equity point from Alpaca's
+    portfolio history; the arithmetic return is ``equity_now / baseline - 1``.
+    "Since inception" uses a long lookback so equity[0] is the earliest equity
+    Alpaca retains for the account. Deposits/withdrawals are not modelled — for a
+    paper account funded once (the norm) this equals the true cumulative return.
+    Returns ``{"mtd": {...}|None, "ytd": {...}|None, "overall": {...}|None}``.
+    """
+    now = now or datetime.now(timezone.utc)
+    midnight = {"hour": 0, "minute": 0, "second": 0, "microsecond": 0}
+    windows = {
+        "mtd": now.replace(day=1, **midnight),
+        "ytd": now.replace(month=1, day=1, **midnight),
+        "overall": now.replace(year=now.year - 5, month=1, day=1, **midnight),
+    }
+    out: dict[str, dict | None] = {}
+    for key, start in windows.items():
+        hist = api.get_portfolio_history(start=start, end=now, timeframe="1D")
+        equity = hist.get("equity") if isinstance(hist, dict) else None
+        baseline = equity[0] if equity else 0.0
+        if not baseline or baseline <= 0:
+            out[key] = None
+            continue
+        out[key] = {
+            "abs": equity_now - baseline,
+            "pct": (equity_now / baseline - 1) * 100,
+            "baseline": baseline,
+        }
+    return out
+
+
 def gather(day: str | None = None, keys: tuple[str, str] | None = None) -> dict:
     from engine.brokers.alpaca import AlpacaAPI
     api = AlpacaAPI(*keys, paper=True) if keys else AlpacaAPI(paper=True)
@@ -85,6 +118,10 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None) -> dict:
     unreal = sum(_f(p.get("unrealized_pl")) for p in positions)
     trades = gather_trades(day)
     runs = gather_runs([t.get("run_id") for t in trades])
+    try:
+        periods = _period_returns(api, equity)
+    except Exception:  # noqa: BLE001 — period returns are best-effort, never fatal
+        periods = {"mtd": None, "ytd": None, "overall": None}
     return {
         "equity": equity, "last_equity": last_equity, "day_pnl": day_pnl, "day_pct": day_pct,
         "cash": _f(acct.get("cash")), "buying_power": _f(acct.get("buying_power")),
@@ -93,6 +130,7 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None) -> dict:
         "trades": trades,
         "runs": runs,
         "active_runs": active_runs(),
+        "periods": periods,
         "day": day or datetime.now(timezone.utc).strftime("%Y-%m-%d"),
     }
 
@@ -355,6 +393,38 @@ def _stale_notice(d: dict) -> str:
             "and today's change are the <b>live</b> account as of now.</p>")
 
 
+def _render_performance(d: dict) -> str:
+    """Performance table: today, month-to-date, year-to-date, and the overall
+    (since-inception) arithmetic return. Missing windows render as n/a rather than
+    being dropped, so the reader always sees the full set."""
+    periods = d.get("periods") or {}
+    today = {"abs": _f(d.get("day_pnl")), "pct": _f(d.get("day_pct")),
+             "baseline": _f(d.get("last_equity"))}
+    rows_src = [
+        ("Today", today, "vs prior close"),
+        ("Month to date", periods.get("mtd"), "arithmetic"),
+        ("Year to date", periods.get("ytd"), "arithmetic"),
+        ("Overall (since inception)", periods.get("overall"), "arithmetic"),
+    ]
+    body = ""
+    for label, p, note in rows_src:
+        if not p:
+            body += (f"<tr><td style='padding:3px 16px 3px 0'>{label}</td>"
+                     "<td colspan='2' style='color:#7A867E'>n/a</td>"
+                     f"<td style='color:#9AA39C;font-size:11px'>{note}</td></tr>")
+            continue
+        c = "#1F5D43" if _f(p.get("pct")) >= 0 else "#b0653f"
+        base = p.get("baseline")
+        base_txt = f"from ${_f(base):,.0f}" if base else note
+        body += (f"<tr><td style='padding:3px 16px 3px 0'>{label}</td>"
+                 f"<td style='text-align:right;color:{c}'>${_f(p.get('abs')):,.2f}</td>"
+                 f"<td style='text-align:right;color:{c}'>{_f(p.get('pct')):+.2f}%</td>"
+                 f"<td style='color:#9AA39C;font-size:11px;padding-left:12px'>{base_txt}</td></tr>")
+    return (f"<h3 style='margin:.9rem 0 .2rem'>Performance</h3>"
+            f"<table style='border-collapse:collapse;font-size:13px;margin:.2rem 0'>"
+            f"<tbody>{body}</tbody></table>")
+
+
 def render(d: dict) -> str:
     sign = "▲" if d["day_pnl"] >= 0 else "▼"
     color = "#1F5D43" if d["day_pnl"] >= 0 else "#b0653f"
@@ -370,6 +440,7 @@ def render(d: dict) -> str:
                  f"<td style='text-align:right;color:{c}'>${pl:,.0f} ({plc:+.1f}%)</td></tr>")
     if not rows:
         rows = "<tr><td colspan='6' style='color:#7A867E'>No open positions.</td></tr>"
+    performance = _render_performance(d)
     trade_rows, n_buys, n_sells, realized = _render_trades(d.get("trades", []), d.get("runs") or {})
     day_label = datetime.strptime(d.get("day"), "%Y-%m-%d").strftime("%b %d, %Y") \
         if d.get("day") else datetime.now(timezone.utc).strftime("%b %d, %Y")
@@ -386,6 +457,7 @@ def render(d: dict) -> str:
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Open unrealised P&amp;L</td><td>${d['unrealized_pl']:,.2f}</td></tr>
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Day trades (5d)</td><td>{_e(d['daytrade_count']) or 'None'}</td></tr>
   </table>
+  {performance}
   {_render_strategy(d)}
   <h3>Open positions ({len(d['positions'])})</h3>
   <table border="1" cellpadding="6" style="border-collapse:collapse;font-size:13px">
