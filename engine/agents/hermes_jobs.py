@@ -340,6 +340,17 @@ def heartbeat(job_id: str, message: str) -> None:
             WHERE job_id = CAST(:job_id AS UUID) AND status IN ('running', 'paused')
         """), {"job_id": job_id,
                 "progress": json.dumps({"message": message})})
+        # Keep the canonical run liveness in sync for tenant-safe reporting.
+        session.execute(text("""
+            UPDATE alpatrade.runs r
+            SET heartbeat_at = NOW()
+            FROM alpatrade.hermes_jobs j
+            WHERE j.job_id = CAST(:job_id AS UUID)
+              AND j.kind = 'paper'
+              AND j.status IN ('running', 'paused')
+              AND r.run_id = j.run_id
+              AND r.status = 'running'
+        """), {"job_id": job_id})
 
 
 class DatabaseJobControl:

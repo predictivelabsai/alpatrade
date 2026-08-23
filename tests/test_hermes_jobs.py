@@ -4,6 +4,15 @@ import inspect
 from pathlib import Path
 
 
+def test_hermes_job_heartbeat_updates_canonical_run_liveness():
+    from engine.agents.hermes_jobs import heartbeat
+
+    source = inspect.getsource(heartbeat)
+    assert "UPDATE alpatrade.hermes_jobs" in source
+    assert "UPDATE alpatrade.runs" in source
+    assert "j.kind = 'paper'" in source
+
+
 def test_backtest_endpoint_enqueues_and_preserves_delegated_identity(monkeypatch):
     from api_app import hermes_backtest
     from api_models import HermesBacktestRequest

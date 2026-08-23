@@ -8,6 +8,8 @@
 - Added heartbeat-verified paper-run status, process-safe delivery claims, account
   equity snapshots for honest MTD/YTD returns, and separate realized-P&L benchmark
   rows for Hermes, DeepAgents, LangGraph, and explicitly labeled legacy runs.
+- Bridged the durable Hermes job heartbeat into canonical run liveness and protected
+  fresh Hermes jobs during stale-run reconciliation.
 - Added migration `sql/23_tenant_agent_reporting.sql`; it only alters/creates objects
   inside `alpatrade` and does not rewrite existing trades or run statuses.
 - Fixed Hermes detailed-backtest result routing so commands containing a job ID

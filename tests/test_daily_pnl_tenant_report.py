@@ -53,9 +53,10 @@ def test_active_runs_requires_tenant_and_fresh_heartbeat(monkeypatch):
                        framework="hermes")
 
     sql, params = session.calls[0]
-    assert "user_id = :user_id" in sql
-    assert "account_id = :account_id" in sql
-    assert "heartbeat_at >= NOW() - INTERVAL '10 minutes'" in sql
+    assert "r.user_id = :user_id" in sql
+    assert "r.account_id = :account_id" in sql
+    assert "r.heartbeat_at >= NOW() - INTERVAL '10 minutes'" in sql
+    assert "FROM alpatrade.hermes_jobs h" in sql
     assert "mode IN ('paper', 'full')" in sql
     assert "agent_framework" in sql
     assert params["framework"] == "hermes"
@@ -83,6 +84,7 @@ def test_stale_reconciliation_is_tenant_scoped(monkeypatch):
     sql, params = session.calls[0]
     assert "status = 'stale'" in sql
     assert "heartbeat_at IS NULL" in sql
+    assert "NOT EXISTS" in sql and "alpatrade.hermes_jobs" in sql
     assert params == {"uid": "user-1", "aid": "account-1"}
 
 

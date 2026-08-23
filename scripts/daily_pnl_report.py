@@ -265,18 +265,21 @@ def active_runs(limit: int = 25, user_id: str | None = None,
         from engine.db.pool import DatabasePool
         pool = DatabasePool()
         with pool.get_session() as session:
-            where = ["mode IN ('paper', 'full')", "status = 'running'", "user_id = :user_id",
-                     "account_id = :account_id",
-                     "heartbeat_at >= NOW() - INTERVAL '10 minutes'"]
+            where = ["r.mode IN ('paper', 'full')", "r.status = 'running'",
+                     "r.user_id = :user_id", "r.account_id = :account_id",
+                     "(r.heartbeat_at >= NOW() - INTERVAL '10 minutes' OR EXISTS ("
+                     "SELECT 1 FROM alpatrade.hermes_jobs h WHERE h.run_id = r.run_id "
+                     "AND h.status IN ('running', 'paused') "
+                     "AND h.heartbeat_at >= NOW() - INTERVAL '10 minutes'))"]
             params = {"lim": limit, "user_id": user_id, "account_id": account_id}
             if framework:
-                where.append("COALESCE(agent_framework, config->>'agent_framework', 'legacy') = :framework")
+                where.append("COALESCE(r.agent_framework, r.config->>'agent_framework', 'legacy') = :framework")
                 params["framework"] = framework
             result = session.execute(text(
-                "SELECT run_id, mode, strategy, strategy_slug, status, config, "
-                "started_at, completed_at, agent_name, agent_framework, heartbeat_at "
-                f"FROM alpatrade.runs WHERE {' AND '.join(where)} "
-                "ORDER BY started_at DESC LIMIT :lim"
+                "SELECT r.run_id, r.mode, r.strategy, r.strategy_slug, r.status, r.config, "
+                "r.started_at, r.completed_at, r.agent_name, r.agent_framework, r.heartbeat_at "
+                f"FROM alpatrade.runs r WHERE {' AND '.join(where)} "
+                "ORDER BY r.started_at DESC LIMIT :lim"
             ), params)
             cols = result.keys()
             return [dict(zip(cols, row)) for row in result.fetchall()]
@@ -297,6 +300,12 @@ def reconcile_stale_runs(user_id: str, account_id: str) -> int:
                   AND mode IN ('paper', 'full') AND status = 'running'
                   AND started_at < NOW() - INTERVAL '15 minutes'
                   AND (heartbeat_at IS NULL OR heartbeat_at < NOW() - INTERVAL '10 minutes')
+                  AND NOT EXISTS (
+                      SELECT 1 FROM alpatrade.hermes_jobs h
+                      WHERE h.run_id = alpatrade.runs.run_id
+                        AND h.status IN ('running', 'paused')
+                        AND h.heartbeat_at >= NOW() - INTERVAL '10 minutes'
+                  )
             """), {"uid": user_id, "aid": account_id})
             return int(result.rowcount or 0)
     except Exception:  # noqa: BLE001
