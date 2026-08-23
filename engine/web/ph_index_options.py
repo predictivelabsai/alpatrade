@@ -116,7 +116,7 @@ def _page(user):
 
 def register(app, rt):
     from engine.web import ph_layout
-    entry = ("◈ Index Options", "/index-options", "indexoptions")
+    entry = ("🎯 Index Options", "/index-options", "indexoptions")
     if entry not in ph_layout.PUBLIC_PAGES:
         ph_layout.PUBLIC_PAGES.append(entry)
 

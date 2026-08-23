@@ -689,6 +689,14 @@ class AGUIThread:
     async def _handle_message(self, msg: str, session):
         self._ensure_loaded()
 
+        # Bind the signed-in user so the shared agent's Alpaca tools resolve
+        # per-user keys (never the shared env account).
+        try:
+            import agui_app as _agui
+            _agui.set_request_user(self._user_id)
+        except Exception:  # noqa: BLE001
+            pass
+
         # Block double-submit immediately
         await self._send_js(_GUARD_ENABLE_JS)
 

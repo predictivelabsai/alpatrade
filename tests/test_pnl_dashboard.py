@@ -92,6 +92,42 @@ def test_unknown_account_id_never_selects_foreign_account(monkeypatch):
     assert data["account_id"] == "owned"
 
 
+def test_dashboard_reads_the_latest_persisted_advisor_for_the_owned_account(monkeypatch):
+    accounts = [_account("owned", "Owned")]
+    report = {
+        "report_id": "report-1",
+        "account_id": "owned",
+        "session_date": "2026-07-28",
+        "status": "completed",
+        "severity": "monitor",
+        "evidence": {"account": {"account_name": "Owned"}},
+        "advisory": {
+            "summary": "Persisted advisor summary",
+            "why_no_change": "The evidence gates were not reached.",
+            "disclaimer": "Paper trading is simulated.",
+        },
+    }
+    observed = {}
+    monkeypatch.setattr(dashboard, "get_user_accounts", lambda _uid: accounts)
+    monkeypatch.setattr(
+        dashboard, "_one_account",
+        lambda _uid, account, _period: _portfolio(account, 8_000),
+    )
+    monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
+
+    def reports(user_id, account_id=None, limit=20):
+        observed.update(user_id=user_id, account_id=account_id, limit=limit)
+        return [report]
+
+    monkeypatch.setattr("engine.reporting.advisor.list_reports_for_user", reports)
+
+    data = dashboard.dashboard_data("user-1", "owned", "daily")
+
+    assert observed == {"user_id": "user-1", "account_id": "owned", "limit": 20}
+    assert data["advisor_report"] is report
+    assert data["advisor_report"]["advisory"]["summary"] == "Persisted advisor summary"
+
+
 def test_no_account_returns_onboarding_state(monkeypatch):
     monkeypatch.setattr(dashboard, "get_user_accounts", lambda _uid: [])
     assert dashboard.dashboard_data("user-1", None, "daily")["needs_account"] is True

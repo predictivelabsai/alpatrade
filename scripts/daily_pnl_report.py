@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Daily paper-trading PnL + trade report — emailed after market close.
+"""Legacy manual paper-trading P&L renderer.
 
 Pulls the live Alpaca **paper** account (equity, day change, open positions with
 unrealised P&L) and the day's paper trades from the `alpatrade.trades` table, renders an
-HTML digest, and emails it via Postmark. Designed to be fired nightly by
-engine.autonomy.schedule.
+HTML digest, and can email an explicitly supplied recipient via Postmark. Scheduled
+delivery moved to the tenant-scoped daily advisor in engine.autonomy.schedule.
 
 The digest reports the strategy that is actually running (name, status, universe and
 every tuned parameter from `alpatrade.runs.config`) and, for each trade, explains what
@@ -15,8 +15,7 @@ the configured take-profit/stop-loss.
 Usage:
   python scripts/daily_pnl_report.py                        # print HTML, no send
   python scripts/daily_pnl_report.py --date 2026-08-03      # re-render a past day
-  python scripts/daily_pnl_report.py --send                 # email to PNL_REPORT_TO / TO_EMAIL
-  python scripts/daily_pnl_report.py --send --to kaljuvee@gmail.com
+  python scripts/daily_pnl_report.py --send --to user@example.com
 """
 from __future__ import annotations
 
@@ -34,11 +33,6 @@ try:
 except Exception:  # noqa: BLE001
     pass
 
-
-# Default distribution list (override with PNL_REPORT_TO, comma-separated).
-DEFAULT_RECIPIENTS = ("kaljuvee@gmail.com,"
-                      "siwei.feng@predictivelabs.co.uk,"
-                      "raslen.guesmi@predictivelabs.co.uk")
 
 # Pretty labels + units for the strategy parameters surfaced in the digest.
 _PARAM_LABELS = {
@@ -62,7 +56,8 @@ _STRATEGY_LABELS = {
 
 
 def recipients(override: str | None = None) -> list[str]:
-    raw = override or os.getenv("PNL_REPORT_TO") or DEFAULT_RECIPIENTS
+    """Legacy CLI recipients; there is deliberately no hardcoded distribution list."""
+    raw = override or os.getenv("PNL_REPORT_TO") or ""
     return [e.strip() for e in raw.split(",") if e.strip()]
 
 
@@ -78,9 +73,9 @@ def _e(v) -> str:
     return _html.escape(str(v if v is not None else ""))
 
 
-def gather(day: str | None = None) -> dict:
+def gather(day: str | None = None, keys: tuple[str, str] | None = None) -> dict:
     from engine.brokers.alpaca import AlpacaAPI
-    api = AlpacaAPI(paper=True)
+    api = AlpacaAPI(*keys, paper=True) if keys else AlpacaAPI(paper=True)
     acct = api.get_account() or {}
     positions = api.get_positions() or []
     equity = _f(acct.get("equity"))
@@ -456,7 +451,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--send", action="store_true")
     ap.add_argument("--date", default=None, help="UTC date to report on (YYYY-MM-DD, default today)")
-    ap.add_argument("--to", default=None, help="comma-separated recipients (default: PNL_REPORT_TO / list)")
+    ap.add_argument("--to", default=None, help="comma-separated recipients (default: PNL_REPORT_TO)")
     args = ap.parse_args()
 
     if args.date:
@@ -474,6 +469,8 @@ def main() -> int:
               f"{n_tr} paper trades, {n_runs} running strategy run(s). "
               f"Would email → {', '.join(to_list)}")
         return 0
+    if not to_list:
+        ap.error("--send requires --to or PNL_REPORT_TO")
     from utils.email_util import send_email_to
     day_label = datetime.strptime(data["day"], "%Y-%m-%d").strftime("%b %d, %Y")
     subject = f"AlpaTrade Paper PnL — {day_label} "

@@ -28,8 +28,8 @@ uv run python app.py                 # web UI
 python -m compileall -q app.py api.py engine verticals tui utils agents   # fast syntax check (matches CI)
 python -m pytest tests/regression_suite.py -v            # full suite — requires DB + .env + Alpaca/XAI
 python -m pytest tests/regression_suite.py::TestStrategySlug -v   # single class
-python -m pytest tests/test_index_options.py tests/test_ui_navigation.py tests/test_premarket.py tests/test_research.py tests/test_chat_chart_transport.py tests/test_objective.py tests/test_refit.py tests/test_regime.py tests/test_vol_sizing.py tests/test_promotion.py tests/test_agent_framework_default.py tests/test_scout_reasoning.py tests/test_backtest_reasoning.py -q   # DB-free unit tests (CI default)
-python -m engine.autonomy.worker                          # autonomy worker loop (needs AUTONOMY_ENABLED=true + DB)
+python -m pytest tests/test_index_options.py tests/test_ui_navigation.py tests/test_premarket.py tests/test_research.py tests/test_chat_chart_transport.py tests/test_objective.py tests/test_refit.py tests/test_regime.py tests/test_vol_sizing.py tests/test_promotion.py tests/test_agent_framework_default.py tests/test_scout_reasoning.py tests/test_backtest_reasoning.py tests/test_daily_advisor.py tests/test_pnl_dashboard.py tests/test_autonomy_worker.py -q   # DB-free unit tests (CI default)
+python -m engine.autonomy.worker                          # worker + advisor scheduler (full autonomy needs AUTONOMY_ENABLED=true)
 python -m engine.backtest.runner --symbols AAPL --start 2024-01-01 --end 2024-06-30  # methodology backtest → backtest-results/
 python run_migration.py sql/NN_name.sql                  # apply a migration (no tracking table; idempotent)
 python scripts/coolify_deploy.py deploy --name agui      # deploy to prod (needs COOLIFY_* in .env)
@@ -59,9 +59,10 @@ ci.yml). Add new DB-free tests to that explicit list if they should run in CI.
   the newer IPO/SEC/hedge-fund tools vertical. Provider-neutral logic stays in `engine/`.
 - **Autonomy engine** (`engine/autonomy/`): Postgres-backed durable run engine over the
   Orchestrator phases — DB queue (`FOR UPDATE SKIP LOCKED`), checkpointed pipeline, continuous
-  worker gated by `AUTONOMY_ENABLED` (paper-only by design). Controls surfaced in
+  worker with full autonomy gated by `AUTONOMY_ENABLED` (paper-only by design). The same
+  worker still drains scheduled advisor jobs when full autonomy is off. Controls surface in
   `engine/web/ph_monitoring.py`.
-- **DB**: PostgreSQL with `alpatrade` schema. Migrations in `sql/` (numbered `01_`–`22_`,
+- **DB**: PostgreSQL with `alpatrade` schema. Migrations in `sql/` (numbered `01_`–`23_`,
   idempotent `CREATE TABLE IF NOT EXISTS`). Per-user Alpaca keys live in `user_accounts`
   (Fernet-encrypted BYTEA), **not** `users`. All data tables carry `user_id` (+ `account_id`).
 

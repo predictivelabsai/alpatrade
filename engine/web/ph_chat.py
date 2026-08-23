@@ -893,6 +893,9 @@ async def _stream(msg: str, session) -> StreamingResponse:
         compat["user"] = {"user_id": str(uid)}
 
     async def gen():
+        # Bind the signed-in user so the shared agent's Alpaca tools resolve
+        # per-user keys (never the shared env account).
+        _agui.set_request_user(str(uid) if uid is not None else None)
         yield _sse("session", {"sid": thread_id})
         user_key = str(uid) if uid is not None else ""
         history = _HISTORY.get(thread_id)
@@ -1181,6 +1184,55 @@ def _maybe_append_equity(msg: str, result: str) -> str:
     return result
 
 
+def _news_slug(category: str) -> str:
+    """Stable, attribute-safe key for a news category (used for client-side filtering)."""
+    return re.sub(r"[^a-z0-9]+", "-", category.lower()).strip("-") or "other"
+
+
+def _news_card(item: dict):
+    """Render one news item as a rich card: source badge (+ predicted side),
+    date/meta, headline and an optional summary snippet."""
+    header_left = [Span(item["source"], cls="news-source")]
+    if item.get("side"):
+        side = item["side"]
+        side_cls = "side-up" if side == "up" else ("side-down" if side == "down" else "side-neutral")
+        header_left.append(Span(side, cls=f"news-side {side_cls}"))
+    meta_cls = "news-time" + (f" {item['meta_cls']}" if item.get("meta_cls") else "")
+    parts = [
+        Div(Div(*header_left, cls="news-item-meta"),
+            Span(item["meta"], cls=meta_cls), cls="news-item-header"),
+        Div(item["title"], cls="news-item-title"),
+    ]
+    if item.get("summary"):
+        parts.append(Div(item["summary"][:160], cls="news-item-summary"))
+    return A(*parts, href=item["link"], target="_blank", rel="noopener",
+             cls="news-item", data_cat=_news_slug(item["cat"]))
+
+
+def _news_feed(items: list[dict]):
+    """Build the pills + cards + empty-state markup for the news pane.
+
+    Renders every item (no arbitrary cap) so the per-category pill counts always
+    match the cards actually present — otherwise low-count categories (e.g.
+    "Management · 2") could show a positive count but zero visible articles.
+    """
+    from collections import Counter
+    items = sorted(items, key=lambda x: x["sort"], reverse=True)
+    counts = Counter(i["cat"] for i in items)
+    pills = [Button("Latest", cls="news-pill active", type="button",
+                    data_cat="latest", onclick="filterNews(this)")]
+    for cat in sorted(counts, key=lambda c: -counts[c]):
+        pills.append(Button(f"{cat} · {counts[cat]}", cls="news-pill", type="button",
+                            data_cat=_news_slug(cat), onclick="filterNews(this)"))
+    cards = [_news_card(i) for i in items]
+    return Div(
+        Div(*pills, cls="news-pills"),
+        Div(*cards, cls="news-feed"),
+        Div("No articles available under this topic", cls="news-empty-filter",
+            id="news-empty-filter"),
+    )
+
+
 # ---------------------------------------------------------------------------
 # register(app, rt) — feature-module contract
 # ---------------------------------------------------------------------------
@@ -1330,77 +1382,77 @@ def register(app, rt):
 
     @rt("/news")
     async def news():
-        """Categorized premarket catalysts plus multi-source market headlines."""
-        from fasthtml.common import A, Details, Div, Span, P, Summary, to_xml
+        """Unified market-news feed: a 'Latest' stream by default plus category
+        filter pills. Merges premarket movers, press releases (public.news) and
+        multi-source RSS headlines into one date-sorted feed of rich cards."""
+        from fasthtml.common import P, to_xml
         from starlette.responses import HTMLResponse
-        sections = []
+
+        items = []  # {cat, source, meta, meta_cls, title, summary, link, side, sort}
+
+        # 1. Premarket movers — current catalysts (sort first).
         try:
             from engine.premarket import latest_report, top_movers
-            movers = top_movers(latest_report(), 8)["movers"]
-            if movers:
-                mover_cards = []
-                for mover in movers:
-                    direction = "up" if mover.get("movement_pct", 0) >= 0 else "down"
-                    catalyst = (mover.get("catalysts") or [{}])[0]
-                    inner = [
-                        Div(Span(mover["ticker"], cls="news-source"),
-                            Span(f"{mover['movement_pct']:+.2f}%",
-                                 cls=f"news-time pm-news-{direction}"),
-                            cls="news-item-header"),
-                        Div(catalyst.get("title") or mover.get("company_name") or
-                            "Premarket price move", cls="news-item-title"),
-                    ]
-                    mover_cards.append(A(
-                        *inner, href=catalyst.get("link") or f"/premarket#{mover['ticker']}",
-                        target="_blank" if catalyst.get("link") else None,
-                        rel="noopener", cls="news-item"))
-                sections.append(Details(
-                    Summary(f"Premarket movers · {len(mover_cards)}", cls="news-category-title"),
-                    Div(*mover_cards), cls="news-category", open=True))
+            for mover in top_movers(latest_report(), 8)["movers"]:
+                direction = "up" if mover.get("movement_pct", 0) >= 0 else "down"
+                catalyst = (mover.get("catalysts") or [{}])[0]
+                items.append({
+                    "cat": "Premarket movers",
+                    "source": mover.get("ticker") or "Mover",
+                    "meta": f"{mover.get('movement_pct', 0):+.2f}%",
+                    "meta_cls": f"pm-news-{direction}",
+                    "title": catalyst.get("title") or mover.get("company_name")
+                             or "Premarket price move",
+                    "summary": "",
+                    "link": catalyst.get("link") or f"/premarket#{mover.get('ticker')}",
+                    "side": "",
+                    "sort": "9999-99-99",
+                })
         except Exception:  # noqa: BLE001
             pass
+
+        # 2. Press releases from the shared public.news feed.
         try:
-            from engine.publicmarkets.news import categorized_news
-            for category, rows in categorized_news(60).items():
-                cards = []
-                for row in rows[:8]:
-                    cards.append(A(
-                        Div(Span(row.get("ticker") or row.get("publisher") or "Release",
-                                 cls="news-source"),
-                            Span((row.get("published") or "")[:10], cls="news-time"),
-                            cls="news-item-header"),
-                        Div(row.get("title") or "", cls="news-item-title"),
-                        href=row.get("link") or "#", target="_blank", rel="noopener",
-                        cls="news-item"))
-                sections.append(Details(
-                    Summary(f"{category} · {len(rows)}", cls="news-category-title"),
-                    Div(*cards), cls="news-category"))
+            from engine.publicmarkets.news import news_category, search_news
+            for row in search_news(limit=60):
+                side = (row.get("predicted_side") or "").lower().strip()
+                if side in ("", "nan", "none", "null", "n/a", "na"):
+                    side = ""
+                items.append({
+                    "cat": news_category(row.get("event", ""), row.get("title", "")),
+                    "source": row.get("ticker") or row.get("publisher") or "Release",
+                    "meta": (row.get("published") or "")[:10],
+                    "meta_cls": "",
+                    "title": row.get("title") or "",
+                    "summary": (row.get("summary") or "").strip(),
+                    "link": row.get("link") or "#",
+                    "side": side,
+                    "sort": row.get("published") or "",
+                })
         except Exception:  # noqa: BLE001
             pass
-        if sections:
-            return HTMLResponse(to_xml(Div(*sections, cls="news-categories")))
+
+        # 3. Multi-source RSS market headlines (a handful of the freshest, so the
+        #    default "Latest" feed stays a mix of headlines + catalysts).
         try:
             from utils.news_feed import fetch_news, time_ago
-            articles = await fetch_news()
-        except Exception as e:  # noqa: BLE001
-            return HTMLResponse(to_xml(P(f"Could not load news: {e}", cls="news-empty")))
-        if not articles:
+            for a in (await fetch_news())[:15]:
+                items.append({
+                    "cat": "Market headlines",
+                    "source": a.get("icon") or a.get("source") or "News",
+                    "meta": time_ago(a.get("published", "")),
+                    "meta_cls": "",
+                    "title": a.get("title") or "",
+                    "summary": (a.get("summary") or "").strip(),
+                    "link": a.get("url") or "#",
+                    "side": "",
+                    "sort": a.get("published") or "",
+                })
+        except Exception:  # noqa: BLE001
+            pass
+
+        if not items:
             return HTMLResponse(to_xml(P("No market news right now — check back shortly.",
                                          cls="news-empty")))
-        items = []
-        for a in articles:
-            summary = (a.get("summary") or "").strip()
-            # NB: FastHTML escapes text children — do NOT pre-escape (double-encodes entities).
-            parts = [
-                Div(
-                    Span(a.get("icon") or a["source"], cls="news-source"),
-                    Span(time_ago(a.get("published", "")), cls="news-time"),
-                    cls="news-item-header",
-                ),
-                Div(a["title"], cls="news-item-title"),
-            ]
-            if summary:
-                parts.append(Div(summary[:160], cls="news-item-summary"))
-            items.append(A(*parts, href=a["url"], target="_blank", rel="noopener",
-                           cls="news-item"))
-        return HTMLResponse(to_xml(Div(*items)))
+
+        return HTMLResponse(to_xml(_news_feed(items)))

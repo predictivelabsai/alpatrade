@@ -36,12 +36,14 @@ PLACEHOLDER='your_|YOUR_|<[^>]+>|xxxx|XXXX|example|EXAMPLE|changeme|CHANGEME|\.\
 mode="${1:-}"
 files=()
 if [[ "$mode" == "--all" ]]; then
-  mapfile -t files < <(git ls-files)
+  while IFS= read -r f; do files+=("$f"); done < <(git ls-files)
 elif [[ $# -gt 0 ]]; then
   files=("$@")
 else
   # default: staged, added/changed text files
-  mapfile -t files < <(git diff --cached --name-only --diff-filter=ACM)
+  while IFS= read -r f; do files+=("$f"); done < <(
+    git diff --cached --name-only --diff-filter=ACM
+  )
 fi
 
 # Never scan the local .env (gitignored) or the venv; we only care about what could be committed.

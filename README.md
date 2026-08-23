@@ -138,7 +138,7 @@ sequenceDiagram
 ## Features
 
 - **Parameterized backtesting** — grid search over dip threshold, take profit, hold days, and stop loss to find optimal strategy parameters ranked by Sharpe ratio
-- **Paper trading** — continuous background trading on Alpaca's paper API with daily P&L email reports, startup order sync, and PDT protection
+- **Paper trading** — continuous background trading on Alpaca's paper API with startup order sync and PDT protection; the worker generates persisted post-close advisor reports
 - **Market research** — news, company profiles, financials, technicals, analyst ratings, and valuation comparisons
 - **Alpha Research** — local Growth, Value, and combined methodology views with user-scoped saved reports
 - **Charts** — stock price charts and backtest equity curves rendered with Plotly in the artifacts pane
@@ -203,6 +203,7 @@ Each backtest variation gets a human-readable **slug** that encodes the strategy
 | `{n}sl` | Stop loss % |
 | `{n}tp` | Take profit % |
 | `{n}d` | Hold (days) |
+| `{n}min` | Non-zero minimum hold (days) |
 | `{period}` | Lookback (e.g. `1m`, `3m`) |
 
 Example: `btd-7dp-05sl-1tp-1d-3m` = 7% dip, 0.5% stop loss, 1% take profit, 1 day hold, 3-month lookback
@@ -251,7 +252,11 @@ Example: `bwg-2r-5ct`
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `XAI_API_KEY` | No | XAI Grok for AI research commands |
 | `EODHD_API_KEY` | No | EOD Historical Data (intraday prices) |
-| `POSTMARK_API_KEY` | No | Email notifications for paper trading |
+| `POSTMARK_API_KEY` | No | Consolidated daily-advisor email delivery |
+| `ADVISOR_ENABLED` | No | Worker-owned post-close paper advisor (default `true` in Compose) |
+| `ADVISOR_EMAIL_ENABLED` | No | Send advisor email to each user's login email (default `false`) |
+| `ADVISOR_CLOSE_DELAY_MINUTES` | No | Delay after the actual NYSE close (default `15`) |
+| `PAPER_USER_ID` / `PAPER_ACCOUNT_ID` | No | Bind the fixed paper service to one owned linked account for advisor attribution |
 
 ## Running Locally
 

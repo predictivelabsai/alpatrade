@@ -190,6 +190,23 @@ AGENT_CATALOG_ENTRIES: tuple[AgentCatalogEntry, ...] = (
         ),
     },
     {
+        "slug": "daily-advisor",
+        "name": "Daily Trading Advisor",
+        "category": "analysis",
+        "description": "Read persisted, evidence-gated paper strategy and risk reviews.",
+        "method": "GET",
+        "path": "/v2/advisor/reports",
+        "access": "authenticated",
+        "execution": "synchronous",
+        "safety": "read_only",
+        "skills": (
+            "Broker-versus-strategy P&L attribution",
+            "Evidence-gated loss classification",
+            "Stored strategy-test recommendations",
+            "Daily multi-account advisory history",
+        ),
+    },
+    {
         "slug": "paper-trader",
         "name": "Paper Trade Agent",
         "category": "trading",

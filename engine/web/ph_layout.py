@@ -83,9 +83,22 @@ function toggleNewsPane(){setNewsPane();}
 function toggleLeftPane(){var p=document.getElementById('left-pane');
   var o=document.getElementById('left-overlay');
   if(p)p.classList.toggle('open');if(o)o.classList.toggle('visible');}
+function filterNews(el){var cat=el.getAttribute('data-cat');
+  var pills=document.querySelectorAll('#news-body .news-pill');
+  for(var i=0;i<pills.length;i++){pills[i].classList.toggle('active',pills[i]===el);}
+  var items=document.querySelectorAll('#news-body .news-item');
+  var visible=0;
+  for(var j=0;j<items.length;j++){
+    var show=(cat==='latest')||(items[j].getAttribute('data-cat')===cat);
+    items[j].style.display=show?'':'none';
+    if(show)visible++;
+  }
+  var empty=document.getElementById('news-empty-filter');
+  if(empty)empty.style.display=visible?'none':'block';
+}
 window.fillChat=fillChat;window.newChat=newChat;window.autoResize=autoResize;
 window.handleKey=handleKey;window.toggleNewsPane=toggleNewsPane;window.setNewsPane=setNewsPane;
-window.toggleLeftPane=toggleLeftPane;
+window.toggleLeftPane=toggleLeftPane;window.filterNews=filterNews;
 document.addEventListener('DOMContentLoaded',function(){
   var p=document.getElementById('right-pane');if(p)setNewsPane(p.classList.contains('open'));
   var t=sessionStorage.getItem('alpatrade.pendingPrompt');
@@ -137,7 +150,6 @@ def _menu_group(label: str, items, active: Optional[str]):
     for cmd, desc in items:
         cls = "agent-item" + (" active" if cmd == active else "")
         rows.append(Button(
-            Span("›", cls="aitem-icon"),
             Span(cmd, cls="aitem-name"),
             Span(desc, cls="aitem-prefix"),
             cls=cls, type="button", title=desc,
@@ -145,9 +157,7 @@ def _menu_group(label: str, items, active: Optional[str]):
         ))
     return Details(
         Summary(
-            Span("▸", cls="cat-icon"),
             Span(label, cls="cat-name"),
-            Span(str(len(items)), cls="cat-count"),
             Span("›", cls="cat-arrow"),
             cls="cat-toggle",
         ),
@@ -247,12 +257,6 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
                     cls="agent-browser"),
             ),
             _nav_section(
-                "Alpha Research",
-                Div(*[_menu_group(lbl, items, active)
-                      for lbl, items in ALPHA_RESEARCH_SHORTCUTS],
-                    cls="agent-browser"),
-            ),
-            _nav_section(
                 "Monitoring",
                 Div(*_MONITORING_EXTRA(active), cls="page-links"),
             ),
@@ -272,6 +276,9 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             _nav_section(
                 "Research",
                 Div(*_RESEARCH_EXTRA(active), cls="page-links"),
+                Div(*[_menu_group(lbl, items, active)
+                      for lbl, items in ALPHA_RESEARCH_SHORTCUTS],
+                    cls="agent-browser"),
             ),
             _nav_section(
                 "Admin",

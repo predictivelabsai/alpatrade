@@ -46,6 +46,49 @@ def test_worker_never_retries_uncertain_paper_job():
     assert fail.call_args.kwargs["max_attempts"] == 1
 
 
+def test_worker_retries_failed_daily_advisor_batch():
+    claimed = {
+        "run_id": "run-advisor", "kind": "deepagent_advisor", "attempt": 1,
+        "config": {"session_date": "2026-08-19"},
+        "user_id": "user-1", "account_id": None,
+    }
+    pipeline = MagicMock()
+    pipeline.run.side_effect = RuntimeError("advisor delivery failed")
+    with patch("engine.autonomy.worker.queue.claim", return_value=claimed) as claim, \
+         patch("engine.autonomy.worker.queue.fail", return_value="queued") as fail, \
+         patch("engine.autonomy.worker.store.append_event"), \
+         patch("engine.autonomy.worker.deepagent_job_pipeline", return_value=pipeline):
+        from engine.autonomy.worker import MAX_ATTEMPTS, run_one
+        assert run_one("test-worker", advisor_only=True) is True
+
+    fail.assert_called_once_with(
+        "run-advisor", "advisor delivery failed", max_attempts=MAX_ATTEMPTS
+    )
+    claim.assert_called_once_with("test-worker", advisor_only=True)
+
+
+def test_advisor_lane_drains_without_waiting_for_general_worker(monkeypatch):
+    from engine.autonomy import worker
+
+    calls = []
+
+    def fake_run_one(worker_id, *, advisor_only=False):
+        calls.append((worker_id, advisor_only))
+        if len(calls) == 1:
+            return True
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(worker, "run_one", fake_run_one)
+
+    with pytest.raises(KeyboardInterrupt):
+        worker._advisor_loop("worker-advisor")
+
+    assert calls == [
+        ("worker-advisor", True),
+        ("worker-advisor", True),
+    ]
+
+
 def test_pipeline_does_not_overwrite_a_concurrent_cancellation():
     from engine.autonomy.graph import JobCancelled, Pipeline
 

@@ -1,5 +1,44 @@
 # Change Log
 
+## 0.17.0 — 2026-08-23
+
+### Daily DeepAgent trading advisor
+
+- Added one persisted, tenant/account-scoped paper advisory after each actual
+  Alpaca/NYSE session close plus 15 minutes. Deterministic policy classifies
+  reports as `insufficient_data`, `monitor`, `review`, or `urgent` and keeps
+  broker-account P&L separate from AlpaTrade-attributed realized P&L.
+- Added a locked-down `trading-advisor` DeepAgent specialist. It may rank only
+  server-generated candidate IDs; unknown evidence, unsupported claims,
+  invented metrics, and altered values are rejected into a deterministic fallback.
+- Added authenticated report history/detail APIs, persisted dashboard cards,
+  consolidated per-user email rendering, and explicit-intent tools that queue
+  a stored advisor grid or start paper trading only from an owned, completed,
+  validated backtest. Scheduled reports never change a strategy or place an order.
+
+### Scheduling, persistence, and rollout
+
+- Added migration `sql/23_daily_advisor.sql` for `advisor_reports` and
+  deduplicated `advisor_deliveries`, and moved scheduler ownership exclusively
+  to the autonomy worker with holiday, early-close, and DST-aware timing. A
+  dedicated advisor queue lane keeps post-close reporting responsive while a
+  longer paper-trading phase occupies the general autonomy lane.
+- Retired web-process, standalone-paper, hardcoded-recipient, and per-session
+  daily email paths. The legacy email request field remains accepted but is
+  deprecated. `ADVISOR_EMAIL_ENABLED` defaults to `false` for the first-session
+  report-only rollout; `ADVISOR_ENABLED` defaults to `true` in Compose.
+- Added optional `PAPER_USER_ID`/`PAPER_ACCOUNT_ID` binding for the fixed paper
+  service so its runs and trades can be attributed to the matching advisor account.
+- Corrected validation-count persistence (`total_trades_checked` → `total_checked`)
+  so non-empty validated backtests satisfy the explicit paper-start gate.
+- Added DB-free coverage for metrics, thresholds, parameter units, model-output
+  filtering, fallbacks, calendar timing, deduplication, consolidation, tenant
+  isolation, API contracts, and explicit-intent gates. Bumped package/lockfile
+  to 0.17.0.
+- Apply `python run_migration.py sql/23_daily_advisor.sql` before deploying the
+  worker/API/web services. Inspect at least one generated session before setting
+  `ADVISOR_EMAIL_ENABLED=true`; deployment and email activation are not included.
+
 ## 0.16.0 — 2026-08-23
 
 ### Tenant-safe DeepAgents API
