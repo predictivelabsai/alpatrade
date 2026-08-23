@@ -10,6 +10,8 @@
   rows for Hermes, DeepAgents, LangGraph, and explicitly labeled legacy runs.
 - Bridged the durable Hermes job heartbeat into canonical run liveness and protected
   fresh Hermes jobs during stale-run reconciliation.
+- Replace `/app?new=1` with the saved thread URL after the first response so refresh
+  restores the new conversation instead of showing a blank composer.
 - Added migration `sql/23_tenant_agent_reporting.sql`; it only alters/creates objects
   inside `alpatrade` and does not rewrite existing trades or run statuses.
 - Fixed Hermes detailed-backtest result routing so commands containing a job ID

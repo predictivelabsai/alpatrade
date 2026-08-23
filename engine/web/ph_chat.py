@@ -405,6 +405,12 @@ CHAT_JS = r"""
       bubble.textContent='Error: '+e;
     }
     streaming=false; if(sb) sb.disabled=false;
+    // The server allocates ALPA_THREAD_ID when /app?new=1 is rendered. Once the
+    // first message is persisted, make that durable thread the current URL so a
+    // browser refresh reloads the conversation instead of another blank chat.
+    if(window.ALPA_THREAD_ID && new URLSearchParams(window.location.search).get('new')==='1'){
+      window.history.replaceState({},'', '/app?thread='+encodeURIComponent(window.ALPA_THREAD_ID));
+    }
     if(window.htmx) htmx.ajax('GET','/app/chats',{target:'#session-list',swap:'innerHTML'});
     var ta2=$('#chat-input'); if(ta2) ta2.focus();
     scrollBottom();
