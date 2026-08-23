@@ -17,7 +17,12 @@ on:
     workflows: ["CI"]
     types: [completed]
     branches: [main]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Force a no-cache rebuild (default). Set false for a fast, cache-reusing deploy."
+        type: boolean
+        default: true
 
 jobs:
   deploy:
@@ -42,17 +47,26 @@ jobs:
       - name: Trigger Coolify deploy
         id: trigger
         run: |
+          # Force a no-cache rebuild by default. A cache-reusing deploy (force=false)
+          # was silently serving STALE images: after a Compose upgrade, service
+          # images stopped picking up source changes, so the api service sat several
+          # versions behind while reporting a newer version string. workflow_run
+          # events carry no inputs, so default to force=true there; manual dispatch
+          # may override to false for a fast deploy.
+          FORCE="${{ github.event.inputs.force }}"
+          [ "$FORCE" = "false" ] || FORCE="true"
+          echo "Deploying with force=$FORCE"
           # Coolify's deploy trigger used to be GET /api/v1/deploy, but a server
           # upgrade (~2026-08-18) started returning 405 to GET; it now expects POST
           # with a JSON body. Try GET first for older instances, then fall back to
           # POST — the same fallback scripts/coolify_deploy.py already uses.
           resp=$(curl -fsSL -X GET \
             -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
-            "${COOLIFY_URL%/}/api/v1/deploy?uuid=${COOLIFY_APP_UUID}&force=false") \
+            "${COOLIFY_URL%/}/api/v1/deploy?uuid=${COOLIFY_APP_UUID}&force=${FORCE}") \
           || resp=$(curl -fsSL -X POST \
             -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
             -H "Content-Type: application/json" \
-            -d "{\"uuid\":\"${COOLIFY_APP_UUID}\",\"force\":false}" \
+            -d "{\"uuid\":\"${COOLIFY_APP_UUID}\",\"force\":${FORCE}}" \
             "${COOLIFY_URL%/}/api/v1/deploy")
           echo "$resp"
           uuid=$(printf '%s' "$resp" | jq -r '.deployments[0].deployment_uuid // empty')
