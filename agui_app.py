@@ -1023,13 +1023,31 @@ register_voice_routes(app)
 # ---------------------------------------------------------------------------
 
 class _AppState:
-    """Lightweight namespace used by CommandProcessor for shared state."""
-    _orch = None
-    _bg_task = None
-    _bg_stop = threading.Event()
-    command_history: list = []
+    """Lightweight namespace used by CommandProcessor for shared state.
 
-_app_state = _AppState()
+    One instance per signed-in user (keyed by ``user_id``) so that account
+    switches, orchestrator handles, background tasks and command history never
+    leak across users. ``None`` is the anonymous / legacy CLI key.
+    """
+    def __init__(self):
+        self._orch = None
+        self._bg_task = None
+        self._bg_stop = threading.Event()
+        self.command_history: list = []
+        self.account_id: Optional[str] = None
+
+
+# Per-user app state (None key = anonymous / legacy CLI path).
+_app_states: Dict[Optional[str], _AppState] = {}
+_app_states_lock = threading.Lock()
+
+
+def get_app_state(user_id: Optional[str] = None) -> _AppState:
+    """Return (creating if needed) the per-user app state for ``user_id``."""
+    with _app_states_lock:
+        if user_id not in _app_states:
+            _app_states[user_id] = _AppState()
+        return _app_states[user_id]
 
 # Commands that should bypass the AI agent and go to CommandProcessor
 _CLI_BASES = {"news", "profile", "financials", "price", "movers", "analysts", "valuation",
@@ -1050,6 +1068,7 @@ async def _command_interceptor(msg: str, session):
     # per-user keys even when the interceptor is invoked directly.
     _uid = session.get("user", {}).get("user_id") if session.get("user") else None
     set_request_user(_uid)
+    app_state = get_app_state(_uid)
     cmd_lower = msg.strip().lower()
     first_word = cmd_lower.split()[0] if cmd_lower.split() else ""
     base = first_word.split(":")[0]
@@ -1169,18 +1188,18 @@ async def _command_interceptor(msg: str, session):
                     matched = acc
                     break
         if matched:
-            _app_state.account_id = matched["account_id"]
-            _app_state._orch = None
+            app_state.account_id = matched["account_id"]
+            app_state._orch = None
             return f"✓ **Switched to: {matched['account_name']}** (`{matched.get('api_key_hint', '****')}`)"
         return f"✗ No account matches '{query}'. Type `accounts` to see the list."
 
     # Long-running commands → return StreamingCommand sentinel
     if first_word in _STREAMING_COMMANDS:
-        return StreamingCommand(msg, session, _app_state)
+        return StreamingCommand(msg, session, app_state)
 
     from tui.command_processor import CommandProcessor
     user_id = session.get("user", {}).get("user_id") if session.get("user") else None
-    cp = CommandProcessor(_app_state, user_id=user_id)
+    cp = CommandProcessor(app_state, user_id=user_id)
     try:
         result = await cp.process_command(msg)
     except Exception as e:
