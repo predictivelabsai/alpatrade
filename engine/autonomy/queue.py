@@ -20,13 +20,19 @@ def _pool():
 
 
 def enqueue(kind: str = "full", config: Optional[dict] = None,
-            user_id: Optional[str] = None, account_id: Optional[str] = None) -> str:
+            user_id: Optional[str] = None, account_id: Optional[str] = None,
+            dedupe_key: Optional[str] = None) -> str:
     with _pool().get_session() as s:
         rid = s.execute(text("""
-            INSERT INTO alpatrade.autonomy_runs (kind, status, config, user_id, account_id)
-            VALUES (:kind, 'queued', :config, :uid, :aid) RETURNING run_id
+            INSERT INTO alpatrade.autonomy_runs
+                (kind, status, config, user_id, account_id, dedupe_key)
+            VALUES (:kind, 'queued', :config, :uid, :aid, :dedupe)
+            ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL
+            DO UPDATE SET updated_at = alpatrade.autonomy_runs.updated_at
+            RETURNING run_id
         """), {"kind": kind, "config": json.dumps(config or {}),
-               "uid": user_id, "aid": account_id}).scalar()
+               "uid": user_id, "aid": account_id,
+               "dedupe": dedupe_key[:255] if dedupe_key else None}).scalar()
     return str(rid)
 
 
@@ -61,12 +67,13 @@ def heartbeat(run_id: str, worker_id: str) -> None:
         """), {"rid": run_id, "w": worker_id})
 
 
-def ack(run_id: str) -> None:
+def ack(run_id: str) -> bool:
     with _pool().get_session() as s:
-        s.execute(text("""
+        changed = s.execute(text("""
             UPDATE alpatrade.autonomy_runs SET status = 'done', updated_at = NOW()
-            WHERE run_id = :rid
-        """), {"rid": run_id})
+            WHERE run_id = :rid AND status IN ('running', 'done')
+        """), {"rid": run_id}).rowcount
+    return bool(changed)
 
 
 def fail(run_id: str, error: str, max_attempts: int = 3) -> str:
@@ -76,10 +83,37 @@ def fail(run_id: str, error: str, max_attempts: int = 3) -> str:
             UPDATE alpatrade.autonomy_runs SET
                 status = CASE WHEN attempt >= :maxa THEN 'failed' ELSE 'queued' END,
                 claimed_by = NULL, error = :err, updated_at = NOW()
-            WHERE run_id = :rid
+            WHERE run_id = :rid AND status IN ('running', 'failed')
             RETURNING status
         """), {"maxa": max_attempts, "err": error[:2000], "rid": run_id}).scalar()
+        if new_status is None:
+            new_status = s.execute(text("""
+                SELECT status FROM alpatrade.autonomy_runs WHERE run_id = :rid
+            """), {"rid": run_id}).scalar()
     return new_status or "failed"
+
+
+def cancel(run_id: str, user_id: str, account_id: Optional[str] = None) -> bool:
+    """Cancel an owned queued/running job; active paper loops observe this state."""
+    with _pool().get_session() as s:
+        changed = s.execute(text("""
+            UPDATE alpatrade.autonomy_runs
+            SET status = 'cancelled', updated_at = NOW()
+            WHERE run_id = :rid AND user_id = :uid
+              AND (CAST(:account_id AS UUID) IS NULL OR account_id = CAST(:account_id AS UUID))
+              AND status IN ('queued', 'running')
+        """), {"rid": run_id, "uid": user_id, "account_id": account_id}).rowcount
+    return bool(changed)
+
+
+def is_cancelled(run_id: str, user_id: Optional[str] = None) -> bool:
+    with _pool().get_session() as s:
+        row = s.execute(text("""
+            SELECT status FROM alpatrade.autonomy_runs
+            WHERE run_id = :rid
+              AND (:uid IS NULL OR user_id = CAST(:uid AS UUID))
+        """), {"rid": run_id, "uid": user_id}).scalar()
+    return row == "cancelled"
 
 
 def pending_count() -> int:
@@ -98,9 +132,25 @@ def requeue_unfinished(stale_seconds: int = 300) -> int:
             UPDATE alpatrade.autonomy_runs SET status = 'queued', claimed_by = NULL,
                    updated_at = NOW()
             WHERE status = 'running'
+              AND kind NOT IN ('full', 'deepagent_paper', 'deepagent_full')
               AND (heartbeat_at IS NULL OR heartbeat_at < NOW() - (:sec * INTERVAL '1 second'))
         """), {"sec": stale_seconds}).rowcount
     return n or 0
+
+
+def fail_uncertain_trading_jobs(stale_seconds: int = 300) -> int:
+    """Never retry a paper-capable job after an uncertain worker failure."""
+    with _pool().get_session() as s:
+        count = s.execute(text("""
+            UPDATE alpatrade.autonomy_runs
+            SET status = 'failed', claimed_by = NULL,
+                error = 'Worker heartbeat expired; paper-capable job was not retried.',
+                updated_at = NOW()
+            WHERE status = 'running'
+              AND kind IN ('full', 'deepagent_paper', 'deepagent_full')
+              AND (heartbeat_at IS NULL OR heartbeat_at < NOW() - (:sec * INTERVAL '1 second'))
+        """), {"sec": stale_seconds}).rowcount
+    return int(count or 0)
 
 
 def retry(run_id: str, user_id: str) -> bool:

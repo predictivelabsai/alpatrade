@@ -68,9 +68,12 @@ def store_run(run_id: str, mode: str, strategy: str = None,
         session.execute(
             text("""
                 INSERT INTO alpatrade.runs
-                    (run_id, mode, strategy, status, config, started_at, strategy_slug, user_id, account_id)
+                    (run_id, mode, strategy, status, config, started_at, strategy_slug,
+                     user_id, account_id, agent_name, agent_framework, source_run_id)
                 VALUES
-                    (:run_id, :mode, :strategy, 'running', :config, :started_at, :strategy_slug, :user_id, :account_id)
+                    (:run_id, :mode, :strategy, 'running', :config, :started_at,
+                     :strategy_slug, :user_id, :account_id, :agent_name,
+                     :agent_framework, :source_run_id)
                 ON CONFLICT (run_id) DO NOTHING
             """),
             {
@@ -82,6 +85,9 @@ def store_run(run_id: str, mode: str, strategy: str = None,
                 "strategy_slug": strategy_slug,
                 "user_id": user_id,
                 "account_id": account_id,
+                "agent_name": (config or {}).get("agent_name"),
+                "agent_framework": (config or {}).get("agent_framework"),
+                "source_run_id": (config or {}).get("source_run_id"),
             },
         )
     logger.info(f"Run {run_id} stored (mode={mode})")
@@ -259,11 +265,14 @@ def _store_backtest_db(run_id: str, best: Dict, all_results: List[Dict],
     )
 
 
-def fetch_backtest_trades(run_id: str, user_id: Optional[str] = None) -> List[Dict]:
+def fetch_backtest_trades(run_id: str, user_id: Optional[str] = None,
+                          account_id: Optional[str] = None) -> List[Dict]:
     """Fetch backtest trades using the configured backend."""
     backend = get_storage_backend()
     if backend == "db":
-        return _fetch_backtest_trades_db(run_id, user_id=user_id)
+        return _fetch_backtest_trades_db(
+            run_id, user_id=user_id, account_id=account_id
+        )
     return _fetch_backtest_trades_file(run_id)
 
 
@@ -276,7 +285,8 @@ def _fetch_backtest_trades_file(run_id: str) -> List[Dict]:
     return data.get("trades", [])
 
 
-def _fetch_backtest_trades_db(run_id: str, user_id: Optional[str] = None) -> List[Dict]:
+def _fetch_backtest_trades_db(run_id: str, user_id: Optional[str] = None,
+                              account_id: Optional[str] = None) -> List[Dict]:
     from sqlalchemy import text
     pool = _get_pool()
     with pool.get_session() as session:
@@ -288,6 +298,9 @@ def _fetch_backtest_trades_db(run_id: str, user_id: Optional[str] = None) -> Lis
         if user_id:
             sql += " AND user_id = :user_id"
             bind["user_id"] = user_id
+        if account_id:
+            sql += " AND account_id = :account_id"
+            bind["account_id"] = account_id
         sql += " ORDER BY entry_time"
         result = session.execute(text(sql), bind)
         columns = result.keys()
@@ -364,11 +377,14 @@ def _store_paper_trade_db(session_id: str, trade: Dict,
     logger.debug(f"Paper trade stored to DB for session {session_id}")
 
 
-def fetch_paper_trades(run_id: str, user_id: Optional[str] = None) -> List[Dict]:
+def fetch_paper_trades(run_id: str, user_id: Optional[str] = None,
+                       account_id: Optional[str] = None) -> List[Dict]:
     """Fetch paper trades using the configured backend."""
     backend = get_storage_backend()
     if backend == "db":
-        return _fetch_paper_trades_db(run_id, user_id=user_id)
+        return _fetch_paper_trades_db(
+            run_id, user_id=user_id, account_id=account_id
+        )
     return _fetch_paper_trades_file(run_id)
 
 
@@ -385,7 +401,8 @@ def _fetch_paper_trades_file(run_id: str) -> List[Dict]:
     return trades
 
 
-def _fetch_paper_trades_db(run_id: str, user_id: Optional[str] = None) -> List[Dict]:
+def _fetch_paper_trades_db(run_id: str, user_id: Optional[str] = None,
+                           account_id: Optional[str] = None) -> List[Dict]:
     from sqlalchemy import text
     pool = _get_pool()
     with pool.get_session() as session:
@@ -397,6 +414,9 @@ def _fetch_paper_trades_db(run_id: str, user_id: Optional[str] = None) -> List[D
         if user_id:
             sql += " AND user_id = :user_id"
             bind["user_id"] = user_id
+        if account_id:
+            sql += " AND account_id = :account_id"
+            bind["account_id"] = account_id
         sql += " ORDER BY entry_time"
         result = session.execute(text(sql), bind)
         columns = result.keys()
@@ -408,7 +428,8 @@ def _fetch_paper_trades_db(run_id: str, user_id: Optional[str] = None) -> List[D
 # ---------------------------------------------------------------------------
 
 def fetch_recent_day_trades(window_days: int = 7,
-                            user_id: Optional[str] = None) -> List[Dict]:
+                            user_id: Optional[str] = None,
+                            account_id: Optional[str] = None) -> List[Dict]:
     """Fetch recent same-day round-trips from alpatrade.trades for PDT bootstrap.
 
     Returns list of {"date": date, "symbol": str} for trades where entry
@@ -432,6 +453,9 @@ def fetch_recent_day_trades(window_days: int = 7,
         if user_id:
             sql += " AND user_id = :user_id"
             bind["user_id"] = user_id
+        if account_id:
+            sql += " AND account_id = :account_id"
+            bind["account_id"] = account_id
         result = session.execute(text(sql), bind)
         return [{"date": row[1], "symbol": row[0]} for row in result.fetchall()]
 

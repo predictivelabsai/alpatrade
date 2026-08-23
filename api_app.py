@@ -22,7 +22,7 @@ from typing import Dict, List, Literal, Optional
 sys.path.insert(0, str(Path(__file__).parent.absolute()))
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException, Query, Request, Response
+from fastapi import FastAPI, Depends, Header, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import (
@@ -33,7 +33,8 @@ from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBea
 from tui.command_processor import CommandProcessor
 from api_models import (
     # Existing / legacy
-    CmdRequest, BacktestRequest, PaperRequest, ApiResponse,
+    CmdRequest, BacktestRequest, PaperRequest, HermesBacktestRequest,
+    HermesPaperRequest, ApiResponse,
     AuthRequest, RegisterRequest, AuthResponse,
     # V2 request models
     ValidateRequest, FullCycleRequest, ReconcileRequest,
@@ -53,6 +54,7 @@ from api_models import (
     ApiInfoResponse, ApiLinks,
     AgentDescriptor, AgentCatalogResponse,
     AgentChatRequest, AgentChatResponse,
+    DeepAgentRequest, DeepAgentResponse,
     PremarketAgentRequest, PremarketAgentResponse,
     AlphaResearchRequest, AlphaResearchResponse, AlphaComparisonResponse,
     AutonomyScoutRequest, AutonomyScoutResponse,
@@ -183,6 +185,31 @@ async def require_current_user(
     return user
 
 
+async def require_hermes_user(
+    x_hermes_key: Optional[str] = Header(None, alias="X-Hermes-Key"),
+    x_hermes_delegation: Optional[str] = Header(None, alias="X-Hermes-Delegation"),
+) -> Dict:
+    """Authenticate Hermes without granting it the general AlpaTrade API key."""
+    configured = os.getenv("ALPATRADE_HERMES_API_KEY", "")
+    if not configured or not x_hermes_key or not secrets.compare_digest(
+        configured, x_hermes_key
+    ):
+        raise HTTPException(status_code=401, detail="Invalid Hermes service key")
+    if not x_hermes_delegation:
+        raise HTTPException(status_code=401, detail="Missing Hermes delegation")
+    try:
+        from engine.agents.hermes_access import decode_hermes_delegation
+        claims = decode_hermes_delegation(x_hermes_delegation)
+        user_id = _normalize_user_id(claims.get("sub"))
+    except Exception as exc:  # token details must not leak to the caller
+        raise HTTPException(status_code=401, detail="Invalid or expired Hermes delegation") from exc
+    return {
+        "user_id": user_id,
+        "auth_type": "hermes",
+        "thread_id": claims.get("thread_id"),
+    }
+
+
 async def require_tenant_user(
     user: Dict = Depends(require_current_user),
 ) -> Dict:
@@ -225,7 +252,7 @@ except (OSError, KeyError, tomllib.TOMLDecodeError):
     try:
         API_VERSION = version("alpatrade")
     except PackageNotFoundError:
-        API_VERSION = "0.8.0"
+        API_VERSION = "0.16.0"
 
 API_DESCRIPTION = """
 AlpaTrade's production REST API for research, backtesting, validation, paper trading,
@@ -273,6 +300,15 @@ app.add_middleware(
     ],
     expose_headers=["X-Request-ID"],
 )
+
+
+async def _close_deepagent_pool() -> None:
+    from engine.ai.deepagents import close_deepagent_service
+
+    await close_deepagent_service()
+
+
+app.router.add_event_handler("shutdown", _close_deepagent_pool)
 
 
 @app.middleware("http")
@@ -1173,6 +1209,14 @@ async def v2_paper(req: PaperRequest, user: Dict = Depends(require_tenant_user))
         "strategy": req.strategy,
         "duration_seconds": duration_sec,
     }
+    if req.params:
+        config["params"] = req.params
+    if req.agent_name:
+        config["agent_name"] = req.agent_name
+    if req.agent_framework:
+        config["agent_framework"] = req.agent_framework
+    if req.source_run_id:
+        config["source_run_id"] = req.source_run_id
     if req.symbols:
         config["symbols"] = [s.strip() for s in req.symbols.split(",")]
     if req.poll:
@@ -1202,6 +1246,210 @@ async def v2_paper(req: PaperRequest, user: Dict = Depends(require_tenant_user))
         duration=req.duration,
         poll_interval=req.poll,
     )
+
+
+# ---------------------------------------------------------------------------
+# Restricted Hermes broker
+# ---------------------------------------------------------------------------
+
+@app.post("/v2/hermes/backtests", tags=["hermes"])
+async def hermes_backtest(
+    req: HermesBacktestRequest,
+    user: Dict = Depends(require_hermes_user),
+):
+    """Queue an owned backtest and return immediately."""
+    from engine.agents.hermes_jobs import enqueue
+
+    uid = _uid(user)
+    if req.account_id:
+        _require_linked_paper_keys(uid, req.account_id)
+    config = {
+        "lookback": req.lookback,
+        "strategy": req.strategy,
+        "symbols": [s.strip() for s in (req.symbols or "").split(",") if s.strip()],
+        "objective": req.objective,
+        "agent_name": "Hermes",
+        "agent_framework": "hermes",
+    }
+    if req.capital is not None:
+        config["initial_capital"] = req.capital
+    if req.hours:
+        config["extended_hours"] = req.hours == "extended"
+    if req.intraday_exit is not None:
+        config["intraday_exit"] = req.intraday_exit
+    if req.pdt is not None:
+        config["pdt_protection"] = req.pdt
+    return enqueue(
+        "backtest", uid, str(user["thread_id"]), config,
+        account_id=req.account_id,
+    )
+
+
+@app.get("/v2/hermes/jobs", tags=["hermes"])
+async def hermes_jobs(user: Dict = Depends(require_hermes_user)):
+    """List queued, running, and completed jobs owned by this user."""
+    from engine.agents.hermes_jobs import list_owned
+    jobs = list_owned(_uid(user))
+    return {"jobs": jobs, "total": len(jobs)}
+
+
+@app.get("/v2/hermes/jobs/{job_id}", tags=["hermes"])
+async def hermes_job(job_id: str, user: Dict = Depends(require_hermes_user)):
+    """Inspect one job only when it belongs to the delegated user."""
+    from engine.agents.hermes_jobs import get_owned
+    job = get_owned(job_id, _uid(user))
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+
+@app.get("/v2/hermes/candidates", tags=["hermes"])
+async def hermes_candidates(user: Dict = Depends(require_hermes_user)):
+    """List only the delegated user's saved candidates."""
+    from sqlalchemy import text
+    from utils.db.db_pool import DatabasePool
+
+    with DatabasePool().get_session() as session:
+        result = session.execute(
+            text("""
+                SELECT c.candidate_id, c.source_run_id, c.agent_name,
+                       c.agent_framework, c.strategy, c.symbols, c.params,
+                       c.metrics, c.objective, c.status, c.account_id,
+                       c.user_id, u.display_name AS owner_name,
+                       c.created_at, c.updated_at
+                FROM alpatrade.strategy_candidates c
+                JOIN alpatrade.users u ON u.user_id = c.user_id
+                WHERE c.user_id = CAST(:user_id AS UUID)
+                ORDER BY c.created_at DESC LIMIT 100
+            """),
+            {"user_id": _uid(user)},
+        )
+        rows = [dict(row) for row in result.mappings().all()]
+    return {"candidates": rows, "total": len(rows)}
+
+
+@app.get("/v2/hermes/runs/{run_id}", tags=["hermes"])
+async def hermes_run(run_id: str, user: Dict = Depends(require_hermes_user)):
+    """Inspect one run only when it belongs to the delegated user."""
+    from sqlalchemy import text
+    from utils.db.db_pool import DatabasePool
+
+    with DatabasePool().get_session() as session:
+        row = session.execute(
+            text("""
+                SELECT run_id, mode, strategy, strategy_slug, status, config,
+                       results, agent_name, agent_framework, started_at, completed_at
+                FROM alpatrade.runs
+                WHERE run_id = :run_id AND user_id = CAST(:user_id AS UUID)
+            """),
+            {"run_id": run_id, "user_id": _uid(user)},
+        ).mappings().first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Run not found")
+    return dict(row)
+
+
+@app.post("/v2/hermes/candidates/{candidate_id}/paper", tags=["hermes"])
+async def hermes_candidate_paper(
+    candidate_id: str,
+    req: HermesPaperRequest,
+    user: Dict = Depends(require_hermes_user),
+):
+    """Queue owned candidate parameters for paper trading; live is not exposed."""
+    from engine.agents.hermes_jobs import enqueue_candidate_paper
+    uid = _uid(user)
+    try:
+        job = await asyncio.to_thread(
+            enqueue_candidate_paper,
+            candidate_id, uid, str(user["thread_id"]),
+            duration=req.duration, poll=req.poll or 60,
+            email_reports=bool(req.email),
+            account_id=req.account_id,
+            extended_hours=(req.hours == "extended") if req.hours else None,
+            pdt_protection=True if req.pdt is None else req.pdt,
+            notification_channel=req.notification_channel,
+        )
+    except ValueError as exc:
+        detail = str(exc)
+        raise HTTPException(
+            status_code=404 if "not found" in detail.lower() else 400,
+            detail=detail,
+        ) from exc
+    return {**job, "agent_name": "Hermes", "agent_framework": "hermes"}
+
+
+async def _hermes_paper_control(job_id: str, action: str, user: Dict) -> Dict:
+    from engine.agents.hermes_jobs import request_control
+
+    job = await asyncio.to_thread(request_control, job_id, _uid(user), action)
+    if not job:
+        raise HTTPException(status_code=404, detail="Active owned paper job not found")
+    return job
+
+
+@app.post("/v2/hermes/jobs/{job_id}/pause", tags=["hermes"])
+async def hermes_pause_paper_job(
+    job_id: str, user: Dict = Depends(require_hermes_user),
+):
+    """Pause one active paper job owned by the delegated user."""
+    return await _hermes_paper_control(job_id, "pause", user)
+
+
+@app.post("/v2/hermes/jobs/{job_id}/resume", tags=["hermes"])
+async def hermes_resume_paper_job(
+    job_id: str, user: Dict = Depends(require_hermes_user),
+):
+    """Resume one paused paper job owned by the delegated user."""
+    return await _hermes_paper_control(job_id, "resume", user)
+
+
+@app.post("/v2/hermes/jobs/{job_id}/stop", tags=["hermes"])
+async def hermes_stop_paper_job(
+    job_id: str, user: Dict = Depends(require_hermes_user),
+):
+    """Request a cooperative stop for one owned paper job."""
+    return await _hermes_paper_control(job_id, "stop", user)
+
+
+@app.get("/v2/hermes/advice", tags=["hermes"])
+async def hermes_advice(
+    job_id: Optional[str] = None, user: Dict = Depends(require_hermes_user),
+):
+    """List only portfolio and entry/exit advice owned by the delegated user."""
+    from engine.agents.hermes_advice import list_owned
+    items = await asyncio.to_thread(list_owned, _uid(user), job_id=job_id)
+    return {"advice": items, "total": len(items)}
+
+
+@app.post("/v2/hermes/candidates/{candidate_id}/portfolio", tags=["hermes"])
+async def hermes_construct_portfolio(
+    candidate_id: str, user: Dict = Depends(require_hermes_user),
+):
+    """Persist paper-only portfolio construction advice for an owned candidate."""
+    from engine.agents.hermes_advice import construct_portfolio
+    try:
+        return await asyncio.to_thread(
+            construct_portfolio, candidate_id, _uid(user), str(user["thread_id"])
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.post("/v2/hermes/jobs/{job_id}/notifications/{channel}", tags=["hermes"])
+async def hermes_notifications(
+    job_id: str, channel: str, user: Dict = Depends(require_hermes_user),
+):
+    """Set advice delivery for one active paper job owned by this user."""
+    from engine.agents.hermes_jobs import set_notification_channel
+    try:
+        job = await asyncio.to_thread(
+            set_notification_channel, job_id, _uid(user), channel
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not job:
+        raise HTTPException(status_code=404, detail="Active owned paper job not found")
+    return job
 
 
 @app.post("/v2/full", response_model=FullCycleResponse, tags=["agents"])
@@ -1283,6 +1531,91 @@ async def v2_reconcile(req: ReconcileRequest, user: Dict = Depends(require_tenan
 # ---------------------------------------------------------------------------
 # Typed external agent invocation
 # ---------------------------------------------------------------------------
+
+@app.post(
+    "/v2/deepagents",
+    response_model=DeepAgentResponse,
+    tags=["agent-invocation"],
+    summary="Invoke the canonical tenant-safe DeepAgent",
+    responses={
+        200: {
+            "description": "Completed JSON response or Server-Sent Events when stream=true.",
+            "content": {
+                "text/event-stream": {
+                    "schema": {"type": "string"},
+                    "example": (
+                        "event: session\ndata: {\"thread_id\":\"...\"}\n\n"
+                        "event: token\ndata: {\"content\":\"...\"}\n\n"
+                        "event: done\ndata: {\"response\":{}}\n\n"
+                    ),
+                }
+            },
+        },
+        409: {"description": "Duplicate response is still running or thread is busy."},
+        503: {"description": "DeepAgents, its model, or PostgreSQL checkpoints are unavailable."},
+    },
+)
+async def v2_deepagents(
+    req: DeepAgentRequest,
+    request: Request,
+    user: Dict = Depends(require_tenant_user),
+):
+    """Append messages to an owned durable thread and invoke DeepAgents.
+
+    Client message UUIDs are idempotency keys. Completed and failed requests
+    replay their recorded response; running duplicates and concurrent calls on
+    the same thread return 409. Tool traces are deliberately metadata-only.
+    """
+    from engine.ai.deepagents import (
+        AccountAccessError,
+        DeepAgentsUnavailable,
+        MessageConflictError,
+        ResponseInProgressError,
+        ThreadAccessError,
+        get_deepagent_service,
+        sse_encode,
+    )
+
+    service = get_deepagent_service()
+    try:
+        await service.initialize()
+        invocation = await service.prepare(
+            req,
+            user_id=str(user["user_id"]),
+            auth_type=str(user.get("auth_type") or "authenticated"),
+            request_id=str(request.state.request_id),
+        )
+    except ResponseInProgressError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "response_in_progress", "message": "A response is already running."},
+        ) from exc
+    except (ThreadAccessError, AccountAccessError) as exc:
+        raise HTTPException(status_code=404, detail="Thread or account not found") from exc
+    except MessageConflictError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "message_id_conflict", "message": str(exc)},
+        ) from exc
+    except DeepAgentsUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    if req.stream:
+        async def generate():
+            async for event in service.events(invocation):
+                yield sse_encode(event["event"], event["data"])
+
+        return StreamingResponse(
+            generate(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache, no-transform",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive",
+            },
+        )
+
+    return await service.invoke(invocation)
 
 @app.post(
     "/v2/agents/chat/invoke",
@@ -1587,7 +1920,11 @@ async def chat_stream(question: str, thread_id: str = "api_default"):
                             "msg": {"type": "string", "description": "The user message / prompt.",
                                     "example": "Show me my positions"},
                             "thread_id": {"type": "string",
-                                          "description": "Conversation id for history continuity.",
+                                          "description": (
+                                              "Conversation id. Authenticated callers receive "
+                                              "durable continuity; anonymous calls use it only "
+                                              "as a correlation label."
+                                          ),
                                           "example": "mobile-1"},
                         },
                         "required": ["msg"],
@@ -1623,8 +1960,9 @@ async def v2_chat(
 ):
     """Streaming chat for the mobile app — the SAME router as the web chat.
 
-    Auth: optional `Authorization: Bearer <JWT>` (authed users trade under their own
-    linked Alpaca account; anonymous falls back to the server's paper keys).
+    Auth: optional `Authorization: Bearer <JWT>`. Authenticated users may use
+    caller-owned portfolio and paper-action tools. Anonymous callers receive
+    public market/research tools only and never use server broker credentials.
 
     Body (JSON or form-encoded): `msg` (or `message`), `thread_id` (or `sid`).
 

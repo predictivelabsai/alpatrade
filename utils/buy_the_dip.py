@@ -97,7 +97,10 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                         extended_hours: bool = False,
                         intraday_exit: bool = False,
                         vol_target: Optional[float] = None,
-                        atr_exit_mult: Optional[float] = None) -> Tuple[pd.DataFrame, Dict]:
+                        atr_exit_mult: Optional[float] = None,
+                        conservative_metrics: bool = False,
+                        conservative_execution: bool = False,
+                        slippage_bps: float = 0.0) -> Tuple[pd.DataFrame, Dict]:
     """
     Backtest buy-the-dip strategy
     
@@ -135,7 +138,7 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
     """
     
     # Import calculate_metrics from backtester_util
-    from utils.backtester_util import calculate_metrics
+    from utils.backtester_util import calculate_metrics, calculate_portfolio_metrics
     
     # Set PDT status and create tracker
     if pdt_protection is None:
@@ -285,7 +288,9 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
             if intraday_result:
                 hit_tp = intraday_result['hit_tp']
                 hit_sl = intraday_result['hit_sl']
-                exit_price = intraday_result['exit_price']
+                exit_price = intraday_result['exit_price'] * (
+                    1 - max(0.0, slippage_bps) / 10000
+                )
                 exit_display_time = intraday_result['exit_time']
                 if hasattr(exit_display_time, 'astimezone'):
                     exit_display_time = exit_display_time.astimezone(pytz.timezone('US/Eastern'))
@@ -298,7 +303,13 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                 if not (hit_tp or hit_sl or hit_end):
                     continue
 
-                exit_price = trade['target_price'] if hit_tp else trade['stop_price'] if hit_sl else float(current_bar['Close'])
+                if conservative_execution and hit_tp and hit_sl:
+                    hit_tp = False
+                raw_exit_price = (
+                    trade['target_price'] if hit_tp else
+                    trade['stop_price'] if hit_sl else float(current_bar['Close'])
+                )
+                exit_price = raw_exit_price * (1 - max(0.0, slippage_bps) / 10000)
 
             # Record the closed trade
             pnl = (exit_price - trade['entry_price']) * trade['shares']
@@ -310,7 +321,7 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
 
             pnl -= total_fees
             available_capital += (trade['entry_price'] * trade['shares']) + pnl
-            pnl_pct = ((exit_price - trade['entry_price']) / trade['entry_price']) * 100
+            pnl_pct = pnl / (trade['entry_price'] * trade['shares']) * 100
 
             # Calculate total equity (Cash + Market Value of REMAINING positions)
             total_market_value = 0
@@ -371,8 +382,8 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                 continue
             
             recent_high = float(historical['High'].tail(lookback_periods).max())
-            current_price = float(historical['Close'].iloc[-1])
-            dip_pct = (recent_high - current_price) / recent_high
+            signal_price = float(historical['Close'].iloc[-1])
+            dip_pct = (recent_high - signal_price) / recent_high
             
             if dip_pct >= dip_threshold:
                 # Enter trade — size and exits may be vol-aware (Phase 2d)
@@ -383,6 +394,7 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                         # size ∝ vol_target / realised_vol, capped at position_size
                         effective_size = min(position_size, vol_target / rv)
 
+                current_price = signal_price * (1 + max(0.0, slippage_bps) / 10000)
                 shares = int((available_capital * effective_size) / current_price)
                 if shares <= 0:
                     continue
@@ -410,7 +422,10 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                 available_capital -= cost
 
                 active_trades[symbol] = {
-                    'entry_time': display_time,
+                    'entry_time': (
+                        eastern.localize(datetime.combine(current_date.date(), time(16, 0)))
+                        if conservative_execution and interval == '1d' else display_time
+                    ),
                     'entry_date_raw': current_date.date(),
                     'entry_price': current_price,
                     'shares': shares,
@@ -452,5 +467,9 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
         running_max = np.maximum.accumulate(ec)
         drawdown = (ec - running_max) / running_max
         metrics['max_drawdown'] = abs(drawdown.min()) * 100
+        if conservative_metrics:
+            metrics.update(calculate_portfolio_metrics(
+                equity_df, initial_capital, start_date, end_date
+            ))
         
     return trades_df, metrics, equity_df

@@ -12,11 +12,16 @@ a live broker into this package).
 from __future__ import annotations
 
 import os
+import threading
 from typing import Any, Callable, Optional
 
 from engine.autonomy import store
 
 Node = tuple[str, Callable[[dict], Any]]
+
+
+class JobCancelled(RuntimeError):
+    pass
 
 
 class Pipeline:
@@ -25,26 +30,41 @@ class Pipeline:
     def __init__(self, nodes: list[Node]):
         self.nodes = nodes
 
-    def run(self, run_id: str, ctx: Optional[dict] = None) -> dict:
+    def run(self, run_id: str, ctx: Optional[dict] = None,
+            stop_event: Optional[threading.Event] = None) -> dict:
         ctx = ctx or {}
         done = store.completed_steps(run_id)
-        store.set_status(run_id, "running")
+        previous_outputs = store.completed_step_outputs(run_id)
+        if not store.mark_running(run_id):
+            raise JobCancelled("job cancelled")
         for name, fn in self.nodes:
+            if stop_event and stop_event.is_set():
+                store.append_event(run_id, "cancellation requested")
+                raise JobCancelled("job cancelled")
             if name in done:
                 store.append_event(run_id, f"skip {name} (checkpoint)")
+                previous = previous_outputs.get(name)
+                if isinstance(previous, dict):
+                    ctx.update(previous.get("ctx", {}))
                 continue
             try:
                 out = fn(ctx)
+            except JobCancelled:
+                raise
             except Exception as e:  # noqa: BLE001
                 store.save_step(run_id, name, status="failed", output={"error": str(e)})
                 store.append_event(run_id, f"{name} failed: {e}", level="error")
-                store.set_status(run_id, "failed", error=str(e))
+                if not store.set_status(run_id, "failed", error=str(e)):
+                    raise JobCancelled("job cancelled") from e
                 raise
             store.save_step(run_id, name, output=_json_safe(out))
             store.append_event(run_id, f"{name} done")
             if isinstance(out, dict):
                 ctx.update(out.get("ctx", {}))
-        store.set_status(run_id, "done")
+        if stop_event and stop_event.is_set():
+            raise JobCancelled("job cancelled")
+        if not store.set_status(run_id, "done"):
+            raise JobCancelled("job cancelled")
         return ctx
 
 
@@ -73,7 +93,8 @@ def policy_gate(ctx: dict) -> dict:
     return {"ctx": {"admitted": admitted}, "admitted_count": len(admitted)}
 
 
-def scout_node(ctx: dict) -> dict:
+def scout_node(ctx: dict, user_id: Optional[str] = None,
+               account_id: Optional[str] = None) -> dict:
     """Populate ctx['candidates'] + ctx['portfolio'] for the policy gate.
 
     Uses symbols the Scout put in the run config; falls back to a fresh scan.
@@ -83,15 +104,24 @@ def scout_node(ctx: dict) -> dict:
     from engine.autonomy import scout
     from engine.autonomy.policy import Candidate
     cfg = ctx.get("config") or {}
-    portfolio = scout.portfolio_state()
+    portfolio = (
+        scout.portfolio_state(account_id=account_id, user_id=user_id)
+        if user_id else scout.portfolio_state()
+    )
     scouted = cfg.get("scouted")
     if scouted:
         candidates = [Candidate(symbol=s["symbol"], strategy_slug=s.get("strategy", "btd"),
                                 intended_notional=float(s.get("notional", 0)))
                       for s in scouted]
     else:
-        candidates = scout.scan(strategy=cfg.get("strategy", "btd"),
-                                equity=portfolio.equity)
+        scan_kwargs = {
+            "strategy": cfg.get("strategy", "btd"),
+            "limit": max(1, min(int(cfg.get("limit", 5)), 20)),
+            "equity": portfolio.equity,
+        }
+        if user_id:
+            scan_kwargs.update(user_id=user_id, account_id=account_id)
+        candidates = scout.scan(**scan_kwargs)
     # LLM annotation (best-effort): flag anything a price-move ranker can't see.
     if candidates:
         try:
@@ -132,12 +162,17 @@ def build_paper_config(base_config: Optional[dict], admitted: list,
     return cfg
 
 
-def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = None) -> Pipeline:
+def default_pipeline(user_id: Optional[str] = None,
+                     account_id: Optional[str] = None,
+                     stop_event: Optional[threading.Event] = None) -> Pipeline:
     """The paper-only scout→backtest→gate→paper→reconcile→promote pipeline (checkpointed)."""
 
     def _orch():
         from agents.orchestrator import Orchestrator
         return Orchestrator(user_id=user_id, account_id=account_id)
+
+    def tenant_scout(ctx):
+        return scout_node(ctx, user_id=user_id, account_id=account_id)
 
     def _check(result, phase):
         # A phase that returns {"error": ...} must halt the run honestly (→ failed),
@@ -195,7 +230,10 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
             return {"skipped": "no viable backtest strategy (no trades) — nothing to paper-trade"}
         dur = int(os.getenv("AUTONOMY_PAPER_SECONDS", DEFAULT_PAPER_SECONDS))
         cfg = build_paper_config(ctx.get("config"), ctx.get("admitted", []), default_duration=dur)
-        return _check(_orch().run_paper_trade(cfg), "paper_trade")
+        return _check(
+            _orch().run_paper_trade(cfg, stop_event=stop_event),
+            "paper_trade",
+        )
 
     def reconcile(ctx):
         return _orch().run_reconciliation(ctx.get("config"))
@@ -212,7 +250,9 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
         from engine.autonomy import refit as _refit
         from scripts.daily_pnl_report import gather_trades
         bt_result = ctx.get("backtest_result") or {}
-        paper_trades = gather_trades(limit=200)
+        paper_trades = gather_trades(
+            limit=200, user_id=user_id, account_id=account_id
+        )
         plan = _refit.refit_plan(bt_result, paper_trades)
         log_msg = f"refit: {plan['reason']}"
         store.append_event(ctx.get("run_id"), log_msg)
@@ -241,7 +281,10 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
         from agents.report_agent import ReportAgent
         from engine.autonomy import promote as _promote, notify as _notify
         from engine.autonomy.reason import reason
-        strategies = ReportAgent().top_strategies(trade_type="paper", limit=10) or []
+        strategies = ReportAgent().top_strategies(
+            trade_type="paper", limit=10,
+            user_id=user_id, account_id=account_id,
+        ) or []
         if isinstance(strategies, dict):
             strategies = strategies.get("strategies", [])
         # Phase 3a: let the configured runtime (LangGraph/deepagents/hermes)
@@ -266,12 +309,12 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
             except Exception:  # noqa: BLE001
                 pass
         promoted = _promote.run_promotions(strategies, run_id=ctx.get("run_id"))
-        if promoted:
+        if promoted and not user_id:
             _notify.send_promotion_digest(promoted)
         return {"promoted": len(promoted)}
 
     return Pipeline([
-        ("scout", scout_node),
+        ("scout", tenant_scout),
         ("backtest", backtest),
         ("policy_gate", policy_gate),
         ("validate_backtest", validate_backtest),
@@ -280,6 +323,80 @@ def default_pipeline(user_id: Optional[str] = None, account_id: Optional[str] = 
         ("refit", refit),
         ("promote", promote),
     ])
+
+
+def deepagent_job_pipeline(
+    kind: str,
+    user_id: str,
+    account_id: Optional[str],
+    stop_event: Optional[threading.Event] = None,
+) -> Pipeline:
+    """Build a checkpointed pipeline for a DeepAgent-enqueued job kind."""
+    from agents.orchestrator import Orchestrator
+
+    def orchestrator() -> Orchestrator:
+        return Orchestrator(user_id=user_id, account_id=account_id)
+
+    def checked(result: Any, phase: str) -> Any:
+        if isinstance(result, dict) and result.get("error"):
+            raise RuntimeError(f"{phase} failed")
+        return result
+
+    def backtest(ctx: dict) -> dict:
+        result = checked(orchestrator().run_backtest(dict(ctx.get("config") or {})), "backtest")
+        return {"ctx": {"backtest_result": result}, "result": result}
+
+    def validate_backtest(ctx: dict) -> dict:
+        prior = ctx.get("backtest_result") or {}
+        result = checked(orchestrator().run_validation(
+            run_id=prior.get("run_id"), source="backtest", trades=prior.get("trades")
+        ), "backtest validation")
+        return {"ctx": {"backtest_validation": result}, "result": result}
+
+    def paper(ctx: dict) -> dict:
+        paper_orchestrator = orchestrator()
+        best_config = (ctx.get("backtest_result") or {}).get("best_config")
+        if best_config:
+            paper_orchestrator.state.best_config = best_config
+        result = checked(paper_orchestrator.run_paper_trade(
+            dict(ctx.get("config") or {}), stop_event=stop_event
+        ), "paper trade")
+        return {"ctx": {"paper_result": result}, "result": result}
+
+    def validate_paper(ctx: dict) -> dict:
+        prior = ctx.get("paper_result") or {}
+        result = checked(orchestrator().run_validation(
+            run_id=prior.get("session_id") or prior.get("run_id"), source="paper_trade"
+        ), "paper validation")
+        return {"ctx": {"paper_validation": result}, "result": result}
+
+    def reconcile(ctx: dict) -> dict:
+        result = checked(orchestrator().run_reconciliation(dict(ctx.get("config") or {})),
+                         "reconciliation")
+        return {"ctx": {"reconciliation": result}, "result": result}
+
+    def report(ctx: dict) -> dict:
+        from agents.report_agent import ReportAgent
+
+        result = ReportAgent().summary(
+            limit=5, user_id=user_id, account_id=account_id
+        )
+        return {"result": result}
+
+    if kind == "deepagent_backtest":
+        return Pipeline([("backtest", backtest)])
+    if kind == "deepagent_paper":
+        return Pipeline([("paper_trade", paper)])
+    if kind == "deepagent_full":
+        return Pipeline([
+            ("backtest", backtest),
+            ("validate_backtest", validate_backtest),
+            ("paper_trade", paper),
+            ("validate_paper", validate_paper),
+            ("reconcile", reconcile),
+            ("report", report),
+        ])
+    raise ValueError(f"unsupported DeepAgent job kind: {kind}")
 
 
 def run_once(config: Optional[dict] = None, user_id: Optional[str] = None,

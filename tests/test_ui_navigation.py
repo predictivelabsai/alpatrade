@@ -40,6 +40,15 @@ def test_sidebar_alpha_research_shortcuts_fill_editable_commands():
     assert "onclick=\"fillChat('alpha:show run-id:&lt;uuid&gt;')\"" in html
 
 
+def test_sidebar_lists_one_message_runtime_overrides():
+    html = to_xml(_left_pane("guide", None))
+
+    assert "AI Runtime" in html
+    assert "/hermes " in html
+    assert "/deepagents " in html
+    assert "/langgraph " in html
+
+
 def test_authenticated_sidebar_has_visible_sign_out():
     html = to_xml(_left_pane("dashboard", {"email": "user@example.com"}))
     assert 'href="/logout"' in html

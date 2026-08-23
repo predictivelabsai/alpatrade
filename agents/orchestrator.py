@@ -66,20 +66,26 @@ class Orchestrator:
         self.state.run_id = self.run_id
         self.state.started_at = datetime.now(timezone.utc).isoformat()
 
-        # Resolve per-user Alpaca keys (None = fall back to env vars)
+        # Tenant invocations resolve an owned account and never use env broker keys.
+        # CLI invocations with user_id=None retain the historical env-key behavior.
         self._alpaca_api_key = None
         self._alpaca_secret_key = None
+        self._has_tenant_keys = False
         self._account_name = ""
         if user_id:
             try:
-                from utils.auth import get_alpaca_keys, get_user_accounts
-                keys = get_alpaca_keys(user_id, account_id)
+                from engine.auth import get_alpaca_keys, get_user_accounts
+                accounts = get_user_accounts(user_id)
+                if self.account_id is None and accounts:
+                    self.account_id = accounts[0]["account_id"]
+                keys = get_alpaca_keys(user_id, self.account_id)
                 if keys:
                     self._alpaca_api_key, self._alpaca_secret_key = keys
+                    self._has_tenant_keys = True
                 # Resolve account_name for email reports
-                if account_id:
-                    for acc in get_user_accounts(user_id):
-                        if acc["account_id"] == str(account_id):
+                if self.account_id:
+                    for acc in accounts:
+                        if acc["account_id"] == str(self.account_id):
                             self._account_name = acc.get("account_name", "")
                             break
             except Exception:
@@ -87,19 +93,20 @@ class Orchestrator:
 
         # Initialize agents
         self.backtester = BacktestAgent(message_bus=self.bus, state=self.state,
-                                        user_id=user_id, account_id=account_id)
+                                        user_id=user_id, account_id=self.account_id)
         self.paper_trader = PaperTradeAgent(message_bus=self.bus, state=self.state,
                                              user_id=user_id,
                                              alpaca_api_key=self._alpaca_api_key,
                                              alpaca_secret_key=self._alpaca_secret_key,
-                                             account_id=account_id,
+                                             account_id=self.account_id,
                                              account_name=self._account_name)
         self.validator = ValidateAgent(message_bus=self.bus, state=self.state,
-                                       user_id=user_id)
+                                       user_id=user_id, account_id=self.account_id)
         self.reconciler = ReconcileAgent(message_bus=self.bus, state=self.state,
                                           user_id=user_id,
                                           alpaca_api_key=self._alpaca_api_key,
-                                          alpaca_secret_key=self._alpaca_secret_key)
+                                          alpaca_secret_key=self._alpaca_secret_key,
+                                          account_id=self.account_id)
 
         # Initialize agent states
         for name in ["backtester", "paper_trader", "validator", "reconciler"]:
@@ -138,6 +145,13 @@ class Orchestrator:
             "extended_hours": config.get("extended_hours", True),
             "intraday_exit": config.get("intraday_exit", False),
             "pdt_protection": config.get("pdt_protection"),
+            "objective": config.get("objective") or {},
+            "conservative_metrics": config.get("conservative_metrics", False),
+            "conservative_execution": config.get("conservative_execution", False),
+            "include_taf_fees": config.get("include_taf_fees", False),
+            "include_cat_fees": config.get("include_cat_fees", False),
+            "slippage_bps": config.get("slippage_bps", 0.0),
+            "validation_fraction": config.get("validation_fraction", 0.0),
         }
 
         # Publish request to bus
@@ -240,6 +254,8 @@ class Orchestrator:
 
     def run_paper_trade(self, config: Dict[str, Any] = None, stop_event=None) -> Dict[str, Any]:
         """Run paper trading phase."""
+        if self.user_id and not self._has_tenant_keys:
+            return {"error": "No linked Alpaca paper account for this user."}
         config = config or {}
         self._config = config
         if self._mode is None:
@@ -286,11 +302,19 @@ class Orchestrator:
                 "stop_loss_threshold": params.get("stop_loss", yaml_cfg.get("stop_loss_threshold", 0.5)) * 100 if params.get("stop_loss", 1) < 1 else params.get("stop_loss", yaml_cfg.get("stop_loss_threshold", 0.5)),
                 "hold_days": params.get("hold_days", yaml_cfg.get("hold_days", 2)),
                 "capital_per_trade": config.get("capital_per_trade", yaml_cfg.get("capital_per_trade", 1000.0)),
+                "position_size": params.get("position_size"),
             },
             "duration_seconds": config.get("duration_seconds", 604800),
             "poll_interval_seconds": config.get("poll_interval_seconds", yaml_general.get("polling_interval", 300)),
             "extended_hours": config.get("extended_hours", True),
             "email_notifications": config.get("email_notifications", True),
+            "report_email": config.get("report_email", ""),
+            "report_hour_utc": config.get("report_hour_utc", 21),
+            "advice_enabled": (config.get("advice_enabled", False)
+                               if config.get("agent_framework") == "hermes" else False),
+            "advice_interval_seconds": config.get("advice_interval_seconds", 900),
+            "report_format": ("hermes" if config.get("agent_framework") == "hermes"
+                              else "default"),
             "pdt_protection": config.get("pdt_protection"),
         }
 
@@ -420,6 +444,8 @@ class Orchestrator:
 
     def run_reconciliation(self, config: Dict[str, Any] = None) -> Dict[str, Any]:
         """Run reconciliation against Alpaca actual holdings."""
+        if self.user_id and not self._has_tenant_keys:
+            return {"error": "No linked Alpaca paper account for this user."}
         config = config or {}
         if self._mode is None:
             self._mode = "reconcile"

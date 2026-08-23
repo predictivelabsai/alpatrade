@@ -65,6 +65,7 @@ def submit_order(
     side: str,
     *,
     limit_price: float | None = None,
+    client_order_id: str | None = None,
 ) -> dict:
     """Submit a DAY order for an index-option contract in paper trading."""
     from alpaca.trading.enums import OrderSide, TimeInForce
@@ -85,6 +86,8 @@ def submit_order(
         side=OrderSide(side),
         time_in_force=TimeInForce.DAY,
     )
+    if client_order_id:
+        common["client_order_id"] = client_order_id
     if limit_price is None:
         request = MarketOrderRequest(**common)
     else:
