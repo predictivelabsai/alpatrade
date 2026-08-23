@@ -38,10 +38,36 @@ class PaperRequest(BaseModel):
     hours: Optional[str] = None
     email: Optional[bool] = Field(None, description="Send daily P&L email reports")
     pdt: Optional[bool] = None
+    params: Optional[Dict[str, Any]] = Field(
+        None, description="Validated strategy parameters (used by scoped agent promotion)"
+    )
+    agent_name: Optional[str] = Field(None, exclude=True)
+    agent_framework: Optional[str] = Field(None, exclude=True)
+    source_run_id: Optional[str] = Field(None, exclude=True)
 
     model_config = {"json_schema_extra": {
         "examples": [{"duration": "7d", "strategy": "buy_the_dip"}]
     }}
+
+
+class HermesBacktestRequest(BacktestRequest):
+    """Backtest request accepted by the restricted Hermes broker."""
+
+    objective: Dict[str, Any] = Field(default_factory=dict)
+
+
+class HermesPaperRequest(BaseModel):
+    """Start a saved candidate in paper mode only."""
+
+    account_id: Optional[str] = None
+    duration: str = "7d"
+    poll: Optional[int] = None
+    hours: Optional[str] = None
+    email: Optional[bool] = None
+    pdt: Optional[bool] = None
+    notification_channel: str = Field(
+        "in_app", description="Hermes advice delivery: in_app, email, both, or none"
+    )
 
 
 class ValidateRequest(BaseModel):

@@ -220,13 +220,14 @@ Five agents coordinated by the Orchestrator (`agents/orchestrator.py`):
 
 PostgreSQL with `alpatrade` schema. Key tables: `runs`, `trades`, `backtest_summaries`, `users`,
 `user_accounts` (per-user Alpaca keys, Fernet-encrypted BYTEA — this is where keys actually live, not
-`users`), `user_settings` (per-user provider prefs, `sql/14`), `chat_messages`, and the autonomy engine tables
+`users`), `user_settings` (per-user provider prefs, `sql/14`), `chat_messages`, Hermes-owned
+`strategy_candidates`/`hermes_jobs` (`sql/18`–`sql/20`), and the autonomy engine tables
 `autonomy_runs`/`autonomy_run_steps`/`autonomy_events`/`autonomy_promotions` (`sql/15`), plus
 `alpha_research_runs` for user-scoped Growth/Value reports (`sql/17`), and
 `deepagent_responses`/`deepagent_events`/`deepagent_actions` for durable API
-idempotency and sanitized traces (`sql/18`). Official LangGraph checkpoint tables
+idempotency and sanitized traces (`sql/22`). Official LangGraph checkpoint tables
 are created in the `alpatrade` search path by `AsyncPostgresSaver.setup()`.
-Migrations in `sql/` (numbered `01_` through `18_`, idempotent DDL). Apply one with
+Migrations in `sql/` (numbered `01_` through `22_`, idempotent migrations). Apply one with
 `python run_migration.py sql/NN_name.sql` (no migration-tracking table). All data tables carry `user_id`
 (and `account_id`) for isolation.
 

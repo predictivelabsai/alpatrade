@@ -1,6 +1,6 @@
 # Change Log
 
-## 0.9.0 — 2026-08-20
+## 0.16.0 — 2026-08-23
 
 ### Tenant-safe DeepAgents API
 
@@ -19,7 +19,7 @@
 
 ### Persistence and paper-action safety
 
-- Added migration `sql/18_deepagent_responses.sql` for durable response,
+- Added migration `sql/22_deepagent_responses.sql` for durable response,
   sanitized event, action-deduplication, and job-deduplication records.
 - Added the official asynchronous PostgreSQL LangGraph checkpointer with a
   shared pool, `alpatrade` search path, idempotent setup, and pickle fallback
@@ -38,9 +38,148 @@
   runtime context, specialist/tool registration, trace redaction, token
   normalization, heartbeats, stream failures, and paper-client identity.
 - Added `deepagents<0.7`, `langgraph-checkpoint-postgres`, and psycopg 3 pool
-  dependencies and bumped the package/lockfile to 0.9.0.
-- Apply `python run_migration.py sql/18_deepagent_responses.sql` before deploying
+  dependencies and bumped the package/lockfile to 0.16.0.
+- Apply `python run_migration.py sql/22_deepagent_responses.sql` before deploying
   the API and worker. Deployment itself is not included in this release.
+
+## 0.15.0 — 2026-08-22
+
+- Added Hermes-only conservative backtests with five-basis-point entry/exit
+  slippage, regulatory fees, stop-first ambiguous daily bars, close-time entry
+  attribution, and portfolio daily-equity Sharpe, Sortino, and drawdown.
+- Split Hermes research into 70% training and 30% untouched validation, persist
+  both date ranges and validation metrics, and block paper promotion unless the
+  validation return, Sharpe, drawdown, trade-count, and stability gates pass.
+- Forward the requested objective and methodology flags through the orchestrator,
+  attribute research jobs/candidates to the user's linked account when available,
+  and release worker claims on terminal states.
+- Added explicit methodology and promotion status to saved chat results. Legacy
+  candidates without validation evidence can no longer start a Hermes paper job.
+- Tests: conservative metric math, objective plumbing, train/validation isolation,
+  promotion gates, worker cleanup, default-agent isolation, and full CI suite.
+- Fixed combined candidate-start commands containing `notify me both` so they
+  queue the validated paper job instead of being mistaken for an update request.
+
+## 0.14.0 — 2026-08-22
+
+- Added Hermes-only performance emails with reconciled signed P&L, grouped
+  fills, green/amber/red status, concise reasons, and supported next commands.
+- Added detailed entry/exit alerts with quantities, prices, thresholds, P&L,
+  rationale, and owned job/run/candidate attribution.
+- Added `/hermes analyze paper job <job-id>` for an owner-scoped diagnosis of
+  results, repeated fills, duplicate Hermes jobs, and overlapping account runs.
+- Finalize stop requests whose paper worker was interrupted during deployment,
+  preventing an orphaned job from remaining incorrectly marked as running.
+- Accept compact Hermes backtest periods such as `lookback:6m` and
+  `lookback=1y` instead of silently applying the three-month default.
+- Honor the explicit `objective:sharpe_ratio` contract when selecting the best
+  eligible variation, and release worker claims when jobs finish or fail.
+- Kept the established AlpaTrade daily email and the DeepAgents/LangGraph
+  execution paths unchanged; all Hermes execution remains paper-only.
+- Tests: Hermes report calculations, alert rendering, durable trade loading,
+  ownership, overlap detection, command routing, and default-template isolation.
+
+## 0.13.0 — 2026-08-21
+
+- Added user-scoped Hermes portfolio recommendations and persisted entry, exit,
+  hold, and watch advice in `alpatrade.hermes_advice` (migration 21).
+- Added selectable in-app, email, both, or disabled advice delivery per active
+  Hermes paper job, with duplicate-alert suppression and daily-email advice.
+- Added deterministic `/hermes help`, portfolio construction, advice history,
+  and notification commands. Advice is paper-only and never places extra orders.
+- Kept DeepAgents, LangGraph compatibility routing, and default chat behavior
+  unchanged.
+- Tests: focused Hermes contracts, CI-default DB-free suite, compile/import,
+  migration transaction, secret scan, and regression suite.
+
+## 0.12.0 — 2026-08-21
+
+### Hermes paper operations and voice
+
+- Added deterministic, account-owned `/hermes` commands to start a saved
+  candidate in paper mode and pause, resume, or stop its durable job.
+- Added daily report opt-in stored on the owned paper job; recipients resolve
+  from the authenticated user's login email instead of the global `TO_EMAIL`.
+- Added durable controls and responsive worker polling. Explicitly continuous
+  paper jobs requeue after worker restarts; finite jobs retain fail-safe recovery.
+- Added an authenticated Hermes command tool to voice mode and changed voice
+  position lookup to use the logged-in user's linked Alpaca paper account.
+- Live-order routes remain unavailable.
+
+### Tests and deployment
+
+- Added command-intent, ownership, paper-control, report, worker-recovery, and
+  voice-tool contracts.
+- Apply `sql/20_hermes_paper_controls.sql`, then redeploy the full Compose
+  resource so both `agui` and `hermes-jobs` use version 0.12.0.
+
+## 0.11.0 — 2026-08-20
+
+### Durable asynchronous Hermes jobs
+
+- Changed scoped Hermes backtests and paper sessions from blocking HTTP calls
+  to PostgreSQL-backed jobs that immediately return `job_id` and `run_id`.
+- Added a deterministic `/hermes ... backtest` dispatcher in the AlpaTrade web
+  tier, so queue creation occurs before remote model planning or terminal tools.
+- Added an isolated AlpaTrade `hermes-jobs` worker, owned job status endpoints,
+  candidate creation on successful backtests, and completion/failure messages
+  written into the originating saved chat.
+- Added five-second chat synchronization so results appear while a chat remains
+  open; users may navigate away, close the browser, or inspect jobs later.
+- Interrupted backtests are safely requeued. Interrupted paper sessions are
+  failed rather than replayed, preventing duplicate paper orders.
+- Removed every documented fallback to general backtest, paper, authentication,
+  or generated test-user routes. Live trading remains unavailable.
+
+### Tests and deployment
+
+- Added DB-free contracts for delegated ownership, queue submission, worker
+  attribution, candidate output, recovery policy, and service isolation.
+- Apply `sql/19_hermes_jobs.sql` before redeploying the complete Compose resource.
+
+## 0.10.0 — 2026-08-20
+
+### Hermes Agent integration — Phase 2
+
+- Added a dedicated Hermes broker with short-lived, per-user delegation and no
+  database, Alpaca, JWT, or general service credentials in the Hermes service.
+- Added user-owned backtest execution, best-parameter candidate persistence,
+  run inspection, and candidate-to-paper promotion under `/v2/hermes/*`.
+- Added `agent_name` and `agent_framework` attribution plus the
+  `alpatrade.strategy_candidates` store. Live execution remains unavailable.
+- Persisted `/app` conversations per account with sidebar resume/delete, and
+  added visible elapsed-time/tool progress for long Hermes operations.
+- Removed duplicated browser history from persistent Hermes sessions, extended
+  per-message delegation to 30 minutes, and disabled non-renderable gateway
+  approval prompts inside the credential-isolated Hermes container.
+
+### Tests and deployment
+
+- Added security-contract coverage for delegation signing, key separation,
+  Compose credential isolation, schema-qualified migration objects, owned chat
+  history, and long-running progress behavior.
+- Apply `sql/18_hermes_agent_attribution.sql` before redeploying, then enable
+  only **Terminal & Processes** with `hermes setup tools` for the mounted skill.
+
+## 0.9.0 — 2026-08-20
+
+### Hermes Agent integration — Phase 1
+
+- Replaced the Hermes-as-LangGraph placeholder with an authenticated client for
+  Nous Hermes Agent's OpenAI-compatible gateway, including SSE streaming and
+  stable per-user and per-thread memory scopes.
+- Added one-message `/hermes`, `/deepagents`, and `/langgraph` chat overrides;
+  unprefixed messages continue using the user's saved framework.
+- Added a private, persistent Hermes service to the Coolify Compose topology and
+  retained DeepAgents as the automatic fallback when Hermes is unavailable.
+
+### Tests and deployment
+
+- Added DB-free tests for Hermes request construction, authentication, remote
+  invocation, and runtime-prefix routing, and included them in CI.
+- No database migration is required. Coolify requires `HERMES_API_SERVER_KEY`,
+  one supported Hermes model-provider credential (including XAI/Grok), and
+  one-time profile setup.
 
 ## 0.8.3 — 2026-08-15
 

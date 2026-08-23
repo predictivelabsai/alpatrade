@@ -32,6 +32,11 @@ INSTRUCTIONS = (
     "get_positions tool and read back the result naturally (round dollars, mention the biggest "
     "movers). Do not invent numbers — always use the tool for live data."
 )
+INSTRUCTIONS += (
+    " When the user addresses Hermes or asks to start, pause, resume, stop, or inspect "
+    "a Hermes paper job, call hermes_command with their complete request. Never claim "
+    "an action happened without a tool result."
+)
 
 # OpenAI/x.ai realtime-compatible function tool.
 TOOLS = [{
@@ -40,6 +45,16 @@ TOOLS = [{
     "description": "Get the user's current Alpaca paper-trading account: equity, cash, and open positions with unrealised P&L.",
     "parameters": {"type": "object", "properties": {}, "required": []},
 }]
+TOOLS.append({
+    "type": "function",
+    "name": "hermes_command",
+    "description": "Run an authenticated, paper-only Hermes command for the logged-in user.",
+    "parameters": {
+        "type": "object",
+        "properties": {"command": {"type": "string"}},
+        "required": ["command"],
+    },
+})
 
 SESSION_UPDATE = {
     "type": "session.update",
@@ -55,11 +70,20 @@ SESSION_UPDATE = {
 }
 
 
-def _get_positions_text() -> str:
+def _get_positions_text(user_id: str = "") -> str:
     """Fetch the Alpaca paper account + positions and format a spoken-friendly summary."""
     try:
+        from engine.auth import get_alpaca_keys, get_user_accounts
         from engine.brokers.alpaca import AlpacaAPI
-        api = AlpacaAPI(paper=True)
+        if user_id:
+            accounts = get_user_accounts(user_id)
+            account_id = str(accounts[0]["account_id"]) if accounts else None
+            keys = get_alpaca_keys(user_id, account_id) if account_id else None
+            if not keys:
+                return "Link an Alpaca paper account before asking for positions."
+            api = AlpacaAPI(paper=True, api_key=keys[0], secret_key=keys[1])
+        else:
+            api = AlpacaAPI(paper=True)
         acct = api.get_account() or {}
         positions = api.get_positions() or []
     except Exception as e:  # noqa: BLE001
@@ -88,6 +112,13 @@ def _get_positions_text() -> str:
 
 async def _voice_ws(ws: WebSocket):
     await ws.accept()
+    session = ws.scope.get("session") or {}
+    user_id = str(session.get("user_id") or "")
+    if not user_id:
+        await ws.send_json({"type": "error", "message": "sign in before using voice"})
+        await ws.close()
+        return
+    thread_id = str(session.get("thread_id") or "")
     key = os.environ.get("XAI_API_KEY", "")
     if not key:
         await ws.send_json({"type": "error", "message": "voice not configured (no XAI_API_KEY)"})
@@ -113,10 +144,25 @@ async def _voice_ws(ws: WebSocket):
                     elif mt == "cancel":
                         await xai.send(json.dumps({"type": "response.cancel"}))
 
-            async def handle_function_call(call_id, name):
-                # Only get_positions is registered; run it off the event loop.
-                out = await asyncio.to_thread(_get_positions_text) if name == "get_positions" \
-                    else f"unknown tool {name}"
+            async def handle_function_call(call_id, name, arguments=""):
+                if name == "get_positions":
+                    out = await asyncio.to_thread(_get_positions_text, user_id)
+                elif name == "hermes_command":
+                    try:
+                        command = json.loads(arguments or "{}").get("command", "")
+                    except json.JSONDecodeError:
+                        command = ""
+                    from engine.web.ph_chat import _dispatch_hermes_job_command, _save_chat_message
+                    out = await _dispatch_hermes_job_command(command, user_id, thread_id)
+                    out = out or "That is not yet an available paper-only Hermes voice command."
+                    if command and thread_id:
+                        _save_chat_message(thread_id, user_id, "user", f"/hermes {command}")
+                        _save_chat_message(
+                            thread_id, user_id, "assistant", out,
+                            {"agent": "Hermes", "framework": "hermes", "source": "voice"},
+                        )
+                else:
+                    out = f"unknown tool {name}"
                 await ws.send_json({"type": "tool", "name": name})
                 await xai.send(json.dumps({
                     "type": "conversation.item.create",
@@ -143,7 +189,9 @@ async def _voice_ws(ws: WebSocket):
                     elif t == "input_audio_buffer.speech_stopped":
                         await ws.send_json({"type": "speech_stopped"})
                     elif t == "response.function_call_arguments.done":
-                        await handle_function_call(e.get("call_id"), e.get("name"))
+                        await handle_function_call(
+                            e.get("call_id"), e.get("name"), e.get("arguments", "")
+                        )
                     elif t == "response.done":
                         await ws.send_json({"type": "done"})
                     elif t == "error":
