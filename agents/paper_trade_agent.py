@@ -22,7 +22,9 @@ if str(project_root) not in sys.path:
 
 from utils.alpaca_util import AlpacaAPI
 from engine.feeds.market_data import get_historical_data, get_intraday_prices, is_market_open
-from utils.agent_storage import store_paper_trade, fetch_recent_day_trades
+from utils.agent_storage import (
+    store_paper_trade, fetch_paper_trades, fetch_recent_day_trades,
+)
 from utils.config import load_parameters
 from utils.pdt_tracker import PDTTracker
 
@@ -82,6 +84,11 @@ class PaperTradeAgent:
         poll_interval = request.get("poll_interval_seconds", yaml_general.get("polling_interval", 300))
         extended_hours = request.get("extended_hours", True)
         email_notifications = request.get("email_notifications", True)
+        report_email = request.get("report_email", "")
+        report_hour_utc = int(request.get("report_hour_utc", 21))
+        report_format = str(request.get("report_format", "default"))
+        advice_enabled = bool(request.get("advice_enabled", False))
+        advice_interval = max(60, int(request.get("advice_interval_seconds", 900)))
 
         # PDT protection: default True, disable with pdt:false for accounts >$25k
         pdt_protection = request.get("pdt_protection")
@@ -97,6 +104,7 @@ class PaperTradeAgent:
         hold_days = params.get("hold_days", yaml_cfg.get("hold_days", 2))
         min_hold_days = params.get("min_hold_days", yaml_cfg.get("min_hold_days", 0))
         capital_per_trade = params.get("capital_per_trade", yaml_cfg.get("capital_per_trade", 1000.0))
+        position_size = params.get("position_size")
 
         logger.info(f"Paper trade agent starting session {self.session_id}")
         logger.info(f"Strategy: {strategy}, Symbols: {symbols}")
@@ -114,6 +122,12 @@ class PaperTradeAgent:
             account = self.client.get_account()
             if "error" in account:
                 raise RuntimeError(f"Alpaca API error: {account['error']}")
+            if position_size is not None:
+                fraction = float(position_size)
+                if not 0 < fraction <= 0.25:
+                    raise ValueError("position_size must be greater than 0 and no more than 0.25")
+                equity = float(account.get("equity") or account.get("portfolio_value") or 0)
+                capital_per_trade = equity * fraction
             logger.info(f"Connected to Alpaca paper. Portfolio value: ${float(account.get('portfolio_value', 0)):,.2f}")
         except Exception as e:
             logger.error(f"Failed to initialize Alpaca client: {e}")
@@ -155,24 +169,52 @@ class PaperTradeAgent:
 
         start_time = datetime.now(timezone.utc)
         end_time = start_time + timedelta(seconds=duration)
-        last_daily_report = start_time.date()
+        last_daily_report = None
+        last_advice_at = 0.0
         cycle_count = 0
 
         logger.info(f"Trading until {end_time.isoformat()}")
 
         try:
             while datetime.now(timezone.utc) < end_time:
+                if stop_event and hasattr(stop_event, "wait_if_paused"):
+                    if not stop_event.wait_if_paused():
+                        logger.info("Paper trading stopped while paused")
+                        break
                 # Check for external stop request
                 if stop_event and stop_event.is_set():
                     logger.info("Paper trading stopped via stop event")
                     break
 
                 now = datetime.now(timezone.utc)
+                live_advice = {}
+                if stop_event and hasattr(stop_event, "advice_settings"):
+                    live_advice = stop_event.advice_settings()
+                    advice_enabled = bool(live_advice.get("enabled", advice_enabled))
+                    advice_interval = int(
+                        live_advice.get("interval_seconds", advice_interval)
+                    )
+
+                # Send at most one owned report per UTC trading date after the
+                # configured post-close hour, even while the market is closed.
+                if now.hour >= report_hour_utc and last_daily_report != now.date():
+                    if stop_event and hasattr(stop_event, "report_target"):
+                        email_notifications, report_email = stop_event.report_target()
+                    if email_notifications:
+                        self._record_daily_pnl()
+                        daily_advice = (stop_event.recent_advice() if stop_event and
+                                        hasattr(stop_event, "recent_advice") else [])
+                        self._send_daily_email(
+                            now.date().isoformat(), report_email, advice=daily_advice,
+                            report_context=live_advice, report_format=report_format,
+                        )
+                    last_daily_report = now.date()
 
                 # Check if market is open
                 if not is_market_open(now, extended_hours=extended_hours):
                     logger.debug("Market closed, sleeping...")
-                    time.sleep(min(poll_interval, 60))
+                    if self._interruptible_wait(min(poll_interval, 60), stop_event):
+                        break
                     continue
 
                 # Periodic PDT re-check (every ~10 cycles)
@@ -190,6 +232,7 @@ class PaperTradeAgent:
 
                 # Execute one trading cycle
                 try:
+                    trades_before_cycle = len(self.trades)
                     self._execute_cycle(
                         symbols=symbols,
                         dip_threshold=dip_threshold,
@@ -199,6 +242,19 @@ class PaperTradeAgent:
                         min_hold_days=min_hold_days,
                         capital_per_trade=capital_per_trade,
                     )
+                    if advice_enabled and stop_event and hasattr(stop_event, "publish_advice"):
+                        trade_advice = self._trade_advice(
+                            self.trades[trades_before_cycle:], params
+                        )
+                        if trade_advice:
+                            stop_event.publish_advice(trade_advice)
+                    if (advice_enabled and stop_event and
+                            hasattr(stop_event, "publish_advice") and
+                            time.monotonic() - last_advice_at >= advice_interval):
+                        stop_event.publish_advice(
+                            self._build_hermes_advice(symbols, params)
+                        )
+                        last_advice_at = time.monotonic()
                 except Exception as e:
                     logger.error(f"Trading cycle error: {e}")
                     if self.message_bus:
@@ -209,21 +265,27 @@ class PaperTradeAgent:
                             payload={"error": str(e), "session_id": self.session_id},
                         )
 
-                # Daily P&L report + email
-                today = datetime.now(timezone.utc).date()
-                if today > last_daily_report:
-                    self._record_daily_pnl()
-                    if email_notifications:
-                        self._send_daily_email(last_daily_report.isoformat())
-                    last_daily_report = today
-
-                time.sleep(poll_interval)
+                if self._interruptible_wait(poll_interval, stop_event):
+                    break
 
         except KeyboardInterrupt:
             logger.info("Paper trading interrupted by user")
 
         # Final summary
         return self._generate_summary(start_time)
+
+    @staticmethod
+    def _interruptible_wait(seconds: float, stop_event=None) -> bool:
+        """Sleep responsively so durable pause/stop requests take effect quickly."""
+        deadline = time.monotonic() + max(0, seconds)
+        while time.monotonic() < deadline:
+            if stop_event and hasattr(stop_event, "wait_if_paused"):
+                if not stop_event.wait_if_paused():
+                    return True
+            if stop_event and stop_event.is_set():
+                return True
+            time.sleep(min(1, max(0, deadline - time.monotonic())))
+        return False
 
     def _execute_cycle(self, symbols, dip_threshold, take_profit, stop_loss,
                        hold_days, capital_per_trade, min_hold_days=0):
@@ -233,6 +295,44 @@ class PaperTradeAgent:
 
         # 2. Process entries
         self._process_entries(symbols, dip_threshold, capital_per_trade)
+
+    def _build_hermes_advice(self, symbols: List[str], params: Dict) -> List[Dict]:
+        """Build paper-only observations; delivery and ownership stay in Hermes control."""
+        from engine.agents.hermes_advice import position_advice
+        try:
+            positions = self.client.get_positions()
+            if not isinstance(positions, list):
+                positions = []
+        except Exception as exc:
+            logger.warning("Could not gather positions for Hermes advice: %s", exc)
+            positions = []
+        return position_advice(positions, symbols, params)
+
+    @staticmethod
+    def _trade_advice(trades: List[Dict], params: Optional[Dict] = None) -> List[Dict]:
+        """Describe strategy-confirmed paper entries/exits without creating orders."""
+        items = []
+        params = params or {}
+        for trade in trades:
+            symbol = str(trade.get("symbol") or "").upper()
+            side = str(trade.get("side") or "").lower()
+            is_entry = side == "buy" and "exit_price" not in trade
+            action = "ENTRY_EXECUTED" if is_entry else "EXIT_EXECUTED"
+            reason = (f"Approved dip signal confirmed at {float(trade.get('dip_pct', 0)):.2f}%."
+                      if is_entry else str(trade.get("reason") or "Approved exit rule triggered."))
+            items.append({
+                "symbol": symbol,
+                "advice_type": "entry" if is_entry else "exit",
+                "action": action, "severity": "action",
+                "summary": f"{symbol}: {action}", "rationale": reason,
+                "snapshot": {
+                    **trade,
+                    "dip_threshold_pct": params.get("dip_threshold"),
+                    "take_profit_pct": params.get("take_profit_threshold"),
+                    "stop_loss_pct": params.get("stop_loss_threshold"),
+                },
+            })
+        return items
 
     def _is_pdt_blocked(self) -> bool:
         """Check if account is PDT-blocked right now."""
@@ -649,11 +749,12 @@ class PaperTradeAgent:
         except Exception as e:
             logger.warning(f"Could not record daily P&L: {e}")
 
-    def _send_daily_email(self, date: str):
-        """Send daily P&L email report via Postmark."""
+    def _send_daily_email(self, date: str, to_email: str = "",
+                          advice: Optional[List[Dict]] = None,
+                          report_context: Optional[Dict] = None,
+                          report_format: str = "default"):
+        """Send Hermes reports only for Hermes jobs; preserve the default template."""
         try:
-            from utils.email_util import send_daily_pnl_report
-
             # Gather positions
             positions = []
             try:
@@ -662,16 +763,6 @@ class PaperTradeAgent:
                     positions = pos_list
             except Exception:
                 pass
-
-            # Calculate daily P&L from today's sell trades
-            sell_trades = [t for t in self.trades if t.get("side") == "sell"]
-            today_trades = [t for t in self.trades
-                           if t.get("timestamp", "").startswith(date)]
-            daily_pnl = sum(t.get("pnl", 0) for t in sell_trades
-                           if t.get("timestamp", "").startswith(date))
-            cumulative_pnl = sum(t.get("pnl", 0) for t in sell_trades)
-            win_count = sum(1 for t in sell_trades if (t.get("pnl") or 0) > 0)
-            win_rate = (win_count / len(sell_trades) * 100) if sell_trades else 0.0
 
             # Resolve user display name
             user_name = ""
@@ -684,15 +775,47 @@ class PaperTradeAgent:
                 except Exception:
                     pass
 
-            send_daily_pnl_report(
-                date=date,
-                pnl=daily_pnl,
-                positions=positions,
-                trades=today_trades,
-                cumulative_pnl=cumulative_pnl,
-                win_rate=win_rate,
+            if report_format != "hermes":
+                from utils.email_util import send_daily_pnl_report
+                sell_trades = [trade for trade in self.trades
+                               if trade.get("side") == "sell"]
+                today_trades = [trade for trade in self.trades
+                                if trade.get("timestamp", "").startswith(date)]
+                daily_pnl = sum(
+                    trade.get("pnl", 0) for trade in sell_trades
+                    if trade.get("timestamp", "").startswith(date)
+                )
+                cumulative_pnl = sum(trade.get("pnl", 0) for trade in sell_trades)
+                wins = sum(1 for trade in sell_trades if (trade.get("pnl") or 0) > 0)
+                win_rate = wins / len(sell_trades) * 100 if sell_trades else 0.0
+                send_daily_pnl_report(
+                    date=date, pnl=daily_pnl, positions=positions, trades=today_trades,
+                    cumulative_pnl=cumulative_pnl, win_rate=win_rate,
+                    account_name=self.account_name, user_name=user_name,
+                    to_email=to_email,
+                )
+                return
+
+            from engine.agents.hermes_advice import build_performance_report
+            from utils.email_util import send_hermes_daily_report
+
+            context = report_context or {}
+            report_trades = fetch_paper_trades(
+                self.session_id, user_id=self.user_id
+            ) or self.trades
+            report = build_performance_report(
+                date=date, positions=positions, trades=report_trades,
+                advice=advice or [], job_id=str(context.get("job_id") or ""),
+                run_id=str(context.get("run_id") or self.session_id),
+                candidate_id=str(context.get("candidate_id") or ""),
+            )
+            if not report["validated"]:
+                raise ValueError("Hermes daily report failed P&L reconciliation")
+            send_hermes_daily_report(
+                report,
                 account_name=self.account_name,
                 user_name=user_name,
+                to_email=to_email,
             )
         except Exception as e:
             logger.warning(f"Could not send daily email: {e}")

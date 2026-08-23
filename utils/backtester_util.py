@@ -120,6 +120,49 @@ def calculate_metrics(trades_df: pd.DataFrame, initial_capital: float,
     }
 
 
+def calculate_portfolio_metrics(equity_df: pd.DataFrame, initial_capital: float,
+                                start_date: datetime, end_date: datetime) -> Dict:
+    """Calculate risk metrics from one end-of-day portfolio equity series."""
+    if equity_df is None or equity_df.empty:
+        return {}
+    frame = equity_df.copy()
+    frame['timestamp'] = pd.to_datetime(frame['timestamp'], utc=True)
+    frame['day'] = frame['timestamp'].dt.date
+    daily = frame.groupby('day', sort=True)['equity'].last().astype(float)
+    if daily.empty:
+        return {}
+    final_equity = float(daily.iloc[-1])
+    total_pnl = final_equity - float(initial_capital)
+    total_return = total_pnl / float(initial_capital) * 100
+    elapsed_days = max(1, (end_date - start_date).days)
+    growth = final_equity / float(initial_capital)
+    annualized_return = (
+        ((growth ** (365.25 / elapsed_days)) - 1) * 100 if growth > 0 else -100.0
+    )
+    returns = daily.pct_change().dropna()
+    std = float(returns.std()) if len(returns) > 1 else 0.0
+    sharpe = float(returns.mean() / std * np.sqrt(252)) if std > 0 else 0.0
+    downside = returns[returns < 0]
+    downside_std = float(downside.std()) if len(downside) > 1 else 0.0
+    sortino = (
+        float(returns.mean() / downside_std * np.sqrt(252))
+        if downside_std > 0 else 0.0
+    )
+    running_max = daily.cummax()
+    max_drawdown = float(((daily - running_max) / running_max).min() * -100)
+    calmar = annualized_return / max_drawdown if max_drawdown > 0 else 0.0
+    return {
+        'total_return': total_return,
+        'total_pnl': total_pnl,
+        'annualized_return': annualized_return,
+        'max_drawdown': max_drawdown,
+        'sharpe_ratio': sharpe,
+        'sortino_ratio': sortino,
+        'calmar_ratio': calmar,
+        'equity_days': int(len(daily)),
+    }
+
+
 def get_historical_data(symbols: List[str], start_date: datetime, 
                        end_date: datetime) -> Dict[str, pd.DataFrame]:
     """Fetch historical price data for multiple symbols"""
@@ -335,6 +378,7 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
         pdt_protection=pdt_protection,
         extended_hours=extended_hours,
         intraday_exit=intraday_exit,
+        **kwargs,
     )
 
 

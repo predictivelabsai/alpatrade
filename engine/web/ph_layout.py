@@ -69,10 +69,7 @@ function fillChat(t){var i=document.getElementById('chat-input');
   sessionStorage.setItem('alpatrade.pendingPrompt',t);window.location.href='/app';}
 function autoResize(el){if(!el)return;el.style.height='auto';
   el.style.height=Math.min(el.scrollHeight,192)+'px';}
-function newChat(){setNewsPane(true);var m=document.getElementById('messages');if(m)m.innerHTML='';
-  var w=document.getElementById('welcome-hero');if(w)w.style.display='';
-  var i=document.getElementById('chat-input');if(i){i.value='';autoResize(i);i.focus();return;}
-  window.location.href='/app';}
+function newChat(){setNewsPane(true);window.location.href='/app?new=1';}
 function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();
   var f=document.getElementById('chat-form');
   if(typeof window.sendMessage==='function'){window.sendMessage(e);}
@@ -160,7 +157,7 @@ def _menu_group(label: str, items, active: Optional[str]):
     )
 
 
-def _nav_section(label: str, *children):
+def _nav_section(label: str, *children, opened: bool = False):
     """A compact top-level sidebar section, collapsed on every page load."""
     return Details(
         Summary(
@@ -171,6 +168,7 @@ def _nav_section(label: str, *children):
         ),
         Div(*children, cls="nav-section-body"),
         cls="nav-section",
+        **({"open": True} if opened else {}),
     )
 
 
@@ -239,7 +237,9 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             _nav_section(
                 "Chats",
                 Div(Div("No chats yet.", cls="sessions-empty"),
-                    cls="session-list", id="session-list"),
+                    cls="session-list", id="session-list",
+                    hx_get="/app/chats", hx_trigger="load", hx_swap="innerHTML"),
+                opened=active == "app",
             ),
             _nav_section(
                 "Agents",

@@ -68,9 +68,12 @@ def store_run(run_id: str, mode: str, strategy: str = None,
         session.execute(
             text("""
                 INSERT INTO alpatrade.runs
-                    (run_id, mode, strategy, status, config, started_at, strategy_slug, user_id, account_id)
+                    (run_id, mode, strategy, status, config, started_at, strategy_slug,
+                     user_id, account_id, agent_name, agent_framework, source_run_id)
                 VALUES
-                    (:run_id, :mode, :strategy, 'running', :config, :started_at, :strategy_slug, :user_id, :account_id)
+                    (:run_id, :mode, :strategy, 'running', :config, :started_at,
+                     :strategy_slug, :user_id, :account_id, :agent_name,
+                     :agent_framework, :source_run_id)
                 ON CONFLICT (run_id) DO NOTHING
             """),
             {
@@ -82,6 +85,9 @@ def store_run(run_id: str, mode: str, strategy: str = None,
                 "strategy_slug": strategy_slug,
                 "user_id": user_id,
                 "account_id": account_id,
+                "agent_name": (config or {}).get("agent_name"),
+                "agent_framework": (config or {}).get("agent_framework"),
+                "source_run_id": (config or {}).get("source_run_id"),
             },
         )
     logger.info(f"Run {run_id} stored (mode={mode})")

@@ -7,6 +7,7 @@ Requires POSTMARK_API_KEY, TO_EMAIL, FROM_EMAIL env vars.
 
 import os
 import logging
+import html
 from typing import List, Dict, Any
 
 import requests
@@ -77,6 +78,118 @@ def send_email_to(to_email: str, subject: str, body_html: str) -> bool:
         logger.warning("Postmark env vars not set (POSTMARK_API_KEY, FROM_EMAIL)")
         return False
 
+
+def send_hermes_daily_report(
+    report: Dict[str, Any], *, account_name: str = "", user_name: str = "",
+    to_email: str,
+) -> bool:
+    """Send one validated, owner-targeted Hermes paper report."""
+    gain, loss, neutral = "#18864b", "#c53b3b", "#475569"
+
+    def money(value: float) -> str:
+        value = float(value or 0)
+        color = gain if value > 0 else loss if value < 0 else neutral
+        value_text = (f"+${value:,.2f}" if value > 0 else
+                      f"-${abs(value):,.2f}" if value < 0 else "$0.00")
+        return f"<span style='color:{color};font-weight:700'>{value_text}</span>"
+
+    position_rows = ""
+    for position in report.get("positions") or []:
+        pnl = float(position.get("unrealized_pl") or 0)
+        position_rows += (
+            "<tr>"
+            f"<td>{html.escape(str(position.get('symbol') or ''))}</td>"
+            f"<td>{html.escape(str(position.get('qty') or 0))}</td>"
+            f"<td>${float(position.get('avg_entry_price') or 0):,.2f}</td>"
+            f"<td>${float(position.get('current_price') or 0):,.2f}</td>"
+            f"<td>{money(pnl)}</td></tr>"
+        )
+    position_rows = position_rows or "<tr><td colspan='5'>No open positions</td></tr>"
+
+    exit_rows = ""
+    for trade in report.get("closed_today") or []:
+        exit_rows += (
+            "<tr>"
+            f"<td>{html.escape(str(trade.get('symbol') or ''))}</td>"
+            f"<td>{html.escape(str(trade.get('qty') or trade.get('shares') or 0))}</td>"
+            f"<td>${float(trade.get('exit_price') or trade.get('price') or 0):,.2f}</td>"
+            f"<td>{money(float(trade.get('pnl') or 0))}</td>"
+            f"<td>{html.escape(str(trade.get('reason') or ''))}</td></tr>"
+        )
+    exit_rows = exit_rows or "<tr><td colspan='5'>No completed exits today</td></tr>"
+
+    entry_rows = ""
+    for group in report.get("grouped_entries") or []:
+        entry_rows += (
+            "<tr>"
+            f"<td>{html.escape(str(group['symbol']))}</td>"
+            f"<td>{html.escape(str(group['side']))}</td>"
+            f"<td>{int(group['fills'])}</td><td>{float(group['quantity']):g}</td>"
+            f"<td>${float(group['average_price']):,.2f}</td></tr>"
+        )
+    entry_rows = entry_rows or "<tr><td colspan='5'>No new entry fills today</td></tr>"
+
+    reasons = "".join(f"<li>{html.escape(reason)}</li>" for reason in report.get("reasons") or [])
+    commands = "".join(
+        "<li><code style='display:inline-block;background:#f1f5f9;padding:5px'>" +
+        html.escape(command) + "</code></li>" for command in report.get("commands") or []
+    )
+    advice_items = report.get("advice") or []
+    latest_by_symbol: dict[str, dict] = {}
+    for item in advice_items:
+        key = str(item.get("symbol") or item.get("summary") or item.get("advice_id") or "")
+        latest_by_symbol.setdefault(key, item)
+    advice_rows = "".join(
+        f"<li><strong>{html.escape(str(item.get('summary') or ''))}</strong> — "
+        f"{html.escape(str(item.get('rationale') or ''))}</li>"
+        for item in latest_by_symbol.values()
+    ) or "<li>No saved Hermes advice for this reporting window.</li>"
+
+    status = str(report.get("status") or "AMBER")
+    status_color = str(report.get("status_color") or "#b7791f")
+    subject_value = float(report.get("realized_today") or 0)
+    subject_pnl = (f"+${subject_value:,.2f}" if subject_value > 0 else
+                   f"-${abs(subject_value):,.2f}" if subject_value < 0 else "$0.00")
+    subject = (
+        f"Hermes Daily Paper Report — {account_name or user_name or 'Account'} — "
+        f"{status} — {subject_pnl} realized"
+    )
+    body = f"""
+    <div style="font-family:Arial,sans-serif;max-width:760px;margin:auto;color:#1e293b">
+      <h2>Hermes Daily Paper Report</h2>
+      <p><strong>Account:</strong> {html.escape(account_name or 'Paper account')} &nbsp;|&nbsp;
+         <strong>User:</strong> {html.escape(user_name or 'Authenticated user')} &nbsp;|&nbsp;
+         <strong>Date:</strong> {html.escape(str(report.get('date') or ''))}</p>
+      <div style="border-left:6px solid {status_color};background:#f8fafc;padding:16px">
+        <div style="font-size:20px;color:{status_color};font-weight:800">{status}</div>
+        <p>{html.escape(str(report.get('decision') or ''))}</p>
+        <ul>{reasons}</ul>
+      </div>
+      <h3>Performance</h3>
+      <table style="width:100%;border-collapse:collapse">
+        <tr><td>Realized P&amp;L today</td><td>{money(report.get('realized_today', 0))}</td></tr>
+        <tr><td>Session realized P&amp;L</td><td>{money(report.get('realized_session', 0))}</td></tr>
+        <tr><td>Account-wide current unrealized P&amp;L</td><td>{money(report.get('unrealized', 0))}</td></tr>
+        <tr><td>Completed exits / wins / losses</td><td>{report.get('completed_exits', 0)} / {report.get('wins', 0)} / {report.get('losses', 0)}</td></tr>
+        <tr><td>Win rate</td><td>{float(report.get('win_rate') or 0):.1f}%</td></tr>
+      </table>
+      <h3>Current account positions</h3>
+      <p style="color:#64748b">Broker positions are account-wide and may include other paper jobs. Realized figures above are scoped to this Hermes run.</p>
+      <table style="width:100%;border-collapse:collapse"><tr><th>Symbol</th><th>Qty</th><th>Entry</th><th>Current</th><th>Unrealized</th></tr>{position_rows}</table>
+      <h3>Completed exits today</h3>
+      <table style="width:100%;border-collapse:collapse"><tr><th>Symbol</th><th>Qty</th><th>Exit</th><th>P&amp;L</th><th>Reason</th></tr>{exit_rows}</table>
+      <h3>Entry fills grouped</h3>
+      <table style="width:100%;border-collapse:collapse"><tr><th>Symbol</th><th>Side</th><th>Fills</th><th>Total qty</th><th>Average</th></tr>{entry_rows}</table>
+      <h3>Latest Hermes assessment by symbol</h3><ul>{advice_rows}</ul>
+      <h3>Recommended next commands</h3><ol>{commands}</ol>
+      <p><strong>Job:</strong> {html.escape(str(report.get('job_id') or ''))}<br>
+         <strong>Run:</strong> {html.escape(str(report.get('run_id') or ''))}<br>
+         <strong>Candidate:</strong> {html.escape(str(report.get('candidate_id') or ''))}</p>
+      <p style="color:#64748b;font-size:12px">Paper mode only. No parameters were changed automatically. Hermes advice does not submit additional orders.</p>
+    </div>
+    """
+    return send_email_to(to_email, subject, body)
+
     try:
         resp = requests.post(
             "https://api.postmarkapp.com/email",
@@ -111,6 +224,8 @@ def send_daily_pnl_report(
     win_rate: float = 0.0,
     account_name: str = "",
     user_name: str = "",
+    to_email: str = "",
+    agent_advice: List[Dict[str, Any]] | None = None,
 ) -> bool:
     """
     Send a daily P&L report email.
@@ -164,6 +279,11 @@ def send_daily_pnl_report(
 
     if not trades_rows:
         trades_rows = "<tr><td colspan='6'>No trades today</td></tr>"
+
+    advice_html = ""
+    if agent_advice:
+        from engine.agents.hermes_advice import advice_email_html
+        advice_html = advice_email_html(agent_advice)
 
     acct_label = f" — {account_name}" if account_name else ""
     subject = f"AlpaTrade Daily Report{acct_label} — {date} — P&L: {pnl_sign}${abs(pnl):.2f}"
@@ -222,6 +342,8 @@ def send_daily_pnl_report(
         {trades_rows}
       </table>
 
+      {advice_html}
+
       <hr style="margin-top:24px; border:none; border-top:1px solid #dee2e6;">
       <p style="color:#6c757d; font-size:12px;">
         Generated by AlpaTrade Multi-Agent Trading System
@@ -229,4 +351,4 @@ def send_daily_pnl_report(
     </div>
     """
 
-    return send_email(subject, body_html)
+    return send_email_to(to_email, subject, body_html) if to_email else send_email(subject, body_html)
