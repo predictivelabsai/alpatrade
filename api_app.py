@@ -253,7 +253,7 @@ except (OSError, KeyError, tomllib.TOMLDecodeError):
     try:
         API_VERSION = version("alpatrade")
     except PackageNotFoundError:
-        API_VERSION = "0.17.0"
+        API_VERSION = "0.18.0"
 
 API_DESCRIPTION = """
 AlpaTrade's production REST API for research, backtesting, validation, paper trading,
