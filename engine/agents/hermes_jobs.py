@@ -171,6 +171,58 @@ def set_notification_channel(job_id: str, user_id: str, channel: str) -> Optiona
     return _job_dict(row) if row else None
 
 
+def send_test_notification(job_id: str, user_id: str, channel: str = "in_app") -> Optional[dict]:
+    """Send and persist an owner-scoped delivery test without placing an order."""
+    from engine.agents.hermes_advice import mark_delivered, normalize_channel, save_advice
+    from engine.auth import get_user_by_id
+
+    channel = normalize_channel(channel)
+    if channel == "none":
+        raise ValueError("A test notification requires in_app, email, or both")
+    with _pool().get_session() as session:
+        job = session.execute(text("""
+            SELECT job_id, run_id, account_id, candidate_id, thread_id
+            FROM alpatrade.hermes_jobs
+            WHERE job_id = CAST(:job_id AS UUID) AND user_id = CAST(:uid AS UUID)
+              AND kind = 'paper'
+        """), {"job_id": job_id, "uid": user_id}).mappings().first()
+    if not job:
+        return None
+    advice_id = save_advice(
+        user_id=user_id, account_id=str(job["account_id"]) if job["account_id"] else None,
+        job_id=job_id, candidate_id=(str(job["candidate_id"])
+                                    if job["candidate_id"] else None),
+        thread_id=str(job["thread_id"]) if job["thread_id"] else None,
+        advice_type="risk", action="TEST_NOTIFICATION", severity="info",
+        summary="Hermes notification test",
+        rationale="Delivery test only; no strategy parameter or paper order changed.",
+        snapshot={"run_id": str(job["run_id"]), "channel": channel},
+    )
+    in_app = False
+    email = False
+    if channel in {"in_app", "both"} and job["thread_id"]:
+        from engine.ai.chat_store import save_message
+        save_message(str(job["thread_id"]), "assistant", (
+            "## Hermes notification test\n\nDelivery is working. "
+            "No strategy parameter or paper order changed."
+        ), metadata={"agent": "Hermes", "framework": "hermes",
+                     "job_id": job_id, "event": "notification_test"})
+        in_app = True
+    if channel in {"email", "both"}:
+        recipient = str((get_user_by_id(user_id) or {}).get("email") or "")
+        if not recipient:
+            raise ValueError("Your login account has no notification email")
+        from utils.email_util import send_email_to
+        email = bool(send_email_to(
+            recipient, "Hermes notification test",
+            "<h2>Hermes notification test</h2><p>Delivery is working. "
+            "No strategy parameter or paper order changed.</p>",
+        ))
+    mark_delivered([advice_id], in_app=in_app, email=email)
+    return {"job_id": job_id, "advice_id": advice_id,
+            "in_app": in_app, "email": email}
+
+
 def enqueue_candidate_paper(
     candidate_id: str,
     user_id: str,
@@ -234,6 +286,9 @@ def enqueue_candidate_paper(
         "advice_enabled": notification_channel != "none",
         "notification_channel": notification_channel,
         "advice_interval_seconds": 900,
+        "drift_guard_enabled": True,
+        "drift_minimum_exits": 20,
+        "drift_sharpe_ratio": 0.5,
         "report_hour_utc": 21,
         "agent_name": "Hermes",
         "agent_framework": "hermes",
@@ -414,6 +469,56 @@ class DatabaseJobControl:
         from engine.agents.hermes_advice import list_owned
         return list_owned(settings["user_id"], job_id=self.job_id, limit=limit)
 
+    def evaluate_drift_guard(self) -> Optional[dict]:
+        """Pause this paper job when sufficient owned evidence shows material drift."""
+        from engine.agents.hermes_advice import assess_performance_drift
+
+        settings = self.advice_settings()
+        config = settings.get("config") or {}
+        if not config.get("drift_guard_enabled", False):
+            return None
+        with _pool().get_session() as session:
+            candidate = session.execute(text("""
+                SELECT metrics FROM alpatrade.strategy_candidates
+                WHERE candidate_id = CAST(:candidate_id AS UUID)
+                  AND user_id = CAST(:uid AS UUID)
+            """), {"candidate_id": settings.get("candidate_id"),
+                    "uid": settings.get("user_id")}).mappings().first()
+            trades = [dict(row) for row in session.execute(text("""
+                SELECT pnl_pct, exit_time FROM alpatrade.trades
+                WHERE run_id = :run_id AND user_id = CAST(:uid AS UUID)
+                  AND trade_type = 'paper' AND pnl_pct IS NOT NULL
+            """), {"run_id": settings.get("run_id"),
+                    "uid": settings.get("user_id")}).mappings().all()]
+        metrics = dict(candidate["metrics"] or {}) if candidate else {}
+        validation = metrics.get("validation_metrics") or {}
+        assessment = assess_performance_drift(
+            validation.get("sharpe_ratio"), trades,
+            minimum_exits=max(20, int(config.get("drift_minimum_exits", 20))),
+            ratio=float(config.get("drift_sharpe_ratio", 0.5)),
+        )
+        if not assessment["drift"]:
+            return assessment
+        with _pool().get_session() as session:
+            session.execute(text("""
+                UPDATE alpatrade.hermes_jobs
+                SET control_requested = 'pause', status = 'paused', paused_at = NOW(),
+                    progress = CAST(:progress AS JSONB), updated_at = NOW()
+                WHERE job_id = CAST(:job_id AS UUID) AND status = 'running'
+            """), {"job_id": self.job_id, "progress": json.dumps({
+                "message": "Auto-paused: paper performance drifted below validation"
+            })})
+        self.publish_advice([{
+            "symbol": None, "advice_type": "risk", "action": "DRIFT_PAUSED",
+            "severity": "action", "summary": "Hermes auto-paused for performance drift",
+            "rationale": (
+                f"Paper Sharpe {assessment['paper_sharpe']:.2f} fell below the "
+                f"approved threshold {assessment['threshold']:.2f} after "
+                f"{assessment['closed_trades']} closed trades."
+            ), "snapshot": assessment,
+        }])
+        return assessment
+
 
 def finish(
     job_id: str,
@@ -571,6 +676,8 @@ def _backtest(job: dict) -> tuple[dict, Optional[str], str]:
     candidate_id = _save_candidate(job, result)
     best = result.get("best_config") or {}
     validation = best.get("validation_metrics") or {}
+    benchmark = best.get("benchmark") or {}
+    robustness = best.get("robustness_windows") or []
     eligible = bool(best.get("promotion_eligible"))
     promotion = (
         "This candidate passed validation and may be started in paper trading."
@@ -594,6 +701,10 @@ def _backtest(job: dict) -> tuple[dict, Optional[str], str]:
         f"- **Return:** {validation.get('total_return', 'n/a')}\n"
         f"- **Maximum drawdown:** {validation.get('max_drawdown', 'n/a')}\n"
         f"- **Trades:** {validation.get('total_trades', 'n/a')}\n"
+        f"- **Benchmark:** `{benchmark.get('symbol', 'SPY')}` return "
+        f"{benchmark.get('total_return', 'n/a')} · excess return "
+        f"{benchmark.get('excess_return', 'n/a')}\n"
+        f"- **Robustness windows:** {len(robustness)}\n"
         f"- **Paper promotion:** {'eligible' if eligible else 'blocked'}\n\n"
         f"{promotion}"
     )

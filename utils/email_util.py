@@ -144,6 +144,13 @@ def send_hermes_daily_report(
         f"{html.escape(str(item.get('rationale') or ''))}</li>"
         for item in latest_by_symbol.values()
     ) or "<li>No saved Hermes advice for this reporting window.</li>"
+    reconciliation = report.get("reconciliation") or {}
+    reconciliation_color = gain if reconciliation.get("ok") else loss
+    reconciliation_text = (
+        "Broker quantity covers this Hermes run"
+        if reconciliation.get("ok") else
+        f"Mismatch on {len(reconciliation.get('differences') or [])} symbol(s)"
+    )
 
     status = str(report.get("status") or "AMBER")
     status_color = str(report.get("status_color") or "#b7791f")
@@ -175,6 +182,8 @@ def send_hermes_daily_report(
       </table>
       <h3>Current account positions</h3>
       <p style="color:#64748b">Broker positions are account-wide and may include other paper jobs. Realized figures above are scoped to this Hermes run.</p>
+      <p><strong>DB-to-broker reconciliation:</strong>
+         <span style="color:{reconciliation_color};font-weight:700">{html.escape(reconciliation_text)}</span></p>
       <table style="width:100%;border-collapse:collapse"><tr><th>Symbol</th><th>Qty</th><th>Entry</th><th>Current</th><th>Unrealized</th></tr>{position_rows}</table>
       <h3>Completed exits today</h3>
       <table style="width:100%;border-collapse:collapse"><tr><th>Symbol</th><th>Qty</th><th>Exit</th><th>P&amp;L</th><th>Reason</th></tr>{exit_rows}</table>

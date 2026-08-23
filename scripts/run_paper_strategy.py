@@ -58,13 +58,6 @@ def main() -> int:
           f"(min-hold {params['min_hold_days']}d = PDT-safe) / ${params['capital_per_trade']:.0f}/trade")
     print(f"  duration {request['duration_seconds']}s, poll {request['poll_interval_seconds']}s\n")
 
-    # Fire the nightly PnL report while this session runs (PNL_REPORT_FREQUENCY=off to disable).
-    try:
-        from engine.autonomy.schedule import start as start_scheduler
-        start_scheduler()
-    except Exception as e:  # noqa: BLE001
-        print(f"  (PnL scheduler not started: {e})")
-
     # Register a run so paper trades persist to alpatrade.runs/trades (avoids the FK).
     import uuid
     run_id = str(uuid.uuid4())
@@ -75,7 +68,14 @@ def main() -> int:
         print(f"  (run registration skipped: {e})")
 
     from agents.paper_trade_agent import PaperTradeAgent
-    result = PaperTradeAgent().run(request, run_id=run_id)
+    from utils.agent_storage import update_run
+    try:
+        result = PaperTradeAgent().run(request, run_id=run_id)
+        update_run(run_id, "failed" if result.get("error") else "completed", results=result)
+    except BaseException as exc:
+        update_run(run_id, "stopped" if isinstance(exc, KeyboardInterrupt) else "failed",
+                   results={"error": str(exc)})
+        raise
     print(f"  run_id: {run_id}")
     print("\nSESSION SUMMARY:")
     for k in ("session_id", "total_trades", "buy_trades", "sell_trades", "total_pnl", "final_equity"):

@@ -119,6 +119,25 @@ def update_run(run_id: str, status: str, results: Dict = None):
     logger.info(f"Run {run_id} updated -> {status}")
 
 
+def heartbeat_run(run_id: str) -> None:
+    """Record liveness for a running paper process (migration 23)."""
+    if get_storage_backend() != "db":
+        return
+    try:
+        from sqlalchemy import text
+        with _get_pool().get_session() as session:
+            session.execute(
+                text("""
+                    UPDATE alpatrade.runs
+                    SET heartbeat_at = NOW()
+                    WHERE run_id = :run_id AND status = 'running'
+                """),
+                {"run_id": run_id},
+            )
+    except Exception as exc:  # migration may be rolling out before every container
+        logger.warning("Could not heartbeat run %s: %s", run_id, exc)
+
+
 # ---------------------------------------------------------------------------
 # Backtest results
 # ---------------------------------------------------------------------------

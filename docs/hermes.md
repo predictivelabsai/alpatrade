@@ -451,6 +451,10 @@ Use an owned candidate ID returned by a completed Hermes backtest:
 /hermes notify me by email for paper job <job-id>
 /hermes notify me both in app and email for paper job <job-id>
 /hermes analyze paper job <job-id>
+/hermes show result for backtest job <job-id>
+/hermes send a test notification for paper job <job-id>
+/hermes send a test notification both in app and email for paper job <job-id>
+/hermes show my notification history
 ```
 
 Apply `sql/21_hermes_portfolio_advice.sql` before using portfolio advice. It creates
@@ -492,11 +496,28 @@ risk statistics calculated from end-of-day portfolio equity. The saved result
 records the methodology, training dates, validation dates, and both metric sets.
 
 The first 70% of the requested period selects parameters; the final 30% is held
-out and evaluated exactly once. A Hermes candidate is paper-eligible only when
+out. Hermes also reports SPY buy-and-hold return, excess return, and three
+non-overlapping robustness windows inside that holdout. A candidate is
+paper-eligible only when
 validation has at least 20 closed trades, positive return, Sharpe of at least
-0.50, maximum drawdown no greater than 10%, and positive top-training stability.
+0.50, maximum drawdown no greater than 10%, positive top-training stability,
+and positive return across a majority of the robustness windows.
 Candidates created before this evidence was introduced are not promotable.
 These gates reduce false confidence but do not guarantee future profit.
+
+New Hermes paper jobs enable a drift guard. It waits for at least 20 closed
+trades across at least five trading days, compares daily paper Sharpe with the
+candidate's held-out Sharpe, and pauses
+the job when paper Sharpe falls below 50% of that reference. The pause and its
+reason are delivered through the selected advice channels; resuming remains an
+explicit user action. Daily Hermes reports also verify that account-wide broker
+quantities cover the run-owned open DB quantities and turn red on a shortfall;
+extra broker quantity can belong to another strategy and is not treated as an error.
+
+Notification tests create an owner-scoped audit record and exercise only the
+requested delivery channel. They never place an order or change a strategy.
+Notification history reports whether each saved Hermes event reached in-app,
+email, both, or neither.
 
 Daily reports go only to the authenticated account's login email. The recipient
 is resolved server-side and is never accepted from chat text. Controls update

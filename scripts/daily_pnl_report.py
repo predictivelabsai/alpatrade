@@ -35,11 +35,6 @@ except Exception:  # noqa: BLE001
     pass
 
 
-# Default distribution list (override with PNL_REPORT_TO, comma-separated).
-DEFAULT_RECIPIENTS = ("kaljuvee@gmail.com,"
-                      "siwei.feng@predictivelabs.co.uk,"
-                      "raslen.guesmi@predictivelabs.co.uk")
-
 # Pretty labels + units for the strategy parameters surfaced in the digest.
 _PARAM_LABELS = {
     "dip_threshold": ("Dip threshold", "pct"),
@@ -62,8 +57,75 @@ _STRATEGY_LABELS = {
 
 
 def recipients(override: str | None = None) -> list[str]:
-    raw = override or os.getenv("PNL_REPORT_TO") or DEFAULT_RECIPIENTS
+    """Explicit operator recipients only; never use a hard-coded distribution list."""
+    raw = override or os.getenv("PNL_REPORT_TO") or os.getenv("TO_EMAIL") or ""
     return [e.strip() for e in raw.split(",") if e.strip()]
+
+
+def report_targets() -> list[dict]:
+    """Active user/account/email targets; decrypted keys stay in process memory only."""
+    try:
+        from sqlalchemy import text
+        from engine.auth import get_alpaca_keys
+        from engine.db.pool import DatabasePool
+        with DatabasePool().get_session() as session:
+            rows = session.execute(text("""
+                SELECT u.user_id, u.email, ua.account_id, ua.account_name
+                FROM alpatrade.users u
+                JOIN alpatrade.user_accounts ua ON ua.user_id = u.user_id
+                WHERE ua.is_active = TRUE AND u.email IS NOT NULL
+                  AND ua.alpaca_api_key_enc IS NOT NULL
+                  AND ua.alpaca_secret_key_enc IS NOT NULL
+                ORDER BY u.user_id, ua.created_at
+            """)).fetchall()
+        targets = []
+        for user_id, email, account_id, account_name in rows:
+            keys = get_alpaca_keys(str(user_id), str(account_id))
+            if keys:
+                targets.append({"user_id": str(user_id), "account_id": str(account_id),
+                                "email": email, "account_name": account_name, "keys": keys})
+        return targets
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def claim_report_delivery(user_id: str, account_id: str, day: str) -> bool:
+    """Atomically reserve one daily delivery across all Coolify processes."""
+    try:
+        from sqlalchemy import text
+        from engine.db.pool import DatabasePool
+        with DatabasePool().get_session() as session:
+            row = session.execute(text("""
+                INSERT INTO alpatrade.report_deliveries
+                    (user_id, account_id, report_date, report_kind)
+                VALUES (:uid, :aid, CAST(:day AS DATE), 'daily_paper')
+                ON CONFLICT (user_id, account_id, report_date, report_kind) DO UPDATE
+                    SET status = 'sending', created_at = NOW()
+                    WHERE alpatrade.report_deliveries.status = 'failed'
+                       OR (alpatrade.report_deliveries.status = 'sending'
+                           AND alpatrade.report_deliveries.created_at < NOW() - INTERVAL '2 hours')
+                RETURNING delivery_id
+            """), {"uid": user_id, "aid": account_id, "day": day}).fetchone()
+            return bool(row)
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def finish_report_delivery(user_id: str, account_id: str, day: str,
+                           sent: bool) -> None:
+    try:
+        from sqlalchemy import text
+        from engine.db.pool import DatabasePool
+        with DatabasePool().get_session() as session:
+            session.execute(text("""
+                UPDATE alpatrade.report_deliveries
+                SET status = :status, sent_at = CASE WHEN :sent THEN NOW() ELSE NULL END
+                WHERE user_id = :uid AND account_id = :aid
+                  AND report_date = CAST(:day AS DATE) AND report_kind = 'daily_paper'
+            """), {"uid": user_id, "aid": account_id, "day": day,
+                    "status": "sent" if sent else "failed", "sent": sent})
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def _f(v, d=0.0) -> float:
@@ -78,7 +140,11 @@ def _e(v) -> str:
     return _html.escape(str(v if v is not None else ""))
 
 
-def gather(day: str | None = None, keys: tuple[str, str] | None = None) -> dict:
+def gather(day: str | None = None, keys: tuple[str, str] | None = None,
+           user_id: str | None = None, account_id: str | None = None,
+           framework: str | None = None) -> dict:
+    if (user_id is None) != (account_id is None):
+        raise ValueError("user_id and account_id must be supplied together")
     from engine.brokers.alpaca import AlpacaAPI
     api = AlpacaAPI(*keys, paper=True) if keys else AlpacaAPI(paper=True)
     acct = api.get_account() or {}
@@ -88,23 +154,33 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None) -> dict:
     day_pnl = equity - last_equity
     day_pct = (equity / last_equity - 1) * 100 if last_equity else 0.0
     unreal = sum(_f(p.get("unrealized_pl")) for p in positions)
-    trades = gather_trades(day)
-    runs = gather_runs([t.get("run_id") for t in trades])
-    return {
+    trades = gather_trades(day, user_id=user_id, account_id=account_id,
+                           framework=framework)
+    runs = gather_runs([t.get("run_id") for t in trades], user_id=user_id,
+                       account_id=account_id)
+    data = {
         "equity": equity, "last_equity": last_equity, "day_pnl": day_pnl, "day_pct": day_pct,
         "cash": _f(acct.get("cash")), "buying_power": _f(acct.get("buying_power")),
         "unrealized_pl": unreal, "daytrade_count": acct.get("daytrade_count"),
         "positions": positions,
         "trades": trades,
         "runs": runs,
-        "active_runs": active_runs(),
+        "active_runs": active_runs(user_id=user_id, account_id=account_id,
+                                   framework=framework),
+        "agent_performance": agent_performance(user_id, account_id, framework),
+        "framework_filter": framework,
         "day": day or datetime.now(timezone.utc).strftime("%Y-%m-%d"),
     }
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    data["periods"] = (save_equity_snapshot(user_id, account_id, data["day"], data)
+                       if user_id and account_id and data["day"] == today else {})
+    return data
 
 
 def gather_trades(day: str | None = None, limit: int = 100,
                   user_id: str | None = None,
-                  account_id: str | None = None) -> list[dict]:
+                  account_id: str | None = None,
+                  framework: str | None = None) -> list[dict]:
     """Paper trades booked on `day` (default: today UTC) — [] on any failure.
 
     Trades are matched by `created_at` falling on that UTC date, so the report reflects
@@ -117,25 +193,28 @@ def gather_trades(day: str | None = None, limit: int = 100,
         target = day or datetime.now(timezone.utc).strftime("%Y-%m-%d")
         with pool.get_session() as session:
             where = [
-                "trade_type = 'paper'",
-                "created_at >= CAST(:day AS DATE)",
-                "created_at < CAST(:day AS DATE) + INTERVAL '1 day'",
+                "t.trade_type = 'paper'",
+                "t.created_at >= CAST(:day AS DATE)",
+                "t.created_at < CAST(:day AS DATE) + INTERVAL '1 day'",
             ]
             params = {"day": target, "lim": limit}
             if user_id:
-                where.append("user_id = :user_id")
+                where.append("t.user_id = :user_id")
                 params["user_id"] = user_id
             if account_id:
-                where.append("account_id = :account_id")
+                where.append("t.account_id = :account_id")
                 params["account_id"] = account_id
+            if framework:
+                where.append("COALESCE(r.agent_framework, r.config->>'agent_framework', 'legacy') = :framework")
+                params["framework"] = framework
             result = session.execute(
                 text(
-                    "SELECT symbol, direction, shares, entry_price, exit_price, "
-                    "       pnl, pnl_pct, reason, created_at, entry_time, exit_time, "
-                    "       run_id, dip_pct, target_price, stop_price, hit_target, hit_stop "
-                    "FROM alpatrade.trades "
+                    "SELECT t.symbol, t.direction, t.shares, t.entry_price, t.exit_price, "
+                    "       t.pnl, t.pnl_pct, t.reason, t.created_at, t.entry_time, t.exit_time, "
+                    "       t.run_id, t.dip_pct, t.target_price, t.stop_price, t.hit_target, t.hit_stop "
+                    "FROM alpatrade.trades t JOIN alpatrade.runs r ON r.run_id = t.run_id "
                     f"WHERE {' AND '.join(where)} "
-                    "ORDER BY created_at DESC LIMIT :lim"
+                    "ORDER BY t.created_at DESC LIMIT :lim"
                 ),
                 params,
             )
@@ -145,7 +224,8 @@ def gather_trades(day: str | None = None, limit: int = 100,
         return []
 
 
-def gather_runs(run_ids) -> dict[str, dict]:
+def gather_runs(run_ids, user_id: str | None = None,
+                account_id: str | None = None) -> dict[str, dict]:
     """Strategy metadata (name, status, config/params) keyed by run_id."""
     ids = sorted({r for r in (run_ids or []) if r})
     if not ids:
@@ -155,37 +235,149 @@ def gather_runs(run_ids) -> dict[str, dict]:
         from engine.db.pool import DatabasePool
         pool = DatabasePool()
         with pool.get_session() as session:
-            result = session.execute(
-                text("SELECT run_id, mode, strategy, strategy_slug, status, config, "
-                     "       started_at, completed_at "
-                     "FROM alpatrade.runs WHERE run_id = ANY(:ids)"),
-                {"ids": ids},
-            )
+            where = ["run_id = ANY(:ids)"]
+            params = {"ids": ids}
+            if user_id:
+                where.append("user_id = :user_id")
+                params["user_id"] = user_id
+            if account_id:
+                where.append("account_id = :account_id")
+                params["account_id"] = account_id
+            result = session.execute(text(
+                "SELECT run_id, mode, strategy, strategy_slug, status, config, "
+                "started_at, completed_at, agent_name, agent_framework, heartbeat_at "
+                f"FROM alpatrade.runs WHERE {' AND '.join(where)}"
+            ), params)
             cols = result.keys()
             return {row[0]: dict(zip(cols, row)) for row in result.fetchall()}
     except Exception:  # noqa: BLE001
         return {}
 
 
-def active_runs(limit: int = 5) -> list[dict]:
-    """Currently-running paper runs, newest first — the agent(s) live right now."""
+def active_runs(limit: int = 25, user_id: str | None = None,
+                account_id: str | None = None,
+                framework: str | None = None) -> list[dict]:
+    """Heartbeat-verified paper runs for exactly one tenant/account."""
+    if not user_id or not account_id:
+        return []
     try:
         from sqlalchemy import text
         from engine.db.pool import DatabasePool
         pool = DatabasePool()
         with pool.get_session() as session:
-            result = session.execute(
-                text("SELECT run_id, mode, strategy, strategy_slug, status, config, "
-                     "       started_at, completed_at "
-                     "FROM alpatrade.runs "
-                     "WHERE mode = 'paper' AND status = 'running' "
-                     "ORDER BY started_at DESC LIMIT :lim"),
-                {"lim": limit},
-            )
+            where = ["mode IN ('paper', 'full')", "status = 'running'", "user_id = :user_id",
+                     "account_id = :account_id",
+                     "heartbeat_at >= NOW() - INTERVAL '10 minutes'"]
+            params = {"lim": limit, "user_id": user_id, "account_id": account_id}
+            if framework:
+                where.append("COALESCE(agent_framework, config->>'agent_framework', 'legacy') = :framework")
+                params["framework"] = framework
+            result = session.execute(text(
+                "SELECT run_id, mode, strategy, strategy_slug, status, config, "
+                "started_at, completed_at, agent_name, agent_framework, heartbeat_at "
+                f"FROM alpatrade.runs WHERE {' AND '.join(where)} "
+                "ORDER BY started_at DESC LIMIT :lim"
+            ), params)
             cols = result.keys()
             return [dict(zip(cols, row)) for row in result.fetchall()]
     except Exception:  # noqa: BLE001
         return []
+
+
+def reconcile_stale_runs(user_id: str, account_id: str) -> int:
+    """Close paper/full rows whose worker has not heartbeated within the grace period."""
+    try:
+        from sqlalchemy import text
+        from engine.db.pool import DatabasePool
+        with DatabasePool().get_session() as session:
+            result = session.execute(text("""
+                UPDATE alpatrade.runs
+                SET status = 'stale', completed_at = COALESCE(completed_at, NOW())
+                WHERE user_id = :uid AND account_id = :aid
+                  AND mode IN ('paper', 'full') AND status = 'running'
+                  AND started_at < NOW() - INTERVAL '15 minutes'
+                  AND (heartbeat_at IS NULL OR heartbeat_at < NOW() - INTERVAL '10 minutes')
+            """), {"uid": user_id, "aid": account_id})
+            return int(result.rowcount or 0)
+    except Exception:  # noqa: BLE001
+        return 0
+
+
+def agent_performance(user_id: str | None, account_id: str | None,
+                      framework: str | None = None) -> list[dict]:
+    """Realized paper results grouped by attributed agent for comparison."""
+    if not user_id or not account_id:
+        return []
+    try:
+        from sqlalchemy import text
+        from engine.db.pool import DatabasePool
+        where = ["t.trade_type = 'paper'", "t.user_id = :user_id",
+                 "t.account_id = :account_id", "t.pnl IS NOT NULL",
+                 "t.created_at >= DATE_TRUNC('year', NOW())"]
+        params = {"user_id": user_id, "account_id": account_id}
+        if framework:
+            where.append("COALESCE(r.agent_framework, r.config->>'agent_framework', 'legacy') = :framework")
+            params["framework"] = framework
+        with DatabasePool().get_session() as session:
+            result = session.execute(text(f"""
+                SELECT COALESCE(r.agent_framework, r.config->>'agent_framework', 'legacy') framework,
+                       COALESCE(r.agent_name, r.config->>'agent_name', 'Legacy / unattributed') agent_name,
+                       COUNT(*) FILTER (WHERE t.created_at >= DATE_TRUNC('month', NOW())) mtd_exits,
+                       COALESCE(SUM(t.pnl) FILTER (WHERE t.created_at >= DATE_TRUNC('month', NOW())), 0) mtd_pnl,
+                       COUNT(*) ytd_exits, COALESCE(SUM(t.pnl), 0) ytd_pnl,
+                       COALESCE(100.0 * COUNT(*) FILTER (WHERE t.pnl > 0) / NULLIF(COUNT(*), 0), 0) win_rate,
+                       COUNT(DISTINCT t.run_id) run_count
+                FROM alpatrade.trades t JOIN alpatrade.runs r ON r.run_id = t.run_id
+                WHERE {' AND '.join(where)}
+                GROUP BY 1, 2 ORDER BY ytd_pnl DESC
+            """), params)
+            cols = result.keys()
+            return [dict(zip(cols, row)) for row in result.fetchall()]
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def save_equity_snapshot(user_id: str, account_id: str, day: str,
+                         data: dict) -> dict:
+    """Upsert an account snapshot and derive account-level MTD/YTD returns."""
+    try:
+        from sqlalchemy import text
+        from engine.db.pool import DatabasePool
+        with DatabasePool().get_session() as session:
+            session.execute(text("""
+                INSERT INTO alpatrade.account_equity_snapshots
+                    (user_id, account_id, trading_date, equity, cash, buying_power, unrealized_pnl)
+                VALUES (:uid, :aid, CAST(:day AS DATE), :equity, :cash, :buying_power, :unrealized)
+                ON CONFLICT (user_id, account_id, trading_date) DO UPDATE SET
+                    equity = EXCLUDED.equity, cash = EXCLUDED.cash,
+                    buying_power = EXCLUDED.buying_power,
+                    unrealized_pnl = EXCLUDED.unrealized_pnl, captured_at = NOW()
+            """), {"uid": user_id, "aid": account_id, "day": day,
+                    "equity": data["equity"], "cash": data["cash"],
+                    "buying_power": data["buying_power"],
+                    "unrealized": data["unrealized_pl"]})
+            rows = session.execute(text("""
+                SELECT trading_date, equity, net_cash_flow
+                FROM alpatrade.account_equity_snapshots
+                WHERE user_id = :uid AND account_id = :aid
+                  AND trading_date >= DATE_TRUNC('year', CAST(:day AS DATE))
+                  AND trading_date <= CAST(:day AS DATE)
+                ORDER BY trading_date
+            """), {"uid": user_id, "aid": account_id, "day": day}).fetchall()
+        if not rows:
+            return {}
+        current = float(rows[-1][1])
+        month_rows = [r for r in rows if r[0].month == rows[-1][0].month]
+
+        def period(subset) -> dict:
+            start = float(subset[0][1]) - float(subset[0][2] or 0)
+            flows = sum(float(r[2] or 0) for r in subset)
+            pnl = current - start - flows
+            return {"pnl": pnl, "pct": (pnl / start * 100) if start else 0.0,
+                    "days": len(subset)}
+        return {"mtd": period(month_rows), "ytd": period(rows)}
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def _params_of(run: dict | None) -> dict:
@@ -317,6 +509,9 @@ def _render_strategy(d: dict) -> str:
         symbols = cfg.get("symbols") or []
         params = _params_of(run)
         slug = run.get("strategy_slug")
+        framework = (run.get("agent_framework") or cfg.get("agent_framework") or "legacy")
+        agent_name = (run.get("agent_name") or cfg.get("agent_name") or
+                      ("AlpaTrade AI" if framework in ("deepagents", "langgraph") else "Legacy"))
 
         param_cells = "".join(
             f"<tr><td style='padding:2px 14px 2px 0;color:#415046'>{_e(lbl)}</td>"
@@ -335,7 +530,7 @@ def _render_strategy(d: dict) -> str:
       <span style="background:{badge_bg};color:{badge_fg};font-size:11px;padding:2px 7px;
         border-radius:10px;margin-left:6px">{_e(status or 'unknown')}</span>{note}</div>
     <div style="color:#7A867E;font-size:12px;margin:.25rem 0">
-      run <code>{_e(rid[:8])}</code> · {_e(run.get('mode') or 'paper')} · started {_e(started_s)}
+      {_e(agent_name)} / {_e(framework)} · run <code>{_e(rid[:8])}</code> · {_e(run.get('mode') or 'paper')} · started {_e(started_s)}
       {('· slug <code>' + _e(slug) + '</code>') if slug else ''}</div>
     {dupe_note}
     <div style="font-size:12px;color:#415046;margin-bottom:.35rem">
@@ -360,6 +555,45 @@ def _stale_notice(d: dict) -> str:
             "and today's change are the <b>live</b> account as of now.</p>")
 
 
+def _render_periods(d: dict) -> str:
+    periods = d.get("periods") or {}
+    if not periods:
+        return ("<p style='color:#7A867E;font-size:12px'>MTD/YTD starts after migration 23 "
+                "captures the first account snapshot; historical values are not invented.</p>")
+    cells = []
+    for key, label in (("mtd", "Month to date"), ("ytd", "Year to date")):
+        value = periods.get(key) or {}
+        pnl, pct = _f(value.get("pnl")), _f(value.get("pct"))
+        color = "#1F5D43" if pnl >= 0 else "#b0653f"
+        cells.append(f"<td style='padding:8px 20px 8px 0'><b>{label}</b><br>"
+                     f"<span style='color:{color}'>${pnl:+,.2f} ({pct:+.2f}%)</span><br>"
+                     f"<small>{int(value.get('days') or 0)} snapshot day(s)</small></td>")
+    return f"<table><tr>{''.join(cells)}</tr></table>"
+
+
+def _render_agent_benchmark(d: dict) -> str:
+    rows = d.get("agent_performance") or []
+    if not rows:
+        return ("<h3>Agent benchmark</h3><p style='color:#7A867E;font-size:12px'>"
+                "No closed, attributed paper trades in the current year.</p>")
+    body = ""
+    for row in rows:
+        mtd, ytd = _f(row.get("mtd_pnl")), _f(row.get("ytd_pnl"))
+        body += (f"<tr><td>{_e(row.get('agent_name'))}<br><small>{_e(row.get('framework'))}</small></td>"
+                 f"<td style='color:{'#1F5D43' if mtd >= 0 else '#b0653f'}'>${mtd:+,.2f}</td>"
+                 f"<td>{int(row.get('mtd_exits') or 0)}</td>"
+                 f"<td style='color:{'#1F5D43' if ytd >= 0 else '#b0653f'}'>${ytd:+,.2f}</td>"
+                 f"<td>{_f(row.get('win_rate')):.1f}%</td>"
+                 f"<td>{int(row.get('run_count') or 0)}</td></tr>")
+    return ("<h3>Agent benchmark — realized paper trades only</h3>"
+            "<p style='font-size:12px;color:#7A867E'>Account equity is shared and is not assigned "
+            "to an agent. This table compares only exits linked to each run.</p>"
+            "<table border='1' cellpadding='6' style='border-collapse:collapse;font-size:13px'>"
+            "<thead><tr><th>Agent</th><th>MTD P&amp;L</th><th>MTD exits</th>"
+            "<th>YTD P&amp;L</th><th>YTD win rate</th><th>Runs</th></tr></thead>"
+            f"<tbody>{body}</tbody></table>")
+
+
 def render(d: dict) -> str:
     sign = "▲" if d["day_pnl"] >= 0 else "▼"
     color = "#1F5D43" if d["day_pnl"] >= 0 else "#b0653f"
@@ -378,9 +612,15 @@ def render(d: dict) -> str:
     trade_rows, n_buys, n_sells, realized = _render_trades(d.get("trades", []), d.get("runs") or {})
     day_label = datetime.strptime(d.get("day"), "%Y-%m-%d").strftime("%b %d, %Y") \
         if d.get("day") else datetime.now(timezone.utc).strftime("%b %d, %Y")
+    owner = ""
+    if d.get("account_name") or d.get("owner_email"):
+        owner = ("<p style='background:#EFEDE4;padding:8px 10px'>Account: "
+                 f"<b>{_e(d.get('account_name') or 'Paper account')}</b> · owner "
+                 f"{_e(d.get('owner_email') or '')}</p>")
     return f"""
 <div style="font-family:Inter,Arial,sans-serif;color:#14231B;max-width:760px">
   <h2>AlpaTrade — Daily Paper PnL · {day_label}</h2>
+  {owner}
   {_stale_notice(d)}
   <p style="font-size:20px;margin:.2rem 0"><b style="color:{color}">{sign} ${d['day_pnl']:,.2f}
      ({d['day_pct']:+.2f}%)</b> <span style="color:#7A867E">today</span></p>
@@ -391,6 +631,8 @@ def render(d: dict) -> str:
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Open unrealised P&amp;L</td><td>${d['unrealized_pl']:,.2f}</td></tr>
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Day trades (5d)</td><td>{_e(d['daytrade_count']) or 'None'}</td></tr>
   </table>
+  {_render_periods(d)}
+  {_render_agent_benchmark(d)}
   {_render_strategy(d)}
   <h3>Open positions ({len(d['positions'])})</h3>
   <table border="1" cellpadding="6" style="border-collapse:collapse;font-size:13px">

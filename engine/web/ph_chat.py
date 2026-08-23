@@ -551,6 +551,8 @@ def _hermes_backtest_config(message: str) -> Optional[dict]:
         "include_cat_fees": True,
         "slippage_bps": 5.0,
         "validation_fraction": 0.30,
+        "robustness_windows": 3,
+        "benchmark_symbol": "SPY",
         "agent_name": "Hermes",
         "agent_framework": "hermes",
     }
@@ -581,6 +583,8 @@ async def _dispatch_hermes_job_command(
             f"- **AlpaTrade Hermes broker:** `{broker_version}`\n"
             "- `/hermes show my recent jobs`\n"
             "- `/hermes show my recent advice`\n"
+            "- `/hermes show my notification history`\n"
+            "- `/hermes send a test notification for paper job <job-id>`\n"
             "- `/hermes analyze paper job <job-id>`\n"
             "- `/hermes construct a portfolio from candidate <candidate-id>`\n"
             "- `/hermes start candidate <candidate-id> in continuous paper trading`\n"
@@ -652,6 +656,40 @@ async def _dispatch_hermes_job_command(
             f"- **Entry parameters:** `{json.dumps(snapshot['entry'])}`\n"
             f"- **Exit parameters:** `{json.dumps(snapshot['exit'])}`\n\n"
             f"{advice['rationale']}"
+        )
+
+    if ("notification" in lowered or "delivery" in lowered) and any(
+        word in lowered for word in ("history", "show", "list", "recent")
+    ) and not ("test" in lowered and uuids):
+        from engine.agents.hermes_advice import list_owned as list_advice
+        items = await asyncio.to_thread(list_advice, user_id, limit=20)
+        if not items:
+            return "## Hermes notification history\n\nNo saved notification events were found."
+        lines = ["## Hermes notification history", ""]
+        for item in items:
+            lines.append(
+                f"- **{item['summary']}** — in-app: `"
+                f"{'delivered' if item.get('delivered_in_app') else 'not delivered'}` · "
+                f"email: `{'delivered' if item.get('delivered_email') else 'not delivered'}` "
+                f"(`{item['created_at']}`)"
+            )
+        return "\n".join(lines)
+
+    if "test" in lowered and ("notif" in lowered or "email" in lowered) and uuids:
+        from engine.agents.hermes_jobs import send_test_notification
+        channel = ("both" if "both" in lowered else "email" if "email" in lowered
+                   and "app" not in lowered else "in_app")
+        delivery = await asyncio.to_thread(
+            send_test_notification, uuids[0], user_id, channel
+        )
+        if not delivery:
+            return "## Hermes notification test\n\nNo matching paper job was found under your account."
+        return (
+            "## Hermes notification test\n\n"
+            f"- **Job ID:** `{delivery['job_id']}`\n"
+            f"- **In-app:** `{'delivered' if delivery['in_app'] else 'not requested'}`\n"
+            f"- **Email:** `{'delivered' if delivery['email'] else 'not delivered or not requested'}`\n"
+            "- **Scope:** your authenticated account only"
         )
 
     if "advice" in lowered and any(word in lowered for word in ("show", "list", "recent")):
@@ -794,7 +832,11 @@ async def _dispatch_hermes_job_command(
             "`resume`, or `stop` to control it."
         )
 
-    if "job" in lowered and any(word in lowered for word in ("show", "list", "running", "status")):
+    backtest_result_request = "backtest" in lowered and any(
+        word in lowered for word in ("result", "details", "parameters", "params", "period")
+    )
+    if ("job" in lowered and not backtest_result_request and
+            any(word in lowered for word in ("show", "list", "running", "status"))):
         from engine.agents.hermes_jobs import list_owned
         jobs = await asyncio.to_thread(list_owned, user_id)
         if not jobs:
@@ -851,6 +893,8 @@ async def _dispatch_hermes_job_command(
             f"- **Win rate:** {best.get('win_rate', 'n/a')}\n"
             f"- **Trades:** {best.get('total_trades', 'n/a')}"
             f"\n- **Validation metrics:** `{json.dumps(best.get('validation_metrics') or {}, default=str)}`"
+            f"\n- **Benchmark:** `{json.dumps(best.get('benchmark') or {}, default=str)}`"
+            f"\n- **Robustness windows:** `{json.dumps(best.get('robustness_windows') or [], default=str)}`"
             f"\n- **Paper promotion:** `"
             f"{'eligible' if best.get('promotion_eligible') is True else 'blocked' if best.get('promotion_eligible') is False else 'not evaluated'}`"
             f"\n- **Methodology:** `{json.dumps(result.get('methodology') or {}, default=str)}`"

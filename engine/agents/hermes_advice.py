@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import html
 import json
+import math
+import statistics
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -16,6 +18,36 @@ GAIN_COLOR = "#18864b"
 LOSS_COLOR = "#c53b3b"
 WATCH_COLOR = "#b7791f"
 INFO_COLOR = "#315f85"
+
+
+def assess_performance_drift(
+    validation_sharpe: Any, trades: list[dict], *, minimum_exits: int = 20,
+    ratio: float = 0.5,
+) -> dict:
+    """Return a conservative drift decision from closed paper-trade returns."""
+    closed = [trade for trade in trades if trade.get("pnl_pct") is not None]
+    daily: dict[str, float] = {}
+    for trade in closed:
+        timestamp = str(trade.get("exit_time") or trade.get("timestamp") or "")
+        day = timestamp[:10]
+        if day:
+            daily[day] = daily.get(day, 0.0) + float(trade.get("pnl_pct") or 0)
+    observed = None
+    if len(closed) >= minimum_exits and len(daily) >= 5:
+        returns = list(daily.values())
+        deviation = statistics.stdev(returns)
+        observed = ((statistics.mean(returns) / deviation) * math.sqrt(252)
+                    if deviation > 0 else 0.0)
+    try:
+        expected = float(validation_sharpe)
+    except (TypeError, ValueError):
+        expected = None
+    threshold = expected * ratio if expected is not None else None
+    drift = bool(observed is not None and threshold is not None and observed < threshold)
+    return {"drift": drift, "paper_sharpe": observed,
+            "validation_sharpe": expected, "threshold": threshold,
+            "closed_trades": len(closed), "observed_days": len(daily),
+            "minimum_exits": minimum_exits}
 
 
 def _pool() -> DatabasePool:
@@ -264,6 +296,36 @@ def _group_fills(trades: list[dict]) -> list[dict]:
     return sorted(result, key=lambda item: (item["symbol"], item["side"]))
 
 
+def reconcile_positions(positions: list[dict], trades: list[dict], *, tolerance: float = 1e-6) -> dict:
+    """Verify broker quantities cover this run's persisted open quantities."""
+    expected: dict[str, float] = {}
+    for trade in trades:
+        if _is_closed(trade):
+            continue
+        symbol = str(trade.get("symbol") or "").upper()
+        if not symbol:
+            continue
+        qty = abs(float(trade.get("qty") or trade.get("shares") or 0))
+        direction = str(trade.get("side") or trade.get("direction") or "buy").lower()
+        expected[symbol] = expected.get(symbol, 0.0) + (-qty if direction == "sell" else qty)
+    actual = {
+        str(item.get("symbol") or "").upper(): float(item.get("qty") or 0)
+        for item in positions if item.get("symbol")
+    }
+    # Broker positions are account-wide and may belong to another paper run;
+    # only compare symbols this Hermes run expects to own.
+    symbols = sorted(expected)
+    differences = [
+        {"symbol": symbol, "expected_qty": expected.get(symbol, 0.0),
+         "broker_qty": actual.get(symbol, 0.0),
+         "difference": actual.get(symbol, 0.0) - expected.get(symbol, 0.0)}
+        for symbol in symbols
+        if actual.get(symbol, 0.0) + tolerance < expected.get(symbol, 0.0)
+    ]
+    return {"ok": not differences, "differences": differences,
+            "expected_symbols": len(expected), "broker_symbols": len(actual)}
+
+
 def build_performance_report(
     *, date: str, positions: list[dict], trades: list[dict], advice: list[dict],
     job_id: str, run_id: str, candidate_id: str,
@@ -283,6 +345,7 @@ def build_performance_report(
                   if "STOP_LOSS" in str(trade.get("reason") or "").upper()]
     grouped_entries = _group_fills(entries_today)
     repeated = [group for group in grouped_entries if group["fills"] > 1]
+    reconciliation = reconcile_positions(positions, trades)
 
     best_positions = sorted(
         positions, key=lambda item: float(item.get("unrealized_pl") or 0), reverse=True
@@ -335,6 +398,16 @@ def build_performance_report(
             "/hermes run the same buy_the_dip parameter grid over 6 months and maximize Sharpe",
         ]
 
+    if not reconciliation["ok"]:
+        symbols = ", ".join(item["symbol"] for item in reconciliation["differences"][:6])
+        status, color = "RED", LOSS_COLOR
+        reasons.append(f"DB-to-broker position mismatch detected for {symbols}.")
+        decision = "Pause new entries and reconcile the paper account before continuing."
+        commands = [
+            f"/hermes pause paper job {job_id}",
+            f"/hermes analyze paper job {job_id}",
+        ]
+
     return {
         "date": date, "status": status, "status_color": color,
         "realized_today": realized_today, "realized_session": realized_session,
@@ -342,6 +415,7 @@ def build_performance_report(
         "wins": wins, "losses": losses, "completed_exits": len(closed),
         "win_rate": win_rate, "positions": positions, "closed_today": closed_today,
         "grouped_entries": grouped_entries, "advice": advice,
+        "reconciliation": reconciliation,
         "reasons": reasons, "decision": decision, "commands": commands,
         "job_id": job_id, "run_id": run_id, "candidate_id": candidate_id,
         "validated": abs(realized_today - sum(float(item.get("pnl") or 0)

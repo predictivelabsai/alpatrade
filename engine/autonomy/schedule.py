@@ -7,7 +7,7 @@ from the web app too — it's idempotent per process).
 Env:
   PNL_REPORT_FREQUENCY = daily | off      (default: daily)
   PNL_REPORT_HOUR_UTC  = 21               (0-23; ~1h after the 20:00 UTC US close)
-  PNL_REPORT_TO        = kaljuvee@gmail.com   (falls back to TO_EMAIL)
+  Account owners are resolved from DB; no cross-account distribution list is used.
 """
 from __future__ import annotations
 
@@ -38,17 +38,34 @@ def _next_fire(freq: str, hour: int) -> datetime | None:
 
 
 def _run_pnl_report():
-    """Send the daily paper PnL report (best-effort)."""
+    """Send one tenant/account report to its owner (best-effort)."""
     try:
-        from scripts.daily_pnl_report import gather, render, recipients
+        from scripts.daily_pnl_report import (
+            claim_report_delivery, finish_report_delivery, gather, reconcile_stale_runs,
+            render, report_targets,
+        )
         from utils.email_util import send_email_to
-        data = gather()
-        subject = (f"AlpaTrade Paper PnL — {datetime.now(timezone.utc).strftime('%b %d, %Y')} "
-                   f"({'+' if data['day_pnl'] >= 0 else ''}${data['day_pnl']:,.0f})")
-        html = render(data)
-        for to in recipients():
-            ok = send_email_to(to, subject, html)
-            log.info("daily PnL report → %s: %s", to, "sent" if ok else "FAILED")
+        day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        for target in report_targets():
+            if not claim_report_delivery(target["user_id"], target["account_id"], day):
+                continue
+            ok = False
+            try:
+                reconcile_stale_runs(target["user_id"], target["account_id"])
+                data = gather(keys=target["keys"], user_id=target["user_id"],
+                              account_id=target["account_id"])
+                data["owner_email"] = target["email"]
+                data["account_name"] = target["account_name"]
+                subject = (f"AlpaTrade Paper PnL — {datetime.now(timezone.utc).strftime('%b %d, %Y')} "
+                           f"({'+' if data['day_pnl'] >= 0 else ''}${data['day_pnl']:,.0f})")
+                ok = send_email_to(target["email"], subject, render(data))
+            except Exception as exc:  # one account cannot suppress every owner's report
+                log.exception("daily PnL report account=%s failed: %s",
+                              target["account_id"], exc)
+            finally:
+                finish_report_delivery(target["user_id"], target["account_id"], day, ok)
+            log.info("daily PnL report account=%s → owner: %s",
+                     target["account_id"], "sent" if ok else "FAILED")
     except Exception as e:  # noqa: BLE001
         log.exception("daily PnL report failed: %s", e)
 

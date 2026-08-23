@@ -757,3 +757,118 @@ def test_hermes_job_config_does_not_duplicate_login_email():
     assert '"report_email": report_email' not in source
     target_source = inspect.getsource(hermes_jobs.DatabaseJobControl.report_target)
     assert "JOIN alpatrade.users u ON u.user_id = j.user_id" in target_source
+
+
+def test_backtest_result_request_is_not_routed_to_jobs_list(monkeypatch):
+    from engine.agents import hermes_jobs
+    from engine.web.ph_chat import _dispatch_hermes_job_command
+
+    job_id = "66666666-6666-6666-6666-666666666666"
+    monkeypatch.setattr(hermes_jobs, "list_owned", lambda *args, **kwargs: [{
+        "job_id": job_id, "run_id": "run-1", "kind": "backtest",
+        "status": "completed", "candidate_id": "candidate-1",
+        "config": {"strategy": "buy_the_dip", "lookback": "1y", "symbols": ["SPY"]},
+        "result": {"best_config": {
+            "params": {"dip_threshold": 0.05}, "sharpe_ratio": 1.8,
+            "validation_metrics": {"sharpe_ratio": 2.0},
+            "benchmark": {"symbol": "SPY", "excess_return": 0.4},
+            "robustness_windows": [{"total_return": 0.2}],
+            "promotion_eligible": True,
+        }},
+    }])
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        f"show result for backtest job {job_id}",
+        "11111111-1111-1111-1111-111111111111",
+        "22222222-2222-2222-2222-222222222222",
+    ))
+    assert "Hermes backtest result" in reply
+    assert "Hermes jobs" not in reply
+    assert "excess_return" in reply
+    assert "Robustness windows" in reply
+
+
+def test_notification_history_shows_delivery_channels(monkeypatch):
+    from engine.agents import hermes_advice
+    from engine.web.ph_chat import _dispatch_hermes_job_command
+
+    monkeypatch.setattr(hermes_advice, "list_owned", lambda *args, **kwargs: [{
+        "summary": "Hermes notification test", "delivered_in_app": True,
+        "delivered_email": False, "created_at": "2026-08-23T00:00:00Z",
+    }])
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        "show my notification history",
+        "11111111-1111-1111-1111-111111111111",
+        "22222222-2222-2222-2222-222222222222",
+    ))
+    assert "notification history" in reply
+    assert "in-app: `delivered`" in reply
+    assert "email: `not delivered`" in reply
+
+
+def test_notification_test_routes_to_owned_job(monkeypatch):
+    from engine.agents import hermes_jobs
+    from engine.web.ph_chat import _dispatch_hermes_job_command
+
+    captured = {}
+    monkeypatch.setattr(hermes_jobs, "send_test_notification", lambda job, user, channel: (
+        captured.update(job=job, user=user, channel=channel) or
+        {"job_id": job, "in_app": True, "email": True}
+    ))
+    job_id = "66666666-6666-6666-6666-666666666666"
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        f"send a test notification both in app and email for paper job {job_id}",
+        "11111111-1111-1111-1111-111111111111",
+        "22222222-2222-2222-2222-222222222222",
+    ))
+    assert captured["channel"] == "both"
+    assert captured["user"] == "11111111-1111-1111-1111-111111111111"
+    assert "In-app:** `delivered`" in reply
+    assert "Email:** `delivered`" in reply
+
+
+def test_drift_guard_waits_for_evidence_then_detects_degradation():
+    from engine.agents.hermes_advice import assess_performance_drift
+
+    insufficient = assess_performance_drift(
+        2.0, [{"pnl_pct": -1.0, "exit_time": f"2026-08-{i % 4 + 1:02d}"}
+              for i in range(19)], minimum_exits=20
+    )
+    returns = [1.0, -2.0, 0.5, -1.5, 0.25] * 4
+    degraded = assess_performance_drift(
+        2.0,
+        [{"pnl_pct": value, "exit_time": f"2026-08-{index % 5 + 1:02d}"}
+         for index, value in enumerate(returns)],
+        minimum_exits=20,
+    )
+    assert insufficient["drift"] is False
+    assert insufficient["paper_sharpe"] is None
+    assert degraded["drift"] is True
+    assert degraded["threshold"] == 1.0
+    assert degraded["observed_days"] == 5
+
+
+def test_daily_report_reconciles_run_positions_against_broker():
+    from engine.agents.hermes_advice import build_performance_report
+
+    report = build_performance_report(
+        date="2026-08-23",
+        positions=[{"symbol": "SPY", "qty": 2, "unrealized_pl": 0}],
+        trades=[{"symbol": "SPY", "direction": "buy", "shares": 3,
+                 "entry_time": "2026-08-23T10:00:00Z"}],
+        advice=[], job_id="job-1", run_id="run-1", candidate_id="candidate-1",
+    )
+    assert report["reconciliation"]["ok"] is False
+    assert report["reconciliation"]["differences"][0]["difference"] == -1
+    assert report["status"] == "RED"
+    assert "reconcile" in report["decision"].lower()
+
+
+def test_hermes_paper_config_enables_drift_guard_only_on_hermes_path():
+    from engine.agents import hermes_jobs
+
+    source = inspect.getsource(hermes_jobs.enqueue_candidate_paper)
+    assert '"drift_guard_enabled": True' in source
+    default_source = inspect.getsource(
+        __import__("agents.orchestrator", fromlist=["Orchestrator"]).Orchestrator.run_paper_trade
+    )
+    assert "drift_guard_enabled" not in default_source

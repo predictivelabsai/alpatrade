@@ -116,9 +116,20 @@ class Orchestrator:
         self._config = None
         logger.info(f"Orchestrator initialized. Run ID: {self.run_id}")
 
+    def _attribute(self, config: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """Attach the selected framework unless the caller supplied a trusted override."""
+        cfg = dict(config or {})
+        if not cfg.get("agent_framework"):
+            from engine.config import get_settings
+            cfg["agent_framework"] = get_settings(self.user_id).agent_framework
+        names = {"hermes": "Hermes", "deepagents": "DeepAgents",
+                 "langgraph": "LangGraph"}
+        cfg.setdefault("agent_name", names.get(cfg["agent_framework"], "AlpaTrade AI"))
+        return cfg
+
     def run_backtest(self, config: Dict[str, Any] = None) -> Dict[str, Any]:
         """Run backtesting phase."""
-        config = config or {}
+        config = self._attribute(config)
         self._config = config
         if self._mode is None:
             self._mode = "backtest"
@@ -256,7 +267,7 @@ class Orchestrator:
         """Run paper trading phase."""
         if self.user_id and not self._has_tenant_keys:
             return {"error": "No linked Alpaca paper account for this user."}
-        config = config or {}
+        config = self._attribute(config)
         self._config = config
         if self._mode is None:
             self._mode = "paper"
@@ -355,7 +366,7 @@ class Orchestrator:
           - ``"strict"``: halt the run on a failed validation — a broken
             backtest/paper session never flows to the next phase.
         """
-        config = config or {}
+        config = self._attribute(config)
         gate = (config.get("validation_gate") or "warn").lower()
         self._mode = "full"
         self._config = config

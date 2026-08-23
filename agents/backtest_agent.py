@@ -51,6 +51,25 @@ LOOKBACK_PERIODS = {
 }
 
 
+def _benchmark_return(symbol: str, start_date: datetime, end_date: datetime,
+                      data_source: str) -> Optional[float]:
+    """Return buy-and-hold percentage return for the validation dates."""
+    try:
+        from engine.feeds.market_data import get_historical_data
+        frame = get_historical_data(symbol, start_date, end_date)
+        if frame is None or frame.empty or "Close" not in frame:
+            return None
+        closes = frame["Close"]
+        if getattr(closes, "ndim", 1) > 1:
+            closes = closes.iloc[:, 0]
+        closes = closes.dropna().astype(float)
+        if len(closes) < 2 or float(closes.iloc[0]) == 0:
+            return None
+        return (float(closes.iloc[-1]) / float(closes.iloc[0]) - 1.0) * 100.0
+    except Exception:  # noqa: BLE001
+        return None
+
+
 class BacktestAgent:
     """Agent that runs parameterized backtests and finds optimal configurations."""
 
@@ -270,6 +289,37 @@ class BacktestAgent:
             validation = next(
                 (row for row in validation_rows if not row.get("error")), {}
             )
+            benchmark_symbol = str(request.get("benchmark_symbol") or "SPY").upper()
+            benchmark_return = _benchmark_return(
+                benchmark_symbol, validation_start, full_end_date, data_source
+            )
+            robustness_windows = []
+            window_count = max(1, min(6, int(request.get("robustness_windows", 1))))
+            validation_span = full_end_date - validation_start
+            if window_count > 1:
+                for index in range(window_count):
+                    window_start = validation_start + validation_span * (index / window_count)
+                    window_end = validation_start + validation_span * ((index + 1) / window_count)
+                    rows = self._run_buy_the_dip_grid(
+                        symbols=symbols, start_date=window_start, end_date=window_end,
+                        initial_capital=initial_capital, data_source=data_source,
+                        variations=validation_grid, run_id=run_id,
+                        extended_hours=extended_hours, intraday_exit=intraday_exit,
+                        pdt_protection=pdt_protection, vol_target=vol_target,
+                        atr_exit_mult=atr_exit_mult,
+                        conservative_metrics=conservative_metrics,
+                        conservative_execution=conservative_execution,
+                        include_taf_fees=include_taf_fees,
+                        include_cat_fees=include_cat_fees, slippage_bps=slippage_bps,
+                    )
+                    row = next((item for item in rows if not item.get("error")), {})
+                    robustness_windows.append({
+                        "start": window_start.isoformat(), "end": window_end.isoformat(),
+                        "sharpe_ratio": row.get("sharpe_ratio"),
+                        "total_return": row.get("total_return"),
+                        "max_drawdown": row.get("max_drawdown"),
+                        "total_trades": row.get("total_trades"),
+                    })
             reasons = []
             if int(validation.get("total_trades", 0) or 0) < 20:
                 reasons.append("validation has fewer than 20 closed trades")
@@ -283,6 +333,14 @@ class BacktestAgent:
             top_sharpes = [float(row.get("sharpe_ratio", 0) or 0) for row in ranked[:3]]
             if len(top_sharpes) < 3 or statistics.median(top_sharpes) <= 0:
                 reasons.append("top training variations are not stable")
+            if robustness_windows:
+                positive = sum(
+                    1 for item in robustness_windows
+                    if float(item.get("total_return") or 0) > 0
+                )
+                required = (len(robustness_windows) + 1) // 2
+                if positive < required:
+                    reasons.append("validation is not positive across enough robustness windows")
             best = {
                 **best,
                 "promotion_eligible": not reasons,
@@ -301,6 +359,15 @@ class BacktestAgent:
                         "win_rate", "total_trades", "total_pnl", "equity_days",
                     )
                 },
+                "benchmark": {
+                    "symbol": benchmark_symbol,
+                    "total_return": benchmark_return,
+                    "excess_return": (
+                        float(validation.get("total_return") or 0) - benchmark_return
+                        if benchmark_return is not None else None
+                    ),
+                },
+                "robustness_windows": robustness_windows,
             }
 
         # Store results to DB if available
@@ -322,6 +389,8 @@ class BacktestAgent:
                 "taf_fees": include_taf_fees,
                 "cat_fees": include_cat_fees,
                 "validation_fraction": validation_fraction,
+                "robustness_windows": int(request.get("robustness_windows", 1)),
+                "benchmark_symbol": str(request.get("benchmark_symbol") or "SPY").upper(),
             },
             "trades": best_trades,
             "all_results_summary": [
