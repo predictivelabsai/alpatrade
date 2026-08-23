@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "alpatrade"
-version = "0.15.0"
+version = "0.16.0"
 description = "Multi-asset trading platform — shared backtesting & paper-trading engine across equities, crypto, FX, and prediction markets"
 readme = "README.md"
 license = "MIT"
@@ -39,7 +39,9 @@ dependencies = [
     "prompt_toolkit>=3.0",
     "httpx>=0.25",
     "feedparser>=6.0",
-    "deepagents>=0.6.12",
+    "deepagents>=0.6.12,<0.7",
+    "langgraph-checkpoint-postgres>=3.0,<4",
+    "psycopg[binary,pool]>=3.2,<4",
     "psutil>=5.9",
 ]
 

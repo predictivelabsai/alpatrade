@@ -28,6 +28,7 @@ def test_openapi_exposes_docs_auth_and_external_agents():
     }
     for path in (
         "/v2/agents",
+        "/v2/deepagents",
         "/v2/agents/chat/invoke",
         "/v2/agents/premarket/invoke",
         "/v2/agents/alpha-growth/invoke",
@@ -92,7 +93,7 @@ def test_browser_navigation_uses_formatted_docs_while_api_clients_get_json():
 
 def test_openapi_documents_agent_skills_and_redoc_groups():
     spec = app.openapi()
-    operation = spec["paths"]["/v2/agents/chat/invoke"]["post"]
+    operation = spec["paths"]["/v2/deepagents"]["post"]
 
     assert operation["x-agent-slug"] == "deep-agent"
     assert "Portfolio and position analysis" in operation["x-agent-skills"]

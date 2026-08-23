@@ -15,6 +15,9 @@ provider config, and deployment notes. This file only captures what an agent wou
 
 `web_app.py` is **retired** (don't target it for new work). `api_app.py` is the canonical production
 API contract; `api.py` is the optional namespaced compatibility shell.
+The canonical external agent endpoint is authenticated `POST /v2/deepagents`,
+implemented by `engine/ai/deepagents.py`; `/v2/chat` and
+`/v2/agents/chat/invoke` are compatibility transports over that service.
 
 ## Commands
 
@@ -50,14 +53,15 @@ ci.yml). Add new DB-free tests to that explicit list if they should run in CI.
 - **`CommandProcessor`** (`tui/command_processor.py`) is the central dispatcher for CLI commands;
   positional params are parsed there (e.g. `trades paper btd-3dp`). Unknown input falls through to the AI agent.
 - **Five-agent orchestrator** (`agents/orchestrator.py`): Backtest → Validate → Paper Trade →
-  Validate → Report. Communication is a file-based JSON message bus (`data/agent_messages/`).
+  Validate → Reconcile → Report. Communication is a file-based JSON message bus
+  (`data/agent_messages/`).
 - **Verticals**: `verticals/equities/` is the equities web vertical; `verticals/publicmarkets/` is
   the newer IPO/SEC/hedge-fund tools vertical. Provider-neutral logic stays in `engine/`.
 - **Autonomy engine** (`engine/autonomy/`): Postgres-backed durable run engine over the
   Orchestrator phases — DB queue (`FOR UPDATE SKIP LOCKED`), checkpointed pipeline, continuous
   worker gated by `AUTONOMY_ENABLED` (paper-only by design). Controls surfaced in
   `engine/web/ph_monitoring.py`.
-- **DB**: PostgreSQL with `alpatrade` schema. Migrations in `sql/` (numbered `01_`–`21_`,
+- **DB**: PostgreSQL with `alpatrade` schema. Migrations in `sql/` (numbered `01_`–`22_`,
   idempotent `CREATE TABLE IF NOT EXISTS`). Per-user Alpaca keys live in `user_accounts`
   (Fernet-encrypted BYTEA), **not** `users`. All data tables carry `user_id` (+ `account_id`).
 

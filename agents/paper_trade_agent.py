@@ -143,7 +143,11 @@ class PaperTradeAgent:
                         "session_id": self.session_id}
 
             # 2. Bootstrap from DB (recent same-day round-trips)
-            db_day_trades = fetch_recent_day_trades(window_days=7, user_id=self.user_id)
+            db_day_trades = fetch_recent_day_trades(
+                window_days=7,
+                user_id=self.user_id,
+                account_id=self.account_id,
+            )
             if db_day_trades:
                 self.pdt_tracker.bootstrap(db_day_trades)
                 logger.info(f"PDT tracker bootstrapped with {len(db_day_trades)} DB day trades")

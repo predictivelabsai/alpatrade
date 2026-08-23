@@ -1,5 +1,47 @@
 # Change Log
 
+## 0.16.0 — 2026-08-23
+
+### Tenant-safe DeepAgents API
+
+- Added authenticated `POST /v2/deepagents` as the canonical DeepAgents-only
+  endpoint with append-only durable threads, stable client message UUIDs,
+  replay-safe response idempotency, JSON responses, and SSE streaming.
+- Added sanitized tool/subagent lifecycle events and heartbeats. Traces expose
+  identity, status, and timing only; arguments, results, credentials, and raw
+  exceptions remain private.
+- Added five native specialists for market research, caller-owned portfolio
+  analysis, strategy work, paper trading, and orchestration. Disabled the
+  default general-purpose subagent and blocked filesystem/shell tools.
+- Routed the older `/v2/chat` and `/v2/agents/chat/invoke` wire formats through
+  the shared service. Anonymous compatibility chat now receives public research
+  tools only and never falls back to deployment broker credentials.
+
+### Persistence and paper-action safety
+
+- Added migration `sql/22_deepagent_responses.sql` for durable response,
+  sanitized event, action-deduplication, and job-deduplication records.
+- Added the official asynchronous PostgreSQL LangGraph checkpointer with a
+  shared pool, `alpatrade` search path, idempotent setup, and pickle fallback
+  disabled in the MessagePack serializer.
+- Generalized the autonomy worker by job kind. Backtests, paper sessions,
+  full cycles, and autonomy requests return durable job IDs; full cycles retain
+  Backtest → Validate → Paper → Validate → Reconcile → Report checkpoints.
+- Enforced explicit imperative intent for mutating tools, caller-owned encrypted
+  Alpaca credentials, `paper=True`, deterministic paper `client_order_id`
+  values, tenant-scoped cancellation, and no automatic retry after uncertain
+  paper-capable worker failures.
+
+### Tests and deployment
+
+- Added DB-free coverage for validation, auth boundaries, replay/concurrency,
+  runtime context, specialist/tool registration, trace redaction, token
+  normalization, heartbeats, stream failures, and paper-client identity.
+- Added `deepagents<0.7`, `langgraph-checkpoint-postgres`, and psycopg 3 pool
+  dependencies and bumped the package/lockfile to 0.16.0.
+- Apply `python run_migration.py sql/22_deepagent_responses.sql` before deploying
+  the API and worker. Deployment itself is not included in this release.
+
 ## 0.15.0 — 2026-08-22
 
 - Added Hermes-only conservative backtests with five-basis-point entry/exit

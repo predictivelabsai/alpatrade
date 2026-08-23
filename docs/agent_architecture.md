@@ -2,8 +2,9 @@
 
 This document describes the implemented AlpaTrade agent surface. The canonical
 machine-readable catalog is `engine/agents/catalog.py` and is exposed by
-`GET /v2/agents`. `api_app.py` owns the typed REST contract; `agui_app.py` owns
-the shared conversational harness. All trading performed by agents is paper-only.
+`GET /v2/agents`. `api_app.py` owns the typed REST contract and
+`engine/ai/deepagents.py` owns the shared API DeepAgents service. All trading
+performed by agents is paper-only.
 
 ## Architecture at a Glance
 
@@ -12,9 +13,10 @@ flowchart LR
     Client[Web, mobile, or API client]
     Auth[JWT or service authentication]
     API[FastAPI v2 API]
-    Chat[DeepAgent chat harness]
-    CP[CommandProcessor]
-    Research[Research agents]
+    Chat[Tenant-safe DeepAgents service]
+    Specialists[Five native specialist subagents]
+    Tools[Runtime-context tools]
+    Checkpoint[(Postgres checkpoints)]
     Orch[Five-Agent Orchestrator]
     Auto[Durable autonomy worker]
     Engine[Canonical engine modules]
@@ -24,13 +26,13 @@ flowchart LR
 
     Client --> Auth --> API
     API --> Chat
-    API --> Research
+    Chat --> Specialists
+    Chat --> Tools
+    Chat <--> Checkpoint
     API --> Orch
     API --> Auto
-    Chat -->|recognized command| CP
-    Chat -->|free-form request| Engine
-    CP --> Orch
-    Research --> Engine
+    Specialists --> Tools
+    Tools --> Engine
     Orch --> Engine
     Auto --> Orch
     Orch <--> Bus
@@ -42,8 +44,9 @@ flowchart LR
 
 | Agent | Endpoint | Execution | Safety | Primary responsibility |
 |---|---|---|---|---|
-| DeepAgent Assistant | `POST /v2/agents/chat/invoke` | synchronous | paper-only | JSON chat response with route and tools used |
-| DeepAgent Assistant SSE | `POST /v2/chat` | streaming | paper-only | Tokens, route events, tool events, and thread continuity |
+| DeepAgent Assistant | `POST /v2/deepagents` | JSON or SSE | paper-only | Canonical durable, idempotent, tenant-safe coordinator |
+| DeepAgent JSON compatibility | `POST /v2/agents/chat/invoke` | synchronous | paper-only | Older single-message JSON contract over the shared service |
+| DeepAgent SSE compatibility | `POST /v2/chat` | streaming | scoped | Older event shape; anonymous sessions are public-research-only |
 | Premarket Agent | `POST /v2/agents/premarket/invoke` | synchronous | read-only | Movers, catalysts, rankings, and saved scans |
 | Alpha Growth Agent | `POST /v2/agents/alpha-growth/invoke` | synchronous | read-only | Evidence-backed growth research |
 | Alpha Value Agent | `POST /v2/agents/alpha-value/invoke` | synchronous | read-only | Valuation and margin-of-safety research |
@@ -56,46 +59,68 @@ flowchart LR
 | Five-Agent Orchestrator | `POST /v2/full` | synchronous | orchestration | End-to-end backtest-to-paper workflow |
 | Autonomy Scout | `POST /v2/agents/autonomy-scout/invoke` | asynchronous | paper-only | Candidate scan and durable run enqueueing |
 
-Except for the streaming `/v2/chat` interface, catalog operations require an
-authenticated user. Account-scoped operations resolve that user's linked Alpaca
-paper account; callers cannot select another user's account.
+`/v2/deepagents` requires JWT authentication or a service key with `X-User-Id`.
+Account-scoped operations resolve only that user's linked Alpaca paper account;
+callers cannot select another user's thread or account. Anonymous `/v2/chat`
+requests receive no portfolio or mutating tools.
 
-## Conversational Agent Flow
+## Canonical DeepAgent Flow
 
-Web chat and both API chat forms reuse `engine/ai/chat_stream.py`. Per-user model
-and framework settings are resolved by `agui_app.agent_for_user()`.
+The canonical API treats each request's messages as append-only input. PostgreSQL
+enforces a single running response per tenant/thread and a unique response per
+final client message ID. The graph is cached by effective model provider/name;
+tenant identity travels separately through `DeepAgentContext` and `ToolRuntime`.
 
 ```mermaid
 sequenceDiagram
     participant U as Client
-    participant S as Chat stream
-    participant I as Command interceptor
-    participant C as CommandProcessor
-    participant A as DeepAgent runtime
-    participant T as Tools and engine
+    participant API as POST /v2/deepagents
+    participant P as Response store
+    participant A as DeepAgent coordinator
+    participant S as Native specialist
+    participant T as Tenant tools
+    participant J as Durable job worker
 
-    U->>S: message, user ID, thread ID
-    S-->>U: session event
-    S->>I: inspect message
-    alt Recognized CLI command
-        I->>C: execute command
-        C->>T: invoke tool or orchestrator
-        T-->>C: result
-        C-->>S: Markdown result
-        S-->>U: route, token, done
-    else Free-form request
-        S->>A: messages plus thread history
-        A->>T: structured tool calls
-        S-->>U: tool_start and tool_end
-        A-->>S: streamed model tokens
-        S-->>U: route, tokens, done
+    U->>API: new messages + thread/account + stream
+    API->>P: verify owner and reserve idempotency key
+    alt recorded response
+        P-->>API: completed/failed payload
+        API-->>U: replay with cached=true
+    else new response
+        API->>A: messages + trusted runtime context
+        A->>S: task(subagent_type)
+        S->>T: scoped read or paper-only action
+        opt long-running action
+            T->>J: enqueue deduplicated job
+            J-->>T: job ID
+        end
+        A-->>API: tokens and sanitized traces
+        API->>P: transcript + terminal payload
+        API-->>U: JSON or SSE done
     end
 ```
 
-The runtime registry supports DeepAgents, LangGraph, Pydantic AI, and Hermes.
-The default is DeepAgents; unavailable runtimes fall back in the order
-DeepAgents → LangGraph → Hermes. Provider and model selection remain independent
-of the agent framework.
+The coordinator has only common fast reads (price, news, linked accounts,
+account summary, positions, recent runs, and job status) plus DeepAgents'
+`write_todos` and `task`. The only native subagents are:
+
+| Subagent | Tool boundary |
+|---|---|
+| `market-research` | Public quotes, news, fundamentals, Alpha research, SEC, sectors, IPOs, funds, activists, press releases, SPACs, and prediction research |
+| `portfolio-analyst` | Caller-owned account metadata, positions, runs, trades, reports, rankings, P&L, job status, and events |
+| `strategy-lab` | Durable backtest queueing, owned-run validation, and strategy comparison |
+| `paper-trader` | Caller-owned equity/index-option paper orders, paper sessions, reconciliation, cancellation, and monitoring |
+| `orchestrator` | Durable full-cycle/autonomy queueing and phase inspection |
+
+DeepAgents' default general-purpose subagent is disabled. `ls`, `read_file`,
+`write_file`, `edit_file`, `glob`, `grep`, and `execute` are excluded and rejected.
+Tool arguments, results, credentials, and raw exceptions never appear in API traces.
+
+The runtime registry still supports DeepAgents, LangGraph, Pydantic AI, and
+Hermes for internal/legacy agents. `/v2/deepagents` is deliberately different:
+it always builds with `create_deep_agent` and returns 503 if DeepAgents,
+PostgreSQL checkpoints, or the configured model cannot be initialized. It never
+silently falls back. Provider and model still come from the caller's settings.
 
 ### Are LangGraph and DeepAgents Both Used?
 
@@ -104,6 +129,8 @@ invocation:
 
 - **DeepAgents is the default.** `agui_app.primary_agent` and per-user chat agents
   are built through the runtime registry with `deepagents` preferred.
+- **The canonical API is DeepAgents-only.** `engine.ai.deepagents.DeepAgentService`
+  calls `create_deep_agent` directly and does not use the fallback registry.
 - **LangGraph remains an active runtime and fallback.** A user can select it via
   `agent_framework`, and it is selected automatically when DeepAgents is not
   installed or available.
@@ -203,6 +230,13 @@ flowchart TD
     T -. node error .-> Retry
 ```
 
+The worker dispatches by job kind. DeepAgent backtest, paper, and full-cycle jobs
+share the queue with autonomy runs. The DeepAgent full-cycle checkpoints the
+sequence Backtest → Validate → Paper → Validate → Reconcile → Report. A stale
+paper-capable job is marked failed and is never automatically retried after an
+uncertain worker failure; cancellation is tenant-scoped and signals active paper
+sessions through their stop event.
+
 The hard safety boundary is `engine/autonomy/policy.py`: live candidates are
 rejected, sizing is deterministic, and the autonomy package only wires the paper
 trading phase. LLM reasoning may annotate scouting, selection, refit, and
@@ -220,3 +254,11 @@ python -m engine.autonomy.worker
 Inspect REST schemas at `/docs`, `/redoc`, or `/openapi.json`. Monitor durable
 runs in the authenticated Agent Pipeline page and in the `autonomy_runs`,
 `autonomy_run_steps`, `autonomy_events`, and `autonomy_promotions` tables.
+DeepAgent API responses and sanitized traces live in `deepagent_responses`,
+`deepagent_events`, and `deepagent_actions`; user-visible transcripts remain in
+`chat_conversations` and `chat_messages`. LangGraph checkpoints use the official
+PostgreSQL saver in the `alpatrade` search path with pickle fallback disabled.
+
+Implementation references: [LangChain runtime context](https://docs.langchain.com/oss/python/langchain/runtime),
+[DeepAgents 0.6.12 security model](https://pypi.org/project/deepagents/0.6.12/), and the
+[official PostgreSQL checkpointer](https://github.com/langchain-ai/langgraph/blob/main/libs/checkpoint-postgres/README.md).

@@ -94,7 +94,9 @@ curl -H "Authorization: Bearer eyJ..." http://localhost:5001/trades
 
 Tenant data and agent-action endpoints require authentication and filter to the supplied
 user identity. Public discovery, health, market helpers, and streaming `/v2/chat` remain
-available without authentication.
+available without authentication; anonymous `/v2/chat` receives public research tools
+only. Canonical `/v2/deepagents` requests require JWT authentication or a trusted service
+key with `X-User-Id`.
 
 **Trusted service requests:**
 ```bash

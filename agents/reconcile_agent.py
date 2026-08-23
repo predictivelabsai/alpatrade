@@ -61,10 +61,11 @@ class ReconcileAgent:
     """Agent that reconciles DB state against Alpaca actual holdings."""
 
     def __init__(self, message_bus=None, state=None, user_id=None,
-                 alpaca_api_key=None, alpaca_secret_key=None):
+                 alpaca_api_key=None, alpaca_secret_key=None, account_id=None):
         self.message_bus = message_bus
         self.state = state
         self.user_id = user_id
+        self.account_id = account_id
         self._alpaca_api_key = alpaca_api_key
         self._alpaca_secret_key = alpaca_secret_key
         self.client: Optional[AlpacaAPI] = None
@@ -86,7 +87,8 @@ class ReconcileAgent:
 
         logger.info(f"Reconciliation agent starting for run {run_id} (window={window_days}d)")
 
-        # Initialize Alpaca client (use injected per-user keys or fall back to env)
+        # API/orchestrator callers inject owned keys. CLI callers may retain the
+        # historical environment-key fallback when no tenant identity exists.
         try:
             self.client = AlpacaAPI(
                 paper=True,
@@ -277,6 +279,9 @@ class ReconcileAgent:
                 if self.user_id:
                     user_filter = "AND user_id = :user_id"
                     params["user_id"] = self.user_id
+                if self.account_id:
+                    user_filter += " AND account_id = :account_id"
+                    params["account_id"] = self.account_id
                 result = session.execute(text(f"""
                     SELECT symbol, SUM(shares) as qty
                     FROM alpatrade.trades
@@ -306,6 +311,9 @@ class ReconcileAgent:
                 if self.user_id:
                     user_filter = "AND user_id = :user_id"
                     params["user_id"] = self.user_id
+                if self.account_id:
+                    user_filter += " AND account_id = :account_id"
+                    params["account_id"] = self.account_id
                 result = session.execute(
                     text(f"""
                         SELECT symbol, direction, shares, entry_price, exit_price,
@@ -351,6 +359,9 @@ class ReconcileAgent:
                 if self.user_id:
                     user_filter = "AND user_id = :user_id"
                     params["user_id"] = self.user_id
+                if self.account_id:
+                    user_filter += " AND account_id = :account_id"
+                    params["account_id"] = self.account_id
                 result = session.execute(text(f"""
                     SELECT COALESCE(SUM(pnl), 0)
                     FROM alpatrade.trades

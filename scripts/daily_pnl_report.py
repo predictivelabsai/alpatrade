@@ -102,7 +102,9 @@ def gather(day: str | None = None) -> dict:
     }
 
 
-def gather_trades(day: str | None = None, limit: int = 100) -> list[dict]:
+def gather_trades(day: str | None = None, limit: int = 100,
+                  user_id: str | None = None,
+                  account_id: str | None = None) -> list[dict]:
     """Paper trades booked on `day` (default: today UTC) — [] on any failure.
 
     Trades are matched by `created_at` falling on that UTC date, so the report reflects
@@ -114,18 +116,28 @@ def gather_trades(day: str | None = None, limit: int = 100) -> list[dict]:
         pool = DatabasePool()
         target = day or datetime.now(timezone.utc).strftime("%Y-%m-%d")
         with pool.get_session() as session:
+            where = [
+                "trade_type = 'paper'",
+                "created_at >= CAST(:day AS DATE)",
+                "created_at < CAST(:day AS DATE) + INTERVAL '1 day'",
+            ]
+            params = {"day": target, "lim": limit}
+            if user_id:
+                where.append("user_id = :user_id")
+                params["user_id"] = user_id
+            if account_id:
+                where.append("account_id = :account_id")
+                params["account_id"] = account_id
             result = session.execute(
                 text(
                     "SELECT symbol, direction, shares, entry_price, exit_price, "
                     "       pnl, pnl_pct, reason, created_at, entry_time, exit_time, "
                     "       run_id, dip_pct, target_price, stop_price, hit_target, hit_stop "
                     "FROM alpatrade.trades "
-                    "WHERE trade_type = 'paper' "
-                    "  AND created_at >= CAST(:day AS DATE) "
-                    "  AND created_at <  CAST(:day AS DATE) + INTERVAL '1 day' "
+                    f"WHERE {' AND '.join(where)} "
                     "ORDER BY created_at DESC LIMIT :lim"
                 ),
-                {"day": target, "lim": limit},
+                params,
             )
             cols = result.keys()
             return [dict(zip(cols, row)) for row in result.fetchall()]

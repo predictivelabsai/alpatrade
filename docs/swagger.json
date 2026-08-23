@@ -11,7 +11,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "0.8.0"
+    "version": "0.16.0"
   },
   "servers": [
     {
@@ -39,7 +39,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/v2/agents": {
@@ -47,8 +48,8 @@
         "tags": [
           "agent-invocation"
         ],
-        "summary": "V2 Agent Catalog",
-        "description": "List callable agents and their canonical typed endpoints.",
+        "summary": "Discover callable agents and their skills",
+        "description": "Machine-readable catalogue of every supported agent, its canonical endpoint, skills, access boundary, execution model, and safety level. Direct browser visits are redirected to the formatted ReDoc reference; API clients continue to receive this typed JSON document.",
         "operationId": "v2_agent_catalog_v2_agents_get",
         "responses": {
           "200": {
@@ -57,11 +58,258 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AgentCatalogResponse"
+                },
+                "example": {
+                  "agents": [
+                    {
+                      "slug": "deep-agent",
+                      "name": "DeepAgent Assistant",
+                      "category": "assistant",
+                      "description": "Canonical durable, tenant-safe DeepAgents API with JSON or SSE responses.",
+                      "method": "POST",
+                      "path": "/v2/deepagents",
+                      "access": "authenticated",
+                      "execution": "streaming",
+                      "safety": "paper_only",
+                      "skills": [
+                        "Portfolio and position analysis",
+                        "Market news and company research",
+                        "Backtest and reporting tool routing",
+                        "Paper-account workflow assistance"
+                      ]
+                    },
+                    {
+                      "slug": "deep-agent-json-compat",
+                      "name": "DeepAgent Assistant (JSON compatibility)",
+                      "category": "assistant",
+                      "description": "Compatibility JSON chat interface backed by the shared DeepAgents service.",
+                      "method": "POST",
+                      "path": "/v2/agents/chat/invoke",
+                      "access": "authenticated",
+                      "execution": "synchronous",
+                      "safety": "paper_only",
+                      "skills": [
+                        "Legacy request and response shape",
+                        "Tenant-aware DeepAgents routing",
+                        "Public research for service principals without a tenant",
+                        "Single-response JSON transport"
+                      ]
+                    },
+                    {
+                      "slug": "deep-agent-stream",
+                      "name": "DeepAgent Assistant (SSE)",
+                      "category": "assistant",
+                      "description": "Compatibility SSE chat; anonymous callers receive public research only.",
+                      "method": "POST",
+                      "path": "/v2/chat",
+                      "access": "public",
+                      "execution": "streaming",
+                      "safety": "paper_only",
+                      "skills": [
+                        "Token-by-token conversational responses",
+                        "Agent routing events",
+                        "Tool execution events",
+                        "Conversation-thread continuity"
+                      ]
+                    },
+                    {
+                      "slug": "premarket",
+                      "name": "Premarket Agent",
+                      "category": "research",
+                      "description": "Read-only premarket scan and ranked mover intelligence.",
+                      "method": "POST",
+                      "path": "/v2/agents/premarket/invoke",
+                      "access": "authenticated",
+                      "execution": "synchronous",
+                      "safety": "read_only",
+                      "skills": [
+                        "Premarket mover discovery",
+                        "Catalyst and news synthesis",
+                        "Candidate ranking",
+                        "Saved-scan retrieval"
+                      ]
+                    },
+                    {
+                      "slug": "alpha-growth",
+                      "name": "Alpha Growth Agent",
+                      "category": "research",
+                      "description": "Evidence-backed growth-company research report.",
+                      "method": "POST",
+                      "path": "/v2/agents/alpha-growth/invoke",
+                      "access": "authenticated",
+                      "execution": "synchronous",
+                      "safety": "read_only",
+                      "skills": [
+                        "Growth-quality assessment",
+                        "Fundamental evidence collection",
+                        "Catalyst and risk analysis",
+                        "Persistent research reports"
+                      ]
+                    },
+                    {
+                      "slug": "alpha-value",
+                      "name": "Alpha Value Agent",
+                      "category": "research",
+                      "description": "Evidence-backed value-company research report.",
+                      "method": "POST",
+                      "path": "/v2/agents/alpha-value/invoke",
+                      "access": "authenticated",
+                      "execution": "synchronous",
+                      "safety": "read_only",
+                      "skills": [
+                        "Valuation and margin-of-safety review",
+                        "Fundamental evidence collection",
+                        "Catalyst and risk analysis",
+                        "Persistent research reports"
+                      ]
+                    },
+                    {
+                      "slug": "alpha-compare",
+                      "name": "Alpha Comparison Agent",
+                      "category": "research",
+                      "description": "Growth and value views generated from one shared evidence collection.",
+                      "method": "POST",
+                      "path": "/v2/agents/alpha-compare/invoke",
+                      "access": "authenticated",
+                      "execution": "synchronous",
+                      "safety": "read_only",
+                      "skills": [
+                        "Shared-evidence company research",
+                        "Growth-versus-value comparison",
+                        "Thesis conflict identification",
+                        "Paired persistent reports"
+                      ]
+                    },
+                    {
+                      "slug": "backtest",
+                      "name": "Backtest Agent",
+                      "category": "analysis",
+                      "description": "Run the parameter-grid backtest and return the best configuration.",
+                      "method": "POST",
+                      "path": "/v2/backtest",
+                      "access": "authenticated",
+                      "execution": "synchronous",
+                      "safety": "read_only",
+                      "skills": [
+                        "Strategy parameter sweeps",
+                        "Historical performance analysis",
+                        "Risk and drawdown metrics",
+                        "Best-configuration selection"
+                      ]
+                    },
+                    {
+                      "slug": "validator",
+                      "name": "Validation Agent",
+                      "category": "analysis",
+                      "description": "Validate stored backtest or paper trades against market data.",
+                      "method": "POST",
+                      "path": "/v2/validate",
+                      "access": "authenticated",
+                      "execution": "synchronous",
+                      "safety": "read_only",
+                      "skills": [
+                        "Trade-price verification",
+                        "Anomaly detection",
+                        "Fill correction checks",
+                        "Validation suggestions"
+                      ]
+                    },
+                    {
+                      "slug": "reporter",
+                      "name": "Report Agent",
+                      "category": "analysis",
+                      "description": "Return run summaries, detail, P&L, and ranked strategies.",
+                      "method": "GET",
+                      "path": "/v2/report",
+                      "access": "authenticated",
+                      "execution": "synchronous",
+                      "safety": "read_only",
+                      "skills": [
+                        "Run summary reporting",
+                        "P&L breakdowns",
+                        "Strategy ranking",
+                        "Performance metric retrieval"
+                      ]
+                    },
+                    {
+                      "slug": "paper-trader",
+                      "name": "Paper Trade Agent",
+                      "category": "trading",
+                      "description": "Start a durable paper-trading subprocess and return immediately.",
+                      "method": "POST",
+                      "path": "/v2/paper",
+                      "access": "authenticated",
+                      "execution": "asynchronous",
+                      "safety": "paper_only",
+                      "skills": [
+                        "Durable paper-strategy execution",
+                        "Configurable polling and duration",
+                        "PDT-aware trade controls",
+                        "Background run monitoring"
+                      ]
+                    },
+                    {
+                      "slug": "reconciler",
+                      "name": "Reconciliation Agent",
+                      "category": "trading",
+                      "description": "Compare the position ledger with the linked Alpaca paper account.",
+                      "method": "POST",
+                      "path": "/v2/reconcile",
+                      "access": "authenticated",
+                      "execution": "synchronous",
+                      "safety": "paper_only",
+                      "skills": [
+                        "Position-ledger reconciliation",
+                        "Trade mismatch detection",
+                        "Missing and extra fill checks",
+                        "Broker-versus-database P&L comparison"
+                      ]
+                    },
+                    {
+                      "slug": "orchestrator",
+                      "name": "Five-Agent Orchestrator",
+                      "category": "orchestration",
+                      "description": "Run backtest, validation, paper trading, and reporting as one workflow.",
+                      "method": "POST",
+                      "path": "/v2/full",
+                      "access": "authenticated",
+                      "execution": "synchronous",
+                      "safety": "orchestration",
+                      "skills": [
+                        "Multi-agent workflow coordination",
+                        "Backtest-to-paper promotion",
+                        "Phase status aggregation",
+                        "End-to-end run reporting"
+                      ]
+                    },
+                    {
+                      "slug": "autonomy-scout",
+                      "name": "Autonomy Scout",
+                      "category": "orchestration",
+                      "description": "Scan candidates and enqueue the durable paper-only agent pipeline.",
+                      "method": "POST",
+                      "path": "/v2/agents/autonomy-scout/invoke",
+                      "access": "authenticated",
+                      "execution": "asynchronous",
+                      "safety": "paper_only",
+                      "skills": [
+                        "Market candidate scouting",
+                        "Strategy-aware candidate ranking",
+                        "Durable autonomy-run enqueueing",
+                        "Paper-only account isolation"
+                      ]
+                    }
+                  ],
+                  "total": 14
                 }
               }
             }
+          },
+          "307": {
+            "description": "Browser navigation to the formatted API reference"
           }
-        }
+        },
+        "security": []
       }
     },
     "/auth/register": {
@@ -103,7 +351,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/auth/login": {
@@ -145,7 +394,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/v2/runs": {
@@ -307,10 +557,10 @@
     "/v2/report": {
       "get": {
         "tags": [
-          "data"
+          "agent-invocation"
         ],
-        "summary": "V2 Report Summary",
-        "description": "List run summaries (performance overview).",
+        "summary": "Invoke Report Agent",
+        "description": "List run summaries (performance overview).\n\n### Agent skills\n\n- Run summary reporting\n- P&L breakdowns\n- Strategy ranking\n- Performance metric retrieval\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `read_only`",
         "operationId": "v2_report_summary_v2_report_get",
         "security": [
           {
@@ -391,7 +641,17 @@
               }
             }
           }
-        }
+        },
+        "x-agent-slug": "reporter",
+        "x-agent-category": "analysis",
+        "x-agent-skills": [
+          "Run summary reporting",
+          "P&L breakdowns",
+          "Strategy ranking",
+          "Performance metric retrieval"
+        ],
+        "x-agent-execution": "synchronous",
+        "x-agent-safety": "read_only"
       }
     },
     "/v2/report/{run_id}": {
@@ -805,10 +1065,10 @@
     "/v2/backtest": {
       "post": {
         "tags": [
-          "agents"
+          "agent-invocation"
         ],
-        "summary": "V2 Backtest",
-        "description": "Run a parameterized backtest. Synchronous \u2014 may take minutes.",
+        "summary": "Invoke Backtest Agent",
+        "description": "Run a parameterized backtest. Synchronous \u2014 may take minutes.\n\n### Agent skills\n\n- Strategy parameter sweeps\n- Historical performance analysis\n- Risk and drawdown metrics\n- Best-configuration selection\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `read_only`",
         "operationId": "v2_backtest_v2_backtest_post",
         "requestBody": {
           "content": {
@@ -849,16 +1109,26 @@
           {
             "ServiceApiKey": []
           }
-        ]
+        ],
+        "x-agent-slug": "backtest",
+        "x-agent-category": "analysis",
+        "x-agent-skills": [
+          "Strategy parameter sweeps",
+          "Historical performance analysis",
+          "Risk and drawdown metrics",
+          "Best-configuration selection"
+        ],
+        "x-agent-execution": "synchronous",
+        "x-agent-safety": "read_only"
       }
     },
     "/v2/validate": {
       "post": {
         "tags": [
-          "agents"
+          "agent-invocation"
         ],
-        "summary": "V2 Validate",
-        "description": "Validate trades for a given run. Synchronous.",
+        "summary": "Invoke Validation Agent",
+        "description": "Validate trades for a given run. Synchronous.\n\n### Agent skills\n\n- Trade-price verification\n- Anomaly detection\n- Fill correction checks\n- Validation suggestions\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `read_only`",
         "operationId": "v2_validate_v2_validate_post",
         "requestBody": {
           "content": {
@@ -899,16 +1169,26 @@
           {
             "ServiceApiKey": []
           }
-        ]
+        ],
+        "x-agent-slug": "validator",
+        "x-agent-category": "analysis",
+        "x-agent-skills": [
+          "Trade-price verification",
+          "Anomaly detection",
+          "Fill correction checks",
+          "Validation suggestions"
+        ],
+        "x-agent-execution": "synchronous",
+        "x-agent-safety": "read_only"
       }
     },
     "/v2/paper": {
       "post": {
         "tags": [
-          "agents"
+          "agent-invocation"
         ],
-        "summary": "V2 Paper",
-        "description": "Start paper trading as an autonomous subprocess. Returns immediately.",
+        "summary": "Invoke Paper Trade Agent",
+        "description": "Start paper trading as an autonomous subprocess. Returns immediately.\n\n### Agent skills\n\n- Durable paper-strategy execution\n- Configurable polling and duration\n- PDT-aware trade controls\n- Background run monitoring\n\n**Execution:** `asynchronous`  \n**Access:** `authenticated`  \n**Safety:** `paper_only`",
         "operationId": "v2_paper_v2_paper_post",
         "requestBody": {
           "content": {
@@ -949,16 +1229,26 @@
           {
             "ServiceApiKey": []
           }
-        ]
+        ],
+        "x-agent-slug": "paper-trader",
+        "x-agent-category": "trading",
+        "x-agent-skills": [
+          "Durable paper-strategy execution",
+          "Configurable polling and duration",
+          "PDT-aware trade controls",
+          "Background run monitoring"
+        ],
+        "x-agent-execution": "asynchronous",
+        "x-agent-safety": "paper_only"
       }
     },
     "/v2/full": {
       "post": {
         "tags": [
-          "agents"
+          "agent-invocation"
         ],
-        "summary": "V2 Full",
-        "description": "Run full cycle: backtest -> validate -> paper -> validate. Synchronous \u2014 long-running.",
+        "summary": "Invoke Five-Agent Orchestrator",
+        "description": "Run full cycle: backtest -> validate -> paper -> validate. Synchronous \u2014 long-running.\n\n### Agent skills\n\n- Multi-agent workflow coordination\n- Backtest-to-paper promotion\n- Phase status aggregation\n- End-to-end run reporting\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `orchestration`",
         "operationId": "v2_full_v2_full_post",
         "requestBody": {
           "content": {
@@ -999,16 +1289,26 @@
           {
             "ServiceApiKey": []
           }
-        ]
+        ],
+        "x-agent-slug": "orchestrator",
+        "x-agent-category": "orchestration",
+        "x-agent-skills": [
+          "Multi-agent workflow coordination",
+          "Backtest-to-paper promotion",
+          "Phase status aggregation",
+          "End-to-end run reporting"
+        ],
+        "x-agent-execution": "synchronous",
+        "x-agent-safety": "orchestration"
       }
     },
     "/v2/reconcile": {
       "post": {
         "tags": [
-          "agents"
+          "agent-invocation"
         ],
-        "summary": "V2 Reconcile",
-        "description": "Reconcile DB positions vs Alpaca holdings. Synchronous.",
+        "summary": "Invoke Reconciliation Agent",
+        "description": "Reconcile DB positions vs Alpaca holdings. Synchronous.\n\n### Agent skills\n\n- Position-ledger reconciliation\n- Trade mismatch detection\n- Missing and extra fill checks\n- Broker-versus-database P&L comparison\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `paper_only`",
         "operationId": "v2_reconcile_v2_reconcile_post",
         "requestBody": {
           "content": {
@@ -1049,7 +1349,89 @@
           {
             "ServiceApiKey": []
           }
-        ]
+        ],
+        "x-agent-slug": "reconciler",
+        "x-agent-category": "trading",
+        "x-agent-skills": [
+          "Position-ledger reconciliation",
+          "Trade mismatch detection",
+          "Missing and extra fill checks",
+          "Broker-versus-database P&L comparison"
+        ],
+        "x-agent-execution": "synchronous",
+        "x-agent-safety": "paper_only"
+      }
+    },
+    "/v2/deepagents": {
+      "post": {
+        "tags": [
+          "agent-invocation"
+        ],
+        "summary": "Stream DeepAgent Assistant",
+        "description": "Append messages to an owned durable thread and invoke DeepAgents.\n\nClient message UUIDs are idempotency keys. Completed and failed requests\nreplay their recorded response; running duplicates and concurrent calls on\nthe same thread return 409. Tool traces are deliberately metadata-only.\n\n### Agent skills\n\n- Portfolio and position analysis\n- Market news and company research\n- Backtest and reporting tool routing\n- Paper-account workflow assistance\n\n**Execution:** `streaming`  \n**Access:** `authenticated`  \n**Safety:** `paper_only`",
+        "operationId": "v2_deepagents_v2_deepagents_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeepAgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Completed JSON response or Server-Sent Events when stream=true.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeepAgentResponse"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "event: session\ndata: {\"thread_id\":\"...\"}\n\nevent: token\ndata: {\"content\":\"...\"}\n\nevent: done\ndata: {\"response\":{}}\n\n"
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate response is still running or thread is busy."
+          },
+          "503": {
+            "description": "DeepAgents, its model, or PostgreSQL checkpoints are unavailable."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ],
+        "x-agent-slug": "deep-agent",
+        "x-agent-category": "assistant",
+        "x-agent-skills": [
+          "Portfolio and position analysis",
+          "Market news and company research",
+          "Backtest and reporting tool routing",
+          "Paper-account workflow assistance"
+        ],
+        "x-agent-execution": "streaming",
+        "x-agent-safety": "paper_only"
       }
     },
     "/v2/agents/chat/invoke": {
@@ -1057,8 +1439,8 @@
         "tags": [
           "agent-invocation"
         ],
-        "summary": "Invoke the primary DeepAgent and return one JSON response",
-        "description": "Run the same DeepAgents harness as web/mobile without requiring SSE parsing.",
+        "summary": "Invoke DeepAgent Assistant (JSON compatibility)",
+        "description": "Run the same DeepAgents harness as web/mobile without requiring SSE parsing.\n\n### Agent skills\n\n- Legacy request and response shape\n- Tenant-aware DeepAgents routing\n- Public research for service principals without a tenant\n- Single-response JSON transport\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `paper_only`",
         "operationId": "v2_invoke_chat_v2_agents_chat_invoke_post",
         "requestBody": {
           "content": {
@@ -1099,7 +1481,17 @@
           {
             "ServiceApiKey": []
           }
-        ]
+        ],
+        "x-agent-slug": "deep-agent-json-compat",
+        "x-agent-category": "assistant",
+        "x-agent-skills": [
+          "Legacy request and response shape",
+          "Tenant-aware DeepAgents routing",
+          "Public research for service principals without a tenant",
+          "Single-response JSON transport"
+        ],
+        "x-agent-execution": "synchronous",
+        "x-agent-safety": "paper_only"
       }
     },
     "/v2/agents/premarket/invoke": {
@@ -1107,8 +1499,8 @@
         "tags": [
           "agent-invocation"
         ],
-        "summary": "V2 Invoke Premarket",
-        "description": "Run the read-only Premarket Agent.",
+        "summary": "Invoke Premarket Agent",
+        "description": "Run the read-only Premarket Agent.\n\n### Agent skills\n\n- Premarket mover discovery\n- Catalyst and news synthesis\n- Candidate ranking\n- Saved-scan retrieval\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `read_only`",
         "operationId": "v2_invoke_premarket_v2_agents_premarket_invoke_post",
         "requestBody": {
           "content": {
@@ -1149,7 +1541,17 @@
           {
             "ServiceApiKey": []
           }
-        ]
+        ],
+        "x-agent-slug": "premarket",
+        "x-agent-category": "research",
+        "x-agent-skills": [
+          "Premarket mover discovery",
+          "Catalyst and news synthesis",
+          "Candidate ranking",
+          "Saved-scan retrieval"
+        ],
+        "x-agent-execution": "synchronous",
+        "x-agent-safety": "read_only"
       }
     },
     "/v2/agents/alpha-growth/invoke": {
@@ -1157,8 +1559,8 @@
         "tags": [
           "agent-invocation"
         ],
-        "summary": "V2 Invoke Alpha Growth",
-        "description": "Run a read-only Growth methodology report.",
+        "summary": "Invoke Alpha Growth Agent",
+        "description": "Run a read-only Growth methodology report.\n\n### Agent skills\n\n- Growth-quality assessment\n- Fundamental evidence collection\n- Catalyst and risk analysis\n- Persistent research reports\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `read_only`",
         "operationId": "v2_invoke_alpha_growth_v2_agents_alpha_growth_invoke_post",
         "requestBody": {
           "content": {
@@ -1199,7 +1601,17 @@
           {
             "ServiceApiKey": []
           }
-        ]
+        ],
+        "x-agent-slug": "alpha-growth",
+        "x-agent-category": "research",
+        "x-agent-skills": [
+          "Growth-quality assessment",
+          "Fundamental evidence collection",
+          "Catalyst and risk analysis",
+          "Persistent research reports"
+        ],
+        "x-agent-execution": "synchronous",
+        "x-agent-safety": "read_only"
       }
     },
     "/v2/agents/alpha-value/invoke": {
@@ -1207,8 +1619,8 @@
         "tags": [
           "agent-invocation"
         ],
-        "summary": "V2 Invoke Alpha Value",
-        "description": "Run a read-only Value methodology report.",
+        "summary": "Invoke Alpha Value Agent",
+        "description": "Run a read-only Value methodology report.\n\n### Agent skills\n\n- Valuation and margin-of-safety review\n- Fundamental evidence collection\n- Catalyst and risk analysis\n- Persistent research reports\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `read_only`",
         "operationId": "v2_invoke_alpha_value_v2_agents_alpha_value_invoke_post",
         "requestBody": {
           "content": {
@@ -1249,7 +1661,17 @@
           {
             "ServiceApiKey": []
           }
-        ]
+        ],
+        "x-agent-slug": "alpha-value",
+        "x-agent-category": "research",
+        "x-agent-skills": [
+          "Valuation and margin-of-safety review",
+          "Fundamental evidence collection",
+          "Catalyst and risk analysis",
+          "Persistent research reports"
+        ],
+        "x-agent-execution": "synchronous",
+        "x-agent-safety": "read_only"
       }
     },
     "/v2/agents/alpha-compare/invoke": {
@@ -1257,8 +1679,8 @@
         "tags": [
           "agent-invocation"
         ],
-        "summary": "V2 Invoke Alpha Compare",
-        "description": "Run Growth and Value agents over a shared evidence collection.",
+        "summary": "Invoke Alpha Comparison Agent",
+        "description": "Run Growth and Value agents over a shared evidence collection.\n\n### Agent skills\n\n- Shared-evidence company research\n- Growth-versus-value comparison\n- Thesis conflict identification\n- Paired persistent reports\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `read_only`",
         "operationId": "v2_invoke_alpha_compare_v2_agents_alpha_compare_invoke_post",
         "requestBody": {
           "content": {
@@ -1299,7 +1721,17 @@
           {
             "ServiceApiKey": []
           }
-        ]
+        ],
+        "x-agent-slug": "alpha-compare",
+        "x-agent-category": "research",
+        "x-agent-skills": [
+          "Shared-evidence company research",
+          "Growth-versus-value comparison",
+          "Thesis conflict identification",
+          "Paired persistent reports"
+        ],
+        "x-agent-execution": "synchronous",
+        "x-agent-safety": "read_only"
       }
     },
     "/v2/agents/autonomy-scout/invoke": {
@@ -1307,8 +1739,8 @@
         "tags": [
           "agent-invocation"
         ],
-        "summary": "V2 Invoke Autonomy Scout",
-        "description": "Scan candidates and enqueue the durable paper-only autonomy pipeline.",
+        "summary": "Invoke Autonomy Scout",
+        "description": "Scan candidates and enqueue the durable paper-only autonomy pipeline.\n\n### Agent skills\n\n- Market candidate scouting\n- Strategy-aware candidate ranking\n- Durable autonomy-run enqueueing\n- Paper-only account isolation\n\n**Execution:** `asynchronous`  \n**Access:** `authenticated`  \n**Safety:** `paper_only`",
         "operationId": "v2_invoke_autonomy_scout_v2_agents_autonomy_scout_invoke_post",
         "requestBody": {
           "content": {
@@ -1349,7 +1781,17 @@
           {
             "ServiceApiKey": []
           }
-        ]
+        ],
+        "x-agent-slug": "autonomy-scout",
+        "x-agent-category": "orchestration",
+        "x-agent-skills": [
+          "Market candidate scouting",
+          "Strategy-aware candidate ranking",
+          "Durable autonomy-run enqueueing",
+          "Paper-only account isolation"
+        ],
+        "x-agent-execution": "asynchronous",
+        "x-agent-safety": "paper_only"
       }
     },
     "/health": {
@@ -1368,7 +1810,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/cmd": {
@@ -2133,16 +2576,17 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/v2/chat": {
       "post": {
         "tags": [
-          "chat"
+          "agent-invocation"
         ],
-        "summary": "Streaming chat (SSE) \u2014 same router as the web chat",
-        "description": "Streaming chat for the mobile app \u2014 the SAME router as the web chat.\n\nAuth: optional `Authorization: Bearer <JWT>` (authed users trade under their own\nlinked Alpaca account; anonymous falls back to the server's paper keys).\n\nBody (JSON or form-encoded): `msg` (or `message`), `thread_id` (or `sid`).\n\nResponse: `text/event-stream` with named SSE events \u2014\n  session \u00b7 agent_route \u00b7 token \u00b7 tool_start \u00b7 tool_end \u00b7 error \u00b7 done\n(`data:` is JSON). This matches the web chat event contract.",
+        "summary": "Stream DeepAgent Assistant (SSE)",
+        "description": "Streaming chat for the mobile app \u2014 the SAME router as the web chat.\n\nAuth: optional `Authorization: Bearer <JWT>`. Authenticated users may use\ncaller-owned portfolio and paper-action tools. Anonymous callers receive\npublic market/research tools only and never use server broker credentials.\n\nBody (JSON or form-encoded): `msg` (or `message`), `thread_id` (or `sid`).\n\nResponse: `text/event-stream` with named SSE events \u2014\n  session \u00b7 agent_route \u00b7 token \u00b7 tool_start \u00b7 tool_end \u00b7 error \u00b7 done\n(`data:` is JSON). This matches the web chat event contract.\n\n### Agent skills\n\n- Token-by-token conversational responses\n- Agent routing events\n- Tool execution events\n- Conversation-thread continuity\n\n**Execution:** `streaming`  \n**Access:** `public`  \n**Safety:** `paper_only`",
         "operationId": "v2_chat_v2_chat_post",
         "requestBody": {
           "content": {
@@ -2156,7 +2600,7 @@
                   },
                   "thread_id": {
                     "type": "string",
-                    "description": "Conversation id for history continuity.",
+                    "description": "Conversation id. Authenticated callers receive durable continuity; anonymous calls use it only as a correlation label.",
                     "example": "mobile-1"
                   }
                 },
@@ -2209,7 +2653,17 @@
             "ServiceApiKey": []
           },
           {}
-        ]
+        ],
+        "x-agent-slug": "deep-agent-stream",
+        "x-agent-category": "assistant",
+        "x-agent-skills": [
+          "Token-by-token conversational responses",
+          "Agent routing events",
+          "Tool execution events",
+          "Conversation-thread continuity"
+        ],
+        "x-agent-execution": "streaming",
+        "x-agent-safety": "paper_only"
       }
     },
     "/v2/order": {
@@ -2275,7 +2729,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     }
   },
@@ -2376,6 +2831,17 @@
             "type": "string",
             "title": "Name"
           },
+          "category": {
+            "type": "string",
+            "enum": [
+              "assistant",
+              "research",
+              "analysis",
+              "trading",
+              "orchestration"
+            ],
+            "title": "Category"
+          },
           "description": {
             "type": "string",
             "title": "Description"
@@ -2418,17 +2884,27 @@
               "orchestration"
             ],
             "title": "Safety"
+          },
+          "skills": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Skills",
+            "description": "Stable, human-readable capabilities exposed by this agent."
           }
         },
         "type": "object",
         "required": [
           "slug",
           "name",
+          "category",
           "description",
           "method",
           "path",
           "execution",
-          "safety"
+          "safety",
+          "skills"
         ],
         "title": "AgentDescriptor"
       },
@@ -3008,6 +3484,253 @@
           "date"
         ],
         "title": "DailyPnl"
+      },
+      "DeepAgentMessageRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Stable client-generated UUID used for idempotency"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "role",
+          "content"
+        ],
+        "title": "DeepAgentMessageRequest",
+        "description": "One append-only client message for a durable DeepAgent thread."
+      },
+      "DeepAgentModelInfo": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "name"
+        ],
+        "title": "DeepAgentModelInfo"
+      },
+      "DeepAgentOutputMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "const": "assistant",
+            "title": "Role",
+            "default": "assistant"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "content"
+        ],
+        "title": "DeepAgentOutputMessage"
+      },
+      "DeepAgentRequest": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/DeepAgentMessageRequest"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Messages"
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Id",
+            "description": "Existing owned thread UUID"
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id",
+            "description": "Optional owned Alpaca account UUID"
+          },
+          "stream": {
+            "type": "boolean",
+            "title": "Stream",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "DeepAgentRequest",
+        "examples": [
+          {
+            "messages": [
+              {
+                "content": "Backtest buy the dip on AAPL and MSFT",
+                "id": "68d8968b-4ec1-44c3-9d0d-a3d519c8086b",
+                "role": "user"
+              }
+            ],
+            "stream": false
+          }
+        ]
+      },
+      "DeepAgentResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "thread_id": {
+            "type": "string",
+            "title": "Thread Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "framework": {
+            "type": "string",
+            "const": "deepagents",
+            "title": "Framework",
+            "default": "deepagents"
+          },
+          "model": {
+            "$ref": "#/components/schemas/DeepAgentModelInfo"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/DeepAgentOutputMessage"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/DeepAgentTrace"
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "subagents": {
+            "items": {
+              "$ref": "#/components/schemas/DeepAgentTrace"
+            },
+            "type": "array",
+            "title": "Subagents"
+          },
+          "cached": {
+            "type": "boolean",
+            "title": "Cached",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "thread_id",
+          "status",
+          "model"
+        ],
+        "title": "DeepAgentResponse"
+      },
+      "DeepAgentTrace": {
+        "properties": {
+          "call_id": {
+            "type": "string",
+            "title": "Call Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "started",
+              "completed",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "call_id",
+          "name",
+          "status"
+        ],
+        "title": "DeepAgentTrace"
       },
       "FullCyclePhase": {
         "properties": {
@@ -4990,39 +5713,83 @@
   "tags": [
     {
       "name": "meta",
-      "description": "API discovery and health"
+      "description": "API discovery and health",
+      "x-displayName": "Platform"
     },
     {
       "name": "auth",
-      "description": "User registration and login"
+      "description": "User registration and login",
+      "x-displayName": "Authentication"
     },
     {
       "name": "agents",
-      "description": "Agent lifecycle \u2014 backtest, paper trade, validate, reconcile, full cycle"
+      "description": "Agent lifecycle \u2014 status and cancellation",
+      "x-displayName": "Agent lifecycle"
     },
     {
       "name": "agent-invocation",
-      "description": "Typed service-to-service agent invocation"
+      "description": "Typed service-to-service invocation for the primary DeepAgent and specialist research/autonomy agents. Each operation documents its skills, execution model, access boundary, and safety level.",
+      "x-displayName": "Agent skills & invocation"
     },
     {
       "name": "chat",
-      "description": "DeepAgents chat, as JSON or Server-Sent Events"
+      "description": "DeepAgents chat, as JSON or Server-Sent Events",
+      "x-displayName": "Chat"
     },
     {
       "name": "data",
-      "description": "Query runs, trades, reports, P&L"
+      "description": "Query runs, trades, reports, P&L",
+      "x-displayName": "Data & reporting"
     },
     {
       "name": "market",
-      "description": "Market data \u2014 news, prices, profiles, movers"
+      "description": "Market data \u2014 news, prices, profiles, movers",
+      "x-displayName": "Market data"
     },
     {
       "name": "trading",
-      "description": "Paper-only order placement"
+      "description": "Paper-only order placement",
+      "x-displayName": "Paper trading"
     },
     {
       "name": "legacy",
-      "description": "Legacy endpoints (markdown responses via CommandProcessor)"
+      "description": "Legacy endpoints (markdown responses via CommandProcessor)",
+      "x-displayName": "Legacy API"
+    }
+  ],
+  "externalDocs": {
+    "description": "AlpaTrade developer portal and integration guide",
+    "url": "https://alpatrade.chat/developers"
+  },
+  "x-tagGroups": [
+    {
+      "name": "Agent APIs",
+      "tags": [
+        "agent-invocation",
+        "agents",
+        "chat"
+      ]
+    },
+    {
+      "name": "Trading and data",
+      "tags": [
+        "trading",
+        "data",
+        "market"
+      ]
+    },
+    {
+      "name": "Platform",
+      "tags": [
+        "auth",
+        "meta"
+      ]
+    },
+    {
+      "name": "Compatibility",
+      "tags": [
+        "legacy"
+      ]
     }
   ]
 }

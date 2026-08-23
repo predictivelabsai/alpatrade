@@ -42,6 +42,9 @@ prefer `engine.*`.
 - **Python 3.13**, virtualenv at `.venv/`, managed with `uv`
 - **Unified web app** (`app.py`, port 5001) — FastHTML house-style shell + verticals switcher; mounts the equities vertical
 - **Production REST API** (`api_app.py`, port 5001) — FastAPI; typed `/v2/*` contract, agent catalog, Swagger and ReDoc
+- **Canonical DeepAgents API** (`engine/ai/deepagents.py`) — authenticated
+  `POST /v2/deepagents`, durable PostgreSQL checkpoints/transcripts, JSON or SSE,
+  tenant-scoped tools and five native specialists
 - **Namespaced API shell** (`api.py`, port 5002) — optional compatibility mount under `/api/v1/equities`
 - **AG-UI Chat** (`agui_app.py`, port 5003) — LangGraph chat agent (XAI Grok) with WebSocket streaming
 - **Rich CLI** (entry point: `cli.py` → `tui/pt_cli.py` → `tui/command_processor.py`; console script `alpatrade`)
@@ -137,7 +140,9 @@ Legacy web/api apps ───────┘                                    
 
 1. **CLI**: `cli.py` → `tui/pt_cli.py` (prompt_toolkit REPL) → `tui/command_processor.py` dispatches commands
 2. **AG-UI**: `agui_app.py` intercepts CLI commands via `_CLI_BASES`/`_CLI_EXACT` sets, routes to `CommandProcessor`; free-form text goes to the DeepAgents harness with `StructuredTool` wrappers
-3. **Web/API**: route handlers call `Orchestrator` or `CommandProcessor` directly
+3. **Canonical agent API**: `api_app.py` → `engine.ai.deepagents.DeepAgentService` →
+   tenant-context tools/native specialists; long actions enqueue the autonomy worker
+4. **Other Web/API routes**: handlers call `Orchestrator` or `CommandProcessor` directly
 
 `CommandProcessor` is the central dispatcher. It parses positional params (e.g., `trades paper btd-3dp`) and routes to handler methods (`_agent_trades`, `_agent_runs`, `_agent_top`, etc.). Unknown input falls through to the AI chat agent.
 
@@ -154,6 +159,9 @@ env vars → `_DEFAULTS`. `build_chat_model(settings)` turns that into a LangCha
   `MODEL_NAMES["xai"]` if it's unavailable — this is why a stale/region-locked `MODEL_NAME` (e.g. the
   region-locked `grok-4.5`) still yields a working agent. Keep the preferred model first in that list.
 - `agui_app.agent_for_user(user_id)` returns a per-user agent cached by `(provider, model, framework)`; DeepAgents is the default harness.
+- `POST /v2/deepagents` always calls `create_deep_agent` directly, caches graphs by
+  effective provider/model, and never uses the runtime fallback chain. It returns
+  503 when DeepAgents, the model, or the PostgreSQL checkpointer is unavailable.
 - **Voice** (`engine/voice.py`) has its OWN model (`XAI_VOICE_MODEL`, default `grok-4-fast`) and is NOT
   routed through this self-heal (realtime models differ from chat-completion models).
 - `get_stock_news` (chat tool) forces the configured `SEARCH_PROVIDER` (default **Tavily**).
@@ -196,7 +204,7 @@ Five agents coordinated by the Orchestrator (`agents/orchestrator.py`):
 
 **Communication**: File-based JSON message bus (`agents/shared/message_bus.py` → `data/agent_messages/`). State persistence: `agents/shared/state.py` → `data/agent_state.json`.
 
-**Workflow**: Backtest → Validate → Paper Trade → Validate → Report
+**Workflow**: Backtest → Validate → Paper Trade → Validate → Reconcile → Report
 
 ### Data Flow
 
@@ -215,8 +223,11 @@ PostgreSQL with `alpatrade` schema. Key tables: `runs`, `trades`, `backtest_summ
 `users`), `user_settings` (per-user provider prefs, `sql/14`), `chat_messages`, Hermes-owned
 `strategy_candidates`/`hermes_jobs` (`sql/18`–`sql/20`), and the autonomy engine tables
 `autonomy_runs`/`autonomy_run_steps`/`autonomy_events`/`autonomy_promotions` (`sql/15`), plus
-`alpha_research_runs` for user-scoped Growth/Value reports (`sql/17`). Migrations in
-`sql/` (numbered `01_` through `21_`, idempotent migrations). Apply one with
+`alpha_research_runs` for user-scoped Growth/Value reports (`sql/17`), and
+`deepagent_responses`/`deepagent_events`/`deepagent_actions` for durable API
+idempotency and sanitized traces (`sql/22`). Official LangGraph checkpoint tables
+are created in the `alpatrade` search path by `AsyncPostgresSaver.setup()`.
+Migrations in `sql/` (numbered `01_` through `22_`, idempotent migrations). Apply one with
 `python run_migration.py sql/NN_name.sql` (no migration-tracking table). All data tables carry `user_id`
 (and `account_id`) for isolation.
 

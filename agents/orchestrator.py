@@ -66,20 +66,26 @@ class Orchestrator:
         self.state.run_id = self.run_id
         self.state.started_at = datetime.now(timezone.utc).isoformat()
 
-        # Resolve per-user Alpaca keys (None = fall back to env vars)
+        # Tenant invocations resolve an owned account and never use env broker keys.
+        # CLI invocations with user_id=None retain the historical env-key behavior.
         self._alpaca_api_key = None
         self._alpaca_secret_key = None
+        self._has_tenant_keys = False
         self._account_name = ""
         if user_id:
             try:
-                from utils.auth import get_alpaca_keys, get_user_accounts
-                keys = get_alpaca_keys(user_id, account_id)
+                from engine.auth import get_alpaca_keys, get_user_accounts
+                accounts = get_user_accounts(user_id)
+                if self.account_id is None and accounts:
+                    self.account_id = accounts[0]["account_id"]
+                keys = get_alpaca_keys(user_id, self.account_id)
                 if keys:
                     self._alpaca_api_key, self._alpaca_secret_key = keys
+                    self._has_tenant_keys = True
                 # Resolve account_name for email reports
-                if account_id:
-                    for acc in get_user_accounts(user_id):
-                        if acc["account_id"] == str(account_id):
+                if self.account_id:
+                    for acc in accounts:
+                        if acc["account_id"] == str(self.account_id):
                             self._account_name = acc.get("account_name", "")
                             break
             except Exception:
@@ -87,19 +93,20 @@ class Orchestrator:
 
         # Initialize agents
         self.backtester = BacktestAgent(message_bus=self.bus, state=self.state,
-                                        user_id=user_id, account_id=account_id)
+                                        user_id=user_id, account_id=self.account_id)
         self.paper_trader = PaperTradeAgent(message_bus=self.bus, state=self.state,
                                              user_id=user_id,
                                              alpaca_api_key=self._alpaca_api_key,
                                              alpaca_secret_key=self._alpaca_secret_key,
-                                             account_id=account_id,
+                                             account_id=self.account_id,
                                              account_name=self._account_name)
         self.validator = ValidateAgent(message_bus=self.bus, state=self.state,
-                                       user_id=user_id)
+                                       user_id=user_id, account_id=self.account_id)
         self.reconciler = ReconcileAgent(message_bus=self.bus, state=self.state,
                                           user_id=user_id,
                                           alpaca_api_key=self._alpaca_api_key,
-                                          alpaca_secret_key=self._alpaca_secret_key)
+                                          alpaca_secret_key=self._alpaca_secret_key,
+                                          account_id=self.account_id)
 
         # Initialize agent states
         for name in ["backtester", "paper_trader", "validator", "reconciler"]:
@@ -247,6 +254,8 @@ class Orchestrator:
 
     def run_paper_trade(self, config: Dict[str, Any] = None, stop_event=None) -> Dict[str, Any]:
         """Run paper trading phase."""
+        if self.user_id and not self._has_tenant_keys:
+            return {"error": "No linked Alpaca paper account for this user."}
         config = config or {}
         self._config = config
         if self._mode is None:
@@ -435,6 +444,8 @@ class Orchestrator:
 
     def run_reconciliation(self, config: Dict[str, Any] = None) -> Dict[str, Any]:
         """Run reconciliation against Alpaca actual holdings."""
+        if self.user_id and not self._has_tenant_keys:
+            return {"error": "No linked Alpaca paper account for this user."}
         config = config or {}
         if self._mode is None:
             self._mode = "reconcile"
