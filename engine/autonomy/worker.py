@@ -18,6 +18,7 @@ import time
 
 from engine.autonomy import queue, store
 from engine.autonomy.graph import JobCancelled, deepagent_job_pipeline, default_pipeline
+from utils.agent_storage import sweep_stale_paper_runs
 
 log = logging.getLogger("autonomy.worker")
 
@@ -25,6 +26,9 @@ SCAN_SECONDS = int(os.getenv("AUTONOMY_SCAN_SECONDS", "300"))
 STALE_SECONDS = int(os.getenv("AUTONOMY_STALE_SECONDS", "900"))
 MAX_ATTEMPTS = int(os.getenv("AUTONOMY_MAX_ATTEMPTS", "3"))
 HEARTBEAT_SECONDS = int(os.getenv("AUTONOMY_HEARTBEAT_SECONDS", "30"))
+# Paper runs left 'running' by an interrupted/redeployed process are swept to
+# 'stopped' once their heartbeat is older than this (default 30 min).
+RUNS_STALE_SECONDS = int(os.getenv("RUNS_STALE_SECONDS", "1800"))
 ADVISOR_POLL_SECONDS = max(
     1, int(os.getenv("ADVISOR_WORKER_POLL_SECONDS", "10"))
 )
@@ -155,6 +159,7 @@ def loop(worker_id: str = "worker-1") -> None:
         try:
             reclaimed = queue.requeue_unfinished(STALE_SECONDS)
             uncertain = queue.fail_uncertain_trading_jobs(STALE_SECONDS)
+            sweep_stale_paper_runs(RUNS_STALE_SECONDS)
             if reclaimed:
                 log.info("requeued %d stale run(s)", reclaimed)
             if uncertain:

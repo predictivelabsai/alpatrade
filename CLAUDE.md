@@ -229,7 +229,7 @@ idempotency and sanitized traces (`sql/22`), plus tenant/account-scoped
 `advisor_reports`/`advisor_deliveries` for the daily DeepAgent advisor (`sql/23`).
 Official LangGraph checkpoint tables are created in the `alpatrade` search path by
 `AsyncPostgresSaver.setup()`.
-Migrations in `sql/` (numbered `01_` through `23_`, idempotent migrations). Apply one with
+Migrations in `sql/` (numbered `01_` through `24_`, idempotent migrations). Apply one with
 `python run_migration.py sql/NN_name.sql` (no migration-tracking table). All data tables carry `user_id`
 (and `account_id`) for isolation.
 

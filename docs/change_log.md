@@ -1,5 +1,20 @@
 # Change Log
 
+## 0.18.0 — 2026-08-23
+
+### Stale paper-run cleanup ("zombie" runs)
+
+- Added `heartbeat_at` to `alpatrade.runs` (`sql/24`); a live paper session now
+  stamps its heartbeat each cycle so a legitimately long-running session is never
+  mistaken for an orphan.
+- The autonomy worker sweeps paper runs left `running` by an interrupted or
+  redeployed process (heartbeat older than `RUNS_STALE_SECONDS`, default 30 min)
+  to `stopped`, and the migration finalizes already-orphaned rows once. This stops
+  the daily report from showing "+N older runs with identical configuration still
+  marked running".
+- Tests: migration hygiene, heartbeat/sweep contracts, per-cycle heartbeat, and
+  the worker sweep call.
+
 ## 0.17.0 — 2026-08-23
 
 ### Daily DeepAgent trading advisor
