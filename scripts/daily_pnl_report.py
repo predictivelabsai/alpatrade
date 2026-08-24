@@ -177,7 +177,54 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
     data["periods"] = (save_equity_snapshot(user_id, account_id, data["day"], data, api)
                        if user_id and account_id and data["day"] == today else {})
     data["benchmark"] = _benchmark_returns(data["day"], data["periods"])
+    data["account_stats"] = (account_stats(user_id, account_id, data["day"])
+                             if user_id and account_id else {})
     return data
+
+
+def account_stats(user_id: str, account_id: str, day: str) -> dict:
+    """Cumulative realized P&L (from paper trades) plus annualized Sharpe and max
+    drawdown derived from the persisted daily equity-snapshot curve.
+
+    Sharpe/drawdown need a few days of history; they are omitted below 5 snapshot
+    days. Best-effort ({} on any failure)."""
+    try:
+        import statistics
+        from sqlalchemy import text
+        from engine.db.pool import DatabasePool
+        with DatabasePool().get_session() as session:
+            eq = session.execute(text("""
+                SELECT equity, net_cash_flow
+                FROM alpatrade.account_equity_snapshots
+                WHERE user_id = :uid AND account_id = :aid
+                  AND trading_date <= CAST(:day AS DATE)
+                ORDER BY trading_date
+            """), {"uid": user_id, "aid": account_id, "day": day}).fetchall()
+            realized = session.execute(text("""
+                SELECT COALESCE(SUM(pnl), 0)
+                FROM alpatrade.trades
+                WHERE user_id = :uid AND account_id = :aid
+                  AND trade_type = 'paper' AND pnl IS NOT NULL
+            """), {"uid": user_id, "aid": account_id}).scalar()
+        stats: dict = {"realized_pnl": float(realized or 0)}
+        equities = [float(r[0]) for r in eq]
+        flows = [float(r[1] or 0) for r in eq]
+        if len(equities) >= 5:
+            rets = [(equities[i] - flows[i] - equities[i - 1]) / equities[i - 1]
+                    for i in range(1, len(equities)) if equities[i - 1] > 0]
+            if len(rets) >= 2:
+                sd = statistics.stdev(rets)
+                stats["sharpe"] = (statistics.fmean(rets) / sd * (252 ** 0.5)) if sd > 0 else None
+            peak, mdd = equities[0], 0.0
+            for e in equities:
+                peak = max(peak, e)
+                if peak > 0:
+                    mdd = min(mdd, e / peak - 1)
+            stats["max_drawdown"] = mdd * 100
+            stats["snapshot_days"] = len(equities)
+        return stats
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def _benchmark_returns(day: str, periods: dict, symbol: str = "SPY") -> dict:
@@ -682,6 +729,26 @@ def _render_periods(d: dict) -> str:
     return f"<h3 style='margin:.9rem 0 .2rem'>Performance</h3><table><tr>{''.join(cells)}</tr></table>"
 
 
+def _render_risk(d: dict) -> str:
+    """Cumulative realized P&L + annualized Sharpe / max drawdown from the curve."""
+    stats = d.get("account_stats") or {}
+    if not stats:
+        return ""
+    parts = []
+    rp = _f(stats.get("realized_pnl"))
+    rc = "#1F5D43" if rp >= 0 else "#b0653f"
+    parts.append(f"Realized P&amp;L to date <b style='color:{rc}'>${rp:+,.2f}</b>")
+    if stats.get("sharpe") is not None:
+        parts.append(f"Sharpe (annualized) <b>{_f(stats.get('sharpe')):.2f}</b>")
+    if stats.get("max_drawdown") is not None:
+        parts.append(f"Max drawdown <b style='color:#b0653f'>{_f(stats.get('max_drawdown')):.2f}%</b>")
+    note = (f" · from {int(stats.get('snapshot_days') or 0)} snapshot day(s)"
+            if stats.get("snapshot_days") else "")
+    return ("<p style='font-size:13px;color:#415046;margin:.3rem 0'>"
+            + " &nbsp;·&nbsp; ".join(parts)
+            + f"<span style='color:#9AA39C;font-size:11px'>{note}</span></p>")
+
+
 def _render_agent_benchmark(d: dict) -> str:
     rows = d.get("agent_performance") or []
     if not rows:
@@ -744,6 +811,7 @@ def render(d: dict) -> str:
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Day trades (5d)</td><td>{_e(d['daytrade_count']) or 'None'}</td></tr>
   </table>
   {_render_periods(d)}
+  {_render_risk(d)}
   {_render_agent_benchmark(d)}
   {_render_strategy(d)}
   <h3>Open positions ({len(d['positions'])})</h3>
