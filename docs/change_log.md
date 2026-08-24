@@ -1,5 +1,29 @@
 # Change Log
 
+## 0.21.0 — 2026-08-24
+
+### Daily PnL report — critique fixes (1-10)
+
+- Unified stale-orphan run status on `'stale'` (worker sweep + report reconcile
+  agreed), leaving `'stopped'` for a deliberate Ctrl+C.
+- CLI `--user/--account/--framework` now render the full per-account report
+  (MTD/YTD, agent benchmark, live runs), matching the scheduler.
+- Hybrid MTD/YTD: seed the baseline from Alpaca portfolio history when snapshots
+  don't reach the window start, so returns are correct retroactively; each window
+  tags its `source`.
+- Labeled baselines: "today (vs prior close)" and "unrealised (since entry)".
+- Populate `net_cash_flow` from Alpaca activities so the cash-flow correction is
+  real, not a silent no-op.
+- Added a SPY buy-and-hold benchmark (with excess return) on MTD/YTD.
+- Added cumulative realized P&L, annualized Sharpe, and max drawdown from the
+  equity-snapshot curve.
+- Back-dated reports show that day's equity/day-change from Alpaca history (only
+  positions/cash stay live), with a precise notice.
+- Added a "data unavailable" banner distinguishing an outage from "no activity".
+- Consolidated recipients: `--to` wins, else the account owner, else the legacy
+  `PNL_REPORT_TO` broadcast.
+- Tests: analytics + render helpers, email send, run recovery (DB-free).
+
 ## 0.20.1 — 2026-08-24
 
 ### Fix: daily PnL report email actually sends
