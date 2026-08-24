@@ -14,7 +14,7 @@ def test_migration_adds_heartbeat_and_cleans_orphans():
     # One-time cleanup finalizes existing orphaned paper runs.
     assert "mode = 'paper'" in sql
     assert "status = 'running'" in sql
-    assert "status = 'stopped'" in sql
+    assert "status = 'stale'" in sql
     # Idempotent + scoped: never creates the schema, only alters runs.
     assert "CREATE SCHEMA" not in sql.upper()
     assert "alpatrade.runs" in sql
@@ -35,7 +35,7 @@ def test_agent_storage_exposes_heartbeat_and_sweep():
     # Finalizes only stale paper runs, falling back to started_at/created_at for
     # pre-heartbeat rows, and returns the count.
     assert "mode = 'paper'" in sweep
-    assert "status = 'stopped'" in sweep
+    assert "status = 'stale'" in sweep
     assert "COALESCE(heartbeat_at, started_at, created_at)" in sweep
 
 

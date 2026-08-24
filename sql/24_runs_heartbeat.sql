@@ -6,7 +6,8 @@
 -- SIGTERM/SIGKILL the process dies first, so the row stays 'running' forever and
 -- the daily report shows "+N older runs ... still marked running" ("zombies").
 -- A live paper session now stamps heartbeat_at each cycle; the autonomy worker
--- sweeps paper runs whose heartbeat has gone stale to 'stopped'.
+-- sweeps paper runs whose heartbeat has gone stale to 'stale' (the same terminal
+-- status the report's reconcile uses; distinct from a deliberate 'stopped').
 
 ALTER TABLE alpatrade.runs
     ADD COLUMN IF NOT EXISTS heartbeat_at TIMESTAMPTZ;
@@ -19,7 +20,7 @@ CREATE INDEX IF NOT EXISTS idx_runs_paper_running
 -- One-time cleanup: finalize already-orphaned paper runs. Pre-migration rows have
 -- no heartbeat, so fall back to started_at/created_at to judge staleness.
 UPDATE alpatrade.runs
-SET status = 'stopped',
+SET status = 'stale',
     completed_at = COALESCE(completed_at, NOW())
 WHERE mode = 'paper'
   AND status = 'running'

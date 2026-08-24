@@ -123,7 +123,9 @@ def sweep_stale_paper_runs(stale_seconds: int = 1800) -> int:
 
     A live paper session heartbeats every cycle; one whose heartbeat (or, for
     pre-heartbeat rows, started_at/created_at) is older than ``stale_seconds`` is
-    considered dead and marked 'stopped'. Returns the number of rows finalized.
+    considered dead and marked 'stale' — the same terminal status the report's
+    reconcile_stale_runs uses, distinct from a deliberate 'stopped' (Ctrl+C).
+    Returns the number of rows finalized.
     """
     backend = get_storage_backend()
     if backend != "db":
@@ -134,7 +136,7 @@ def sweep_stale_paper_runs(stale_seconds: int = 1800) -> int:
         result = session.execute(
             text("""
                 UPDATE alpatrade.runs
-                SET status = 'stopped',
+                SET status = 'stale',
                     completed_at = COALESCE(completed_at, NOW())
                 WHERE mode = 'paper'
                   AND status = 'running'
@@ -145,7 +147,7 @@ def sweep_stale_paper_runs(stale_seconds: int = 1800) -> int:
         )
         count = result.rowcount or 0
     if count:
-        logger.info(f"Swept {count} stale paper run(s) -> stopped")
+        logger.info(f"Swept {count} stale paper run(s) -> stale")
     return count
 
 
