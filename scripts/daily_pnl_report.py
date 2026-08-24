@@ -91,6 +91,26 @@ def report_targets() -> list[dict]:
         return []
 
 
+def account_owner(user_id: str, account_id: str) -> dict:
+    """The owning user's email + account name for one account, or {} if not found.
+
+    Lets the CLI tenant path target the same per-owner recipient the scheduler uses,
+    instead of the global PNL_REPORT_TO broadcast list."""
+    try:
+        from sqlalchemy import text
+        from engine.db.pool import DatabasePool
+        with DatabasePool().get_session() as session:
+            row = session.execute(text("""
+                SELECT u.email, ua.account_name
+                FROM alpatrade.users u
+                JOIN alpatrade.user_accounts ua ON ua.user_id = u.user_id
+                WHERE u.user_id = :uid AND ua.account_id = :aid
+            """), {"uid": user_id, "aid": account_id}).fetchone()
+        return {"email": row[0], "account_name": row[1]} if row else {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
 def claim_report_delivery(user_id: str, account_id: str, day: str) -> bool:
     """Atomically reserve one daily delivery across all Coolify processes."""
     try:
@@ -982,9 +1002,22 @@ def main() -> int:
             return 2
         reconcile_stale_runs(args.user, args.account)
 
-    to_list = recipients(args.to)
+    # Recipients: explicit --to wins; else in tenant mode target the account owner
+    # (the scheduler's per-owner model); else fall back to the legacy PNL_REPORT_TO
+    # broadcast list.
+    owner = account_owner(args.user, args.account) if args.user and args.account else {}
+    if args.to:
+        to_list = recipients(args.to)
+    elif owner.get("email"):
+        to_list = [owner["email"]]
+    else:
+        to_list = recipients(None)
+
     data = gather(args.date, keys=keys, user_id=args.user,
                   account_id=args.account, framework=args.framework)
+    if owner:
+        data["owner_email"] = owner.get("email") or ""
+        data["account_name"] = owner.get("account_name") or ""
     html_out = render(data)
     if not args.send:
         print(html_out)
