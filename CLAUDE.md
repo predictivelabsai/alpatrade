@@ -260,10 +260,17 @@ Connection pool: `engine.db.pool` → `DatabasePool` with `get_session()` contex
 
 ## Deployment (Coolify)
 
-Prod (`alpatrade.chat` / `alpatrade.dev`) runs on **Coolify** (`https://coolify.finespresso.org` — note: **not** `coolify.predictivelabs.ai`, which is a separate instance hosting polytrade / rl-agent-swarm / macrohero / plai-crm and has different logins)
-from `docker-compose.yaml`. The web service is **`agui`** (`Dockerfile.agui` → `python main.py` →
-merged `app.py`, `ASSETHERO_WEB_PORT=5003`); the `api` service is `Dockerfile.api` (`api_app`). The old
-`web` service (`web_app.py`) is retired.
+Prod (`alpatrade.chat` / `api.alpatrade.chat`) runs on **Coolify at
+`https://coolify.predictivelabs.ai`** (migrated 2026-08-24 from the old
+`coolify.finespresso.org`), as a single `docker-compose.yaml` resource in the **Root Team**
+(project "AlpaTrade / production", app uuid `nnjuws8sa09rthx7j7xservt`). It **builds from the
+`main` branch** — keep it on `main`; pointing it at a feature branch silently ships unmerged
+work (the app once tracked `feat/hermes-agent-phase-1`, so nothing merged to `main` reached
+prod). The web service is **`agui`** (`Dockerfile.agui` → `python main.py` → merged `app.py`,
+`ASSETHERO_WEB_PORT=5003`); the `api` service is `Dockerfile.api` (`api_app`); the autonomy
+`worker` runs `Dockerfile.agui`. The old `web` service (`web_app.py`) is retired.
+Coolify UI login lives in `.env` (`COOLIFY_EMAIL`/`COOLIFY_PASSWORD`, gitignored); deploys use
+an API token only (`COOLIFY_API_TOKEN`, also a GitHub repo secret) — never the password.
 
 - **Detecting a live deploy:** new routes 404 on the old image — `curl -s -o /dev/null -w '%{http_code}'
   https://alpatrade.chat/map` should be `200` once the current build is live. To check the **api** service
