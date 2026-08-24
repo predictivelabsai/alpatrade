@@ -176,7 +176,46 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     data["periods"] = (save_equity_snapshot(user_id, account_id, data["day"], data, api)
                        if user_id and account_id and data["day"] == today else {})
+    data["benchmark"] = _benchmark_returns(data["day"], data["periods"])
     return data
+
+
+def _benchmark_returns(day: str, periods: dict, symbol: str = "SPY") -> dict:
+    """SPY buy-and-hold % over the same MTD/YTD windows, for a market comparison.
+
+    Uses daily closes from the configured market-data feed; best-effort ({} on any
+    failure) so the benchmark can never fail the report.
+    """
+    if not periods:
+        return {}
+    try:
+        import pandas as pd
+        from datetime import datetime as _dt, timedelta
+        from engine.feeds.market_data import get_historical_data
+        end = _dt.strptime(day, "%Y-%m-%d")
+        df = get_historical_data(symbol, end.replace(month=1, day=1) - timedelta(days=7),
+                                 end + timedelta(days=1), timeframe="day")
+        if df is None or df.empty or "Close" not in df:
+            return {}
+        closes = df["Close"].dropna()
+        if closes.empty:
+            return {}
+        current = float(closes.iloc[-1])
+        idx = pd.to_datetime(closes.index)
+
+        def _ret(start) -> float | None:
+            sub = closes[idx >= pd.Timestamp(start)]
+            base = float(sub.iloc[0]) if len(sub) else 0.0
+            return (current / base - 1) * 100 if base else None
+
+        out = {}
+        if periods.get("mtd"):
+            out["mtd"] = _ret(end.replace(day=1))
+        if periods.get("ytd"):
+            out["ytd"] = _ret(end.replace(month=1, day=1))
+        return out
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def gather_trades(day: str | None = None, limit: int = 100,
@@ -611,6 +650,7 @@ def _render_periods(d: dict) -> str:
     if not periods:
         return ("<p style='color:#7A867E;font-size:12px'>MTD/YTD are unavailable for this "
                 "account yet (no equity history).</p>")
+    bench = d.get("benchmark") or {}
     cells = []
     for key, label in (("mtd", "Month to date"), ("ytd", "Year to date")):
         value = periods.get(key) or {}
@@ -626,9 +666,18 @@ def _render_periods(d: dict) -> str:
             note = "est. from Alpaca history"
         else:
             note = f"{int(value.get('days') or 0)} snapshot day(s)"
+        # SPY buy-and-hold over the same window, plus excess return vs it.
+        spy = bench.get(key)
+        spy_line = ""
+        if spy is not None:
+            excess = pct - spy
+            ec = "#1F5D43" if excess >= 0 else "#b0653f"
+            spy_line = (f"<br><small style='color:#7A867E'>vs SPY {spy:+.2f}% · "
+                        f"<span style='color:{ec}'>{excess:+.2f}% excess</span></small>")
         cells.append(f"<td style='padding:8px 20px 8px 0'><b>{label}</b> "
                      "<span style='font-size:11px;color:#9AA39C'>(arithmetic)</span><br>"
-                     f"<span style='color:{color}'>${pnl:+,.2f} ({pct:+.2f}%)</span><br>"
+                     f"<span style='color:{color}'>${pnl:+,.2f} ({pct:+.2f}%)</span>"
+                     f"{spy_line}<br>"
                      f"<small style='color:#9AA39C'>{note}</small></td>")
     return f"<h3 style='margin:.9rem 0 .2rem'>Performance</h3><table><tr>{''.join(cells)}</tr></table>"
 
