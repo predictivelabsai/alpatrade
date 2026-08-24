@@ -150,6 +150,7 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
     from engine.brokers.alpaca import AlpacaAPI
     api = AlpacaAPI(*keys, paper=True) if keys else AlpacaAPI(paper=True)
     acct = api.get_account() or {}
+    account_ok = bool(acct) and "error" not in acct
     positions = api.get_positions() or []
     equity = _f(acct.get("equity"))
     last_equity = _f(acct.get("last_equity")) or equity
@@ -186,6 +187,8 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
         "day": day or today,
         "backdated": bool(day and day != today),
         "backdated_equity_ok": backdated_equity is not None,
+        "account_ok": account_ok,
+        "db_ok": _db_ok(),
     }
     data["periods"] = (save_equity_snapshot(user_id, account_id, data["day"], data, api)
                        if user_id and account_id and data["day"] == today else {})
@@ -238,6 +241,34 @@ def account_stats(user_id: str, account_id: str, day: str) -> dict:
         return stats
     except Exception:  # noqa: BLE001
         return {}
+
+
+def _db_ok() -> bool:
+    """Quick probe so the report can tell 'no data' apart from 'storage down'."""
+    try:
+        from sqlalchemy import text
+        from engine.db.pool import DatabasePool
+        with DatabasePool().get_session() as session:
+            session.execute(text("SELECT 1"))
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _render_health(d: dict) -> str:
+    """Banner when a data source was unreachable, so empty sections aren't misread
+    as 'no activity'."""
+    missing = []
+    if not d.get("account_ok", True):
+        missing.append("the Alpaca account (portfolio, positions, cash)")
+    if not d.get("db_ok", True):
+        missing.append("the database (trades, runs, MTD/YTD, benchmark)")
+    if not missing:
+        return ""
+    return ("<p style='background:#FCE8E6;border-left:3px solid #B4472F;padding:8px 10px;"
+            "font-size:12px;color:#7A2E1D;margin:.4rem 0'><b>Data unavailable:</b> could not "
+            f"load {', and '.join(missing)}. Sections below may be blank because of this, "
+            "not because there was no activity.</p>")
 
 
 def _historical_equity(api, day: str):
@@ -841,6 +872,7 @@ def render(d: dict) -> str:
 <div style="font-family:Inter,Arial,sans-serif;color:#14231B;max-width:760px">
   <h2>AlpaTrade — Daily Paper PnL · {day_label}</h2>
   {owner}
+  {_render_health(d)}
   {_stale_notice(d)}
   <p style="font-size:20px;margin:.2rem 0"><b style="color:{color}">{sign} ${d['day_pnl']:,.2f}
      ({d['day_pct']:+.2f}%)</b>
