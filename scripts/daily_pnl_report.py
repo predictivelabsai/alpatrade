@@ -156,6 +156,18 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
     day_pnl = equity - last_equity
     day_pct = (equity / last_equity - 1) * 100 if last_equity else 0.0
     unreal = sum(_f(p.get("unrealized_pl")) for p in positions)
+    # Backdated (--date in the past): the live account can't describe a past day, so
+    # take that day's equity + its day-over-day change from Alpaca portfolio history.
+    # (Positions still can't be reconstructed — the stale notice flags that.)
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    backdated_equity = None
+    if day and day != today:
+        hist_pair = _historical_equity(api, day)
+        if hist_pair:
+            hist_equity, hist_prev = hist_pair
+            backdated_equity, equity, last_equity = hist_equity, hist_equity, hist_prev
+            day_pnl = equity - last_equity
+            day_pct = (equity / last_equity - 1) * 100 if last_equity else 0.0
     trades = gather_trades(day, user_id=user_id, account_id=account_id,
                            framework=framework)
     runs = gather_runs([t.get("run_id") for t in trades], user_id=user_id,
@@ -171,9 +183,10 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
                                    framework=framework),
         "agent_performance": agent_performance(user_id, account_id, framework),
         "framework_filter": framework,
-        "day": day or datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "day": day or today,
+        "backdated": bool(day and day != today),
+        "backdated_equity_ok": backdated_equity is not None,
     }
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     data["periods"] = (save_equity_snapshot(user_id, account_id, data["day"], data, api)
                        if user_id and account_id and data["day"] == today else {})
     data["benchmark"] = _benchmark_returns(data["day"], data["periods"])
@@ -225,6 +238,30 @@ def account_stats(user_id: str, account_id: str, day: str) -> dict:
         return stats
     except Exception:  # noqa: BLE001
         return {}
+
+
+def _historical_equity(api, day: str):
+    """(equity at end of `day`, prior trading day's equity) from Alpaca history.
+
+    Lets a back-dated report show that day's real equity/day-change instead of the
+    live account. Returns None on any failure."""
+    try:
+        import pandas as pd
+        from datetime import datetime as _dt, timedelta
+        target = _dt.strptime(day, "%Y-%m-%d")
+        hist = api.get_portfolio_history(start=target - timedelta(days=10),
+                                         end=target + timedelta(days=1), timeframe="1D")
+        eq = hist.get("equity") if isinstance(hist, dict) else None
+        ts = hist.get("timestamps") if isinstance(hist, dict) else None
+        if not eq or not ts:
+            return None
+        upto = [float(e) for t, e in zip(ts, eq)
+                if pd.Timestamp(t).date() <= target.date()]
+        if not upto:
+            return None
+        return (upto[-1], upto[-2] if len(upto) >= 2 else upto[-1])
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def _benchmark_returns(day: str, periods: dict, symbol: str = "SPY") -> dict:
@@ -678,18 +715,23 @@ def _render_strategy(d: dict) -> str:
 
 
 def _stale_notice(d: dict) -> str:
-    """Warn when trades are back-dated but the account snapshot is necessarily live.
+    """Clarify which figures are historical vs live for a back-dated report.
 
-    Alpaca only exposes the account as it stands now, so a `--date` in the past mixes
-    historical trades with a current portfolio. Say so rather than implying otherwise.
+    Equity and the day-over-day change now come from Alpaca portfolio history for
+    the requested date, but Alpaca only exposes *current* positions, so those (and
+    cash/buying power) remain live. Say exactly which is which.
     """
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     if not d.get("day") or d["day"] == today:
         return ""
+    equity_src = ("equity and the day change are Alpaca history for that date"
+                  if d.get("backdated_equity_ok")
+                  else "equity/day change could not be pulled for that date and show the "
+                       "<b>live</b> account")
     return ("<p style='background:#FBF3E2;border-left:3px solid #C79A3B;padding:8px 10px;"
-            "font-size:12px;color:#5B4A22;margin:.4rem 0'>Back-dated report: trades and "
-            f"realised P&amp;L are for {_e(d['day'])}, but portfolio value, open positions "
-            "and today's change are the <b>live</b> account as of now.</p>")
+            "font-size:12px;color:#5B4A22;margin:.4rem 0'>Back-dated report for "
+            f"{_e(d['day'])}: trades and realised P&amp;L are for that date; {equity_src}; "
+            "open positions, cash and buying power are the <b>live</b> account as of now.</p>")
 
 
 def _render_periods(d: dict) -> str:
