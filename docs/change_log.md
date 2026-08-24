@@ -1,5 +1,35 @@
 # Change Log
 
+## 0.20.0 — 2026-08-24
+
+- Rebuilt the standard daily paper report around per-user, per-account Alpaca
+  credentials; removed the hard-coded distribution list and cross-tenant run/trade
+  queries.
+- Added heartbeat-verified paper-run status, process-safe delivery claims, account
+  equity snapshots for honest MTD/YTD returns (superseding the 0.19.0 Alpaca
+  portfolio-history period returns), and separate realized-P&L benchmark
+  rows for Hermes, DeepAgents, LangGraph, and explicitly labeled legacy runs.
+- Bridged the durable Hermes job heartbeat into canonical run liveness and protected
+  fresh Hermes jobs during stale-run reconciliation.
+- Replace `/app?new=1` with the saved thread URL after the first response so refresh
+  restores the new conversation instead of showing a blank composer.
+- Added migration `sql/25_tenant_agent_reporting.sql`; it only alters/creates objects
+  inside `alpatrade` and does not rewrite existing trades or run statuses.
+- Fixed Hermes detailed-backtest result routing so commands containing a job ID
+  return the selected result instead of the general jobs list.
+- Added three validation robustness windows plus SPY buy-and-hold and excess-return
+  evidence to new Hermes backtests; promotion now requires positive results across
+  a majority of the robustness windows.
+- Added a Hermes-only paper drift guard that waits for 20 closed trades across at
+  least five trading days and automatically pauses when daily paper Sharpe falls
+  below half the validated Sharpe.
+- Added owner-scoped notification delivery tests/history and DB-to-broker position
+  reconciliation in Hermes daily reports. Default agents and live trading paths
+  remain unchanged.
+- Tests: result routing, delivery history, drift thresholds, reconciliation,
+  robustness windows, benchmarks, default-agent isolation, tenant report isolation,
+  liveness, and framework-separated rendering.
+
 ## 0.19.0 — 2026-08-23
 
 ### Daily report: period returns

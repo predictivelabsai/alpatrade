@@ -726,6 +726,7 @@ def queue_backtest(strategy: str = "buy_the_dip", symbols: list[str] | None = No
                    runtime: ToolRuntime[DeepAgentContext] = None) -> dict:
     """Queue a durable grid-search backtest after an explicit user instruction."""
     config = {
+        "agent_name": "DeepAgents", "agent_framework": "deepagents",
         "strategy": strategy[:64],
         "symbols": [_ticker(symbol) for symbol in (symbols or [])[:25]],
         "lookback": lookback[:16],
@@ -924,6 +925,7 @@ def queue_paper_session(strategy: str = "buy_the_dip",
     context = _require_action(runtime)
     _broker(context)  # prove owned credentials now; workers never fall back to env
     config = {
+        "agent_name": "DeepAgents", "agent_framework": "deepagents",
         "strategy": strategy[:64],
         "symbols": [_ticker(symbol) for symbol in (symbols or [])[:25]],
         "duration_seconds": max(30, min(int(duration_seconds), 604800)),
@@ -1038,6 +1040,7 @@ def queue_full_cycle(strategy: str = "buy_the_dip", symbols: list[str] | None = 
     context = _require_action(runtime)
     _broker(context)
     config = {
+        "agent_name": "DeepAgents", "agent_framework": "deepagents",
         "strategy": strategy[:64],
         "symbols": [_ticker(symbol) for symbol in (symbols or [])[:25]],
         "lookback": lookback[:16],
@@ -1055,7 +1058,8 @@ def queue_autonomy_scout(strategy: str = "btd", limit: int = 5,
     """Queue the paper-only autonomous scout and risk-gated workflow."""
     context = _require_action(runtime)
     _broker(context)
-    config = {"strategy": strategy[:64], "limit": max(1, min(limit, 20))}
+    config = {"strategy": strategy[:64], "limit": max(1, min(limit, 20)),
+              "agent_name": "DeepAgents", "agent_framework": "deepagents"}
     return _enqueue(runtime, "queue_autonomy_scout", "full", config)
 
 

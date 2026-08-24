@@ -1,14 +1,28 @@
-"""NYSE-aware daily-advisor scheduler owned exclusively by the autonomy worker.
+"""Worker-owned schedulers: the NYSE-aware daily advisor and the nightly paper
+PnL report. Both are started once per process from the autonomy worker (safe to
+start from the web app too — each is idempotent per process).
 
-The scheduler polls rather than assuming a fixed UTC close. Alpaca's calendar is
-the authority for holidays, early closes, and daylight-saving transitions. The
-database queue's tenant/session dedupe key makes repeated polls harmless.
+Advisor scheduler:
+  Polls rather than assuming a fixed UTC close. Alpaca's calendar is the authority
+  for holidays, early closes, and daylight-saving transitions. The database queue's
+  tenant/session dedupe key makes repeated polls harmless.
+    ADVISOR_ENABLED               = true                 (default)
+    ADVISOR_CLOSE_DELAY_MINUTES   = 15
+    ADVISOR_SCHEDULER_POLL_SECONDS = 60
+
+PnL-report scheduler:
+  A single daemon thread that sleeps until the next fire time, sends one
+  tenant/account report to each owner, and re-sleeps.
+    PNL_REPORT_FREQUENCY = daily | off      (default: daily)
+    PNL_REPORT_HOUR_UTC  = 21               (0-23; ~1h after the 20:00 UTC US close)
+    Account owners are resolved from DB; no cross-account distribution list is used.
 """
 from __future__ import annotations
 
 import logging
 import os
 import threading
+import time
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
@@ -27,6 +41,54 @@ def _enabled() -> bool:
 
 def _delay_minutes() -> int:
     return max(0, int(os.getenv("ADVISOR_CLOSE_DELAY_MINUTES", "15")))
+
+
+def _cfg():
+    return (os.getenv("PNL_REPORT_FREQUENCY", "daily").strip().lower(),
+            int(os.getenv("PNL_REPORT_HOUR_UTC", "21")))
+
+
+def _next_fire(freq: str, hour: int) -> datetime | None:
+    if freq != "daily":
+        return None
+    now = datetime.now(timezone.utc)
+    target = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+    if target <= now:
+        target += timedelta(days=1)
+    return target
+
+
+def _run_pnl_report():
+    """Send one tenant/account report to its owner (best-effort)."""
+    try:
+        from scripts.daily_pnl_report import (
+            claim_report_delivery, finish_report_delivery, gather, reconcile_stale_runs,
+            render, report_targets,
+        )
+        from utils.email_util import send_email_to
+        day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        for target in report_targets():
+            if not claim_report_delivery(target["user_id"], target["account_id"], day):
+                continue
+            ok = False
+            try:
+                reconcile_stale_runs(target["user_id"], target["account_id"])
+                data = gather(keys=target["keys"], user_id=target["user_id"],
+                              account_id=target["account_id"])
+                data["owner_email"] = target["email"]
+                data["account_name"] = target["account_name"]
+                subject = (f"AlpaTrade Paper PnL — {datetime.now(timezone.utc).strftime('%b %d, %Y')} "
+                           f"({'+' if data['day_pnl'] >= 0 else ''}${data['day_pnl']:,.0f})")
+                ok = send_email_to(target["email"], subject, render(data))
+            except Exception as exc:  # one account cannot suppress every owner's report
+                log.exception("daily PnL report account=%s failed: %s",
+                              target["account_id"], exc)
+            finally:
+                finish_report_delivery(target["user_id"], target["account_id"], day, ok)
+            log.info("daily PnL report account=%s → owner: %s",
+                     target["account_id"], "sent" if ok else "FAILED")
+    except Exception as e:  # noqa: BLE001
+        log.exception("daily PnL report failed: %s", e)
 
 
 def advisor_is_due(
@@ -110,7 +172,7 @@ def enqueue_due_advisor_jobs(now: Optional[datetime] = None) -> list[str]:
     return job_ids
 
 
-def _loop() -> None:
+def _advisor_loop() -> None:
     poll_seconds = max(30, int(os.getenv("ADVISOR_SCHEDULER_POLL_SECONDS", "60")))
     log.info(
         "daily advisor scheduler started (close delay=%sm, poll=%ss, email=%s)",
@@ -126,18 +188,45 @@ def _loop() -> None:
         threading.Event().wait(poll_seconds)
 
 
+def _pnl_loop() -> None:
+    freq, hour = _cfg()
+    log.info("PnL-report scheduler: freq=%s hour_utc=%s", freq, hour)
+    while True:
+        nxt = _next_fire(*_cfg())
+        if nxt is None:
+            time.sleep(3600)  # 'off' — re-check hourly in case .env changes on restart
+            continue
+        time.sleep(max(1, (nxt - datetime.now(timezone.utc)).total_seconds()))
+        _run_pnl_report()
+        time.sleep(60)  # avoid a double-fire in the same minute
+
+
 def start() -> None:
-    """Start the worker-owned scheduler once in this process."""
+    """Start both worker-owned schedulers once in this process.
+
+    The advisor scheduler runs when ADVISOR_ENABLED is set; the nightly PnL-report
+    scheduler runs unless PNL_REPORT_FREQUENCY is 'off'. They are independent, so
+    one being disabled never suppresses the other.
+    """
     global _started
     if _started:
         return
-    if not _enabled():
-        log.info("daily advisor scheduler disabled (ADVISOR_ENABLED=false)")
-        return
     _started = True
-    threading.Thread(
-        target=_loop, name="daily-advisor-scheduler", daemon=True
-    ).start()
+
+    if _enabled():
+        threading.Thread(
+            target=_advisor_loop, name="daily-advisor-scheduler", daemon=True
+        ).start()
+    else:
+        log.info("daily advisor scheduler disabled (ADVISOR_ENABLED=false)")
+
+    freq, _ = _cfg()
+    if freq != "off":
+        threading.Thread(
+            target=_pnl_loop, name="pnl-report-scheduler", daemon=True
+        ).start()
+    else:
+        log.info("PnL-report scheduler disabled (PNL_REPORT_FREQUENCY=off)")
 
 
 __all__ = ["advisor_is_due", "enqueue_due_advisor_jobs", "start"]

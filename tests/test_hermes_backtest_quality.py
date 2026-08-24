@@ -51,6 +51,8 @@ def test_hermes_command_enables_conservative_methodology():
     assert config["conservative_execution"] is True
     assert config["slippage_bps"] == 5.0
     assert config["validation_fraction"] == 0.30
+    assert config["robustness_windows"] == 3
+    assert config["benchmark_symbol"] == "SPY"
 
 
 def test_orchestrator_forwards_objective_and_quality_flags():
@@ -121,6 +123,34 @@ def test_failed_validation_blocks_promotion(monkeypatch):
     })["best_config"]
     assert best["promotion_eligible"] is False
     assert len(best["promotion_reasons"]) >= 4
+
+
+def test_hermes_robustness_windows_and_benchmark_are_persisted(monkeypatch):
+    from agents import backtest_agent as module
+    from agents.backtest_agent import BacktestAgent
+
+    agent = BacktestAgent()
+    calls = []
+
+    def fake_grid(**kwargs):
+        calls.append(kwargs)
+        if len(calls) == 1:
+            return [_row(2.0), _row(1.8), _row(1.6)]
+        return [_row(1.0, total_return=1.0, drawdown=1.0, trades=25)]
+
+    monkeypatch.setattr(agent, "_run_buy_the_dip_grid", fake_grid)
+    monkeypatch.setattr(agent, "_store_results", lambda *args, **kwargs: None)
+    monkeypatch.setattr(module, "_benchmark_return", lambda *args, **kwargs: 0.4)
+    best = agent.run({
+        "strategy": "buy_the_dip", "symbols": ["SPY"], "lookback": "1y",
+        "objective": {"maximize": "sharpe_ratio"}, "validation_fraction": 0.30,
+        "robustness_windows": 3, "benchmark_symbol": "SPY",
+    })["best_config"]
+    assert len(calls) == 5
+    assert len(best["robustness_windows"]) == 3
+    assert best["benchmark"]["total_return"] == 0.4
+    assert best["benchmark"]["excess_return"] == 0.6
+    assert best["promotion_eligible"] is True
 
 
 def test_paper_promotion_enforces_saved_validation_gate():

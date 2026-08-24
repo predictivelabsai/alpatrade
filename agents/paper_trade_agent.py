@@ -178,9 +178,11 @@ class PaperTradeAgent:
         cycle_count = 0
 
         logger.info(f"Trading until {end_time.isoformat()}")
+        heartbeat_run(self.session_id)
 
         try:
             while datetime.now(timezone.utc) < end_time:
+                heartbeat_run(self.session_id)
                 if stop_event and hasattr(stop_event, "wait_if_paused"):
                     if not stop_event.wait_if_paused():
                         logger.info("Paper trading stopped while paused")
@@ -262,6 +264,8 @@ class PaperTradeAgent:
                         stop_event.publish_advice(
                             self._build_hermes_advice(symbols, params)
                         )
+                        if hasattr(stop_event, "evaluate_drift_guard"):
+                            stop_event.evaluate_drift_guard()
                         last_advice_at = time.monotonic()
                 except Exception as e:
                     logger.error(f"Trading cycle error: {e}")

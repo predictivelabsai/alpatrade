@@ -115,15 +115,31 @@ def main() -> int:
             return 2
 
     from agents.paper_trade_agent import PaperTradeAgent
+    from utils.agent_storage import update_run
     if not user_id:
         print("  note: unscoped legacy run; set PAPER_USER_ID/PAPER_ACCOUNT_ID for advisor attribution")
-    result = PaperTradeAgent(
-        user_id=user_id,
-        account_id=account_id,
-        account_name=account_name,
-        alpaca_api_key=owned_keys[0] if owned_keys else None,
-        alpaca_secret_key=owned_keys[1] if owned_keys else None,
-    ).run(request, run_id=run_id)
+
+    def _finalize(status: str, results: dict) -> None:
+        # Best-effort, like the run registration above: a storage outage must not
+        # crash the launcher (and keeps the DB-free path working in tests/CLI).
+        try:
+            update_run(run_id, status, results=results)
+        except Exception as exc:  # noqa: BLE001
+            print(f"  (run finalize skipped: {type(exc).__name__})")
+
+    try:
+        result = PaperTradeAgent(
+            user_id=user_id,
+            account_id=account_id,
+            account_name=account_name,
+            alpaca_api_key=owned_keys[0] if owned_keys else None,
+            alpaca_secret_key=owned_keys[1] if owned_keys else None,
+        ).run(request, run_id=run_id)
+        _finalize("failed" if result.get("error") else "completed", result)
+    except BaseException as exc:
+        _finalize("stopped" if isinstance(exc, KeyboardInterrupt) else "failed",
+                  {"error": str(exc)})
+        raise
     print(f"  run_id: {run_id}")
     print("\nSESSION SUMMARY:")
     for k in ("session_id", "total_trades", "buy_trades", "sell_trades", "total_pnl", "final_equity"):

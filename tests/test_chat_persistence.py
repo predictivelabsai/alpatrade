@@ -23,6 +23,8 @@ def test_chat_client_loads_saved_messages_and_supports_owned_delete():
     assert "window.ALPA_THREAD_ID" in CHAT_JS
     assert "fetch('/app/chats',{cache:'no-store'})" in CHAT_JS
     assert "window.addEventListener('pageshow',loadConversationList)" in CHAT_JS
+    assert "window.history.replaceState" in CHAT_JS
+    assert "'/app?thread='+encodeURIComponent(window.ALPA_THREAD_ID)" in CHAT_JS
 
 
 def test_chat_client_shows_remote_progress_instead_of_silent_dots():
