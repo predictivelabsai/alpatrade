@@ -13,10 +13,12 @@ observed dip against the configured dip threshold, an exit as the realised move 
 the configured take-profit/stop-loss.
 
 Usage:
-  python scripts/daily_pnl_report.py                        # print HTML, no send
+  python scripts/daily_pnl_report.py                        # print HTML, no send (env account, lite)
   python scripts/daily_pnl_report.py --date 2026-08-03      # re-render a past day
   python scripts/daily_pnl_report.py --send                 # email to PNL_REPORT_TO / TO_EMAIL
   python scripts/daily_pnl_report.py --send --to kaljuvee@gmail.com
+  # Full per-account report (MTD/YTD, agent benchmark, live runs) for one tenant:
+  python scripts/daily_pnl_report.py --user <uuid> --account <uuid> --send --to owner@example.com
 """
 from __future__ import annotations
 
@@ -89,6 +91,26 @@ def report_targets() -> list[dict]:
         return []
 
 
+def account_owner(user_id: str, account_id: str) -> dict:
+    """The owning user's email + account name for one account, or {} if not found.
+
+    Lets the CLI tenant path target the same per-owner recipient the scheduler uses,
+    instead of the global PNL_REPORT_TO broadcast list."""
+    try:
+        from sqlalchemy import text
+        from engine.db.pool import DatabasePool
+        with DatabasePool().get_session() as session:
+            row = session.execute(text("""
+                SELECT u.email, ua.account_name
+                FROM alpatrade.users u
+                JOIN alpatrade.user_accounts ua ON ua.user_id = u.user_id
+                WHERE u.user_id = :uid AND ua.account_id = :aid
+            """), {"uid": user_id, "aid": account_id}).fetchone()
+        return {"email": row[0], "account_name": row[1]} if row else {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
 def claim_report_delivery(user_id: str, account_id: str, day: str) -> bool:
     """Atomically reserve one daily delivery across all Coolify processes."""
     try:
@@ -148,12 +170,25 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
     from engine.brokers.alpaca import AlpacaAPI
     api = AlpacaAPI(*keys, paper=True) if keys else AlpacaAPI(paper=True)
     acct = api.get_account() or {}
+    account_ok = bool(acct) and "error" not in acct
     positions = api.get_positions() or []
     equity = _f(acct.get("equity"))
     last_equity = _f(acct.get("last_equity")) or equity
     day_pnl = equity - last_equity
     day_pct = (equity / last_equity - 1) * 100 if last_equity else 0.0
     unreal = sum(_f(p.get("unrealized_pl")) for p in positions)
+    # Backdated (--date in the past): the live account can't describe a past day, so
+    # take that day's equity + its day-over-day change from Alpaca portfolio history.
+    # (Positions still can't be reconstructed — the stale notice flags that.)
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    backdated_equity = None
+    if day and day != today:
+        hist_pair = _historical_equity(api, day)
+        if hist_pair:
+            hist_equity, hist_prev = hist_pair
+            backdated_equity, equity, last_equity = hist_equity, hist_equity, hist_prev
+            day_pnl = equity - last_equity
+            day_pct = (equity / last_equity - 1) * 100 if last_equity else 0.0
     trades = gather_trades(day, user_id=user_id, account_id=account_id,
                            framework=framework)
     runs = gather_runs([t.get("run_id") for t in trades], user_id=user_id,
@@ -169,12 +204,153 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
                                    framework=framework),
         "agent_performance": agent_performance(user_id, account_id, framework),
         "framework_filter": framework,
-        "day": day or datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "day": day or today,
+        "backdated": bool(day and day != today),
+        "backdated_equity_ok": backdated_equity is not None,
+        "account_ok": account_ok,
+        "db_ok": _db_ok(),
     }
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    data["periods"] = (save_equity_snapshot(user_id, account_id, data["day"], data)
+    data["periods"] = (save_equity_snapshot(user_id, account_id, data["day"], data, api)
                        if user_id and account_id and data["day"] == today else {})
+    data["benchmark"] = _benchmark_returns(data["day"], data["periods"])
+    data["account_stats"] = (account_stats(user_id, account_id, data["day"])
+                             if user_id and account_id else {})
     return data
+
+
+def account_stats(user_id: str, account_id: str, day: str) -> dict:
+    """Cumulative realized P&L (from paper trades) plus annualized Sharpe and max
+    drawdown derived from the persisted daily equity-snapshot curve.
+
+    Sharpe/drawdown need a few days of history; they are omitted below 5 snapshot
+    days. Best-effort ({} on any failure)."""
+    try:
+        import statistics
+        from sqlalchemy import text
+        from engine.db.pool import DatabasePool
+        with DatabasePool().get_session() as session:
+            eq = session.execute(text("""
+                SELECT equity, net_cash_flow
+                FROM alpatrade.account_equity_snapshots
+                WHERE user_id = :uid AND account_id = :aid
+                  AND trading_date <= CAST(:day AS DATE)
+                ORDER BY trading_date
+            """), {"uid": user_id, "aid": account_id, "day": day}).fetchall()
+            realized = session.execute(text("""
+                SELECT COALESCE(SUM(pnl), 0)
+                FROM alpatrade.trades
+                WHERE user_id = :uid AND account_id = :aid
+                  AND trade_type = 'paper' AND pnl IS NOT NULL
+            """), {"uid": user_id, "aid": account_id}).scalar()
+        stats: dict = {"realized_pnl": float(realized or 0)}
+        equities = [float(r[0]) for r in eq]
+        flows = [float(r[1] or 0) for r in eq]
+        if len(equities) >= 5:
+            rets = [(equities[i] - flows[i] - equities[i - 1]) / equities[i - 1]
+                    for i in range(1, len(equities)) if equities[i - 1] > 0]
+            if len(rets) >= 2:
+                sd = statistics.stdev(rets)
+                stats["sharpe"] = (statistics.fmean(rets) / sd * (252 ** 0.5)) if sd > 0 else None
+            peak, mdd = equities[0], 0.0
+            for e in equities:
+                peak = max(peak, e)
+                if peak > 0:
+                    mdd = min(mdd, e / peak - 1)
+            stats["max_drawdown"] = mdd * 100
+            stats["snapshot_days"] = len(equities)
+        return stats
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def _db_ok() -> bool:
+    """Quick probe so the report can tell 'no data' apart from 'storage down'."""
+    try:
+        from sqlalchemy import text
+        from engine.db.pool import DatabasePool
+        with DatabasePool().get_session() as session:
+            session.execute(text("SELECT 1"))
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _render_health(d: dict) -> str:
+    """Banner when a data source was unreachable, so empty sections aren't misread
+    as 'no activity'."""
+    missing = []
+    if not d.get("account_ok", True):
+        missing.append("the Alpaca account (portfolio, positions, cash)")
+    if not d.get("db_ok", True):
+        missing.append("the database (trades, runs, MTD/YTD, benchmark)")
+    if not missing:
+        return ""
+    return ("<p style='background:#FCE8E6;border-left:3px solid #B4472F;padding:8px 10px;"
+            "font-size:12px;color:#7A2E1D;margin:.4rem 0'><b>Data unavailable:</b> could not "
+            f"load {', and '.join(missing)}. Sections below may be blank because of this, "
+            "not because there was no activity.</p>")
+
+
+def _historical_equity(api, day: str):
+    """(equity at end of `day`, prior trading day's equity) from Alpaca history.
+
+    Lets a back-dated report show that day's real equity/day-change instead of the
+    live account. Returns None on any failure."""
+    try:
+        import pandas as pd
+        from datetime import datetime as _dt, timedelta
+        target = _dt.strptime(day, "%Y-%m-%d")
+        hist = api.get_portfolio_history(start=target - timedelta(days=10),
+                                         end=target + timedelta(days=1), timeframe="1D")
+        eq = hist.get("equity") if isinstance(hist, dict) else None
+        ts = hist.get("timestamps") if isinstance(hist, dict) else None
+        if not eq or not ts:
+            return None
+        upto = [float(e) for t, e in zip(ts, eq)
+                if pd.Timestamp(t).date() <= target.date()]
+        if not upto:
+            return None
+        return (upto[-1], upto[-2] if len(upto) >= 2 else upto[-1])
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _benchmark_returns(day: str, periods: dict, symbol: str = "SPY") -> dict:
+    """SPY buy-and-hold % over the same MTD/YTD windows, for a market comparison.
+
+    Uses daily closes from the configured market-data feed; best-effort ({} on any
+    failure) so the benchmark can never fail the report.
+    """
+    if not periods:
+        return {}
+    try:
+        import pandas as pd
+        from datetime import datetime as _dt, timedelta
+        from engine.feeds.market_data import get_historical_data
+        end = _dt.strptime(day, "%Y-%m-%d")
+        df = get_historical_data(symbol, end.replace(month=1, day=1) - timedelta(days=7),
+                                 end + timedelta(days=1), timeframe="day")
+        if df is None or df.empty or "Close" not in df:
+            return {}
+        closes = df["Close"].dropna()
+        if closes.empty:
+            return {}
+        current = float(closes.iloc[-1])
+        idx = pd.to_datetime(closes.index)
+
+        def _ret(start) -> float | None:
+            sub = closes[idx >= pd.Timestamp(start)]
+            base = float(sub.iloc[0]) if len(sub) else 0.0
+            return (current / base - 1) * 100 if base else None
+
+        out = {}
+        if periods.get("mtd"):
+            out["mtd"] = _ret(end.replace(day=1))
+        if periods.get("ytd"):
+            out["ytd"] = _ret(end.replace(month=1, day=1))
+        return out
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def gather_trades(day: str | None = None, limit: int = 100,
@@ -347,24 +523,38 @@ def agent_performance(user_id: str | None, account_id: str | None,
 
 
 def save_equity_snapshot(user_id: str, account_id: str, day: str,
-                         data: dict) -> dict:
-    """Upsert an account snapshot and derive account-level MTD/YTD returns."""
+                         data: dict, api=None) -> dict:
+    """Upsert today's account snapshot and derive account-level MTD/YTD returns.
+
+    Hybrid baseline: persisted snapshots are preferred (cash-flow aware via
+    net_cash_flow), but when snapshots don't yet reach a window's start the
+    baseline is seeded from Alpaca's portfolio history so MTD/YTD are correct
+    *retroactively* rather than blank until snapshots accumulate. Each window
+    carries a ``source`` of ``'snapshot'`` or ``'alpaca'``.
+    """
     try:
+        from datetime import timedelta, datetime as _dt, time as _time
         from sqlalchemy import text
         from engine.db.pool import DatabasePool
+        # External cash flow (deposits/withdrawals/resets) for the day, so the
+        # MTD/YTD math can subtract it out. Best-effort — 0.0 when unavailable.
+        net_flow = api.get_cash_flows(day) if api is not None else 0.0
         with DatabasePool().get_session() as session:
             session.execute(text("""
                 INSERT INTO alpatrade.account_equity_snapshots
-                    (user_id, account_id, trading_date, equity, cash, buying_power, unrealized_pnl)
-                VALUES (:uid, :aid, CAST(:day AS DATE), :equity, :cash, :buying_power, :unrealized)
+                    (user_id, account_id, trading_date, equity, cash, buying_power,
+                     unrealized_pnl, net_cash_flow)
+                VALUES (:uid, :aid, CAST(:day AS DATE), :equity, :cash, :buying_power,
+                        :unrealized, :net_flow)
                 ON CONFLICT (user_id, account_id, trading_date) DO UPDATE SET
                     equity = EXCLUDED.equity, cash = EXCLUDED.cash,
                     buying_power = EXCLUDED.buying_power,
-                    unrealized_pnl = EXCLUDED.unrealized_pnl, captured_at = NOW()
+                    unrealized_pnl = EXCLUDED.unrealized_pnl,
+                    net_cash_flow = EXCLUDED.net_cash_flow, captured_at = NOW()
             """), {"uid": user_id, "aid": account_id, "day": day,
                     "equity": data["equity"], "cash": data["cash"],
                     "buying_power": data["buying_power"],
-                    "unrealized": data["unrealized_pl"]})
+                    "unrealized": data["unrealized_pl"], "net_flow": net_flow})
             rows = session.execute(text("""
                 SELECT trading_date, equity, net_cash_flow
                 FROM alpatrade.account_equity_snapshots
@@ -375,16 +565,42 @@ def save_equity_snapshot(user_id: str, account_id: str, day: str,
             """), {"uid": user_id, "aid": account_id, "day": day}).fetchall()
         if not rows:
             return {}
-        current = float(rows[-1][1])
-        month_rows = [r for r in rows if r[0].month == rows[-1][0].month]
+        current = float(data.get("equity") or rows[-1][1])
+        day_date = rows[-1][0]
+        month_start = day_date.replace(day=1)
+        year_start = day_date.replace(month=1, day=1)
+        month_rows = [r for r in rows
+                      if r[0].year == day_date.year and r[0].month == day_date.month]
 
-        def period(subset) -> dict:
-            start = float(subset[0][1]) - float(subset[0][2] or 0)
+        def _alpaca_baseline(start_date):
+            if api is None:
+                return None
+            try:
+                s = _dt.combine(start_date, _time.min, tzinfo=timezone.utc)
+                e = _dt.combine(day_date, _time.max, tzinfo=timezone.utc)
+                hist = api.get_portfolio_history(start=s, end=e, timeframe="1D")
+                eq = hist.get("equity") if isinstance(hist, dict) else None
+                return float(eq[0]) if eq else None
+            except Exception:  # noqa: BLE001
+                return None
+
+        def window(subset, start_date) -> dict | None:
             flows = sum(float(r[2] or 0) for r in subset)
-            pnl = current - start - flows
-            return {"pnl": pnl, "pct": (pnl / start * 100) if start else 0.0,
-                    "days": len(subset)}
-        return {"mtd": period(month_rows), "ytd": period(rows)}
+            # Snapshots "cover" the window only if the earliest one lands on/near
+            # the window start (allow a weekend/holiday gap).
+            snap_covers = bool(subset) and subset[0][0] <= start_date + timedelta(days=4)
+            if snap_covers:
+                baseline, source = float(subset[0][1]) - float(subset[0][2] or 0), "snapshot"
+            else:
+                baseline, source = _alpaca_baseline(start_date), "alpaca"
+                if baseline is None and subset:  # last resort: earliest snapshot
+                    baseline, source = float(subset[0][1]) - float(subset[0][2] or 0), "snapshot"
+            if not baseline:
+                return None
+            pnl = current - baseline - flows
+            return {"pnl": pnl, "pct": (pnl / baseline * 100) if baseline else 0.0,
+                    "days": len(subset), "source": source}
+        return {"mtd": window(month_rows, month_start), "ytd": window(rows, year_start)}
     except Exception:  # noqa: BLE001
         return {}
 
@@ -550,34 +766,80 @@ def _render_strategy(d: dict) -> str:
 
 
 def _stale_notice(d: dict) -> str:
-    """Warn when trades are back-dated but the account snapshot is necessarily live.
+    """Clarify which figures are historical vs live for a back-dated report.
 
-    Alpaca only exposes the account as it stands now, so a `--date` in the past mixes
-    historical trades with a current portfolio. Say so rather than implying otherwise.
+    Equity and the day-over-day change now come from Alpaca portfolio history for
+    the requested date, but Alpaca only exposes *current* positions, so those (and
+    cash/buying power) remain live. Say exactly which is which.
     """
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     if not d.get("day") or d["day"] == today:
         return ""
+    equity_src = ("equity and the day change are Alpaca history for that date"
+                  if d.get("backdated_equity_ok")
+                  else "equity/day change could not be pulled for that date and show the "
+                       "<b>live</b> account")
     return ("<p style='background:#FBF3E2;border-left:3px solid #C79A3B;padding:8px 10px;"
-            "font-size:12px;color:#5B4A22;margin:.4rem 0'>Back-dated report: trades and "
-            f"realised P&amp;L are for {_e(d['day'])}, but portfolio value, open positions "
-            "and today's change are the <b>live</b> account as of now.</p>")
+            "font-size:12px;color:#5B4A22;margin:.4rem 0'>Back-dated report for "
+            f"{_e(d['day'])}: trades and realised P&amp;L are for that date; {equity_src}; "
+            "open positions, cash and buying power are the <b>live</b> account as of now.</p>")
 
 
 def _render_periods(d: dict) -> str:
     periods = d.get("periods") or {}
     if not periods:
-        return ("<p style='color:#7A867E;font-size:12px'>MTD/YTD starts after migration 23 "
-                "captures the first account snapshot; historical values are not invented.</p>")
+        return ("<p style='color:#7A867E;font-size:12px'>MTD/YTD are unavailable for this "
+                "account yet (no equity history).</p>")
+    bench = d.get("benchmark") or {}
     cells = []
     for key, label in (("mtd", "Month to date"), ("ytd", "Year to date")):
         value = periods.get(key) or {}
+        if not value:
+            cells.append(f"<td style='padding:8px 20px 8px 0'><b>{label}</b><br>"
+                         "<span style='color:#7A867E'>n/a</span></td>")
+            continue
         pnl, pct = _f(value.get("pnl")), _f(value.get("pct"))
         color = "#1F5D43" if pnl >= 0 else "#b0653f"
-        cells.append(f"<td style='padding:8px 20px 8px 0'><b>{label}</b><br>"
-                     f"<span style='color:{color}'>${pnl:+,.2f} ({pct:+.2f}%)</span><br>"
-                     f"<small>{int(value.get('days') or 0)} snapshot day(s)</small></td>")
-    return f"<table><tr>{''.join(cells)}</tr></table>"
+        # Baseline provenance: persisted snapshots (cash-flow aware) vs a retroactive
+        # Alpaca portfolio-history estimate until snapshots reach the window start.
+        if value.get("source") == "alpaca":
+            note = "est. from Alpaca history"
+        else:
+            note = f"{int(value.get('days') or 0)} snapshot day(s)"
+        # SPY buy-and-hold over the same window, plus excess return vs it.
+        spy = bench.get(key)
+        spy_line = ""
+        if spy is not None:
+            excess = pct - spy
+            ec = "#1F5D43" if excess >= 0 else "#b0653f"
+            spy_line = (f"<br><small style='color:#7A867E'>vs SPY {spy:+.2f}% · "
+                        f"<span style='color:{ec}'>{excess:+.2f}% excess</span></small>")
+        cells.append(f"<td style='padding:8px 20px 8px 0'><b>{label}</b> "
+                     "<span style='font-size:11px;color:#9AA39C'>(arithmetic)</span><br>"
+                     f"<span style='color:{color}'>${pnl:+,.2f} ({pct:+.2f}%)</span>"
+                     f"{spy_line}<br>"
+                     f"<small style='color:#9AA39C'>{note}</small></td>")
+    return f"<h3 style='margin:.9rem 0 .2rem'>Performance</h3><table><tr>{''.join(cells)}</tr></table>"
+
+
+def _render_risk(d: dict) -> str:
+    """Cumulative realized P&L + annualized Sharpe / max drawdown from the curve."""
+    stats = d.get("account_stats") or {}
+    if not stats:
+        return ""
+    parts = []
+    rp = _f(stats.get("realized_pnl"))
+    rc = "#1F5D43" if rp >= 0 else "#b0653f"
+    parts.append(f"Realized P&amp;L to date <b style='color:{rc}'>${rp:+,.2f}</b>")
+    if stats.get("sharpe") is not None:
+        parts.append(f"Sharpe (annualized) <b>{_f(stats.get('sharpe')):.2f}</b>")
+    if stats.get("max_drawdown") is not None:
+        parts.append(f"Max drawdown <b style='color:#b0653f'>{_f(stats.get('max_drawdown')):.2f}%</b>")
+    note = (f" · from {int(stats.get('snapshot_days') or 0)} snapshot day(s)"
+            if stats.get("snapshot_days") else "")
+    return ("<p style='font-size:13px;color:#415046;margin:.3rem 0'>"
+            + " &nbsp;·&nbsp; ".join(parts)
+            + f"<span style='color:#9AA39C;font-size:11px'>{note}</span></p>")
 
 
 def _render_agent_benchmark(d: dict) -> str:
@@ -630,17 +892,20 @@ def render(d: dict) -> str:
 <div style="font-family:Inter,Arial,sans-serif;color:#14231B;max-width:760px">
   <h2>AlpaTrade — Daily Paper PnL · {day_label}</h2>
   {owner}
+  {_render_health(d)}
   {_stale_notice(d)}
   <p style="font-size:20px;margin:.2rem 0"><b style="color:{color}">{sign} ${d['day_pnl']:,.2f}
-     ({d['day_pct']:+.2f}%)</b> <span style="color:#7A867E">today</span></p>
+     ({d['day_pct']:+.2f}%)</b>
+     <span style="color:#7A867E">today <span style="font-size:12px">(vs prior close)</span></span></p>
   <table style="border-collapse:collapse;margin:.4rem 0">
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Portfolio value</td><td><b>${d['equity']:,.2f}</b></td></tr>
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Cash</td><td>${d['cash']:,.2f}</td></tr>
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Buying power</td><td>${d['buying_power']:,.2f}</td></tr>
-    <tr><td style="padding:2px 14px 2px 0;color:#415046">Open unrealised P&amp;L</td><td>${d['unrealized_pl']:,.2f}</td></tr>
+    <tr><td style="padding:2px 14px 2px 0;color:#415046">Open unrealised P&amp;L <span style="font-size:11px;color:#7A867E">(since entry)</span></td><td>${d['unrealized_pl']:,.2f}</td></tr>
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Day trades (5d)</td><td>{_e(d['daytrade_count']) or 'None'}</td></tr>
   </table>
   {_render_periods(d)}
+  {_render_risk(d)}
   {_render_agent_benchmark(d)}
   {_render_strategy(d)}
   <h3>Open positions ({len(d['positions'])})</h3>
@@ -708,13 +973,51 @@ def main() -> int:
     ap.add_argument("--send", action="store_true")
     ap.add_argument("--date", default=None, help="UTC date to report on (YYYY-MM-DD, default today)")
     ap.add_argument("--to", default=None, help="comma-separated recipients (default: PNL_REPORT_TO / list)")
+    ap.add_argument("--user", default=None,
+                    help="tenant user_id — renders the full per-account report "
+                         "(MTD/YTD, agent benchmark, live runs); requires --account")
+    ap.add_argument("--account", default=None, help="tenant account_id (requires --user)")
+    ap.add_argument("--framework", default=None,
+                    help="filter runs/benchmark by agent framework (hermes|deepagents|langgraph|legacy)")
     args = ap.parse_args()
 
     if args.date:
         datetime.strptime(args.date, "%Y-%m-%d")  # fail fast on a bad date
+    if bool(args.user) != bool(args.account):
+        print("error: --user and --account must be supplied together")
+        return 2
 
-    to_list = recipients(args.to)
-    data = gather(args.date)
+    # Tenant mode: resolve the account's own Alpaca keys (never the env account)
+    # so a manual send matches exactly what the scheduler would email that owner.
+    keys = None
+    if args.user and args.account:
+        try:
+            from engine.auth import get_alpaca_keys
+            keys = get_alpaca_keys(args.user, args.account)
+        except Exception as exc:  # noqa: BLE001
+            print(f"error: could not resolve Alpaca keys for that account: {exc}")
+            return 2
+        if not keys:
+            print("error: no stored Alpaca keys for that user/account")
+            return 2
+        reconcile_stale_runs(args.user, args.account)
+
+    # Recipients: explicit --to wins; else in tenant mode target the account owner
+    # (the scheduler's per-owner model); else fall back to the legacy PNL_REPORT_TO
+    # broadcast list.
+    owner = account_owner(args.user, args.account) if args.user and args.account else {}
+    if args.to:
+        to_list = recipients(args.to)
+    elif owner.get("email"):
+        to_list = [owner["email"]]
+    else:
+        to_list = recipients(None)
+
+    data = gather(args.date, keys=keys, user_id=args.user,
+                  account_id=args.account, framework=args.framework)
+    if owner:
+        data["owner_email"] = owner.get("email") or ""
+        data["account_name"] = owner.get("account_name") or ""
     html_out = render(data)
     if not args.send:
         print(html_out)
