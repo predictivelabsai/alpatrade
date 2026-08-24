@@ -78,6 +78,30 @@ def send_email_to(to_email: str, subject: str, body_html: str) -> bool:
         logger.warning("Postmark env vars not set (POSTMARK_API_KEY, FROM_EMAIL)")
         return False
 
+    try:
+        resp = requests.post(
+            "https://api.postmarkapp.com/email",
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "X-Postmark-Server-Token": api_key,
+            },
+            json={
+                "From": from_email,
+                "To": to_email,
+                "Subject": subject,
+                "HtmlBody": body_html,
+                "MessageStream": "outbound",
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        logger.info(f"Email sent to {to_email}: {subject}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send email to {to_email}: {e}")
+        return False
+
 
 def send_hermes_daily_report(
     report: Dict[str, Any], *, account_name: str = "", user_name: str = "",

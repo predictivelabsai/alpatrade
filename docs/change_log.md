@@ -1,5 +1,16 @@
 # Change Log
 
+## 0.20.1 — 2026-08-24
+
+### Fix: daily PnL report email actually sends
+
+- `send_email_to()` had no body after the env check — when Postmark was
+  configured it fell through and returned `None`, so the daily PnL report emailed
+  nothing and the CLI aggregator crashed on `all_ok &= None`. The worker-owned
+  scheduler uses the same helper, so scheduled tenant reports silently never sent.
+- Added the missing Postmark POST and a strict bool return; DB-free tests cover
+  send/uncleared-env/transport-error/return-type.
+
 ## 0.20.0 — 2026-08-24
 
 - Rebuilt the standard daily paper report around per-user, per-account Alpaca
