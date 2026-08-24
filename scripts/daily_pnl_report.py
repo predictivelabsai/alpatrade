@@ -13,10 +13,12 @@ observed dip against the configured dip threshold, an exit as the realised move 
 the configured take-profit/stop-loss.
 
 Usage:
-  python scripts/daily_pnl_report.py                        # print HTML, no send
+  python scripts/daily_pnl_report.py                        # print HTML, no send (env account, lite)
   python scripts/daily_pnl_report.py --date 2026-08-03      # re-render a past day
   python scripts/daily_pnl_report.py --send                 # email to PNL_REPORT_TO / TO_EMAIL
   python scripts/daily_pnl_report.py --send --to kaljuvee@gmail.com
+  # Full per-account report (MTD/YTD, agent benchmark, live runs) for one tenant:
+  python scripts/daily_pnl_report.py --user <uuid> --account <uuid> --send --to owner@example.com
 """
 from __future__ import annotations
 
@@ -708,13 +710,38 @@ def main() -> int:
     ap.add_argument("--send", action="store_true")
     ap.add_argument("--date", default=None, help="UTC date to report on (YYYY-MM-DD, default today)")
     ap.add_argument("--to", default=None, help="comma-separated recipients (default: PNL_REPORT_TO / list)")
+    ap.add_argument("--user", default=None,
+                    help="tenant user_id — renders the full per-account report "
+                         "(MTD/YTD, agent benchmark, live runs); requires --account")
+    ap.add_argument("--account", default=None, help="tenant account_id (requires --user)")
+    ap.add_argument("--framework", default=None,
+                    help="filter runs/benchmark by agent framework (hermes|deepagents|langgraph|legacy)")
     args = ap.parse_args()
 
     if args.date:
         datetime.strptime(args.date, "%Y-%m-%d")  # fail fast on a bad date
+    if bool(args.user) != bool(args.account):
+        print("error: --user and --account must be supplied together")
+        return 2
+
+    # Tenant mode: resolve the account's own Alpaca keys (never the env account)
+    # so a manual send matches exactly what the scheduler would email that owner.
+    keys = None
+    if args.user and args.account:
+        try:
+            from engine.auth import get_alpaca_keys
+            keys = get_alpaca_keys(args.user, args.account)
+        except Exception as exc:  # noqa: BLE001
+            print(f"error: could not resolve Alpaca keys for that account: {exc}")
+            return 2
+        if not keys:
+            print("error: no stored Alpaca keys for that user/account")
+            return 2
+        reconcile_stale_runs(args.user, args.account)
 
     to_list = recipients(args.to)
-    data = gather(args.date)
+    data = gather(args.date, keys=keys, user_id=args.user,
+                  account_id=args.account, framework=args.framework)
     html_out = render(data)
     if not args.send:
         print(html_out)
