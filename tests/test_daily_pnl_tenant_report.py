@@ -118,7 +118,7 @@ def test_render_separates_framework_benchmark_and_periods():
 
 
 def test_migration_is_confined_to_alpatrade_schema():
-    source = open("sql/23_tenant_agent_reporting.sql", encoding="utf-8").read()
+    source = open("sql/25_tenant_agent_reporting.sql", encoding="utf-8").read()
     assert "alpatrade.account_equity_snapshots" in source
     assert "alpatrade.report_deliveries" in source
     assert "public." not in source

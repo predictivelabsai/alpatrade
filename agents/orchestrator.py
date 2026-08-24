@@ -235,6 +235,7 @@ class Orchestrator:
 
         try:
             result = self.validator.run(request)
+            result.setdefault("source", source)
             agent_state.set_completed()
             agent_state.iteration_count = result.get("iterations_used", 0)
             self.state.validation_results.append(result)
@@ -269,22 +270,10 @@ class Orchestrator:
             return {"error": "No linked Alpaca paper account for this user."}
         config = self._attribute(config)
         self._config = config
-        if self._mode is None:
+        starting_standalone_paper = self._mode is None
+        if starting_standalone_paper:
             self._mode = "paper"
             self.state.mode = "paper"
-            # Build slug from best config params or paper config
-            best = self.state.best_config or {}
-            paper_params = best.get("params", {}) or config.get("params", {})
-            paper_slug = build_slug(
-                config.get("strategy", "buy_the_dip"),
-                paper_params,
-                config.get("lookback", ""),
-            )
-            store_run(self.run_id, "paper",
-                      strategy=config.get("strategy", "buy_the_dip"),
-                      config=config,
-                      strategy_slug=paper_slug,
-                      user_id=self.user_id, account_id=self.account_id)
         agent_state = self.state.get_agent("paper_trader")
         agent_state.set_running("paper_trading")
         self.state.save()
@@ -294,7 +283,11 @@ class Orchestrator:
         logger.info("=" * 60)
 
         # Use best config from backtest if available
-        best = self.state.best_config or {}
+        best = (
+            config.get("approved_best_config") or {}
+            if starting_standalone_paper
+            else self.state.best_config or {}
+        )
         params = best.get("params", {})
 
         # Load defaults from parameters.yaml
@@ -303,18 +296,45 @@ class Orchestrator:
         yaml_general = yaml_params.get("general", {})
         yaml_symbols = [s.strip() for s in yaml_cfg.get("symbols", "").split(",") if s.strip()]
 
+        def _ratio_to_percent(value: Any) -> Any:
+            if isinstance(value, (int, float)) and 0 < abs(value) < 1:
+                return value * 100
+            return value
+
+        def _best_percent(key: str, fallback: Any) -> Any:
+            return _ratio_to_percent(params[key]) if key in params else fallback
+
+        resolved_params = {
+            "dip_threshold": _best_percent(
+                "dip_threshold", yaml_cfg.get("dip_threshold", 5.0)
+            ),
+            "take_profit_threshold": _best_percent(
+                "take_profit", yaml_cfg.get("take_profit_threshold", 1.0)
+            ),
+            "stop_loss_threshold": _best_percent(
+                "stop_loss", yaml_cfg.get("stop_loss_threshold", 0.5)
+            ),
+            "hold_days": params.get(
+                "hold_days", yaml_cfg.get("hold_days", 2)
+            ),
+            "min_hold_days": params.get(
+                "min_hold_days", yaml_cfg.get("min_hold_days", 0)
+            ),
+            "capital_per_trade": config.get(
+                "capital_per_trade", yaml_cfg.get("capital_per_trade", 1000.0)
+            ),
+        }
+        # Preserve optional fractional sizing when a caller/backtest set it
+        # (PaperTradeAgent uses it over capital_per_trade); omit the key entirely
+        # otherwise so the resolved-param contract stays unchanged.
+        if params.get("position_size") is not None:
+            resolved_params["position_size"] = params.get("position_size")
+
         request = {
             "strategy": config.get("strategy", "buy_the_dip"),
             "symbols": params.get("symbols", config.get("symbols",
                        yaml_symbols or ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"])),
-            "params": {
-                "dip_threshold": params.get("dip_threshold", yaml_cfg.get("dip_threshold", 5.0)) * 100 if params.get("dip_threshold", 1) < 1 else params.get("dip_threshold", yaml_cfg.get("dip_threshold", 5.0)),
-                "take_profit_threshold": params.get("take_profit", yaml_cfg.get("take_profit_threshold", 1.0)) * 100 if params.get("take_profit", 1) < 1 else params.get("take_profit", yaml_cfg.get("take_profit_threshold", 1.0)),
-                "stop_loss_threshold": params.get("stop_loss", yaml_cfg.get("stop_loss_threshold", 0.5)) * 100 if params.get("stop_loss", 1) < 1 else params.get("stop_loss", yaml_cfg.get("stop_loss_threshold", 0.5)),
-                "hold_days": params.get("hold_days", yaml_cfg.get("hold_days", 2)),
-                "capital_per_trade": config.get("capital_per_trade", yaml_cfg.get("capital_per_trade", 1000.0)),
-                "position_size": params.get("position_size"),
-            },
+            "params": resolved_params,
             "duration_seconds": config.get("duration_seconds", 604800),
             "poll_interval_seconds": config.get("poll_interval_seconds", yaml_general.get("polling_interval", 300)),
             "extended_hours": config.get("extended_hours", True),
@@ -328,6 +348,44 @@ class Orchestrator:
                               else "default"),
             "pdt_protection": config.get("pdt_protection"),
         }
+
+        if starting_standalone_paper:
+            strategy_name = request["strategy"]
+            lookback = str(config.get("lookback") or "3m")
+            if strategy_name == "buy_the_dip":
+                slug_params = {
+                    "dip_threshold": float(resolved_params["dip_threshold"]) / 100,
+                    "take_profit": float(resolved_params["take_profit_threshold"]) / 100,
+                    "stop_loss": float(resolved_params["stop_loss_threshold"]) / 100,
+                    "hold_days": resolved_params["hold_days"],
+                    "min_hold_days": resolved_params["min_hold_days"],
+                }
+            else:
+                configured_params = (
+                    config.get("params")
+                    if isinstance(config.get("params"), dict) else {}
+                )
+                slug_params = params or configured_params
+            paper_slug = build_slug(
+                strategy_name, slug_params, lookback
+            )
+            persisted_config = {
+                **config,
+                "strategy": strategy_name,
+                "lookback": lookback,
+                "symbols": request["symbols"],
+                "params": resolved_params,
+            }
+            self._config = persisted_config
+            store_run(
+                self.run_id,
+                "paper",
+                strategy=strategy_name,
+                config=persisted_config,
+                strategy_slug=paper_slug,
+                user_id=self.user_id,
+                account_id=self.account_id,
+            )
 
         self.bus.publish(
             from_agent="portfolio_manager",

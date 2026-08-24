@@ -1,18 +1,19 @@
 # Change Log
 
-## 0.17.0 — 2026-08-23
+## 0.20.0 — 2026-08-24
 
 - Rebuilt the standard daily paper report around per-user, per-account Alpaca
   credentials; removed the hard-coded distribution list and cross-tenant run/trade
   queries.
 - Added heartbeat-verified paper-run status, process-safe delivery claims, account
-  equity snapshots for honest MTD/YTD returns, and separate realized-P&L benchmark
+  equity snapshots for honest MTD/YTD returns (superseding the 0.19.0 Alpaca
+  portfolio-history period returns), and separate realized-P&L benchmark
   rows for Hermes, DeepAgents, LangGraph, and explicitly labeled legacy runs.
 - Bridged the durable Hermes job heartbeat into canonical run liveness and protected
   fresh Hermes jobs during stale-run reconciliation.
 - Replace `/app?new=1` with the saved thread URL after the first response so refresh
   restores the new conversation instead of showing a blank composer.
-- Added migration `sql/23_tenant_agent_reporting.sql`; it only alters/creates objects
+- Added migration `sql/25_tenant_agent_reporting.sql`; it only alters/creates objects
   inside `alpatrade` and does not rewrite existing trades or run statuses.
 - Fixed Hermes detailed-backtest result routing so commands containing a job ID
   return the selected result instead of the general jobs list.
@@ -28,6 +29,75 @@
 - Tests: result routing, delivery history, drift thresholds, reconciliation,
   robustness windows, benchmarks, default-agent isolation, tenant report isolation,
   liveness, and framework-separated rendering.
+
+## 0.19.0 — 2026-08-23
+
+### Daily report: period returns
+
+- Added month-to-date, year-to-date, and overall (since-inception) arithmetic
+  returns to the daily paper-PnL report, alongside the existing day change.
+  Each window's baseline is the first available equity point from Alpaca's
+  portfolio history; the return is `equity_now / baseline - 1`.
+- Added an `AlpacaAPI.get_portfolio_history()` wrapper (normalized equity/PnL
+  series, null/zero padding dropped) used by the report.
+- Deposits/withdrawals are not modelled — for a paper account funded once (the
+  norm) this equals the true cumulative return; missing windows render as `n/a`.
+- Tests: history normalization, arithmetic-return math, graceful empty history,
+  and Performance-table rendering (DB-free).
+
+## 0.18.0 — 2026-08-23
+
+### Stale paper-run cleanup ("zombie" runs)
+
+- Added `heartbeat_at` to `alpatrade.runs` (`sql/24`); a live paper session now
+  stamps its heartbeat each cycle so a legitimately long-running session is never
+  mistaken for an orphan.
+- The autonomy worker sweeps paper runs left `running` by an interrupted or
+  redeployed process (heartbeat older than `RUNS_STALE_SECONDS`, default 30 min)
+  to `stopped`, and the migration finalizes already-orphaned rows once. This stops
+  the daily report from showing "+N older runs with identical configuration still
+  marked running".
+- Tests: migration hygiene, heartbeat/sweep contracts, per-cycle heartbeat, and
+  the worker sweep call.
+
+## 0.17.0 — 2026-08-23
+
+### Daily DeepAgent trading advisor
+
+- Added one persisted, tenant/account-scoped paper advisory after each actual
+  Alpaca/NYSE session close plus 15 minutes. Deterministic policy classifies
+  reports as `insufficient_data`, `monitor`, `review`, or `urgent` and keeps
+  broker-account P&L separate from AlpaTrade-attributed realized P&L.
+- Added a locked-down `trading-advisor` DeepAgent specialist. It may rank only
+  server-generated candidate IDs; unknown evidence, unsupported claims,
+  invented metrics, and altered values are rejected into a deterministic fallback.
+- Added authenticated report history/detail APIs, persisted dashboard cards,
+  consolidated per-user email rendering, and explicit-intent tools that queue
+  a stored advisor grid or start paper trading only from an owned, completed,
+  validated backtest. Scheduled reports never change a strategy or place an order.
+
+### Scheduling, persistence, and rollout
+
+- Added migration `sql/23_daily_advisor.sql` for `advisor_reports` and
+  deduplicated `advisor_deliveries`, and moved scheduler ownership exclusively
+  to the autonomy worker with holiday, early-close, and DST-aware timing. A
+  dedicated advisor queue lane keeps post-close reporting responsive while a
+  longer paper-trading phase occupies the general autonomy lane.
+- Retired web-process, standalone-paper, hardcoded-recipient, and per-session
+  daily email paths. The legacy email request field remains accepted but is
+  deprecated. `ADVISOR_EMAIL_ENABLED` defaults to `false` for the first-session
+  report-only rollout; `ADVISOR_ENABLED` defaults to `true` in Compose.
+- Added optional `PAPER_USER_ID`/`PAPER_ACCOUNT_ID` binding for the fixed paper
+  service so its runs and trades can be attributed to the matching advisor account.
+- Corrected validation-count persistence (`total_trades_checked` → `total_checked`)
+  so non-empty validated backtests satisfy the explicit paper-start gate.
+- Added DB-free coverage for metrics, thresholds, parameter units, model-output
+  filtering, fallbacks, calendar timing, deduplication, consolidation, tenant
+  isolation, API contracts, and explicit-intent gates. Bumped package/lockfile
+  to 0.17.0.
+- Apply `python run_migration.py sql/23_daily_advisor.sql` before deploying the
+  worker/API/web services. Inspect at least one generated session before setting
+  `ADVISOR_EMAIL_ENABLED=true`; deployment and email activation are not included.
 
 ## 0.16.0 — 2026-08-23
 

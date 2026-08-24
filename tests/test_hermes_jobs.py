@@ -679,7 +679,9 @@ def test_paper_wait_obeys_durable_stop_without_sleeping_full_poll(monkeypatch):
 
 def test_orchestrator_preserves_candidate_position_size():
     source = inspect.getsource(__import__("agents.orchestrator", fromlist=["Orchestrator"]).Orchestrator.run_paper_trade)
-    assert '"position_size": params.get("position_size")' in source
+    # Preserved via the resolved-params passthrough (added only when the caller/
+    # backtest set it, so the default resolved-param contract stays unchanged).
+    assert 'resolved_params["position_size"] = params.get("position_size")' in source
     paper_source = inspect.getsource(
         __import__("agents.paper_trade_agent", fromlist=["PaperTradeAgent"]).PaperTradeAgent.run
     )

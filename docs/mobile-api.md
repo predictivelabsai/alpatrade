@@ -85,6 +85,12 @@ paper, full-cycle, and autonomy work and return a job ID immediately. Paper
 orders use the caller's linked paper account. Hypothetical or advisory wording
 cannot trigger an action.
 
+The authenticated `trading-advisor` specialist can read the same persisted daily
+reports used by the dashboard and email. `queue_advisor_backtest(report_id,
+recommendation_id)` loads its stored grid server-side, and
+`queue_paper_from_backtest(run_id, duration_seconds)` accepts only an owned,
+completed, validated backtest. Both require a separate explicit imperative message.
+
 ---
 
 ## Compatibility chat (streaming) — `POST /v2/chat`
@@ -179,6 +185,8 @@ All return typed JSON (see `swagger.json` for schemas). Pass the bearer token to
 | GET | `/v2/runs` | Backtest / paper runs. |
 | GET | `/v2/report` | Strategy summaries. |
 | GET | `/v2/report/{run_id}` | One run's detail. |
+| GET | `/v2/advisor/reports?account_id=&limit=` | Daily paper-advisor history. |
+| GET | `/v2/advisor/reports/{report_id}` | One owned daily paper-advisor report. |
 | GET | `/v2/top` | Top strategies ranking. |
 | GET | `/v2/pnl/{run_id}` | P&L breakdown for a run. |
 | GET | `/v2/status` | Background agent status. |

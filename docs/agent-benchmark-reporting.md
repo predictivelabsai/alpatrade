@@ -21,7 +21,7 @@ account conditions.
 
 ## Liveness and delivery
 
-Migration `sql/23_tenant_agent_reporting.sql` adds `runs.heartbeat_at`, daily equity
+Migration `sql/25_tenant_agent_reporting.sql` adds `runs.heartbeat_at`, daily equity
 snapshots, and delivery claims. A paper run appears as running only when its heartbeat is
 less than ten minutes old. Multiple Coolify processes may wake at the report hour, but a
 unique `(user_id, account_id, report_date, report_kind)` claim permits one email.
@@ -29,7 +29,7 @@ unique `(user_id, account_id, report_date, report_kind)` claim permits one email
 Apply before deployment:
 
 ```bash
-python run_migration.py sql/23_tenant_agent_reporting.sql
+python run_migration.py sql/25_tenant_agent_reporting.sql
 ```
 
 No historical MTD/YTD values are fabricated. On the first snapshot day those periods

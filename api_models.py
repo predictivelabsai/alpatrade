@@ -1,6 +1,6 @@
 """Pydantic request/response models for AlpaTrade API v2."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -36,7 +36,13 @@ class PaperRequest(BaseModel):
     strategy: str = "buy_the_dip"
     poll: Optional[int] = Field(None, description="Poll interval in seconds")
     hours: Optional[str] = None
-    email: Optional[bool] = Field(None, description="Send daily P&L email reports")
+    email: Optional[bool] = Field(
+        None,
+        description=(
+            "Deprecated and ignored. Daily delivery is consolidated by the post-close advisor."
+        ),
+        deprecated=True,
+    )
     pdt: Optional[bool] = None
     params: Optional[Dict[str, Any]] = Field(
         None, description="Validated strategy parameters (used by scoped agent promotion)"
@@ -370,6 +376,49 @@ class TopStrategyItem(BaseModel):
     total_trades: int = 0
     total_runs: int = 0
     avg_pnl: Optional[float] = None
+
+
+# ---------------------------------------------------------------------------
+# V2 Response Models — Daily advisor
+# ---------------------------------------------------------------------------
+
+class AdvisorRecommendation(BaseModel):
+    candidate_id: str
+    kind: Literal["backtest", "risk"]
+    title: str
+    rationale: str
+    explanation: Optional[str] = None
+    evidence_refs: List[str] = Field(default_factory=list)
+    approval_required: bool = True
+    parameter_source: Optional[str] = None
+    proposed_parameters_display: Optional[Dict[str, Any]] = None
+    test_config: Optional[Dict[str, Any]] = None
+
+
+class AdvisorReport(BaseModel):
+    report_id: str
+    account_id: str
+    account_name: str
+    session_date: date
+    status: Literal["generating", "completed", "partial", "failed"]
+    severity: Literal["insufficient_data", "monitor", "review", "urgent"]
+    evidence_window: Dict[str, Any] = Field(default_factory=dict)
+    evidence: Dict[str, Any] = Field(default_factory=dict)
+    headline: str = ""
+    summary: str = ""
+    drivers: List[Dict[str, Any]] = Field(default_factory=list)
+    recommendations: List[AdvisorRecommendation] = Field(default_factory=list)
+    why_no_change: str = ""
+    data_warnings: List[str] = Field(default_factory=list)
+    ai_status: Literal["available", "unavailable"] = "unavailable"
+    generation_note: str = ""
+    approval_required: bool = False
+    disclaimer: str = ""
+    model_provider: Optional[str] = None
+    model_name: Optional[str] = None
+    error_code: Optional[str] = None
+    created_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
 
 
 # ---------------------------------------------------------------------------

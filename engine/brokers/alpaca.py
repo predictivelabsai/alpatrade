@@ -90,6 +90,63 @@ class AlpacaAPI:
             logger.error(f"API request failed: {e}")
             return {"error": str(e)}
 
+    def get_portfolio_history(self, start=None, end=None, timeframe="1D",
+                              period=None, pnl_reset="no_reset"):
+        """Return normalized Alpaca portfolio history.
+
+        On success: ``{"timestamps": [...iso...], "equity": [float...],
+        "pnl": [float...], "pnl_pct": [float...]}`` with null/blank equity points
+        dropped (aligned across series). On failure: ``{"error": str}``. Pass
+        either ``period`` (e.g. "1M", "1A") or an explicit ``start``/``end``.
+        """
+        try:
+            from alpaca.trading.requests import GetPortfolioHistoryRequest
+            kwargs = {"timeframe": timeframe, "extended_hours": True,
+                      "pnl_reset": pnl_reset}
+            if period:
+                kwargs["period"] = period
+            else:
+                kwargs["start"] = start
+                kwargs["end"] = end
+            raw = self.trading_client.get_portfolio_history(
+                GetPortfolioHistoryRequest(**kwargs)
+            )
+            if isinstance(raw, dict):
+                data = raw
+            elif hasattr(raw, "model_dump"):
+                data = raw.model_dump()
+            else:
+                data = raw.dict()
+
+            def _num(v):
+                try:
+                    return float(v)
+                except (TypeError, ValueError):
+                    return None
+
+            ts = data.get("timestamp") or []
+            eq = data.get("equity") or []
+            pnl = data.get("profit_loss") or []
+            pct = data.get("profit_loss_pct") or []
+            timestamps, equity, profit, profit_pct = [], [], [], []
+            for i, e in enumerate(eq):
+                v = _num(e)
+                if v is None or v <= 0:
+                    continue  # drop null/zero padding Alpaca emits pre-inception
+                equity.append(v)
+                if i < len(ts):
+                    from datetime import datetime as _dt, timezone as _tz
+                    timestamps.append(
+                        _dt.fromtimestamp(int(ts[i]), tz=_tz.utc).isoformat()
+                    )
+                profit.append(_num(pnl[i]) if i < len(pnl) else None)
+                profit_pct.append(_num(pct[i]) if i < len(pct) else None)
+            return {"timestamps": timestamps, "equity": equity,
+                    "pnl": profit, "pnl_pct": profit_pct}
+        except Exception as e:
+            logger.error(f"Portfolio history request failed: {e}")
+            return {"error": str(e)}
+
     def create_order(self, symbol, qty=None, side='buy', type='market', time_in_force='day',
                      notional=None, limit_price=None, **kwargs):
         from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest

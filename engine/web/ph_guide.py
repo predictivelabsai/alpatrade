@@ -299,7 +299,7 @@ def _guide_paper():
 <tr><td><code>symbols:AAPL,MSFT</code></td><td>7 large caps</td><td>Tickers to trade</td></tr>
 <tr><td><code>poll:60</code></td><td>300</td><td>Seconds between strategy checks</td></tr>
 <tr><td><code>hours:extended</code></td><td>regular</td><td>Trade pre/after-market</td></tr>
-<tr><td><code>email:false</code></td><td>true</td><td>Disable daily P&amp;L email reports</td></tr>
+<tr><td><code>email:false</code></td><td>ignored</td><td>Deprecated compatibility field; advisor delivery is configured server-side</td></tr>
 <tr><td><code>pdt:false</code></td><td>auto</td><td>Disable PDT rule</td></tr>
 </tbody></table>"""),
 
@@ -312,9 +312,10 @@ def _guide_paper():
           "with total trades and P&L is shown."),
 
         H3("Email Reports", id="pt-email"),
-        P("When enabled (default), a daily P&L summary is emailed via Postmark. "
-          "Requires ", Code("POSTMARK_API_KEY"), ", ", Code("TO_EMAIL"), ", and ",
-          Code("FROM_EMAIL"), " in your ", Code(".env"), " file."),
+        P("The paper-session email flag is deprecated and ignored. The autonomy worker "
+          "creates one post-close advisor report per usable paper account and can send one "
+          "consolidated email to the user's login address when ",
+          Code("ADVISOR_EMAIL_ENABLED=true"), "."),
     )
 
 

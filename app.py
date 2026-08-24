@@ -87,31 +87,5 @@ from engine.voice import register_voice_routes  # noqa: E402
 
 register_voice_routes(app)
 
-# --- scheduler bootstrap ----------------------------------------------------
-# Compose runs autonomy in its own service. The web process only owns the PnL
-# scheduler, avoiding two competing worker loops and ambiguous heartbeats.
-#
-# 1. Nightly PnL email scheduler — always starts (disable via PNL_REPORT_FREQUENCY=off).
-#    Idempotent per process (schedule.py guards with _started).
-# 2. Autonomy worker loop — only starts when AUTONOMY_ENABLED=true. Runs the
-#    scout→backtest→gate→paper→reconcile→refit→promote pipeline on a timer
-#    (AUTONOMY_SCAN_SECONDS, default 300s). Paper-only; policy.py hard-rejects
-#    live orders. When AUTONOMY_ENABLED is false/absent, the worker just sleeps.
-#
-# Both are daemon threads → die with the process, never block shutdown.
-def _bootstrap_autonomy():
-    import logging
-    log = logging.getLogger("autonomy.bootstrap")
-    try:
-        from engine.autonomy.schedule import start as _start_scheduler
-        _start_scheduler()
-        log.info("PnL-report scheduler started")
-    except Exception as e:  # noqa: BLE001
-        log.warning("PnL scheduler failed to start: %s", e)
-
-
-_bootstrap_autonomy()
-
-
 if __name__ == "__main__":
     serve(port=int(os.getenv("ASSETHERO_WEB_PORT", "5001")))

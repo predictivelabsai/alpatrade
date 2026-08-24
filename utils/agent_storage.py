@@ -93,6 +93,62 @@ def store_run(run_id: str, mode: str, strategy: str = None,
     logger.info(f"Run {run_id} stored (mode={mode})")
 
 
+def heartbeat_run(run_id: str) -> None:
+    """Stamp a run's heartbeat so the stale-run sweep can tell it is still alive.
+
+    A no-op when there is no matching row (e.g. CLI/standalone sessions whose
+    session_id is not an orchestrator run), so it is always safe to call.
+    """
+    backend = get_storage_backend()
+    if backend != "db" or not run_id:
+        return
+    from sqlalchemy import text
+    pool = _get_pool()
+    try:
+        with pool.get_session() as session:
+            session.execute(
+                text("""
+                    UPDATE alpatrade.runs
+                    SET heartbeat_at = :now
+                    WHERE run_id = :run_id AND status = 'running'
+                """),
+                {"run_id": run_id, "now": datetime.now(timezone.utc)},
+            )
+    except Exception as exc:  # noqa: BLE001 — heartbeat must never break trading
+        logger.debug(f"heartbeat_run({run_id}) skipped: {exc}")
+
+
+def sweep_stale_paper_runs(stale_seconds: int = 1800) -> int:
+    """Finalize paper runs left 'running' by an interrupted/redeployed process.
+
+    A live paper session heartbeats every cycle; one whose heartbeat (or, for
+    pre-heartbeat rows, started_at/created_at) is older than ``stale_seconds`` is
+    considered dead and marked 'stopped'. Returns the number of rows finalized.
+    """
+    backend = get_storage_backend()
+    if backend != "db":
+        return 0
+    from sqlalchemy import text
+    pool = _get_pool()
+    with pool.get_session() as session:
+        result = session.execute(
+            text("""
+                UPDATE alpatrade.runs
+                SET status = 'stopped',
+                    completed_at = COALESCE(completed_at, NOW())
+                WHERE mode = 'paper'
+                  AND status = 'running'
+                  AND COALESCE(heartbeat_at, started_at, created_at)
+                      < NOW() - (CAST(:seconds AS INTEGER) * INTERVAL '1 second')
+            """),
+            {"seconds": int(stale_seconds)},
+        )
+        count = result.rowcount or 0
+    if count:
+        logger.info(f"Swept {count} stale paper run(s) -> stopped")
+    return count
+
+
 def update_run(run_id: str, status: str, results: Dict = None):
     """Update an existing run with final status and results."""
     backend = get_storage_backend()
@@ -507,7 +563,9 @@ def store_validation(run_id: str, result: Dict,
                 "run_id": run_id,
                 "source": result.get("source"),
                 "status": result.get("status"),
-                "total_checked": result.get("total_checked", 0),
+                "total_checked": result.get(
+                    "total_checked", result.get("total_trades_checked", 0)
+                ),
                 "anomalies_found": result.get("anomalies_found", 0),
                 "anomalies_corrected": result.get("anomalies_corrected", 0),
                 "iterations_used": result.get("iterations_used", 0),

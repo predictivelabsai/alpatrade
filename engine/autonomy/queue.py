@@ -36,7 +36,7 @@ def enqueue(kind: str = "full", config: Optional[dict] = None,
     return str(rid)
 
 
-def claim(worker_id: str) -> Optional[dict]:
+def claim(worker_id: str, *, advisor_only: bool = False) -> Optional[dict]:
     """Atomically claim the oldest queued run. Returns the run dict or None."""
     with _pool().get_session() as s:
         row = s.execute(text("""
@@ -46,12 +46,13 @@ def claim(worker_id: str) -> Optional[dict]:
             WHERE run_id = (
                 SELECT run_id FROM alpatrade.autonomy_runs
                 WHERE status = 'queued'
+                  AND (:advisor_only = FALSE OR kind = 'deepagent_advisor')
                 ORDER BY created_at
                 FOR UPDATE SKIP LOCKED
                 LIMIT 1
             )
             RETURNING run_id, kind, config, attempt, user_id, account_id
-        """), {"w": worker_id}).fetchone()
+        """), {"w": worker_id, "advisor_only": advisor_only}).fetchone()
     if not row:
         return None
     return {"run_id": str(row[0]), "kind": row[1], "config": row[2], "attempt": row[3],

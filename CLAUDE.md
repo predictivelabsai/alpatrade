@@ -44,7 +44,7 @@ prefer `engine.*`.
 - **Production REST API** (`api_app.py`, port 5001) — FastAPI; typed `/v2/*` contract, agent catalog, Swagger and ReDoc
 - **Canonical DeepAgents API** (`engine/ai/deepagents.py`) — authenticated
   `POST /v2/deepagents`, durable PostgreSQL checkpoints/transcripts, JSON or SSE,
-  tenant-scoped tools and five native specialists
+  tenant-scoped tools and six native specialists (including the read-only daily advisor)
 - **Namespaced API shell** (`api.py`, port 5002) — optional compatibility mount under `/api/v1/equities`
 - **AG-UI Chat** (`agui_app.py`, port 5003) — LangGraph chat agent (XAI Grok) with WebSocket streaming
 - **Rich CLI** (entry point: `cli.py` → `tui/pt_cli.py` → `tui/command_processor.py`; console script `alpatrade`)
@@ -225,9 +225,11 @@ PostgreSQL with `alpatrade` schema. Key tables: `runs`, `trades`, `backtest_summ
 `autonomy_runs`/`autonomy_run_steps`/`autonomy_events`/`autonomy_promotions` (`sql/15`), plus
 `alpha_research_runs` for user-scoped Growth/Value reports (`sql/17`), and
 `deepagent_responses`/`deepagent_events`/`deepagent_actions` for durable API
-idempotency and sanitized traces (`sql/22`). Official LangGraph checkpoint tables
-are created in the `alpatrade` search path by `AsyncPostgresSaver.setup()`.
-Migrations in `sql/` (numbered `01_` through `22_`, idempotent migrations). Apply one with
+idempotency and sanitized traces (`sql/22`), plus tenant/account-scoped
+`advisor_reports`/`advisor_deliveries` for the daily DeepAgent advisor (`sql/23`).
+Official LangGraph checkpoint tables are created in the `alpatrade` search path by
+`AsyncPostgresSaver.setup()`.
+Migrations in `sql/` (numbered `01_` through `24_`, idempotent migrations). Apply one with
 `python run_migration.py sql/NN_name.sql` (no migration-tracking table). All data tables carry `user_id`
 (and `account_id`) for isolation.
 
@@ -264,11 +266,17 @@ merged `app.py`, `ASSETHERO_WEB_PORT=5003`); the `api` service is `Dockerfile.ap
 `web` service (`web_app.py`) is retired.
 
 - **Detecting a live deploy:** new routes 404 on the old image — `curl -s -o /dev/null -w '%{http_code}'
-  https://alpatrade.chat/map` should be `200` once the current build is live.
-- **Auto-deploy on git push has NOT been firing** — pushes to `main` did not redeploy. Trigger manually
-  with the `coolify-deploy` skill / `scripts/coolify_deploy.py deploy --name agui` (needs `COOLIFY_URL` +
-  `COOLIFY_API_TOKEN`), or fix the GitHub App webhook (see `docs/`/the deep-research findings: Auto-Deploy
-  toggle, FQDN-vs-IPv4 webhook endpoint bug, `repository_project_id` null regression).
+  https://alpatrade.chat/map` should be `200` once the current build is live. To check the **api** service
+  specifically, compare `curl -s https://api.alpatrade.chat/openapi.json | jq '.info.version'` to
+  `pyproject.toml`.
+- **CD via GitHub Actions** (`.github/workflows/deploy.yml`): runs after CI succeeds on `main`, triggers a
+  Coolify deploy over the API, waits, and smoke-tests prod. Needs repo secrets `COOLIFY_URL` /
+  `COOLIFY_API_TOKEN` / `COOLIFY_APP_UUID`. Two bugs are fixed: it POSTs to `/api/v1/deploy` (a Coolify
+  upgrade made GET return 405), and it **forces a no-cache rebuild by default** (`force=true`) — a
+  cache-reusing deploy had been silently serving stale images (e.g. the `api` service sat several versions
+  behind while reporting a newer version string). Manual run: `gh workflow run deploy.yml` (add
+  `-f force=false` for a fast cache-reusing deploy), or the `coolify-deploy` skill /
+  `scripts/coolify_deploy.py deploy --name agui`.
 - Never deploy with the Coolify **account password** — use an API token only.
 
 ## Skills & operational scripts
@@ -308,7 +316,17 @@ Optional:
   `SEARCH_PROVIDER` (default tavily) + `TAVILY_API_KEY`, `MARKET_DATA_PROVIDER`/`MARKED_DATA_PROVIDER`
   (yfinance/alpaca), `AGENT_FRAMEWORK`, `ANTHROPIC_API_KEY` (+ `langchain-anthropic` for Claude)
 - **Data/feeds**: `EODHD_API_KEY`
-- **Email**: `POSTMARK_API_KEY`, `TO_EMAIL`, `FROM_EMAIL`
+- **Daily advisor**: `ADVISOR_ENABLED` (default true in Compose),
+  `ADVISOR_EMAIL_ENABLED` (default false), `ADVISOR_CLOSE_DELAY_MINUTES` (15),
+  `ADVISOR_WORKER_POLL_SECONDS` (10),
+  plus optional `ADVISOR_MIN_CLOSED_TRADES`, `ADVISOR_DRIFT_RATIO`,
+  `ADVISOR_LOSING_SESSIONS`, `ADVISOR_DRAWDOWN_PCT`, and
+  `ADVISOR_URGENT_DAILY_LOSS_PCT` overrides
+- **Fixed paper service attribution**: set both `PAPER_USER_ID` and
+  `PAPER_ACCOUNT_ID` to bind `scripts/run_paper_strategy.py` to an owned linked
+  account; without them it remains a legacy unscoped run
+- **Email**: `POSTMARK_API_KEY`, `FROM_EMAIL` (`TO_EMAIL` remains for legacy scripts;
+  advisor delivery always uses each active user's login email)
 - **OAuth**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
 - **Deploy**: `COOLIFY_URL`, `COOLIFY_API_TOKEN`, `COOLIFY_APP_UUID`
 - **LinkedIn skill**: `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`, `LINKEDIN_ACCESS_TOKEN`

@@ -35,6 +35,7 @@ def test_openapi_exposes_docs_auth_and_external_agents():
         "/v2/agents/alpha-value/invoke",
         "/v2/agents/alpha-compare/invoke",
         "/v2/agents/autonomy-scout/invoke",
+        "/v2/advisor/reports",
     ):
         assert path in spec["paths"]
 

@@ -1150,7 +1150,8 @@ Plotly.newPlot('chart', [trace1], {{
             "duration_seconds": parse_duration(duration),
             "poll_interval_seconds": int(params.get("poll", "300")),
             "extended_hours": params.get("hours") == "extended",
-            "email_notifications": params.get("email", "true").lower() not in ("false", "no", "0", "off"),
+            # Accepted for older clients but ignored by PaperTradeAgent.
+            "email_notifications": params.get("email", "false").lower() not in ("false", "no", "0", "off"),
             "pdt_protection": pdt_protection,
         }
         
@@ -1185,7 +1186,7 @@ Plotly.newPlot('chart', [trace1], {{
 
         hours_label = "Extended (4AM-8PM ET)" if config.get("extended_hours") else "Regular (9:30AM-4PM ET)"
         pdt_label = "Off" if pdt_protection is False else "On" if pdt_protection else "Auto"
-        email_label = "On" if config.get("email_notifications") else "Off"
+        email_label = "Deprecated (ignored)"
 
         log_path = Path("data/paper_trade.log")
 

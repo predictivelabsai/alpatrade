@@ -192,6 +192,10 @@ class PaperTradeAgent:
                     logger.info("Paper trading stopped via stop event")
                     break
 
+                # Stamp liveness so the stale-run sweep never mistakes an active
+                # (possibly long-running) session for an interrupted orphan.
+                heartbeat_run(self.session_id)
+
                 now = datetime.now(timezone.utc)
                 live_advice = {}
                 if stop_event and hasattr(stop_event, "advice_settings"):

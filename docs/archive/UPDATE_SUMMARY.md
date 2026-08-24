@@ -9,7 +9,7 @@ Updated `.env` and `.env.example` with:
 - **ALPACA_PAPER_SECRET_KEY**: REDACTED_ALPACA_SECRET
 - **EODHD_API_KEY**: REDACTED_EODHD_KEY
 - **MASSIVE_API_KEY**: REDACTED_MASSIVE_KEY
-- **DB_URL**: postgresql://REDACTED_DB_USER:REDACTED_DB_PASSWORD@REDACTED_DB_HOST/indurent_db
+- **DB_URL**: postgresql://<user>:<password>@<host>/<database>
 - **DB_SCHEMA**: trading
 
 ### 2. ✅ EODHD Utility Created
