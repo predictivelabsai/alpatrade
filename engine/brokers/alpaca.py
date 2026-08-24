@@ -78,6 +78,39 @@ class AlpacaAPI:
     def is_paper(self):
         return self.paper
 
+    def get_cash_flows(self, day: str) -> float:
+        """Net external cash flow (deposits − withdrawals) on a UTC date.
+
+        alpaca-py 0.43 exposes no activities method, so this hits the raw
+        `/v2/account/activities` REST endpoint for cash transfer types and sums
+        their net_amount. Best-effort: returns 0.0 on any error (and paper-account
+        resets do not always surface as activities). Used to make the equity
+        snapshots' MTD/YTD math cash-flow aware.
+        """
+        try:
+            import requests
+            resp = requests.get(
+                f"{self.base_url}/v2/account/activities",
+                headers={
+                    "APCA-API-KEY-ID": self.api_key,
+                    "APCA-API-SECRET-KEY": self.secret_key,
+                },
+                params={"activity_types": "CSD,CSW,CSR", "date": day},
+                timeout=15,
+            )
+            resp.raise_for_status()
+            activities = resp.json() or []
+            total = 0.0
+            for a in activities:
+                try:
+                    total += float(a.get("net_amount") or 0)
+                except (TypeError, ValueError):
+                    continue
+            return total
+        except Exception as e:  # noqa: BLE001
+            logger.debug(f"get_cash_flows({day}) unavailable: {e}")
+            return 0.0
+
     @property
     def base_url(self):
         return "https://paper-api.alpaca.markets" if self.paper else "https://api.alpaca.markets"

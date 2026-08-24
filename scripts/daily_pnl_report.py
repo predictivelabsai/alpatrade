@@ -362,19 +362,25 @@ def save_equity_snapshot(user_id: str, account_id: str, day: str,
         from datetime import timedelta, datetime as _dt, time as _time
         from sqlalchemy import text
         from engine.db.pool import DatabasePool
+        # External cash flow (deposits/withdrawals/resets) for the day, so the
+        # MTD/YTD math can subtract it out. Best-effort — 0.0 when unavailable.
+        net_flow = api.get_cash_flows(day) if api is not None else 0.0
         with DatabasePool().get_session() as session:
             session.execute(text("""
                 INSERT INTO alpatrade.account_equity_snapshots
-                    (user_id, account_id, trading_date, equity, cash, buying_power, unrealized_pnl)
-                VALUES (:uid, :aid, CAST(:day AS DATE), :equity, :cash, :buying_power, :unrealized)
+                    (user_id, account_id, trading_date, equity, cash, buying_power,
+                     unrealized_pnl, net_cash_flow)
+                VALUES (:uid, :aid, CAST(:day AS DATE), :equity, :cash, :buying_power,
+                        :unrealized, :net_flow)
                 ON CONFLICT (user_id, account_id, trading_date) DO UPDATE SET
                     equity = EXCLUDED.equity, cash = EXCLUDED.cash,
                     buying_power = EXCLUDED.buying_power,
-                    unrealized_pnl = EXCLUDED.unrealized_pnl, captured_at = NOW()
+                    unrealized_pnl = EXCLUDED.unrealized_pnl,
+                    net_cash_flow = EXCLUDED.net_cash_flow, captured_at = NOW()
             """), {"uid": user_id, "aid": account_id, "day": day,
                     "equity": data["equity"], "cash": data["cash"],
                     "buying_power": data["buying_power"],
-                    "unrealized": data["unrealized_pl"]})
+                    "unrealized": data["unrealized_pl"], "net_flow": net_flow})
             rows = session.execute(text("""
                 SELECT trading_date, equity, net_cash_flow
                 FROM alpatrade.account_equity_snapshots
