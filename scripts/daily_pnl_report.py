@@ -174,7 +174,7 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
         "day": day or datetime.now(timezone.utc).strftime("%Y-%m-%d"),
     }
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    data["periods"] = (save_equity_snapshot(user_id, account_id, data["day"], data)
+    data["periods"] = (save_equity_snapshot(user_id, account_id, data["day"], data, api)
                        if user_id and account_id and data["day"] == today else {})
     return data
 
@@ -349,9 +349,17 @@ def agent_performance(user_id: str | None, account_id: str | None,
 
 
 def save_equity_snapshot(user_id: str, account_id: str, day: str,
-                         data: dict) -> dict:
-    """Upsert an account snapshot and derive account-level MTD/YTD returns."""
+                         data: dict, api=None) -> dict:
+    """Upsert today's account snapshot and derive account-level MTD/YTD returns.
+
+    Hybrid baseline: persisted snapshots are preferred (cash-flow aware via
+    net_cash_flow), but when snapshots don't yet reach a window's start the
+    baseline is seeded from Alpaca's portfolio history so MTD/YTD are correct
+    *retroactively* rather than blank until snapshots accumulate. Each window
+    carries a ``source`` of ``'snapshot'`` or ``'alpaca'``.
+    """
     try:
+        from datetime import timedelta, datetime as _dt, time as _time
         from sqlalchemy import text
         from engine.db.pool import DatabasePool
         with DatabasePool().get_session() as session:
@@ -377,16 +385,42 @@ def save_equity_snapshot(user_id: str, account_id: str, day: str,
             """), {"uid": user_id, "aid": account_id, "day": day}).fetchall()
         if not rows:
             return {}
-        current = float(rows[-1][1])
-        month_rows = [r for r in rows if r[0].month == rows[-1][0].month]
+        current = float(data.get("equity") or rows[-1][1])
+        day_date = rows[-1][0]
+        month_start = day_date.replace(day=1)
+        year_start = day_date.replace(month=1, day=1)
+        month_rows = [r for r in rows
+                      if r[0].year == day_date.year and r[0].month == day_date.month]
 
-        def period(subset) -> dict:
-            start = float(subset[0][1]) - float(subset[0][2] or 0)
+        def _alpaca_baseline(start_date):
+            if api is None:
+                return None
+            try:
+                s = _dt.combine(start_date, _time.min, tzinfo=timezone.utc)
+                e = _dt.combine(day_date, _time.max, tzinfo=timezone.utc)
+                hist = api.get_portfolio_history(start=s, end=e, timeframe="1D")
+                eq = hist.get("equity") if isinstance(hist, dict) else None
+                return float(eq[0]) if eq else None
+            except Exception:  # noqa: BLE001
+                return None
+
+        def window(subset, start_date) -> dict | None:
             flows = sum(float(r[2] or 0) for r in subset)
-            pnl = current - start - flows
-            return {"pnl": pnl, "pct": (pnl / start * 100) if start else 0.0,
-                    "days": len(subset)}
-        return {"mtd": period(month_rows), "ytd": period(rows)}
+            # Snapshots "cover" the window only if the earliest one lands on/near
+            # the window start (allow a weekend/holiday gap).
+            snap_covers = bool(subset) and subset[0][0] <= start_date + timedelta(days=4)
+            if snap_covers:
+                baseline, source = float(subset[0][1]) - float(subset[0][2] or 0), "snapshot"
+            else:
+                baseline, source = _alpaca_baseline(start_date), "alpaca"
+                if baseline is None and subset:  # last resort: earliest snapshot
+                    baseline, source = float(subset[0][1]) - float(subset[0][2] or 0), "snapshot"
+            if not baseline:
+                return None
+            pnl = current - baseline - flows
+            return {"pnl": pnl, "pct": (pnl / baseline * 100) if baseline else 0.0,
+                    "days": len(subset), "source": source}
+        return {"mtd": window(month_rows, month_start), "ytd": window(rows, year_start)}
     except Exception:  # noqa: BLE001
         return {}
 
@@ -569,17 +603,28 @@ def _stale_notice(d: dict) -> str:
 def _render_periods(d: dict) -> str:
     periods = d.get("periods") or {}
     if not periods:
-        return ("<p style='color:#7A867E;font-size:12px'>MTD/YTD starts after migration 23 "
-                "captures the first account snapshot; historical values are not invented.</p>")
+        return ("<p style='color:#7A867E;font-size:12px'>MTD/YTD are unavailable for this "
+                "account yet (no equity history).</p>")
     cells = []
     for key, label in (("mtd", "Month to date"), ("ytd", "Year to date")):
         value = periods.get(key) or {}
+        if not value:
+            cells.append(f"<td style='padding:8px 20px 8px 0'><b>{label}</b><br>"
+                         "<span style='color:#7A867E'>n/a</span></td>")
+            continue
         pnl, pct = _f(value.get("pnl")), _f(value.get("pct"))
         color = "#1F5D43" if pnl >= 0 else "#b0653f"
-        cells.append(f"<td style='padding:8px 20px 8px 0'><b>{label}</b><br>"
+        # Baseline provenance: persisted snapshots (cash-flow aware) vs a retroactive
+        # Alpaca portfolio-history estimate until snapshots reach the window start.
+        if value.get("source") == "alpaca":
+            note = "est. from Alpaca history"
+        else:
+            note = f"{int(value.get('days') or 0)} snapshot day(s)"
+        cells.append(f"<td style='padding:8px 20px 8px 0'><b>{label}</b> "
+                     "<span style='font-size:11px;color:#9AA39C'>(arithmetic)</span><br>"
                      f"<span style='color:{color}'>${pnl:+,.2f} ({pct:+.2f}%)</span><br>"
-                     f"<small>{int(value.get('days') or 0)} snapshot day(s)</small></td>")
-    return f"<table><tr>{''.join(cells)}</tr></table>"
+                     f"<small style='color:#9AA39C'>{note}</small></td>")
+    return f"<h3 style='margin:.9rem 0 .2rem'>Performance</h3><table><tr>{''.join(cells)}</tr></table>"
 
 
 def _render_agent_benchmark(d: dict) -> str:
@@ -634,12 +679,13 @@ def render(d: dict) -> str:
   {owner}
   {_stale_notice(d)}
   <p style="font-size:20px;margin:.2rem 0"><b style="color:{color}">{sign} ${d['day_pnl']:,.2f}
-     ({d['day_pct']:+.2f}%)</b> <span style="color:#7A867E">today</span></p>
+     ({d['day_pct']:+.2f}%)</b>
+     <span style="color:#7A867E">today <span style="font-size:12px">(vs prior close)</span></span></p>
   <table style="border-collapse:collapse;margin:.4rem 0">
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Portfolio value</td><td><b>${d['equity']:,.2f}</b></td></tr>
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Cash</td><td>${d['cash']:,.2f}</td></tr>
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Buying power</td><td>${d['buying_power']:,.2f}</td></tr>
-    <tr><td style="padding:2px 14px 2px 0;color:#415046">Open unrealised P&amp;L</td><td>${d['unrealized_pl']:,.2f}</td></tr>
+    <tr><td style="padding:2px 14px 2px 0;color:#415046">Open unrealised P&amp;L <span style="font-size:11px;color:#7A867E">(since entry)</span></td><td>${d['unrealized_pl']:,.2f}</td></tr>
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Day trades (5d)</td><td>{_e(d['daytrade_count']) or 'None'}</td></tr>
   </table>
   {_render_periods(d)}
