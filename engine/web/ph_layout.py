@@ -26,6 +26,7 @@ composer.
 """
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 from fasthtml.common import (
@@ -40,6 +41,14 @@ from engine.web.ph_commands import (
 )
 
 # --- CDN assets -------------------------------------------------------------
+# Cache-bust app.css by its mtime so style changes reach browsers without a
+# manual hard refresh (static files are otherwise long-cached).
+try:
+    _CSS_VER = str(int(os.path.getmtime(
+        os.path.join(os.path.dirname(__file__), "..", "..", "static", "app.css"))))
+except OSError:
+    _CSS_VER = "1"
+
 _MARKED_CDN = "https://cdn.jsdelivr.net/npm/marked/marked.min.js"
 _PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js"
 _HTMX_CDN = "https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js"
@@ -61,6 +70,79 @@ _MIC_SVG = (
     '3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19"'
     ' x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>'
 )
+
+# --- uniform nav icon set (line icons, replace per-OS emoji) ----------------
+# Feather/Lucide-style single-stroke glyphs. Keyed by page active-key and by
+# section (``sec-*``); every glyph inherits ``currentColor`` so it tracks the
+# link's muted/active colour. See :func:`_icon` / :func:`_page_link`.
+_ICONS = {
+    "_default": '<circle cx="12" cy="12" r="3.2"/>',
+    # Explore
+    "dashboard": '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+    "map": '<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>',
+    "charts": '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+    "hedgefunds": '<line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
+    "marketintel": '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+    "premarket": '<path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/><polyline points="8 6 12 2 16 6"/>',
+    # Monitoring
+    "agent-pipeline": '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    # Tools
+    "filings": '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+    "press": '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="13" y2="16"/>',
+    "spacs": '<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/>',
+    # Public Markets
+    "indexoptions": '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
+    "ipomap": '<circle cx="12" cy="12" r="9"/><polygon points="16 8 13.5 13.5 8 16 10.5 10.5 16 8"/>',
+    "ipopipeline": '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="14" y2="15"/>',
+    # Research pages
+    "research-premarket": '<path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/><polyline points="8 6 12 2 16 6"/>',
+    "research-models": '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+    "research-news": '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="13" y2="16"/>',
+    "research-timing": '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/>',
+    "research-history": '<polyline points="3 4 3 10 9 10"/><path d="M3.5 15a9 9 0 1 0 2.2-9.3L3 10"/><polyline points="12 8 12 12 15 14"/>',
+    # Admin
+    "settings": '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    "guide": '<circle cx="12" cy="12" r="9"/><path d="M9.2 9a3 3 0 0 1 5.6 1c0 2-3 2.5-3 4"/><line x1="12" y1="17" x2="12" y2="17.01"/>',
+    # Section headers
+    "sec-explore": '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
+    "sec-chats": '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
+    "sec-agents": '<rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1"/><line x1="9" y1="13" x2="9" y2="15"/><line x1="15" y1="13" x2="15" y2="15"/>',
+    "sec-monitoring": '<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><polyline points="6 11 9 8 11 10 15 6"/>',
+    "sec-tools": '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+    "sec-public": '<circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/>',
+    "sec-research": '<path d="M2 3h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
+    "sec-admin": '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="2" y1="14" x2="6" y2="14"/><line x1="10" y1="8" x2="14" y2="8"/><line x1="18" y1="16" x2="22" y2="16"/>',
+}
+
+
+def _icon(name: str, cls: str = "nav-ico"):
+    """A uniform inline-SVG line icon; falls back to a small dot when unknown."""
+    inner = _ICONS.get(name, _ICONS["_default"])
+    # width/height live on the element itself so the glyph can never balloon if
+    # app.css is cached/late; CSS only fine-tunes the size and colour.
+    svg = ('<svg viewBox="0 0 24 24" width="16" height="16" fill="none" '
+           'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" '
+           'stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>')
+    return Span(NotStr(svg), cls=cls)
+
+
+def _strip_emoji(label: str) -> str:
+    """Drop a leading emoji/symbol + space so labels render icon-then-text."""
+    i = 0
+    while i < len(label) and (not label[i].isascii() or label[i] in " \t"):
+        i += 1
+    return label[i:] or label
+
+
+def _page_link(label: str, href: str, key: str, active):
+    """A sidebar page link: uniform icon + clean text, active-highlighted."""
+    return A(
+        _icon(key),
+        Span(_strip_emoji(label), cls="page-link-text"),
+        href=href,
+        cls="page-link" + (" active" if active == key else ""),
+    )
+
 
 # --- client helpers (fillChat / newChat / composer + pane toggles) ----------
 PH_JS = """
@@ -96,11 +178,33 @@ function filterNews(el){var cat=el.getAttribute('data-cat');
   var empty=document.getElementById('news-empty-filter');
   if(empty)empty.style.display=visible?'none':'block';
 }
+// --- sidebar drawer + scroll persistence across navigation ---------------
+// Each <details data-nav-key> remembers its open/closed state in localStorage
+// so navigating to a new page no longer collapses the whole menu and loses
+// the user's place. The section holding the active page is always revealed.
+function navSave(){var st={};var s=document.querySelectorAll('#left-pane details[data-nav-key]');
+  for(var i=0;i<s.length;i++){st[s[i].getAttribute('data-nav-key')]=s[i].open;}
+  try{localStorage.setItem('alpatrade.nav',JSON.stringify(st));}catch(e){}}
+function navRestore(){var st={};
+  try{var r=localStorage.getItem('alpatrade.nav');if(r)st=JSON.parse(r)||{};}catch(e){st={};}
+  var s=document.querySelectorAll('#left-pane details[data-nav-key]');
+  for(var i=0;i<s.length;i++){var k=s[i].getAttribute('data-nav-key');
+    if(Object.prototype.hasOwnProperty.call(st,k))s[i].open=!!st[k];
+    s[i].addEventListener('toggle',navSave);}
+  var a=document.querySelector('#left-pane .page-link.active,#left-pane .agent-item.active,#left-pane .session-row.active');
+  if(a){var d=a.closest('details[data-nav-key]');
+    while(d){d.open=true;var pr=d.parentElement;d=pr?pr.closest('details[data-nav-key]'):null;}}
+  var lb=document.querySelector('.left-body');
+  if(lb){try{var sc=localStorage.getItem('alpatrade.navScroll');if(sc)lb.scrollTop=parseInt(sc,10)||0;}catch(e){}
+    var tmr;lb.addEventListener('scroll',function(){if(tmr)return;
+      tmr=setTimeout(function(){tmr=null;try{localStorage.setItem('alpatrade.navScroll',String(lb.scrollTop));}catch(e){}},150);});}}
 window.fillChat=fillChat;window.newChat=newChat;window.autoResize=autoResize;
 window.handleKey=handleKey;window.toggleNewsPane=toggleNewsPane;window.setNewsPane=setNewsPane;
 window.toggleLeftPane=toggleLeftPane;window.filterNews=filterNews;
+window.navSave=navSave;window.navRestore=navRestore;
 document.addEventListener('DOMContentLoaded',function(){
   var p=document.getElementById('right-pane');if(p)setNewsPane(p.classList.contains('open'));
+  navRestore();
   var t=sessionStorage.getItem('alpatrade.pendingPrompt');
   if(t&&document.getElementById('chat-input')){
     sessionStorage.removeItem('alpatrade.pendingPrompt');fillChat(t);
@@ -122,7 +226,7 @@ def head(title: str = "AlpaTrade"):
         Link(rel="icon", type="image/svg+xml", href="/static/favicon.svg"),
         Meta(name="theme-color", content="#1F5D43"),
         Style("html,body{margin:0}"),
-        Link(rel="stylesheet", href="/static/app.css"),
+        Link(rel="stylesheet", href=f"/static/app.css?v={_CSS_VER}"),
         Script(src=_HTMX_CDN),
         Script(src=_MARKED_CDN),
         Script(src=_PLOTLY_CDN),
@@ -163,21 +267,33 @@ def _menu_group(label: str, items, active: Optional[str]):
         ),
         Div(*rows, cls="agent-list"),
         cls="agent-group",
+        **{"data-nav-key": "grp-" + label.lower().replace(" ", "-")},
         **({"open": True} if is_open else {}),
     )
 
 
-def _nav_section(label: str, *children, opened: bool = False):
-    """A compact top-level sidebar section, collapsed on every page load."""
+def _nav_section(label: str, *children, opened: bool = False,
+                 icon: Optional[str] = None):
+    """A compact top-level sidebar section.
+
+    Open/closed state is remembered client-side across navigation
+    (``data-nav-key`` + ``navRestore`` in ``PH_JS``); ``opened`` is only the
+    first-visit default, and the section holding the active page is always
+    force-opened on load.
+    """
+    summary_kids = []
+    if icon:
+        summary_kids.append(_icon(icon, cls="nav-ico nav-section-ico"))
+    summary_kids += [
+        Span(label, cls="nav-section-name"),
+        Span(">", cls="nav-section-expand", aria_hidden="true"),
+        Span("<", cls="nav-section-collapse", aria_hidden="true"),
+    ]
     return Details(
-        Summary(
-            Span(label, cls="nav-section-name"),
-            Span(">", cls="nav-section-expand", aria_hidden="true"),
-            Span("<", cls="nav-section-collapse", aria_hidden="true"),
-            cls="nav-section-toggle",
-        ),
+        Summary(*summary_kids, cls="nav-section-toggle"),
         Div(*children, cls="nav-section-body"),
         cls="nav-section",
+        **{"data-nav-key": "sec-" + label.lower().replace(" ", "-").replace("&", "and")},
         **({"open": True} if opened else {}),
     )
 
@@ -193,28 +309,23 @@ MONITORING_PAGES: list = []
 
 
 def _EXPLORE_EXTRA(active):
-    return [A(lbl, href=href, cls="page-link" + (" active" if active == key else ""))
-            for lbl, href, key in EXPLORE_PAGES]
+    return [_page_link(lbl, href, key, active) for lbl, href, key in EXPLORE_PAGES]
 
 
 def _TOOLS_EXTRA(active):
-    return [A(lbl, href=href, cls="page-link" + (" active" if active == key else ""))
-            for lbl, href, key in TOOLS_PAGES]
+    return [_page_link(lbl, href, key, active) for lbl, href, key in TOOLS_PAGES]
 
 
 def _PUBLIC_EXTRA(active):
-    return [A(lbl, href=href, cls="page-link" + (" active" if active == key else ""))
-            for lbl, href, key in PUBLIC_PAGES]
+    return [_page_link(lbl, href, key, active) for lbl, href, key in PUBLIC_PAGES]
 
 
 def _RESEARCH_EXTRA(active):
-    return [A(lbl, href=href, cls="page-link" + (" active" if active == key else ""))
-            for lbl, href, key in RESEARCH_PAGES]
+    return [_page_link(lbl, href, key, active) for lbl, href, key in RESEARCH_PAGES]
 
 
 def _MONITORING_EXTRA(active):
-    return [A(lbl, href=href, cls="page-link" + (" active" if active == key else ""))
-            for lbl, href, key in MONITORING_PAGES]
+    return [_page_link(lbl, href, key, active) for lbl, href, key in MONITORING_PAGES]
 
 
 def _left_pane(active: Optional[str], user: Optional[dict]):
@@ -237,12 +348,13 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             _nav_section(
                 "Explore",
                 Div(
-                    A("📊 Dashboard", href="/dashboard", cls="page-link" + (" active" if active == "dashboard" else "")),
-                    A("🗺 Market Map", href="/map", cls="page-link" + (" active" if active == "map" else "")),
-                    A("📈 Charts", href="/charts", cls="page-link" + (" active" if active == "charts" else "")),
+                    _page_link("Dashboard", "/dashboard", "dashboard", active),
+                    _page_link("Market Map", "/map", "map", active),
+                    _page_link("Charts", "/charts", "charts", active),
                     *_EXPLORE_EXTRA(active),
                     cls="page-links",
                 ),
+                icon="sec-explore",
             ),
             _nav_section(
                 "Chats",
@@ -250,15 +362,18 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
                     cls="session-list", id="session-list",
                     hx_get="/app/chats", hx_trigger="load", hx_swap="innerHTML"),
                 opened=active == "app",
+                icon="sec-chats",
             ),
             _nav_section(
                 "Agents",
                 Div(*[_menu_group(lbl, items, active) for lbl, items in AGENT_SHORTCUTS],
                     cls="agent-browser"),
+                icon="sec-agents",
             ),
             _nav_section(
                 "Monitoring",
                 Div(*_MONITORING_EXTRA(active), cls="page-links"),
+                icon="sec-monitoring",
             ),
             _nav_section(
                 "Tools",
@@ -268,10 +383,12 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
                 ),
                 Div(*[_menu_group(lbl, items, active) for lbl, items in MAIN_NAV],
                     cls="agent-browser"),
+                icon="sec-tools",
             ),
             _nav_section(
                 "Public Markets",
                 Div(*_PUBLIC_EXTRA(active), cls="page-links"),
+                icon="sec-public",
             ),
             _nav_section(
                 "Research",
@@ -279,14 +396,16 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
                 Div(*[_menu_group(lbl, items, active)
                       for lbl, items in ALPHA_RESEARCH_SHORTCUTS],
                     cls="agent-browser"),
+                icon="sec-research",
             ),
             _nav_section(
                 "Admin",
                 Div(
-                    A("⚙ Settings", href="/settings", cls="page-link" + (" active" if active == "settings" else "")),
-                    A("❓ Help & shortcuts", href="/guide", cls="page-link" + (" active" if active == "guide" else "")),
+                    _page_link("Settings", "/settings", "settings", active),
+                    _page_link("Help & shortcuts", "/guide", "guide", active),
                     cls="page-links",
                 ),
+                icon="sec-admin",
             ),
             cls="left-body",
         ),
