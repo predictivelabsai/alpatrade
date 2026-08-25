@@ -1,5 +1,19 @@
 # Change Log
 
+## 0.22.0 — 2026-08-25
+
+### Fix: duplicate live paper runs (replace, session-scoped)
+
+- Paper runs are no longer allowed to pile up: `run_paper_trade` now replaces this
+  session's own prior identical live run(s) before starting a new one
+  (`stop_duplicate_paper_runs`), marking the old ones `stopped`.
+- Strictly scoped to the SAME user + account + strategy_slug + symbol-set, and a
+  no-op unless the run is attributed (user_id + account_id set) — it can never
+  stop another user's runs, a different config, or an unattributed run.
+- Note: the runs seen piling up were unattributed system/env paper runs
+  (user_id NULL); attaching them to an owner (so this guard applies) requires the
+  autonomy/paper-strategy spawner to run with a user/account.
+
 ## 0.21.0 — 2026-08-24
 
 ### Daily PnL report — critique fixes (1-10)

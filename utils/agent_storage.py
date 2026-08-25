@@ -151,6 +151,52 @@ def sweep_stale_paper_runs(stale_seconds: int = 1800) -> int:
     return count
 
 
+def stop_duplicate_paper_runs(keep_run_id: str, strategy_slug: str,
+                              symbols, user_id: Optional[str],
+                              account_id: Optional[str]) -> int:
+    """Stop the caller's OWN prior identical live paper runs before starting a new one.
+
+    Strictly scoped to the same user + account + strategy_slug + symbol-set, so it
+    can only ever replace a duplicate that belongs to this session — never another
+    user's runs, a different config, or an unattributed run. A no-op unless both
+    user_id and account_id are set (an attributed, session-owned run). Returns the
+    number of duplicates stopped.
+    """
+    backend = get_storage_backend()
+    if backend != "db" or not strategy_slug or not user_id or not account_id:
+        return 0
+    symkey = ",".join(sorted(
+        s.strip().upper() for s in (symbols or []) if s and str(s).strip()))
+    from sqlalchemy import text
+    pool = _get_pool()
+    with pool.get_session() as session:
+        result = session.execute(
+            text("""
+                UPDATE alpatrade.runs
+                SET status = 'stopped',
+                    completed_at = COALESCE(completed_at, NOW())
+                WHERE mode = 'paper'
+                  AND status = 'running'
+                  AND run_id <> :keep
+                  AND strategy_slug = :slug
+                  AND user_id = :uid
+                  AND account_id = :aid
+                  AND COALESCE((
+                      SELECT string_agg(UPPER(x), ',' ORDER BY UPPER(x))
+                      FROM jsonb_array_elements_text(config->'symbols') x
+                  ), '') = :symkey
+            """),
+            {"keep": keep_run_id, "slug": strategy_slug,
+             "uid": user_id, "aid": account_id, "symkey": symkey},
+        )
+        count = result.rowcount or 0
+    if count:
+        logger.info(
+            f"Replaced {count} duplicate live paper run(s) for user={user_id} "
+            f"account={account_id} slug={strategy_slug}")
+    return count
+
+
 def update_run(run_id: str, status: str, results: Dict = None):
     """Update an existing run with final status and results."""
     backend = get_storage_backend()

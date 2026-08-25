@@ -60,3 +60,40 @@ def test_default_stale_window_exceeds_default_poll_interval():
     # Default paper poll is 300s; the stale window must be comfortably larger so a
     # legitimately long-running (but heart-beating) session is never swept.
     assert worker.RUNS_STALE_SECONDS >= 600
+
+
+def test_dedup_guard_is_scoped_to_owner_and_config():
+    """Replacing duplicate paper runs must never touch another user's or a
+    different config's runs."""
+    import inspect
+    from utils import agent_storage
+
+    assert hasattr(agent_storage, "stop_duplicate_paper_runs")
+    src = inspect.getsource(agent_storage.stop_duplicate_paper_runs)
+    # Strictly scoped: same user, same account, same slug, same symbol-set, and
+    # never the run we are about to create.
+    assert "user_id = :uid" in src
+    assert "account_id = :aid" in src
+    assert "strategy_slug = :slug" in src
+    assert "run_id <> :keep" in src
+    assert "jsonb_array_elements_text(config->'symbols')" in src
+    # Only ever stops 'running' paper rows, to 'stopped' (deliberate replacement).
+    assert "mode = 'paper'" in src and "status = 'running'" in src
+    assert "status = 'stopped'" in src
+
+
+def test_dedup_guard_noop_without_owner():
+    """Unattributed runs (no user/account) are left completely alone."""
+    from utils.agent_storage import stop_duplicate_paper_runs
+    assert stop_duplicate_paper_runs("r", "btd-3dp", ["AAPL"], None, None) == 0
+    assert stop_duplicate_paper_runs("r", "btd-3dp", ["AAPL"], "u", None) == 0
+    assert stop_duplicate_paper_runs("r", "btd-3dp", ["AAPL"], None, "a") == 0
+
+
+def test_orchestrator_replaces_own_duplicate_paper_runs():
+    import inspect
+    from agents.orchestrator import Orchestrator
+    src = inspect.getsource(Orchestrator.run_paper_trade)
+    assert "stop_duplicate_paper_runs(" in src
+    # called before store_run so the fresh run is the only survivor
+    assert src.index("stop_duplicate_paper_runs(") < src.index("store_run(")
