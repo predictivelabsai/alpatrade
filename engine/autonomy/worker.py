@@ -29,6 +29,25 @@ HEARTBEAT_SECONDS = int(os.getenv("AUTONOMY_HEARTBEAT_SECONDS", "30"))
 # Paper runs left 'running' by an interrupted/redeployed process are swept to
 # 'stopped' once their heartbeat is older than this (default 30 min).
 RUNS_STALE_SECONDS = int(os.getenv("RUNS_STALE_SECONDS", "1800"))
+
+
+def scout_owner() -> tuple[str | None, str | None]:
+    """Resolve the owner for scout self-fed autonomous runs.
+
+    Without an owner the self-feed enqueues UNATTRIBUTED runs (user_id NULL) that
+    pile up because the session-scoped dedup guard only acts on attributed runs.
+    Reads AUTONOMY_OWNER_USER_ID/AUTONOMY_OWNER_ACCOUNT_ID, falling back to
+    PAPER_USER_ID/PAPER_ACCOUNT_ID so one env pair can own both this worker's
+    self-feed and the fixed paper-strategy service. Both must be set together —
+    a half-configured pair resolves to unattributed rather than a broken lookup.
+    """
+    uid = (os.getenv("AUTONOMY_OWNER_USER_ID", "").strip()
+           or os.getenv("PAPER_USER_ID", "").strip() or None)
+    aid = (os.getenv("AUTONOMY_OWNER_ACCOUNT_ID", "").strip()
+           or os.getenv("PAPER_ACCOUNT_ID", "").strip() or None)
+    if not (uid and aid):
+        return None, None
+    return uid, aid
 ADVISOR_POLL_SECONDS = max(
     1, int(os.getenv("ADVISOR_WORKER_POLL_SECONDS", "10"))
 )
@@ -167,9 +186,17 @@ def loop(worker_id: str = "worker-1") -> None:
             # Self-feed: when the queue is idle, the Scout enqueues one new run.
             if queue.pending_count() == 0:
                 from engine.autonomy import scout
-                rid = scout.enqueue_run(strategy=os.getenv("AUTONOMY_STRATEGY", "btd"))
+                # Attribute the self-fed run to the configured owner so it is a
+                # tenant-scoped session (not an orphan) and the dedup guard applies.
+                owner_uid, owner_aid = scout_owner()
+                rid = scout.enqueue_run(
+                    strategy=os.getenv("AUTONOMY_STRATEGY", "btd"),
+                    user_id=owner_uid,
+                    account_id=owner_aid,
+                )
                 if rid:
-                    log.info("scout enqueued run %s", rid)
+                    log.info("scout enqueued run %s (owner=%s)", rid,
+                             (owner_uid[:8] if owner_uid else "unattributed"))
             drained = 0
             while run_one(worker_id):
                 drained += 1

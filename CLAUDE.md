@@ -329,9 +329,13 @@ Optional:
   plus optional `ADVISOR_MIN_CLOSED_TRADES`, `ADVISOR_DRIFT_RATIO`,
   `ADVISOR_LOSING_SESSIONS`, `ADVISOR_DRAWDOWN_PCT`, and
   `ADVISOR_URGENT_DAILY_LOSS_PCT` overrides
-- **Fixed paper service attribution**: set both `PAPER_USER_ID` and
-  `PAPER_ACCOUNT_ID` to bind `scripts/run_paper_strategy.py` to an owned linked
-  account; without them it remains a legacy unscoped run
+- **Autonomous run attribution**: set both `PAPER_USER_ID` and `PAPER_ACCOUNT_ID`
+  to an owned linked account to bind (a) `scripts/run_paper_strategy.py` (the fixed
+  `paper-strategy` service) and (b) the autonomy worker's scout self-feed to that
+  owner — so self-fed paper runs are tenant-scoped sessions the dedup guard applies
+  to, not orphans (user_id NULL) that pile up. The worker resolves its owner via
+  `worker.scout_owner()`: `AUTONOMY_OWNER_USER_ID`/`AUTONOMY_OWNER_ACCOUNT_ID`
+  override, else `PAPER_*`. Both ids must be set together or it stays unattributed.
 - **Email**: `POSTMARK_API_KEY`, `FROM_EMAIL` (`TO_EMAIL` remains for legacy scripts;
   advisor delivery always uses each active user's login email)
 - **OAuth**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`

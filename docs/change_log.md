@@ -1,5 +1,23 @@
 # Change Log
 
+## 0.23.0 — 2026-08-25
+
+### Attribute autonomous paper runs to a configured owner
+
+- Closes the gap noted in 0.22.0: the paper runs seen piling up were the
+  autonomy worker's **scout self-feed** (`worker.loop` → `scout.enqueue_run`),
+  which enqueued runs with **no owner** (user_id NULL). Because the 0.22.0 dedup
+  guard only acts on attributed runs, those orphans were never de-duplicated.
+- The worker now resolves an owner via `worker.scout_owner()`
+  (`AUTONOMY_OWNER_USER_ID`/`AUTONOMY_OWNER_ACCOUNT_ID`, falling back to
+  `PAPER_USER_ID`/`PAPER_ACCOUNT_ID`) and passes it to the scout, so self-fed
+  runs are tenant-scoped sessions and the dedup guard applies to them.
+- Both ids must be set together; a half-configured pair resolves to unattributed
+  (never a broken key lookup). One env pair now owns both the autonomy self-feed
+  and the fixed `paper-strategy` service.
+- `docker-compose.yaml`: autonomy service passes `AUTONOMY_OWNER_*` (defaulting
+  to `PAPER_*`).
+
 ## 0.22.0 — 2026-08-25
 
 ### Fix: duplicate live paper runs (replace, session-scoped)
