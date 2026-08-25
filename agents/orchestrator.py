@@ -33,7 +33,9 @@ from agents.backtest_agent import BacktestAgent
 from agents.paper_trade_agent import PaperTradeAgent
 from agents.validate_agent import ValidateAgent
 from agents.reconcile_agent import ReconcileAgent
-from utils.agent_storage import store_run, update_run, store_validation
+from utils.agent_storage import (
+    store_run, update_run, store_validation, stop_duplicate_paper_runs,
+)
 from utils.strategy_slug import build_slug
 
 logger = logging.getLogger(__name__)
@@ -377,6 +379,16 @@ class Orchestrator:
                 "params": resolved_params,
             }
             self._config = persisted_config
+            # One live paper run per session+config: replace this session's own
+            # prior identical run(s) so duplicates don't pile up. Strictly scoped to
+            # this user+account+slug+symbols — never touches other users' runs.
+            stop_duplicate_paper_runs(
+                keep_run_id=self.run_id,
+                strategy_slug=paper_slug,
+                symbols=request["symbols"],
+                user_id=self.user_id,
+                account_id=self.account_id,
+            )
             store_run(
                 self.run_id,
                 "paper",
