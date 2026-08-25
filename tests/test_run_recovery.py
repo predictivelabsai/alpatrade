@@ -90,6 +90,49 @@ def test_dedup_guard_noop_without_owner():
     assert stop_duplicate_paper_runs("r", "btd-3dp", ["AAPL"], None, "a") == 0
 
 
+def test_scout_owner_prefers_autonomy_env_then_paper_env(monkeypatch):
+    """The self-fed autonomous run is attributed to the configured owner so it is
+    a tenant session, not an orphan — with PAPER_* as the shared fallback."""
+    from engine.autonomy import worker
+
+    for k in ("AUTONOMY_OWNER_USER_ID", "AUTONOMY_OWNER_ACCOUNT_ID",
+              "PAPER_USER_ID", "PAPER_ACCOUNT_ID"):
+        monkeypatch.delenv(k, raising=False)
+    # Nothing set → unattributed (both None).
+    assert worker.scout_owner() == (None, None)
+
+    # PAPER_* fallback covers both services from one env pair.
+    monkeypatch.setenv("PAPER_USER_ID", "paper-uid")
+    monkeypatch.setenv("PAPER_ACCOUNT_ID", "paper-aid")
+    assert worker.scout_owner() == ("paper-uid", "paper-aid")
+
+    # AUTONOMY_OWNER_* wins when present.
+    monkeypatch.setenv("AUTONOMY_OWNER_USER_ID", "auto-uid")
+    monkeypatch.setenv("AUTONOMY_OWNER_ACCOUNT_ID", "auto-aid")
+    assert worker.scout_owner() == ("auto-uid", "auto-aid")
+
+
+def test_scout_owner_requires_both_ids(monkeypatch):
+    """A half-configured pair resolves to unattributed, never a broken lookup."""
+    from engine.autonomy import worker
+
+    for k in ("AUTONOMY_OWNER_USER_ID", "AUTONOMY_OWNER_ACCOUNT_ID",
+              "PAPER_USER_ID", "PAPER_ACCOUNT_ID"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("PAPER_USER_ID", "only-uid")
+    assert worker.scout_owner() == (None, None)
+
+
+def test_worker_self_feed_attributes_scout_run():
+    from engine.autonomy import worker
+
+    source = inspect.getsource(worker.loop)
+    # The self-feed must pass the resolved owner to the scout, not enqueue orphans.
+    assert "scout_owner()" in source
+    assert "user_id=owner_uid" in source
+    assert "account_id=owner_aid" in source
+
+
 def test_orchestrator_replaces_own_duplicate_paper_runs():
     import inspect
     from agents.orchestrator import Orchestrator
