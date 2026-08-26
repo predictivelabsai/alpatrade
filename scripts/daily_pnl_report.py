@@ -40,8 +40,11 @@ except Exception:  # noqa: BLE001
 # Pretty labels + units for the strategy parameters surfaced in the digest.
 _PARAM_LABELS = {
     "dip_threshold": ("Dip threshold", "pct"),
+    "take_profit": ("Take profit", "pct"),
     "take_profit_threshold": ("Take profit", "pct"),
+    "stop_loss": ("Stop loss", "pct"),
     "stop_loss_threshold": ("Stop loss", "pct"),
+    "position_size": ("Position size", "pct"),
     "hold_days": ("Max hold", "days"),
     "min_hold_days": ("Min hold", "days"),
     "capital_per_trade": ("Capital per trade", "usd"),
@@ -193,6 +196,9 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
                            framework=framework)
     runs = gather_runs([t.get("run_id") for t in trades], user_id=user_id,
                        account_id=account_id)
+    target_day = day or today
+    prior_reported = (prior_reported_equity(user_id, account_id, target_day)
+                      if user_id and account_id else None)
     data = {
         "equity": equity, "last_equity": last_equity, "day_pnl": day_pnl, "day_pct": day_pct,
         "cash": _f(acct.get("cash")), "buying_power": _f(acct.get("buying_power")),
@@ -202,9 +208,12 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
         "runs": runs,
         "active_runs": active_runs(user_id=user_id, account_id=account_id,
                                    framework=framework),
-        "agent_performance": agent_performance(user_id, account_id, framework),
+        "agent_performance": agent_performance(
+            user_id, account_id, framework, day=target_day
+        ),
         "framework_filter": framework,
-        "day": day or today,
+        "day": target_day,
+        "prior_reported_equity": prior_reported,
         "backdated": bool(day and day != today),
         "backdated_equity_ok": backdated_equity is not None,
         "account_ok": account_ok,
@@ -216,6 +225,23 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
     data["account_stats"] = (account_stats(user_id, account_id, data["day"])
                              if user_id and account_id else {})
     return data
+
+
+def prior_reported_equity(user_id: str, account_id: str, day: str) -> float | None:
+    """Last equity previously emailed/snapshotted before ``day`` for reconciliation."""
+    try:
+        from sqlalchemy import text
+        from engine.db.pool import DatabasePool
+        with DatabasePool().get_session() as session:
+            row = session.execute(text("""
+                SELECT equity FROM alpatrade.account_equity_snapshots
+                WHERE user_id = :uid AND account_id = :aid
+                  AND trading_date < CAST(:day AS DATE)
+                ORDER BY trading_date DESC LIMIT 1
+            """), {"uid": user_id, "aid": account_id, "day": day}).first()
+        return float(row[0]) if row else None
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def account_stats(user_id: str, account_id: str, day: str) -> dict:
@@ -489,7 +515,8 @@ def reconcile_stale_runs(user_id: str, account_id: str) -> int:
 
 
 def agent_performance(user_id: str | None, account_id: str | None,
-                      framework: str | None = None) -> list[dict]:
+                      framework: str | None = None,
+                      day: str | None = None) -> list[dict]:
     """Realized paper results grouped by attributed agent for comparison."""
     if not user_id or not account_id:
         return []
@@ -499,7 +526,10 @@ def agent_performance(user_id: str | None, account_id: str | None,
         where = ["t.trade_type = 'paper'", "t.user_id = :user_id",
                  "t.account_id = :account_id", "t.pnl IS NOT NULL",
                  "t.created_at >= DATE_TRUNC('year', NOW())"]
-        params = {"user_id": user_id, "account_id": account_id}
+        params = {
+            "user_id": user_id, "account_id": account_id,
+            "day": day or datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        }
         if framework:
             where.append("COALESCE(r.agent_framework, r.config->>'agent_framework', 'legacy') = :framework")
             params["framework"] = framework
@@ -507,6 +537,10 @@ def agent_performance(user_id: str | None, account_id: str | None,
             result = session.execute(text(f"""
                 SELECT COALESCE(r.agent_framework, r.config->>'agent_framework', 'legacy') framework,
                        COALESCE(r.agent_name, r.config->>'agent_name', 'Legacy / unattributed') agent_name,
+                       COUNT(*) FILTER (WHERE t.created_at >= CAST(:day AS DATE)
+                                         AND t.created_at < CAST(:day AS DATE) + INTERVAL '1 day') today_exits,
+                       COALESCE(SUM(t.pnl) FILTER (WHERE t.created_at >= CAST(:day AS DATE)
+                                         AND t.created_at < CAST(:day AS DATE) + INTERVAL '1 day'), 0) today_pnl,
                        COUNT(*) FILTER (WHERE t.created_at >= DATE_TRUNC('month', NOW())) mtd_exits,
                        COALESCE(SUM(t.pnl) FILTER (WHERE t.created_at >= DATE_TRUNC('month', NOW())), 0) mtd_pnl,
                        COUNT(*) ytd_exits, COALESCE(SUM(t.pnl), 0) ytd_pnl,
@@ -517,7 +551,22 @@ def agent_performance(user_id: str | None, account_id: str | None,
                 GROUP BY 1, 2 ORDER BY ytd_pnl DESC
             """), params)
             cols = result.keys()
-            return [dict(zip(cols, row)) for row in result.fetchall()]
+            rows = [dict(zip(cols, row)) for row in result.fetchall()]
+            if framework:
+                return rows
+            present = {str(row.get("framework") or "").lower() for row in rows}
+            for slug, name in (("hermes", "Hermes"),
+                               ("deepagents", "DeepAgents"),
+                               ("langgraph", "LangGraph")):
+                if slug not in present:
+                    rows.append({
+                        "framework": slug, "agent_name": name,
+                        "today_exits": 0, "today_pnl": 0,
+                        "mtd_exits": 0, "mtd_pnl": 0,
+                        "ytd_exits": 0, "ytd_pnl": 0,
+                        "win_rate": 0, "run_count": 0, "has_data": False,
+                    })
+            return rows
     except Exception:  # noqa: BLE001
         return []
 
@@ -616,7 +665,12 @@ def _params_of(run: dict | None) -> dict:
 def _fmt_param(key: str, value) -> tuple[str, str]:
     label, unit = _PARAM_LABELS.get(key, (key.replace("_", " ").capitalize(), "num"))
     if unit == "pct":
-        return label, f"{_f(value):.2f}%"
+        number = _f(value)
+        # Strategy engines persist ratios (0.05 = 5%) while some legacy paths
+        # persist whole percentages (5 = 5%). Render both representations safely.
+        if abs(number) <= 1:
+            number *= 100
+        return label, f"{number:.2f}%"
     if unit == "usd":
         return label, f"${_f(value):,.0f}"
     if unit == "days":
@@ -849,20 +903,69 @@ def _render_agent_benchmark(d: dict) -> str:
                 "No closed, attributed paper trades in the current year.</p>")
     body = ""
     for row in rows:
-        mtd, ytd = _f(row.get("mtd_pnl")), _f(row.get("ytd_pnl"))
+        today, mtd, ytd = (_f(row.get("today_pnl")), _f(row.get("mtd_pnl")),
+                           _f(row.get("ytd_pnl")))
+        has_data = row.get("has_data", int(row.get("ytd_exits") or 0) > 0)
+        empty = "<span style='color:#7A867E'>No attributed exits</span>"
         body += (f"<tr><td>{_e(row.get('agent_name'))}<br><small>{_e(row.get('framework'))}</small></td>"
-                 f"<td style='color:{'#1F5D43' if mtd >= 0 else '#b0653f'}'>${mtd:+,.2f}</td>"
+                 f"<td style='color:{'#1F5D43' if today >= 0 else '#b0653f'}'>"
+                 f"{f'${today:+,.2f}' if has_data else empty}</td>"
+                 f"<td style='color:{'#1F5D43' if mtd >= 0 else '#b0653f'}'>"
+                 f"{f'${mtd:+,.2f}' if has_data else '—'}</td>"
                  f"<td>{int(row.get('mtd_exits') or 0)}</td>"
-                 f"<td style='color:{'#1F5D43' if ytd >= 0 else '#b0653f'}'>${ytd:+,.2f}</td>"
-                 f"<td>{_f(row.get('win_rate')):.1f}%</td>"
+                 f"<td style='color:{'#1F5D43' if ytd >= 0 else '#b0653f'}'>"
+                 f"{f'${ytd:+,.2f}' if has_data else '—'}</td>"
+                 f"<td>{f'{_f(row.get('win_rate')):.1f}%' if has_data else '—'}</td>"
                  f"<td>{int(row.get('run_count') or 0)}</td></tr>")
     return ("<h3>Agent benchmark — realized paper trades only</h3>"
             "<p style='font-size:12px;color:#7A867E'>Account equity is shared and is not assigned "
             "to an agent. This table compares only exits linked to each run.</p>"
             "<table border='1' cellpadding='6' style='border-collapse:collapse;font-size:13px'>"
-            "<thead><tr><th>Agent</th><th>MTD P&amp;L</th><th>MTD exits</th>"
+            "<thead><tr><th>Agent</th><th>Today</th><th>MTD P&amp;L</th><th>MTD exits</th>"
             "<th>YTD P&amp;L</th><th>YTD win rate</th><th>Runs</th></tr></thead>"
             f"<tbody>{body}</tbody></table>")
+
+
+def _render_equity_reconciliation(d: dict) -> str:
+    """Explain differences between Alpaca prior-close P&L and our last digest."""
+    prior = d.get("prior_reported_equity")
+    if prior is None:
+        return ""
+    digest_change = _f(d.get("equity")) - _f(prior)
+    unexplained = digest_change - _f(d.get("day_pnl"))
+    if abs(unexplained) < 0.01:
+        return ""
+    return (
+        "<p style='background:#FFF8E6;border-left:4px solid #b7791f;"
+        "padding:8px 10px;font-size:12px'>"
+        f"<b>Equity reconciliation:</b> Alpaca reports today’s trading P&amp;L as "
+        f"${_f(d.get('day_pnl')):+,.2f}; equity changed ${digest_change:+,.2f} since "
+        f"the last AlpaTrade digest. The ${unexplained:+,.2f} difference is an "
+        "overnight broker adjustment, fee, cash movement, or history timing difference—not "
+        "silently counted as strategy P&amp;L.</p>"
+    )
+
+
+def _render_agent_next_steps(d: dict) -> str:
+    """One compact action section replaces a second agent-specific daily email."""
+    rows = d.get("agent_performance") or []
+    hermes = next((r for r in rows if r.get("framework") == "hermes"), None)
+    note = "No Hermes exits are attributed yet."
+    if hermes and int(hermes.get("ytd_exits") or 0):
+        today = _f(hermes.get("today_pnl"))
+        note = ("No realized Hermes activity today; continue paper observation."
+                if int(hermes.get("today_exits") or 0) == 0 else
+                f"Hermes realized ${today:+,.2f} today; review risk and backtest drift.")
+    return (
+        "<h3>Agent status &amp; recommended next steps</h3>"
+        f"<p style='font-size:13px'>{_e(note)}</p>"
+        "<ul style='font-size:13px'>"
+        "<li><code>/hermes analyze my running paper job</code></li>"
+        "<li><code>/hermes show my latest backtest result</code></li>"
+        "<li>Default DeepAgents and LangGraph appear above after they own completed paper exits.</li>"
+        "</ul><p style='font-size:12px;color:#7A867E'>Immediate entry/exit advice remains a "
+        "separate opt-in alert and is not suppressed by this consolidated daily digest.</p>"
+    )
 
 
 def render(d: dict) -> str:
@@ -897,6 +1000,7 @@ def render(d: dict) -> str:
   <p style="font-size:20px;margin:.2rem 0"><b style="color:{color}">{sign} ${d['day_pnl']:,.2f}
      ({d['day_pct']:+.2f}%)</b>
      <span style="color:#7A867E">today <span style="font-size:12px">(vs prior close)</span></span></p>
+  {_render_equity_reconciliation(d)}
   <table style="border-collapse:collapse;margin:.4rem 0">
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Portfolio value</td><td><b>${d['equity']:,.2f}</b></td></tr>
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Cash</td><td>${d['cash']:,.2f}</td></tr>
@@ -907,6 +1011,7 @@ def render(d: dict) -> str:
   {_render_periods(d)}
   {_render_risk(d)}
   {_render_agent_benchmark(d)}
+  {_render_agent_next_steps(d)}
   {_render_strategy(d)}
   <h3>Open positions ({len(d['positions'])})</h3>
   <table border="1" cellpadding="6" style="border-collapse:collapse;font-size:13px">

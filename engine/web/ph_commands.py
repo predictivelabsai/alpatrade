@@ -49,6 +49,35 @@ AGENT_SHORTCUTS = [
     ]),
 ]
 
+# Guided Hermes workflow. These are intentionally natural-language commands
+# accepted by the deterministic Hermes broker. The common path does not require
+# users to copy UUIDs; ID-based commands remain available for choosing one job
+# when an account owns several.
+HERMES_SHORTCUTS = [
+    ("Hermes — Start Here", [
+        ("/hermes help", "guided workflow and ID explanation"),
+        ("/hermes show my recent jobs", "find jobs, runs, and candidates"),
+    ]),
+    ("Hermes — Backtest", [
+        ("/hermes run a 6-month buy_the_dip backtest for AAPL, MSFT and NVDA and optimize Sharpe",
+         "optimize and save the best candidate"),
+        ("/hermes show my latest backtest result",
+         "metrics and parameters from the latest result"),
+    ]),
+    ("Hermes — Paper Trade", [
+        ("/hermes construct an optimal portfolio from my best completed candidate",
+         "portfolio advice without copying an ID"),
+        ("/hermes start my best candidate in continuous paper trading, email daily reports, and notify me both",
+         "start the best eligible candidate"),
+    ]),
+    ("Hermes — Monitor", [
+        ("/hermes analyze my running paper job", "P&L, drift, and next actions"),
+        ("/hermes pause my running paper job", "pause the latest running Hermes job"),
+        ("/hermes resume my paused paper job", "resume the latest paused Hermes job"),
+        ("/hermes stop my running paper job", "stop the latest running Hermes job"),
+    ]),
+]
+
 # Local, read-only equity research ported from the Alpha Agents methodology.
 ALPHA_RESEARCH_SHORTCUTS = [
     ("Growth Agent", [

@@ -585,25 +585,49 @@ async def _dispatch_hermes_job_command(
             except Exception:  # noqa: BLE001
                 broker_version = "unknown"
         return (
-            "## Hermes commands\n\n"
+            "## Hermes — quick start\n\n"
             f"- **AlpaTrade Hermes broker:** `{broker_version}`\n"
-            "- `/hermes show my recent jobs`\n"
-            "- `/hermes show my recent advice`\n"
-            "- `/hermes show my notification history`\n"
-            "- `/hermes send a test notification for paper job <job-id>`\n"
+            "- **1. Backtest:** `/hermes run a 6-month buy_the_dip backtest for AAPL, MSFT and NVDA and optimize Sharpe`\n"
+            "- **2. See progress:** `/hermes show my recent jobs`\n"
+            "- **3. Review:** `/hermes show my latest backtest result`\n"
+            "- **4. Build portfolio:** `/hermes construct an optimal portfolio from my best completed candidate`\n"
+            "- **5. Start paper mode:** `/hermes start my best candidate in continuous paper trading, email daily reports, and notify me both`\n"
+            "- **6. Monitor:** `/hermes analyze my running paper job`\n\n"
+            "### What the IDs mean\n\n"
+            "- **Job ID:** the background task; use it to inspect, pause, resume, or stop one specific task.\n"
+            "- **Run ID:** the saved backtest or paper-trading run and its trades/metrics.\n"
+            "- **Candidate ID:** the saved winning backtest parameters that can be promoted to paper trading.\n"
+            "- You do **not** need an ID for the quick-start commands above. When several jobs exist, "
+            "use `/hermes show my recent jobs`, then add the desired job ID to target it exactly.\n\n"
+            "### Specific-job controls\n\n"
             "- `/hermes analyze paper job <job-id>`\n"
-            "- `/hermes construct a portfolio from candidate <candidate-id>`\n"
-            "- `/hermes start candidate <candidate-id> in continuous paper trading`\n"
-            "- `/hermes notify me in app|by email|both for paper job <job-id>`\n"
+            "- `/hermes notify me both in app and email for paper job <job-id>`\n"
             "- `/hermes enable daily email reports for paper job <job-id>`\n"
-            "- `/hermes pause|resume|stop paper job <job-id>`\n\n"
+            "- `/hermes pause|resume|stop paper job <job-id>`\n"
+            "- `/hermes show my recent advice`\n"
+            "- `/hermes show my notification history`\n\n"
             "Hermes research uses conservative costs and 70/30 out-of-sample validation. "
             "Hermes advice does not place extra orders. Trading remains paper-only."
         )
 
-    if "analyze" in lowered and "paper" in lowered and uuids:
+    if "analyze" in lowered and "paper" in lowered:
+        job_id = uuids[0] if uuids else ""
+        if not job_id:
+            from engine.agents.hermes_jobs import list_owned
+            paper_jobs = [
+                item for item in await asyncio.to_thread(list_owned, user_id)
+                if item.get("kind") == "paper"
+            ]
+            preferred = next(
+                (item for item in paper_jobs if item.get("status") == "running"),
+                paper_jobs[0] if paper_jobs else None,
+            )
+            if preferred:
+                job_id = str(preferred["job_id"])
+        if not job_id:
+            return "## Hermes paper analysis\n\nNo paper job was found under your account."
         from engine.agents.hermes_advice import analyze_owned_paper_job
-        report = await asyncio.to_thread(analyze_owned_paper_job, uuids[0], user_id)
+        report = await asyncio.to_thread(analyze_owned_paper_job, job_id, user_id)
         if not report:
             return "## Hermes paper analysis\n\nNo matching paper job was found under your account."
         reasons = "\n".join(f"- {reason}" for reason in report["reasons"])
@@ -732,10 +756,26 @@ async def _dispatch_hermes_job_command(
             "- **Scope:** your authenticated account only"
         )
     control_match = re.search(r"\b(pause|resume|stop)\b", lowered)
-    if control_match and "paper" in lowered and uuids:
+    if control_match and "paper" in lowered:
         from engine.agents.hermes_jobs import request_control
         action = control_match.group(1)
-        job = await asyncio.to_thread(request_control, uuids[0], user_id, action)
+        job_id = uuids[0] if uuids else ""
+        if not job_id:
+            from engine.agents.hermes_jobs import list_owned
+            wanted = {"pause": {"running"}, "resume": {"paused"},
+                      "stop": {"queued", "running", "paused"}}[action]
+            matching = [
+                item for item in await asyncio.to_thread(list_owned, user_id)
+                if item.get("kind") == "paper" and item.get("status") in wanted
+            ]
+            if matching:
+                job_id = str(matching[0]["job_id"])
+        if not job_id:
+            return (
+                "## Hermes paper control\n\nNo applicable paper job was found under "
+                "your account. Use `/hermes show my recent jobs` to check its status."
+            )
+        job = await asyncio.to_thread(request_control, job_id, user_id, action)
         if not job:
             return (
                 "## Hermes paper control\n\nNo matching active paper job was found "

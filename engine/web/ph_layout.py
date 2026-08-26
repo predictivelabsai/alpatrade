@@ -36,6 +36,7 @@ from fasthtml.common import (
 from engine.web.ph_commands import (
     AGENT_SHORTCUTS,
     ALPHA_RESEARCH_SHORTCUTS,
+    HERMES_SHORTCUTS,
     MAIN_NAV,
 )
 
@@ -253,7 +254,8 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             ),
             _nav_section(
                 "Agents",
-                Div(*[_menu_group(lbl, items, active) for lbl, items in AGENT_SHORTCUTS],
+                Div(*[_menu_group(lbl, items, active)
+                      for lbl, items in AGENT_SHORTCUTS + HERMES_SHORTCUTS],
                     cls="agent-browser"),
             ),
             _nav_section(

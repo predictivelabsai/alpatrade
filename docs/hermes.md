@@ -106,8 +106,10 @@ Then sign in to AlpaTrade and run these one at a time:
 /hermes help
 /hermes run a buy_the_dip backtest for AAPL, MSFT, GOOGL, AMZN, META, TSLA and NVDA over 3 months and optimize Sharpe
 /hermes show my recent jobs
-/hermes construct an optimal portfolio from candidate <candidate-id>
-/hermes start candidate <candidate-id> in continuous paper trading and email daily reports
+/hermes show my latest backtest result
+/hermes construct an optimal portfolio from my best completed candidate
+/hermes start my best candidate in continuous paper trading, email daily reports, and notify me both
+/hermes analyze my running paper job
 /hermes notify me both in app and email for paper job <paper-job-id>
 /hermes show my recent advice
 ```
@@ -115,7 +117,21 @@ Then sign in to AlpaTrade and run these one at a time:
 Expected behavior: backtest and paper starts return immediately; completion and
 advice messages appear in the originating saved chat; refreshing or reopening
 the thread retains them; the paper job remains active when the page closes.
-Use these control tests only after copying the paper job ID:
+The quick-start commands automatically select the best completed candidate or
+latest applicable owned paper job. Use an explicit ID only when selecting one
+specific job among several. A **job ID** identifies the background task, a
+**run ID** identifies its stored trading/backtest record, and a **candidate ID**
+identifies the winning parameters saved by a completed backtest.
+
+These no-ID controls target the latest applicable owned paper job:
+
+```text
+/hermes pause my running paper job
+/hermes resume my paused paper job
+/hermes stop my running paper job
+```
+
+Use these explicit controls when you copied a particular paper job ID:
 
 ```text
 /hermes pause paper job <paper-job-id>
@@ -151,6 +167,13 @@ separate setting from immediate advice delivery.
 ```text
 /hermes help
 /hermes show my recent jobs
+/hermes show my latest backtest result
+/hermes construct an optimal portfolio from my best completed candidate
+/hermes start my best candidate in continuous paper trading, email daily reports, and notify me both
+/hermes analyze my running paper job
+/hermes pause my running paper job
+/hermes resume my paused paper job
+/hermes stop my running paper job
 /hermes show my recent advice
 /hermes show the result of backtest <job-or-run-id>
 /hermes construct an optimal portfolio from candidate <candidate-id>

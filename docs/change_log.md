@@ -1,5 +1,31 @@
 # Change Log
 
+## Unreleased
+
+### Consolidated daily agent digest
+
+- Replaced the duplicate Hermes-only daily summary with the account-owned
+  AlpaTrade digest. Immediate opt-in Hermes entry/exit alerts remain independent.
+- Added Today/MTD/YTD realized agent benchmarks and explicit no-data rows for
+  Hermes, DeepAgents, and LangGraph.
+- Corrected fractional strategy parameter display (`0.05` now renders as `5%`)
+  and added an equity reconciliation notice when Alpaca prior-close P&L differs
+  from the last emailed equity snapshot.
+- Added a concise agent-status section with safe next commands and clearer
+  zero-activity language.
+
+### Guided Hermes workflow
+
+- Added clickable Hermes Backtest, Paper Trade, and Monitor shortcuts to the
+  left Agents panel.
+- Reworked `/hermes help` into a numbered quick start and explained the
+  difference between job, run, and candidate IDs.
+- Added no-ID analysis and pause/resume/stop commands that safely resolve the
+  latest applicable paper job owned by the authenticated user. Explicit IDs
+  remain supported when an account has multiple jobs.
+- Tests cover sidebar rendering, deterministic help, ownership-safe job
+  selection, and existing ID-based commands.
+
 ## 0.23.0 — 2026-08-25
 
 ### Attribute autonomous paper runs to a configured owner

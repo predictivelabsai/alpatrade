@@ -319,10 +319,63 @@ def test_hermes_help_is_deterministic_and_paper_only():
         "help", "11111111-1111-1111-1111-111111111111",
         "22222222-2222-2222-2222-222222222222",
     ))
-    assert "Hermes commands" in reply
-    assert "construct a portfolio" in reply
-    assert "notify me in app|by email|both" in reply
+    assert "Hermes — quick start" in reply
+    assert "What the IDs mean" in reply
+    assert "You do **not** need an ID" in reply
+    assert "start my best candidate" in reply
+    assert "notify me both in app and email" in reply
     assert "paper-only" in reply
+
+
+def test_chat_analyzes_latest_running_paper_job_without_id(monkeypatch):
+    from engine.agents import hermes_advice, hermes_jobs
+    from engine.web.ph_chat import _dispatch_hermes_job_command
+
+    monkeypatch.setattr(hermes_jobs, "list_owned", lambda *_args, **_kwargs: [
+        {"kind": "paper", "status": "stopped", "job_id": "old-job"},
+        {"kind": "paper", "status": "running", "job_id": "running-job"},
+    ])
+    captured = {}
+    monkeypatch.setattr(hermes_advice, "analyze_owned_paper_job", lambda job, user: (
+        captured.update(job=job, user=user) or {
+            "status": "GREEN", "job_id": job, "job_status": "running",
+            "run_id": "run-1", "realized_today": 10, "realized_session": 20,
+            "completed_exits": 2, "win_rate": 50, "active_duplicate_jobs": 0,
+            "other_active_account_runs": 0, "reasons": ["Stable."],
+            "decision": "Continue paper validation.", "commands": [],
+        }
+    ))
+
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        "analyze my running paper job", "user-1", "thread-1"
+    ))
+
+    assert captured == {"job": "running-job", "user": "user-1"}
+    assert "Hermes paper analysis" in reply
+
+
+def test_chat_controls_latest_applicable_paper_job_without_id(monkeypatch):
+    from engine.agents import hermes_jobs
+    from engine.web.ph_chat import _dispatch_hermes_job_command
+
+    monkeypatch.setattr(hermes_jobs, "list_owned", lambda *_args, **_kwargs: [
+        {"kind": "paper", "status": "stopped", "job_id": "old-job"},
+        {"kind": "paper", "status": "running", "job_id": "running-job"},
+    ])
+    captured = {}
+    monkeypatch.setattr(hermes_jobs, "request_control", lambda job, user, action: (
+        captured.update(job=job, user=user, action=action) or {
+            "job_id": job, "run_id": "run-1", "candidate_id": "candidate-1",
+            "status": "paused",
+        }
+    ))
+
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        "pause my running paper job", "user-1", "thread-1"
+    ))
+
+    assert captured == {"job": "running-job", "user": "user-1", "action": "pause"}
+    assert "paper job paused" in reply
 
 
 def test_chat_constructs_owned_portfolio_advice(monkeypatch):
@@ -562,23 +615,18 @@ def test_running_paper_agent_refreshes_advice_preferences():
     assert 'live_advice.get("enabled"' in source
 
 
-def test_hermes_daily_report_loads_durable_owned_run_trades():
-    from agents.paper_trade_agent import PaperTradeAgent
-
-    source = inspect.getsource(PaperTradeAgent._send_daily_email)
-    assert "fetch_paper_trades" in source
-
-
-def test_daily_email_keeps_default_and_hermes_templates_separate():
-    """Hermes reporting must not replace the established default-agent email."""
+def test_daily_email_consolidates_hermes_without_disabling_advice():
+    """One account digest replaces the duplicate Hermes-only daily email."""
     import inspect
     from agents.paper_trade_agent import PaperTradeAgent
+    from engine.agents.hermes_jobs import DatabaseJobControl
 
     source = inspect.getsource(PaperTradeAgent._send_daily_email)
-    assert 'if report_format != "hermes"' in source
-    assert "send_daily_pnl_report" in source
-    assert "send_hermes_daily_report" in source
-    assert "user_id=self.user_id" in source
+    assert "send_daily_pnl_report" not in source
+    assert "send_hermes_daily_report" not in source
+    assert "account digest owns delivery" in source
+    assert "Hermes, DeepAgents, LangGraph" in source
+    assert "publish_advice" in inspect.getsource(DatabaseJobControl)
 
 
 def test_analysis_checks_all_account_paper_runs_not_only_hermes():

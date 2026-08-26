@@ -49,6 +49,20 @@ def test_sidebar_lists_one_message_runtime_overrides():
     assert "/langgraph " in html
 
 
+def test_sidebar_offers_guided_hermes_workflow_without_ids():
+    html = to_xml(_left_pane("app", {"email": "user@example.com"}))
+
+    assert "Hermes — Start Here" in html
+    assert "Hermes — Backtest" in html
+    assert "Hermes — Paper Trade" in html
+    assert "Hermes — Monitor" in html
+    assert "/hermes help" in html
+    assert "/hermes show my latest backtest result" in html
+    assert "/hermes start my best candidate in continuous paper trading" in html
+    assert "/hermes analyze my running paper job" in html
+    assert "onclick=\"fillChat('/hermes help')\"" in html
+
+
 def test_authenticated_sidebar_has_visible_sign_out():
     html = to_xml(_left_pane("dashboard", {"email": "user@example.com"}))
     assert 'href="/logout"' in html
@@ -202,7 +216,7 @@ def test_no_duplicate_nav_routes():
     import app  # noqa: F401  (registers feature modules)
     from engine.web import ph_layout
     from engine.web.ph_commands import (
-        AGENT_SHORTCUTS, ALPHA_RESEARCH_SHORTCUTS, MAIN_NAV,
+        AGENT_SHORTCUTS, ALPHA_RESEARCH_SHORTCUTS, HERMES_SHORTCUTS, MAIN_NAV,
     )
 
     # Page links: no duplicate hrefs or labels across all registered sections.
@@ -215,6 +229,8 @@ def test_no_duplicate_nav_routes():
     assert len(labels) == len(set(labels)), f"duplicate labels: {labels}"
 
     # Command groups: no duplicate group labels.
-    group_labels = [lbl for lbl, _ in AGENT_SHORTCUTS + ALPHA_RESEARCH_SHORTCUTS + MAIN_NAV]
+    group_labels = [lbl for lbl, _ in (
+        AGENT_SHORTCUTS + HERMES_SHORTCUTS + ALPHA_RESEARCH_SHORTCUTS + MAIN_NAV
+    )]
     assert len(group_labels) == len(set(group_labels)), \
         f"duplicate group labels: {group_labels}"
