@@ -644,6 +644,14 @@ def test_reclaimed_paper_job_reactivates_canonical_run():
     assert 'row.get("kind") == "paper"' in source
 
 
+def test_live_paper_heartbeat_repairs_canonical_run_status():
+    from engine.agents import hermes_jobs
+
+    source = inspect.getsource(hermes_jobs.heartbeat)
+    assert "SET heartbeat_at = NOW(), status = 'running', completed_at = NULL" in source
+    assert "AND r.status = 'running'" not in source
+
+
 def test_analysis_checks_all_account_paper_runs_not_only_hermes():
     from engine.agents import hermes_advice
 
