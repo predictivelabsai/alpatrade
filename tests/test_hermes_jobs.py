@@ -629,6 +629,21 @@ def test_daily_email_consolidates_hermes_without_disabling_advice():
     assert "publish_advice" in inspect.getsource(DatabaseJobControl)
 
 
+def test_worker_recovery_handles_legacy_null_heartbeats():
+    from engine.agents import hermes_jobs
+
+    source = inspect.getsource(hermes_jobs.recover_stale)
+    assert source.count("heartbeat_at IS NULL OR heartbeat_at <") >= 4
+
+
+def test_reclaimed_paper_job_reactivates_canonical_run():
+    from engine.agents import hermes_jobs
+
+    source = inspect.getsource(hermes_jobs.claim)
+    assert "SET status = 'running', completed_at = NULL, heartbeat_at = NOW()" in source
+    assert 'row.get("kind") == "paper"' in source
+
+
 def test_analysis_checks_all_account_paper_runs_not_only_hermes():
     from engine.agents import hermes_advice
 

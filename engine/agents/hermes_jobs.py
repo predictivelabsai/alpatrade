@@ -328,6 +328,15 @@ def claim(worker_id: str) -> Optional[dict]:
             FROM next_job n WHERE j.job_id = n.job_id
             RETURNING j.*
         """), {"worker": worker_id}).mappings().first()
+        if row and row.get("kind") == "paper":
+            # A continuous job reclaimed after deployment keeps its stable run
+            # identity. Reactivate that canonical run so liveness reporting and
+            # agent benchmarks agree with the worker that just claimed it.
+            session.execute(text("""
+                UPDATE alpatrade.runs
+                SET status = 'running', completed_at = NULL, heartbeat_at = NOW()
+                WHERE run_id = :run_id AND user_id = CAST(:uid AS UUID)
+            """), {"run_id": row["run_id"], "uid": str(row["user_id"])})
     return dict(row) if row else None
 
 
@@ -578,7 +587,7 @@ def recover_stale(stale_seconds: int = 900) -> None:
                 completed_at = NOW(), updated_at = NOW()
             WHERE status = 'running' AND kind = 'paper'
               AND control_requested = 'stop'
-              AND heartbeat_at < NOW() - INTERVAL '30 seconds'
+              AND (heartbeat_at IS NULL OR heartbeat_at < NOW() - INTERVAL '30 seconds')
         """))
         session.execute(text("""
             UPDATE alpatrade.hermes_jobs
@@ -586,7 +595,8 @@ def recover_stale(stale_seconds: int = 900) -> None:
                 progress = '{"message":"Requeued after worker restart"}'::jsonb,
                 updated_at = NOW()
             WHERE status = 'running' AND kind = 'backtest'
-              AND heartbeat_at < NOW() - (CAST(:seconds AS INTEGER) * INTERVAL '1 second')
+              AND (heartbeat_at IS NULL OR heartbeat_at < NOW() -
+                   (CAST(:seconds AS INTEGER) * INTERVAL '1 second'))
         """), {"seconds": stale_seconds})
         session.execute(text("""
             UPDATE alpatrade.hermes_jobs
@@ -596,7 +606,8 @@ def recover_stale(stale_seconds: int = 900) -> None:
             WHERE status = 'running' AND kind = 'paper'
               AND COALESCE((config->>'continuous')::boolean, FALSE) = TRUE
               AND control_requested = 'none'
-              AND heartbeat_at < NOW() - (CAST(:seconds AS INTEGER) * INTERVAL '1 second')
+              AND (heartbeat_at IS NULL OR heartbeat_at < NOW() -
+                   (CAST(:seconds AS INTEGER) * INTERVAL '1 second'))
         """), {"seconds": stale_seconds})
         session.execute(text("""
             UPDATE alpatrade.hermes_jobs
@@ -606,7 +617,8 @@ def recover_stale(stale_seconds: int = 900) -> None:
                 completed_at = NOW(), updated_at = NOW()
             WHERE status = 'running' AND kind = 'paper'
               AND COALESCE((config->>'continuous')::boolean, FALSE) = FALSE
-              AND heartbeat_at < NOW() - (CAST(:seconds AS INTEGER) * INTERVAL '1 second')
+              AND (heartbeat_at IS NULL OR heartbeat_at < NOW() -
+                   (CAST(:seconds AS INTEGER) * INTERVAL '1 second'))
         """), {"seconds": stale_seconds})
 
 

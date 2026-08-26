@@ -13,6 +13,9 @@
   from the last emailed equity snapshot.
 - Added a concise agent-status section with safe next commands and clearer
   zero-activity language.
+- Fixed deployment recovery for older continuous Hermes jobs whose heartbeat is
+  null, and reactivate the canonical run when the worker reclaims the job so
+  chat status and daily reporting cannot disagree.
 
 ### Guided Hermes workflow
 
