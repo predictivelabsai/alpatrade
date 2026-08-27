@@ -242,10 +242,13 @@ def enqueue_candidate_paper(
 
     with _pool().get_session() as session:
         candidate = session.execute(text("""
-            SELECT strategy, symbols, params, metrics, account_id, source_run_id
-            FROM alpatrade.strategy_candidates
-            WHERE candidate_id = CAST(:candidate_id AS UUID)
-              AND user_id = CAST(:uid AS UUID)
+            SELECT c.strategy, c.symbols, c.params, c.metrics, c.account_id,
+                   c.source_run_id, r.config AS source_config
+            FROM alpatrade.strategy_candidates c
+            LEFT JOIN alpatrade.runs r
+              ON r.run_id = c.source_run_id AND r.user_id = c.user_id
+            WHERE c.candidate_id = CAST(:candidate_id AS UUID)
+              AND c.user_id = CAST(:uid AS UUID)
         """), {"candidate_id": candidate_id, "uid": user_id}).mappings().first()
     if not candidate:
         raise ValueError("Candidate was not found under your account")
@@ -277,6 +280,7 @@ def enqueue_candidate_paper(
     config = {
         "duration_seconds": parse_duration(duration),
         "continuous": duration == "365d",
+        "lookback": str((candidate.get("source_config") or {}).get("lookback") or "3m"),
         "symbols": candidate["symbols"] or [],
         "strategy": candidate["strategy"],
         "params": candidate["params"] or {},

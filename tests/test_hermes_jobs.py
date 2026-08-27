@@ -940,6 +940,14 @@ def test_hermes_job_config_does_not_duplicate_login_email():
     assert "JOIN alpatrade.users u ON u.user_id = j.user_id" in target_source
 
 
+def test_candidate_promotion_preserves_source_backtest_lookback():
+    from engine.agents import hermes_jobs
+
+    source = inspect.getsource(hermes_jobs.enqueue_candidate_paper)
+    assert "r.config AS source_config" in source
+    assert '"lookback": str((candidate.get("source_config") or {}).get("lookback") or "3m")' in source
+
+
 def test_backtest_result_request_is_not_routed_to_jobs_list(monkeypatch):
     from engine.agents import hermes_jobs
     from engine.web.ph_chat import _dispatch_hermes_job_command

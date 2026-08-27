@@ -11,6 +11,8 @@
 - Forwarded the requested robustness-window count and benchmark symbol through
   the orchestrator, so the three-window Hermes validation contract is actually
   executed rather than only recorded in the queued job.
+- Preserved the source backtest lookback when promoting a candidate, keeping the
+  paper-run slug and daily-report lineage aligned with the research period.
 - Improved Hermes-only command output: running-job queries now exclude history,
   zero-exit sessions report `WAITING` and `N/A` win rate, backtest metrics use
   explicit percentage units, and benchmark underperformance is highlighted.
