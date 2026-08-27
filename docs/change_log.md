@@ -19,6 +19,16 @@
 - Added regression coverage for exact candidate promotion, robustness forwarding,
   running-job filtering, and zero-exit reporting.
 
+### Hermes clarification and suggested follow-ups
+
+- Added persistent, clickable suggested follow-ups beneath every Hermes response;
+  clicking fills the composer so the user can review or edit before sending.
+- Added a deterministic clarification gate for incomplete backtests, ambiguous
+  paper starts, and parameter-change requests. Hermes now states what is missing
+  and queues nothing instead of silently choosing defaults.
+- Fixed hyphenated natural periods such as `6-month`, which previously bypassed
+  the period parser and fell back to three months.
+
 ### Consolidated daily agent digest
 
 - Replaced the duplicate Hermes-only daily summary with the account-owned

@@ -234,3 +234,14 @@ def test_no_duplicate_nav_routes():
     )]
     assert len(group_labels) == len(set(group_labels)), \
         f"duplicate group labels: {group_labels}"
+
+
+def test_hermes_follow_up_cards_are_clickable_and_persistent():
+    from engine.web import ph_chat
+
+    script = ph_chat.CHAT_JS
+    assert "function renderFollowUps" in script
+    assert "type==='follow_ups'" in script
+    assert "window.fillChat(prompt)" in script
+    assert "m.metadata&&m.metadata.follow_ups" in script
+    assert ".hermes-follow-up" in ph_chat.CHAT_STYLE

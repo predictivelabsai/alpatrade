@@ -140,6 +140,63 @@ def test_chat_result_question_does_not_queue_another_backtest():
     ) is None
 
 
+def test_hyphenated_backtest_period_is_not_silently_defaulted():
+    from engine.web.ph_chat import _hermes_backtest_config
+
+    config = _hermes_backtest_config(
+        "run a 6-month buy_the_dip backtest for SPY and optimize Sharpe"
+    )
+
+    assert config["lookback"] == "6m"
+
+
+def test_incomplete_hermes_backtest_requires_clarification():
+    from engine.web.ph_chat import _hermes_clarification
+
+    result = _hermes_clarification("run a backtest")
+
+    assert result is not None
+    reply, suggestions = result
+    assert "not started" in reply
+    assert "strategy, symbols, lookback period" in reply
+    assert all(item.startswith("/hermes ") for item in suggestions)
+
+
+def test_complete_hermes_backtest_does_not_require_clarification():
+    from engine.web.ph_chat import _hermes_clarification
+
+    assert _hermes_clarification(
+        "run a 6-month buy_the_dip backtest for SPY, QQQ and IWM"
+    ) is None
+
+
+def test_ambiguous_paper_start_does_not_choose_candidate_by_default():
+    from engine.web.ph_chat import _hermes_clarification
+
+    reply, suggestions = _hermes_clarification("start paper trading")
+
+    assert "no approved candidate was selected" in reply
+    assert any("best eligible candidate" in item for item in suggestions)
+
+
+def test_parameter_change_requires_new_explicit_decision():
+    from engine.web.ph_chat import _hermes_clarification
+
+    reply, suggestions = _hermes_clarification("update parameters on my running job")
+
+    assert "will not change a running paper strategy in place" in reply
+    assert any("analyze my running paper job" in item for item in suggestions)
+
+
+def test_hermes_follow_ups_match_completed_backtest():
+    from engine.web.ph_chat import _hermes_follow_ups
+
+    suggestions = _hermes_follow_ups("show result", "## Hermes backtest result")
+
+    assert any("construct an optimal portfolio" in item for item in suggestions)
+    assert any("start my best eligible candidate" in item for item in suggestions)
+
+
 def test_chat_result_question_returns_latest_completed_job(monkeypatch):
     from engine.agents import hermes_jobs
     from engine.web.ph_chat import _dispatch_hermes_job_command
@@ -376,6 +433,37 @@ def test_chat_controls_latest_applicable_paper_job_without_id(monkeypatch):
 
     assert captured == {"job": "running-job", "user": "user-1", "action": "pause"}
     assert "paper job paused" in reply
+
+
+def test_chat_does_not_guess_when_multiple_paper_jobs_match(monkeypatch):
+    from engine.agents import hermes_jobs
+    from engine.web.ph_chat import _dispatch_hermes_job_command, _hermes_follow_ups
+
+    first = "66666666-6666-6666-6666-666666666666"
+    second = "77777777-7777-7777-7777-777777777777"
+    monkeypatch.setattr(hermes_jobs, "list_owned", lambda *_args, **_kwargs: [
+        {"kind": "paper", "status": "running", "job_id": first, "run_id": "run-1"},
+        {"kind": "paper", "status": "running", "job_id": second, "run_id": "run-2"},
+    ])
+    monkeypatch.setattr(
+        hermes_jobs,
+        "request_control",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("ambiguous control must not execute")
+        ),
+    )
+
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        "pause my running paper job", "user-1", "thread-1"
+    ))
+    suggestions = _hermes_follow_ups("pause my running paper job", reply)
+
+    assert "needs clarification" in reply.lower()
+    assert first in reply and second in reply
+    assert suggestions == [
+        f"/hermes pause paper job {first}",
+        f"/hermes pause paper job {second}",
+    ]
 
 
 def test_chat_constructs_owned_portfolio_advice(monkeypatch):

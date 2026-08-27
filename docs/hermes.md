@@ -140,6 +140,40 @@ Use these explicit controls when you copied a particular paper job ID:
 /hermes stop paper job <paper-job-id>
 ```
 
+### Clickable commands, clarification, and approval
+
+Every command above can be typed, pasted, or selected from the left-side
+**Agents → Hermes** menu. Hermes responses also show contextual **Suggested
+follow-ups**. Selecting one fills the composer; it does not send automatically,
+so the user can review or edit it first. Follow-ups are stored with the saved
+message and remain available after refresh or reopening the chat.
+
+Hermes does not guess missing details for an actionable request. For example,
+`/hermes run a backtest` asks for strategy, symbols, and lookback instead of
+silently using defaults. `/hermes start paper trading` asks which approved
+candidate to use. A request to change running parameters explains that the
+safe workflow is a new backtest and candidate approval; it never mutates a
+running strategy in place.
+
+Recommended team demonstration:
+
+```text
+/hermes run a 6-month buy_the_dip backtest for SPY, QQQ, IWM, DIA, XLK, XLF and XLV and optimize Sharpe
+/hermes show my running jobs
+/hermes show my latest backtest result
+/hermes construct an optimal portfolio from my best completed candidate
+/hermes start my best eligible candidate in continuous paper trading, email daily reports, and notify me both
+/hermes analyze my running paper job
+/hermes pause my running paper job
+/hermes resume my paused paper job
+/hermes stop my running paper job
+```
+
+Parameter updates follow the same approval boundary: run a new backtest with
+the requested symbols/period or grid, inspect its validation and benchmark,
+then explicitly promote the new eligible candidate. The old paper job remains
+unchanged until the user stops it and approves the replacement.
+
 Do not run `stop` during initial continuous-operation testing unless you intend
 to terminate that job.
 
