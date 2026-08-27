@@ -165,6 +165,8 @@ class Orchestrator:
             "include_cat_fees": config.get("include_cat_fees", False),
             "slippage_bps": config.get("slippage_bps", 0.0),
             "validation_fraction": config.get("validation_fraction", 0.0),
+            "robustness_windows": config.get("robustness_windows", 1),
+            "benchmark_symbol": config.get("benchmark_symbol", "SPY"),
         }
 
         # Publish request to bus

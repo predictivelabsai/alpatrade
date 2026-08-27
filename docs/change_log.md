@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Hermes candidate promotion correctness
+
+- Fixed Hermes paper promotion to pass the exact approved candidate parameters
+  into the standalone orchestrator. Previously, the worker stored the candidate
+  under `params` but omitted `approved_best_config`, causing YAML defaults to be
+  traded and reported instead.
+- Forwarded the requested robustness-window count and benchmark symbol through
+  the orchestrator, so the three-window Hermes validation contract is actually
+  executed rather than only recorded in the queued job.
+- Improved Hermes-only command output: running-job queries now exclude history,
+  zero-exit sessions report `WAITING` and `N/A` win rate, backtest metrics use
+  explicit percentage units, and benchmark underperformance is highlighted.
+- Added regression coverage for exact candidate promotion, robustness forwarding,
+  running-job filtering, and zero-exit reporting.
+
 ### Consolidated daily agent digest
 
 - Replaced the duplicate Hermes-only daily summary with the account-owned

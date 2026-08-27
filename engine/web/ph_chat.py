@@ -632,6 +632,10 @@ async def _dispatch_hermes_job_command(
             return "## Hermes paper analysis\n\nNo matching paper job was found under your account."
         reasons = "\n".join(f"- {reason}" for reason in report["reasons"])
         commands = "\n".join(f"- `{command}`" for command in report["commands"])
+        win_rate = (
+            f"{report['win_rate']:.1f}%"
+            if report["completed_exits"] else "N/A (no completed exits)"
+        )
         return (
             "## Hermes paper analysis\n\n"
             f"- **Status:** `{report['status']}`\n"
@@ -640,7 +644,7 @@ async def _dispatch_hermes_job_command(
             f"- **Realized today:** `${report['realized_today']:+,.2f}`\n"
             f"- **Session realized:** `${report['realized_session']:+,.2f}`\n"
             f"- **Completed exits:** {report['completed_exits']}\n"
-            f"- **Win rate:** {report['win_rate']:.1f}%\n"
+            f"- **Win rate:** {win_rate}\n"
             f"- **Duplicate active jobs:** {report['active_duplicate_jobs']}\n\n"
             f"- **Other active account runs:** {report['other_active_account_runs']}\n\n"
             f"### Why\n{reasons}\n\n"
@@ -885,8 +889,17 @@ async def _dispatch_hermes_job_command(
             any(word in lowered for word in ("show", "list", "running", "status"))):
         from engine.agents.hermes_jobs import list_owned
         jobs = await asyncio.to_thread(list_owned, user_id)
+        running_only = "running" in lowered and not any(
+            word in lowered for word in ("recent", "history", "all")
+        )
+        if running_only:
+            jobs = [
+                job for job in jobs
+                if job.get("status") in {"queued", "running", "paused"}
+            ]
         if not jobs:
-            return "## Hermes jobs\n\nNo queued, running, or completed jobs were found for your account."
+            suffix = "running jobs" if running_only else "jobs"
+            return f"## Hermes jobs\n\nNo {suffix} were found for your account."
         lines = ["## Hermes jobs", ""]
         for job in jobs[:20]:
             progress = (job.get("progress") or {}).get("message", "")
@@ -923,6 +936,35 @@ async def _dispatch_hermes_job_command(
         config = job.get("config") or {}
         result = job.get("result") or {}
         best = result.get("best_config") or {}
+        params = best.get("params") or {}
+        validation = best.get("validation_metrics") or {}
+        benchmark = best.get("benchmark") or {}
+        robustness = best.get("robustness_windows") or []
+
+        def pct(value) -> str:
+            return "n/a" if value is None else f"{float(value):+.2f}%"
+
+        def ratio_pct(value) -> str:
+            if value is None:
+                return "n/a"
+            number = float(value)
+            if abs(number) <= 1:
+                number *= 100
+            return f"{number:.2f}%"
+
+        parameter_lines = [
+            f"  - Dip threshold: **{ratio_pct(params.get('dip_threshold'))}**",
+            f"  - Take profit: **{ratio_pct(params.get('take_profit'))}**",
+            f"  - Stop loss: **{ratio_pct(params.get('stop_loss'))}**",
+            f"  - Maximum hold: **{params.get('hold_days', 'n/a')} day(s)**",
+            f"  - Position size: **{ratio_pct(params.get('position_size'))}**",
+        ]
+        excess = benchmark.get("excess_return")
+        benchmark_warning = (
+            "\n\n> **Benchmark warning:** validation underperformed "
+            f"{benchmark.get('symbol', 'SPY')} by {abs(float(excess)):.2f} percentage points."
+            if excess is not None and float(excess) < 0 else ""
+        )
         return (
             "## Hermes backtest result\n\n"
             f"- **Job ID:** `{job['job_id']}`\n"
@@ -932,18 +974,23 @@ async def _dispatch_hermes_job_command(
             f"- **Strategy:** `{config.get('strategy', 'buy_the_dip')}`\n"
             f"- **Data period:** `{config.get('lookback', 'not recorded')}`\n"
             f"- **Symbols:** {', '.join(config.get('symbols') or [])}\n"
-            f"- **Best parameters:** `{json.dumps(best.get('params') or {}, default=str)}`\n"
-            f"- **Sharpe ratio:** {best.get('sharpe_ratio', 'n/a')}\n"
-            f"- **Total return:** {best.get('total_return', 'n/a')}\n"
-            f"- **Maximum drawdown:** {best.get('max_drawdown', 'n/a')}\n"
-            f"- **Win rate:** {best.get('win_rate', 'n/a')}\n"
+            "- **Best parameters:**\n" + "\n".join(parameter_lines) + "\n"
+            f"- **Training Sharpe:** {best.get('sharpe_ratio', 'n/a')}\n"
+            f"- **Training return:** {pct(best.get('total_return'))}\n"
+            f"- **Training maximum drawdown:** {pct(best.get('max_drawdown'))}\n"
+            f"- **Training win rate:** {pct(best.get('win_rate'))}\n"
             f"- **Trades:** {best.get('total_trades', 'n/a')}"
-            f"\n- **Validation metrics:** `{json.dumps(best.get('validation_metrics') or {}, default=str)}`"
-            f"\n- **Benchmark:** `{json.dumps(best.get('benchmark') or {}, default=str)}`"
-            f"\n- **Robustness windows:** `{json.dumps(best.get('robustness_windows') or [], default=str)}`"
+            f"\n- **Validation Sharpe:** {validation.get('sharpe_ratio', 'n/a')}"
+            f"\n- **Validation return:** {pct(validation.get('total_return'))}"
+            f"\n- **Validation maximum drawdown:** {pct(validation.get('max_drawdown'))}"
+            f"\n- **Validation trades:** {validation.get('total_trades', 'n/a')}"
+            f"\n- **Benchmark {benchmark.get('symbol', 'SPY')} return:** {pct(benchmark.get('total_return'))}"
+            f"\n- **Excess return:** {pct(excess)}"
+            f"\n- **Robustness windows:** {len(robustness)} completed of "
+            f"{config.get('robustness_windows', result.get('methodology', {}).get('robustness_windows', 1))} requested"
             f"\n- **Paper promotion:** `"
             f"{'eligible' if best.get('promotion_eligible') is True else 'blocked' if best.get('promotion_eligible') is False else 'not evaluated'}`"
-            f"\n- **Methodology:** `{json.dumps(result.get('methodology') or {}, default=str)}`"
+            f"{benchmark_warning}"
         )
 
     config = _hermes_backtest_config(message)

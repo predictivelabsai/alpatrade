@@ -737,11 +737,18 @@ def _paper(job: dict) -> tuple[dict, Optional[str], str]:
     from agents.orchestrator import Orchestrator
     config = dict(job.get("config") or {})
     config.update({"agent_name": "Hermes", "agent_framework": "hermes"})
+    # Standalone paper promotion intentionally reads only an explicitly
+    # approved backtest configuration.  Passing candidate params merely via
+    # ``config["params"]`` makes the orchestrator fall back to YAML defaults,
+    # so preserve the exact owned candidate at the approval boundary.
+    config["approved_best_config"] = {
+        "params": dict(config.get("params") or {})
+    }
     orch = Orchestrator(user_id=str(job["user_id"]),
                         account_id=str(job["account_id"]) if job.get("account_id") else None)
     orch.run_id = job["run_id"]
     orch.state.run_id = job["run_id"]
-    orch.state.best_config = {"params": config.get("params") or {}}
+    orch.state.best_config = config["approved_best_config"]
     result = orch.run_paper_trade(config, stop_event=DatabaseJobControl(str(job["job_id"])))
     if result.get("error"):
         raise RuntimeError(result["error"])

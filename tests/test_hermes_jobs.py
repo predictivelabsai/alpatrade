@@ -160,7 +160,7 @@ def test_chat_result_question_returns_latest_completed_job(monkeypatch):
     ))
     assert "Hermes backtest result" in reply
     assert "Data period:** `3m`" in reply
-    assert "dip_threshold" in reply
+    assert "Dip threshold: **3.00%**" in reply
 
 
 def test_chat_dispatch_returns_queue_ack_immediately(monkeypatch):
@@ -510,6 +510,20 @@ def test_hermes_green_report_explains_gain_and_keeps_strategy():
                for command in report["commands"])
 
 
+def test_hermes_report_waits_for_evidence_when_no_exits_exist():
+    from engine.agents.hermes_advice import build_performance_report
+
+    report = build_performance_report(
+        date="2026-08-26", positions=[], trades=[], advice=[],
+        job_id="job-1", run_id="run-1", candidate_id="candidate-1",
+    )
+
+    assert report["status"] == "WAITING"
+    assert report["completed_exits"] == 0
+    assert "No paper exits" in report["reasons"][0]
+    assert not any("backtest" in command for command in report["commands"])
+
+
 def test_immediate_alert_has_reason_context_and_loss_color():
     from engine.agents.hermes_advice import build_advice_alert_email
 
@@ -578,6 +592,45 @@ def test_chat_analyzes_only_owned_paper_job(monkeypatch):
     assert "Hermes paper analysis" in reply
     assert "Loss detected" in reply
     assert "No parameters or orders were changed automatically" in reply
+
+
+def test_chat_analysis_renders_no_exit_win_rate_as_na(monkeypatch):
+    from engine.agents import hermes_advice
+    from engine.web.ph_chat import _dispatch_hermes_job_command
+
+    monkeypatch.setattr(hermes_advice, "analyze_owned_paper_job", lambda *_args: {
+        "status": "WAITING", "job_id": "job-1", "job_status": "running",
+        "run_id": "run-1", "realized_today": 0, "realized_session": 0,
+        "completed_exits": 0, "win_rate": 0, "active_duplicate_jobs": 0,
+        "other_active_account_runs": 0, "reasons": ["No exits."],
+        "decision": "Keep observing.", "commands": [],
+    })
+
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        "analyze paper job 66666666-6666-6666-6666-666666666666",
+        "user-1", "thread-1",
+    ))
+
+    assert "N/A (no completed exits)" in reply
+
+
+def test_show_running_jobs_filters_historical_jobs(monkeypatch):
+    from engine.agents import hermes_jobs
+    from engine.web.ph_chat import _dispatch_hermes_job_command
+
+    monkeypatch.setattr(hermes_jobs, "list_owned", lambda *_args, **_kwargs: [
+        {"kind": "paper", "status": "running", "job_id": "live",
+         "run_id": "run-live", "config": {}, "progress": {}},
+        {"kind": "backtest", "status": "completed", "job_id": "old",
+         "run_id": "run-old", "config": {}, "progress": {}},
+    ])
+
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        "show my running jobs", "user-1", "thread-1",
+    ))
+
+    assert "`live`" in reply
+    assert "`old`" not in reply
 
 
 def test_portfolio_risk_weights_fall_back_without_complete_market_data(monkeypatch):
@@ -753,6 +806,52 @@ def test_orchestrator_preserves_candidate_position_size():
     # Preserved via the resolved-params passthrough (added only when the caller/
     # backtest set it, so the default resolved-param contract stays unchanged).
     assert 'resolved_params["position_size"] = params.get("position_size")' in source
+
+
+def test_hermes_paper_promotes_exact_candidate_params(monkeypatch):
+    from agents import orchestrator as orchestrator_module
+    from engine.agents import hermes_jobs
+
+    seen = {}
+
+    class FakeState:
+        run_id = None
+        best_config = None
+
+    class FakeOrchestrator:
+        def __init__(self, user_id=None, account_id=None):
+            self.run_id = "generated"
+            self.state = FakeState()
+
+        def run_paper_trade(self, config, stop_event=None):
+            seen["config"] = config
+            seen["state_best"] = self.state.best_config
+            return {"total_trades": 0, "total_pnl": 0}
+
+    monkeypatch.setattr(orchestrator_module, "Orchestrator", FakeOrchestrator)
+    params = {
+        "dip_threshold": 0.05,
+        "take_profit": 0.015,
+        "stop_loss": 0.005,
+        "hold_days": 1,
+        "position_size": 0.1,
+        "symbols": ["SPY", "QQQ"],
+    }
+    job = {
+        "job_id": "33333333-3333-3333-3333-333333333333",
+        "run_id": "44444444-4444-4444-4444-444444444444",
+        "user_id": "11111111-1111-1111-1111-111111111111",
+        "account_id": "22222222-2222-2222-2222-222222222222",
+        "candidate_id": "55555555-5555-5555-5555-555555555555",
+        "config": {"strategy": "buy_the_dip", "params": params},
+    }
+
+    hermes_jobs._paper(job)
+
+    approved = seen["config"]["approved_best_config"]
+    assert approved == {"params": params}
+    assert seen["state_best"] == approved
+    assert seen["config"]["agent_framework"] == "hermes"
     paper_source = inspect.getsource(
         __import__("agents.paper_trade_agent", fromlist=["PaperTradeAgent"]).PaperTradeAgent.run
     )
@@ -865,8 +964,8 @@ def test_backtest_result_request_is_not_routed_to_jobs_list(monkeypatch):
     ))
     assert "Hermes backtest result" in reply
     assert "Hermes jobs" not in reply
-    assert "excess_return" in reply
-    assert "Robustness windows" in reply
+    assert "Excess return:** +0.40%" in reply
+    assert "Robustness windows:** 1 completed" in reply
 
 
 def test_notification_history_shows_delivery_channels(monkeypatch):

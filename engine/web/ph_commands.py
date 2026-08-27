@@ -71,6 +71,7 @@ HERMES_SHORTCUTS = [
          "start the best eligible candidate"),
     ]),
     ("Hermes — Monitor", [
+        ("/hermes show my running jobs", "only queued, running, or paused jobs"),
         ("/hermes analyze my running paper job", "P&L, drift, and next actions"),
         ("/hermes pause my running paper job", "pause the latest running Hermes job"),
         ("/hermes resume my paused paper job", "resume the latest paused Hermes job"),

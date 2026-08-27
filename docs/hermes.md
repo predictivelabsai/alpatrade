@@ -105,6 +105,7 @@ Then sign in to AlpaTrade and run these one at a time:
 ```text
 /hermes help
 /hermes run a buy_the_dip backtest for AAPL, MSFT, GOOGL, AMZN, META, TSLA and NVDA over 3 months and optimize Sharpe
+/hermes show my running jobs
 /hermes show my recent jobs
 /hermes show my latest backtest result
 /hermes construct an optimal portfolio from my best completed candidate
@@ -494,12 +495,15 @@ approved threshold, P&L when an exit closes, and the reason for the decision.
 An entry is informational rather than a profit signal. Exit gains render green,
 losses render red, and watch/hold events render amber.
 
-The Hermes daily report is separate from the existing AlpaTrade daily report.
-It derives realized P&L from the owned paper run's persisted trades, groups
+Hermes is included in the consolidated AlpaTrade daily report; it does not send
+a second Hermes-only daily digest. Immediate opt-in entry/exit alerts remain
+separate. The consolidated report derives realized P&L from the owned paper
+run's persisted trades, groups
 repeated entry fills, and labels broker positions/unrealized P&L as account-wide
 because other strategies can share the linked paper account. It never adds
-account-wide unrealized P&L to run-only realized P&L. The report includes one of:
+account-wide unrealized P&L to run-only realized P&L. Hermes analysis includes:
 
+- **WAITING**: no completed exits exist yet; keep collecting paper evidence.
 - **GREEN**: profitable closed activity without stop-loss exits; keep the
   approved configuration while monitoring consistency.
 - **AMBER**: insufficient or mixed closed activity; inspect before changing it.

@@ -386,6 +386,21 @@ def build_performance_report(
             "/hermes run a 6-month buy_the_dip backtest for the same symbols and "
             "maximize Sharpe without changing my running paper job",
         ]
+    elif not closed:
+        status, color = "WAITING", INFO_COLOR
+        reasons = [
+            "No paper exits have completed yet, so win rate and realized performance are not available."
+        ]
+        if unrealized:
+            direction = "gain" if unrealized > 0 else "loss"
+            reasons.append(
+                f"Open positions currently show an unrealized {direction} of ${abs(unrealized):,.2f}."
+            )
+        decision = "Keep the approved paper configuration running until enough exits exist to evaluate it."
+        commands = [
+            f"/hermes analyze paper job {job_id}",
+            "/hermes show my recent advice",
+        ]
     else:
         status, color = "AMBER", WATCH_COLOR
         reasons = ["There is not yet enough positive realized evidence to classify the day as green."]

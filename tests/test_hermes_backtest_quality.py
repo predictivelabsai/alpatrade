@@ -62,7 +62,7 @@ def test_orchestrator_forwards_objective_and_quality_flags():
     for field in (
         "objective", "conservative_metrics", "conservative_execution",
         "include_taf_fees", "include_cat_fees", "slippage_bps",
-        "validation_fraction",
+        "validation_fraction", "robustness_windows", "benchmark_symbol",
     ):
         assert f'"{field}"' in source
 
