@@ -174,6 +174,10 @@ the requested symbols/period or grid, inspect its validation and benchmark,
 then explicitly promote the new eligible candidate. The old paper job remains
 unchanged until the user stops it and approves the replacement.
 
+Candidates created by an older worker that show fewer completed robustness
+windows than requested are displayed as **blocked** and cannot be promoted.
+Run a fresh backtest after deployment to create a fully validated candidate.
+
 Do not run `stop` during initial continuous-operation testing unless you intend
 to terminate that job.
 

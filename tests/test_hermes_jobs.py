@@ -197,6 +197,17 @@ def test_hermes_follow_ups_match_completed_backtest():
     assert any("start my best eligible candidate" in item for item in suggestions)
 
 
+def test_hermes_help_follow_ups_start_at_backtest_not_promotion():
+    from engine.web.ph_chat import _hermes_follow_ups
+
+    suggestions = _hermes_follow_ups(
+        "help", "## Hermes quick start\nshow my latest backtest result"
+    )
+
+    assert "run a 6-month" in suggestions[0]
+    assert not any("start my best eligible candidate" in item for item in suggestions)
+
+
 def test_chat_result_question_returns_latest_completed_job(monkeypatch):
     from engine.agents import hermes_jobs
     from engine.web.ph_chat import _dispatch_hermes_job_command
@@ -1033,7 +1044,8 @@ def test_candidate_promotion_preserves_source_backtest_lookback():
 
     source = inspect.getsource(hermes_jobs.enqueue_candidate_paper)
     assert "r.config AS source_config" in source
-    assert '"lookback": str((candidate.get("source_config") or {}).get("lookback") or "3m")' in source
+    assert 'source_config = candidate.get("source_config") or {}' in source
+    assert '"lookback": str(source_config.get("lookback") or "3m")' in source
 
 
 def test_backtest_result_request_is_not_routed_to_jobs_list(monkeypatch):
@@ -1062,6 +1074,33 @@ def test_backtest_result_request_is_not_routed_to_jobs_list(monkeypatch):
     assert "Hermes jobs" not in reply
     assert "Excess return:** +0.40%" in reply
     assert "Robustness windows:** 1 completed" in reply
+
+
+def test_incomplete_legacy_robustness_blocks_promotion_in_chat(monkeypatch):
+    from engine.agents import hermes_jobs
+    from engine.web.ph_chat import _dispatch_hermes_job_command, _hermes_follow_ups
+
+    monkeypatch.setattr(hermes_jobs, "list_owned", lambda *_args, **_kwargs: [{
+        "job_id": "job-1", "run_id": "run-1", "kind": "backtest",
+        "status": "completed", "candidate_id": "candidate-1",
+        "config": {"strategy": "buy_the_dip", "lookback": "6m",
+                   "symbols": ["SPY"], "robustness_windows": 3},
+        "result": {"best_config": {
+            "params": {"dip_threshold": 0.05},
+            "promotion_eligible": True,
+            "robustness_windows": [],
+        }},
+    }])
+
+    reply = asyncio.run(_dispatch_hermes_job_command(
+        "show my latest backtest result", "user-1", "thread-1"
+    ))
+    suggestions = _hermes_follow_ups("show my latest backtest result", reply)
+
+    assert "0 completed of 3 requested" in reply
+    assert "Paper promotion:** `blocked`" in reply
+    assert "run a 6-month" in suggestions[0]
+    assert not any("start my best eligible candidate" in item for item in suggestions)
 
 
 def test_notification_history_shows_delivery_channels(monkeypatch):

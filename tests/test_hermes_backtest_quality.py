@@ -159,6 +159,8 @@ def test_paper_promotion_enforces_saved_validation_gate():
     source = inspect.getsource(hermes_jobs.enqueue_candidate_paper)
     assert 'metrics.get("promotion_eligible") is not True' in source
     assert "Candidate is not eligible for paper promotion" in source
+    assert "requested_robustness" in source
+    assert "completed_robustness < requested_robustness" in source
 
 
 def test_backtest_worker_attributes_default_owned_account():

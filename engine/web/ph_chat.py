@@ -675,7 +675,14 @@ def _hermes_clarification(message: str) -> Optional[tuple[str, list[str]]]:
 
 def _hermes_follow_ups(message: str, reply: str) -> list[str]:
     """Contextual editable next steps shown after every Hermes response."""
+    request = message.lower().strip()
     text = reply.lower()
+    if request in {"help", "commands", "show commands"}:
+        return [
+            "/hermes run a 6-month buy_the_dip backtest for SPY, QQQ, IWM, DIA, XLK, XLF and XLV and optimize Sharpe",
+            "/hermes show my running jobs",
+            "/hermes show my latest backtest result",
+        ]
     if "needs clarification" in text:
         clarification = _hermes_clarification(message)
         if clarification:
@@ -700,6 +707,12 @@ def _hermes_follow_ups(message: str, reply: str) -> list[str]:
             "/hermes help",
         ]
     if "backtest result" in text or "backtest completed" in text:
+        if "paper promotion:** `blocked" in text:
+            return [
+                "/hermes run a 6-month buy_the_dip backtest for SPY, QQQ, IWM, DIA, XLK, XLF and XLV and optimize Sharpe",
+                "/hermes show my running jobs",
+                "/hermes help",
+            ]
         return [
             "/hermes construct an optimal portfolio from my best completed candidate",
             "/hermes start my best eligible candidate in continuous paper trading, email daily reports, and notify me both",
@@ -1116,9 +1129,23 @@ async def _dispatch_hermes_job_command(
         validation = best.get("validation_metrics") or {}
         benchmark = best.get("benchmark") or {}
         robustness = best.get("robustness_windows") or []
+        requested_robustness = max(1, int(
+            config.get("robustness_windows")
+            or (result.get("methodology") or {}).get("robustness_windows")
+            or 1
+        ))
+        promotion_eligible = (
+            best.get("promotion_eligible") is True
+            and not (
+                requested_robustness > 1
+                and len(robustness) < requested_robustness
+            )
+        )
 
-        def pct(value) -> str:
-            return "n/a" if value is None else f"{float(value):+.2f}%"
+        def pct(value, *, signed: bool = True) -> str:
+            if value is None:
+                return "n/a"
+            return f"{float(value):+,.2f}%" if signed else f"{float(value):,.2f}%"
 
         def ratio_pct(value) -> str:
             if value is None:
@@ -1132,7 +1159,8 @@ async def _dispatch_hermes_job_command(
             f"  - Dip threshold: **{ratio_pct(params.get('dip_threshold'))}**",
             f"  - Take profit: **{ratio_pct(params.get('take_profit'))}**",
             f"  - Stop loss: **{ratio_pct(params.get('stop_loss'))}**",
-            f"  - Maximum hold: **{params.get('hold_days', 'n/a')} day(s)**",
+            f"  - Maximum hold: **{params.get('hold_days', 'n/a')} "
+            f"{'day' if params.get('hold_days') == 1 else 'days'}**",
             f"  - Position size: **{ratio_pct(params.get('position_size'))}**",
         ]
         excess = benchmark.get("excess_return")
@@ -1153,19 +1181,19 @@ async def _dispatch_hermes_job_command(
             "- **Best parameters:**\n" + "\n".join(parameter_lines) + "\n"
             f"- **Training Sharpe:** {best.get('sharpe_ratio', 'n/a')}\n"
             f"- **Training return:** {pct(best.get('total_return'))}\n"
-            f"- **Training maximum drawdown:** {pct(best.get('max_drawdown'))}\n"
-            f"- **Training win rate:** {pct(best.get('win_rate'))}\n"
+            f"- **Training maximum drawdown:** {pct(best.get('max_drawdown'), signed=False)}\n"
+            f"- **Training win rate:** {pct(best.get('win_rate'), signed=False)}\n"
             f"- **Trades:** {best.get('total_trades', 'n/a')}"
             f"\n- **Validation Sharpe:** {validation.get('sharpe_ratio', 'n/a')}"
             f"\n- **Validation return:** {pct(validation.get('total_return'))}"
-            f"\n- **Validation maximum drawdown:** {pct(validation.get('max_drawdown'))}"
+            f"\n- **Validation maximum drawdown:** {pct(validation.get('max_drawdown'), signed=False)}"
             f"\n- **Validation trades:** {validation.get('total_trades', 'n/a')}"
             f"\n- **Benchmark {benchmark.get('symbol', 'SPY')} return:** {pct(benchmark.get('total_return'))}"
             f"\n- **Excess return:** {pct(excess)}"
             f"\n- **Robustness windows:** {len(robustness)} completed of "
-            f"{config.get('robustness_windows', result.get('methodology', {}).get('robustness_windows', 1))} requested"
+            f"{requested_robustness} requested"
             f"\n- **Paper promotion:** `"
-            f"{'eligible' if best.get('promotion_eligible') is True else 'blocked' if best.get('promotion_eligible') is False else 'not evaluated'}`"
+            f"{'eligible' if promotion_eligible else 'blocked' if best.get('promotion_eligible') is not None else 'not evaluated'}`"
             f"{benchmark_warning}"
         )
 

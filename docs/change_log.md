@@ -28,6 +28,9 @@
   and queues nothing instead of silently choosing defaults.
 - Fixed hyphenated natural periods such as `6-month`, which previously bypassed
   the period parser and fell back to three months.
+- Blocked promotion of legacy candidates whose saved job requested robustness
+  validation but did not complete every requested window; their follow-up now
+  proposes a fresh backtest instead of paper trading.
 
 ### Consolidated daily agent digest
 

@@ -258,6 +258,14 @@ def enqueue_candidate_paper(
             "candidate has not passed Hermes out-of-sample validation"
         ]
         raise ValueError("Candidate is not eligible for paper promotion: " + "; ".join(reasons))
+    source_config = candidate.get("source_config") or {}
+    requested_robustness = max(1, int(source_config.get("robustness_windows") or 1))
+    completed_robustness = len(metrics.get("robustness_windows") or [])
+    if requested_robustness > 1 and completed_robustness < requested_robustness:
+        raise ValueError(
+            "Candidate is not eligible for paper promotion: robustness validation "
+            f"is incomplete ({completed_robustness} of {requested_robustness} windows)"
+        )
     owned_accounts = get_user_accounts(user_id)
     owned_ids = {str(item["account_id"]) for item in owned_accounts}
     if account_id and account_id not in owned_ids:
@@ -280,7 +288,7 @@ def enqueue_candidate_paper(
     config = {
         "duration_seconds": parse_duration(duration),
         "continuous": duration == "365d",
-        "lookback": str((candidate.get("source_config") or {}).get("lookback") or "3m"),
+        "lookback": str(source_config.get("lookback") or "3m"),
         "symbols": candidate["symbols"] or [],
         "strategy": candidate["strategy"],
         "params": candidate["params"] or {},
