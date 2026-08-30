@@ -71,7 +71,13 @@ def has_paper_activity(user_id: str) -> bool:
 
 
 def best_backtest_for_run(run_id: str, user_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    """The best-variation row (strategy slug + params + headline metrics) of a run."""
+    """The best-variation row (strategy slug + params + headline metrics) of a run.
+
+    Two storage paths exist in production: the agent-storage grid path writes
+    ``alpatrade.backtest_summaries`` rows (is_best) and the orchestrator path
+    stores everything in ``alpatrade.runs.results`` JSON under ``best_config``.
+    This returns whichever carries the run's parameters.
+    """
     from sqlalchemy import text
     sql = text("""
         SELECT r.strategy, r.strategy_slug, s.params, s.total_return,
@@ -93,7 +99,52 @@ def best_backtest_for_run(run_id: str, user_id: Optional[str] = None) -> Optiona
         with _pool().get_session() as session:
             row = session.execute(
                 text(str(sql).format(scope=scope)), binds).mappings().first()
-        return dict(row) if row else None
+        if row and row.get("params"):
+            return dict(row)
+        if not row:
+            return None
+        return dict(row) | _best_config_from_results(run_id) or dict(row)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _best_config_from_results(run_id: str) -> Optional[Dict[str, Any]]:
+    """Best-variation data from the orchestrator path's runs.results JSON."""
+    from sqlalchemy import text
+    try:
+        import json as _json
+        with _pool().get_session() as session:
+            r = session.execute(
+                text("""
+                    SELECT results FROM alpatrade.runs
+                    WHERE run_id = :r AND mode = 'backtest'
+                """),
+                {"r": run_id},
+            ).mappings().first()
+        if not r or not r["results"]:
+            return None
+        res = r["results"]
+        if isinstance(res, str):
+            res = _json.loads(res)
+        cfg = res.get("best_config") or {}
+        params = cfg.get("params") or {}
+        if not isinstance(params, dict):
+            return None
+        # Metrics live in all_results_summary entries keyed by params.
+        metrics = {}
+        for entry in (res.get("all_results_summary") or []):
+            if entry.get("params") == params:
+                metrics = entry
+                break
+        return {
+            "strategy": (res.get("strategy") or (cfg.get("config") or {}).get("strategy")),
+            "strategy_slug": None,
+            "params": params,
+            "total_return": metrics.get("total_return"),
+            "win_rate": metrics.get("win_rate"),
+            "max_drawdown": metrics.get("max_drawdown"),
+            "total_trades": metrics.get("total_trades"),
+        }
     except Exception:  # noqa: BLE001
         return None
 
@@ -152,7 +203,7 @@ def paper_deploy_command(cfg: Optional[Dict[str, Any]]) -> Optional[str]:
     symbols = ""
     raw_symbols = params.get("symbols")
     if isinstance(raw_symbols, (list, tuple)) and raw_symbols:
-        clean = [str(s).upper().strip() for s in raw_symbols if s][:5]
+        clean = [str(s).upper().strip() for s in raw_symbols if s][:10]
         if clean:
             symbols = " symbols:" + ",".join(clean)
     return (
