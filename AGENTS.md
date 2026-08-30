@@ -41,6 +41,19 @@ CI (`.github/workflows/ci.yml`) uses **pip**, not uv: `pip install -e ".[all]"` 
 otherwise CI runs only the explicit DB-free unit-test list above (mirrors the "Unit tests" step in
 ci.yml). Add new DB-free tests to that explicit list if they should run in CI.
 
+## Parallel agent sessions
+
+Multiple agents work this repo concurrently, each in its own worktree + branch:
+
+- **Divide by PR domain** — each agent owns its feature/fix domain and its PRs; never have two
+  agents edit the same branch.
+- **Worktree discipline** — branch off a committed ref (the shared checkout's working tree may hold
+  another agent's in-flight edits); commit and push from your worktree only.
+- **Rebase before opening a PR** — `git fetch` first: if a dependency PR (e.g. a base feature
+  branch) or `fix/web-*` work landed on `main`, rebase onto it before review so conflicts are
+  resolved once, in the right order. Stacked PRs (base = a feature branch) are fine; say which PR
+  each stacked PR waits on.
+
 ## Architecture facts that aren't obvious from filenames
 
 - **`engine/` is canonical; `utils/*` are compat shims** that `sys.modules`-alias to relocated
