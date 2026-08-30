@@ -254,10 +254,10 @@ def _brand():
 def _menu_group(label: str, items, active: Optional[str]):
     """One collapsible command group (pehero cat-toggle / agent-item markup).
 
-    Items render as plain-language actions — the description is the label and
-    the raw command is a title tooltip + small hint, so the syntax is never
-    the thing a new user must read, but nothing is hidden. Clicking drafts
-    the command into the composer (edit before send — syntax stays opt-in).
+    Items render as plain-language actions only — the description is the whole
+    label; the raw command lives in the hover tooltip (and lands in the
+    composer on click, ready to edit), so the syntax never competes with the
+    name for space.
     """
     is_open = any(cmd == active for cmd, _ in items)
     rows = []
@@ -265,8 +265,7 @@ def _menu_group(label: str, items, active: Optional[str]):
         cls = "agent-item" + (" active" if cmd == active else "")
         rows.append(Button(
             Span(desc or cmd, cls="aitem-name"),
-            Span(cmd, cls="aitem-prefix"),
-            cls=cls, type="button", title=f"{desc} — {cmd}",
+            cls=cls, type="button", title=f"{desc}: {cmd}" if desc else cmd,
             onclick=f"fillChat({cmd!r})",
         ))
     return Details(
