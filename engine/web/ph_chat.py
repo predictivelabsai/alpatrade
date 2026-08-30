@@ -1431,7 +1431,7 @@ def register(app, rt):
         return await _stream(msg, session)
 
     @rt("/news")
-    async def news():
+    async def news(request, session):
         """Unified market-news feed: a 'Latest' stream by default plus category
         filter pills. Merges premarket movers, press releases (public.news) and
         multi-source RSS headlines into one date-sorted feed of rich cards."""
@@ -1502,7 +1502,16 @@ def register(app, rt):
             pass
 
         if not items:
-            return HTMLResponse(to_xml(P("No market news right now — check back shortly.",
-                                         cls="news-empty")))
+            body: object = P("No market news right now — check back shortly.",
+                             cls="news-empty")
+        else:
+            body = _news_feed(items)
 
-        return HTMLResponse(to_xml(_news_feed(items)))
+        # The right-pane loads this via htmx (HX-Request header) and swaps the
+        # fragment in. A direct browser navigation would otherwise render the
+        # bare fragment without the shell, styles or title — wrap it instead.
+        if "hx-request" not in {k.lower() for k in request.headers}:
+            user = _current_user(session)
+            return ph_layout.page("app", body, user=user,
+                                  title="News · AlpaTrade", right_news_open=True)
+        return HTMLResponse(to_xml(body))
