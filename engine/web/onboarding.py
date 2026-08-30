@@ -6,7 +6,10 @@ dashboard checklist can never drift from reality: every step is a query,
 not a stored flag. Paper-deploy commands are composed from a backtest
 run's best variation so "deploy to paper" really does trade the tested
 config. Read-only, DB-failure tolerant — checklist rendering must never
-break the dashboard.
+break the dashboard. Also hosts the activation-event funnel (phase 3):
+``record_event`` writes first-occurrence markers into
+``alpatrade.activation_events``; ``funnel_counts`` / ``week1_cohorts``
+read them for the monitoring dial.
 """
 from __future__ import annotations
 
@@ -236,3 +239,103 @@ def autorun_url(command: str, draft: bool = False) -> str:
     """Open a fresh chat that (auto-)sends ``command`` through the normal
     chat pipeline — the same endpooint the composer posts to."""
     return f"/app?new=1&autorun={quote(command)}" + ("&draft=1" if draft else "")
+
+
+# ---------------------------------------------------------------------------
+# Activation events (Start Here plan, phase 3) — the funnel dial.
+# ---------------------------------------------------------------------------
+
+_ACTIVATION_EVENTS = ("registered", "keys_connected",
+                      "first_backtest", "first_paper_run")
+
+
+def record_event(user_id, event: str, meta: Optional[dict] = None) -> None:
+    """Record the first occurrence of an activation event. Idempotent and
+    failure-tolerant: measuring must never break the flow that feeds it."""
+    if not user_id or event not in _ACTIVATION_EVENTS:
+        return
+    from sqlalchemy import text
+
+    from utils.db.db_pool import DatabasePool
+    try:
+        with _pool().get_session() as session:
+            session.execute(
+                text("""
+                    INSERT INTO alpatrade.activation_events (user_id, event, meta)
+                    VALUES (CAST(:uid AS UUID), :event, CAST(:meta AS JSONB))
+                    ON CONFLICT (user_id, event) DO NOTHING
+                """),
+                {"uid": str(user_id), "event": event,
+                 "meta": json.dumps(meta) if meta else None},
+            )
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def funnel_counts() -> Dict[str, int]:
+    """How many users have reached each activation step."""
+    from sqlalchemy import text
+
+    counts = {e: 0 for e in _ACTIVATION_EVENTS}
+    try:
+        with _pool().get_session() as session:
+            rows = session.execute(
+                text("""
+                    SELECT event, COUNT(DISTINCT user_id)::int AS n
+                    FROM alpatrade.activation_events
+                    GROUP BY event
+                """),
+            ).fetchall()
+        for event, n in rows:
+            if event in counts:
+                counts[event] = n
+        return counts
+    except Exception:  # noqa: BLE001
+        return counts
+
+
+def week1_cohorts(days: int = 30) -> Dict[str, Any]:
+    """Week-1 retention for recent signups.
+
+    For every user registered in the last ``days`` days: did any trading or
+    chat activity happen 1–7 days after registration? Returns cohort-wide
+    counts plus the per-user list for the monitoring view.
+    """
+    from sqlalchemy import text
+
+    try:
+        with _pool().get_session() as session:
+            rows = session.execute(
+                text("""
+                    WITH regs AS (
+                        SELECT user_id, first_at
+                        FROM alpatrade.activation_events
+                        WHERE event = 'registered'
+                              AND first_at > NOW() - (:days * INTERVAL '1 day')
+                    )
+                    SELECT r.user_id::text AS user_id,
+                           r.first_at,
+                           EXISTS (
+                               SELECT 1 FROM alpatrade.runs run
+                               WHERE run.user_id = r.user_id
+                                     AND run.created_at >= r.first_at + INTERVAL '1 day'
+                                     AND run.created_at <  r.first_at + INTERVAL '8 days'
+                           ) OR EXISTS (
+                               SELECT 1
+                               FROM alpatrade.chat_conversations c
+                               JOIN alpatrade.chat_messages m
+                                     ON m.thread_id = c.thread_id
+                               WHERE c.user_id = r.user_id
+                                     AND m.created_at >= r.first_at + INTERVAL '1 day'
+                                     AND m.created_at <  r.first_at + INTERVAL '8 days'
+                           ) AS returned_d7
+                    FROM regs r
+                    ORDER BY r.first_at DESC
+                """),
+                {"days": days},
+            ).mappings().all()
+        users = [dict(r) for r in rows]
+        returned = sum(1 for u in users if u.get("returned_d7"))
+        return {"users": users, "returned": returned, "total": len(users)}
+    except Exception:  # noqa: BLE001
+        return {"users": [], "returned": 0, "total": 0}

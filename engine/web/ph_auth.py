@@ -331,6 +331,11 @@ def register(app, rt):
         if not user:
             return _register_page(email=email, error="Could not create account. Please try again.")
         _session_login(session, user)
+        try:
+            from engine.web.onboarding import record_event
+            record_event(user["user_id"], "registered")
+        except Exception:  # noqa: BLE001
+            pass
         return RedirectResponse("/dashboard", status_code=303)
 
     # ---- forgot password --------------------------------------------------
@@ -445,6 +450,11 @@ def register(app, rt):
             if not user:
                 return RedirectResponse("/signin?error=Could+not+create+account", status_code=303)
             _session_login(session, user)
+            try:
+                from engine.web.onboarding import record_event
+                record_event(user["user_id"], "registered")
+            except Exception:  # noqa: BLE001
+                pass
             return RedirectResponse("/dashboard", status_code=303)
     else:
         @rt("/login")
