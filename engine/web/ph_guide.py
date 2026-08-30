@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Optional
 
 from fasthtml.common import (
-    A, Button, Code, Div, H1, H2, H3, H4, Hr, Li, NotStr, Ol, P, Pre, Span,
+    A, B, Button, Code, Div, H1, H2, H3, H4, Hr, Li, NotStr, Ol, P, Pre, Span,
     Strong, Style, Table, Tbody, Td, Th, Thead, Tr, Ul,
 )
 from starlette.responses import Response
@@ -28,6 +28,25 @@ _GUIDE_CSS = """
 .guide h1{margin-bottom:.2rem}
 .guide h2{border-bottom:1px solid var(--line);padding-bottom:.3rem;scroll-margin-top:1rem;margin-top:1.6rem}
 .guide h3{color:var(--accent);scroll-margin-top:1rem}
+.gx{background:var(--bg-elev);border:1px solid var(--line);border-radius:.65rem;padding:1rem 1.2rem;margin:.9rem 0 1.4rem}
+.gx .gx-head{display:flex;align-items:baseline;gap:.7rem;flex-wrap:wrap}
+.gx .gx-head b{font-size:.98rem}
+.gx .gx-sub{color:var(--ink-muted);font-size:.8rem}
+.gx .gx-progress{flex:1 1 6rem;height:3px;background:var(--bg-raise);border-radius:2px;min-width:4rem}
+.gx .gx-progress i{display:block;height:100%;background:var(--accent);border-radius:2px}
+.gx .gx-count{font-family:var(--font-mono);font-size:.7rem;color:var(--ink-dim)}
+.gx-step{display:flex;gap:.8rem;align-items:flex-start;padding:.55rem 0;border-top:1px solid var(--line);margin-top:.55rem}
+.gx-num{flex:0 0 1.4rem;height:1.4rem;border-radius:50%;display:grid;place-items:center;
+ font-family:var(--font-mono);font-size:.68rem;font-weight:600;margin-top:.05rem;
+ border:1.5px solid var(--line-br);color:var(--ink-muted)}
+.gx-step.done .gx-num{border:none;background:var(--accent);color:var(--bg-elev)}
+.gx-step.now .gx-num{border-color:var(--accent);color:var(--accent)}
+.gx-body{font-size:.86rem}
+.gx-body p{margin:.05rem 0 .2rem;font-size:.86rem}
+.gx-body .gx-desc{color:var(--ink-muted);font-size:.78rem}
+.gx-step.done .gx-title{color:var(--ink-dim);text-decoration:line-through;text-decoration-color:var(--line-br)}
+.gx-step.now .gx-title{color:var(--accent);font-weight:650}
+.gx a{font-weight:600}
 .guide ul,.guide ol{padding-left:1.2rem;margin:.4rem 0}
 .guide li{font-size:.85rem;color:var(--ink-muted);line-height:1.5;margin-bottom:.25rem}
 .guide strong{color:var(--ink)}
@@ -597,11 +616,70 @@ def _guide_options():
     )
 
 
-def _guide_body():
+def _walkthrough(user_id: Optional[str]):
+    """Live-state walkthrough — 'your first strategy in three steps'.
+
+    Steps are queries (see engine/web/onboarding.py), not prose: the section
+    marks what is already done and points at the one action that unlocks the
+    next step, so it cannot drift out of date the way a written manual does.
+    """
+    if not user_id:
+        return ()
+    try:
+        from engine.web import onboarding
+        keys = onboarding.has_linked_account(user_id)
+        backtests = onboarding.has_backtests(user_id)
+        paper = onboarding.has_paper_activity(user_id)
+    except Exception:  # noqa: BLE001
+        return ()
+    done = int(keys) + int(backtests) + int(paper)
+    if done >= 3:
+        return ()  # graduated — the guide below is the reference, not a next step
+    steps = (
+        ("1", "Connect your brokerage",
+         "Link your Alpaca paper account so every trade is yours.",
+         A("Add your keys in Settings →", href="/settings"), keys),
+        ("2", "Run your first backtest",
+         "One click with sensible defaults — tune everything afterwards.",
+         A("Run a backtest in chat →",
+           href=onboarding.autorun_url("agent:backtest lookback:3m")), backtests),
+        ("3", "Deploy the best result to paper",
+         "Send the winning config from your backtest to live paper trading.",
+         A("Open the Start Here card →", href="/dashboard"), paper),
+    )
+    rows = []
+    for num, title, desc, action, is_done in steps:
+        state = "done" if is_done else "now"
+        body = [P(title, cls="gx-title"), P(desc, cls="gx-desc")]
+        if not is_done:
+            body.append(P(action))
+        rows.append(Div(Span("✓" if is_done else num, cls="gx-num",
+                             aria_hidden="true"),
+                        Div(*body, cls="gx-body"), cls=f"gx-step {state}"))
+    pct = int(round(100 * done / 3))
+    head = Div(
+        Div(B("Start here — your first strategy"),
+            Span("Three steps to a strategy trading on paper — "
+                 "the full manual starts below.", cls="gx-sub"),
+            Span(f"{done} of 3 done", cls="gx-count"),
+            NotStr(f"<span class='gx-progress' aria-hidden='true'>"
+                   f"<i style='width:{pct}%'></i></span>"),
+            cls="gx-head"),
+        *rows,
+        cls="gx",
+    )
+    return (head,)
+
+
+def _guide_body(user_id: Optional[str] = None):
+    blocks = []
+    if user_id:
+        blocks = list(_walkthrough(user_id))
     return Div(
         H1("User Guide"),
         P("Complete reference for all AlpaTrade commands. Type any command in the chat "
           "composer on the ", A("home page", href="/"), ".", cls="lead"),
+        *blocks,
         _guide_toc(),
         *_guide_chat(),
         *_guide_backtest(),
@@ -678,7 +756,8 @@ def register(app, rt):
 
     @rt("/guide", methods=["GET"])
     def guide_get(session):
-        center = Div(_header("User Guide"), _guide_body(), cls="center-pane")
+        uid = str(session.get("user_id") or "") if session else ""
+        center = Div(_header("User Guide"), _guide_body(uid), cls="center-pane")
         return page("guide", Style(_GUIDE_CSS), center, user=_user(session),
                     title="User Guide · AlpaTrade", right_news=False)
 
