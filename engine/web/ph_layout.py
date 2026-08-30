@@ -358,7 +358,7 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             ),
             _nav_section(
                 "Chats",
-                Div(Div("No chats yet.", cls="sessions-empty"),
+                Div(Div("Your conversations appear here.", cls="sessions-empty"),
                     cls="session-list", id="session-list",
                     hx_get="/app/chats", hx_trigger="load", hx_swap="innerHTML"),
                 opened=active == "app",
