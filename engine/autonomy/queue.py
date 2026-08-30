@@ -8,6 +8,7 @@ a lost queue never loses a run.
 from __future__ import annotations
 
 import json
+import uuid
 from typing import Optional
 
 from sqlalchemy import text
@@ -156,6 +157,12 @@ def fail_uncertain_trading_jobs(stale_seconds: int = 300) -> int:
 
 def retry(run_id: str, user_id: str) -> bool:
     """Requeue one failed run owned by ``user_id`` and retain checkpoints."""
+    # run_id is a UUID column — a malformed value would raise a DataError on
+    # the UPDATE; anything not a full UUID simply cannot be retried.
+    try:
+        uuid.UUID(str(run_id))
+    except (ValueError, AttributeError, TypeError):
+        return False
     with _pool().get_session() as s:
         n = s.execute(text("""
             UPDATE alpatrade.autonomy_runs
