@@ -64,6 +64,7 @@ from engine.web import ph_spacs  # noqa: E402
 from engine.web import ph_premarket  # noqa: E402
 from engine.web import ph_research  # noqa: E402
 from engine.web import ph_monitoring  # noqa: E402
+from engine.web import ph_reports  # noqa: E402
 
 ph_landing.register(app, rt)
 ph_auth.register(app, rt)
@@ -83,6 +84,7 @@ ph_spacs.register(app, rt)
 ph_premarket.register(app, rt)
 ph_research.register(app, rt)
 ph_monitoring.register(app, rt)
+ph_reports.register(app, rt)  # public /r/{id} — last, unlisted
 
 # --- verticals: per-asset-class surfaces (Phase 1b) ---------------------------
 from verticals.equities import routes as equities_routes  # noqa: E402
