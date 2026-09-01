@@ -9,27 +9,57 @@ from __future__ import annotations
 from datetime import datetime
 
 from fasthtml.common import (
-    A, Button, Div, Form, H2, H3, Input, Label, Option, P, Select, Span, Table,
-    Tbody, Td, Th, Thead, Tr, NotStr,
+    A, Button, Div, Form, H2, H3, Input, Label, Option, P, Select, Span, Style,
+    Table, Tbody, Td, Th, Thead, Tr, NotStr,
 )
 from starlette.responses import RedirectResponse
 
-from engine.web.layout import page
+from engine.web.ph_layout import page
 
-NAV = [
-    ("Dashboard", "/equities"),
-    ("Backtest", "/equities/backtest"),
-    ("Runs", "/equities/runs"),
-]
-RAIL_CHIPS = ["runs", "trades", "report", "help"]
+_EQUITIES_CSS = """
+.equities{max-width:960px;margin:0 auto;width:100%;padding:0 1rem 3rem}
+.equities h2{font-size:1.2rem;margin:.4rem 0 .9rem;color:var(--ink)}
+.equities .card{background:var(--bg-elev);border:1px solid var(--line);
+  border-radius:.7rem;padding:1rem 1.2rem;margin-bottom:1.2rem}
+.equities .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.8rem}
+.equities .kpi .v{font-size:1.25rem;font-weight:700;color:var(--ink)}
+.equities .kpi .l{font-size:.72rem;color:var(--ink-dim);margin-top:.15rem}
+.equities .muted{font-size:.82rem;color:var(--ink-muted)}
+.equities .notice{border-radius:.5rem;padding:.6rem .8rem;font-size:.82rem;margin-bottom:1rem}
+.equities .notice.err{background:rgba(176,101,63,.12);color:#b0653f}
+.equities table{width:100%;border-collapse:collapse;font-size:.82rem;color:var(--ink)}
+.equities th{font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;
+  color:var(--ink-dim);text-align:left;padding:.4rem .5rem;border-bottom:1px solid var(--line)}
+.equities td{padding:.45rem .5rem;border-bottom:1px solid var(--line)}
+.equities td.right,.equities th.right{text-align:right}
+.equities td.pos{color:var(--green,#2e7d32)}
+.equities td.neg{color:var(--red,#b0653f)}
+.equities .formrow{display:flex;flex-direction:column;gap:.25rem;margin-bottom:.7rem}
+.equities .formrow label{font-size:.74rem;color:var(--ink-muted);font-weight:600}
+.equities .formrow input,.equities .formrow select{font-size:.86rem;color:var(--ink);
+  background:var(--bg);border:1px solid var(--line-br);border-radius:.45rem;padding:.5rem .6rem}
+.equities .btn{font-size:.85rem;color:var(--bg);background:var(--accent);border:0;
+  border-radius:.45rem;padding:.55rem 1.1rem;cursor:pointer;margin-top:.3rem}
+.equities .btn:hover{opacity:.92}
+"""
 
 
 # --- data helpers -----------------------------------------------------------
 
-def _account_kpis():
+def _account_kpis(user):
+    """Account KPI boxes from the viewer's own linked Alpaca paper account.
+
+    Returns ``(boxes, positions, error)``; ``boxes is None`` means no keys are
+    linked (render the connect-your-keys card instead of falling back to the
+    shared server keys).
+    """
     try:
+        from engine.auth import get_alpaca_keys
+        keys = get_alpaca_keys(user["user_id"])
+        if not keys:
+            return None, [], None
         from engine.brokers.alpaca import AlpacaAPI
-        api = AlpacaAPI(paper=True)
+        api = AlpacaAPI(api_key=keys[0], secret_key=keys[1], paper=True)
         a = api.get_account()
         positions = api.get_positions() or []
         boxes = [
@@ -101,12 +131,24 @@ def _runs_table(runs):
 
 # --- views ------------------------------------------------------------------
 
+def _connect_keys_card():
+    return Div(
+        H3("Connect your Alpaca keys"),
+        P("Add your own Alpaca paper API keys to see account equity, positions "
+          "and run this vertical's backtester. Paper trading only.", cls="muted"),
+        P(A("Connect keys →", href="/settings", cls="btn"), style="margin-top:.6rem"),
+        cls="card",
+    )
+
+
 def _dashboard(user):
-    boxes, positions, acct_err = _account_kpis()
+    boxes, positions, acct_err = _account_kpis(user)
     runs, runs_err = _recent_runs()
     center = [H2("Equities — Dashboard")]
     if acct_err:
         center.append(Div(f"Alpaca account unavailable: {acct_err}", cls="notice err"))
+    elif boxes is None:
+        center.append(_connect_keys_card())
     else:
         center.append(Div(_kpi_row(boxes), cls="card"))
         center.append(Div(H3("Open positions"), _positions_table(positions), cls="card"))
@@ -114,8 +156,8 @@ def _dashboard(user):
         center.append(Div(f"Runs unavailable: {runs_err}", cls="notice err"))
     else:
         center.append(Div(H3("Recent runs"), _runs_table(runs), cls="card"))
-    return page("equities", NAV, *center, user=user, active_nav="/equities",
-                title="AlpaTrade · Equities", rail_chips=RAIL_CHIPS)
+    return page("equities", Style(_EQUITIES_CSS), *center, user=user,
+                title="AlpaTrade · Equities", right_news=False)
 
 
 def _backtest_form(user, result_block=None):
@@ -145,8 +187,8 @@ def _backtest_form(user, result_block=None):
               Div(form, cls="card")]
     if result_block is not None:
         center.append(result_block)
-    return page("equities", NAV, *center, user=user, active_nav="/equities/backtest",
-                title="AlpaTrade · Backtest", rail_chips=RAIL_CHIPS)
+    return page("equities", Style(_EQUITIES_CSS), *center, user=user,
+                title="AlpaTrade · Backtest", right_news=False)
 
 
 def _teaching_five_block(res):
@@ -182,21 +224,21 @@ def register(app, rt, current_user):
     def equities_home(session):
         user = guard(session)
         if not user:
-            return RedirectResponse("/login", status_code=303)
+            return RedirectResponse("/signin", status_code=303)
         return _dashboard(user)
 
     @rt("/equities/backtest", methods=["GET"])
     def equities_backtest_get(session):
         user = guard(session)
         if not user:
-            return RedirectResponse("/login", status_code=303)
+            return RedirectResponse("/signin", status_code=303)
         return _backtest_form(user)
 
     @app.post("/equities/backtest")
     async def equities_backtest_post(session, request):
         user = guard(session)
         if not user:
-            return RedirectResponse("/login", status_code=303)
+            return RedirectResponse("/signin", status_code=303)
         form = await request.form()
         try:
             from engine.backtest.runner import run_backtest
@@ -221,13 +263,13 @@ def register(app, rt, current_user):
     def equities_runs(session):
         user = guard(session)
         if not user:
-            return RedirectResponse("/login", status_code=303)
+            return RedirectResponse("/signin", status_code=303)
         runs, err = _recent_runs(limit=30)
         center = [H2("Equities — Runs")]
         center.append(Div(f"Runs unavailable: {err}", cls="notice err") if err
                       else Div(_runs_table(runs), cls="card"))
-        return page("equities", NAV, *center, user=user, active_nav="/equities/runs",
-                    title="AlpaTrade · Runs", rail_chips=RAIL_CHIPS)
+        return page("equities", Style(_EQUITIES_CSS), *center, user=user,
+                    title="AlpaTrade · Runs", right_news=False)
 
     @app.post("/equities/assistant")
     async def equities_assistant(session, request):

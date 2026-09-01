@@ -84,6 +84,11 @@ ph_premarket.register(app, rt)
 ph_research.register(app, rt)
 ph_monitoring.register(app, rt)
 
+# --- verticals: per-asset-class surfaces (Phase 1b) ---------------------------
+from verticals.equities import routes as equities_routes  # noqa: E402
+
+equities_routes.register(app, rt, ph_auth.current_user)
+
 # --- voice (mic button → /voice/* endpoints) --------------------------------
 from engine.voice import register_voice_routes  # noqa: E402
 
