@@ -564,3 +564,14 @@ td.neg { color: var(--red); }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--line-br); border-radius: 5px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* Email verification banner (ph_layout._verify_banner) */
+.verify-banner {
+  background: rgba(230, 168, 76, 0.12);
+  border-bottom: 1px solid rgba(230, 168, 76, 0.35);
+  padding: .45rem .9rem;
+  font-size: .78rem;
+  color: var(--ink);
+}
+.verify-banner-inner { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; }
+.verify-banner .verify-resend { font-weight: 600; }

@@ -545,6 +545,25 @@ def _news_pane(open_by_default: bool = False):
 # ---------------------------------------------------------------------------
 # page / auth_shell
 # ---------------------------------------------------------------------------
+def _verify_banner(user: dict):
+    """Persistent nudge for signed-in users whose email is not yet verified.
+
+    Browsing stays open; costly actions (AI chat, backtests, paper runs) gate
+    on verification separately. POSTs to /verify/resend in ph_auth.
+    """
+    from fasthtml.common import A, Div
+    return Div(
+        Div(
+            Span("Verify your email to use AI chat, backtests and paper trading."),
+            A("Resend link", href="#", cls="verify-resend",
+              onclick="event.preventDefault();fetch('/verify/resend',{method:'POST'})"
+                      ".then(()=>this.textContent='Sent — check your inbox')"),
+            cls="verify-banner-inner",
+        ),
+        cls="verify-banner",
+    )
+
+
 def page(active, *content, user: Optional[dict] = None,
          title: str = "AlpaTrade", right_news: bool = True,
          right_news_open: bool = False):
@@ -554,6 +573,8 @@ def page(active, *content, user: Optional[dict] = None,
     # The document itself intentionally does not scroll, so every feature page
     # needs this shared viewport instead of relying on route-specific overflow.
     center = Div(*content, cls="page-pane")
+    if user and not user.get("email_verified_at"):
+        center = Div(_verify_banner(user), center, cls="page-pane")
     children = [_left_pane(active, user), center]
     if right_news:
         children.append(_news_pane(right_news_open))
