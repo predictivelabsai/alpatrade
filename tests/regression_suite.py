@@ -1151,6 +1151,60 @@ class TestMinHoldSwing(unittest.TestCase):
         self.assertEqual(build_strategy("buy_the_dip").params["min_hold_days"], 0)
 
 
+class TestVIXCloseLive(unittest.TestCase):
+    """Live ^VIX close via yfinance — the paper VIX strategy's data source
+    (an index, so Alpaca bars can't serve it)."""
+
+    def test_fetch_vix_close_live(self):
+        from utils.paper_signals import fetch_vix_close
+        close, reason = fetch_vix_close()
+        if close is None:
+            self.skipTest(f"VIX fetch unavailable: {reason}")
+        self.assertGreater(close, 5.0, close)
+        self.assertLess(close, 200.0, close)
+
+
+class TestBacktestRecordsDeployableParams(unittest.TestCase):
+    """Momentum/VIX backtests record real params (ratio convention) so the
+    best config is deployable to paper via paper_deploy_command — the Start
+    Here checklist's final step must work for every strategy, not just btd."""
+
+    def _run_backtest(self, strategy):
+        from agents.backtest_agent import BacktestAgent
+        return BacktestAgent().run({
+            "strategy": strategy,
+            "symbols": ["AAPL"],
+            "lookback": "1m",
+            "data_source": "yfinance",
+        })
+
+    def _deploy_command(self, strategy, params):
+        from engine.web.onboarding import paper_deploy_command
+        return paper_deploy_command({"strategy": strategy, "params": params})
+
+    def test_momentum_backtest_params_are_deployable(self):
+        out = self._run_backtest("momentum")
+        if not isinstance(out, dict) or out.get("error"):
+            self.skipTest(f"momentum backtest unavailable: {out}")
+        params = (out.get("best_config") or {}).get("params") or {}
+        self.assertIn("lookback_period", params)
+        self.assertIn("momentum_threshold", params)
+        cmd = self._deploy_command("momentum", params)
+        self.assertIsNotNone(cmd)
+        self.assertTrue(cmd.startswith("agent:paper strategy:momentum"), cmd)
+
+    def test_vix_backtest_params_are_deployable(self):
+        out = self._run_backtest("vix")
+        if not isinstance(out, dict) or out.get("error"):
+            self.skipTest(f"vix backtest unavailable: {out}")
+        params = (out.get("best_config") or {}).get("params") or {}
+        self.assertIn("vix_threshold", params)
+        self.assertIn("hold_type", params)
+        cmd = self._deploy_command("vix", params)
+        self.assertIsNotNone(cmd)
+        self.assertTrue(cmd.startswith("agent:paper strategy:vix"), cmd)
+
+
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------

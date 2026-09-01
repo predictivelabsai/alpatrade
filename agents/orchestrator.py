@@ -37,6 +37,13 @@ from utils.agent_storage import (
     store_run, update_run, store_validation, stop_duplicate_paper_runs,
 )
 from utils.strategy_slug import build_slug
+from utils.paper_strategies import (
+    PARAM_SCHEMA,
+    canonical_strategy,
+    resolve_paper_params,
+    slug_params,
+    storage_params,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -292,51 +299,33 @@ class Orchestrator:
             if starting_standalone_paper
             else self.state.best_config or {}
         )
-        params = best.get("params", {})
+        best_params = best.get("params", {}) or {}
 
-        # Load defaults from parameters.yaml
+        # Load defaults from parameters.yaml (per-strategy section)
         yaml_params = load_parameters()
-        yaml_cfg = yaml_params.get("buy_the_dip", {})
         yaml_general = yaml_params.get("general", {})
+        strategy = canonical_strategy(config.get("strategy") or "buy_the_dip")
+        if strategy not in PARAM_SCHEMA:
+            logger.warning(f"Unknown paper strategy {strategy!r} — using buy_the_dip")
+            strategy = "buy_the_dip"
+        yaml_cfg = yaml_params.get(strategy, {})
         yaml_symbols = [s.strip() for s in yaml_cfg.get("symbols", "").split(",") if s.strip()]
 
-        def _ratio_to_percent(value: Any) -> Any:
-            if isinstance(value, (int, float)) and 0 < abs(value) < 1:
-                return value * 100
-            return value
-
-        def _best_percent(key: str, fallback: Any) -> Any:
-            return _ratio_to_percent(params[key]) if key in params else fallback
-
-        resolved_params = {
-            "dip_threshold": _best_percent(
-                "dip_threshold", yaml_cfg.get("dip_threshold", 5.0)
-            ),
-            "take_profit_threshold": _best_percent(
-                "take_profit", yaml_cfg.get("take_profit_threshold", 1.0)
-            ),
-            "stop_loss_threshold": _best_percent(
-                "stop_loss", yaml_cfg.get("stop_loss_threshold", 0.5)
-            ),
-            "hold_days": params.get(
-                "hold_days", yaml_cfg.get("hold_days", 2)
-            ),
-            "min_hold_days": params.get(
-                "min_hold_days", yaml_cfg.get("min_hold_days", 0)
-            ),
-            "capital_per_trade": config.get(
-                "capital_per_trade", yaml_cfg.get("capital_per_trade", 1000.0)
-            ),
-        }
-        # Preserve optional fractional sizing when a caller/backtest set it
-        # (PaperTradeAgent uses it over capital_per_trade); omit the key entirely
-        # otherwise so the resolved-param contract stays unchanged.
-        if params.get("position_size") is not None:
-            resolved_params["position_size"] = params.get("position_size")
+        # Explicit command/API params win over persisted best-config state —
+        # a stale best_config must never override what this run was asked to do.
+        explicit = config.get("params") if isinstance(config.get("params"), dict) else {}
+        merged = {**storage_params(strategy, best_params), **(explicit or {})}
+        resolved_params = resolve_paper_params(strategy, merged, yaml_params)
+        # Run-level capital override wins over yaml/schema defaults.
+        if config.get("capital_per_trade") is not None:
+            resolved_params["capital_per_trade"] = config.get("capital_per_trade")
+        # Drop unset optional keys (e.g. position_size) so the resolved-param
+        # contract stays unchanged for callers using .get().
+        resolved_params = {k: v for k, v in resolved_params.items() if v is not None}
 
         request = {
-            "strategy": config.get("strategy", "buy_the_dip"),
-            "symbols": params.get("symbols", config.get("symbols",
+            "strategy": strategy,
+            "symbols": best_params.get("symbols", config.get("symbols",
                        yaml_symbols or ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"])),
             "params": resolved_params,
             "duration_seconds": config.get("duration_seconds", 604800),
@@ -356,22 +345,8 @@ class Orchestrator:
         if starting_standalone_paper:
             strategy_name = request["strategy"]
             lookback = str(config.get("lookback") or "3m")
-            if strategy_name == "buy_the_dip":
-                slug_params = {
-                    "dip_threshold": float(resolved_params["dip_threshold"]) / 100,
-                    "take_profit": float(resolved_params["take_profit_threshold"]) / 100,
-                    "stop_loss": float(resolved_params["stop_loss_threshold"]) / 100,
-                    "hold_days": resolved_params["hold_days"],
-                    "min_hold_days": resolved_params["min_hold_days"],
-                }
-            else:
-                configured_params = (
-                    config.get("params")
-                    if isinstance(config.get("params"), dict) else {}
-                )
-                slug_params = params or configured_params
             paper_slug = build_slug(
-                strategy_name, slug_params, lookback
+                strategy_name, slug_params(strategy_name, resolved_params), lookback
             )
             persisted_config = {
                 **config,

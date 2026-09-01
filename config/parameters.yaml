@@ -13,7 +13,28 @@ buy_the_dip:
 
 vix:
   symbols: "AAPL,MSFT,GOOGL,AMZN,META,TSLA,NVDA"  # Comma-separated list of stock symbols to trade
-  vix_threshold: 20.0  # VIX level to trigger trades
+  vix_threshold: 20.0  # VIX level to trigger trades (index points, not percent)
+  hold_overnight: true  # true = sell next session; false = sell same day near the close
+  position_size: 0.1  # Fraction of equity per trade (0-1); falls back to capital_per_trade
+  capital_per_trade: 1000.0  # Capital to allocate per trade in dollars
+
+momentum:
+  symbols: "AAPL,MSFT,GOOGL,AMZN,META,TSLA,NVDA"  # Comma-separated list of stock symbols to trade
+  momentum_threshold: 5.0  # Minimum % gain over lookback period to trigger buy
+  lookback_period: 20  # Days to look back for momentum calculation
+  take_profit_threshold: 10.0  # Percentage gain to take profit
+  stop_loss_threshold: 5.0  # Percentage loss to stop out
+  hold_days: 5  # Max days before a time-based exit
+  capital_per_trade: 1000.0  # Capital to allocate per trade in dollars
+
+box_wedge:
+  symbols: "AAPL,MSFT,GOOGL,AMZN,META,TSLA,NVDA"  # Comma-separated list of stock symbols to trade
+  risk_per_trade_pct: 1.0  # Percent of capital risked per trade (via stop distance)
+  contraction_threshold: 0.7  # Wedge range must be under this fraction of box range
+  box_lookback: 100  # Days of history for the box
+  wedge_lookback: 20  # Days of history for the wedge
+  scale_out_1_5r_pct: 50.0  # Percent of the position sold at 1.5R
+  scale_out_3r_pct: 25.0  # Percent sold at 3R (remainder runs)
   capital_per_trade: 1000.0  # Capital to allocate per trade in dollars
 
 general:

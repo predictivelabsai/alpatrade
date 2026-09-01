@@ -17,6 +17,13 @@ import json
 from typing import Any, Dict, Optional
 from urllib.parse import quote
 
+from utils.paper_strategies import (
+    PARAM_SCHEMA,
+    canonical_strategy,
+    storage_params,
+    strategy_command,
+)
+
 
 def _pool():
     from utils.db.db_pool import DatabasePool
@@ -178,14 +185,18 @@ def latest_backtest_config(user_id: str) -> Optional[Dict[str, Any]]:
 def paper_deploy_command(cfg: Optional[Dict[str, Any]]) -> Optional[str]:
     """A user-runnable ``agent:paper`` command trading the backtested params.
 
-    Only buy-the-dip is supported today — it is the one strategy whose
-    paper agent consumes explicit thresholds. Returns None otherwise, and
-    the caller just omits the CTA instead of pretending precision.
+    Thin wrapper over ``utils.paper_strategies`` — any of the four strategies
+    whose backtest recorded params can be deployed. DB backtest params use the
+    storage convention (ratio percents, legacy key names like ``take_profit``);
+    the schema module owns the renames and ratio→percent translation, so this
+    layer no longer needs its own. Returns None for unknown strategies or
+    params the schema cannot resolve — the caller just omits the CTA instead
+    of pretending precision.
     """
     if not cfg:
         return None
-    strategy = str(cfg.get("strategy") or "")
-    if strategy != "buy_the_dip":
+    strategy = canonical_strategy(str(cfg.get("strategy") or ""))
+    if strategy not in PARAM_SCHEMA:
         return None
     params = cfg.get("params")
     if isinstance(params, str):
@@ -193,46 +204,19 @@ def paper_deploy_command(cfg: Optional[Dict[str, Any]]) -> Optional[str]:
             import json as _json
             params = _json.loads(params)
         except Exception:  # noqa: BLE001
-            params = {}
+            return None
     if not isinstance(params, dict):
         return None
     try:
-        dip = _pct(params["dip_threshold"])
-        tp = _pct(params["take_profit"])
-        sl = _pct(params["stop_loss"])
-        hold = int(params["hold_days"])
-    except (KeyError, TypeError, ValueError):
+        command = strategy_command(strategy, storage_params(strategy, params))
+    except (ValueError, TypeError):  # noqa: BLE001
         return None
-    symbols = ""
     raw_symbols = params.get("symbols")
     if isinstance(raw_symbols, (list, tuple)) and raw_symbols:
         clean = [str(s).upper().strip() for s in raw_symbols if s][:10]
         if clean:
-            symbols = " symbols:" + ",".join(clean)
-    return (
-        f"agent:paper strategy:{strategy}"
-        f" dip_threshold:{_num(dip)}"
-        f" take_profit_threshold:{_num(tp)}"
-        f" stop_loss_threshold:{_num(sl)}"
-        f" hold_days:{hold}"
-        f"{symbols}"
-    )
-
-
-def _pct(value: Any) -> float:
-    """Backtest params store ratios (0.05 = 5%); agent:paper wants percent.
-
-    Same convention as ``utils.strategy_slug._fmt_pct``: anything in (0,1)
-    is treated as a ratio and scaled by 100.
-    """
-    v = float(value)
-    if 0 < abs(v) < 1:
-        return round(v * 100, 4)
-    return v
-
-
-def _num(value: float) -> str:
-    return f"{value:g}"
+            command += " symbols:" + ",".join(clean)
+    return command
 
 
 def autorun_url(command: str, draft: bool = False) -> str:
