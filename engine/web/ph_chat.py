@@ -464,6 +464,9 @@ CHAT_JS = r"""
     var tid=window.ALPA_THREAD_ID||'';
     try{var r=await fetch('/app/chat/history?thread='+encodeURIComponent(tid),{cache:'no-store'});
       if(!r.ok)return;var data=await r.json();
+      // Re-check after the await: an in-flight history fetch must never
+      // wipe bubbles added while it was loading (e.g. auto-sent commands).
+      if(streaming) return;
       var messages=data.messages||[],last=messages.length?messages[messages.length-1].message_id:null;
       if(!force&&last===lastHistoryId)return;
       host.innerHTML='';
@@ -476,6 +479,21 @@ CHAT_JS = r"""
   loadSavedMessages(true);
   setInterval(function(){loadSavedMessages(false);},5000);
 
+  // One-click commands (Start Here card, deploy-to-paper links) arrive as
+  // /app?new=1&autorun=… — wait for the initial history render, then pre-fill
+  // the composer and send (draft mode pre-fills only, ready to edit). Strip
+  // the URL first so a mid-stream refresh cannot double-send.
+  (async function autorun(){
+    try{ await loadSavedMessages(true); }catch(e){}
+    var ar=window.ALPA_AUTORUN||null;
+    if(!ar||!ar.command)return;
+    history.replaceState({},'', '/app?new=1');
+    var ta=$('#chat-input'); if(!ta)return;
+    ta.value=ar.command;
+    if(ar.draft){ ta.focus(); return; }
+    if(window.sendMessage) window.sendMessage(null);
+  })();
+
   // News pane now returns ready-made HTML cards (see /news) — no markdown step.
 })();
 """
@@ -483,6 +501,8 @@ CHAT_JS = r"""
 # Minimal styles for the tool-call log + streaming cursor inside bubbles
 # (parchment/forest tokens; class names not present in app.css).
 CHAT_STYLE = """
+.sessions-empty-start { line-height:1.45; }
+.sessions-empty-hint { color:var(--accent); font-style:italic; margin-top:.15rem; }
 .tool-log { margin-top:.4rem; display:flex; flex-direction:column; gap:.15rem; }
 .tool-step { font-family:var(--font-mono); font-size:.68rem; color:var(--ink-dim); }
 .tool-step .tool-name { color:var(--accent); }
@@ -1329,12 +1349,28 @@ async def _stream(msg: str, session) -> StreamingResponse:
             md = ""
             try:
                 if isinstance(result, StreamingCommand):
-                    # Long-running agent:* command — run to completion, then emit.
+                    # Long-running agent:* command — run to completion, emitting
+                    # progress heartbeats so the UI stays visibly alive through
+                    # multi-minute grid searches (which emit nothing themselves).
                     from tui.command_processor import CommandProcessor
                     cp = CommandProcessor(result.app_state, user_id=uid)
-                    md = await cp.process_command(result.raw_command)
+                    label = result.raw_command.strip().split()[0]
+                    hint = (" — backtests can take a few minutes"
+                            if label == "agent:backtest" else "")
+                    started = time.monotonic()
+                    task = asyncio.ensure_future(cp.process_command(result.raw_command))
+                    while True:
+                        try:
+                            md = await asyncio.wait_for(asyncio.shield(task), timeout=3)
+                            break
+                        except asyncio.TimeoutError:
+                            elapsed = int(time.monotonic() - started)
+                            yield _sse("progress", {
+                                "message": f"Running {label}{hint}",
+                                "elapsed_seconds": elapsed,
+                            })
                     md = md or "Command executed."
-                    md = _maybe_append_equity(msg, md)
+                    md = _maybe_append_equity(msg, md, user_id=uid)
                 else:
                     md = result
             except Exception as e:  # noqa: BLE001
@@ -1535,9 +1571,10 @@ async def _stream(msg: str, session) -> StreamingResponse:
     return StreamingResponse(gen(), media_type="text/event-stream")
 
 
-def _maybe_append_equity(msg: str, result: str) -> str:
+def _maybe_append_equity(msg: str, result: str, user_id: str = "") -> str:
     """For a successful backtest, append its equity-curve chart marker (parity
-    with agui_app._handle_streaming_command)."""
+    with agui_app._handle_streaming_command) and, when the best variation maps
+    to a paper-deployable config, a one-click deploy link."""
     first = msg.strip().lower().split()[0] if msg.strip() else ""
     if not first.startswith("agent:backtest"):
         return result
@@ -1550,9 +1587,29 @@ def _maybe_append_equity(msg: str, result: str) -> str:
             eq = show_equity_curve(run_id=m.group(1))
             if "__CHART_DATA__" in eq:
                 result += "\n\n" + eq
+            deploy = _deploy_link(m.group(1), user_id)
+            if deploy:
+                result += "\n\n" + deploy
     except Exception:  # noqa: BLE001
         pass
     return result
+
+
+def _deploy_link(run_id: str, user_id: str) -> str:
+    """One-click 'Deploy to paper' link carrying the run's best-tested params."""
+    try:
+        from engine.web import onboarding
+        cfg = onboarding.best_backtest_for_run(run_id, user_id=user_id or None)
+        cmd = onboarding.paper_deploy_command(cfg)
+        if not cmd:
+            return ""
+        slug = cfg.get("strategy_slug") or ""
+        suffix = f" ({slug})" if slug else ""
+        url = onboarding.autorun_url(cmd)
+        return (f"> **Next step:** [Deploy to paper →]({url}) — start paper trading "
+                f"with the tested configuration{suffix}.")
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 def _news_slug(category: str) -> str:
@@ -1621,7 +1678,7 @@ def register(app, rt):
             return {"user_id": uid, "email": ""}
 
     @rt("/app")
-    def app_home(session, new: str = "", thread: str = ""):
+    def app_home(session, new: str = "", thread: str = "", autorun: str = "", draft: str = ""):
         user = _current_user(session)
         if not user:
             return RedirectResponse("/signin", status_code=303)
@@ -1658,10 +1715,17 @@ def register(app, rt):
                 if not current:
                     session["thread_id"] = str(_uuid.uuid4())
         thread_id = str(session["thread_id"])
+        # One-click commands (Start Here CTA, deploy-to-paper) land here and
+        # are auto-sent — or, in draft mode, pre-filled for editing first.
+        autorun_js = ""
+        if autorun.strip() and "\n" not in autorun and len(autorun) <= 300:
+            payload = json.dumps({"command": autorun, "draft": draft == "1"})
+            autorun_js = f"window.ALPA_AUTORUN={payload};"
         return (
             *ph_layout.page("app", ph_layout.chat_center(), user=user, title="AlpaTrade",
                             right_news_open=True),
             Script(f"window.ALPA_THREAD_ID={json.dumps(thread_id)};"),
+            Script(autorun_js),
             Style(CHAT_STYLE),
             Script(CHAT_JS),
         )
@@ -1679,7 +1743,12 @@ def register(app, rt):
             logger.warning("Could not list chats for %s: %s", uid, exc)
             conversations = []
         if not conversations:
-            return Div("No chats yet.", cls="sessions-empty")
+            return Div(
+                "No chats yet — start one below, or ask",
+                Div("“backtest buy-the-dip on AAPL”",
+                    cls="sessions-empty-hint"),
+                cls="sessions-empty sessions-empty-start",
+            )
         current = str(session.get("thread_id") or "")
         rows = []
         for conversation in conversations:

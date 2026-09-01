@@ -13,7 +13,9 @@ def test_sidebar_loads_account_chat_history_and_new_chat_gets_new_thread():
     assert 'hx-get="/app/chats"' in html
     assert 'id="session-list"' in html
     assert "window.location.href='/app?new=1'" in PH_JS
-    assert '<details open class="nav-section">' in html
+    # The Chats section is expanded on the /app page (nav-refresh added a
+    # persistence key to each section; the `open` attribute is what matters).
+    assert 'data-nav-key="sec-chats" open' in html
 
 
 def test_chat_client_loads_saved_messages_and_supports_owned_delete():

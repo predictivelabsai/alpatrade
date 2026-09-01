@@ -88,7 +88,7 @@ a { color: var(--accent); }
 /* Top-level sidebar sections: collapsed by default to preserve vertical space. */
 .nav-section { border-bottom: 1px solid var(--line); padding: .15rem 0; }
 .nav-section-toggle {
-    display: flex; align-items: center; width: 100%; padding: .48rem .4rem;
+    display: flex; align-items: center; gap: .5rem; width: 100%; padding: .48rem .4rem;
     cursor: pointer; list-style: none; color: var(--ink-dim);
     font-size: .64rem; font-weight: 700; text-transform: uppercase; letter-spacing: .13em;
 }
@@ -104,6 +104,18 @@ a { color: var(--accent); }
 .nav-section-body { padding: .15rem 0 .45rem; }
 .nav-section-body .page-links { margin-bottom: 0; }
 
+/* Uniform nav icons (replace per-OS emoji) */
+.nav-ico { display: inline-flex; align-items: center; justify-content: center;
+    width: 1rem; height: 1rem; flex-shrink: 0; color: var(--ink-muted); }
+.nav-ico svg { width: 100%; height: 100%; display: block; }
+.nav-section-ico { width: .95rem; height: .95rem; color: var(--ink-dim); }
+.nav-section-toggle:hover .nav-section-ico,
+.nav-section[open] > .nav-section-toggle .nav-section-ico { color: var(--accent); opacity: 1; }
+/* Active trail: highlight the section header that contains the current page */
+.nav-section:has(.page-link.active) > .nav-section-toggle,
+.nav-section:has(.agent-item.active) > .nav-section-toggle { color: var(--accent); }
+.nav-section:has(.page-link.active) > .nav-section-toggle .nav-section-ico { color: var(--accent); opacity: 1; }
+
 /* New-chat button */
 .new-chat-btn {
     width: 100%; padding: .55rem; background: var(--accent); color: var(--bg);
@@ -116,11 +128,15 @@ a { color: var(--accent); }
 /* Explore page links (Market Map / Charts) */
 .page-links { display: flex; flex-direction: column; gap: .15rem; margin-bottom: .75rem; }
 .page-link {
-    display: block; padding: .4rem .5rem; border-radius: .45rem; font-size: .82rem;
+    display: flex; align-items: center; gap: .55rem;
+    padding: .4rem .5rem; border-radius: .45rem; font-size: .82rem;
     color: var(--ink-muted); text-decoration: none; font-family: var(--font-body);
 }
+.page-link-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .page-link:hover { background: var(--accent-dim); color: var(--ink); }
+.page-link:hover .nav-ico { color: var(--ink); }
 .page-link.active { background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+.page-link.active .nav-ico { color: var(--accent); }
 
 /* Session history */
 .session-list { display: flex; flex-direction: column; gap: .2rem; }

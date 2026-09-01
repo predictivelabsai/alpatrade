@@ -952,6 +952,16 @@ Plotly.newPlot('chart', [trace1], {{
         # Generate equity chart for web UI (stored on app, ignored by CLI)
         self._build_equity_chart(result.get("trades", []), config)
 
+        # Activation funnel (web tenants only; CLI runs have no user_id)
+        if self.user_id:
+            try:
+                from engine.web.onboarding import record_event
+                record_event(self.user_id, "first_backtest",
+                             {"run_id": run_id,
+                              "strategy": result.get("strategy")})
+            except Exception:  # noqa: BLE001
+                pass
+
         return (
             f"# Backtest Complete\n\n"
             f"- **Run ID**: `{run_id}`\n"
@@ -1195,6 +1205,16 @@ Plotly.newPlot('chart', [trace1], {{
 
         account_id = params.get("account")
         run_id = spawn_agent("paper", config, user_id=self.user_id, account_id=account_id)
+
+        # Activation funnel (web tenants only; CLI runs have no user_id)
+        if self.user_id:
+            try:
+                from engine.web.onboarding import record_event
+                record_event(self.user_id, "first_paper_run",
+                             {"run_id": run_id,
+                              "strategy": config.get("strategy")})
+            except Exception:  # noqa: BLE001
+                pass
 
         # Set orch locally just so current CLI knows a run happened.
         orch = self._new_orchestrator()

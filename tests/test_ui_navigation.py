@@ -4,19 +4,23 @@ from pathlib import Path
 from fasthtml.common import Div
 from fastcore.xml import to_xml
 
+from engine.web.ph_commands import MAIN_NAV
 from engine.web.ph_layout import PH_JS, _left_pane, chat_center, page
 
 
-def test_sidebar_sections_are_collapsed_by_default():
+def test_sidebar_uses_job_oriented_sections_with_trade_open_by_default():
     html = to_xml(_left_pane("guide", None))
 
-    for section in ("Explore", "Chats", "Agents", "Monitoring",
-                    "Tools", "Public Markets", "Research", "Admin"):
+    for section in ("Trade", "Chats", "Agents", "Research", "Account"):
         assert f'<span class="nav-section-name">{section}</span>' in html
-    assert '<details class="nav-section" open' not in html
+    for retired in ("Explore", "Monitoring", "Tools", "Public Markets", "Admin"):
+        assert f'<span class="nav-section-name">{retired}</span>' not in html
+    assert 'data-nav-key="sec-trade" open class="nav-section"' in html
     assert 'class="nav-section-expand">&gt;' in html
     assert 'class="nav-section-collapse">&lt;' in html
     assert 'href="/dashboard"' in html
+    assert 'href="/backtests"' in html
+    assert 'href="/paper"' in html
 
 
 def test_sidebar_alpha_research_shortcuts_fill_editable_commands():
@@ -24,10 +28,11 @@ def test_sidebar_alpha_research_shortcuts_fill_editable_commands():
 
     # Alpha Research shortcuts now live inside the merged "Research" section.
     assert 'nav-section-name">Research<' in html
-    assert "Growth Agent" in html
-    assert "Value Agent" in html
-    assert "Combined View" in html
-    assert "Saved Reports" in html
+    assert "Alpha research agents" in html
+    assert "durable growth and moat review" in html
+    assert "undervaluation and value-trap review" in html
+    assert "compact growth and value perspectives" in html
+    assert "recent saved reports" in html
     assert "alpha:growth ticker:AAPL" in html
     assert "alpha:value ticker:BBY" in html
     assert "alpha:compare ticker:AAPL" in html
@@ -40,13 +45,13 @@ def test_sidebar_alpha_research_shortcuts_fill_editable_commands():
     assert "onclick=\"fillChat('alpha:show run-id:&lt;uuid&gt;')\"" in html
 
 
-def test_sidebar_lists_one_message_runtime_overrides():
+def test_one_message_runtime_overrides_remain_in_command_surface():
     html = to_xml(_left_pane("guide", None))
+    runtime_commands = dict(next(items for label, items in MAIN_NAV
+                                 if label == "AI Runtime"))
 
-    assert "AI Runtime" in html
-    assert "/hermes " in html
-    assert "/deepagents " in html
-    assert "/langgraph " in html
+    assert set(runtime_commands) == {"/hermes ", "/deepagents ", "/langgraph "}
+    assert "AI Runtime" not in html
 
 
 def test_sidebar_offers_guided_hermes_workflow_without_ids():
