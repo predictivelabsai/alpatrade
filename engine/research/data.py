@@ -36,9 +36,11 @@ def premarket_snapshot(run_id: str | None = None, limit: int = 1000) -> list[dic
     clause = "r.run_id=:run_id" if run_id else (
         "r.run_id=(SELECT run_id FROM public.premarket_scan_runs ORDER BY timestamp DESC LIMIT 1)"
     )
+    # history/ai_reasoning/ai_sources are multi-MiB blobs no consumer renders;
+    # skipping them keeps the payload ~40x smaller (2.4 MiB -> 62 KiB measured).
     return _rows(f"""SELECT r.ticker, r.company_name, r.sector, r.industry, r.prev_close,
         r.premarket_close, r.movement_abs, r.movement_pct, r.premarket_high,
-        r.premarket_low, r.ai_reasoning, r.ai_sources, r.history, r.data_source, r.timestamp
+        r.premarket_low, r.data_source, r.timestamp
         FROM public.premarket_scan_results r WHERE {clause}
         ORDER BY ABS(r.movement_pct) DESC NULLS LAST LIMIT :limit""",
                  {"run_id": run_id, "limit": max(1, min(limit, 2500))})

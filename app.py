@@ -89,5 +89,8 @@ from engine.voice import register_voice_routes  # noqa: E402
 
 register_voice_routes(app)
 
+# Browsers always probe /favicon.ico; FastHTML's static glob serves it from the
+# repo root, so the compiled icon lives at ./favicon.ico (head() links the SVG).
+
 if __name__ == "__main__":
     serve(port=int(os.getenv("ASSETHERO_WEB_PORT", "5001")))

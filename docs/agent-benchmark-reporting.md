@@ -1,5 +1,12 @@
 # Agent Benchmark Reporting
 
+The scheduled account owner now receives one consolidated daily paper digest.
+It contains account performance plus separate Hermes, DeepAgents, and LangGraph
+rows. A framework with no attributed completed exits is shown as "No attributed
+exits" rather than an artificial zero return. Hermes does not send a second
+daily summary; user-enabled immediate entry/exit advice can still be delivered
+in app, by email, or both.
+
 The standard AlpaTrade daily report is account-owned. The scheduler enumerates active
 `user_accounts`, decrypts that account's Alpaca paper credentials in memory, and sends
 the result only to the owning user's login email. It never combines another user's

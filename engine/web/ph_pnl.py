@@ -83,11 +83,15 @@ _JS = """
  const d=window.__PNL_DASH__; if(!d||!window.Plotly)return;
  const base={paper_bgcolor:'#fff',plot_bgcolor:'#f7f6f1',font:{family:'Inter,system-ui',color:'#2d352f'},
  margin:{t:12,r:15,b:42,l:62},showlegend:false};
+ // Empty accounts render no chart elements (and history may be null); skip
+ // plotting rather than crash, but keep the plots for accounts with points.
+ if(d.history && document.getElementById('equity-chart'))
  Plotly.newPlot(document.getElementById('equity-chart'),[{x:d.history.timestamps,y:d.history.equity,type:'scatter',
  mode:'lines',line:{color:'#1f5d43',width:3},fill:'tozeroy',fillcolor:'rgba(31,93,67,.08)',
  hovertemplate:'%{x}<br>$%{y:,.2f}<extra></extra>'}],{...base,yaxis:{tickprefix:'$'}},
  {responsive:true,displayModeBar:false});
  const c=d.contributors||[];
+ if(document.getElementById('contrib-chart'))
  Plotly.newPlot(document.getElementById('contrib-chart'),[{x:c.slice(0,10).map(x=>x.symbol),y:c.slice(0,10).map(x=>x.pnl),
  type:'bar',marker:{color:c.slice(0,10).map(x=>x.pnl>=0?'#27865e':'#c64a43')},
  hovertemplate:'%{x}<br>$%{y:,.2f}<extra></extra>'}],{...base,yaxis:{tickprefix:'$'}},

@@ -64,7 +64,7 @@ class Orchestrator:
         self.user_id = user_id
         self.account_id = account_id
         self.bus = MessageBus()
-        self.state = PortfolioState.load()
+        self.state = PortfolioState.load(user_id=user_id)
         self.state.run_id = self.run_id
         self.state.started_at = datetime.now(timezone.utc).isoformat()
 
@@ -165,6 +165,8 @@ class Orchestrator:
             "include_cat_fees": config.get("include_cat_fees", False),
             "slippage_bps": config.get("slippage_bps", 0.0),
             "validation_fraction": config.get("validation_fraction", 0.0),
+            "robustness_windows": config.get("robustness_windows", 1),
+            "benchmark_symbol": config.get("benchmark_symbol", "SPY"),
         }
 
         # Publish request to bus

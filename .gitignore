@@ -220,3 +220,6 @@ output/playwright/
 # eval outputs
 eval-results/
 .deepeval/
+
+# local-only Claude workflow notes (never pushed)
+CLAUDE.local.md

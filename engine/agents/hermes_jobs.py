@@ -242,10 +242,13 @@ def enqueue_candidate_paper(
 
     with _pool().get_session() as session:
         candidate = session.execute(text("""
-            SELECT strategy, symbols, params, metrics, account_id, source_run_id
-            FROM alpatrade.strategy_candidates
-            WHERE candidate_id = CAST(:candidate_id AS UUID)
-              AND user_id = CAST(:uid AS UUID)
+            SELECT c.strategy, c.symbols, c.params, c.metrics, c.account_id,
+                   c.source_run_id, r.config AS source_config
+            FROM alpatrade.strategy_candidates c
+            LEFT JOIN alpatrade.runs r
+              ON r.run_id = c.source_run_id AND r.user_id = c.user_id
+            WHERE c.candidate_id = CAST(:candidate_id AS UUID)
+              AND c.user_id = CAST(:uid AS UUID)
         """), {"candidate_id": candidate_id, "uid": user_id}).mappings().first()
     if not candidate:
         raise ValueError("Candidate was not found under your account")
@@ -255,6 +258,14 @@ def enqueue_candidate_paper(
             "candidate has not passed Hermes out-of-sample validation"
         ]
         raise ValueError("Candidate is not eligible for paper promotion: " + "; ".join(reasons))
+    source_config = candidate.get("source_config") or {}
+    requested_robustness = max(1, int(source_config.get("robustness_windows") or 1))
+    completed_robustness = len(metrics.get("robustness_windows") or [])
+    if requested_robustness > 1 and completed_robustness < requested_robustness:
+        raise ValueError(
+            "Candidate is not eligible for paper promotion: robustness validation "
+            f"is incomplete ({completed_robustness} of {requested_robustness} windows)"
+        )
     owned_accounts = get_user_accounts(user_id)
     owned_ids = {str(item["account_id"]) for item in owned_accounts}
     if account_id and account_id not in owned_ids:
@@ -277,6 +288,7 @@ def enqueue_candidate_paper(
     config = {
         "duration_seconds": parse_duration(duration),
         "continuous": duration == "365d",
+        "lookback": str(source_config.get("lookback") or "3m"),
         "symbols": candidate["symbols"] or [],
         "strategy": candidate["strategy"],
         "params": candidate["params"] or {},
@@ -328,6 +340,15 @@ def claim(worker_id: str) -> Optional[dict]:
             FROM next_job n WHERE j.job_id = n.job_id
             RETURNING j.*
         """), {"worker": worker_id}).mappings().first()
+        if row and row.get("kind") == "paper":
+            # A continuous job reclaimed after deployment keeps its stable run
+            # identity. Reactivate that canonical run so liveness reporting and
+            # agent benchmarks agree with the worker that just claimed it.
+            session.execute(text("""
+                UPDATE alpatrade.runs
+                SET status = 'running', completed_at = NULL, heartbeat_at = NOW()
+                WHERE run_id = :run_id AND user_id = CAST(:uid AS UUID)
+            """), {"run_id": row["run_id"], "uid": str(row["user_id"])})
     return dict(row) if row else None
 
 
@@ -343,13 +364,12 @@ def heartbeat(job_id: str, message: str) -> None:
         # Keep the canonical run liveness in sync for tenant-safe reporting.
         session.execute(text("""
             UPDATE alpatrade.runs r
-            SET heartbeat_at = NOW()
+            SET heartbeat_at = NOW(), status = 'running', completed_at = NULL
             FROM alpatrade.hermes_jobs j
             WHERE j.job_id = CAST(:job_id AS UUID)
               AND j.kind = 'paper'
               AND j.status IN ('running', 'paused')
               AND r.run_id = j.run_id
-              AND r.status = 'running'
         """), {"job_id": job_id})
 
 
@@ -578,7 +598,7 @@ def recover_stale(stale_seconds: int = 900) -> None:
                 completed_at = NOW(), updated_at = NOW()
             WHERE status = 'running' AND kind = 'paper'
               AND control_requested = 'stop'
-              AND heartbeat_at < NOW() - INTERVAL '30 seconds'
+              AND (heartbeat_at IS NULL OR heartbeat_at < NOW() - INTERVAL '30 seconds')
         """))
         session.execute(text("""
             UPDATE alpatrade.hermes_jobs
@@ -586,7 +606,8 @@ def recover_stale(stale_seconds: int = 900) -> None:
                 progress = '{"message":"Requeued after worker restart"}'::jsonb,
                 updated_at = NOW()
             WHERE status = 'running' AND kind = 'backtest'
-              AND heartbeat_at < NOW() - (CAST(:seconds AS INTEGER) * INTERVAL '1 second')
+              AND (heartbeat_at IS NULL OR heartbeat_at < NOW() -
+                   (CAST(:seconds AS INTEGER) * INTERVAL '1 second'))
         """), {"seconds": stale_seconds})
         session.execute(text("""
             UPDATE alpatrade.hermes_jobs
@@ -596,7 +617,8 @@ def recover_stale(stale_seconds: int = 900) -> None:
             WHERE status = 'running' AND kind = 'paper'
               AND COALESCE((config->>'continuous')::boolean, FALSE) = TRUE
               AND control_requested = 'none'
-              AND heartbeat_at < NOW() - (CAST(:seconds AS INTEGER) * INTERVAL '1 second')
+              AND (heartbeat_at IS NULL OR heartbeat_at < NOW() -
+                   (CAST(:seconds AS INTEGER) * INTERVAL '1 second'))
         """), {"seconds": stale_seconds})
         session.execute(text("""
             UPDATE alpatrade.hermes_jobs
@@ -606,7 +628,8 @@ def recover_stale(stale_seconds: int = 900) -> None:
                 completed_at = NOW(), updated_at = NOW()
             WHERE status = 'running' AND kind = 'paper'
               AND COALESCE((config->>'continuous')::boolean, FALSE) = FALSE
-              AND heartbeat_at < NOW() - (CAST(:seconds AS INTEGER) * INTERVAL '1 second')
+              AND (heartbeat_at IS NULL OR heartbeat_at < NOW() -
+                   (CAST(:seconds AS INTEGER) * INTERVAL '1 second'))
         """), {"seconds": stale_seconds})
 
 
@@ -726,11 +749,18 @@ def _paper(job: dict) -> tuple[dict, Optional[str], str]:
     from agents.orchestrator import Orchestrator
     config = dict(job.get("config") or {})
     config.update({"agent_name": "Hermes", "agent_framework": "hermes"})
+    # Standalone paper promotion intentionally reads only an explicitly
+    # approved backtest configuration.  Passing candidate params merely via
+    # ``config["params"]`` makes the orchestrator fall back to YAML defaults,
+    # so preserve the exact owned candidate at the approval boundary.
+    config["approved_best_config"] = {
+        "params": dict(config.get("params") or {})
+    }
     orch = Orchestrator(user_id=str(job["user_id"]),
                         account_id=str(job["account_id"]) if job.get("account_id") else None)
     orch.run_id = job["run_id"]
     orch.state.run_id = job["run_id"]
-    orch.state.best_config = {"params": config.get("params") or {}}
+    orch.state.best_config = config["approved_best_config"]
     result = orch.run_paper_trade(config, stop_event=DatabaseJobControl(str(job["job_id"])))
     if result.get("error"):
         raise RuntimeError(result["error"])

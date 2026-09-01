@@ -7,6 +7,7 @@ import sys
 import asyncio
 import json
 import os
+import re
 import threading
 from contextlib import contextmanager
 from datetime import datetime, timedelta
@@ -768,12 +769,23 @@ Plotly.newPlot('chart', [trace1], {{
             )
 
     def _parse_kv_params(self, parts: list) -> Dict[str, str]:
-        """Parse key:value pairs from command parts."""
-        params = {}
+        """Parse key:value pairs from command parts, keeping bare tokens.
+
+        Bare tokens (no colon) are preserved under the reserved ``_positional``
+        key so command handlers that accept positional arguments (e.g. a bare
+        ticker after ``agent:backtest``) can use them instead of silently
+        dropping them.
+        """
+        params: Dict[str, str] = {}
+        positional = []
         for part in parts:
             if ":" in part:
                 key, value = part.split(":", 1)
                 params[key.lower()] = value
+            else:
+                positional.append(part)
+        if positional:
+            params["_positional"] = " ".join(positional)
         return params
 
     def _add_user_account_filters(self, where_clauses: list, bind: dict,
@@ -900,7 +912,12 @@ Plotly.newPlot('chart', [trace1], {{
         from agents.orchestrator import parse_duration
 
         orch = self._new_orchestrator()
-        symbols_str = params.get("symbols", ",".join(self.default_symbols))
+        symbols_str = params.get("symbols", "")
+        if not symbols_str:
+            # Positional tickers ("agent:backtest AAPL,MSFT") — otherwise the
+            # bare symbol is silently dropped and the default symbol set runs.
+            bare = re.findall(r"\b[A-Z]{1,5}\b", params.get("_positional", ""))
+            symbols_str = ",".join(bare) if bare else ",".join(self.default_symbols)
         symbols = [s.strip().upper() for s in symbols_str.split(",")]
 
         # PDT protection: default True (None lets strategy decide), pdt:false disables

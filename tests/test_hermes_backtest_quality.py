@@ -62,7 +62,7 @@ def test_orchestrator_forwards_objective_and_quality_flags():
     for field in (
         "objective", "conservative_metrics", "conservative_execution",
         "include_taf_fees", "include_cat_fees", "slippage_bps",
-        "validation_fraction",
+        "validation_fraction", "robustness_windows", "benchmark_symbol",
     ):
         assert f'"{field}"' in source
 
@@ -159,6 +159,8 @@ def test_paper_promotion_enforces_saved_validation_gate():
     source = inspect.getsource(hermes_jobs.enqueue_candidate_paper)
     assert 'metrics.get("promotion_eligible") is not True' in source
     assert "Candidate is not eligible for paper promotion" in source
+    assert "requested_robustness" in source
+    assert "completed_robustness < requested_robustness" in source
 
 
 def test_backtest_worker_attributes_default_owned_account():

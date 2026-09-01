@@ -37,6 +37,7 @@ from fasthtml.common import (
 from engine.web.ph_commands import (
     AGENT_SHORTCUTS,
     ALPHA_RESEARCH_SHORTCUTS,
+    HERMES_SHORTCUTS,
 )
 
 # --- CDN assets -------------------------------------------------------------
@@ -242,12 +243,17 @@ def head(title: str = "AlpaTrade"):
 # ---------------------------------------------------------------------------
 # Left pane — brand · new chat · sessions · command menu · user/login
 # ---------------------------------------------------------------------------
-def _brand():
+def _brand(user: Optional[dict] = None):
+    # Keep signed-in users in the app: the logo jumps to the dashboard (/app)
+    # instead of the public landing page (/), so it never looks like a logout.
+    # Anonymous visitors (e.g. on auth shells that reuse the brand) still land
+    # on the marketing home page.
+    href = "/app" if user else "/"
     return A(
         Span(NotStr(TILE_MARK), cls="brand-mark"),
         Span("AlpaTrade", cls="brand-name"),
         Span("beta", cls="brand-badge"),
-        href="/", cls="brand-link",
+        href=href, cls="brand-link",
     )
 
 
@@ -356,7 +362,7 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
         footer_inner = A("Sign in", href="/login", cls="sign-in-btn")
 
     return Div(
-        Div(_brand(), cls="left-header"),
+        Div(_brand(user), cls="left-header"),
         Div(
             A("＋ New chat", cls="new-chat-btn", href="#",
               onclick="newChat();return false;"),
@@ -382,7 +388,8 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             ),
             _nav_section(
                 "Agents",
-                Div(*[_menu_group(lbl, items, active) for lbl, items in AGENT_SHORTCUTS],
+                Div(*[_menu_group(lbl, items, active)
+                      for lbl, items in AGENT_SHORTCUTS + HERMES_SHORTCUTS],
                     cls="agent-browser"),
                 icon="sec-agents",
                 opened=active == "app",

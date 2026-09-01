@@ -4,19 +4,23 @@ from pathlib import Path
 from fasthtml.common import Div
 from fastcore.xml import to_xml
 
+from engine.web.ph_commands import MAIN_NAV
 from engine.web.ph_layout import PH_JS, _left_pane, chat_center, page
 
 
-def test_sidebar_sections_are_collapsed_by_default():
+def test_sidebar_uses_job_oriented_sections_with_trade_open_by_default():
     html = to_xml(_left_pane("guide", None))
 
-    for section in ("Explore", "Chats", "Agents", "Monitoring",
-                    "Tools", "Public Markets", "Research", "Admin"):
+    for section in ("Trade", "Chats", "Agents", "Research", "Account"):
         assert f'<span class="nav-section-name">{section}</span>' in html
-    assert '<details class="nav-section" open' not in html
+    for retired in ("Explore", "Monitoring", "Tools", "Public Markets", "Admin"):
+        assert f'<span class="nav-section-name">{retired}</span>' not in html
+    assert 'data-nav-key="sec-trade" open class="nav-section"' in html
     assert 'class="nav-section-expand">&gt;' in html
     assert 'class="nav-section-collapse">&lt;' in html
     assert 'href="/dashboard"' in html
+    assert 'href="/backtests"' in html
+    assert 'href="/paper"' in html
 
 
 def test_sidebar_alpha_research_shortcuts_fill_editable_commands():
@@ -24,10 +28,11 @@ def test_sidebar_alpha_research_shortcuts_fill_editable_commands():
 
     # Alpha Research shortcuts now live inside the merged "Research" section.
     assert 'nav-section-name">Research<' in html
-    assert "Growth Agent" in html
-    assert "Value Agent" in html
-    assert "Combined View" in html
-    assert "Saved Reports" in html
+    assert "Alpha research agents" in html
+    assert "durable growth and moat review" in html
+    assert "undervaluation and value-trap review" in html
+    assert "compact growth and value perspectives" in html
+    assert "recent saved reports" in html
     assert "alpha:growth ticker:AAPL" in html
     assert "alpha:value ticker:BBY" in html
     assert "alpha:compare ticker:AAPL" in html
@@ -40,13 +45,27 @@ def test_sidebar_alpha_research_shortcuts_fill_editable_commands():
     assert "onclick=\"fillChat('alpha:show run-id:&lt;uuid&gt;')\"" in html
 
 
-def test_sidebar_lists_one_message_runtime_overrides():
+def test_one_message_runtime_overrides_remain_in_command_surface():
     html = to_xml(_left_pane("guide", None))
+    runtime_commands = dict(next(items for label, items in MAIN_NAV
+                                 if label == "AI Runtime"))
 
-    assert "AI Runtime" in html
-    assert "/hermes " in html
-    assert "/deepagents " in html
-    assert "/langgraph " in html
+    assert set(runtime_commands) == {"/hermes ", "/deepagents ", "/langgraph "}
+    assert "AI Runtime" not in html
+
+
+def test_sidebar_offers_guided_hermes_workflow_without_ids():
+    html = to_xml(_left_pane("app", {"email": "user@example.com"}))
+
+    assert "Hermes — Start Here" in html
+    assert "Hermes — Backtest" in html
+    assert "Hermes — Paper Trade" in html
+    assert "Hermes — Monitor" in html
+    assert "/hermes help" in html
+    assert "/hermes show my latest backtest result" in html
+    assert "/hermes start my best candidate in continuous paper trading" in html
+    assert "/hermes analyze my running paper job" in html
+    assert "onclick=\"fillChat('/hermes help')\"" in html
 
 
 def test_authenticated_sidebar_has_visible_sign_out():
@@ -202,7 +221,7 @@ def test_no_duplicate_nav_routes():
     import app  # noqa: F401  (registers feature modules)
     from engine.web import ph_layout
     from engine.web.ph_commands import (
-        AGENT_SHORTCUTS, ALPHA_RESEARCH_SHORTCUTS, MAIN_NAV,
+        AGENT_SHORTCUTS, ALPHA_RESEARCH_SHORTCUTS, HERMES_SHORTCUTS, MAIN_NAV,
     )
 
     # Page links: no duplicate hrefs or labels across all registered sections.
@@ -215,6 +234,19 @@ def test_no_duplicate_nav_routes():
     assert len(labels) == len(set(labels)), f"duplicate labels: {labels}"
 
     # Command groups: no duplicate group labels.
-    group_labels = [lbl for lbl, _ in AGENT_SHORTCUTS + ALPHA_RESEARCH_SHORTCUTS + MAIN_NAV]
+    group_labels = [lbl for lbl, _ in (
+        AGENT_SHORTCUTS + HERMES_SHORTCUTS + ALPHA_RESEARCH_SHORTCUTS + MAIN_NAV
+    )]
     assert len(group_labels) == len(set(group_labels)), \
         f"duplicate group labels: {group_labels}"
+
+
+def test_hermes_follow_up_cards_are_clickable_and_persistent():
+    from engine.web import ph_chat
+
+    script = ph_chat.CHAT_JS
+    assert "function renderFollowUps" in script
+    assert "type==='follow_ups'" in script
+    assert "window.fillChat(prompt)" in script
+    assert "m.metadata&&m.metadata.follow_ups" in script
+    assert ".hermes-follow-up" in ph_chat.CHAT_STYLE
