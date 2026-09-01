@@ -98,6 +98,25 @@ def test_render_risk_shows_realized_sharpe_drawdown():
     assert "Realized P&amp;L to date" in html
     assert "Sharpe" in html and "1.80" in html
     assert "Max drawdown" in html and "-6.30%" in html
+    assert "preliminary" not in html
+
+
+def test_render_risk_marks_short_history_sharpe_preliminary():
+    html = report._render_risk({"account_stats": {
+        "realized_pnl": 0, "sharpe": -6.94,
+        "max_drawdown": -0.02, "snapshot_days": 9,
+    }})
+    assert "-6.94" in html and "preliminary" in html
+
+
+def test_idle_report_explains_failed_latest_hermes_job():
+    html = report._render_agent_next_steps({
+        "active_runs": [], "agent_performance": [],
+        "latest_hermes_paper_job": {"status": "failed", "error": "worker stopped"},
+    })
+    assert "No active strategy" in html
+    assert "no trades or P&amp;L can be generated" in html
+    assert "worker stopped" in html
 
 
 def test_render_risk_empty_without_stats():

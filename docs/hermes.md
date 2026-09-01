@@ -105,9 +105,12 @@ Then sign in to AlpaTrade and run these one at a time:
 ```text
 /hermes help
 /hermes run a buy_the_dip backtest for AAPL, MSFT, GOOGL, AMZN, META, TSLA and NVDA over 3 months and optimize Sharpe
+/hermes show my running jobs
 /hermes show my recent jobs
-/hermes construct an optimal portfolio from candidate <candidate-id>
-/hermes start candidate <candidate-id> in continuous paper trading and email daily reports
+/hermes show my latest backtest result
+/hermes construct an optimal portfolio from my best completed candidate
+/hermes start my best candidate in continuous paper trading, email daily reports, and notify me both
+/hermes analyze my running paper job
 /hermes notify me both in app and email for paper job <paper-job-id>
 /hermes show my recent advice
 ```
@@ -115,13 +118,65 @@ Then sign in to AlpaTrade and run these one at a time:
 Expected behavior: backtest and paper starts return immediately; completion and
 advice messages appear in the originating saved chat; refreshing or reopening
 the thread retains them; the paper job remains active when the page closes.
-Use these control tests only after copying the paper job ID:
+The quick-start commands automatically select the best completed candidate or
+latest applicable owned paper job. Use an explicit ID only when selecting one
+specific job among several. A **job ID** identifies the background task, a
+**run ID** identifies its stored trading/backtest record, and a **candidate ID**
+identifies the winning parameters saved by a completed backtest.
+
+These no-ID controls target the latest applicable owned paper job:
+
+```text
+/hermes pause my running paper job
+/hermes resume my paused paper job
+/hermes stop my running paper job
+```
+
+Use these explicit controls when you copied a particular paper job ID:
 
 ```text
 /hermes pause paper job <paper-job-id>
 /hermes resume paper job <paper-job-id>
 /hermes stop paper job <paper-job-id>
 ```
+
+### Clickable commands, clarification, and approval
+
+Every command above can be typed, pasted, or selected from the left-side
+**Agents → Hermes** menu. Hermes responses also show contextual **Suggested
+follow-ups**. Selecting one fills the composer; it does not send automatically,
+so the user can review or edit it first. Follow-ups are stored with the saved
+message and remain available after refresh or reopening the chat.
+
+Hermes does not guess missing details for an actionable request. For example,
+`/hermes run a backtest` asks for strategy, symbols, and lookback instead of
+silently using defaults. `/hermes start paper trading` asks which approved
+candidate to use. A request to change running parameters explains that the
+safe workflow is a new backtest and candidate approval; it never mutates a
+running strategy in place.
+
+Recommended team demonstration:
+
+```text
+/hermes run a 6-month buy_the_dip backtest for SPY, QQQ, IWM, DIA, XLK, XLF and XLV and optimize Sharpe
+/hermes show my running jobs
+/hermes show my latest backtest result
+/hermes construct an optimal portfolio from my best completed candidate
+/hermes start my best eligible candidate in continuous paper trading, email daily reports, and notify me both
+/hermes analyze my running paper job
+/hermes pause my running paper job
+/hermes resume my paused paper job
+/hermes stop my running paper job
+```
+
+Parameter updates follow the same approval boundary: run a new backtest with
+the requested symbols/period or grid, inspect its validation and benchmark,
+then explicitly promote the new eligible candidate. The old paper job remains
+unchanged until the user stops it and approves the replacement.
+
+Candidates created by an older worker that show fewer completed robustness
+windows than requested are displayed as **blocked** and cannot be promoted.
+Run a fresh backtest after deployment to create a fully validated candidate.
 
 Do not run `stop` during initial continuous-operation testing unless you intend
 to terminate that job.
@@ -151,6 +206,13 @@ separate setting from immediate advice delivery.
 ```text
 /hermes help
 /hermes show my recent jobs
+/hermes show my latest backtest result
+/hermes construct an optimal portfolio from my best completed candidate
+/hermes start my best candidate in continuous paper trading, email daily reports, and notify me both
+/hermes analyze my running paper job
+/hermes pause my running paper job
+/hermes resume my paused paper job
+/hermes stop my running paper job
 /hermes show my recent advice
 /hermes show the result of backtest <job-or-run-id>
 /hermes construct an optimal portfolio from candidate <candidate-id>
@@ -471,12 +533,15 @@ approved threshold, P&L when an exit closes, and the reason for the decision.
 An entry is informational rather than a profit signal. Exit gains render green,
 losses render red, and watch/hold events render amber.
 
-The Hermes daily report is separate from the existing AlpaTrade daily report.
-It derives realized P&L from the owned paper run's persisted trades, groups
+Hermes is included in the consolidated AlpaTrade daily report; it does not send
+a second Hermes-only daily digest. Immediate opt-in entry/exit alerts remain
+separate. The consolidated report derives realized P&L from the owned paper
+run's persisted trades, groups
 repeated entry fills, and labels broker positions/unrealized P&L as account-wide
 because other strategies can share the linked paper account. It never adds
-account-wide unrealized P&L to run-only realized P&L. The report includes one of:
+account-wide unrealized P&L to run-only realized P&L. Hermes analysis includes:
 
+- **WAITING**: no completed exits exist yet; keep collecting paper evidence.
 - **GREEN**: profitable closed activity without stop-loss exits; keep the
   approved configuration while monitoring consistency.
 - **AMBER**: insufficient or mixed closed activity; inspect before changing it.

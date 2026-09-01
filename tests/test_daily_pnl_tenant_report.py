@@ -115,6 +115,32 @@ def test_render_separates_framework_benchmark_and_periods():
     assert "Month to date" in html and "Year to date" in html
     assert "Hermes" in html and "DeepAgents" in html and "LangGraph" in html
     assert "realized paper trades only" in html
+    assert "Agent status &amp; recommended next steps" in html
+
+
+def test_fractional_strategy_parameters_render_as_percentages():
+    assert report._fmt_param("dip_threshold", 0.05) == ("Dip threshold", "5.00%")
+    assert report._fmt_param("stop_loss", 0.005) == ("Stop loss", "0.50%")
+    assert report._fmt_param("take_profit", 0.015) == ("Take profit", "1.50%")
+    assert report._fmt_param("position_size", 0.1) == ("Position size", "10.00%")
+    assert report._fmt_param("dip_threshold", 5) == ("Dip threshold", "5.00%")
+
+
+def test_equity_reconciliation_explains_non_trading_difference():
+    html = report._render_equity_reconciliation({
+        "prior_reported_equity": 113318.98,
+        "equity": 113314.11,
+        "day_pnl": 0.0,
+    })
+    assert "Equity reconciliation" in html
+    assert "$-4.87" in html
+    assert "not silently counted as strategy" in html
+
+
+def test_equity_reconciliation_is_hidden_when_values_agree():
+    assert report._render_equity_reconciliation({
+        "prior_reported_equity": 100.0, "equity": 105.0, "day_pnl": 5.0,
+    }) == ""
 
 
 def test_migration_is_confined_to_alpatrade_schema():

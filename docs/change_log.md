@@ -1,5 +1,64 @@
 # Change Log
 
+## Unreleased
+
+### Hermes candidate promotion correctness
+
+- Fixed Hermes paper promotion to pass the exact approved candidate parameters
+  into the standalone orchestrator. Previously, the worker stored the candidate
+  under `params` but omitted `approved_best_config`, causing YAML defaults to be
+  traded and reported instead.
+- Forwarded the requested robustness-window count and benchmark symbol through
+  the orchestrator, so the three-window Hermes validation contract is actually
+  executed rather than only recorded in the queued job.
+- Preserved the source backtest lookback when promoting a candidate, keeping the
+  paper-run slug and daily-report lineage aligned with the research period.
+- Improved Hermes-only command output: running-job queries now exclude history,
+  zero-exit sessions report `WAITING` and `N/A` win rate, backtest metrics use
+  explicit percentage units, and benchmark underperformance is highlighted.
+- Added regression coverage for exact candidate promotion, robustness forwarding,
+  running-job filtering, and zero-exit reporting.
+
+### Hermes clarification and suggested follow-ups
+
+- Added persistent, clickable suggested follow-ups beneath every Hermes response;
+  clicking fills the composer so the user can review or edit before sending.
+- Added a deterministic clarification gate for incomplete backtests, ambiguous
+  paper starts, and parameter-change requests. Hermes now states what is missing
+  and queues nothing instead of silently choosing defaults.
+- Fixed hyphenated natural periods such as `6-month`, which previously bypassed
+  the period parser and fell back to three months.
+- Blocked promotion of legacy candidates whose saved job requested robustness
+  validation but did not complete every requested window; their follow-up now
+  proposes a fresh backtest instead of paper trading.
+
+### Consolidated daily agent digest
+
+- Replaced the duplicate Hermes-only daily summary with the account-owned
+  AlpaTrade digest. Immediate opt-in Hermes entry/exit alerts remain independent.
+- Added Today/MTD/YTD realized agent benchmarks and explicit no-data rows for
+  Hermes, DeepAgents, and LangGraph.
+- Corrected fractional strategy parameter display (`0.05` now renders as `5%`)
+  and added an equity reconciliation notice when Alpaca prior-close P&L differs
+  from the last emailed equity snapshot.
+- Added a concise agent-status section with safe next commands and clearer
+  zero-activity language.
+- Fixed deployment recovery for older continuous Hermes jobs whose heartbeat is
+  null, and reactivate the canonical run when the worker reclaims the job so
+  chat status and daily reporting cannot disagree.
+
+### Guided Hermes workflow
+
+- Added clickable Hermes Backtest, Paper Trade, and Monitor shortcuts to the
+  left Agents panel.
+- Reworked `/hermes help` into a numbered quick start and explained the
+  difference between job, run, and candidate IDs.
+- Added no-ID analysis and pause/resume/stop commands that safely resolve the
+  latest applicable paper job owned by the authenticated user. Explicit IDs
+  remain supported when an account has multiple jobs.
+- Tests cover sidebar rendering, deterministic help, ownership-safe job
+  selection, and existing ID-based commands.
+
 ## 0.23.0 — 2026-08-25
 
 ### Attribute autonomous paper runs to a configured owner

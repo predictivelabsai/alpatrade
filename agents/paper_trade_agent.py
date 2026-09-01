@@ -765,72 +765,17 @@ class PaperTradeAgent:
                           advice: Optional[List[Dict]] = None,
                           report_context: Optional[Dict] = None,
                           report_format: str = "default"):
-        """Send Hermes reports only for Hermes jobs; preserve the default template."""
-        try:
-            # Gather positions
-            positions = []
-            try:
-                pos_list = self.client.get_positions()
-                if isinstance(pos_list, list):
-                    positions = pos_list
-            except Exception:
-                pass
+        """Leave daily summaries to the single account-owned report scheduler.
 
-            # Resolve user display name
-            user_name = ""
-            if self.user_id:
-                try:
-                    from utils.auth import get_user_by_id
-                    user = get_user_by_id(self.user_id)
-                    if user:
-                        user_name = user.get("display_name") or user.get("email", "")
-                except Exception:
-                    pass
-
-            if report_format != "hermes":
-                from utils.email_util import send_daily_pnl_report
-                sell_trades = [trade for trade in self.trades
-                               if trade.get("side") == "sell"]
-                today_trades = [trade for trade in self.trades
-                                if trade.get("timestamp", "").startswith(date)]
-                daily_pnl = sum(
-                    trade.get("pnl", 0) for trade in sell_trades
-                    if trade.get("timestamp", "").startswith(date)
-                )
-                cumulative_pnl = sum(trade.get("pnl", 0) for trade in sell_trades)
-                wins = sum(1 for trade in sell_trades if (trade.get("pnl") or 0) > 0)
-                win_rate = wins / len(sell_trades) * 100 if sell_trades else 0.0
-                send_daily_pnl_report(
-                    date=date, pnl=daily_pnl, positions=positions, trades=today_trades,
-                    cumulative_pnl=cumulative_pnl, win_rate=win_rate,
-                    account_name=self.account_name, user_name=user_name,
-                    to_email=to_email,
-                )
-                return
-
-            from engine.agents.hermes_advice import build_performance_report
-            from utils.email_util import send_hermes_daily_report
-
-            context = report_context or {}
-            report_trades = fetch_paper_trades(
-                self.session_id, user_id=self.user_id
-            ) or self.trades
-            report = build_performance_report(
-                date=date, positions=positions, trades=report_trades,
-                advice=advice or [], job_id=str(context.get("job_id") or ""),
-                run_id=str(context.get("run_id") or self.session_id),
-                candidate_id=str(context.get("candidate_id") or ""),
-            )
-            if not report["validated"]:
-                raise ValueError("Hermes daily report failed P&L reconciliation")
-            send_hermes_daily_report(
-                report,
-                account_name=self.account_name,
-                user_name=user_name,
-                to_email=to_email,
-            )
-        except Exception as e:
-            logger.warning(f"Could not send daily email: {e}")
+        Historically each paper worker could send a separate daily message,
+        producing duplicate and inconsistent emails. The consolidated scheduler
+        now owns daily reporting for Hermes, DeepAgents, LangGraph, and legacy
+        runs. Hermes entry/exit advice remains an independent opt-in channel.
+        """
+        logger.info(
+            "Worker daily summary suppressed for %s (%s); account digest owns delivery",
+            date, report_format,
+        )
 
     def _generate_summary(self, start_time: datetime) -> Dict[str, Any]:
         """Generate session summary."""

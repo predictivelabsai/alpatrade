@@ -130,6 +130,22 @@ CHAT_JS = r"""
     return b;
   }
 
+  function renderFollowUps(bubble, items){
+    if(!bubble||!Array.isArray(items)||!items.length)return;
+    var wrap=bubble.parentElement,old=wrap.querySelector('.hermes-follow-ups');
+    if(old)old.remove();
+    var box=document.createElement('div');box.className='hermes-follow-ups';
+    var label=document.createElement('div');label.className='hermes-follow-ups-label';
+    label.textContent='Suggested follow-ups';box.appendChild(label);
+    items.forEach(function(prompt){
+      var btn=document.createElement('button');btn.type='button';
+      btn.className='hermes-follow-up';btn.textContent=prompt;btn.title=prompt;
+      btn.onclick=function(){if(window.fillChat)window.fillChat(prompt);};
+      box.appendChild(btn);
+    });
+    wrap.appendChild(box);scrollBottom();
+  }
+
   function appendTool(bubble, name){
     if(!bubble) return;
     var log=bubble.parentElement.querySelector('.tool-log');
@@ -380,6 +396,8 @@ CHAT_JS = r"""
               setProgress(bubble,'Using '+(p.name||'tool')+'...');
             } else if(type==='tool_end'){
               setProgress(bubble,'Tool finished; preparing answer...');
+            } else if(type==='follow_ups'){
+              renderFollowUps(bubble,p.items||[]);
             } else if(type==='error'){
               clearProgress(bubble);
               if(!bubble) bubble=addBubble('assistant','','');
@@ -445,7 +463,8 @@ CHAT_JS = r"""
       if(!force&&last===lastHistoryId)return;
       host.innerHTML='';
       messages.forEach(function(m){var b=addBubble(m.role,m.content,m.metadata&&m.metadata.agent);
-        if(m.role==='assistant'){var clean=extractChart(m.content,b);b.innerHTML=renderMd(clean);enhanceTables(b);renderChart(b);}});
+        if(m.role==='assistant'){var clean=extractChart(m.content,b);b.innerHTML=renderMd(clean);enhanceTables(b);renderChart(b);
+          renderFollowUps(b,(m.metadata&&m.metadata.follow_ups)||[]);}});
       lastHistoryId=last;
     }catch(e){console.warn('chat history unavailable',e);}
   }
@@ -467,6 +486,13 @@ CHAT_STYLE = """
 .progress-dot { width:7px;height:7px;border-radius:50%;background:var(--accent);
   animation:pulse 1.1s ease-in-out infinite; }
 .progress-secs { color:var(--ink-muted);font-weight:400; }
+.hermes-follow-ups { margin:.55rem 0 0;display:flex;flex-direction:column;gap:.32rem; }
+.hermes-follow-ups-label { color:var(--ink-muted);font:650 .68rem var(--font-mono);
+  letter-spacing:.06em;text-transform:uppercase; }
+.hermes-follow-up { width:100%;text-align:left;border:1px solid var(--line);
+  background:var(--paper);color:var(--ink);border-radius:8px;padding:.55rem .7rem;
+  font-size:.76rem;cursor:pointer;transition:border-color .15s,background .15s; }
+.hermes-follow-up:hover { border-color:var(--accent);background:var(--bg-raise); }
 .news-category { border-bottom:1px solid var(--line); }
 .news-category-title { padding:.65rem .2rem; cursor:pointer; font-size:.74rem;
   color:var(--ink); font-weight:650; list-style:none; }
@@ -532,7 +558,9 @@ def _hermes_backtest_config(message: str) -> Optional[dict]:
         r"\blookback\s*[:=]\s*(\d+)\s*([dmy])\b", message, re.IGNORECASE
     )
     period = re.search(
-        r"\b(\d+)\s*(day|days|month|months|year|years)\b", message, re.IGNORECASE
+        r"\b(\d+)[\s-]*(day|days|month|months|year|years)\b",
+        message,
+        re.IGNORECASE,
     )
     lookback = "3m"
     if compact_period:
@@ -564,6 +592,151 @@ def _hermes_backtest_config(message: str) -> Optional[dict]:
     }
 
 
+def _hermes_clarification(message: str) -> Optional[tuple[str, list[str]]]:
+    """Stop incomplete Hermes mutations before defaults can change user intent."""
+    lowered = message.lower().strip()
+    actionable_backtest = "backtest" in lowered and bool(re.search(
+        r"\b(run|start|queue|launch|execute|perform|optimi[sz]e)\b", lowered
+    ))
+    if actionable_backtest:
+        supported = [
+            name for name in ("buy_the_dip", "momentum", "vix", "box_wedge")
+            if name in lowered
+        ]
+        symbols = [
+            symbol for symbol in re.findall(r"\b[A-Z]{1,5}\b", message)
+            if symbol not in {"HERMES", "USD", "PDT"}
+        ]
+        has_period = bool(re.search(
+            r"\blookback\s*[:=]\s*\d+\s*[dmy]\b|"
+            r"\b\d+[\s-]*(?:day|days|month|months|year|years)\b",
+            message,
+            re.IGNORECASE,
+        ))
+        missing = []
+        if not supported:
+            missing.append("strategy")
+        if not symbols:
+            missing.append("symbols")
+        if not has_period:
+            missing.append("lookback period")
+        if missing:
+            missing_text = ", ".join(missing)
+            return (
+                "## Hermes needs clarification\n\n"
+                f"I have not started a backtest because the **{missing_text}** "
+                "was not explicit. Choose or edit one of the suggestions below. "
+                "Nothing has been queued and no strategy was changed.",
+                [
+                    "/hermes run a 6-month buy_the_dip backtest for SPY, QQQ, IWM, DIA, XLK, XLF and XLV and optimize Sharpe",
+                    "/hermes run a 12-month buy_the_dip backtest for AAPL, MSFT and NVDA and optimize Sharpe",
+                    "/hermes help",
+                ],
+            )
+
+    paper_start = (
+        bool(re.search(r"\b(start|launch|run)\b", lowered))
+        and any(word in lowered for word in ("paper", "candidate"))
+    )
+    if paper_start and not (
+        re.search(r"\bbest(?:\s+eligible)?\s+candidate\b", lowered)
+        or re.search(r"\b[0-9a-f]{8}-[0-9a-f-]{27,}\b", lowered)
+    ):
+        return (
+            "## Hermes needs clarification\n\n"
+            "I have not started paper trading because no approved candidate was selected. "
+            "Choose the best eligible candidate or inspect candidates first. Nothing was queued.",
+            [
+                "/hermes show my latest backtest result",
+                "/hermes start my best eligible candidate in continuous paper trading, email daily reports, and notify me both",
+                "/hermes show my recent jobs",
+            ],
+        )
+
+    parameter_change = any(
+        phrase in lowered for phrase in (
+            "update params", "update parameters", "change params",
+            "change parameters", "modify params", "modify parameters",
+        )
+    )
+    if parameter_change:
+        return (
+            "## Hermes needs clarification\n\n"
+            "Hermes will not change a running paper strategy in place. Should I run a new "
+            "backtest, review the current candidate, or leave the running job unchanged?",
+            [
+                "/hermes show my latest backtest result",
+                "/hermes analyze my running paper job",
+                "/hermes run a 6-month buy_the_dip backtest for SPY, QQQ, IWM, DIA, XLK, XLF and XLV and optimize Sharpe",
+            ],
+        )
+    return None
+
+
+def _hermes_follow_ups(message: str, reply: str) -> list[str]:
+    """Contextual editable next steps shown after every Hermes response."""
+    request = message.lower().strip()
+    text = reply.lower()
+    if request in {"help", "commands", "show commands"}:
+        return [
+            "/hermes run a 6-month buy_the_dip backtest for SPY, QQQ, IWM, DIA, XLK, XLF and XLV and optimize Sharpe",
+            "/hermes show my running jobs",
+            "/hermes show my latest backtest result",
+        ]
+    if "needs clarification" in text:
+        clarification = _hermes_clarification(message)
+        if clarification:
+            return clarification[1]
+        ids = re.findall(
+            r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b",
+            reply,
+            re.IGNORECASE,
+        )
+        action = next(
+            (word for word in ("pause", "resume", "stop", "analyze")
+             if word in message.lower()),
+            "analyze",
+        )
+        return [f"/hermes {action} paper job {job_id}" for job_id in ids[:4]] or [
+            "/hermes show my running jobs", "/hermes help"
+        ]
+    if "backtest queued" in text:
+        return [
+            "/hermes show my running jobs",
+            "/hermes show my latest backtest result",
+            "/hermes help",
+        ]
+    if "backtest result" in text or "backtest completed" in text:
+        if "paper promotion:** `blocked" in text:
+            return [
+                "/hermes run a 6-month buy_the_dip backtest for SPY, QQQ, IWM, DIA, XLK, XLF and XLV and optimize Sharpe",
+                "/hermes show my running jobs",
+                "/hermes help",
+            ]
+        return [
+            "/hermes construct an optimal portfolio from my best completed candidate",
+            "/hermes start my best eligible candidate in continuous paper trading, email daily reports, and notify me both",
+            "/hermes show my recent jobs",
+        ]
+    if "paper trading queued" in text or "paper analysis" in text:
+        return [
+            "/hermes show my running jobs",
+            "/hermes analyze my running paper job",
+            "/hermes pause my running paper job",
+        ]
+    if "portfolio recommendation" in text or "portfolio advice" in text:
+        return [
+            "/hermes show my latest backtest result",
+            "/hermes start my best eligible candidate in continuous paper trading, email daily reports, and notify me both",
+            "/hermes help",
+        ]
+    return [
+        "/hermes show my running jobs",
+        "/hermes show my latest backtest result",
+        "/hermes help",
+    ]
+
+
 async def _dispatch_hermes_job_command(
     message: str, user_id: str, thread_id: str
 ) -> Optional[str]:
@@ -585,29 +758,64 @@ async def _dispatch_hermes_job_command(
             except Exception:  # noqa: BLE001
                 broker_version = "unknown"
         return (
-            "## Hermes commands\n\n"
+            "## Hermes — quick start\n\n"
             f"- **AlpaTrade Hermes broker:** `{broker_version}`\n"
-            "- `/hermes show my recent jobs`\n"
-            "- `/hermes show my recent advice`\n"
-            "- `/hermes show my notification history`\n"
-            "- `/hermes send a test notification for paper job <job-id>`\n"
+            "- **1. Backtest:** `/hermes run a 6-month buy_the_dip backtest for AAPL, MSFT and NVDA and optimize Sharpe`\n"
+            "- **2. See progress:** `/hermes show my recent jobs`\n"
+            "- **3. Review:** `/hermes show my latest backtest result`\n"
+            "- **4. Build portfolio:** `/hermes construct an optimal portfolio from my best completed candidate`\n"
+            "- **5. Start paper mode:** `/hermes start my best candidate in continuous paper trading, email daily reports, and notify me both`\n"
+            "- **6. Monitor:** `/hermes analyze my running paper job`\n\n"
+            "### What the IDs mean\n\n"
+            "- **Job ID:** the background task; use it to inspect, pause, resume, or stop one specific task.\n"
+            "- **Run ID:** the saved backtest or paper-trading run and its trades/metrics.\n"
+            "- **Candidate ID:** the saved winning backtest parameters that can be promoted to paper trading.\n"
+            "- You do **not** need an ID for the quick-start commands above. When several jobs exist, "
+            "use `/hermes show my recent jobs`, then add the desired job ID to target it exactly.\n\n"
+            "### Specific-job controls\n\n"
             "- `/hermes analyze paper job <job-id>`\n"
-            "- `/hermes construct a portfolio from candidate <candidate-id>`\n"
-            "- `/hermes start candidate <candidate-id> in continuous paper trading`\n"
-            "- `/hermes notify me in app|by email|both for paper job <job-id>`\n"
+            "- `/hermes notify me both in app and email for paper job <job-id>`\n"
             "- `/hermes enable daily email reports for paper job <job-id>`\n"
-            "- `/hermes pause|resume|stop paper job <job-id>`\n\n"
+            "- `/hermes pause|resume|stop paper job <job-id>`\n"
+            "- `/hermes show my recent advice`\n"
+            "- `/hermes show my notification history`\n\n"
             "Hermes research uses conservative costs and 70/30 out-of-sample validation. "
             "Hermes advice does not place extra orders. Trading remains paper-only."
         )
 
-    if "analyze" in lowered and "paper" in lowered and uuids:
+    if "analyze" in lowered and "paper" in lowered:
+        job_id = uuids[0] if uuids else ""
+        if not job_id:
+            from engine.agents.hermes_jobs import list_owned
+            paper_jobs = [
+                item for item in await asyncio.to_thread(list_owned, user_id)
+                if item.get("kind") == "paper"
+            ]
+            running = [item for item in paper_jobs if item.get("status") == "running"]
+            if len(running) > 1:
+                choices = "\n".join(
+                    f"- `{item['job_id']}` · run `{item.get('run_id', 'n/a')}`"
+                    for item in running[:10]
+                )
+                return (
+                    "## Hermes needs clarification\n\nSeveral running paper jobs were found. "
+                    "Select the job to analyze; nothing was changed.\n\n" + choices
+                )
+            preferred = running[0] if running else (paper_jobs[0] if paper_jobs else None)
+            if preferred:
+                job_id = str(preferred["job_id"])
+        if not job_id:
+            return "## Hermes paper analysis\n\nNo paper job was found under your account."
         from engine.agents.hermes_advice import analyze_owned_paper_job
-        report = await asyncio.to_thread(analyze_owned_paper_job, uuids[0], user_id)
+        report = await asyncio.to_thread(analyze_owned_paper_job, job_id, user_id)
         if not report:
             return "## Hermes paper analysis\n\nNo matching paper job was found under your account."
         reasons = "\n".join(f"- {reason}" for reason in report["reasons"])
         commands = "\n".join(f"- `{command}`" for command in report["commands"])
+        win_rate = (
+            f"{report['win_rate']:.1f}%"
+            if report["completed_exits"] else "N/A (no completed exits)"
+        )
         return (
             "## Hermes paper analysis\n\n"
             f"- **Status:** `{report['status']}`\n"
@@ -616,7 +824,7 @@ async def _dispatch_hermes_job_command(
             f"- **Realized today:** `${report['realized_today']:+,.2f}`\n"
             f"- **Session realized:** `${report['realized_session']:+,.2f}`\n"
             f"- **Completed exits:** {report['completed_exits']}\n"
-            f"- **Win rate:** {report['win_rate']:.1f}%\n"
+            f"- **Win rate:** {win_rate}\n"
             f"- **Duplicate active jobs:** {report['active_duplicate_jobs']}\n\n"
             f"- **Other active account runs:** {report['other_active_account_runs']}\n\n"
             f"### Why\n{reasons}\n\n"
@@ -732,10 +940,35 @@ async def _dispatch_hermes_job_command(
             "- **Scope:** your authenticated account only"
         )
     control_match = re.search(r"\b(pause|resume|stop)\b", lowered)
-    if control_match and "paper" in lowered and uuids:
+    if control_match and "paper" in lowered:
         from engine.agents.hermes_jobs import request_control
         action = control_match.group(1)
-        job = await asyncio.to_thread(request_control, uuids[0], user_id, action)
+        job_id = uuids[0] if uuids else ""
+        if not job_id:
+            from engine.agents.hermes_jobs import list_owned
+            wanted = {"pause": {"running"}, "resume": {"paused"},
+                      "stop": {"queued", "running", "paused"}}[action]
+            matching = [
+                item for item in await asyncio.to_thread(list_owned, user_id)
+                if item.get("kind") == "paper" and item.get("status") in wanted
+            ]
+            if len(matching) > 1:
+                choices = "\n".join(
+                    f"- `{item['job_id']}` · run `{item.get('run_id', 'n/a')}`"
+                    for item in matching[:10]
+                )
+                return (
+                    "## Hermes needs clarification\n\nSeveral applicable paper jobs were found. "
+                    f"Select the job to {action}; nothing was changed.\n\n" + choices
+                )
+            if matching:
+                job_id = str(matching[0]["job_id"])
+        if not job_id:
+            return (
+                "## Hermes paper control\n\nNo applicable paper job was found under "
+                "your account. Use `/hermes show my recent jobs` to check its status."
+            )
+        job = await asyncio.to_thread(request_control, job_id, user_id, action)
         if not job:
             return (
                 "## Hermes paper control\n\nNo matching active paper job was found "
@@ -845,8 +1078,17 @@ async def _dispatch_hermes_job_command(
             any(word in lowered for word in ("show", "list", "running", "status"))):
         from engine.agents.hermes_jobs import list_owned
         jobs = await asyncio.to_thread(list_owned, user_id)
+        running_only = "running" in lowered and not any(
+            word in lowered for word in ("recent", "history", "all")
+        )
+        if running_only:
+            jobs = [
+                job for job in jobs
+                if job.get("status") in {"queued", "running", "paused"}
+            ]
         if not jobs:
-            return "## Hermes jobs\n\nNo queued, running, or completed jobs were found for your account."
+            suffix = "running jobs" if running_only else "jobs"
+            return f"## Hermes jobs\n\nNo {suffix} were found for your account."
         lines = ["## Hermes jobs", ""]
         for job in jobs[:20]:
             progress = (job.get("progress") or {}).get("message", "")
@@ -883,6 +1125,50 @@ async def _dispatch_hermes_job_command(
         config = job.get("config") or {}
         result = job.get("result") or {}
         best = result.get("best_config") or {}
+        params = best.get("params") or {}
+        validation = best.get("validation_metrics") or {}
+        benchmark = best.get("benchmark") or {}
+        robustness = best.get("robustness_windows") or []
+        requested_robustness = max(1, int(
+            config.get("robustness_windows")
+            or (result.get("methodology") or {}).get("robustness_windows")
+            or 1
+        ))
+        promotion_eligible = (
+            best.get("promotion_eligible") is True
+            and not (
+                requested_robustness > 1
+                and len(robustness) < requested_robustness
+            )
+        )
+
+        def pct(value, *, signed: bool = True) -> str:
+            if value is None:
+                return "n/a"
+            return f"{float(value):+,.2f}%" if signed else f"{float(value):,.2f}%"
+
+        def ratio_pct(value) -> str:
+            if value is None:
+                return "n/a"
+            number = float(value)
+            if abs(number) <= 1:
+                number *= 100
+            return f"{number:.2f}%"
+
+        parameter_lines = [
+            f"  - Dip threshold: **{ratio_pct(params.get('dip_threshold'))}**",
+            f"  - Take profit: **{ratio_pct(params.get('take_profit'))}**",
+            f"  - Stop loss: **{ratio_pct(params.get('stop_loss'))}**",
+            f"  - Maximum hold: **{params.get('hold_days', 'n/a')} "
+            f"{'day' if params.get('hold_days') == 1 else 'days'}**",
+            f"  - Position size: **{ratio_pct(params.get('position_size'))}**",
+        ]
+        excess = benchmark.get("excess_return")
+        benchmark_warning = (
+            "\n\n> **Benchmark warning:** validation underperformed "
+            f"{benchmark.get('symbol', 'SPY')} by {abs(float(excess)):.2f} percentage points."
+            if excess is not None and float(excess) < 0 else ""
+        )
         return (
             "## Hermes backtest result\n\n"
             f"- **Job ID:** `{job['job_id']}`\n"
@@ -892,18 +1178,23 @@ async def _dispatch_hermes_job_command(
             f"- **Strategy:** `{config.get('strategy', 'buy_the_dip')}`\n"
             f"- **Data period:** `{config.get('lookback', 'not recorded')}`\n"
             f"- **Symbols:** {', '.join(config.get('symbols') or [])}\n"
-            f"- **Best parameters:** `{json.dumps(best.get('params') or {}, default=str)}`\n"
-            f"- **Sharpe ratio:** {best.get('sharpe_ratio', 'n/a')}\n"
-            f"- **Total return:** {best.get('total_return', 'n/a')}\n"
-            f"- **Maximum drawdown:** {best.get('max_drawdown', 'n/a')}\n"
-            f"- **Win rate:** {best.get('win_rate', 'n/a')}\n"
+            "- **Best parameters:**\n" + "\n".join(parameter_lines) + "\n"
+            f"- **Training Sharpe:** {best.get('sharpe_ratio', 'n/a')}\n"
+            f"- **Training return:** {pct(best.get('total_return'))}\n"
+            f"- **Training maximum drawdown:** {pct(best.get('max_drawdown'), signed=False)}\n"
+            f"- **Training win rate:** {pct(best.get('win_rate'), signed=False)}\n"
             f"- **Trades:** {best.get('total_trades', 'n/a')}"
-            f"\n- **Validation metrics:** `{json.dumps(best.get('validation_metrics') or {}, default=str)}`"
-            f"\n- **Benchmark:** `{json.dumps(best.get('benchmark') or {}, default=str)}`"
-            f"\n- **Robustness windows:** `{json.dumps(best.get('robustness_windows') or [], default=str)}`"
+            f"\n- **Validation Sharpe:** {validation.get('sharpe_ratio', 'n/a')}"
+            f"\n- **Validation return:** {pct(validation.get('total_return'))}"
+            f"\n- **Validation maximum drawdown:** {pct(validation.get('max_drawdown'), signed=False)}"
+            f"\n- **Validation trades:** {validation.get('total_trades', 'n/a')}"
+            f"\n- **Benchmark {benchmark.get('symbol', 'SPY')} return:** {pct(benchmark.get('total_return'))}"
+            f"\n- **Excess return:** {pct(excess)}"
+            f"\n- **Robustness windows:** {len(robustness)} completed of "
+            f"{requested_robustness} requested"
             f"\n- **Paper promotion:** `"
-            f"{'eligible' if best.get('promotion_eligible') is True else 'blocked' if best.get('promotion_eligible') is False else 'not evaluated'}`"
-            f"\n- **Methodology:** `{json.dumps(result.get('methodology') or {}, default=str)}`"
+            f"{'eligible' if promotion_eligible else 'blocked' if best.get('promotion_eligible') is not None else 'not evaluated'}`"
+            f"{benchmark_warning}"
         )
 
     config = _hermes_backtest_config(message)
@@ -958,6 +1249,21 @@ async def _stream(msg: str, session) -> StreamingResponse:
         # the remote Hermes model, so job creation never waits on model planning,
         # terminal approvals, retries, or context compression.
         if runtime_override == "hermes" and routed_msg:
+            clarification = _hermes_clarification(routed_msg)
+            if clarification is not None:
+                broker_reply, follow_ups = clarification
+                yield _sse("agent_route", {"slug": "hermes", "agent": "Hermes"})
+                yield _sse("token", {"text": broker_reply})
+                yield _sse("follow_ups", {"items": follow_ups})
+                history.append({"role": "user", "content": routed_msg})
+                history.append({"role": "assistant", "content": broker_reply})
+                _save_chat_message(
+                    thread_id, user_key, "assistant", broker_reply,
+                    {"agent": "Hermes", "framework": "hermes",
+                     "dispatch": "clarification", "follow_ups": follow_ups},
+                )
+                yield _sse("done", {})
+                return
             try:
                 broker_reply = await _dispatch_hermes_job_command(
                     routed_msg, user_key, thread_id
@@ -973,13 +1279,16 @@ async def _stream(msg: str, session) -> StreamingResponse:
                 yield _sse("done", {})
                 return
             if broker_reply is not None:
+                follow_ups = _hermes_follow_ups(routed_msg, broker_reply)
                 yield _sse("agent_route", {"slug": "hermes", "agent": "Hermes"})
                 yield _sse("token", {"text": broker_reply})
+                yield _sse("follow_ups", {"items": follow_ups})
                 history.append({"role": "user", "content": routed_msg})
                 history.append({"role": "assistant", "content": broker_reply})
                 _save_chat_message(
                     thread_id, user_key, "assistant", broker_reply,
-                    {"agent": "Hermes", "framework": "hermes", "dispatch": "job"},
+                    {"agent": "Hermes", "framework": "hermes", "dispatch": "job",
+                     "follow_ups": follow_ups},
                 )
                 yield _sse("done", {})
                 return
@@ -1205,9 +1514,16 @@ async def _stream(msg: str, session) -> StreamingResponse:
             full += "\n\n" + tool_chart
             yield _sse("token", {"text": "\n\n" + tool_chart})
         history.append({"role": "assistant", "content": full})
+        follow_ups = (
+            _hermes_follow_ups(routed_msg, full)
+            if selected_framework == "hermes" else []
+        )
+        if follow_ups:
+            yield _sse("follow_ups", {"items": follow_ups})
         _save_chat_message(
             thread_id, user_key, "assistant", full,
-            {"agent": display_name, "framework": selected_framework},
+            {"agent": display_name, "framework": selected_framework,
+             **({"follow_ups": follow_ups} if follow_ups else {})},
         )
         yield _sse("done", {})
 
