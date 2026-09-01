@@ -82,6 +82,16 @@ def test_resolve_translation_rules():
     assert r["stop_loss_threshold"] == 50.0
 
 
+def test_resolve_never_translates_yaml_or_defaults():
+    """Only explicit params are in storage-ratio space; parameters.yaml
+    sections and schema defaults are already percent-unit (0.5 = 0.5%) and
+    must survive translate=True untouched."""
+    r = resolve_paper_params("buy_the_dip", {}, None)
+    assert r["stop_loss_threshold"] == 0.5
+    yaml = {"buy_the_dip": {"stop_loss_threshold": 0.5}}
+    assert resolve_paper_params("buy_the_dip", {}, yaml)["stop_loss_threshold"] == 0.5
+
+
 def test_storage_params_renames_and_hold_type():
     p = storage_params("vix", {"vix_threshold": 20.0, "hold_type": "on"})
     assert p == {"vix_threshold": 20.0, "hold_overnight": True}
@@ -185,7 +195,7 @@ def test_slugs_are_non_degenerate_for_all_strategies():
         "bwg-1r-70ct-3m"
     assert build_slug("buy_the_dip", slug_params(
         "buy_the_dip", resolve_paper_params("buy_the_dip", {}, None)), "3m") == \
-        "btd-5dp-50sl-1tp-2d-3m"
+        "btd-5dp-05sl-1tp-2d-3m"
 
 
 def test_strategy_command_and_parse_round_trip():

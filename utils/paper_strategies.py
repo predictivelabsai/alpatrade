@@ -160,13 +160,14 @@ def resolve_paper_params(strategy: str, params: Optional[dict],
     """Effective paper params for ``strategy``.
 
     Precedence: explicit ``params`` > the strategy's ``parameters.yaml``
-    section > schema defaults. Percent-kind values are normalized to percent
-    units (a stored ratio 0.05 becomes 5.0) unless ``translate`` is False —
-    the orchestrator translates DB best-config ratios, while
-    ``PaperTradeAgent`` receives percent-unit params (from the orchestrator,
-    parameters.yaml, or direct callers) and must NOT re-translate (a 0.5%
-    stop_loss would otherwise become 50%). All other kinds pass through
-    unscaled so VIX points and dimensionless ratios survive.
+    section > schema defaults. Only *explicit* percent-kind values are
+    normalized to percent units (a stored ratio 0.05 becomes 5.0) — the
+    orchestrator's merged dict is in DB best-config ratio space, while
+    ``parameters.yaml`` sections and schema defaults are already percent-unit
+    (agent-facing) and must pass through unscaled, as must everything when
+    ``translate`` is False (``PaperTradeAgent`` receives percent-unit params;
+    re-translating would turn a 0.5% stop_loss into 50%). All other kinds
+    pass through unscaled so VIX points and dimensionless ratios survive.
     """
     strategy = canonical_strategy(strategy)
     schema = PARAM_SCHEMA.get(strategy, [])
@@ -174,7 +175,8 @@ def resolve_paper_params(strategy: str, params: Optional[dict],
     out: Dict[str, Any] = {}
     for spec in schema:
         value = None
-        if isinstance(params, dict) and params.get(spec.key) is not None:
+        explicit = isinstance(params, dict) and params.get(spec.key) is not None
+        if explicit:
             value = params.get(spec.key)
         elif isinstance(yaml_cfg, dict) and yaml_cfg.get(spec.key) is not None:
             value = yaml_cfg.get(spec.key)
@@ -184,7 +186,7 @@ def resolve_paper_params(strategy: str, params: Optional[dict],
             out[spec.key] = None
             continue
         value = _coerce(value, spec.kind)
-        if translate and spec.kind == "percent":
+        if translate and explicit and spec.kind == "percent":
             value = ratio_to_percent(value)
         out[spec.key] = value
     return out
@@ -244,23 +246,38 @@ def parse_command_params(strategy: str, raw: Optional[dict]) -> Dict[str, Any]:
 
 
 def slug_params(strategy: str, resolved: dict) -> dict:
-    """Map resolved paper params onto ``build_slug``'s per-strategy keys."""
+    """Map resolved paper params onto ``build_slug``'s per-strategy keys.
+
+    Percent-kind values go back to storage ratios first: ``build_slug``'s
+    formatter re-applies the ``0 < |v| < 1`` → ×100 heuristic, so a 0.5%
+    stop passed as percent ``0.5`` would otherwise render as ``50sl``
+    instead of ``05sl``. Points (VIX level) and ratios (contraction
+    threshold) pass through unscaled.
+    """
     strategy = canonical_strategy(strategy)
+    kinds = {p.key: p.kind for p in PARAM_SCHEMA.get(strategy, [])}
+
+    def slug_value(key: str):
+        value = resolved.get(key)
+        if kinds.get(key) == "percent" and isinstance(value, (int, float)):
+            return value / 100.0
+        return value
+
     if strategy == "buy_the_dip":
         return {
-            "dip_threshold": resolved.get("dip_threshold"),
-            "stop_loss": resolved.get("stop_loss_threshold"),
-            "take_profit": resolved.get("take_profit_threshold"),
+            "dip_threshold": slug_value("dip_threshold"),
+            "stop_loss": slug_value("stop_loss_threshold"),
+            "take_profit": slug_value("take_profit_threshold"),
             "hold_days": resolved.get("hold_days"),
             "min_hold_days": resolved.get("min_hold_days"),
         }
     if strategy == "momentum":
         return {
             "lookback_period": resolved.get("lookback_period"),
-            "momentum_threshold": resolved.get("momentum_threshold"),
+            "momentum_threshold": slug_value("momentum_threshold"),
             "hold_days": resolved.get("hold_days"),
-            "take_profit": resolved.get("take_profit_threshold"),
-            "stop_loss": resolved.get("stop_loss_threshold"),
+            "take_profit": slug_value("take_profit_threshold"),
+            "stop_loss": slug_value("stop_loss_threshold"),
         }
     if strategy == "vix":
         return {
@@ -269,7 +286,7 @@ def slug_params(strategy: str, resolved: dict) -> dict:
         }
     if strategy == "box_wedge":
         return {
-            "risk_pct": resolved.get("risk_per_trade_pct"),
+            "risk_pct": slug_value("risk_per_trade_pct"),
             "contraction_threshold": resolved.get("contraction_threshold"),
         }
     return dict(resolved)
