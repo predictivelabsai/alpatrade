@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import html
 import os
+from typing import Optional
 
 from fasthtml.common import Div, NotStr, Style
 from sqlalchemy import text
@@ -26,6 +27,14 @@ color:#9b302b}.run{margin:.7rem 0}.run-head{justify-content:space-between;gap:1r
 padding:.25rem .5rem;background:#ecece8}.pill.running{background:#fff0c8;color:#775a00}.pill.done{background:#dcefe5;
 color:#176441}.pill.failed{background:#f8dedb;color:#9b302b}.muted{font-size:.78rem;color:var(--ink-muted)}
 .error{color:#9b302b}.empty{text-align:center;padding:2rem}.retry{float:right}
+.funnel{background:#fff;border:1px solid var(--line);border-radius:.65rem;padding:1rem 1.2rem;margin:1rem 0}
+.funnel h2{font-size:.95rem;margin:0 0 .2rem}.funnel .muted{display:block;margin-bottom:.7rem}
+.fr{display:grid;grid-template-columns:10.5rem 1fr 4.2rem;gap:1rem;align-items:center;padding:.4rem 0;font-size:.84rem}
+.fr .fl{color:var(--ink-muted)}
+.fr .bar{height:1.15rem;border-radius:.3rem;background:var(--accent);min-width:3px;opacity:.85}
+.fr .val{font-family:var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
+.retention{font-size:.82rem;color:var(--ink-muted);margin-top:.7rem;border-top:1px solid var(--line);padding-top:.7rem}
+.retention b{color:var(--ink)}
 @media(max-width:760px){.status-grid{grid-template-columns:repeat(2,1fr)}}
 """
 
@@ -73,7 +82,56 @@ def pipeline_snapshot(user_id: str) -> dict:
             in ("1", "true", "yes", "on")}
 
 
-def _render(data: dict, message: str = "") -> str:
+_FUNNEL_STEPS = (
+    ("registered", "Registered"),
+    ("keys_connected", "Keys connected"),
+    ("first_backtest", "First backtest run"),
+    ("first_paper_run", "First paper run live"),
+)
+
+
+def _activation_html(user: Optional[dict]) -> str:
+    """The Start Here activation dial — funnel + week-1 retention.
+
+    Every number is read from alpatrade.activation_events (written at the
+    true source: registration, key save, backtest completion, paper start).
+    Platform-wide counts, so it renders for admins only; failures render
+    nothing.
+    """
+    if not (user and user.get("is_admin")):
+        return ""
+    try:
+        from engine.web import onboarding
+        counts = onboarding.funnel_counts()
+        w1 = onboarding.week1_cohorts(days=30)
+    except Exception:  # noqa: BLE001
+        return ""
+    base = max(counts.get("registered", 0), 1)
+    steps = []
+    for event, label in _FUNNEL_STEPS:
+        n = counts.get(event, 0)
+        pct = int(round(100 * n / base))
+        steps.append(
+            f"<div class='fr'><span class='fl'>{html.escape(label)}</span>"
+            f"<div class='bar' style='width:{max(pct, 1)}%'></div>"
+            f"<span class='val'>{n} · {pct}%</span></div>"
+        )
+    w1_line = ""
+    if w1 and w1.get("total"):
+        w1_pct = int(round(100 * w1["returned"] / max(w1["total"], 1)))
+        w1_line = (f"<div class='retention'>Week-1 retention — <b>{w1['returned']} of "
+                   f"{w1['total']}</b> users registered in the last 30 days were active "
+                   f"again 1–7 days after signup ({w1_pct}%). Target ≥ 20%.</div>")
+    return (
+        "<section class='funnel' aria-label='Activation funnel'>"
+        "<h2>Activation funnel</h2>"
+        "<span class='muted'>First-occurrence events per account, all time — "
+        "one step per row, percent of registered.</span>"
+        f"{''.join(steps)}{w1_line}</section>"
+    )
+
+
+def _render(data: dict, message: str = "", activation: str = "") -> str:
     counts = data["counts"]
     account_options = "".join(
         f"<option value='{html.escape(str(a['account_id']))}'>{html.escape(a['account_name'])}</option>"
@@ -112,7 +170,7 @@ def _render(data: dict, message: str = "") -> str:
       <select name="account_id" aria-label="Paper account">{account_options}</select>
       <button class="primary" type="submit">Run pipeline now</button></form>
       <a href="/monitoring/pipeline"><button type="button">Refresh</button></a></div></div>
-      {message_html}<div class="status-grid">{cards}</div>{''.join(runs) or empty}
+      {message_html}{activation}<div class="status-grid">{cards}</div>{''.join(runs) or empty}
     """
 
 
@@ -126,7 +184,9 @@ def register(app, rt):
         user = _user(session)
         if not user:
             return RedirectResponse("/signin", status_code=303)
-        body = Div(NotStr(_render(pipeline_snapshot(str(user["user_id"])), msg)), cls="monitor")
+        body = Div(NotStr(_render(
+            pipeline_snapshot(str(user["user_id"])), msg,
+            activation=_activation_html(user))), cls="monitor")
         return page("agent-pipeline", Style(_CSS), body, user=user,
                     title="Agent Pipeline · AlpaTrade", right_news=False)
 

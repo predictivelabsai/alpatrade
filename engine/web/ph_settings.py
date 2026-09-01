@@ -205,6 +205,12 @@ def register(app, rt):
             from engine.auth import store_alpaca_keys
             store_alpaca_keys(user["user_id"], api_key, secret_key,
                               account_name="Default Account", account_id=account_id)
+            try:
+                from engine.web.onboarding import record_event
+                record_event(user["user_id"], "keys_connected",
+                             {"account_id": account_id})
+            except Exception:  # noqa: BLE001
+                pass
         return RedirectResponse("/settings?msg=saved", status_code=303)
 
     @app.post("/settings/preferences")

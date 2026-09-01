@@ -37,7 +37,6 @@ from fasthtml.common import (
 from engine.web.ph_commands import (
     AGENT_SHORTCUTS,
     ALPHA_RESEARCH_SHORTCUTS,
-    MAIN_NAV,
 )
 
 # --- CDN assets -------------------------------------------------------------
@@ -84,6 +83,10 @@ _ICONS = {
     "hedgefunds": '<line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
     "marketintel": '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
     "premarket": '<path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/><polyline points="8 6 12 2 16 6"/>',
+    # Trade
+    "backtests": '<rect x="4" y="13" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="11" rx="1"/><rect x="16" y="4" width="4" height="16" rx="1"/>',
+    "paper": '<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="3"/>',
+    "news": '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="13" y2="16"/>',
     # Monitoring
     "agent-pipeline": '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
     # Tools
@@ -112,6 +115,7 @@ _ICONS = {
     "sec-public": '<circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/>',
     "sec-research": '<path d="M2 3h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
     "sec-admin": '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="2" y1="14" x2="6" y2="14"/><line x1="10" y1="8" x2="14" y2="8"/><line x1="18" y1="16" x2="22" y2="16"/>',
+    "sec-trade": '<path d="M7 4v3"/><rect x="5.5" y="7" width="3" height="7"/><path d="M7 10v10"/><path d="M17 3v2"/><rect x="15.5" y="5" width="3" height="8"/><path d="M17 13v7"/>',
 }
 
 
@@ -248,15 +252,20 @@ def _brand():
 
 
 def _menu_group(label: str, items, active: Optional[str]):
-    """One collapsible command group (pehero cat-toggle / agent-item markup)."""
+    """One collapsible command group (pehero cat-toggle / agent-item markup).
+
+    Items render as plain-language actions only — the description is the whole
+    label; the raw command lives in the hover tooltip (and lands in the
+    composer on click, ready to edit), so the syntax never competes with the
+    name for space.
+    """
     is_open = any(cmd == active for cmd, _ in items)
     rows = []
     for cmd, desc in items:
         cls = "agent-item" + (" active" if cmd == active else "")
         rows.append(Button(
-            Span(cmd, cls="aitem-name"),
-            Span(desc, cls="aitem-prefix"),
-            cls=cls, type="button", title=desc,
+            Span(desc or cmd, cls="aitem-name"),
+            cls=cls, type="button", title=f"{desc}: {cmd}" if desc else cmd,
             onclick=f"fillChat({cmd!r})",
         ))
     return Details(
@@ -299,13 +308,19 @@ def _nav_section(label: str, *children, opened: bool = False,
 
 
 # Extra tool pages, appended by their feature modules as they're built.
-# Each entry: (label, href, active-key). EXPLORE = visual/map tools (IPO Map, Hedge
+# Each entry: (label, href, active-key). TRADE = first-class product surfaces
+# (Backtests, Paper Runs — ph_runs); EXPLORE = visual/map tools (IPO Map, Hedge
 # Funds, Market Intel); TOOLS = actionable tools (SEC Filings, Press Releases).
+TRADE_PAGES: list = []
 EXPLORE_PAGES: list = []
 TOOLS_PAGES: list = []
 PUBLIC_PAGES: list = []
 RESEARCH_PAGES: list = []
 MONITORING_PAGES: list = []
+
+
+def _TRADE_EXTRA(active):
+    return [_page_link(lbl, href, key, active) for lbl, href, key in TRADE_PAGES]
 
 
 def _EXPLORE_EXTRA(active):
@@ -346,19 +361,20 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             A("＋ New chat", cls="new-chat-btn", href="#",
               onclick="newChat();return false;"),
             _nav_section(
-                "Explore",
+                "Trade",
                 Div(
                     _page_link("Dashboard", "/dashboard", "dashboard", active),
-                    _page_link("Market Map", "/map", "map", active),
-                    _page_link("Charts", "/charts", "charts", active),
-                    *_EXPLORE_EXTRA(active),
+                    _page_link("Backtests", "/backtests", "backtests", active),
+                    _page_link("Paper runs", "/paper", "paper", active),
+                    *_TRADE_EXTRA(active),
                     cls="page-links",
                 ),
-                icon="sec-explore",
+                icon="sec-trade",
+                opened=True,
             ),
             _nav_section(
                 "Chats",
-                Div(Div("No chats yet.", cls="sessions-empty"),
+                Div(Div("Your conversations appear here.", cls="sessions-empty"),
                     cls="session-list", id="session-list",
                     hx_get="/app/chats", hx_trigger="load", hx_swap="innerHTML"),
                 opened=active == "app",
@@ -369,38 +385,28 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
                 Div(*[_menu_group(lbl, items, active) for lbl, items in AGENT_SHORTCUTS],
                     cls="agent-browser"),
                 icon="sec-agents",
-            ),
-            _nav_section(
-                "Monitoring",
-                Div(*_MONITORING_EXTRA(active), cls="page-links"),
-                icon="sec-monitoring",
-            ),
-            _nav_section(
-                "Tools",
-                Div(
-                    *_TOOLS_EXTRA(active),
-                    cls="page-links",
-                ),
-                Div(*[_menu_group(lbl, items, active) for lbl, items in MAIN_NAV],
-                    cls="agent-browser"),
-                icon="sec-tools",
-            ),
-            _nav_section(
-                "Public Markets",
-                Div(*_PUBLIC_EXTRA(active), cls="page-links"),
-                icon="sec-public",
+                opened=active == "app",
             ),
             _nav_section(
                 "Research",
-                Div(*_RESEARCH_EXTRA(active), cls="page-links"),
-                Div(*[_menu_group(lbl, items, active)
-                      for lbl, items in ALPHA_RESEARCH_SHORTCUTS],
-                    cls="agent-browser"),
+                Div(
+                    _page_link("Market Map", "/map", "map", active),
+                    _page_link("Charts", "/charts", "charts", active),
+                    *_RESEARCH_EXTRA(active),
+                    *_EXPLORE_EXTRA(active),
+                    *_TOOLS_EXTRA(active),
+                    *_PUBLIC_EXTRA(active),
+                    _menu_group("Alpha research agents", [
+                        item for _, items in ALPHA_RESEARCH_SHORTCUTS for item in items
+                    ], active),
+                    cls="page-links",
+                ),
                 icon="sec-research",
             ),
             _nav_section(
-                "Admin",
+                "Account",
                 Div(
+                    *_MONITORING_EXTRA(active),
                     _page_link("Settings", "/settings", "settings", active),
                     _page_link("Help & shortcuts", "/guide", "guide", active),
                     cls="page-links",

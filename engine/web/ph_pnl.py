@@ -8,6 +8,7 @@ from fasthtml.common import Div, NotStr, Style
 from starlette.responses import RedirectResponse
 
 from engine.reporting.pnl_dashboard import dashboard_data
+from engine.web import onboarding
 from engine.web.ph_layout import page
 
 _CSS = """
@@ -42,6 +43,39 @@ _CSS = """
  padding:.6rem 1rem;border-radius:.5rem;text-decoration:none}.error{color:#9b302b;background:#fff0ee;padding:.7rem;border-radius:.4rem}
 @media(max-width:820px){.metric-grid{grid-template-columns:repeat(2,1fr)}.panel-grid{grid-template-columns:1fr}}
 @media(max-width:480px){.metric-grid{grid-template-columns:1fr 1fr}.metric{padding:.75rem}.chart{height:285px}}
+/* ---- Start Here checklist (progressive onboarding; retires when complete) ---- */
+.start-here{background:var(--bg-elev);border:1px solid var(--line);border-radius:.65rem;
+ padding:1.05rem 1.15rem .6rem;margin:0 0 .85rem;position:relative;overflow:hidden}
+.start-here-head{display:flex;align-items:baseline;gap:.7rem;flex-wrap:wrap}
+.start-here-head h2{font-size:1rem;margin:0}
+.start-here-head .sh-sub{color:var(--ink-muted);font-size:.76rem}
+.sh-progress{flex:1 1 7rem;height:3px;background:var(--bg-raise);border-radius:2px;min-width:5rem}
+.sh-progress i{display:block;height:100%;background:var(--accent);border-radius:2px}
+.sh-count{font-family:var(--font-mono);font-size:.7rem;color:var(--ink-dim);white-space:nowrap}
+.sh-steps{display:flex;flex-direction:column;margin-top:.55rem}
+.sh-step{display:flex;gap:.8rem;padding:.62rem .6rem;border-radius:.5rem;align-items:flex-start}
+.sh-step.now{background:var(--accent-dim)}
+.sh-num{flex:0 0 1.4rem;height:1.4rem;border-radius:50%;display:grid;place-items:center;
+ font-family:var(--font-mono);font-size:.68rem;font-weight:600;margin-top:.05rem;
+ border:1.5px solid var(--line-br);color:var(--ink-muted);background:var(--bg-elev)}
+.sh-step.now .sh-num{border-color:var(--accent);color:var(--accent)}
+.sh-step.done .sh-num{border:none;background:var(--accent);color:var(--bg-elev)}
+.sh-step.done .sh-title{color:var(--ink-dim);text-decoration:line-through;
+ text-decoration-color:var(--line-br);text-decoration-thickness:1px}
+.sh-title{font-size:.88rem;font-weight:650;margin:0}
+.sh-desc{font-size:.76rem;color:var(--ink-muted);margin:.12rem 0 0}
+.sh-step.now .sh-title{color:var(--accent)}
+.sh-actions{margin-top:.55rem;display:flex;gap:.55rem;flex-wrap:wrap;align-items:center}
+.sh-btn{display:inline-block;background:var(--accent);color:var(--bg-elev);border-radius:.45rem;
+ padding:.58rem 1rem;font-size:.82rem;font-weight:650;text-decoration:none;min-height:2.75rem;
+ display:inline-flex;align-items:center}
+.sh-btn:hover{background:var(--accent-deep);text-decoration:none}
+.sh-btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent);
+ display:inline-flex;align-items:center;min-height:2.75rem;padding:.52rem .9rem}
+.sh-btn.ghost:hover{background:var(--accent-dim);text-decoration:none}
+.sh-hint{font-size:.72rem;color:var(--ink-dim)}
+.sh-inline{color:var(--accent);font-weight:600;text-decoration:none;white-space:nowrap}
+.sh-inline:hover{text-decoration:underline}
 """
 
 _JS = """
@@ -84,12 +118,129 @@ def _rank_table(rows: list[dict], kind: str) -> str:
             f"<tr><td>{i}. {html.escape(str(row.get('strategy_slug') or 'Unknown'))}</td>"
             f"<td>{shown}</td><td>{row.get('avg_win_rate', 0):.1f}%</td></tr>")
     if not body:
-        body.append("<tr><td colspan='3' class='muted'>No strategy results in this account yet.</td></tr>")
+        if kind == "backtest":
+            action = (f" <a class='sh-inline' href='{onboarding.autorun_url('agent:backtest lookback:3m')}'>"
+                      f"Run your first backtest →</a>")
+            body.append(
+                "<tr><td colspan='3' class='muted'>No strategy results in this account yet."
+                f"{action}</td></tr>")
+        else:
+            body.append(
+                "<tr><td colspan='3' class='muted'>No paper sessions yet — backtest a "
+                "strategy first, then trade it here.</td></tr>")
     return (
         f"<table class='contributors rank-table' data-kind='{kind}'"
         f"{' hidden' if kind != 'paper' else ''}><thead><tr><th>Strategy</th>"
         f"<th>{'PnL' if kind == 'paper' else 'Annual return'}</th><th>Win rate</th></tr></thead>"
         f"<tbody>{''.join(body)}</tbody></table>")
+
+
+def _start_here(state: dict) -> str:
+    """Start Here checklist — state-derived, self-retiring.
+
+    Every step's done-ness comes from a production-table query (see
+    engine/web/onboarding.py); nothing is a dismissible banner. The card
+    disappears entirely once all three steps have cleared, leaving the
+    P&L view to stand on its own.
+    """
+    steps = []  # each entry: (title, desc, state, num, actions)
+
+    # Step 1 — brokerage connected (own keys vs shared paper fallback).
+    if state["keys"]:
+        steps.append(("Connect your brokerage",
+                      "Alpaca keys connected and trading under your login.",
+                      "done", "1", ""))
+    else:
+        actions = (
+            "<div class='sh-actions'>"
+            "<a class='sh-btn ghost' href='/settings'>Add your own keys</a>"
+            "<span class='sh-hint'>Paper keys active — you're trading test money "
+            "until you connect live keys.</span>"
+            "</div>"
+        )
+        steps.append(("Connect your brokerage",
+                      "Link your Alpaca account so every trade is yours.",
+                      "now", "1", actions))
+
+    # Step 2 — first backtest.
+    if state["backtests"]:
+        steps.append(("Run your first backtest",
+                      "Grid-searched a strategy against real market data.",
+                      "done", "2", ""))
+    else:
+        run_url = onboarding.autorun_url("agent:backtest lookback:3m")
+        draft_url = onboarding.autorun_url("agent:backtest symbols:", draft=True)
+        actions = (
+            "<div class='sh-actions'>"
+            f"<a class='sh-btn' href='{run_url}'>Run backtest for me</a>"
+            f"<a class='sh-btn ghost' href='{draft_url}'>I'll choose symbols</a>"
+            "<span class='sh-hint'>Defaults: AAPL, MSFT, NVDA, TSLA · 3 months</span>"
+            "</div>"
+        )
+        steps.append(("Run your first backtest",
+                      "One click with sensible defaults — tune everything after.",
+                      "now", "2", actions))
+
+    # Step 3 — paper deployment.
+    if state["paper"]:
+        steps.append(("Deploy a strategy to paper",
+                      "A backtested config is live on the Alpaca paper API.",
+                      "done", "3", ""))
+    elif state["latest"]:
+        cmd = onboarding.paper_deploy_command(state["latest"])
+        metrics = ""
+        lr = state["latest"]
+        if lr.get("total_return") is not None:
+            metrics = (f"Best run: {html.escape(str(lr.get('strategy_slug') or 'result'))}"
+                       f" · {float(lr['total_return']):+.1f}% return"
+                       + (f", {float(lr['max_drawdown']):.1f}% max drawdown"
+                          if lr.get("max_drawdown") is not None else ""))
+        if cmd:
+            actions = (
+                f"<div class='sh-actions'><a class='sh-btn' "
+                f"href='{onboarding.autorun_url(cmd)}'>Deploy to paper →</a>"
+                f"<span class='sh-hint'>{metrics}</span></div>"
+            )
+            steps.append(("Trade your best result on paper",
+                          "The strongest config from your latest backtest, ready to go live.",
+                          "now", "3", actions))
+        else:
+            draft_url = onboarding.autorun_url("agent:paper duration:7d", draft=True)
+            steps.append(("Trade a strategy on paper",
+                          "Open a paper session and pick the strategy in chat.",
+                          "now", "3",
+                          ("<div class='sh-actions'>"
+                           f"<a class='sh-btn ghost' href='{draft_url}'>"
+                           "Start paper trading →</a></div>")))
+    else:
+        steps.append(("Deploy to paper",
+                      "Backtest first — this becomes your deploy step right after.",
+                      "later", "3", ""))
+
+    done_steps = sum(1 for _, _, s, _, _ in steps if s == "done")
+    pct = int(round(100 * done_steps / 3))
+    rows = []
+    for title, desc, s, num, actions in steps:
+        cls = "sh-step" + (f" {s}" if s else "")
+        aria = ' aria-current="step"' if s == "now" else ""
+        marker = "✓" if s == "done" else num
+        rows.append(
+            f"<div class='sh-step {s}'{aria}>"
+            f"<div class='sh-num' aria-hidden='true'>{marker}</div>"
+            f"<div><p class='sh-title'>{title}</p><p class='sh-desc'>{desc}</p>{actions}</div>"
+            f"</div>"
+        )
+    return (
+        "<section class='start-here' aria-label='Getting started'>"
+        "<div class='start-here-head'><h2>Start here</h2>"
+        "<span class='sh-progress' aria-hidden='true'>"
+        f"<i style='width:{pct}%'></i></span>"
+        f"<span class='sh-count'>{done_steps} of 3 done</span>"
+        "<span class='sh-sub'>Test a strategy on real data, then trade it on paper.</span>"
+        "</div>"
+        f"<div class='sh-steps'>{''.join(rows)}</div>"
+        "</section>"
+    )
 
 
 def _advisor_cards(data: dict) -> str:
@@ -162,7 +313,10 @@ def _render(data: dict, selected_id: str | None) -> str:
     if data.get("needs_account"):
         return (
             "<div class='empty'><h1>Connect an Alpaca account</h1>"
-            "<p class='muted'>Add an account to see equity, P&L and strategy performance.</p>"
+            "<p class='muted'>Add an account to see equity, P&amp;L and strategy "
+            "performance — and to trade the strategies you've backtested.</p>"
+            "<p class='muted'>No keys yet? Link your Alpaca paper account from "
+            "Settings first; you can decide about live keys whenever you're ready.</p>"
             "<a href='/settings'>Connect account</a></div>")
     if "equity" not in data:
         errors = "".join(f"<p>{html.escape(e['message'])}</p>" for e in data.get("errors", []))
@@ -185,7 +339,15 @@ def _render(data: dict, selected_id: str | None) -> str:
         for r in data["contributors"][:8]
     ) or "<tr><td colspan='3' class='muted'>No open contributors.</td></tr>"
     advisor_html = _advisor_cards(data)
+    checklist = ""
+    state = data.get("start_here") or {}
+    if not all((state.get("keys"), state.get("backtests"), state.get("paper"))):
+        try:
+            checklist = _start_here(state)
+        except Exception:  # noqa: BLE001
+            checklist = ""  # never let onboarding break the P&L page
     return f"""
+      {checklist}
       <div class="dash-head"><div><h1>Portfolio P&amp;L</h1>
       <div class="muted">{html.escape(data['account_name'])} · calendar {period} · updated {data['as_of'][:16].replace('T',' ') } UTC</div></div>
       <form class="dash-controls" method="get" action="/dashboard">
@@ -227,6 +389,18 @@ def register(app, rt):
         if data.get("account_id") and data["account_id"] != "all":
             session["dashboard_account_id"] = data["account_id"]
         selected = requested
+        uid = str(user_id)
+        # Start Here checklist — read-only state queries; any failure just
+        # hides the card rather than breaking the dashboard.
+        try:
+            data["start_here"] = {
+                "keys": onboarding.has_linked_account(uid),
+                "backtests": onboarding.has_backtests(uid),
+                "paper": onboarding.has_paper_activity(uid),
+                "latest": onboarding.latest_backtest_config(uid),
+            }
+        except Exception:  # noqa: BLE001
+            data["start_here"] = {}
         serializable = {k: data.get(k) for k in ("history", "contributors")}
         try:
             from engine.auth import get_user_by_id
