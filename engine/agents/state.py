@@ -17,6 +17,18 @@ logger = logging.getLogger(__name__)
 STATE_FILE = Path("data/agent_state.json")
 
 
+def _state_file(user_id: Optional[str]) -> Path:
+    """Per-user state file so concurrent runs from different users don't collide.
+
+    Anonymous / legacy CLI runs (``user_id is None``) keep the shared
+    ``data/agent_state.json``; signed-in users get a dedicated file.
+    """
+    if user_id:
+        safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in str(user_id))
+        return Path("data") / f"agent_state_{safe}.json"
+    return STATE_FILE
+
+
 @dataclass
 class AgentState:
     """State of a single agent."""
@@ -54,6 +66,7 @@ class AgentState:
 class PortfolioState:
     """Overall portfolio and orchestration state."""
     run_id: Optional[str] = None
+    user_id: Optional[str] = None
     mode: str = "idle"  # idle, backtest, validate, paper_trade, full
     agents: Dict[str, AgentState] = field(default_factory=dict)
     backtest_results: List[Dict[str, Any]] = field(default_factory=list)
@@ -73,6 +86,7 @@ class PortfolioState:
     def to_dict(self) -> Dict:
         data = {
             "run_id": self.run_id,
+            "user_id": self.user_id,
             "mode": self.mode,
             "agents": {k: asdict(v) for k, v in self.agents.items()},
             "backtest_results": self.backtest_results,
@@ -89,6 +103,7 @@ class PortfolioState:
     def from_dict(cls, data: Dict) -> "PortfolioState":
         state = cls(
             run_id=data.get("run_id"),
+            user_id=data.get("user_id"),
             mode=data.get("mode", "idle"),
             backtest_results=data.get("backtest_results", []),
             best_config=data.get("best_config"),
@@ -104,19 +119,26 @@ class PortfolioState:
 
     def save(self, path: Optional[Path] = None):
         """Persist state to JSON file."""
-        target = path or STATE_FILE
+        target = path or _state_file(self.user_id)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps(self.to_dict(), indent=2, default=str))
         logger.debug(f"State saved to {target}")
 
     @classmethod
-    def load(cls, path: Optional[Path] = None) -> "PortfolioState":
-        """Load state from JSON file, or return fresh state."""
-        target = path or STATE_FILE
+    def load(cls, path: Optional[Path] = None, user_id: Optional[str] = None) -> "PortfolioState":
+        """Load state from JSON file, or return fresh state.
+
+        When ``user_id`` is given (and no explicit ``path``), the state is loaded
+        from that user's dedicated file so runs from different users never collide.
+        """
+        target = path or _state_file(user_id)
         if target.exists():
             try:
                 data = json.loads(target.read_text())
-                return cls.from_dict(data)
+                state = cls.from_dict(data)
+                if user_id is not None:
+                    state.user_id = user_id
+                return state
             except Exception as e:
                 logger.warning(f"Failed to load state from {target}: {e}")
-        return cls()
+        return cls(user_id=user_id)

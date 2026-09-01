@@ -64,7 +64,7 @@ class Orchestrator:
         self.user_id = user_id
         self.account_id = account_id
         self.bus = MessageBus()
-        self.state = PortfolioState.load()
+        self.state = PortfolioState.load(user_id=user_id)
         self.state.run_id = self.run_id
         self.state.started_at = datetime.now(timezone.utc).isoformat()
 

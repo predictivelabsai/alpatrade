@@ -65,12 +65,17 @@ primary_agent = _agui.primary_agent
 # Compatibility alias for local helpers/tests written before the harness migration.
 langgraph_agent = primary_agent
 _command_interceptor = _agui._command_interceptor
-_app_state = _agui._app_state
 
-# In-memory per-thread AI history (context for the primary agent). Keyed by the
-# thread id stored on the session cookie. Command results are stateless.
+# In-memory AI history (context for the primary agent). Keyed by (user_id, thread_id)
+# so that even if two users ever share a thread id (cookie collision / reused
+# session), they never see each other's chat history. Command results are stateless.
 _HISTORY: dict[str, list[dict]] = {}
 logger = logging.getLogger(__name__)
+
+
+def _history_key(user_id, thread_id) -> str:
+    """Composite key isolating chat history per user *and* thread."""
+    return f"{user_id}:{thread_id}"
 
 
 # ---------------------------------------------------------------------------
@@ -1239,10 +1244,10 @@ async def _stream(msg: str, session) -> StreamingResponse:
         _agui.set_request_user(str(uid) if uid is not None else None)
         yield _sse("session", {"sid": thread_id})
         user_key = str(uid) if uid is not None else ""
-        history = _HISTORY.get(thread_id)
+        history = _HISTORY.get(_history_key(uid, thread_id))
         if history is None:
             history = _load_owned_history(thread_id, user_key) if user_key else []
-            _HISTORY[thread_id] = history
+            _HISTORY[_history_key(uid, thread_id)] = history
         _save_chat_message(thread_id, user_key, "user", msg)
 
         # Durable trading commands are deterministic: queue them before asking
@@ -1727,7 +1732,7 @@ def register(app, rt):
             if not conversation_belongs_to_user(thread_id, str(uid)):
                 return JSONResponse({"deleted": False}, status_code=404)
             delete_conversation(thread_id, user_id=str(uid))
-            _HISTORY.pop(thread_id, None)
+            _HISTORY.pop(_history_key(uid, thread_id), None)
             return JSONResponse({"deleted": True})
         except Exception:  # noqa: BLE001
             return JSONResponse({"deleted": False}, status_code=404)
