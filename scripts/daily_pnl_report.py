@@ -208,6 +208,7 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
         "runs": runs,
         "active_runs": active_runs(user_id=user_id, account_id=account_id,
                                    framework=framework),
+        "latest_hermes_paper_job": latest_hermes_paper_job(user_id, account_id),
         "agent_performance": agent_performance(
             user_id, account_id, framework, day=target_day
         ),
@@ -487,6 +488,26 @@ def active_runs(limit: int = 25, user_id: str | None = None,
             return [dict(zip(cols, row)) for row in result.fetchall()]
     except Exception:  # noqa: BLE001
         return []
+
+
+def latest_hermes_paper_job(user_id: str | None, account_id: str | None) -> dict:
+    """Latest owned Hermes paper job, used to explain an idle daily digest."""
+    if not user_id or not account_id:
+        return {}
+    try:
+        from sqlalchemy import text
+        from engine.db.pool import DatabasePool
+        with DatabasePool().get_session() as session:
+            row = session.execute(text("""
+                SELECT job_id, status, error, candidate_id, updated_at
+                FROM alpatrade.hermes_jobs
+                WHERE user_id = CAST(:uid AS UUID)
+                  AND account_id = CAST(:aid AS UUID) AND kind = 'paper'
+                ORDER BY created_at DESC LIMIT 1
+            """), {"uid": user_id, "aid": account_id}).mappings().first()
+        return dict(row) if row else {}
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def reconcile_stale_runs(user_id: str, account_id: str) -> int:
@@ -886,7 +907,11 @@ def _render_risk(d: dict) -> str:
     rc = "#1F5D43" if rp >= 0 else "#b0653f"
     parts.append(f"Realized P&amp;L to date <b style='color:{rc}'>${rp:+,.2f}</b>")
     if stats.get("sharpe") is not None:
-        parts.append(f"Sharpe (annualized) <b>{_f(stats.get('sharpe')):.2f}</b>")
+        days = int(stats.get("snapshot_days") or 0)
+        preliminary = " <small>(preliminary)</small>" if days < 20 else ""
+        parts.append(
+            f"Sharpe (annualized) <b>{_f(stats.get('sharpe')):.2f}</b>{preliminary}"
+        )
     if stats.get("max_drawdown") is not None:
         parts.append(f"Max drawdown <b style='color:#b0653f'>{_f(stats.get('max_drawdown')):.2f}%</b>")
     note = (f" · from {int(stats.get('snapshot_days') or 0)} snapshot day(s)"
@@ -956,8 +981,28 @@ def _render_agent_next_steps(d: dict) -> str:
         note = ("No realized Hermes activity today; continue paper observation."
                 if int(hermes.get("today_exits") or 0) == 0 else
                 f"Hermes realized ${today:+,.2f} today; review risk and backtest drift.")
+    active = list(d.get("active_runs") or [])
+    latest = d.get("latest_hermes_paper_job") or {}
+    activity_alert = ""
+    if not active:
+        status = str(latest.get("status") or "").lower()
+        if status == "failed":
+            from engine.agents.hermes_advice import safe_failure_reason
+            reason = safe_failure_reason(latest.get("error"))
+            activity_alert = (
+                "<p style='background:#FCE8E6;border-left:4px solid #B4472F;"
+                "padding:8px 10px'><b>No active strategy — no trades or P&amp;L can be "
+                f"generated.</b><br>Latest Hermes paper job failed: {_e(reason)}</p>"
+            )
+        else:
+            activity_alert = (
+                "<p style='background:#FFF8E6;border-left:4px solid #b7791f;"
+                "padding:8px 10px'><b>No active strategy — no trades or strategy P&amp;L "
+                "can be generated.</b></p>"
+            )
     return (
         "<h3>Agent status &amp; recommended next steps</h3>"
+        f"{activity_alert}"
         f"<p style='font-size:13px'>{_e(note)}</p>"
         "<ul style='font-size:13px'>"
         "<li><code>/hermes analyze my running paper job</code></li>"

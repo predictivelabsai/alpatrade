@@ -4,6 +4,7 @@ from __future__ import annotations
 import html
 import json
 import math
+import re
 import statistics
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
@@ -18,6 +19,23 @@ GAIN_COLOR = "#18864b"
 LOSS_COLOR = "#c53b3b"
 WATCH_COLOR = "#b7791f"
 INFO_COLOR = "#315f85"
+
+
+def safe_failure_reason(value: Any, limit: int = 500) -> str:
+    """Return a useful worker error without exposing credential-shaped values."""
+    message = str(value or "The paper worker failed without recording a reason.")
+    message = re.sub(
+        r"(?i)\bAuthorization\b\s*[:=]\s*(?:Bearer\s+)?\S+",
+        "Authorization=[REDACTED]",
+        message,
+    )
+    message = re.sub(
+        r"(?i)\b(api[_ -]?key|secret|token|password)\b\s*[:=]\s*\S+",
+        r"\1=[REDACTED]",
+        message,
+    )
+    message = re.sub(r"(?i)\bBearer\s+\S+", "Bearer [REDACTED]", message)
+    return message[:limit]
 
 
 def assess_performance_drift(
@@ -500,7 +518,7 @@ def analyze_owned_paper_job(job_id: str, user_id: str) -> Optional[dict]:
     """Return a deterministic, owner-scoped paper diagnosis for chat/email actions."""
     with _pool().get_session() as session:
         job = session.execute(text("""
-            SELECT job_id, run_id, candidate_id, account_id, status, config
+            SELECT job_id, run_id, candidate_id, account_id, status, config, error
             FROM alpatrade.hermes_jobs
             WHERE job_id = CAST(:job_id AS UUID) AND user_id = CAST(:uid AS UUID)
               AND kind = 'paper'
@@ -540,9 +558,34 @@ def analyze_owned_paper_job(job_id: str, user_id: str) -> Optional[dict]:
     )
     report.update({
         "job_status": str(job["status"]), "config": dict(job["config"] or {}),
+        "job_error": str(job["error"] or ""),
         "active_duplicate_jobs": int(active_duplicates or 0),
         "other_active_account_runs": int(other_account_runs or 0),
     })
+    job_status = str(job["status"] or "").lower()
+    if job_status == "failed":
+        report["status"] = "FAILED"
+        report["status_color"] = LOSS_COLOR
+        failure = safe_failure_reason(job["error"])
+        report["reasons"] = [f"The paper job failed: {failure}"]
+        report["decision"] = (
+            "Do not evaluate this job's P&L as a running strategy. Review the failure, "
+            "then explicitly start an eligible candidate in a new paper job."
+        )
+        report["commands"] = [
+            "/hermes show my latest backtest result",
+            "/hermes start my best eligible candidate in continuous paper trading, "
+            "email daily reports, and notify me both",
+        ]
+    elif (job_status in {"stopped", "cancelled", "completed"}
+          and not report["completed_exits"]):
+        report["status"] = job_status.upper()
+        report["status_color"] = INFO_COLOR
+        report["reasons"] = [
+            f"This paper job is {job_status} and has no completed exits."
+        ]
+        report["decision"] = "No strategy is currently being evaluated by this job."
+        report["commands"] = ["/hermes show my running jobs"]
     if active_duplicates:
         report["status"] = "RED"
         report["status_color"] = LOSS_COLOR

@@ -623,6 +623,52 @@ def test_hermes_report_waits_for_evidence_when_no_exits_exist():
     assert not any("backtest" in command for command in report["commands"])
 
 
+def test_failed_paper_analysis_does_not_recommend_keep_running(monkeypatch):
+    from engine.agents import hermes_advice
+
+    class _Result:
+        def __init__(self, rows=None, scalar=0):
+            self._rows = rows or []
+            self._scalar = scalar
+        def mappings(self): return self
+        def first(self): return self._rows[0] if self._rows else None
+        def all(self): return self._rows
+        def scalar_one(self): return self._scalar
+
+    class _Session:
+        def __init__(self): self.calls = 0
+        def execute(self, *_args, **_kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                return _Result([{"job_id": "job-1", "run_id": "run-1",
+                    "candidate_id": "candidate-1", "account_id": "account-1",
+                    "status": "failed", "config": {}, "error": "worker crashed"}])
+            return _Result(scalar=0)
+
+    class _Ctx:
+        def __init__(self, session): self.session = session
+        def __enter__(self): return self.session
+        def __exit__(self, *_args): return False
+
+    class _Pool:
+        def get_session(self): return _Ctx(_Session())
+
+    monkeypatch.setattr(hermes_advice, "_pool", lambda: _Pool())
+    monkeypatch.setattr(hermes_advice, "list_owned", lambda *_args, **_kwargs: [])
+    result = hermes_advice.analyze_owned_paper_job("job-1", "user-1")
+    assert result["status"] == "FAILED"
+    assert "worker crashed" in result["reasons"][0]
+    assert "Keep" not in result["decision"]
+
+
+def test_failure_reason_redacts_credentials():
+    from engine.agents.hermes_advice import safe_failure_reason
+
+    reason = safe_failure_reason("API_KEY=abc123 Authorization: Bearer secret-token")
+    assert "abc123" not in reason and "secret-token" not in reason
+    assert "[REDACTED]" in reason
+
+
 def test_immediate_alert_has_reason_context_and_loss_color():
     from engine.agents.hermes_advice import build_advice_alert_email
 
