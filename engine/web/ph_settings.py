@@ -102,7 +102,8 @@ def _settings_page(user, msg: str = ""):
         hint = accounts[0].get("api_key_hint", "****")
         key_status = Span(f"Configured · {hint}", cls="s-status ok")
     else:
-        key_status = Span("Not configured — using the server's default keys", cls="s-status no")
+        key_status = Span("Not connected — add your Alpaca paper keys below to trade",
+                          cls="s-status no")
 
     notice = [Div("Saved.", cls="s-notice ok")] if msg == "saved" else []
 

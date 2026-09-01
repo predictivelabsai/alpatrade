@@ -485,7 +485,14 @@ def register(app, rt):
         if not api_key or not secret_key:
             return RedirectResponse("/profile?msg=Both+keys+are+required", status_code=303)
         try:
-            store_alpaca_keys(user["user_id"], api_key, secret_key, account_name=account_name)
+            account_id = store_alpaca_keys(
+                user["user_id"], api_key, secret_key, account_name=account_name)
+            try:
+                from engine.web.onboarding import record_event
+                record_event(user["user_id"], "keys_connected",
+                             {"account_id": account_id})
+            except Exception:  # noqa: BLE001
+                pass
             return RedirectResponse("/profile?msg=Alpaca+keys+saved+successfully", status_code=303)
         except Exception as e:  # noqa: BLE001
             logger.error("Failed to store Alpaca keys: %s", e)
