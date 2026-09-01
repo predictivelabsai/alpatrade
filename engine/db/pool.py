@@ -30,6 +30,7 @@ MAX_OVERFLOW = int(os.getenv("DB_MAX_OVERFLOW", "5"))
 POOL_RECYCLE = int(os.getenv("DB_POOL_RECYCLE", "1800"))  # drop conns older than 30m
 POOL_TIMEOUT = int(os.getenv("DB_POOL_TIMEOUT", "10"))    # fail fast instead of hanging
 APPLICATION_NAME = os.getenv("DB_APPLICATION_NAME", "alpatrade")
+CONNECT_TIMEOUT = int(os.getenv("DB_CONNECT_TIMEOUT", "10"))  # seconds to TCP-connect
 
 
 class DatabasePool:
@@ -74,7 +75,14 @@ class DatabasePool:
             pool_recycle=POOL_RECYCLE,
             pool_timeout=POOL_TIMEOUT,
             pool_pre_ping=True,
-            connect_args={"application_name": APPLICATION_NAME},
+            # connect_timeout caps the TCP connect so an unreachable/blocked
+            # database fails fast instead of hanging forever — a missing one
+            # once stalled the CI regression suite for its whole 10-min step
+            # timeout (the DB port was briefly unreachable from the runner).
+            connect_args={
+                "application_name": APPLICATION_NAME,
+                "connect_timeout": CONNECT_TIMEOUT,
+            },
         )
         self._session_factory = sessionmaker(bind=self.engine)
         logger.info(
