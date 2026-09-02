@@ -56,6 +56,15 @@ _CSS = """
 .runs .copy{border:1px solid var(--line);background:var(--bg-elev);color:var(--ink-muted);
  border-radius:.4rem;padding:.32rem .5rem;font-size:.7rem;cursor:pointer}
 .runs .copy:hover{border-color:var(--accent);color:var(--accent)}
+.runs .presets{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;
+ margin:0 0 1rem}
+.runs .presets .p-label{font-size:.7rem;text-transform:uppercase;
+ letter-spacing:.08em;color:var(--ink-dim);margin-right:.2rem}
+.runs .presets a{border:1px solid var(--line);background:var(--bg-elev);
+ color:var(--ink);text-decoration:none;border-radius:1rem;
+ padding:.34rem .7rem;font-size:.76rem}
+.runs .presets a:hover{border-color:var(--accent);color:var(--accent);
+ text-decoration:none}
 """
 
 _LIMIT = 25
@@ -74,8 +83,9 @@ _RUN_SQL = """
 
 _MODE_EMPTY = {
     "backtest": (
-        "<p>No backtests yet. Run one from the <a href='/dashboard'>Start Here</a> card, "
-        "or just say <i>backtest buy-the-dip on AAPL</i> in the chat composer.</p>"),
+        "<p>No backtests yet. Start from a preset below, run one from the "
+        "<a href='/dashboard'>Start Here</a> card, or just say <i>backtest "
+        "buy-the-dip on AAPL</i> in the chat composer.</p>"),
     "paper": (
         "<p>No paper runs yet. Backtest a strategy first — the deploy step appears on "
         "the <a href='/dashboard'>dashboard</a> and the <a href='/backtests'>backtests "
@@ -186,6 +196,19 @@ def _paper_row(r: dict) -> str:
         f"<td><span class='run-id'>{html.escape(str(r['run_id'])[:8])}</span></td></tr>")
 
 
+def _presets_strip() -> str:
+    """One-click strategy presets — curated agent:backtest starting configs."""
+    links = "".join(
+        f"<a href='{onboarding.preset_url(p)}' "
+        f"title='{html.escape(str(p.get('blurb') or ''))}'>"
+        f"{html.escape(str(p.get('name') or ''))}</a>"
+        for p in onboarding.STRATEGY_PRESETS)
+    return (
+        "<div class='presets'><span class='p-label'>Start from a preset</span>"
+        f"{links}</div>"
+    )
+
+
 def _render(mode: str, rows: list[dict]) -> str:
     tabs = (
         "<div class='runs-tabs'>"
@@ -202,11 +225,15 @@ def _render(mode: str, rows: list[dict]) -> str:
         f"{tabs}</div>"
     )
     if not rows:
-        body = f"<div class='empty'>{_MODE_EMPTY[mode]}</div>"
+        empty = _MODE_EMPTY[mode]
+        if mode == "backtest":
+            empty += _presets_strip()
+        body = f"<div class='empty'>{empty}</div>"
     elif mode == "backtest":
         rows_html = "".join(_bt_row(r) for r in rows)
         body = (
-            "<div class='runs-tblwrap'><table><thead><tr>"
+            _presets_strip()
+            + "<div class='runs-tblwrap'><table><thead><tr>"
             "<th>Strategy</th><th>Return</th><th>Sharpe</th><th>Best params</th>"
             "<th>Started</th><th>Status</th><th></th><th>Share</th><th>Run</th>"
             "</tr></thead><tbody>" + rows_html + "</tbody></table></div>"

@@ -289,6 +289,71 @@ def format_params(params: dict) -> str:
             scaled = float(value) * 100 if 0 < abs(value) < 1 else value
             bits.append(f"{label} {scaled:g}%")
     return " · ".join(bits)
+# Strategy presets — curated one-click starting configs (P1 #7).
+# Each preset is a plain ``agent:backtest`` command (the same tokens the CLI
+# accepts: strategy/symbols/lookback/capital/hours/intraday_exit/pdt), so a
+# preset can never drift from what the command surface actually parses.
+# ---------------------------------------------------------------------------
+
+_PRESET = Dict[str, str]  # name/strategy/blurb/command keys
+
+STRATEGY_PRESETS: tuple = (
+    {
+        "name": "Dip · mega-cap tech",
+        "strategy": "buy_the_dip",
+        "blurb": "Buys sharp dips in the largest tech names and exits on "
+                 "bounce, stop, or timeout. Params are grid-searched.",
+        "command": "agent:backtest strategy:buy_the_dip "
+                   "symbols:AAPL,MSFT,NVDA,TSLA lookback:6m",
+    },
+    {
+        "name": "Dip · blue chips",
+        "strategy": "buy_the_dip",
+        "blurb": "Slower, steadier names — shallower dips, longer holds.",
+        "command": "agent:backtest strategy:buy_the_dip "
+                   "symbols:KO,JNJ,PG lookback:12m",
+    },
+    {
+        "name": "Dip · intraday exits",
+        "strategy": "buy_the_dip",
+        "blurb": "Same dip logic, but exits use 5-minute bars for precise "
+                 "take-profit/stop timing.",
+        "command": "agent:backtest strategy:buy_the_dip symbols:AAPL,MSFT "
+                   "lookback:3m intraday_exit:true",
+    },
+    {
+        "name": "Momentum · mega caps",
+        "strategy": "momentum",
+        "blurb": "Rides strong upward momentum over a lookback window.",
+        "command": "agent:backtest strategy:momentum "
+                   "symbols:AAPL,MSFT,NVDA,AMZN,META,GOOGL lookback:6m",
+    },
+    {
+        "name": "Momentum · high beta",
+        "strategy": "momentum",
+        "blurb": "The fast movers — bigger swings, both ways.",
+        "command": "agent:backtest strategy:momentum symbols:TSLA,NVDA,AMD,MU "
+                   "lookback:3m",
+    },
+    {
+        "name": "VIX fear regime",
+        "strategy": "vix",
+        "blurb": "Trades when the VIX fear index breaks its threshold.",
+        "command": "agent:backtest strategy:vix symbols:SPY,QQQ lookback:6m",
+    },
+    {
+        "name": "Box & wedge · patterns",
+        "strategy": "box_wedge",
+        "blurb": "Pattern-based entries with R-based scale-outs.",
+        "command": "agent:backtest strategy:box_wedge symbols:AAPL,TSLA,NVDA "
+                   "lookback:6m",
+    },
+)
+
+
+def preset_url(preset: dict) -> str:
+    """Autorun URL for one strategy preset."""
+    return autorun_url(str(preset.get("command") or ""))
 
 
 # ---------------------------------------------------------------------------
