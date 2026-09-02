@@ -324,7 +324,11 @@ def _render(data: dict, selected_id: str | None) -> str:
             "<a href='/settings'>Connect account</a></div>")
     if "equity" not in data:
         errors = "".join(f"<p>{html.escape(e['message'])}</p>" for e in data.get("errors", []))
-        return f"<div class='empty'><h1>Portfolio unavailable</h1><div class='error'>{errors}</div></div>"
+        cta = ""
+        if any("unauthorized" in str(e.get("message", "")).lower() for e in data.get("errors", [])):
+            cta = ("<p style='margin:.9rem 0 0'><a href='/settings'>"
+                   "Update your Alpaca keys →</a></p>")
+        return f"<div class='empty'><h1>Portfolio unavailable</h1><div class='error'>{errors}</div>{cta}</div>"
     chosen = selected_id or data["account_id"]
     options = ["<option value='all'>All accounts</option>"] + [
         f"<option value='{a['account_id']}' {'selected' if chosen == a['account_id'] else ''}>"

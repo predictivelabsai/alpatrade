@@ -133,6 +133,60 @@ def test_no_account_returns_onboarding_state(monkeypatch):
     assert dashboard.dashboard_data("user-1", None, "daily")["needs_account"] is True
 
 
+def test_unauthorized_keys_get_actionable_guidance(monkeypatch):
+    observed = []
+
+    class FakeClient:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def get_account(self):
+            observed.append(1)
+            return {"error": '{"message": "unauthorized."}\n'}
+
+    monkeypatch.setattr(dashboard, "AlpacaAPI", FakeClient)
+    monkeypatch.setattr(dashboard, "get_alpaca_keys", lambda _uid, _aid: ("key", "secret"))
+
+    with pytest.raises(ValueError) as excinfo:
+        dashboard._client("user-1", "acct-1")
+
+    message = str(excinfo.value)
+    assert "unauthorized" in message
+    assert "re-enter them under Settings" in message
+    assert '{"message"' not in message  # raw Alpaca JSON never reaches the user
+
+
+def test_non_unauthorized_alpaca_errors_pass_through(monkeypatch):
+    class FakeClient:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def get_account(self):
+            return {"error": "forbidden: IP not whitelisted"}
+
+    monkeypatch.setattr(dashboard, "AlpacaAPI", FakeClient)
+    monkeypatch.setattr(dashboard, "get_alpaca_keys", lambda _uid, _aid: ("key", "secret"))
+
+    with pytest.raises(ValueError) as excinfo:
+        dashboard._client("user-1", "acct-1")
+
+    assert "IP not whitelisted" in str(excinfo.value)
+
+
+def test_error_page_offers_the_settings_cta_for_bad_keys():
+    from engine.web import ph_pnl
+
+    data = {"errors": [{"account_id": "a1",
+                        "message": "Could not read this Alpaca account: "
+                                   "Alpaca rejected the stored API keys for this "
+                                   "account (unauthorized)."}],
+            "period": "daily"}
+    rendered = ph_pnl._render(data, None)
+
+    assert "Update your Alpaca keys" in rendered
+    assert "href='/settings'" in rendered
+
+
 def test_failing_selected_account_returns_errors_instead_of_crashing(monkeypatch):
     accounts = [_account("broken", "Broken")]
     monkeypatch.setattr(dashboard, "get_user_accounts", lambda _uid: accounts)

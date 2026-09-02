@@ -28,6 +28,17 @@ def period_bounds(period: str, now: datetime | None = None) -> tuple[datetime, d
     return datetime.combine(start_date, time.min, tzinfo=timezone.utc), now
 
 
+def _friendly_error(raw: str) -> str:
+    """Translate raw Alpaca API errors into user-facing guidance."""
+    if "unauthorized" in raw.lower():
+        return (
+            "Alpaca rejected the stored API keys for this account (unauthorized). "
+            "The keys were most likely regenerated or revoked — create new paper "
+            "keys in your Alpaca dashboard, then re-enter them under Settings."
+        )
+    return raw
+
+
 def _client(user_id: str, account_id: str) -> tuple[AlpacaAPI, str]:
     keys = get_alpaca_keys(user_id, account_id)
     if not keys:
@@ -42,7 +53,9 @@ def _client(user_id: str, account_id: str) -> tuple[AlpacaAPI, str]:
             client._dashboard_account = account  # type: ignore[attr-defined]
             return client, "paper" if paper else "live"
         errors.append(str(account.get("error", "unknown")) if isinstance(account, dict) else str(account))
-    raise ValueError("Could not read this Alpaca account: " + "; ".join(errors))
+    # Paper and live share the keys, so both probes usually fail identically.
+    messages = list(dict.fromkeys(_friendly_error(e) for e in errors))
+    raise ValueError("Could not read this Alpaca account: " + " ".join(messages))
 
 
 def _number(value: Any) -> float:
