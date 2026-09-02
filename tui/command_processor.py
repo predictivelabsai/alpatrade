@@ -16,6 +16,12 @@ from typing import Optional, Tuple, Dict, Any, Iterator
 
 from rich.console import Console
 
+from utils.paper_strategies import (
+    PARAM_SCHEMA,
+    canonical_strategy,
+    parse_command_params,
+)
+
 # Ensure project root is importable
 project_root = Path(__file__).parent.parent.absolute()
 if str(project_root) not in sys.path:
@@ -1172,7 +1178,7 @@ Plotly.newPlot('chart', [trace1], {{
             pdt_protection = pdt_val.lower() not in ("false", "no", "0", "off")
 
         config = {
-            "strategy": params.get("strategy", "buy_the_dip"),
+            "strategy": canonical_strategy(params.get("strategy", "buy_the_dip") or "buy_the_dip"),
             "symbols": symbols,
             "duration_seconds": parse_duration(duration),
             "poll_interval_seconds": int(params.get("poll", "300")),
@@ -1181,22 +1187,35 @@ Plotly.newPlot('chart', [trace1], {{
             "email_notifications": params.get("email", "false").lower() not in ("false", "no", "0", "off"),
             "pdt_protection": pdt_protection,
         }
-        
-        # Load yaml config for threshold defaults
+        if config["strategy"] not in PARAM_SCHEMA:
+            return (f"# Unknown Strategy\n\n`{config['strategy']}` is not a paper-trading "
+                    f"strategy. Supported: {', '.join(sorted(PARAM_SCHEMA))} "
+                    "(or aliases btd/mom/vix/bwg).")
+
+        # Load yaml config for per-strategy defaults
         import yaml
         yaml_path = Path("config/parameters.yaml")
-        yaml_cfg = {}
+        yaml_params = {}
         if yaml_path.exists():
             with open(yaml_path) as f:
-                all_cfg = yaml.safe_load(f) or {}
-            yaml_cfg = all_cfg.get(config["strategy"], {})
+                yaml_params = yaml.safe_load(f) or {}
 
+        # Schema-driven params (nested dict; the orchestrator resolves
+        # precedence against the strategy's yaml section and its defaults).
+        strategy_params = parse_command_params(config["strategy"], params)
+        if params.get("capital_per_trade") is not None:
+            strategy_params["capital_per_trade"] = float(params["capital_per_trade"])
+        config["params"] = strategy_params
+
+        # Legacy top-level btd keys kept for older readers (the orchestrator
+        # reads config["params"] now).
+        yaml_cfg = yaml_params.get(config["strategy"], {})
         dip = params.get("dip_threshold", yaml_cfg.get("dip_threshold", 5.0))
         tp = params.get("take_profit_threshold", yaml_cfg.get("take_profit_threshold", 1.0))
         sl = params.get("stop_loss_threshold", yaml_cfg.get("stop_loss_threshold", 0.5))
         hold = params.get("hold_days", yaml_cfg.get("hold_days", 2))
         cpt = params.get("capital_per_trade", yaml_cfg.get("capital_per_trade", 1000.0))
-        
+
         config["dip_threshold"] = float(dip)
         config["take_profit_threshold"] = float(tp)
         config["stop_loss_threshold"] = float(sl)
@@ -1227,6 +1246,24 @@ Plotly.newPlot('chart', [trace1], {{
 
         log_path = Path("data/paper_trade.log")
 
+        # Per-strategy param lines (btd keeps its classic dip/tp/sl/hold block)
+        def _fmt_param(v):
+            return f"{v:g}" if isinstance(v, (int, float)) else str(v)
+
+        param_lines = []
+        for spec in PARAM_SCHEMA[config["strategy"]]:
+            value = strategy_params.get(spec.key)
+            if value is None:
+                continue
+            if spec.kind == "percent":
+                param_lines.append(f"- **{spec.key.replace('_', ' ').title()}**: {value:g}%")
+            elif spec.kind == "dollars":
+                param_lines.append(f"- **{spec.key.replace('_', ' ').title()}**: ${float(value):,.0f}")
+            elif spec.kind == "bool":
+                param_lines.append(f"- **{spec.key.replace('_', ' ').title()}**: {'yes' if value else 'no'}")
+            else:
+                param_lines.append(f"- **{spec.key.replace('_', ' ').title()}**: {_fmt_param(value)}")
+
         return (
             f"# Paper Trading Started\n\n"
             f"- **Run ID**: `{run_id}`\n"
@@ -1234,11 +1271,10 @@ Plotly.newPlot('chart', [trace1], {{
             f"- **Strategy**: {config['strategy']}\n"
             f"- **Account**: {account_id or 'Default'}\n"
             f"- **Symbols**: {', '.join(symbols)}\n"
-            f"- **Dip Threshold**: {dip}%\n"
-            f"- **Take Profit**: {tp}%\n"
-            f"- **Stop Loss**: {sl}%\n"
-            f"- **Hold Days**: {hold}\n"
-            f"- **Capital/Trade**: ${float(cpt):,.0f}\n"
+            + ("\n".join(param_lines) if param_lines else
+               f"- **Dip Threshold**: {dip}%\n- **Take Profit**: {tp}%\n"
+               f"- **Stop Loss**: {sl}%\n- **Hold Days**: {hold}\n")
+            + f"- **Capital/Trade**: ${float(cpt):,.0f}\n"
             f"- **Poll Interval**: {config['poll_interval_seconds']}s\n"
             f"- **Hours**: {hours_label}\n"
             f"- **PDT Protection**: {pdt_label}\n"

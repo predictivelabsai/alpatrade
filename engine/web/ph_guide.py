@@ -309,11 +309,21 @@ def _guide_paper():
         P("Paper trading runs continuously in the background, placing real orders on "
           "Alpaca's paper trading API:"),
         Pre(Code("agent:paper duration:7d")),
-        P("This monitors your symbols every 5 minutes for 7 days, executing the Buy the "
-          "Dip strategy with real market data — but no real money is at risk."),
+        P("This monitors your symbols every 5 minutes for 7 days with real market data — "
+          "but no real money is at risk. All four strategies can be deployed; pick one "
+          "with ", Code("strategy:"), " (buy_the_dip is the default):"),
+        Pre(Code(
+            "agent:paper strategy:buy_the_dip dip_threshold:5 stop_loss_threshold:0.5\n"
+            "agent:paper strategy:momentum momentum_threshold:5 lookback_period:20\n"
+            "agent:paper strategy:vix vix_threshold:22 hold_overnight:true\n"
+            "agent:paper strategy:box_wedge risk_per_trade_pct:1 contraction_threshold:0.7"
+        )),
+        P("Backtesting a strategy first is the recommended flow — the backtests list "
+          "then offers a one-click deploy that trades the tested config."),
         NotStr("""<table>
 <thead><tr><th>Parameter</th><th>Default</th><th>Description</th></tr></thead>
 <tbody>
+<tr><td><code>strategy:vix</code></td><td>buy_the_dip</td><td>Strategy: <code>buy_the_dip</code>, <code>momentum</code>, <code>vix</code>, <code>box_wedge</code></td></tr>
 <tr><td><code>duration:7d</code></td><td>7d</td><td>How long to run — <code>1h</code>, <code>1d</code>, <code>7d</code>, <code>1m</code></td></tr>
 <tr><td><code>symbols:AAPL,MSFT</code></td><td>7 large caps</td><td>Tickers to trade</td></tr>
 <tr><td><code>poll:60</code></td><td>300</td><td>Seconds between strategy checks</td></tr>
@@ -321,6 +331,10 @@ def _guide_paper():
 <tr><td><code>email:false</code></td><td>ignored</td><td>Deprecated compatibility field; advisor delivery is configured server-side</td></tr>
 <tr><td><code>pdt:false</code></td><td>auto</td><td>Disable PDT rule</td></tr>
 </tbody></table>"""),
+        P("Strategy-specific thresholds (dip, momentum, VIX level, risk) use percent "
+          "units — 5 means 5%. Unset thresholds fall back to the strategy's defaults "
+          "in ", Code("config/parameters.yaml"), ". VIX is an index, so its level is "
+          "always points (20 = VIX at 20), never a percent."),
 
         H3("Monitoring & Stopping", id="pt-monitor"),
         Pre(Code(

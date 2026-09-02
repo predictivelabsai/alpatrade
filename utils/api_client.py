@@ -84,8 +84,11 @@ def _get(path: str, params: Optional[Dict] = None,
 def api_paper(params: Dict[str, str], user_id: Optional[str] = None,
               account_id: Optional[str] = None) -> str:
     """Start paper trading via API. Returns markdown result."""
+    from utils.paper_strategies import canonical_strategy, parse_command_params
+
+    strategy = canonical_strategy(params.get("strategy", "buy_the_dip") or "buy_the_dip")
     payload: Dict[str, Any] = {
-        "strategy": params.get("strategy", "buy_the_dip"),
+        "strategy": strategy,
         "duration": params.get("duration", "7d"),
     }
     if params.get("symbols"):
@@ -100,6 +103,13 @@ def api_paper(params: Dict[str, str], user_id: Optional[str] = None,
         payload["pdt"] = params["pdt"].lower() not in ("false", "no", "0", "off")
     if account_id:
         payload["account_id"] = account_id
+    # Per-strategy params (POST /v2/paper accepts a params dict and the
+    # orchestrator resolves precedence server-side).
+    strategy_params = parse_command_params(strategy, params)
+    if params.get("capital_per_trade") is not None:
+        strategy_params["capital_per_trade"] = float(params["capital_per_trade"])
+    if strategy_params:
+        payload["params"] = strategy_params
 
     data = _post("/v2/paper", payload, user_id=user_id)
 

@@ -4,6 +4,7 @@ Buys when VIX exceeds threshold (high fear), holds overnight or same day
 """
 
 import pandas as pd
+import yfinance as yf
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 
@@ -34,8 +35,11 @@ def backtest_vix_strategy(symbols: List[str], start_date: datetime, end_date: da
     # Import calculate_metrics from backtester_util
     from utils.backtester_util import calculate_metrics
     
-    # Fetch VIX data
+    # Fetch VIX data. Recent yfinance returns MultiIndex columns
+    # (price level → ticker) even for one symbol; flatten so rows are scalars.
     vix_data = yf.download('^VIX', start=start_date, end=end_date, progress=False)
+    if isinstance(vix_data.columns, pd.MultiIndex):
+        vix_data.columns = vix_data.columns.get_level_values(0)
     
     if vix_data.empty:
         return None

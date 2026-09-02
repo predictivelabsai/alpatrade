@@ -68,7 +68,31 @@ _RUN_SQL = """
 """
 
 _PARAM_LABELS = {"dip_threshold": "dip", "take_profit": "TP",
-                 "stop_loss": "SL", "hold_days": "hold"}
+                 "take_profit_threshold": "TP", "stop_loss": "SL",
+                 "stop_loss_threshold": "SL", "hold_days": "hold",
+                 "momentum_threshold": "mom", "lookback_period": "lb",
+                 "vix_threshold": "VIX", "hold_overnight": "overnight",
+                 "risk_pct": "risk", "risk_per_trade_pct": "risk",
+                 "contraction_threshold": "contract",
+                 "box_lookback": "box", "wedge_lookback": "wedge",
+                 "scale_out_1_5r_pct": "1.5R", "scale_out_3r_pct": "3R",
+                 "capital_per_trade": "cap", "position_size": "pos"}
+
+# Kind drives the unit (and the 0<|v|<1 ratio→percent display translation).
+# VIX levels are index points and contraction thresholds are ratios — both
+# must never be shown (or scaled) as percents.
+_PARAM_KINDS = {
+    "dip_threshold": "percent", "take_profit": "percent",
+    "take_profit_threshold": "percent", "stop_loss": "percent",
+    "stop_loss_threshold": "percent", "momentum_threshold": "percent",
+    "risk_pct": "percent", "risk_per_trade_pct": "percent",
+    "scale_out_1_5r_pct": "percent", "scale_out_3r_pct": "percent",
+    "vix_threshold": "points",
+    "hold_days": "days", "lookback_period": "days",
+    "box_lookback": "days", "wedge_lookback": "days",
+    "contraction_threshold": "ratio", "position_size": "ratio",
+    "capital_per_trade": "dollars", "hold_overnight": "bool",
+}
 
 _MODE_EMPTY = {
     "backtest": (
@@ -137,13 +161,24 @@ def _best_from_results(run_id: str) -> dict:
 
 def _params_summary(params: dict) -> str:
     bits = []
-    for key in ("dip_threshold", "take_profit", "stop_loss", "hold_days"):
+    for key, label in _PARAM_LABELS.items():
         v = params.get(key)
         if v is None:
             continue
-        v = float(v) * 100 if isinstance(v, float) and 0 < abs(v) < 1 else v
-        unit = "d" if key == "hold_days" else "%"
-        bits.append(f"{_PARAM_LABELS[key]} {v:g}{unit}")
+        kind = _PARAM_KINDS.get(key, "percent")
+        if kind == "bool":
+            bits.append(f"{label} {'on' if v else 'off'}")
+        elif kind == "days":
+            bits.append(f"{label} {float(v):g}d")
+        elif kind == "dollars":
+            bits.append(f"{label} ${float(v):,.0f}")
+        elif kind in ("points", "ratio"):
+            bits.append(f"{label} {float(v):g}")
+        else:  # percent — storage ratios (0.05) display as percents (5%)
+            fv = float(v)
+            if 0 < abs(fv) < 1:
+                fv *= 100
+            bits.append(f"{label} {fv:g}%")
     return " · ".join(bits)
 
 

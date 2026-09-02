@@ -257,11 +257,14 @@ def backtest_box_wedge_strategy(
             if not is_contracting:
                 continue
             
-            # Find wedge within box
+            # Find wedge within box. Measured on the window ending at the
+            # previous bar: a window including the breakout bar's own high
+            # makes `current_high > wedge_high` unsatisfiable, so this
+            # strategy could never enter (zero trades, silently).
             has_wedge, wedge_high, wedge_low = find_wedge_within_box(
-                df, i, box_high, box_low, wedge_lookback
+                df, i - 1, box_high, box_low, wedge_lookback
             )
-            
+
             if not has_wedge:
                 continue
             

@@ -2,6 +2,7 @@
 import asyncio
 import inspect
 from pathlib import Path
+from types import SimpleNamespace
 
 
 def test_hermes_job_heartbeat_updates_canonical_run_liveness():
@@ -946,11 +947,76 @@ def test_paper_wait_obeys_durable_stop_without_sleeping_full_poll(monkeypatch):
     assert PaperTradeAgent._interruptible_wait(300, Control()) is True
 
 
-def test_orchestrator_preserves_candidate_position_size():
-    source = inspect.getsource(__import__("agents.orchestrator", fromlist=["Orchestrator"]).Orchestrator.run_paper_trade)
-    # Preserved via the resolved-params passthrough (added only when the caller/
-    # backtest set it, so the default resolved-param contract stays unchanged).
-    assert 'resolved_params["position_size"] = params.get("position_size")' in source
+def test_orchestrator_preserves_candidate_position_size(monkeypatch):
+    """A candidate/backtest position_size flows into the resolved paper params
+    (the schema passes it through storage_params → resolve_paper_params);
+    when unset the key is omitted so the resolved-param contract is unchanged."""
+    from agents.orchestrator import Orchestrator
+
+    observed = {}
+
+    class AgentState:
+        def set_running(self, _task):
+            pass
+
+        def set_completed(self):
+            pass
+
+        def set_error(self, _error):
+            pass
+
+    class PaperTrader:
+        def run(self, request, stop_event=None, run_id=None):
+            observed["request"] = request
+            return {"total_trades": 0, "total_pnl": 0.0}
+
+    state = SimpleNamespace(
+        mode=None,
+        best_config={
+            "params": {
+                "dip_threshold": 0.05,
+                "take_profit": 0.01,
+                "stop_loss": 0.005,
+                "hold_days": 2,
+                "position_size": 0.1,
+                "symbols": ["AAPL"],
+            },
+        },
+        paper_trade_session=None,
+        save=lambda: None,
+        get_agent=lambda _name: AgentState(),
+    )
+    orchestrator = Orchestrator.__new__(Orchestrator)
+    orchestrator.user_id = None
+    orchestrator.account_id = None
+    orchestrator.run_id = "paper-run"
+    orchestrator._mode = None
+    orchestrator._config = None
+    orchestrator.state = state
+    orchestrator.paper_trader = PaperTrader()
+    orchestrator.bus = SimpleNamespace(publish=lambda **_kwargs: None)
+
+    monkeypatch.setattr(
+        "agents.orchestrator.load_parameters",
+        lambda: {
+            "buy_the_dip": {"capital_per_trade": 1000},
+            "general": {"polling_interval": 300},
+        },
+    )
+    monkeypatch.setattr("agents.orchestrator.store_run", lambda *_a, **_k: None)
+    monkeypatch.setattr("agents.orchestrator.update_run", lambda *_a, **_k: None)
+
+    config = {"strategy": "buy_the_dip", "approved_best_config": state.best_config}
+    orchestrator.run_paper_trade(config)
+    assert observed["request"]["params"]["position_size"] == 0.1
+
+    # Without a candidate position_size the key is dropped entirely.
+    state.best_config = {
+        "params": {k: v for k, v in state.best_config["params"].items()
+                   if k != "position_size"}}
+    config = {"strategy": "buy_the_dip", "approved_best_config": state.best_config}
+    orchestrator.run_paper_trade(config)
+    assert "position_size" not in observed["request"]["params"]
 
 
 def test_hermes_paper_promotes_exact_candidate_params(monkeypatch):

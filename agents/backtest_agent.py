@@ -231,6 +231,7 @@ class BacktestAgent:
                 initial_capital=initial_capital,
                 data_source=data_source,
                 run_id=run_id,
+                overrides=request.get("params") or {},
             )
         elif strategy == "vix":
             results = self._run_vix(
@@ -239,6 +240,7 @@ class BacktestAgent:
                 end_date=end_date,
                 initial_capital=initial_capital,
                 run_id=run_id,
+                overrides=request.get("params") or {},
             )
         elif strategy == "box_wedge":
             results = self._run_box_wedge(
@@ -247,6 +249,7 @@ class BacktestAgent:
                 end_date=end_date,
                 initial_capital=initial_capital,
                 run_id=run_id,
+                overrides=request.get("params") or {},
             )
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
@@ -696,21 +699,51 @@ class BacktestAgent:
         return results
 
     def _run_momentum(self, symbols, start_date, end_date, initial_capital,
-                      data_source, run_id) -> List[Dict]:
-        """Run momentum backtest (single configuration)."""
+                      data_source, run_id, overrides=None) -> List[Dict]:
+        """Run momentum backtest (single configuration).
+
+        The effective parameters are recorded in the result so the deploy-to-paper
+        CTA can thread them into a live session (ratio convention: 0.05 = 5%).
+        """
+        overrides = overrides or {}
         try:
+            from utils.paper_strategies import ratio_to_percent
+            position_size_pct = float(ratio_to_percent(
+                overrides.get("position_size_pct", 10.0)))
+            lookback_period = int(overrides.get("lookback_period", 20))
+            momentum_threshold = float(ratio_to_percent(
+                overrides.get("momentum_threshold", 5.0)))
+            hold_days = int(overrides.get("hold_days", 5))
+            take_profit_pct = float(ratio_to_percent(
+                overrides.get("take_profit_pct", 10.0)))
+            stop_loss_pct = float(ratio_to_percent(
+                overrides.get("stop_loss_pct", 5.0)))
             result = backtest_momentum_strategy(
                 symbols=symbols,
                 start_date=start_date,
                 end_date=end_date,
                 initial_capital=initial_capital,
                 data_source=data_source,
+                position_size_pct=position_size_pct,
+                lookback_period=lookback_period,
+                momentum_threshold=momentum_threshold,
+                hold_days=hold_days,
+                take_profit_pct=take_profit_pct or None,
+                stop_loss_pct=stop_loss_pct or None,
             )
             metrics = result if isinstance(result, dict) else {}
             return [{
                 "run_id": run_id,
                 "variation_index": 0,
-                "params": {"strategy": "momentum"},
+                "params": {
+                    "strategy": "momentum",
+                    "lookback_period": lookback_period,
+                    "momentum_threshold": momentum_threshold / 100.0,
+                    "hold_days": hold_days,
+                    "take_profit": (take_profit_pct or 0) / 100.0,
+                    "stop_loss": (stop_loss_pct or 0) / 100.0,
+                    "position_size_pct": position_size_pct / 100.0,
+                },
                 "total_return": metrics.get("total_return", 0),
                 "sharpe_ratio": metrics.get("sharpe_ratio", 0),
                 "win_rate": metrics.get("win_rate", 0),
@@ -721,19 +754,39 @@ class BacktestAgent:
             return [{"run_id": run_id, "error": str(e), "sharpe_ratio": 0}]
 
     def _run_vix(self, symbols, start_date, end_date, initial_capital,
-                 run_id) -> List[Dict]:
-        """Run VIX backtest (single configuration)."""
+                 run_id, overrides=None) -> List[Dict]:
+        """Run VIX backtest (single configuration).
+
+        Records the effective params (VIX points are never ratio-scaled).
+        """
+        overrides = overrides or {}
         try:
-            trades_df, metrics = backtest_vix_strategy(
+            vix_threshold = float(overrides.get("vix_threshold", 20))
+            hold_overnight = overrides.get("hold_overnight", True)
+            if isinstance(hold_overnight, str):
+                hold_overnight = hold_overnight.strip().lower() not in ("false", "no", "0", "off")
+            position_size = float(overrides.get("position_size", 0.1))
+            result = backtest_vix_strategy(
                 symbols=symbols,
                 start_date=start_date,
                 end_date=end_date,
                 initial_capital=initial_capital,
+                position_size=position_size,
+                vix_threshold=vix_threshold,
+                hold_overnight=hold_overnight,
             )
+            # A quiet month can legitimately produce zero trades (None from
+            # the strategy) — still record the params so the run is deployable.
+            metrics = (result[1] if isinstance(result, tuple) and result[1] else {})
             return [{
                 "run_id": run_id,
                 "variation_index": 0,
-                "params": {"strategy": "vix"},
+                "params": {
+                    "strategy": "vix",
+                    "vix_threshold": vix_threshold,
+                    "hold_type": "on" if hold_overnight else "eod",
+                    "position_size": position_size,
+                },
                 "total_return": metrics.get("total_return", 0),
                 "sharpe_ratio": metrics.get("sharpe_ratio", 0),
                 "sortino_ratio": metrics.get("sortino_ratio", 0),
@@ -748,7 +801,7 @@ class BacktestAgent:
             return [{"run_id": run_id, "error": str(e), "sharpe_ratio": 0}]
 
     def _run_box_wedge(self, symbols, start_date, end_date, initial_capital,
-                       run_id) -> List[Dict]:
+                       run_id, overrides=None) -> List[Dict]:
         """Run box-wedge backtest (single configuration).
 
         Phase 4e: box_wedge was previously unreachable from the orchestrator
@@ -756,19 +809,48 @@ class BacktestAgent:
         scale-out, SMA200 regime gate, ATR computed — though the ATR is
         currently dead code). Wiring it in makes it available via
         ``agent:backtest strategy:box_wedge`` and the autonomy pipeline.
+        Effective params are recorded (ratio convention: 0.01 = 1%).
         """
+        overrides = overrides or {}
         try:
             from utils.box_wedge import backtest_box_wedge_strategy
-            trades_df, metrics = backtest_box_wedge_strategy(
+            from utils.paper_strategies import ratio_to_percent
+            risk_per_trade_pct = float(ratio_to_percent(
+                overrides.get("risk_per_trade_pct", 1.0)))
+            contraction_threshold = float(overrides.get("contraction_threshold", 0.7))
+            box_lookback = int(overrides.get("box_lookback", 100))
+            wedge_lookback = int(overrides.get("wedge_lookback", 20))
+            scale_out_1_5r_pct = float(ratio_to_percent(
+                overrides.get("scale_out_1_5r_pct", 50.0)))
+            scale_out_3r_pct = float(ratio_to_percent(
+                overrides.get("scale_out_3r_pct", 25.0)))
+            result = backtest_box_wedge_strategy(
                 symbols=symbols,
                 start_date=start_date,
                 end_date=end_date,
                 initial_capital=initial_capital,
+                risk_per_trade_pct=risk_per_trade_pct,
+                contraction_threshold=contraction_threshold,
+                box_lookback=box_lookback,
+                wedge_lookback=wedge_lookback,
+                scale_out_1_5r_pct=scale_out_1_5r_pct,
+                scale_out_3r_pct=scale_out_3r_pct,
             )
+            # No breakout in the window is a valid outcome (None from the
+            # strategy) — still record the params so the run is deployable.
+            metrics = (result[1] if isinstance(result, tuple) and result[1] else {})
             return [{
                 "run_id": run_id,
                 "variation_index": 0,
-                "params": {"strategy": "box_wedge"},
+                "params": {
+                    "strategy": "box_wedge",
+                    "risk_pct": risk_per_trade_pct / 100.0,
+                    "contraction_threshold": contraction_threshold,
+                    "box_lookback": box_lookback,
+                    "wedge_lookback": wedge_lookback,
+                    "scale_out_1_5r_pct": scale_out_1_5r_pct / 100.0,
+                    "scale_out_3r_pct": scale_out_3r_pct / 100.0,
+                },
                 "total_return": metrics.get("total_return", 0),
                 "sharpe_ratio": metrics.get("sharpe_ratio", 0),
                 "sortino_ratio": metrics.get("sortino_ratio", 0),
