@@ -172,7 +172,9 @@ The merged FastHTML app (`app.py`) registers feature modules, each exposing `reg
 `ph_landing` (`/`), `ph_auth` (`/signin`, `/profile`), `ph_chat` (`/app` chat + `/news`),
 `ph_guide` (`/guide` user + shortcut guide), `ph_charts` (`/map` finviz-style market-map treemap via
 `engine/market_map.py`, `/charts` candlestick + compare), `ph_settings` (`/settings` — BYOK Alpaca keys +
-provider dropdowns). `engine.voice.register_voice_routes(app)` adds the `/ws/voice` WebSocket proxy to
+provider dropdowns), `ph_advisor` (`/advisor` — post-close daily advisor digest rendering the persisted
+`advisor_reports` rows, with `?report=`/`?date=` deep links; nav entry via `ph_layout.TRADE_PAGES`).
+`engine.voice.register_voice_routes(app)` adds the `/ws/voice` WebSocket proxy to
 x.ai's realtime agent (voice mode). The 3-pane shell is `engine/web/ph_layout.py::page(active, …)`; the
 current user is resolved per-request from `session["user_id"]` (no `current_user` is passed to `register`).
 Inline chat charts use `__CHART_DATA__{json}__END_CHART__` markers rendered client-side in `ph_chat.py`.
