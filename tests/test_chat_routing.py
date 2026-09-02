@@ -81,8 +81,10 @@ def test_interceptor_routes_help_to_help_text():
 def test_interceptor_routes_positions_to_alpaca_tool(monkeypatch):
     from agui_app import _command_interceptor
 
+    # The interceptor lives in engine.ai.harness since the Phase 7 split;
+    # patch the defining module, not the agui_app re-export.
     monkeypatch.setattr(
-        "agui_app.get_alpaca_positions", lambda: "No open positions."
+        "engine.ai.harness.get_alpaca_positions", lambda: "No open positions."
     )
 
     result = asyncio.run(
