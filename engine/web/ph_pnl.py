@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import html
 import json
+from urllib.parse import quote as _urlquote
 
 from fasthtml.common import Div, NotStr, Style
 from starlette.responses import RedirectResponse
@@ -33,6 +34,7 @@ _CSS = """
 .advisor-card{border-left:4px solid #6f7b74;padding-left:.8rem;margin:.45rem 0 1rem}.advisor-card.review,
 .advisor-card.urgent{border-left-color:#b43b35}.advisor-card.monitor{border-left-color:#c4902f}
 .advisor-meta,.advisor-note{color:var(--ink-muted);font-size:.75rem}.advisor-card h3{font-size:.9rem;margin:.25rem 0}
+.advisor-card h3 a{color:inherit;text-decoration:none}.advisor-card h3 a:hover{color:var(--accent)}
 .advisor-card ul{padding-left:1.1rem;margin:.4rem 0}.advisor-card li{font-size:.8rem;margin:.3rem 0}
 .advisor-history{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.65rem}.advisor-history span{font-size:.7rem;
  border:1px solid var(--line);padding:.2rem .4rem;border-radius:1rem;color:var(--ink-muted)}
@@ -255,7 +257,8 @@ def _advisor_cards(data: dict) -> str:
         return (
             "<p class='ai-copy'>No post-close daily advisor report has been generated "
             "for this paper account yet.</p><p class='advisor-note'>Reports appear after "
-            "the NYSE session close plus 15 minutes.</p>"
+            "the NYSE session close plus 15 minutes — the full history lives on the "
+            "<a href='/advisor'>daily advisor page</a>.</p>"
         )
     cards = []
     for report in reports:
@@ -295,7 +298,7 @@ def _advisor_cards(data: dict) -> str:
           · status {html.escape(str(report.get('status') or 'unknown'))}
           · evidence {html.escape(str(paper.get('window_start') or 'n/a'))} to
           {html.escape(str(paper.get('window_end') or report.get('session_date') or ''))}</div>
-          <h3>{html.escape(str(advisory.get('headline') or severity.replace('_', ' ').title()))}</h3>
+          <h3><a href="/advisor?report={_urlquote(str(report.get('report_id') or ''))}">{html.escape(str(advisory.get('headline') or severity.replace('_', ' ').title()))}</a></h3>
           <p class="ai-copy">{html.escape(str(advisory.get('summary') or report.get('narrative') or ''))}</p>
           <p class="advisor-note">{html.escape(str(advisory.get('generation_note') or ''))}</p>
           <b>Performance drivers and evidence</b><ul>{drivers or '<li>No detailed drivers were available.</li>'}</ul>

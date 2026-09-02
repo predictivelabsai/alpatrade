@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### In-product daily advisor digest
+
+- Added a polished `/advisor` page surfacing the persisted post-close advisor
+  reports in-product: one section per paper account for the selected session,
+  with severity and status chips, headline, summary, performance drivers,
+  data-quality notes, and the mandatory disclaimer.
+- Added a session-history rail (newest 30 sessions) plus date pills, so the
+  digest is browsable per day instead of only latest-in-dashboard.
+- Added "Test in chat" deep links from backtest recommendations — they open a
+  fresh chat pre-filled with an `agent:backtest` command matching the
+  recommendation's strategy, symbols, and lookback, while the exact proposed
+  parameter grid stays displayed for reference.
+- Linked the dashboard advisor card headline and empty state to the new page,
+  and added a "Daily advisor" entry (with icon) to the Trade nav section.
+- The page is read-only: it never mutates reports, enqueues runs, or bypasses
+  the explicit-approval gate on advisor recommendations.
+
 ### Hermes candidate promotion correctness
 
 - Fixed Hermes paper promotion to pass the exact approved candidate parameters

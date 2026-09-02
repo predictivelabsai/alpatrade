@@ -28,7 +28,7 @@ uv run python app.py                 # web UI
 python -m compileall -q app.py api.py engine verticals tui utils agents   # fast syntax check (matches CI)
 python -m pytest tests/regression_suite.py -v            # full suite — requires DB + .env + Alpaca/XAI
 python -m pytest tests/regression_suite.py::TestStrategySlug -v   # single class
-python -m pytest tests/test_index_options.py tests/test_ui_navigation.py tests/test_premarket.py tests/test_research.py tests/test_chat_chart_transport.py tests/test_objective.py tests/test_refit.py tests/test_regime.py tests/test_vol_sizing.py tests/test_promotion.py tests/test_agent_framework_default.py tests/test_scout_reasoning.py tests/test_backtest_reasoning.py tests/test_daily_advisor.py tests/test_pnl_dashboard.py tests/test_autonomy_worker.py -q   # DB-free unit tests (CI default)
+python -m pytest tests/test_index_options.py tests/test_ui_navigation.py tests/test_premarket.py tests/test_research.py tests/test_chat_chart_transport.py tests/test_objective.py tests/test_refit.py tests/test_regime.py tests/test_vol_sizing.py tests/test_promotion.py tests/test_agent_framework_default.py tests/test_scout_reasoning.py tests/test_backtest_reasoning.py tests/test_daily_advisor.py tests/test_web_advisor_page.py tests/test_pnl_dashboard.py tests/test_autonomy_worker.py -q   # DB-free unit tests (CI default)
 python -m engine.autonomy.worker                          # worker + advisor scheduler (full autonomy needs AUTONOMY_ENABLED=true)
 python -m engine.backtest.runner --symbols AAPL --start 2024-01-01 --end 2024-06-30  # methodology backtest → backtest-results/
 python run_migration.py sql/NN_name.sql                  # apply a migration (no tracking table; idempotent)

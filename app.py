@@ -65,6 +65,7 @@ from engine.web import ph_premarket  # noqa: E402
 from engine.web import ph_research  # noqa: E402
 from engine.web import ph_monitoring  # noqa: E402
 from engine.web import ph_reports  # noqa: E402
+from engine.web import ph_advisor  # noqa: E402
 
 ph_landing.register(app, rt)
 ph_auth.register(app, rt)
@@ -90,6 +91,7 @@ ph_reports.register(app, rt)  # public /r/{id} — last, unlisted
 from verticals.equities import routes as equities_routes  # noqa: E402
 
 equities_routes.register(app, rt, ph_auth.current_user)
+ph_advisor.register(app, rt)
 
 # --- voice (mic button → /voice/* endpoints) --------------------------------
 from engine.voice import register_voice_routes  # noqa: E402
