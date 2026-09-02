@@ -106,7 +106,7 @@ def test_render_shows_headline_summary_drivers_and_disclaimer():
 def test_recommendation_cta_is_built_from_test_config():
     html = ph_advisor._render([_rail_row()], [_record()], "2026-07-28")
     assert (
-        "href='/app?new=1&autorun=agent%3Abacktest%20strategy%3Abuy_the_dip"
+        "href='/app?new=1&amp;autorun=agent%3Abacktest%20strategy%3Abuy_the_dip"
         "%20symbols%3AAAPL%2CMSFT%20lookback%3A3m'" in html
     )
     assert "Test in chat" in html

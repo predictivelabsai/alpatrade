@@ -224,8 +224,9 @@ def _rec_html(rec: dict) -> str:
     if kind == "backtest":
         cmd = _test_command(rec.get("test_config"))
         if cmd:
+            href = html.escape(onboarding.autorun_url(cmd), quote=True)
             cta = (
-                f"<a class='advisor-cta' href='{onboarding.autorun_url(cmd)}'"
+                f"<a class='advisor-cta' href='{href}'"
                 " title='Opens a chat backtest with the same strategy, symbols "
                 "and lookback; the exact parameter grid is shown above.'>"
                 "Test in chat →</a>"
