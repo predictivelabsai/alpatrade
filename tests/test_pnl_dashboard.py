@@ -131,3 +131,58 @@ def test_dashboard_reads_the_latest_persisted_advisor_for_the_owned_account(monk
 def test_no_account_returns_onboarding_state(monkeypatch):
     monkeypatch.setattr(dashboard, "get_user_accounts", lambda _uid: [])
     assert dashboard.dashboard_data("user-1", None, "daily")["needs_account"] is True
+
+
+def test_failing_selected_account_returns_errors_instead_of_crashing(monkeypatch):
+    accounts = [_account("broken", "Broken")]
+    monkeypatch.setattr(dashboard, "get_user_accounts", lambda _uid: accounts)
+
+    def load(_uid, account, _period):
+        raise ValueError("Could not read this Alpaca account: unauthorized.")
+
+    monkeypatch.setattr(dashboard, "_one_account", load)
+    monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
+
+    data = dashboard.dashboard_data("user-1", "broken", "daily")
+
+    assert "equity" not in data
+    assert data["errors"] == [
+        {"account_id": "broken", "message": "Could not read this Alpaca account: unauthorized."}
+    ]
+
+
+def test_failing_remembered_account_falls_back_to_other_accounts(monkeypatch):
+    accounts = [_account("stale", "Stale"), _account("healthy", "Healthy")]
+    monkeypatch.setattr(dashboard, "get_user_accounts", lambda _uid: accounts)
+
+    def load(_uid, account, _period):
+        if account["account_id"] == "stale":
+            raise ValueError("unauthorized.")
+        return _portfolio(account, 12_000)
+
+    monkeypatch.setattr(dashboard, "_one_account", load)
+    monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
+
+    data = dashboard.dashboard_data("user-1", "stale", "daily")
+
+    assert data["account_id"] == "healthy"
+    assert data["equity"] == 12_000
+    assert data["errors"] == [{"account_id": "stale", "message": "unauthorized."}]
+
+
+def test_failing_selected_account_reports_each_attempt_once(monkeypatch):
+    accounts = [_account("broken", "Broken")]
+    monkeypatch.setattr(dashboard, "get_user_accounts", lambda _uid: accounts)
+    attempts = []
+
+    def load(_uid, account, _period):
+        attempts.append(account["account_id"])
+        raise ValueError("unauthorized.")
+
+    monkeypatch.setattr(dashboard, "_one_account", load)
+    monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
+
+    data = dashboard.dashboard_data("user-1", "broken", "daily")
+
+    assert attempts == ["broken", "broken"]  # selected attempt, then fallback
+    assert len(data["errors"]) == 1
