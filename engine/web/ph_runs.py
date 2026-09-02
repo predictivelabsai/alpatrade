@@ -51,6 +51,11 @@ _CSS = """
  text-decoration:none;border-radius:.4rem;padding:.42rem .7rem;font-size:.74rem;font-weight:650}
 .runs .deploy:hover{background:var(--accent-deep);text-decoration:none}
 .runs .run-id{font-family:var(--font-mono);font-size:.68rem;color:var(--ink-dim)}
+.runs .share{color:var(--accent);text-decoration:none;font-size:.74rem;margin-right:.5rem}
+.runs .share:hover{text-decoration:underline}
+.runs .copy{border:1px solid var(--line);background:var(--bg-elev);color:var(--ink-muted);
+ border-radius:.4rem;padding:.32rem .5rem;font-size:.7rem;cursor:pointer}
+.runs .copy:hover{border-color:var(--accent);color:var(--accent)}
 """
 
 _LIMIT = 25
@@ -66,33 +71,6 @@ _RUN_SQL = """
     ORDER BY r.created_at DESC
     LIMIT :limit
 """
-
-_PARAM_LABELS = {"dip_threshold": "dip", "take_profit": "TP",
-                 "take_profit_threshold": "TP", "stop_loss": "SL",
-                 "stop_loss_threshold": "SL", "hold_days": "hold",
-                 "momentum_threshold": "mom", "lookback_period": "lb",
-                 "vix_threshold": "VIX", "hold_overnight": "overnight",
-                 "risk_pct": "risk", "risk_per_trade_pct": "risk",
-                 "contraction_threshold": "contract",
-                 "box_lookback": "box", "wedge_lookback": "wedge",
-                 "scale_out_1_5r_pct": "1.5R", "scale_out_3r_pct": "3R",
-                 "capital_per_trade": "cap", "position_size": "pos"}
-
-# Kind drives the unit (and the 0<|v|<1 ratio→percent display translation).
-# VIX levels are index points and contraction thresholds are ratios — both
-# must never be shown (or scaled) as percents.
-_PARAM_KINDS = {
-    "dip_threshold": "percent", "take_profit": "percent",
-    "take_profit_threshold": "percent", "stop_loss": "percent",
-    "stop_loss_threshold": "percent", "momentum_threshold": "percent",
-    "risk_pct": "percent", "risk_per_trade_pct": "percent",
-    "scale_out_1_5r_pct": "percent", "scale_out_3r_pct": "percent",
-    "vix_threshold": "points",
-    "hold_days": "days", "lookback_period": "days",
-    "box_lookback": "days", "wedge_lookback": "days",
-    "contraction_threshold": "ratio", "position_size": "ratio",
-    "capital_per_trade": "dollars", "hold_overnight": "bool",
-}
 
 _MODE_EMPTY = {
     "backtest": (
@@ -160,26 +138,7 @@ def _best_from_results(run_id: str) -> dict:
 
 
 def _params_summary(params: dict) -> str:
-    bits = []
-    for key, label in _PARAM_LABELS.items():
-        v = params.get(key)
-        if v is None:
-            continue
-        kind = _PARAM_KINDS.get(key, "percent")
-        if kind == "bool":
-            bits.append(f"{label} {'on' if v else 'off'}")
-        elif kind == "days":
-            bits.append(f"{label} {float(v):g}d")
-        elif kind == "dollars":
-            bits.append(f"{label} ${float(v):,.0f}")
-        elif kind in ("points", "ratio"):
-            bits.append(f"{label} {float(v):g}")
-        else:  # percent — storage ratios (0.05) display as percents (5%)
-            fv = float(v)
-            if 0 < abs(fv) < 1:
-                fv *= 100
-            bits.append(f"{label} {fv:g}%")
-    return " · ".join(bits)
+    return onboarding.format_params(params)
 
 
 def _bt_row(r: dict) -> str:
@@ -203,11 +162,16 @@ def _bt_row(r: dict) -> str:
     })
     action = (f"<a class='deploy' href='{onboarding.autorun_url(cmd)}'>Deploy to paper</a>"
               if cmd else "")
+    share = (f"<a class='share' href='/r/{html.escape(str(r['run_id']))}'>Share</a>"
+             f"<button class='copy' type='button' "
+             f"onclick=\"navigator.clipboard.writeText(location.origin+'/r/"
+             f"{html.escape(str(r['run_id']))}');this.textContent='Copied'\">Copy link</button>")
     return (
         f"<tr><td class='slug'>{html.escape(str(r.get('strategy_slug') or r.get('strategy') or 'backtest'))}</td>"
         f"<td class='num'>{ret_html}</td><td class='num'>{sh}</td>"
         f"<td>{params_txt}</td><td>{html.escape(started)}</td>"
         f"<td><span class='status {status}'>{status}</span></td><td>{action}</td>"
+        f"<td>{share}</td>"
         f"<td><span class='run-id'>{html.escape(str(r['run_id'])[:8])}</span></td></tr>")
 
 
@@ -244,7 +208,7 @@ def _render(mode: str, rows: list[dict]) -> str:
         body = (
             "<div class='runs-tblwrap'><table><thead><tr>"
             "<th>Strategy</th><th>Return</th><th>Sharpe</th><th>Best params</th>"
-            "<th>Started</th><th>Status</th><th></th><th>Run</th>"
+            "<th>Started</th><th>Status</th><th></th><th>Share</th><th>Run</th>"
             "</tr></thead><tbody>" + rows_html + "</tbody></table></div>"
             "<p class='muted' style='font-size:.72rem'>Latest "
             f"{len(rows)} backtest runs for your login.</p>"

@@ -226,6 +226,72 @@ def autorun_url(command: str, draft: bool = False) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Param formatting — shared by the runs table and the shareable report pages,
+# so both surfaces always agree on units (ratios → %, VIX in points, days).
+# ---------------------------------------------------------------------------
+
+PARAM_LABELS = {
+    "dip_threshold": "dip", "take_profit": "TP",
+    "take_profit_threshold": "TP", "stop_loss": "SL",
+    "stop_loss_threshold": "SL", "hold_days": "hold",
+    "momentum_threshold": "mom", "lookback_period": "lb",
+    "vix_threshold": "VIX", "hold_overnight": "overnight",
+    "risk_pct": "risk", "risk_per_trade_pct": "risk",
+    "contraction_threshold": "contract",
+    "box_lookback": "box", "wedge_lookback": "wedge",
+    "scale_out_1_5r_pct": "1.5R", "scale_out_3r_pct": "3R",
+    "capital_per_trade": "cap", "position_size": "pos",
+}
+
+# Units per param kind: percent-ish params render with "%", hold/lookback in
+# days ("d"), VIX level in points (no unit), dimensionless ratios unscaled,
+# dollar amounts with "$"; unlabeled numeric params default to percent.
+PARAM_KINDS = {
+    "dip_threshold": "percent", "take_profit": "percent",
+    "take_profit_threshold": "percent", "stop_loss": "percent",
+    "stop_loss_threshold": "percent", "momentum_threshold": "percent",
+    "risk_pct": "percent", "risk_per_trade_pct": "percent",
+    "scale_out_1_5r_pct": "percent", "scale_out_3r_pct": "percent",
+    "hold_days": "days", "lookback_period": "days",
+    "box_lookback": "days", "wedge_lookback": "days",
+    "vix_threshold": "points",
+    "contraction_threshold": "ratio", "position_size": "ratio",
+    "capital_per_trade": "dollars", "hold_overnight": "bool",
+}
+
+
+def format_params(params: dict) -> str:
+    """Compact human summary of best-config params, e.g. ``dip 5% · hold 3d``.
+
+    Ratio values (0 < |v| < 1) are percent-scaled per the storage convention
+    except for ``points`` (VIX level), ``ratio`` (dimensionless thresholds)
+    and ``days`` keys; ``bool`` renders on/off; dollar amounts keep the "$"
+    and are never percent-scaled; unknown keys fall back to ``key value`` so
+    no strategy's params ever render as an empty string.
+    """
+    bits = []
+    for key, value in (params or {}).items():
+        if value is None:
+            continue
+        kind = PARAM_KINDS.get(key)
+        label = PARAM_LABELS.get(key, key)
+        if kind == "bool":
+            bits.append(f"{label} {'on' if value else 'off'}")
+            continue
+        if kind in ("ratio", "points") \
+                or not isinstance(value, (int, float)) or isinstance(value, bool):
+            bits.append(f"{label} {value}")
+        elif kind == "days":
+            bits.append(f"{label} {value:g}d")
+        elif kind == "dollars":
+            bits.append(f"{label} ${float(value):,.0f}")
+        else:  # percent-kind: storage ratios scale to percent
+            scaled = float(value) * 100 if 0 < abs(value) < 1 else value
+            bits.append(f"{label} {scaled:g}%")
+    return " · ".join(bits)
+
+
+# ---------------------------------------------------------------------------
 # Activation events (Start Here plan, phase 3) — the funnel dial.
 # ---------------------------------------------------------------------------
 
