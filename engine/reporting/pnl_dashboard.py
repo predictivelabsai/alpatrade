@@ -28,6 +28,17 @@ def period_bounds(period: str, now: datetime | None = None) -> tuple[datetime, d
     return datetime.combine(start_date, time.min, tzinfo=timezone.utc), now
 
 
+def _friendly_error(raw: str) -> str:
+    """Translate raw Alpaca API errors into user-facing guidance."""
+    if "unauthorized" in raw.lower():
+        return (
+            "Alpaca rejected the stored API keys for this account (unauthorized). "
+            "The keys were most likely regenerated or revoked — create new paper "
+            "keys in your Alpaca dashboard, then re-enter them under Settings."
+        )
+    return raw
+
+
 def _client(user_id: str, account_id: str) -> tuple[AlpacaAPI, str]:
     keys = get_alpaca_keys(user_id, account_id)
     if not keys:
@@ -42,7 +53,9 @@ def _client(user_id: str, account_id: str) -> tuple[AlpacaAPI, str]:
             client._dashboard_account = account  # type: ignore[attr-defined]
             return client, "paper" if paper else "live"
         errors.append(str(account.get("error", "unknown")) if isinstance(account, dict) else str(account))
-    raise ValueError("Could not read this Alpaca account: " + "; ".join(errors))
+    # Paper and live share the keys, so both probes usually fail identically.
+    messages = list(dict.fromkeys(_friendly_error(e) for e in errors))
+    raise ValueError("Could not read this Alpaca account: " + " ".join(messages))
 
 
 def _number(value: Any) -> float:
@@ -170,17 +183,29 @@ def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[st
     requested = account_id if account_id == "all" or any(
         a["account_id"] == account_id for a in accounts
     ) else None
-    loaded, errors = [], []
-    for account in accounts:
-        if requested not in (None, "all") and account["account_id"] != requested:
-            continue
-        try:
-            loaded.append(_one_account(user_id, account, period))
-        except Exception as exc:  # noqa: BLE001
-            errors.append({"account_id": account["account_id"], "message": str(exc)})
-    if not loaded and requested is None:
-        # All configured accounts were attempted above, providing useful errors.
-        return {"needs_account": False, "accounts": accounts, "errors": errors, "period": period}
+    loaded, errors = [], {}
+
+    def _attempt(req: str | None) -> None:
+        for account in accounts:
+            if req not in (None, "all") and account["account_id"] != req:
+                continue
+            try:
+                loaded.append(_one_account(user_id, account, period))
+            except Exception as exc:  # noqa: BLE001
+                errors[account["account_id"]] = {
+                    "account_id": account["account_id"], "message": str(exc),
+                }
+
+    _attempt(requested)
+    if not loaded and requested not in (None, "all"):
+        # The explicitly selected (or session-remembered) account failed to
+        # load — fall back to every account so one broken connection can't
+        # blank the dashboard.
+        _attempt(None)
+    if not loaded:
+        # Nothing loaded; surface the errors instead of an empty selection.
+        return {"needs_account": False, "accounts": accounts, "errors": list(errors.values()),
+                "period": period}
     selected = _aggregate(loaded, period) if requested == "all" else max(
         loaded, key=lambda row: (bool(row["history"]["equity"]), row["equity"])
     )
@@ -210,7 +235,7 @@ def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[st
         **selected,
         "needs_account": False,
         "accounts": accounts,
-        "errors": errors,
+        "errors": list(errors.values()),
         "period": period,
         "paper_rankings": reporter.top_strategies(
             trade_type="paper", limit=8, user_id=user_id, account_id=ranking_account),
