@@ -969,6 +969,13 @@ def _start_chat_stream(command: str, uss: UserSessionState):
             if is_broker:
                 from utils.alpaca_agent import async_stream_response
                 thread_id = cli._broker_thread_id
+                # Strict keys: a signed-in user without linked keys must not
+                # silently fall back to the shared server keys.
+                if uss.user_id and not alpaca_keys:
+                    raise RuntimeError(
+                        "No Alpaca paper keys linked to your account. "
+                        "Connect them in Settings to use broker queries."
+                    )
             else:
                 from utils.research_agent import async_stream_response
                 thread_id = cli._research_thread_id
