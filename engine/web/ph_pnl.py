@@ -178,7 +178,9 @@ def _start_here(state: dict) -> str:
             "<div class='sh-actions'>"
             f"<a class='sh-btn' href='{run_url}'>Run backtest for me</a>"
             f"<a class='sh-btn ghost' href='{draft_url}'>I'll choose symbols</a>"
-            "<span class='sh-hint'>Defaults: AAPL, MSFT, NVDA, TSLA · 3 months</span>"
+            "<a class='sh-btn ghost' href='/backtests'>Strategy presets →</a>"
+            "<span class='sh-hint'>Defaults: AAPL, MSFT, NVDA, TSLA · 3 months"
+            " — or start from a curated preset on the backtests page.</span>"
             "</div>"
         )
         steps.append(("Run your first backtest",
