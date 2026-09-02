@@ -38,6 +38,7 @@ from starlette.responses import RedirectResponse
 
 from engine.auth import (
     authenticate,
+    create_email_verification_token,
     create_password_reset_token,
     create_user,
     get_user_accounts,
@@ -45,8 +46,10 @@ from engine.auth import (
     get_user_by_google_id,
     get_user_by_id,
     link_google_id,
+    mark_email_verified,
     store_alpaca_keys,
     update_password,
+    verify_and_consume_email_token,
     verify_and_consume_reset_token,
 )
 from engine.web.ph_layout import auth_shell
@@ -102,6 +105,38 @@ def current_user(session):
 def _session_login(session, user: dict) -> None:
     """Persist the login. Only the id is stored; the record is re-fetched."""
     session["user_id"] = user["user_id"]
+
+
+def _send_verification_email(user: dict, request) -> None:
+    """Email the verify-your-email link for a fresh signup.
+
+    Never raises and never blocks signup: if Postmark is unconfigured (local
+    dev) the link is logged instead. The token expires in 24 hours.
+    """
+    try:
+        token = create_email_verification_token(user["user_id"])
+        if not token:
+            return
+        scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+        host = request.headers.get("host", request.url.netloc)
+        verify_url = f"{scheme}://{host}/verify?token={token}"
+        body_html = (
+            '<div style="font-family:-apple-system,sans-serif;max-width:500px;margin:0 auto">'
+            "<h2>Verify your email</h2>"
+            "<p>Welcome to AlpaTrade. Confirm your email to unlock AI chat, "
+            "backtesting and paper trading.</p>"
+            f'<p><a href="{verify_url}" style="display:inline-block;padding:12px 24px;'
+            'background:#1F5D43;color:#fff;text-decoration:none;border-radius:6px">'
+            "Verify email</a></p>"
+            '<p style="color:#6c757d;font-size:13px">This link expires in 24 hours. '
+            "If you didn't create this account, ignore this email.</p></div>"
+        )
+        from utils.email_util import send_email_to
+        if not send_email_to(user["email"], "AlpaTrade — Verify your email", body_html):
+            logger.warning("Postmark unavailable; verification link for %s: %s",
+                           user["email"], verify_url)
+    except Exception as e:  # noqa: BLE001
+        logger.error("verification email failed: %s", e)
 
 
 # ---------------------------------------------------------------------------
@@ -336,7 +371,38 @@ def register(app, rt):
             record_event(user["user_id"], "registered")
         except Exception:  # noqa: BLE001
             pass
+        _send_verification_email(user, request)
         return RedirectResponse("/dashboard", status_code=303)
+
+    # ---- email verification -----------------------------------------------
+    @rt("/verify", methods=["GET"])
+    def verify_get(session, token: str = ""):
+        if not token:
+            return RedirectResponse("/dashboard", status_code=303)
+        try:
+            user_id = verify_and_consume_email_token(token)
+        except Exception as e:  # noqa: BLE001
+            logger.error("email verification failed: %s", e)
+            user_id = None
+        if not user_id:
+            return RedirectResponse(
+                "/dashboard?msg=Verification+link+is+invalid+or+expired",
+                status_code=303)
+        _session_login(session, {"user_id": user_id})
+        return RedirectResponse(
+            "/dashboard?msg=Email+verified.+Thanks!", status_code=303)
+
+    @app.post("/verify/resend")
+    async def verify_resend(session, request):
+        user = current_user(session)
+        if not user:
+            return RedirectResponse("/signin", status_code=303)
+        if user.get("email_verified_at"):
+            return RedirectResponse("/dashboard", status_code=303)
+        _send_verification_email(user, request)
+        return RedirectResponse(
+            "/dashboard?msg=Verification+email+sent.+Check+your+inbox.",
+            status_code=303)
 
     # ---- forgot password --------------------------------------------------
     @rt("/forgot", methods=["GET"])
@@ -453,6 +519,10 @@ def register(app, rt):
             try:
                 from engine.web.onboarding import record_event
                 record_event(user["user_id"], "registered")
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                mark_email_verified(user["user_id"])  # Google emails verified at source
             except Exception:  # noqa: BLE001
                 pass
             return RedirectResponse("/dashboard", status_code=303)

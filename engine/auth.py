@@ -87,7 +87,8 @@ def create_user(
                 VALUES
                     (:email, :pw_hash, :google_id, :display_name)
                 ON CONFLICT (email) DO NOTHING
-                RETURNING user_id, email, display_name, is_admin, is_active, created_at
+                RETURNING user_id, email, display_name, is_admin, is_active,
+                          created_at, email_verified_at
             """),
             {
                 "email": email.lower().strip(),
@@ -110,7 +111,8 @@ def get_user_by_email(email: str) -> Optional[Dict]:
         result = session.execute(
             text("""
                 SELECT user_id, email, password_hash, google_id,
-                       display_name, is_admin, is_active, created_at
+                       display_name, is_admin, is_active, created_at,
+                       email_verified_at
                 FROM alpatrade.users
                 WHERE email = :email AND is_active = TRUE
             """),
@@ -130,7 +132,8 @@ def get_user_by_id(user_id: str) -> Optional[Dict]:
         result = session.execute(
             text("""
                 SELECT user_id, email, password_hash, google_id,
-                       display_name, is_admin, is_active, created_at
+                       display_name, is_admin, is_active, created_at,
+                       email_verified_at
                 FROM alpatrade.users
                 WHERE user_id = :user_id AND is_active = TRUE
             """),
@@ -150,7 +153,8 @@ def get_user_by_google_id(google_id: str) -> Optional[Dict]:
         result = session.execute(
             text("""
                 SELECT user_id, email, password_hash, google_id,
-                       display_name, is_admin, is_active, created_at
+                       display_name, is_admin, is_active, created_at,
+                       email_verified_at
                 FROM alpatrade.users
                 WHERE google_id = :google_id AND is_active = TRUE
             """),
@@ -460,6 +464,98 @@ def verify_and_consume_reset_token(token: str) -> Optional[Dict]:
             {"token": token, "now": datetime.now(timezone.utc)},
         )
         return {"user_id": str(row[0]), "email": row[1], "display_name": row[2]}
+
+
+# ---------------------------------------------------------------------------
+# Email verification
+# ---------------------------------------------------------------------------
+
+def create_email_verification_token(user_id: str) -> Optional[str]:
+    """
+    Generate an email-verification token for the given user.
+    Token expires in 24 hours.
+    """
+    from sqlalchemy import text
+
+    token = secrets.token_urlsafe(48)
+    pool = _get_pool()
+    with pool.get_session() as session:
+        session.execute(
+            text("""
+                INSERT INTO alpatrade.email_verification_tokens
+                    (user_id, token, expires_at)
+                VALUES (:user_id, :token, :expires_at)
+            """),
+            {
+                "user_id": user_id,
+                "token": token,
+                "expires_at": datetime.now(timezone.utc) + timedelta(hours=24),
+            },
+        )
+    return token
+
+
+def verify_and_consume_email_token(token: str) -> Optional[str]:
+    """
+    Verify an email-verification token is valid and not expired.
+    Marks the token as used and the user's email as verified on success.
+    Returns the user_id, or None if invalid/expired.
+    """
+    from sqlalchemy import text
+
+    pool = _get_pool()
+    with pool.get_session() as session:
+        result = session.execute(
+            text("""
+                SELECT t.user_id
+                FROM alpatrade.email_verification_tokens t
+                JOIN alpatrade.users u ON u.user_id = t.user_id
+                WHERE t.token = :token
+                  AND t.used_at IS NULL
+                  AND t.expires_at > :now
+                  AND u.is_active = TRUE
+            """),
+            {"token": token, "now": datetime.now(timezone.utc)},
+        )
+        row = result.fetchone()
+        if not row:
+            return None
+        now = datetime.now(timezone.utc)
+        session.execute(
+            text("""
+                UPDATE alpatrade.email_verification_tokens
+                SET used_at = :now
+                WHERE token = :token
+            """),
+            {"token": token, "now": now},
+        )
+        session.execute(
+            text("""
+                UPDATE alpatrade.users
+                SET email_verified_at = :now, updated_at = :now
+                WHERE user_id = :user_id
+            """),
+            {"now": now, "user_id": row[0]},
+        )
+        return str(row[0])
+
+
+def mark_email_verified(user_id: str) -> bool:
+    """Stamp email_verified_at (Google OAuth signups are verified at source)."""
+    from sqlalchemy import text
+
+    pool = _get_pool()
+    with pool.get_session() as session:
+        result = session.execute(
+            text("""
+                UPDATE alpatrade.users
+                SET email_verified_at = COALESCE(email_verified_at, :now),
+                    updated_at = :now
+                WHERE user_id = :user_id AND is_active = TRUE
+            """),
+            {"now": datetime.now(timezone.utc), "user_id": user_id},
+        )
+        return bool(result.rowcount)
 
 
 def update_password(user_id: str, new_password: str) -> bool:

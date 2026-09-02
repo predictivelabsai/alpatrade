@@ -1813,6 +1813,19 @@ def register(app, rt):
                 iter([_sse("error", {"message": "not signed in"}), _sse("done", {})]),
                 media_type="text/event-stream",
             )
+        try:
+            from engine.auth import get_user_by_id
+            u = get_user_by_id(str(session.get("user_id")))
+            if u and not u.get("email_verified_at"):
+                return StreamingResponse(
+                    iter([_sse("error", {
+                        "message": "Verify your email to use AI chat — "
+                                   "check your inbox for the link."}),
+                         _sse("done", {})]),
+                    media_type="text/event-stream",
+                )
+        except Exception:  # noqa: BLE001
+            pass  # verification check must never block the chat
         if not msg.strip():
             return StreamingResponse(
                 iter([_sse("done", {})]), media_type="text/event-stream")

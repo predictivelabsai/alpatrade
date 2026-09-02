@@ -195,6 +195,10 @@ def register(app, rt):
         user = _user(session)
         if not user:
             return RedirectResponse("/signin", status_code=303)
+        if not user.get("email_verified_at"):
+            return RedirectResponse(
+                "/monitoring/pipeline?msg=Verify+your+email+to+queue+runs",
+                status_code=303)
         form = await request.form()
         account_id = str(form.get("account_id") or "")
         owned = {str(a["account_id"]) for a in pipeline_snapshot(str(user["user_id"]))["accounts"]}
@@ -210,6 +214,10 @@ def register(app, rt):
         user = _user(session)
         if not user:
             return RedirectResponse("/signin", status_code=303)
+        if not user.get("email_verified_at"):
+            return RedirectResponse(
+                "/monitoring/pipeline?msg=Verify+your+email+to+retry+runs",
+                status_code=303)
         form = await request.form()
         from engine.autonomy import queue
         changed = queue.retry(str(form.get("run_id") or ""), str(user["user_id"]))
