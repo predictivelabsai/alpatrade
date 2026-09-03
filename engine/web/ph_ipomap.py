@@ -117,6 +117,7 @@ _MAP_JS = _COMMON_JS + """
 _PIPELINE_JS = _COMMON_JS + """
 (async function(){
  const root=document.getElementById('ipo-pipeline-body');
+ const ex=v=>(!v||String(v).toUpperCase()==='UNKNOWN')?'—':esc(v);
  try{
   const rows=await (await fetch('/ipo-pipeline/data')).json();
   const privateRows=rows.filter(x=>x.kind==='private'), completed=rows.filter(x=>x.kind==='ipo_completed');
@@ -136,14 +137,20 @@ _PIPELINE_JS = _COMMON_JS + """
    ' · Staff: '+esc(x.employees||'—')+'</p>'+(x.summary&&!x.summary.trim().startsWith('{')?
    '<p class="ipo-pl-summary">'+esc(x.summary.slice(0,240))+'</p>':'')+
    (x.website?'<a href="'+esc(x.website)+'" target="_blank" rel="noopener">Website ↗</a>':'')+'</article>').join('');
-  function table(target,data){document.getElementById(target).innerHTML=data.length?'<table class="ipo-table"><thead><tr>'+
+  function completedTable(target,data){document.getElementById(target).innerHTML=data.length?'<table class="ipo-table"><thead><tr>'+
+   '<th>Company</th><th>Ticker</th><th>Exchange</th><th>Price</th><th>IPO date</th><th>Since IPO</th>'+
+   '</tr></thead><tbody>'+data.map(x=>'<tr><td>'+esc(x.company)+'</td><td>'+esc(x.ticker||'—')+'</td><td>'+
+   ex(x.exchange)+'</td><td>'+(x.proposed_price?'$'+Number(x.proposed_price).toFixed(2):'—')+'</td><td>'+
+   esc((x.expected_date||'').slice(0,10)||'—')+'</td><td class="'+((x.return_pct==null||x.return_pct>=0)?'ipo-pos':'ipo-neg')+'">'+
+   (x.return_pct==null?'—':pct(x.return_pct))+'</td></tr>').join('')+'</tbody></table>':'<div class="ipo-empty">No records.</div>';}
+  function upcomingTable(target,data){document.getElementById(target).innerHTML=data.length?'<table class="ipo-table"><thead><tr>'+
    '<th>Company</th><th>Ticker</th><th>Exchange</th><th>Price</th><th>Deal / valuation</th><th>Expected</th><th>Status</th>'+
    '</tr></thead><tbody>'+data.map(x=>'<tr><td>'+esc(x.company)+'</td><td>'+esc(x.ticker||'—')+'</td><td>'+
-   esc(x.exchange||'—')+'</td><td>'+(x.proposed_price?'$'+Number(x.proposed_price).toFixed(2):'—')+'</td><td>'+
+   ex(x.exchange)+'</td><td>'+(x.proposed_price?'$'+Number(x.proposed_price).toFixed(2):'—')+'</td><td>'+
    money(x.deal_value||x.valuation)+'</td><td>'+esc((x.expected_date||'').slice(0,10)||'—')+'</td><td>'+
    esc(x.status||x.kind||'—')+'</td></tr>').join('')+'</tbody></table>':'<div class="ipo-empty">No records.</div>';}
-  table('pipeline-completed',completed);table('pipeline-upcoming',upcoming);
-  root.textContent=rows.length+' pipeline companies · shared LiquidRound dataset';
+  completedTable('pipeline-completed',completed);upcomingTable('pipeline-upcoming',upcoming);
+  root.textContent=rows.length+' pipeline companies · completed verified against priced IPOs and live quotes';
  }catch(e){root.innerHTML='<div class="ipo-empty">Could not load pipeline: '+esc(e)+'</div>';}
 })();
 """
