@@ -94,15 +94,20 @@ def _fetch_one(feed: dict) -> list[dict]:
         log.warning("RSS fetch failed for %s: %s", feed["name"], repr(e)[:120])
         return []
     out = []
+    from engine.publicmarkets.news import is_english_text
     for entry in getattr(parsed, "entries", [])[:_PER_FEED]:
         url = (entry.get("link", "") or "").strip()
         title = (entry.get("title", "") or "").strip()
         if not url or not title:
             continue
+        # The platform is English-only: drop headlines in other scripts.
+        summary = _clean_summary(entry)
+        if not is_english_text(title) or not is_english_text(summary):
+            continue
         out.append({
             "title": title,
             "url": url,
-            "summary": _clean_summary(entry),
+            "summary": summary,
             "source": feed["name"],
             "icon": feed["icon"],
             "published": _parse_date(entry).isoformat(),

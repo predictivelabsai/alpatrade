@@ -1,8 +1,89 @@
 """DB-free tests for the redesigned news panel (layout + feed rendering)."""
+from unittest.mock import MagicMock, patch
+
 from fastcore.xml import to_xml
 
 from engine.web.ph_chat import _news_card, _news_feed, _news_slug
 from engine.web.ph_layout import PH_JS
+
+# Non-Latin sample strings (Japanese / Russian / Arabic) used to assert the
+# English-only filter — the platform surface is English-only.
+_JA = "市場は節分後も材料難──日経平均は小動か"
+_RU = "Крупнейший банк объявил о сделке"
+_AR = "البنك المركزي يرفع أسعار الفائدة"
+
+
+def test_is_english_text_rejects_non_english_scripts():
+    from engine.publicmarkets.news import is_english_text
+
+    assert is_english_text("Apple beats quarterly estimates")
+    assert is_english_text("")
+    assert is_english_text(None)
+    assert is_english_text("Naïve café résumé — Latin-1 accents are fine")
+    assert not is_english_text(_JA)
+    assert not is_english_text(_RU)
+    assert not is_english_text(_AR)
+
+
+def test_search_news_excludes_non_english_rows():
+    """Language metadata gates the SQL (so LIMIT applies after filtering);
+    rows without language metadata still pass the script guard."""
+    import engine.publicmarkets.news as news_mod
+
+    captured = {}
+
+    def fake_execute(sql, params=None):
+        captured.update(sql=str(sql), params=params or {})
+
+        raw = [
+            ("English headline", "u1", "AAPL", "Apple", None, "e", "p",
+             "s", "up", 1.0, "en"),
+            ("Communiqué semestriel 2024", "u2", "BNP", "BNP", None, "e",
+             "p", "s", None, None, "fr"),
+            (_JA, "u3", "TYO", "T", None, "e", "p", "s", None, None, None),
+        ]
+        # Simulate the SQL gate: language IS NULL OR language = ANY(:langs).
+        gated = [r for r in raw if r[10] is None
+                 or r[10].lower() in captured["params"]["langs"]]
+
+        class Result:
+            @staticmethod
+            def fetchall():
+                return gated
+
+        return Result()
+
+    session = MagicMock()
+    session.execute.side_effect = fake_execute
+    with patch.object(news_mod, "DatabasePool") as pool_cls:
+        ctx = pool_cls.return_value.get_session.return_value
+        ctx.__enter__.return_value = session
+        ctx.__exit__.return_value = False
+        rows = news_mod.search_news(limit=60)
+
+    assert "language IS NULL OR lower(btrim(language)) = ANY(:langs)" in captured["sql"]
+    assert captured["params"]["langs"] == list(news_mod.ENGLISH_LANGUAGES)
+    # 'fr' is excluded by the SQL gate; the NULL-language non-Latin title
+    # falls through the SQL but is dropped by the script guard.
+    assert [row["title"] for row in rows] == ["English headline"]
+
+
+def test_rss_ingester_drops_non_english_headlines(monkeypatch):
+    import utils.news_feed as nf
+
+    entries = [
+        {"link": "https://example.com/1", "title": "Markets rally on rate hopes",
+         "summary": "Stocks rose."},
+        {"link": "https://example.com/2", "title": _JA, "summary": "Tokyo."},
+    ]
+    resp = MagicMock()
+    resp.content = b"<rss/>"
+    parsed = MagicMock()
+    parsed.entries = entries
+    monkeypatch.setattr(nf.requests, "get", lambda *a, **k: resp)
+    monkeypatch.setattr(nf.feedparser, "parse", lambda content: parsed)
+    items = nf._fetch_one({"name": "Test", "url": "https://example.com/rss", "icon": "T"})
+    assert [item["title"] for item in items] == ["Markets rally on rate hopes"]
 
 
 def test_news_slug_is_attribute_safe():

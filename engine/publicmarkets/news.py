@@ -1,16 +1,36 @@
 """Press-release / news tool — reads the shared public.news feed (391k+ rows).
 
 Each item has a headline + link + a modeled predicted side/move (the 'finespresso'
-feed). AlpaTrade consumes it read-only.
+feed). AlpaTrade consumes it read-only. The platform is English-only, so rows
+whose ``language`` column marks them as another language are excluded, and rows
+without language metadata are guarded by a non-Latin script check on the title.
 """
 from __future__ import annotations
 
 import math
+import re
 from typing import Any
 
 from sqlalchemy import text
 
 from engine.db.pool import DatabasePool
+
+# Language values accepted as English (the platform surface is English-only).
+ENGLISH_LANGUAGES = ("en", "en-us", "en-gb", "english")
+
+# Scripts that never occur in English text (Greek, Cyrillic, Hebrew, Arabic,
+# Devanagari, Thai, kana, CJK ideographs, Hangul) — used as a fallback guard
+# for rows lacking language metadata and for third-party RSS headlines.
+_NON_LATIN_RE = re.compile(
+    "[\u0370-\u03ff\u0400-\u04ff\u0590-\u05ff\u0600-\u06ff\u0900-\u097f"
+    "\u0e00-\u0e7f\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af]")
+
+
+def is_english_text(value: Any) -> bool:
+    """True when the text carries no obviously non-English script."""
+    if not value:
+        return True
+    return not _NON_LATIN_RE.search(str(value))
 
 
 def _clean_float(value: Any) -> float | None:
@@ -57,8 +77,12 @@ def categorized_news(limit: int = 60) -> dict[str, list[dict]]:
 
 
 def search_news(query: str = "", ticker: str = "", limit: int = 30) -> list[dict]:
-    """Recent press releases, optionally filtered by headline query and/or ticker."""
-    where, params = ["1=1"], {"lim": min(limit, 60)}
+    """Recent English press releases, optionally filtered by headline query
+    and/or ticker. Non-English rows are excluded at the SQL level so the
+    limit still applies to the surviving rows."""
+    where, params = ["1=1"], {"lim": min(limit, 60),
+                              "langs": list(ENGLISH_LANGUAGES)}
+    where.append("(language IS NULL OR lower(btrim(language)) = ANY(:langs))")
     if ticker:
         where.append("(upper(ticker) = :tk OR upper(yf_ticker) = :tk)")
         params["tk"] = ticker.upper()
@@ -68,7 +92,7 @@ def search_news(query: str = "", ticker: str = "", limit: int = 30) -> list[dict
     with DatabasePool().get_session() as s:
         rows = s.execute(text(f"""
             SELECT title, link, ticker, company, published_date, event, publisher,
-                   publisher_summary, predicted_side, predicted_move
+                   publisher_summary, predicted_side, predicted_move, language
             FROM public.news
             WHERE {' AND '.join(where)}
             ORDER BY published_date DESC NULLS LAST
@@ -77,7 +101,10 @@ def search_news(query: str = "", ticker: str = "", limit: int = 30) -> list[dict
     return [{"title": r[0], "link": r[1], "ticker": r[2], "company": r[3],
              "published": str(r[4]) if r[4] else "", "event": r[5], "publisher": r[6],
              "summary": r[7], "predicted_side": _clean_side(r[8]),
-             "predicted_move": _clean_float(r[9])} for r in rows]
+             "predicted_move": _clean_float(r[9])}
+            for r in rows
+            # Rows without language metadata still pass the script guard.
+            if r[10] or is_english_text(r[0])]
 
 
 def news_summary(query: str = "", ticker: str = "", limit: int = 15) -> str:
