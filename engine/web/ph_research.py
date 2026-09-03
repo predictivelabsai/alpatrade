@@ -1,4 +1,4 @@
-"""Finespresso Research — FastHTML views over the shared ``public`` schema."""
+"""Finespresso Research — FastHTML views over the shared public schema and stored scans."""
 from __future__ import annotations
 
 import math
@@ -93,8 +93,8 @@ async function load(){
  let ys=Object.keys(sectors).sort(),ups=ys.map(y=>sectors[y].up),downs=ys.map(y=>-sectors[y].down);
  Plotly.newPlot('breadth',[{type:'bar',orientation:'h',y:ys,x:downs,name:'Fallers',marker:{color:'#B4472F'}},{type:'bar',orientation:'h',y:ys,x:ups,name:'Gainers',marker:{color:'#1F5D43'}}],
  {barmode:'relative',margin:{l:150,r:20,t:15,b:35},paper_bgcolor:'#fff',plot_bgcolor:'#F7F6F1',legend:{orientation:'h'}},{responsive:true,displayModeBar:false});
- status.textContent='Read-only snapshot supplied by the Finespresso scheduler.';
- }catch(e){root.innerHTML=card('No scheduler snapshot',`<div class="r-empty">${esc(e.message)}</div>`,'wide');status.textContent='No data was written or refreshed.'}}
+ status.textContent='Snapshot served from the stored premarket scan report.';
+ }catch(e){root.innerHTML=card('No premarket snapshot',`<div class="r-empty">${esc(e.message)}</div>`,'wide');status.textContent='No scans are stored yet — run one from the Premarket page.'}}
 load();
 """
 
@@ -141,7 +141,7 @@ _HISTORY_JS = _COMMON_JS + """
 async function load(){try{let runs=await get('/research/api/runs');let ticker=new URLSearchParams(location.search).get('ticker')||'';
  let rows=runs.rows||[],table=`<form class="r-controls"><input name="ticker" value="${esc(ticker)}" placeholder="Find ticker"><button>Search</button></form><table class="r-table"><thead><tr><th>Date</th><th>Type</th><th>Stocks</th><th>Up</th><th>Down</th><th></th></tr></thead><tbody>`+
  rows.map(x=>`<tr><td>${esc(x.timestamp)}</td><td>${esc(x.scan_type)}</td><td>${x.total_stocks_scanned??'—'}</td><td>${x.total_up_movements??'—'}</td><td>${x.total_down_movements??'—'}</td><td><a href="/research/premarket?run_id=${x.run_id}">Open snapshot</a></td></tr>`).join('')+'</tbody></table>';
- root.innerHTML=card('Scheduler snapshot history',table,'wide');status.textContent='Historical data is read-only.'}catch(e){root.innerHTML=card('History unavailable',esc(e.message),'wide')}}load();
+ root.innerHTML=card('Premarket scan history',table,'wide');status.textContent='Historical data is read-only.'}catch(e){root.innerHTML=card('History unavailable',esc(e.message),'wide')}}load();
 """
 
 
@@ -164,7 +164,8 @@ def register(app, rt):
     @rt("/research/premarket", methods=["GET"])
     def premarket(session):
         return _shell("research-premarket", "☀ Premarket Research",
-                      "Scheduler snapshots, sector breadth and movers. AlpaTrade never refreshes this dataset.",
+                      "Sector breadth and movers from the latest premarket scan. "
+                      "Fresh scans appear here automatically.",
                       _PREMARKET_JS, _user(session))
 
     @rt("/research/models", methods=["GET"])
@@ -187,7 +188,7 @@ def register(app, rt):
     @rt("/research/history", methods=["GET"])
     def history(session):
         return _shell("research-history", "⌛ Historical Research",
-                      "Browse completed scheduler scans and locate earlier movers.",
+                      "Browse completed premarket scans and locate earlier movers.",
                       _HISTORY_JS, _user(session))
 
     @rt("/research/api/premarket", methods=["GET"])
