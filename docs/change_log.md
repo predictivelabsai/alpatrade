@@ -17,6 +17,10 @@
   source, used and remaining starter queries, and percentage consumed. A saved
   chat warning is appended after a successful platform-funded response reaches
   90% of the allowance; checking usage never consumes a query.
+- Extended the same visible-request gate to free-form Hermes calls. Supported
+  deterministic Hermes commands stay free, and a Hermes-to-DeepAgents fallback
+  reuses the original reservation rather than charging twice. The counter is a
+  request guard; exact internal Hermes turns/tokens still require an LLM proxy.
 - Closed the Hermes-outage fallback gap: if the app falls back to the hosted
   DeepAgents model, that call now reserves/refunds the same user allowance.
 - Added idempotent migration `sql/28_xai_byok_query_gate.sql`. Deploy it before
@@ -39,6 +43,9 @@
   realized return evidence, elapsed idle time, and a review/retest recommendation
   after 24 hours without any saved trade. Missing broker prices are labeled
   unavailable instead of being presented as zero unrealized P&L.
+- Fixed Hermes progress messaging so ordinary research questions no longer say
+  that a backtest is running; the backtest label is now shown only when the
+  submitted request actually contains a backtest instruction.
 
 ### In-product daily advisor digest
 

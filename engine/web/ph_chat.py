@@ -1503,26 +1503,25 @@ async def _stream(msg: str, session) -> StreamingResponse:
         full = ""
         tool_chart = ""
         query_authorization = None
-        # Deterministic Hermes trading commands returned above do not spend an
-        # LLM query. Hermes free-form calls use the separately configured sidecar.
-        # This gate protects the AlpaTrade-hosted DeepAgents/LangGraph clients.
-        if selected_framework != "hermes":
-            try:
-                from engine.ai.query_gate import authorize_query
-                query_authorization = await asyncio.to_thread(
-                    authorize_query, str(uid) if uid is not None else "",
-                    has_byok=bool(settings.api_key),
-                )
-            except PermissionError as exc:
-                message = str(exc)
-                yield _sse("error", {"message": message})
-                _save_chat_message(
-                    thread_id, user_key, "assistant", message,
-                    {"agent": display_name, "framework": selected_framework,
-                     "error": True, "code": "query_limit_exceeded"},
-                )
-                yield _sse("done", {})
-                return
+        # Deterministic Hermes commands returned above are free. Every free-form
+        # model request shares one gate. Hermes currently uses the platform key
+        # inside its sidecar, so a user's AlpaTrade BYOK cannot bypass that gate.
+        try:
+            from engine.ai.query_gate import authorize_query
+            query_authorization = await asyncio.to_thread(
+                authorize_query, str(uid) if uid is not None else "",
+                has_byok=bool(settings.api_key) and selected_framework != "hermes",
+            )
+        except PermissionError as exc:
+            message = str(exc)
+            yield _sse("error", {"message": message})
+            _save_chat_message(
+                thread_id, user_key, "assistant", message,
+                {"agent": display_name, "framework": selected_framework,
+                 "error": True, "code": "query_limit_exceeded"},
+            )
+            yield _sse("done", {})
+            return
         try:
             runtime = get_runtime(selected_framework)
             if runtime_override:
@@ -1590,12 +1589,7 @@ async def _stream(msg: str, session) -> StreamingResponse:
                             kind, value = await asyncio.wait_for(queue.get(), timeout=2.0)
                         except TimeoutError:
                             elapsed = int(time.monotonic() - started)
-                            if elapsed < 8:
-                                status = "Hermes is planning the request"
-                            elif elapsed < 30:
-                                status = "Hermes is running tools or waiting for data"
-                            else:
-                                status = "Backtest still running; waiting for results"
+                            status = _hermes_progress_status(routed_msg, elapsed)
                             yield _sse("progress", {
                                 "message": status,
                                 "elapsed_seconds": elapsed,
@@ -1619,7 +1613,7 @@ async def _stream(msg: str, session) -> StreamingResponse:
                 full = res.text
                 yield _sse("token", {"text": full})
         except Exception as e:  # noqa: BLE001
-            if selected_framework != "hermes" and uid is not None:
+            if uid is not None:
                 try:
                     from engine.ai.query_gate import refund_query
                     await asyncio.to_thread(
@@ -1635,13 +1629,8 @@ async def _stream(msg: str, session) -> StreamingResponse:
                     "agent": "AlpaTrade AI (Hermes unavailable)",
                 })
                 try:
-                    # A Hermes outage must not bypass the platform allowance
-                    # when its fallback invokes the hosted DeepAgents model.
-                    from engine.ai.query_gate import authorize_query
-                    query_authorization = await asyncio.to_thread(
-                        authorize_query, str(uid) if uid is not None else "",
-                        has_byok=bool(settings.api_key),
-                    )
+                    # Reuse the Hermes request's reserved slot for fallback;
+                    # never charge the user twice for one visible request.
                     fallback_runtime = get_runtime("deepagents")
                     fallback = fallback_runtime.build(
                         _agui._chat_role(build_chat_model(settings, streaming=True))
@@ -1707,6 +1696,17 @@ async def _stream(msg: str, session) -> StreamingResponse:
         yield _sse("done", {})
 
     return StreamingResponse(gen(), media_type="text/event-stream")
+
+
+def _hermes_progress_status(message: str, elapsed: int) -> str:
+    """Describe remote work without falsely labeling every request a backtest."""
+    if elapsed < 8:
+        return "Hermes is planning the request"
+    if elapsed < 30:
+        return "Hermes is running tools or waiting for data"
+    if "backtest" in message.lower():
+        return "Backtest still running; waiting for results"
+    return "Hermes is still working; waiting for a response"
 
 
 def _maybe_append_equity(msg: str, result: str, user_id: str = "") -> str:

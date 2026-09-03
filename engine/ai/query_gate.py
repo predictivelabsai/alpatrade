@@ -73,11 +73,15 @@ def render_usage_status(status: dict[str, object]) -> str:
     remaining = int(status["platform_queries_remaining"])
     percent = int(status["percent_used"])
     byok = status["funding_source"] == "byok"
-    funding = "Your xAI API key (BYOK)" if byok else "Platform starter allowance"
+    funding = (
+        "Your xAI API key for DeepAgents/LangGraph"
+        if byok else "Platform starter allowance"
+    )
     note = (
-        "Your starter allowance is paused while BYOK is enabled."
+        "Your starter allowance is paused for DeepAgents/LangGraph; free-form "
+        "Hermes still uses it because the sidecar cannot receive your saved key."
         if byok else
-        "Free-form DeepAgents and LangGraph questions consume this allowance."
+        "Free-form Hermes, DeepAgents, and LangGraph questions consume this allowance."
     )
     return (
         "## AI usage\n\n"
@@ -85,8 +89,8 @@ def render_usage_status(status: dict[str, object]) -> str:
         f"- **Platform queries used:** {used} / {limit} ({percent}%)\n"
         f"- **Platform queries remaining:** {remaining}\n\n"
         f"{note} Deterministic commands, including supported Hermes trading "
-        "commands, do not consume a query. Hermes sidecar token/cost usage is "
-        "not yet included in this counter."
+        "commands, do not consume a query. This counts visible Hermes requests, "
+        "not every internal sidecar model turn or its exact token cost."
     )
 
 

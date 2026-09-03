@@ -111,7 +111,8 @@ def test_usage_render_discloses_counter_scope():
         "percent_used": 60,
     })
     assert "3 / 5 (60%)" in rendered
-    assert "Hermes sidecar token/cost usage is not yet included" in rendered
+    assert "Free-form Hermes, DeepAgents, and LangGraph" in rendered
+    assert "not every internal sidecar model turn" in rendered
 
 
 def test_settings_xai_key_is_never_rendered(monkeypatch):
@@ -171,3 +172,14 @@ def test_xai_byok_is_passed_directly_without_platform_probe(monkeypatch):
     config.build_chat_model(settings)
     assert captured["api_key"] == "xai-user-key"
     assert captured["model"] == "grok-test"
+
+
+def test_hermes_progress_only_mentions_backtest_for_backtest_requests():
+    from engine.web.ph_chat import _hermes_progress_status
+
+    assert _hermes_progress_status("Compare AAPL and MSFT", 46) == (
+        "Hermes is still working; waiting for a response"
+    )
+    assert _hermes_progress_status("run a backtest for AAPL", 46) == (
+        "Backtest still running; waiting for results"
+    )
