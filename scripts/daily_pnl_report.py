@@ -687,9 +687,12 @@ def _fmt_param(key: str, value) -> tuple[str, str]:
     label, unit = _PARAM_LABELS.get(key, (key.replace("_", " ").capitalize(), "num"))
     if unit == "pct":
         number = _f(value)
-        # Strategy engines persist ratios (0.05 = 5%) while some legacy paths
-        # persist whole percentages (5 = 5%). Render both representations safely.
-        if abs(number) <= 1:
+        # Active paper threshold fields are already whole percentages
+        # (stop_loss_threshold=0.5 means 0.5%). Backtest-style fields such as
+        # stop_loss=0.005 and position_size=0.1 remain ratios.
+        already_percent = key in {"take_profit_threshold", "stop_loss_threshold",
+                                  "momentum_threshold"}
+        if not already_percent and abs(number) <= 1:
             number *= 100
         return label, f"{number:.2f}%"
     if unit == "usd":
@@ -728,15 +731,17 @@ def _explain(t: dict, run: dict | None) -> str:
 
     is_entry = not exit_p and t.get("pnl") is None
 
-    def threshold_pct(value) -> float:
+    def threshold_pct(value, *, already_percent: bool) -> float:
         number = _f(value)
-        return number * 100 if abs(number) <= 1 else number
+        return number if already_percent else (
+            number * 100 if abs(number) <= 1 else number
+        )
 
     if is_entry:
         if dip is not None:
             trigger = params.get("dip_threshold")
             bits.append(f"Dip -{_f(dip):.2f}%" +
-                        (f" past -{threshold_pct(trigger):.2f}% trigger"
+                        (f" past -{threshold_pct(trigger, already_percent=True):.2f}% trigger"
                          if trigger is not None else ""))
         elif raw:
             bits.append(raw)
@@ -746,13 +751,17 @@ def _explain(t: dict, run: dict | None) -> str:
         if cap:
             bits.append(f"sized ${_f(cap):,.0f}/trade")
     elif code == "TAKE_PROFIT":
+        tp_is_threshold = params.get("take_profit_threshold") is not None
         tp = params.get("take_profit_threshold", params.get("take_profit"))
         bits.append(f"Take-profit {_f(pnl_pct):+.2f}%" +
-                    (f" reached {threshold_pct(tp):.2f}% target" if tp is not None else ""))
+                    (f" reached {threshold_pct(tp, already_percent=tp_is_threshold):.2f}% target"
+                     if tp is not None else ""))
     elif code in ("STOP_LOSS", "STOPLOSS"):
+        sl_is_threshold = params.get("stop_loss_threshold") is not None
         sl = params.get("stop_loss_threshold", params.get("stop_loss"))
         bits.append(f"Stop-loss {_f(pnl_pct):+.2f}%" +
-                    (f" breached -{threshold_pct(sl):.2f}% limit" if sl is not None else ""))
+                    (f" breached -{threshold_pct(sl, already_percent=sl_is_threshold):.2f}% limit"
+                     if sl is not None else ""))
     elif code in ("HOLD_DAYS", "MAX_HOLD", "TIME_EXIT", "TIMEOUT"):
         hd = params.get("hold_days")
         bits.append("Max hold reached" + (f" ({_f(hd):.0f}d)" if hd is not None else "") +
