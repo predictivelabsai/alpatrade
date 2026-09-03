@@ -24,6 +24,18 @@ font:inherit;font-size:.78rem;border:1px solid var(--line);border-radius:.4rem;p
 .r-controls button{background:var(--accent);color:#fff;cursor:pointer}.r-plot{min-height:390px;width:100%}
 .r-table{width:100%;border-collapse:collapse;font-size:.76rem}.r-table th,.r-table td{padding:.4rem;border-bottom:1px solid var(--line);text-align:left}
 .r-up{color:#1F5D43}.r-down{color:#B4472F}.r-empty{padding:1.5rem;color:var(--ink-muted);text-align:center}
+.n-item{padding:.55rem 0;border-bottom:1px solid var(--line)}.n-item:last-child{border-bottom:0}
+.n-head{display:flex;align-items:baseline;gap:.5rem}.n-badge{flex:none;font-size:.62rem;font-weight:700;background:var(--bg-raise);
+ border:1px solid var(--line);border-radius:.3rem;padding:.1rem .3rem;color:var(--ink-muted)}
+.n-title{font-size:.84rem;font-weight:600;color:var(--ink);text-decoration:none}.n-title:hover{color:var(--accent)}
+.n-ago{margin-left:auto;flex:none;font-size:.68rem;color:var(--ink-muted)}
+.n-sum{font-size:.74rem;color:var(--ink-muted);margin-top:.15rem}
+.n-meta{display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;margin-top:.3rem}
+.n-chip{font-family:var(--font-mono);font-size:.66rem;font-weight:650;border:1px solid var(--line);border-radius:.3rem;padding:.08rem .35rem}
+.n-imp{font-size:.66rem;border-radius:.3rem;padding:.08rem .35rem;border:1px solid var(--line)}
+.n-up{background:#E7F1EA;color:#1F5D43;border-color:#BFD8C8}.n-down{background:#F7E9E4;color:#B4472F;border-color:#E3C4B8}
+.n-neutral{background:var(--bg-raise);color:var(--ink-muted)}
+.n-thesis{width:100%;font-size:.72rem;color:var(--ink);margin-top:.2rem}
 @media(max-width:760px){.r-grid{grid-template-columns:1fr}.r-card.wide{grid-column:auto}.r-metrics{grid-template-columns:repeat(2,1fr)}}
 """
 
@@ -118,14 +130,51 @@ load();
 """
 
 _NEWS_JS = _COMMON_JS + """
-async function load(){
- let market=new URLSearchParams(location.search).get('market')||'',ticker=new URLSearchParams(location.search).get('ticker')||'';
- try{let d=await get('/research/api/news?market='+encodeURIComponent(market)+'&ticker='+encodeURIComponent(ticker));
- let controls=`<form class="r-controls"><select name="market"><option value="">All markets</option>${['nordics','euronext','baltics','biotech','us'].map(x=>`<option ${market===x?'selected':''}>${x}</option>`)}</select><input name="ticker" value="${esc(ticker)}" placeholder="Ticker"><button>Filter</button></form>`;
- let table=`<table class="r-table"><thead><tr><th>Date</th><th>Market/source</th><th>Ticker</th><th>Event</th><th>Headline</th><th>Prediction</th></tr></thead><tbody>`+d.rows.map(x=>`<tr><td>${esc(String(x.published||'').slice(0,10))}</td><td>${esc(x.publisher)}</td><td>${esc(x.ticker)}</td><td>${esc(x.event)}</td><td><a target="_blank" href="${esc(x.link||'#')}">${esc(x.title)}</a></td><td class="${(x.predicted_move||0)>=0?'r-up':'r-down'}">${pct(x.predicted_move)}</td></tr>`).join('')+'</tbody></table>';
- root.innerHTML=card('All publisher feeds',controls+table,'wide');status.textContent=d.rows.length+' real news items from public.news.';
- }catch(e){root.innerHTML=card('News unavailable',esc(e.message),'wide')}}
-load();
+let src=new URLSearchParams(location.search).get('source')||'',q=new URLSearchParams(location.search).get('q')||'';
+const imp=s=>`<span class="n-imp n-${s.direction}">${esc(s.sector)} ${s.direction==='up'?'▲':s.direction==='down'?'▼':'•'}`+
+ (s.move_pct!=null?' '+Number(s.move_pct).toFixed(1)+'%':'')+(s.confidence!=null?' ('+Math.round(Number(s.confidence)*100)+'%)':'')+'</span>';
+function rowHtml(x){let ai=x.ai||{};
+ return `<div class="n-item"><div class="n-head"><span class="n-badge">${esc(x.icon||'NEWS')}</span>`+
+ `<a class="n-title" target="_blank" rel="noopener" href="${esc(x.url||'#')}">${esc(x.title)}</a><span class="n-ago">${esc(x.published_ago||'')}</span></div>`+
+ (x.summary?`<div class="n-sum">${esc(x.summary)}</div>`:'')+
+ `<div class="n-meta">${(x.tickers||[]).map(t=>`<span class="n-chip" title="${esc((x.sector_map||{})[t]||'')}">${esc(t)}</span>`).join('')}`+
+ ((ai.sectors||[]).map(imp).join(''))+(ai.thesis?`<div class="n-thesis">${esc(ai.thesis)}</div>`:'')+`</div></div>`}
+function plotBoard(secs){let el=document.getElementById('n-impact');if(!el)return;
+ let cells=(secs||[]).slice(0,12);
+ if(cells.length&&('up'in cells[0])){
+  Plotly.newPlot(el,[{type:'bar',orientation:'h',y:cells.map(c=>c.sector),x:cells.map(c=>c.up),name:'Bullish',marker:{color:'#1F5D43'}},
+   {type:'bar',orientation:'h',y:cells.map(c=>c.sector),x:cells.map(c=>-c.down),name:'Bearish',marker:{color:'#B4472F'}}],
+   {barmode:'relative',margin:{l:150,r:20,t:15,b:35},paper_bgcolor:'#fff',plot_bgcolor:'#F7F6F1',legend:{orientation:'h'}},{responsive:true,displayModeBar:false});
+ }else{
+  let names=Object.keys(secs||{}).sort((a,b)=>secs[b]-secs[a]).slice(0,10);
+  Plotly.newPlot(el,[{type:'bar',orientation:'h',y:names,x:names.map(n=>secs[n]),marker:{color:'#1F5D43'}}],
+   {margin:{l:150,r:20,t:15,b:35},paper_bgcolor:'#fff',plot_bgcolor:'#F7F6F1',xaxis:{title:'Headlines mentioning sector'}},{responsive:true,displayModeBar:false});
+ }}
+function modelRows(m){m=m||{binary:[],regression:[]};let out=[];
+ m.binary.slice(0,6).forEach(r=>out.push(`<tr><td>${esc(r.event)}</td><td>direction</td><td>${r.accuracy==null?'—':Number(r.accuracy).toFixed(2)}</td><td>${r.f1==null?'—':Number(r.f1).toFixed(2)}</td><td>${esc(String(r.test_sample??'—'))}</td></tr>`));
+ m.regression.slice(0,4).forEach(r=>out.push(`<tr><td>${esc(r.event)}</td><td>move size</td><td>${r.r2==null?'—':Number(r.r2).toFixed(2)} R²</td><td>${r.mae==null?'—':Number(r.mae).toFixed(2)} MAE</td><td>${esc(String(r.test_sample??'—'))}</td></tr>`));
+ return out.join('')||'<tr><td colspan="5">No stored model results.</td></tr>'}
+async function analyze(){
+ status.textContent='Analyzing headlines with AI — this can take ~30s…';
+ try{let r=await fetch('/research/api/news/analyze?'+new URLSearchParams({source:src,q:q}),{method:'POST'});
+  let d=await r.json();if(d.error)throw Error(d.error);
+  let feed=document.getElementById('n-feed');if(feed)feed.innerHTML=(d.items||[]).map(rowHtml).join('');
+  plotBoard(d.sectors);
+  status.textContent='AI sector-impact analysis by '+(d.model||'model')+(d.cached?' · cached':'')+' · '+new Date().toLocaleTimeString();}
+ catch(e){status.textContent='Analysis failed: '+e.message}}
+function render(d){let rows=d.rows||[],secs=d.sector_counts||{},top=Object.keys(secs)[0];
+ root.innerHTML=`<div class="r-metrics wide">${metric(rows.length,'Live headlines')}${metric((d.sources||[]).length,'Sources active')}${metric((d.top_tickers||[]).length,'Symbols detected')}${metric(top?top+' · '+secs[top]:'—','Most mentioned sector')}</div>`+
+ `<form class="r-controls" method="get" action="/research/news"><input name="q" value="${esc(q)}" placeholder="Search headlines"><select name="source"><option value="">All sources</option>`+
+ (d.sources||[]).map(s=>`<option ${src===s?'selected':''}>${esc(s)}</option>`).join('')+`</select><button>Filter</button>`+
+ `<button type="button" id="n-analyze" onclick="analyze()">⚡ Analyze with AI</button></form>`+
+ card('Sector heat','<div id="n-impact" class="r-plot"></div>')+
+ card('Headline feed','<div id="n-feed">'+rows.map(rowHtml).join('')+'</div>','wide')+
+ card('Finespresso model quality by event','<table class="r-table"><thead><tr><th>Event</th><th>Task</th><th>Score</th><th>Secondary</th><th>Sample</th></tr></thead><tbody>'+modelRows(d.model_analytics)+'</tbody></table>');
+ plotBoard(secs);}
+async function load(){try{let d=await get('/research/api/news?source='+encodeURIComponent(src)+'&q='+encodeURIComponent(q));render(d);
+ status.textContent=(d.total_fetched||0)+' live headlines fetched · '+(d.rows||[]).length+' shown · auto-refreshes every 5 min';}
+ catch(e){root.innerHTML=card('News unavailable',`<div class="r-empty">${esc(e.message)}</div>`,'wide')}}
+load();setInterval(load,300000);
 """
 
 _TIMING_JS = _COMMON_JS + """
@@ -177,7 +226,8 @@ def register(app, rt):
     @rt("/research/news", methods=["GET"])
     def news(session):
         return _shell("research-news", "📰 News Intelligence",
-                      "Nordic, Euronext, Baltic, biotech and US publisher feeds.",
+                      "Live multi-source headlines with AI sector-impact analysis, "
+                      "Finespresso analogs and model quality.",
                       _NEWS_JS, _user(session))
 
     @rt("/research/timing", methods=["GET"])
@@ -210,13 +260,25 @@ def register(app, rt):
             return JSONResponse({"error": str(exc)}, status_code=503)
 
     @rt("/research/api/news", methods=["GET"])
-    def api_news(market: str = "", publisher: str = "", ticker: str = "", days: int = 7):
-        from engine.research.data import news_feed
+    def api_news(source: str = "", q: str = "", limit: int = 60):
+        from engine.research import news_intel
+        from engine.research.data import model_results
         try:
-            return JSONResponse(_json_content(
-                {"rows": news_feed(market=market, publisher=publisher, ticker=ticker, days=days)}))
+            data = news_intel.collect(source=source, query=q, limit=limit)
+            data["model_analytics"] = model_results()
+            return JSONResponse(_json_content(data))
         except Exception as exc:  # noqa: BLE001
             return JSONResponse({"error": str(exc)}, status_code=503)
+
+    @rt("/research/api/news/analyze", methods=["POST"])
+    def api_news_analyze(source: str = "", q: str = "", limit: int = 25):
+        from engine.research import news_intel
+        try:
+            data = news_intel.collect(source=source, query=q, limit=60)
+            result = news_intel.analyze_with_ai(data["rows"][:max(1, min(limit, 25))])
+            return JSONResponse(_json_content(result))
+        except Exception as exc:  # noqa: BLE001
+            return JSONResponse({"error": f"Analysis unavailable: {exc}"}, status_code=503)
 
     @rt("/research/api/correlations", methods=["GET"])
     def api_correlations(industry: str = "", event: str = "", min_samples: int = 5):
