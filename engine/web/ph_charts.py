@@ -26,7 +26,7 @@ from starlette.responses import JSONResponse
 from engine.web.ph_layout import page
 
 _CHARTS_CSS = """
-.app{padding-right:0}
+
 .chartpage{max-width:1180px;margin:0 auto;width:100%;padding:0 1rem 2.5rem}
 .chartpage .cp-head{display:flex;align-items:center;justify-content:space-between;
   flex-wrap:wrap;gap:.6rem;margin:.4rem 0 1rem}

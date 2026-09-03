@@ -10,7 +10,7 @@ from fasthtml.common import A, Button, Div, Form, Input, NotStr, Option, P, Sele
 from engine.web.ph_layout import page
 
 _CSS = """
-.app{padding-right:0}
+
 .filings{max-width:960px;margin:0 auto;width:100%;padding:0 1rem 2.5rem}
 .filings h1{font-size:1.3rem;margin:.4rem 0 .2rem;color:var(--ink)}
 .filings .f-sub{font-size:.82rem;color:var(--ink-muted);margin:0 0 1rem}

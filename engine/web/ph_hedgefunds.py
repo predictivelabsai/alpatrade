@@ -12,7 +12,7 @@ from starlette.responses import JSONResponse
 from engine.web.ph_layout import page
 
 _CSS = """
-.app{padding-right:0}
+
 .hfpage{max-width:1180px;margin:0 auto;width:100%;padding:0 1rem 2.5rem}
 .hfpage h1{font-size:1.3rem;margin:.4rem 0 .2rem;color:var(--ink)}
 .hfpage h3{color:var(--accent);margin:1.4rem 0 .4rem;font-size:1rem}

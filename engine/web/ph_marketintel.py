@@ -11,7 +11,7 @@ from starlette.responses import JSONResponse
 from engine.web.ph_layout import page
 
 _CSS = """
-.app{padding-right:0}
+
 .mintel{max-width:1080px;margin:0 auto;width:100%;padding:0 1rem 2.5rem}
 .mintel h1{font-size:1.3rem;margin:.4rem 0 .2rem;color:var(--ink)}
 .mintel .mi-sub{font-size:.82rem;color:var(--ink-muted);margin:0 0 1rem}

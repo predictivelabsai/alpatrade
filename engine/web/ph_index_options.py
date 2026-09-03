@@ -6,7 +6,7 @@ from fasthtml.common import Button, Div, H1, H2, H3, P, Span, Style
 from engine.web.ph_layout import page
 
 _CSS = """
-.app{padding-right:0}
+
 .ix{width:100%;max-width:1120px;margin:0 auto;padding:1rem 1.2rem 3rem;overflow:auto}
 .ix-hero{background:linear-gradient(135deg,var(--ink),var(--accent));color:white;
  border-radius:.85rem;padding:1.25rem;margin-bottom:1rem}

@@ -6,7 +6,7 @@ from fasthtml.common import Div, NotStr, P, Style, Table, Tbody, Td, Th, Thead, 
 from engine.web.ph_layout import page
 
 _CSS = """
-.app{padding-right:0}
+
 .spacs{max-width:1080px;margin:0 auto;width:100%;padding:0 1rem 2.5rem}
 .spacs h1{font-size:1.3rem;margin:.4rem 0 .2rem;color:var(--ink)}
 .spacs .s-sub{font-size:.82rem;color:var(--ink-muted);margin:0 0 1rem}
