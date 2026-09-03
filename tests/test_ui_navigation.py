@@ -252,3 +252,39 @@ def test_hermes_follow_up_cards_are_clickable_and_persistent():
     assert "window.fillChat(prompt)" in script
     assert "m.metadata&&m.metadata.follow_ups" in script
     assert ".hermes-follow-up" in ph_chat.CHAT_STYLE
+
+
+def test_side_panels_are_draggable_with_persistent_widths():
+    html = to_xml(page("app", chat_center(), user={"email": "user@example.com"},
+                       right_news_open=True))
+    css = (Path(__file__).parents[1] / "static" / "app.css").read_text()
+
+    # Edge strips exist on both panes and are exposed as separators.
+    assert 'id="nav-resizer" class="pane-resizer"' in html
+    assert 'id="news-resizer" class="pane-resizer"' in html
+    assert 'role="separator"' in html
+    assert 'aria-orientation="vertical"' in html
+
+    # Widths are variable-driven so the strips can move them.
+    assert "grid-template-columns: var(--nav-w, 300px) 1fr" in css
+    assert "padding-right: var(--news-w, 420px)" in css
+    assert "width: var(--news-w, 420px)" in css
+    assert ".pane-resizer {" in css
+
+    # Drag logic: pointer capture, clamped widths, persistence, reset.
+    assert "function makeResizer(" in PH_JS
+    assert "setPointerCapture" in PH_JS
+    assert "localStorage.setItem(storeKey" in PH_JS
+    assert "alpatrade.navWidth" in PH_JS
+    assert "alpatrade.newsWidth" in PH_JS
+    assert "removeProperty" in PH_JS
+    assert "restorePaneWidths()" in PH_JS
+
+
+def test_pane_resizers_are_hidden_on_mobile_overlays():
+    css = (Path(__file__).parents[1] / "static" / "app.css").read_text()
+    mobile = css.split("@media (max-width: 960px)", 1)[1]
+    assert ".pane-resizer { display: none; }" in mobile
+    # The mobile overlay panes keep their own fixed sizes (vars don't apply).
+    assert "width: 92vw" in mobile
+    assert "width: 300px" in mobile

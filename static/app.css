@@ -35,15 +35,21 @@ html, body {
 a { color: var(--accent); }
 
 /* ── App grid ── */
+/* Pane widths are CSS variables so the edge strips (.pane-resizer) can drag
+   them; --nav-w / --news-w fall back to the house defaults and are persisted
+   per browser in localStorage (see PH_JS). */
 .app {
     display: grid;
-    grid-template-columns: 300px 1fr;
+    grid-template-columns: var(--nav-w, 300px) 1fr;
     height: 100vh;
     height: 100dvh; /* account for mobile browser chrome so the composer stays visible */
-    padding-right: 420px;
+    padding-right: var(--news-w, 420px);
     transition: padding-right .3s ease;
 }
 .app.pane-closed { padding-right: 0; }
+/* While a resizer is being dragged the width must track the pointer exactly. */
+.app.dragging-resize,
+.app.dragging-resize .right-pane { transition: none; }
 
 /* Every route renders inside this constrained grid viewport.  The document is
    fixed so chat composers remain visible; long tool/research pages scroll here. */
@@ -72,6 +78,7 @@ a { color: var(--accent); }
 
 /* ── Left pane ── */
 .left-pane {
+    position: relative; /* anchors the #nav-resizer edge strip */
     background: var(--bg-elev);
     border-right: 1px solid var(--line);
     display: flex; flex-direction: column;
@@ -402,7 +409,9 @@ details.agent-group[open] .agent-list { display: flex; flex-direction: column; g
 
 /* ── Right pane (NEWS only) ── */
 .right-pane {
-    position: fixed; top: 0; bottom: 0; right: -440px; width: 420px;
+    position: fixed; top: 0; bottom: 0;
+    right: calc(-1 * var(--news-w, 420px) - 40px);
+    width: var(--news-w, 420px);
     background: var(--bg-elev); border-left: 1px solid var(--line);
     z-index: 150; display: flex; flex-direction: column; transition: right .3s ease;
 }
@@ -531,12 +540,30 @@ td.neg { color: var(--red); }
 .left-overlay { display: none; position: fixed; inset: 0; z-index: 199; background: rgba(0,0,0,.4); backdrop-filter: blur(2px); }
 .left-overlay.visible { display: block; }
 
+/* ── Draggable pane resizers ── */
+/* Thin strips on the inner edge of the left menu (right edge) and the news
+   pane (left edge). Dragging writes --nav-w / --news-w; double-click resets
+   to the stylesheet default. Hidden below 960px where panes overlay. */
+.pane-resizer {
+    position: absolute; top: 0; bottom: 0; width: 7px;
+    cursor: col-resize; touch-action: none; z-index: 300; outline: none;
+}
+.pane-resizer::after {
+    content: ''; position: absolute; top: 0; bottom: 0; width: 2px;
+    background: transparent; transition: background .15s;
+}
+.pane-resizer:hover::after,
+.pane-resizer:focus-visible::after { background: var(--accent); opacity: .55; }
+#nav-resizer { right: 0; }
+#news-resizer { left: 0; }
+
 /* ── Responsive ── */
 @media (max-width: 1280px) {
     .welcome-hero .suggestions { display: none; }
     .welcome-hero { top: 38%; }
 }
 @media (max-width: 960px) {
+    .pane-resizer { display: none; }
     .app { padding-right: 0; grid-template-columns: 1fr; }
     .left-pane { position: fixed; left: -320px; top: 0; bottom: 0; width: 300px; transition: left .3s ease; }
     .left-pane.open { left: 0; }

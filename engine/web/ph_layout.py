@@ -204,6 +204,48 @@ function navRestore(){var st={};
   if(lb){try{var sc=localStorage.getItem('alpatrade.navScroll');if(sc)lb.scrollTop=parseInt(sc,10)||0;}catch(e){}
     var tmr;lb.addEventListener('scroll',function(){if(tmr)return;
       tmr=setTimeout(function(){tmr=null;try{localStorage.setItem('alpatrade.navScroll',String(lb.scrollTop));}catch(e){}},150);});}}
+// --- draggable pane widths (left menu + right news) ----------------------
+// The edge strips (.pane-resizer) write --nav-w / --news-w while dragging and
+// persist the final width in localStorage; double-click restores the default.
+function clampWidth(v,min,max){return Math.max(min,Math.min(max,v));}
+function setPaneWidth(name,w){document.documentElement.style.setProperty(name,w+'px');}
+function currentWidth(name,def){
+  return parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name))||def;}
+function makeResizer(handle,varName,storeKey,minW,maxW,growDir,defW){
+  if(!handle)return;
+  var startX=0,startW=0,app=document.getElementById('app');
+  function apply(w){setPaneWidth(varName,clampWidth(w,minW,maxW));}
+  handle.addEventListener('pointerdown',function(e){
+    startX=e.clientX;startW=currentWidth(varName,defW);
+    try{handle.setPointerCapture(e.pointerId);}catch(err){}
+    if(app)app.classList.add('dragging-resize');
+    document.body.style.userSelect='none';e.preventDefault();});
+  handle.addEventListener('pointermove',function(e){
+    if(!handle.hasPointerCapture||!handle.hasPointerCapture(e.pointerId))return;
+    apply(startW+growDir*(e.clientX-startX));});
+  function finish(e){
+    try{if(handle.hasPointerCapture&&handle.hasPointerCapture(e.pointerId))
+      handle.releasePointerCapture(e.pointerId);}catch(err){}
+    if(app)app.classList.remove('dragging-resize');
+    document.body.style.userSelect='';
+    try{localStorage.setItem(storeKey,
+      String(Math.round(currentWidth(varName,defW))));}catch(err){}}
+  handle.addEventListener('pointerup',finish);
+  handle.addEventListener('pointercancel',finish);
+  handle.addEventListener('dblclick',function(){
+    document.documentElement.style.removeProperty(varName);
+    try{localStorage.removeItem(storeKey);}catch(err){}});
+  handle.addEventListener('keydown',function(e){
+    var step=e.shiftKey?60:20;
+    if(e.key==='ArrowLeft'){apply(currentWidth(varName,defW)-growDir*step);e.preventDefault();}
+    if(e.key==='ArrowRight'){apply(currentWidth(varName,defW)+growDir*step);e.preventDefault();}});
+}
+function restorePaneWidths(){
+  try{var nw=parseInt(localStorage.getItem('alpatrade.navWidth'),10);
+    if(nw)setPaneWidth('--nav-w',clampWidth(nw,220,420));}catch(e){}
+  try{var gw=parseInt(localStorage.getItem('alpatrade.newsWidth'),10);
+    if(gw)setPaneWidth('--news-w',clampWidth(gw,320,640));}catch(e){}
+}
 window.fillChat=fillChat;window.newChat=newChat;window.autoResize=autoResize;
 window.handleKey=handleKey;window.toggleNewsPane=toggleNewsPane;window.setNewsPane=setNewsPane;
 window.toggleLeftPane=toggleLeftPane;window.filterNews=filterNews;
@@ -211,6 +253,9 @@ window.navSave=navSave;window.navRestore=navRestore;
 document.addEventListener('DOMContentLoaded',function(){
   var p=document.getElementById('right-pane');if(p)setNewsPane(p.classList.contains('open'));
   navRestore();
+  restorePaneWidths();
+  makeResizer(document.getElementById('nav-resizer'),'--nav-w','alpatrade.navWidth',220,420,1,300);
+  makeResizer(document.getElementById('news-resizer'),'--news-w','alpatrade.newsWidth',320,640,-1,420);
   var t=sessionStorage.getItem('alpatrade.pendingPrompt');
   if(t&&document.getElementById('chat-input')){
     sessionStorage.removeItem('alpatrade.pendingPrompt');fillChat(t);
@@ -424,6 +469,11 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             cls="left-body",
         ),
         Div(footer_inner, cls="left-footer"),
+        # Drag strip on the menu's inner edge: writes --nav-w, persisted per
+        # browser (see makeResizer in PH_JS). Double-click resets the width.
+        Div(id="nav-resizer", cls="pane-resizer", role="separator",
+            tabindex="0", title="Drag to resize the menu — double-click resets",
+            **{"aria-orientation": "vertical", "aria-label": "Resize menu panel"}),
         cls="left-pane", id="left-pane",
     )
 
@@ -522,6 +572,11 @@ def chat_center():
 # ---------------------------------------------------------------------------
 def _news_pane(open_by_default: bool = False):
     return Div(
+        # Drag strip on the news pane's left edge: writes --news-w, persisted
+        # per browser (see makeResizer in PH_JS). Double-click resets.
+        Div(id="news-resizer", cls="pane-resizer", role="separator",
+            tabindex="0", title="Drag to resize News — double-click resets",
+            **{"aria-orientation": "vertical", "aria-label": "Resize news panel"}),
         Div(
             Div(H3("News", cls="right-title"),
                 Span("market headlines", cls="right-subtitle"),

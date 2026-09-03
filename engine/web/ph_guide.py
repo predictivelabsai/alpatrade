@@ -23,7 +23,7 @@ from engine.web.ph_layout import page
 
 # --- scoped styles (pehero tokens; only what .content doesn't already give) --
 _GUIDE_CSS = """
-.app{padding-right:0}
+
 .guide{max-width:840px;margin:0 auto;padding-bottom:3rem}
 .guide h1{margin-bottom:.2rem}
 .guide h2{border-bottom:1px solid var(--line);padding-bottom:.3rem;scroll-margin-top:1rem;margin-top:1.6rem}

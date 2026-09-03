@@ -29,7 +29,7 @@ from engine.config import (
 )
 
 _SETTINGS_CSS = """
-.app{padding-right:0}
+
 .settings{max-width:720px;margin:0 auto;width:100%;padding:0 1rem 3rem}
 .settings h1{font-size:1.3rem;margin:.4rem 0 .2rem;color:var(--ink)}
 .settings .s-sub{font-size:.82rem;color:var(--ink-muted);margin:0 0 1.4rem}

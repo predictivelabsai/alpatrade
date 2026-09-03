@@ -7,7 +7,7 @@ from starlette.responses import JSONResponse
 from engine.web.ph_layout import page
 
 _CSS = """
-.app{padding-right:0}
+
 .ipopage{width:100%;max-width:1220px;margin:0 auto;padding:1rem 1.2rem 3rem;overflow:auto}
 .ipo-hero{background:linear-gradient(135deg,var(--bg-elev),var(--accent-dim));border:1px solid var(--line);
  border-radius:.8rem;padding:1rem 1.15rem;margin-bottom:1rem}
