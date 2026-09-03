@@ -1,6 +1,13 @@
-"""Read-only, schema-qualified access to the shared Finespresso data."""
+"""Read-only analytics over the shared Finespresso data and AlpaTrade's own scans.
+
+Shared Finespresso relations (news, price moves, model results) live in the
+``public`` schema. Premarket scans written by ``engine.premarket`` live in
+``alpatrade.premarket_scan_runs`` and carry the full report as JSONB; the
+snapshot views below flatten that report rather than a per-stock table.
+"""
 from __future__ import annotations
 
+import json
 from collections import defaultdict
 from datetime import date
 from math import sqrt
@@ -17,33 +24,58 @@ def _rows(sql: str, params: dict | None = None) -> list[dict[str, Any]]:
         return [dict(r) for r in session.execute(text(sql), params or {}).mappings()]
 
 
+def _table_exists(schema: str, name: str) -> bool:
+    rows = _rows("""SELECT 1 FROM information_schema.tables
+        WHERE table_schema=:schema AND table_name=:name""",
+                 {"schema": schema, "name": name})
+    return bool(rows)
+
+
 def relation_exists(name: str) -> bool:
-    rows = _rows("""SELECT EXISTS (
-        SELECT 1 FROM information_schema.tables
-        WHERE table_schema='public' AND table_name=:name
-    ) AS present""", {"name": name})
-    return bool(rows and rows[0]["present"])
+    return _table_exists("public", name)
 
 
 def premarket_runs(limit: int = 30) -> list[dict]:
-    return _rows("""SELECT run_id, timestamp, scan_type, total_stocks_scanned,
-        total_up_movements, total_down_movements
-        FROM public.premarket_scan_runs ORDER BY timestamp DESC LIMIT :limit""",
+    return _rows("""SELECT run_id, scan_timestamp AS timestamp, scan_type,
+        total_stocks_scanned, total_up_movements, total_down_movements
+        FROM alpatrade.premarket_scan_runs ORDER BY scan_timestamp DESC LIMIT :limit""",
                  {"limit": max(1, min(limit, 100))})
 
 
+# Multi-MiB blobs (per-tick history, catalyst payloads) no snapshot consumer renders.
+_SNAPSHOT_DROP_KEYS = frozenset({"history", "catalysts", "ai_reasoning", "ai_sources"})
+
+
+def _flatten_report(report: dict[str, Any]) -> list[dict[str, Any]]:
+    """Flatten a persisted scan report into de-duplicated mover rows."""
+    movers: list[dict[str, Any]] = []
+    for bucket in report.get("sectors", {}).values():
+        for direction in ("up", "down"):
+            for row in bucket.get(direction, []):
+                movers.append({key: value for key, value in row.items()
+                               if key not in _SNAPSHOT_DROP_KEYS})
+    seen: set[str] = set()
+    return [row for row in movers
+            if not (row.get("ticker") in seen or seen.add(row.get("ticker")))]
+
+
 def premarket_snapshot(run_id: str | None = None, limit: int = 1000) -> list[dict]:
-    clause = "r.run_id=:run_id" if run_id else (
-        "r.run_id=(SELECT run_id FROM public.premarket_scan_runs ORDER BY timestamp DESC LIMIT 1)"
-    )
-    # history/ai_reasoning/ai_sources are multi-MiB blobs no consumer renders;
-    # skipping them keeps the payload ~40x smaller (2.4 MiB -> 62 KiB measured).
-    return _rows(f"""SELECT r.ticker, r.company_name, r.sector, r.industry, r.prev_close,
-        r.premarket_close, r.movement_abs, r.movement_pct, r.premarket_high,
-        r.premarket_low, r.data_source, r.timestamp
-        FROM public.premarket_scan_results r WHERE {clause}
-        ORDER BY ABS(r.movement_pct) DESC NULLS LAST LIMIT :limit""",
-                 {"run_id": run_id, "limit": max(1, min(limit, 2500))})
+    params: dict[str, Any] = {"limit": max(1, min(limit, 2500))}
+    clause = ""
+    if run_id:
+        clause = "WHERE run_id=:run_id"
+        params["run_id"] = run_id
+    rows = _rows(f"""SELECT run_id, scan_timestamp AS timestamp, report
+        FROM alpatrade.premarket_scan_runs {clause}
+        ORDER BY scan_timestamp DESC LIMIT 1""", params)
+    if not rows:
+        return []
+    report = rows[0]["report"]
+    if isinstance(report, str):
+        report = json.loads(report)
+    movers = _flatten_report(report or {})
+    movers.sort(key=lambda row: abs(row.get("movement_pct") or 0), reverse=True)
+    return movers[:params["limit"]]
 
 
 def news_feed(*, market: str = "", publisher: str = "", ticker: str = "",
