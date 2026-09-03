@@ -50,7 +50,9 @@ def test_one_message_runtime_overrides_remain_in_command_surface():
     runtime_commands = dict(next(items for label, items in MAIN_NAV
                                  if label == "AI Runtime"))
 
-    assert set(runtime_commands) == {"/hermes ", "/deepagents ", "/langgraph "}
+    assert set(runtime_commands) == {
+        "/usage", "/hermes ", "/deepagents ", "/langgraph ",
+    }
     assert "AI Runtime" not in html
 
 

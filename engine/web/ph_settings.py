@@ -53,6 +53,11 @@ _SETTINGS_CSS = """
 .settings .s-notice{border-radius:.5rem;padding:.6rem .8rem;margin-bottom:1rem;font-size:.82rem}
 .settings .s-notice.ok{background:var(--accent-dim);color:var(--accent-deep)}
 .settings .s-readonly{font-size:.9rem;color:var(--ink)}
+.settings .s-secret{display:flex;gap:.4rem;align-items:center}
+.settings .s-secret input{flex:1}
+.settings .s-eye{border:1px solid var(--line-br);background:var(--bg);color:var(--ink);
+  border-radius:.45rem;padding:.5rem .65rem;cursor:pointer}
+.settings .s-danger{background:transparent;color:#9b3c30;border:1px solid #c98b82}
 """
 
 
@@ -108,6 +113,17 @@ def _settings_page(user, msg: str = ""):
     notice = [Div("Saved.", cls="s-notice ok")] if msg == "saved" else []
 
     account_id = accounts[0]["account_id"] if accounts else ""
+
+    try:
+        from engine.auth import get_provider_key_status
+        xai_status = get_provider_key_status(user["user_id"], "xai")
+    except Exception:  # migration may not have been applied yet
+        xai_status = {"configured": False, "hint": ""}
+    xai_label = (
+        f"Configured · {xai_status['hint']}"
+        if xai_status["configured"] else
+        "Not configured — the first 5 AI queries use the platform allowance"
+    )
 
     body = Div(
         Div("Settings", cls="chat-header-title", style="display:none"),
@@ -179,6 +195,44 @@ def _settings_page(user, msg: str = ""):
             ),
             cls="s-card",
         ),
+        Div(
+            H3("xAI API key (BYOK)"),
+            P(NotStr("Status: "),
+              Span(xai_label, cls=f"s-status {'ok' if xai_status['configured'] else 'no'}"),
+              cls="s-hint"),
+            Form(
+                Div(
+                    Label("XAI_API_KEY"),
+                    Div(
+                        Input(id="xai-api-key", name="api_key", type="password",
+                              autocomplete="new-password", placeholder="xai-…", required=True),
+                        Button("Show", type="button", cls="s-eye",
+                               onclick="toggleSecret('xai-api-key', this)"),
+                        cls="s-secret",
+                    ),
+                    cls="s-row",
+                ),
+                P("Your key is Fernet-encrypted at rest. Saved credentials are never sent "
+                  "back to the browser; Show only reveals what you are typing.", cls="s-hint"),
+                Button("Save xAI key", type="submit", cls="s-btn"),
+                method="post", action="/settings/provider-key",
+            ),
+            *(
+                [Form(Input(name="provider", type="hidden", value="xai"),
+                      Button("Remove saved key", type="submit", cls="s-btn s-danger"),
+                      method="post", action="/settings/provider-key/remove")]
+                if xai_status["configured"] else []
+            ),
+            NotStr("""<script>
+function toggleSecret(id, button) {
+  const field = document.getElementById(id);
+  const showing = field.type === 'text';
+  field.type = showing ? 'password' : 'text';
+  button.textContent = showing ? 'Show' : 'Hide';
+}
+</script>"""),
+            cls="s-card",
+        ),
         P(A("← Back to chat", href="/app"), cls="s-hint"),
         cls="settings",
     )
@@ -221,8 +275,14 @@ def register(app, rt):
             return RedirectResponse("/signin", status_code=303)
         form = await request.form()
         from engine.auth import store_user_settings, USER_SETTING_FIELDS
-        store_user_settings(user["user_id"],
-                            **{f: (form.get(f) or "").strip() for f in USER_SETTING_FIELDS})
+        preferences = {
+            f: (form.get(f) or "").strip() for f in USER_SETTING_FIELDS
+        }
+        provider = preferences.get("model_provider")
+        allowed_models = MODEL_NAMES.get(provider, [])
+        if allowed_models and preferences.get("model_name") not in allowed_models:
+            preferences["model_name"] = allowed_models[0]
+        store_user_settings(user["user_id"], **preferences)
         # Phase 3b: evict cached chat + reasoning agents so the new framework/model
         # takes effect on the next message/reasoning call (no process restart).
         try:
@@ -237,4 +297,39 @@ def register(app, rt):
             pass
         return RedirectResponse("/settings?msg=saved", status_code=303)
 
-    return ["/settings", "/settings/keys", "/settings/preferences"]
+    @app.post("/settings/provider-key")
+    async def settings_provider_key(session, request):
+        user = _user(session)
+        if not user:
+            return RedirectResponse("/signin", status_code=303)
+        form = await request.form()
+        api_key = (form.get("api_key") or "").strip()
+        if api_key:
+            from engine.auth import store_provider_api_key
+            store_provider_api_key(user["user_id"], "xai", api_key)
+            try:
+                from agui_app import clear_agent_cache
+                clear_agent_cache()
+            except Exception:  # noqa: BLE001
+                pass
+        return RedirectResponse("/settings?msg=saved", status_code=303)
+
+    @app.post("/settings/provider-key/remove")
+    async def settings_provider_key_remove(session, request):
+        user = _user(session)
+        if not user:
+            return RedirectResponse("/signin", status_code=303)
+        form = await request.form()
+        provider = (form.get("provider") or "").strip().lower()
+        if provider == "xai":
+            from engine.auth import clear_provider_api_key
+            clear_provider_api_key(user["user_id"], provider)
+            try:
+                from agui_app import clear_agent_cache
+                clear_agent_cache()
+            except Exception:  # noqa: BLE001
+                pass
+        return RedirectResponse("/settings?msg=saved", status_code=303)
+
+    return ["/settings", "/settings/keys", "/settings/preferences",
+            "/settings/provider-key", "/settings/provider-key/remove"]

@@ -232,6 +232,30 @@ def test_chat_result_question_returns_latest_completed_job(monkeypatch):
     assert "Dip threshold: **3.00%**" in reply
 
 
+def test_chat_backtest_trade_questions_use_deterministic_owned_query(monkeypatch):
+    from engine.agents import hermes_backtest_results
+    from engine.web.ph_chat import _dispatch_hermes_job_command
+
+    calls = []
+
+    def fake_analysis(user_id, view, run_id=None):
+        calls.append((user_id, view, run_id))
+        return f"table:{view}"
+
+    monkeypatch.setattr(hermes_backtest_results, "owned_trade_analysis", fake_analysis)
+    user_id = "11111111-1111-1111-1111-111111111111"
+    thread_id = "22222222-2222-2222-2222-222222222222"
+    prompts = [
+        ("show trades from my latest backtest", "all"),
+        ("show my most profitable backtest trade", "best"),
+        ("show my least profitable backtest trade", "worst"),
+        ("calculate average holding period", "holding"),
+    ]
+    for prompt, view in prompts:
+        assert asyncio.run(_dispatch_hermes_job_command(prompt, user_id, thread_id)) == f"table:{view}"
+    assert calls == [(user_id, view, None) for _, view in prompts]
+
+
 def test_chat_dispatch_returns_queue_ack_immediately(monkeypatch):
     from engine.agents import hermes_jobs
     from engine.web.ph_chat import _dispatch_hermes_job_command

@@ -121,6 +121,7 @@ def test_render_separates_framework_benchmark_and_periods():
 def test_fractional_strategy_parameters_render_as_percentages():
     assert report._fmt_param("dip_threshold", 0.05) == ("Dip threshold", "5.00%")
     assert report._fmt_param("stop_loss", 0.005) == ("Stop loss", "0.50%")
+    assert report._fmt_param("stop_loss_threshold", 0.5) == ("Stop loss", "0.50%")
     assert report._fmt_param("take_profit", 0.015) == ("Take profit", "1.50%")
     assert report._fmt_param("position_size", 0.1) == ("Position size", "10.00%")
     assert report._fmt_param("dip_threshold", 5) == ("Dip threshold", "5.00%")

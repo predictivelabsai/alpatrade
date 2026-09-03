@@ -73,6 +73,10 @@ HERMES_SHORTCUTS = [
     ("Hermes — Monitor", [
         ("/hermes show my running jobs", "only queued, running, or paused jobs"),
         ("/hermes analyze my running paper job", "P&L, drift, and next actions"),
+        ("/hermes show total P&L and average return for my latest paper run",
+         "ask the read-only Hermes data analyst"),
+        ("/hermes show paper P&L and return by symbol",
+         "compare saved results by ticker"),
         ("/hermes pause my running paper job", "pause the latest running Hermes job"),
         ("/hermes resume my paused paper job", "resume the latest paused Hermes job"),
         ("/hermes stop my running paper job", "stop the latest running Hermes job"),
@@ -99,6 +103,7 @@ ALPHA_RESEARCH_SHORTCUTS = [
 # (group, [(command, description), ...]) — data / reporting navigation.
 MAIN_NAV = [
     ("AI Runtime", [
+        ("/usage", "view your AI query allowance without spending a query"),
         ("/hermes ", "use Hermes for one message"),
         ("/deepagents ", "use DeepAgents for one message"),
         ("/langgraph ", "use LangGraph for one message"),

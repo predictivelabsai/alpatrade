@@ -127,3 +127,48 @@ def test_render_health_banner_when_source_down():
     assert "Data unavailable" in report._render_health({"db_ok": False, "account_ok": True})
     assert "Alpaca account" in report._render_health({"db_ok": True, "account_ok": False})
     assert report._render_health({"db_ok": True, "account_ok": True}) == ""
+
+
+def test_agent_benchmark_adds_correct_all_agent_totals():
+    rows = [
+        {"agent_name": "Hermes", "framework": "hermes", "today_pnl": 12,
+         "today_exits": 1, "mtd_pnl": 30, "mtd_exits": 2,
+         "ytd_pnl": 40, "ytd_exits": 4, "win_rate": 50, "run_count": 1},
+        {"agent_name": "DeepAgents", "framework": "deepagents", "today_pnl": -2,
+         "today_exits": 1, "mtd_pnl": 5, "mtd_exits": 1,
+         "ytd_pnl": 10, "ytd_exits": 1, "win_rate": 100, "run_count": 1},
+    ]
+    html = report._render_agent_benchmark({"agent_performance": rows})
+    assert "All attributed agents" in html
+    assert "$+10.00 (2 exits)" in html
+    assert "$+35.00" in html
+    assert "$+50.00" in html
+    assert "60.0%" in html
+
+
+def test_daily_pnl_scope_explains_broker_vs_agent_numbers():
+    html = report._render_daily_pnl_scope({"agent_performance": [
+        {"today_pnl": 25, "today_exits": 2, "ytd_exits": 2},
+        {"today_pnl": -5, "today_exits": 1, "ytd_exits": 1},
+    ]})
+    assert "Agent realized P&amp;L today" in html
+    assert "$+20.00" in html and "3 completed exits" in html
+    assert "broker account equity change" in html
+
+
+def test_trade_row_shows_return_and_normalized_stop_loss_reason():
+    trades = [{"symbol": "AAPL", "direction": "sell", "shares": 2,
+               "entry_price": 100, "exit_price": 99.5, "pnl": -1,
+               "pnl_pct": -0.5, "reason": "STOP_LOSS (-0.50%)", "run_id": "r1"}]
+    runs = {"r1": {"strategy": "buy_the_dip",
+                    "config": {"params": {"stop_loss": 0.005}}}}
+    html, buys, sells, realized = report._render_trades(trades, runs)
+    assert buys == 0 and sells == 1 and realized == -1
+    assert "-0.50%" in html
+    assert "breached -0.50% limit" in html
+
+
+def test_empty_trade_table_explains_signal_waiting_is_valid():
+    html, _, _, _ = report._render_trades([], {})
+    assert "No paper trade rows were booked for this reporting date" in html
+    assert "signal-waiting strategy" in html

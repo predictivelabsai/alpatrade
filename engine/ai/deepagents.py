@@ -283,7 +283,9 @@ class DeepAgentService:
         provider = (settings.model_provider or "").lower()
         if provider not in MODEL_PROVIDERS:
             raise DeepAgentsUnavailable("The configured model provider is unavailable")
-        configured_key = (provider, settings.model_name)
+        # Provider clients containing BYOK credentials are tenant-scoped.
+        credential_scope = user_id if settings.api_key else None
+        configured_key = (credential_scope, provider, settings.model_name)
         model = self._models.get(configured_key)
         if model is None:
             try:
@@ -298,7 +300,7 @@ class DeepAgentService:
                 raise DeepAgentsUnavailable("The configured model provider is unavailable")
             self._models[configured_key] = model
         actual_name = _model_name(model, settings.model_name)
-        cache_key = (provider, actual_name, public_only)
+        cache_key = (credential_scope, provider, actual_name, public_only)
         graph = self._graphs.get(cache_key)
         if graph is not None:
             return graph, provider, actual_name

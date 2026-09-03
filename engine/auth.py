@@ -396,6 +396,74 @@ def store_user_settings(user_id: str, **fields) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Per-user model-provider credentials (BYOK)
+# ---------------------------------------------------------------------------
+
+SUPPORTED_PROVIDER_CREDENTIALS = {"xai"}
+
+
+def store_provider_api_key(user_id: str, provider: str, api_key: str) -> None:
+    """Fernet-encrypt and upsert one provider key for one user."""
+    provider = (provider or "").strip().lower()
+    api_key = (api_key or "").strip()
+    if not user_id or provider not in SUPPORTED_PROVIDER_CREDENTIALS or not api_key:
+        raise ValueError("A supported provider and non-empty API key are required")
+    from sqlalchemy import text
+    hint = f"{api_key[:4]}...{api_key[-4:]}" if len(api_key) >= 10 else "configured"
+    with _get_pool().get_session() as session:
+        session.execute(text("""
+            INSERT INTO alpatrade.user_provider_credentials
+                (user_id, provider, api_key_enc, api_key_hint, is_active)
+            VALUES (:user_id, :provider, :api_key_enc, :api_key_hint, TRUE)
+            ON CONFLICT (user_id, provider) DO UPDATE SET
+                api_key_enc = EXCLUDED.api_key_enc,
+                api_key_hint = EXCLUDED.api_key_hint,
+                is_active = TRUE,
+                updated_at = NOW()
+        """), {"user_id": user_id, "provider": provider,
+                "api_key_enc": encrypt_key(api_key), "api_key_hint": hint})
+
+
+def get_provider_api_key(user_id: str, provider: str) -> Optional[str]:
+    """Return a user's decrypted active provider key; never log this value."""
+    if not user_id:
+        return None
+    from sqlalchemy import text
+    with _get_pool().get_session() as session:
+        row = session.execute(text("""
+            SELECT api_key_enc FROM alpatrade.user_provider_credentials
+            WHERE user_id = :user_id AND provider = :provider AND is_active = TRUE
+        """), {"user_id": user_id, "provider": provider.lower()}).fetchone()
+    if not row or not row[0]:
+        return None
+    encrypted = bytes(row[0]) if isinstance(row[0], memoryview) else row[0]
+    return decrypt_key(encrypted)
+
+
+def get_provider_key_status(user_id: str, provider: str) -> Dict:
+    """Return display-safe credential status without decrypting the key."""
+    if not user_id:
+        return {"configured": False, "hint": ""}
+    from sqlalchemy import text
+    with _get_pool().get_session() as session:
+        row = session.execute(text("""
+            SELECT api_key_hint FROM alpatrade.user_provider_credentials
+            WHERE user_id = :user_id AND provider = :provider AND is_active = TRUE
+        """), {"user_id": user_id, "provider": provider.lower()}).fetchone()
+    return {"configured": bool(row), "hint": row[0] if row else ""}
+
+
+def clear_provider_api_key(user_id: str, provider: str) -> None:
+    """Disable and erase an encrypted provider key for one user."""
+    from sqlalchemy import text
+    with _get_pool().get_session() as session:
+        session.execute(text("""
+            DELETE FROM alpatrade.user_provider_credentials
+            WHERE user_id = :user_id AND provider = :provider
+        """), {"user_id": user_id, "provider": provider.lower()})
+
+
+# ---------------------------------------------------------------------------
 # Password reset
 # ---------------------------------------------------------------------------
 

@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import logging
 import os
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, field
 from functools import lru_cache
 
 logger = logging.getLogger(__name__)
@@ -67,9 +67,17 @@ class Settings:
     market_data_provider: str
     search_provider: str
     agent_framework: str
+    # Decrypted only inside the backend. Deliberately excluded from as_dict/repr.
+    api_key: str | None = field(default=None, repr=False)
 
     def as_dict(self) -> dict:
-        return asdict(self)
+        return {
+            "model_provider": self.model_provider,
+            "model_name": self.model_name,
+            "market_data_provider": self.market_data_provider,
+            "search_provider": self.search_provider,
+            "agent_framework": self.agent_framework,
+        }
 
 
 def _norm(val: str | None) -> str | None:
@@ -155,6 +163,13 @@ def get_settings(user_id: str | None = None) -> Settings:
             pass
     if data.get("market_data_provider") not in MARKET_DATA_PROVIDERS:
         data["market_data_provider"] = _DEFAULTS["market_data_provider"]
+    data["api_key"] = None
+    if user_id:
+        try:
+            from engine.auth import get_provider_api_key
+            data["api_key"] = get_provider_api_key(user_id, data["model_provider"])
+        except Exception:  # migration may not be deployed yet
+            pass
     return Settings(**data)
 
 
@@ -176,11 +191,11 @@ def build_chat_model(settings: Settings | None = None, *, streaming: bool = True
             model = _DEFAULTS["model_name"]
 
     base_url, key_env = _OPENAI_COMPAT.get(provider, _OPENAI_COMPAT["xai"])
-    if provider == "xai":
+    if provider == "xai" and not settings.api_key:
         model = _resolve_xai_model(model)
     from langchain_openai import ChatOpenAI
     return ChatOpenAI(
-        api_key=os.getenv(key_env),
+        api_key=settings.api_key or os.getenv(key_env),
         base_url=base_url,
         model=model,
         temperature=temperature,

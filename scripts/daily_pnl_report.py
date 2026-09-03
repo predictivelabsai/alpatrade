@@ -687,9 +687,12 @@ def _fmt_param(key: str, value) -> tuple[str, str]:
     label, unit = _PARAM_LABELS.get(key, (key.replace("_", " ").capitalize(), "num"))
     if unit == "pct":
         number = _f(value)
-        # Strategy engines persist ratios (0.05 = 5%) while some legacy paths
-        # persist whole percentages (5 = 5%). Render both representations safely.
-        if abs(number) <= 1:
+        # Active paper threshold fields are already whole percentages
+        # (stop_loss_threshold=0.5 means 0.5%). Backtest-style fields such as
+        # stop_loss=0.005 and position_size=0.1 remain ratios.
+        already_percent = key in {"take_profit_threshold", "stop_loss_threshold",
+                                  "momentum_threshold"}
+        if not already_percent and abs(number) <= 1:
             number *= 100
         return label, f"{number:.2f}%"
     if unit == "usd":
@@ -727,11 +730,19 @@ def _explain(t: dict, run: dict | None) -> str:
     bits: list[str] = []
 
     is_entry = not exit_p and t.get("pnl") is None
+
+    def threshold_pct(value, *, already_percent: bool) -> float:
+        number = _f(value)
+        return number if already_percent else (
+            number * 100 if abs(number) <= 1 else number
+        )
+
     if is_entry:
         if dip is not None:
             trigger = params.get("dip_threshold")
             bits.append(f"Dip -{_f(dip):.2f}%" +
-                        (f" past -{_f(trigger):.2f}% trigger" if trigger is not None else ""))
+                        (f" past -{threshold_pct(trigger, already_percent=True):.2f}% trigger"
+                         if trigger is not None else ""))
         elif raw:
             bits.append(raw)
         else:
@@ -740,13 +751,17 @@ def _explain(t: dict, run: dict | None) -> str:
         if cap:
             bits.append(f"sized ${_f(cap):,.0f}/trade")
     elif code == "TAKE_PROFIT":
-        tp = params.get("take_profit_threshold")
+        tp_is_threshold = params.get("take_profit_threshold") is not None
+        tp = params.get("take_profit_threshold", params.get("take_profit"))
         bits.append(f"Take-profit {_f(pnl_pct):+.2f}%" +
-                    (f" reached {_f(tp):.2f}% target" if tp is not None else ""))
+                    (f" reached {threshold_pct(tp, already_percent=tp_is_threshold):.2f}% target"
+                     if tp is not None else ""))
     elif code in ("STOP_LOSS", "STOPLOSS"):
-        sl = params.get("stop_loss_threshold")
+        sl_is_threshold = params.get("stop_loss_threshold") is not None
+        sl = params.get("stop_loss_threshold", params.get("stop_loss"))
         bits.append(f"Stop-loss {_f(pnl_pct):+.2f}%" +
-                    (f" breached -{_f(sl):.2f}% limit" if sl is not None else ""))
+                    (f" breached -{threshold_pct(sl, already_percent=sl_is_threshold):.2f}% limit"
+                     if sl is not None else ""))
     elif code in ("HOLD_DAYS", "MAX_HOLD", "TIME_EXIT", "TIMEOUT"):
         hd = params.get("hold_days")
         bits.append("Max hold reached" + (f" ({_f(hd):.0f}d)" if hd is not None else "") +
@@ -927,10 +942,19 @@ def _render_agent_benchmark(d: dict) -> str:
         return ("<h3>Agent benchmark</h3><p style='color:#7A867E;font-size:12px'>"
                 "No closed, attributed paper trades in the current year.</p>")
     body = ""
+    total_today = total_mtd = total_ytd = 0.0
+    total_today_exits = total_mtd_exits = total_ytd_exits = 0
     for row in rows:
         today, mtd, ytd = (_f(row.get("today_pnl")), _f(row.get("mtd_pnl")),
                            _f(row.get("ytd_pnl")))
         has_data = row.get("has_data", int(row.get("ytd_exits") or 0) > 0)
+        if has_data:
+            total_today += today
+            total_mtd += mtd
+            total_ytd += ytd
+            total_today_exits += int(row.get("today_exits") or 0)
+            total_mtd_exits += int(row.get("mtd_exits") or 0)
+            total_ytd_exits += int(row.get("ytd_exits") or 0)
         empty = "<span style='color:#7A867E'>No attributed exits</span>"
         body += (f"<tr><td>{_e(row.get('agent_name'))}<br><small>{_e(row.get('framework'))}</small></td>"
                  f"<td style='color:{'#1F5D43' if today >= 0 else '#b0653f'}'>"
@@ -942,6 +966,20 @@ def _render_agent_benchmark(d: dict) -> str:
                  f"{f'${ytd:+,.2f}' if has_data else '—'}</td>"
                  f"<td>{f'{_f(row.get('win_rate')):.1f}%' if has_data else '—'}</td>"
                  f"<td>{int(row.get('run_count') or 0)}</td></tr>")
+    weighted_wins = sum(
+        _f(row.get("win_rate")) * int(row.get("ytd_exits") or 0)
+        for row in rows
+    )
+    total_win_rate = weighted_wins / total_ytd_exits if total_ytd_exits else 0.0
+    body += (
+        "<tr style='background:#EFEDE4;font-weight:700'><td>All attributed agents</td>"
+        f"<td style='color:{'#1F5D43' if total_today >= 0 else '#b0653f'}'>"
+        f"${total_today:+,.2f} ({total_today_exits} exits)</td>"
+        f"<td style='color:{'#1F5D43' if total_mtd >= 0 else '#b0653f'}'>"
+        f"${total_mtd:+,.2f}</td><td>{total_mtd_exits}</td>"
+        f"<td style='color:{'#1F5D43' if total_ytd >= 0 else '#b0653f'}'>"
+        f"${total_ytd:+,.2f}</td><td>{total_win_rate:.1f}%</td><td>—</td></tr>"
+    )
     return ("<h3>Agent benchmark — realized paper trades only</h3>"
             "<p style='font-size:12px;color:#7A867E'>Account equity is shared and is not assigned "
             "to an agent. This table compares only exits linked to each run.</p>"
@@ -949,6 +987,28 @@ def _render_agent_benchmark(d: dict) -> str:
             "<thead><tr><th>Agent</th><th>Today</th><th>MTD P&amp;L</th><th>MTD exits</th>"
             "<th>YTD P&amp;L</th><th>YTD win rate</th><th>Runs</th></tr></thead>"
             f"<tbody>{body}</tbody></table>")
+
+
+def _render_daily_pnl_scope(d: dict) -> str:
+    """Separate broker equity movement from DB-attributed realized agent exits."""
+    performance = d.get("agent_performance") or []
+    exits = sum(int(row.get("today_exits") or 0) for row in performance)
+    realized = sum(
+        _f(row.get("today_pnl"))
+        for row in performance
+        if row.get("has_data", int(row.get("ytd_exits") or 0) > 0)
+    )
+    color = "#1F5D43" if realized >= 0 else "#b0653f"
+    activity = (
+        f"<b style='color:{color}'>${realized:+,.2f}</b> across {exits} completed exits"
+        if exits else "<b>$0.00</b> — no attributed exits were booked today"
+    )
+    return (
+        "<p style='background:#F5F3EB;border-left:3px solid #6F806F;padding:8px 10px;"
+        "font-size:12px'><b>Agent realized P&amp;L today:</b> " + activity + ".<br>"
+        "The headline is the broker account equity change and can differ because it also "
+        "includes unrealized movement, fees, cash activity, and broker timing.</p>"
+    )
 
 
 def _render_equity_reconciliation(d: dict) -> str:
@@ -1045,6 +1105,7 @@ def render(d: dict) -> str:
   <p style="font-size:20px;margin:.2rem 0"><b style="color:{color}">{sign} ${d['day_pnl']:,.2f}
      ({d['day_pct']:+.2f}%)</b>
      <span style="color:#7A867E">today <span style="font-size:12px">(vs prior close)</span></span></p>
+  {_render_daily_pnl_scope(d)}
   {_render_equity_reconciliation(d)}
   <table style="border-collapse:collapse;margin:.4rem 0">
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Portfolio value</td><td><b>${d['equity']:,.2f}</b></td></tr>
@@ -1067,7 +1128,7 @@ def render(d: dict) -> str:
   <p style="color:#415046;font-size:13px;margin:.15rem 0 .4rem">{n_buys} buy · {n_sells} sell
      · realised P&amp;L <b style="color:{'#1F5D43' if realized >= 0 else '#b0653f'}">${realized:,.2f}</b></p>
   <table border="1" cellpadding="6" style="border-collapse:collapse;font-size:13px">
-    <thead><tr style="background:#EFEDE4"><th>Symbol</th><th>Side</th><th>Qty</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Reasoning</th></tr></thead>
+    <thead><tr style="background:#EFEDE4"><th>Symbol</th><th>Side</th><th>Qty</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Return</th><th>Reasoning / TP / SL</th></tr></thead>
     <tbody>{trade_rows}</tbody>
   </table>
   <p style="color:#7A867E;font-size:12px;margin-top:1rem">Paper trading — simulated, no real money.
@@ -1104,14 +1165,18 @@ def _render_trades(trades: list[dict], runs: dict[str, dict]) -> tuple[str, int,
                     else ("-" if not exit_p else f"${pnl_val:,.2f}"))
         exit_cell = f"${exit_p:,.2f}" if exit_p else "—"
         reasoning = _e(_explain(t, runs.get(t.get("run_id"))))
+        return_cell = f"{_f(t.get('pnl_pct')):+.2f}%" if pnl is not None else "—"
         rows += (f"<tr><td>{_e(sym)}</td><td>{_e(side or '—')}</td>"
                  f"<td style='text-align:right'>{qty:g}</td>"
                  f"<td style='text-align:right'>${entry:,.2f}</td>"
                  f"<td style='text-align:right'>{exit_cell}</td>"
                  f"<td style='text-align:right;color:{c}'>{pnl_cell}</td>"
+                 f"<td style='text-align:right;color:{c}'>{return_cell}</td>"
                  f"<td style='font-size:12px;color:#415046'>{reasoning}</td></tr>")
     if not rows:
-        rows = "<tr><td colspan='7' style='color:#7A867E'>No paper trades booked.</td></tr>"
+        rows = ("<tr><td colspan='8' style='color:#7A867E'>No paper trade rows were "
+                "booked for this reporting date. Check the active-job section above; "
+                "a stopped or signal-waiting strategy can correctly have no trades.</td></tr>")
     # If no closed trades had a pnl value, don't pretend a $0.00 realised figure.
     if not saw_realized:
         realized = 0.0
