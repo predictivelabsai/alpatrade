@@ -1,4 +1,5 @@
-from unittest.mock import patch
+import json
+from unittest.mock import MagicMock, patch
 
 from engine.research.data import (
     _flatten_report,
@@ -112,6 +113,145 @@ def test_premarket_snapshot_accepts_jsonb_text_and_run_id():
 def test_premarket_snapshot_returns_empty_without_runs():
     with patch("engine.research.data._rows", return_value=[]):
         assert premarket_snapshot() == []
+
+
+def test_extract_tickers_uses_known_universe(monkeypatch):
+    import engine.research.news_intel as ni
+
+    monkeypatch.setattr(ni, "ticker_map", lambda: {
+        "AAPL": {"company": "Apple", "sector": "Technology"},
+        "MSFT": {"company": "Microsoft", "sector": "Technology"},
+        "AI": {"company": "C3.ai", "sector": "Technology"},
+    })
+    assert ni.extract_tickers("Chip rally: $AAPL jumps while MSFT slips") == ["AAPL", "MSFT"]
+    assert ni.extract_tickers("FED GDP REPORT SHOCKS WALL STREET") == []
+    # Word-collision symbols need the $ prefix; $AI still matches C3.ai.
+    assert ni.extract_tickers("AI is transforming everything") == []
+    assert ni.extract_tickers("Traders pile into $AI") == ["AI"]
+
+
+def test_collect_filters_searches_and_enriches(monkeypatch):
+    import engine.research.news_intel as ni
+
+    monkeypatch.setattr(ni, "extract_tickers", lambda title, summary: ["AAPL"])
+    monkeypatch.setattr(ni, "ticker_map",
+                        lambda: {"AAPL": {"company": "Apple", "sector": "Technology"}})
+    articles = [
+        {"title": "Chip rally lifts Apple", "url": "u1", "summary": "s1",
+         "source": "CNBC Markets", "icon": "CNBC", "published": "2026-09-03T10:00:00+00:00"},
+        {"title": "Local football results", "url": "u2", "summary": "s2",
+         "source": "BBC", "icon": "BBC", "published": "2026-09-03T09:00:00+00:00"},
+    ]
+    out = ni.collect(query="chip", fetch=lambda: articles)
+    assert [row["url"] for row in out["rows"]] == ["u1"]
+    assert out["rows"][0]["tickers"] == ["AAPL"]
+    assert out["rows"][0]["sector_map"] == {"AAPL": "Technology"}
+    assert out["sector_counts"] == {"Technology": 1}
+    assert out["sources"] == ["CNBC Markets"]
+    assert out["top_tickers"] == [("AAPL", 1)]
+
+
+def test_collect_source_filter_and_limit(monkeypatch):
+    import engine.research.news_intel as ni
+
+    monkeypatch.setattr(ni, "extract_tickers", lambda title, summary: [])
+    articles = [{"title": f"t{i}", "url": f"u{i}", "summary": "",
+                 "source": "A" if i % 2 else "B", "icon": "X",
+                 "published": "2026-09-03T10:00:00+00:00"} for i in range(6)]
+    out = ni.collect(source="A", limit=2, fetch=lambda: articles)
+    assert len(out["rows"]) == 2
+    assert all(row["source"] == "A" for row in out["rows"])
+
+
+def test_analog_evidence_aggregates_and_drops_nan():
+    import engine.research.news_intel as ni
+
+    row = ("AAPL", "up", float("nan"), 0.8)
+    session = MagicMock()
+    session.execute.return_value.fetchall.return_value = [row]
+    with patch.object(ni, "DatabasePool") as pool_cls:
+        ctx = pool_cls.return_value.get_session.return_value
+        ctx.__enter__.return_value = session
+        ctx.__exit__.return_value = False
+        evidence = ni.analog_evidence(["AAPL"])
+    assert evidence["AAPL"]["model_side"] == "up"
+    assert evidence["AAPL"]["model_avg_move"] is None
+    assert evidence["AAPL"]["realized_avg_move"] == 0.8
+    assert evidence["AAPL"]["samples"] == 1
+
+
+def test_analog_evidence_empty_without_tickers():
+    import engine.research.news_intel as ni
+
+    with patch.object(ni, "DatabasePool") as pool_cls:
+        ni.analog_evidence([])
+        pool_cls.assert_not_called()
+
+
+def test_sector_board_blends_moves_and_ranks():
+    from engine.research.news_intel import _sector_board
+
+    items = [
+        {"title": "A", "ai": {"sectors": [
+            {"sector": "Energy", "direction": "up", "move_pct": 1.0}]}},
+        {"title": "B", "ai": {"sectors": [
+            {"sector": "Energy", "direction": "down", "move_pct": 2.0},
+            {"sector": "Financials", "direction": "up", "move_pct": None}]}},
+    ]
+    board = _sector_board(items)
+    assert board[0]["sector"] == "Energy"
+    assert board[0]["mentions"] == 2
+    assert board[0]["up"] == 1 and board[0]["down"] == 1
+    assert board[0]["expected_move_pct"] == 1.3
+    assert board[0]["driver"] == "A"
+    assert board[1]["sector"] == "Financials"
+    assert board[1]["expected_move_pct"] is None
+
+
+def test_analyze_with_ai_parses_enriches_and_caches():
+    import engine.research.news_intel as ni
+
+    ni._analysis_cache.update({"key": None, "at": 0.0, "data": None})
+
+    class FakeModel:
+        model_name = "fake-1"
+
+        def invoke(self, messages):
+            content = json.dumps({"items": [{
+                "i": 0,
+                "sectors": [{"sector": "Technology", "direction": "up",
+                             "move_pct": 1.5, "confidence": 0.8}],
+                "tickers": ["AAPL"], "thesis": "Chip demand rising",
+            }]})
+            return type("Response", (), {"content": content})()
+
+    rows = [{"title": "Chip rally", "url": "u1", "summary": "",
+             "tickers": ["AAPL"], "sectors": ["Technology"]}]
+    out = ni.analyze_with_ai(rows, model=FakeModel())
+    assert out["model"] == "fake-1" and out["cached"] is False
+    assert out["items"][0]["ai"]["thesis"] == "Chip demand rising"
+    assert out["items"][0]["ai"]["sectors"][0]["direction"] == "up"
+    assert out["sectors"][0]["sector"] == "Technology"
+    assert ni.analyze_with_ai(rows, model=FakeModel())["cached"] is True
+
+    ni._analysis_cache.update({"key": None, "at": 0.0, "data": None})
+
+
+def test_parse_llm_json_extracts_object_from_prose():
+    from engine.research.news_intel import _parse_llm_json
+
+    assert _parse_llm_json('Sure! {"items": []} hope that helps') == {"items": []}
+    try:
+        _parse_llm_json("no json here")
+        raise AssertionError("expected ValueError")
+    except ValueError:
+        pass
+
+
+def test_news_intelligence_routes_registered():
+    import app
+    paths = {getattr(route, "path", "") for route in app.app.routes}
+    assert {"/research/api/news", "/research/api/news/analyze"} <= paths
 
 
 def test_research_json_replaces_non_finite_database_values():
