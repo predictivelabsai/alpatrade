@@ -1096,6 +1096,23 @@ async def _dispatch_hermes_job_command(
             "`resume`, or `stop` to control it."
         )
 
+    backtest_trade_view = None
+    if "backtest" in lowered and "trade" in lowered:
+        if any(phrase in lowered for phrase in ("most profitable", "best trade")):
+            backtest_trade_view = "best"
+        elif any(phrase in lowered for phrase in ("least profitable", "worst trade")):
+            backtest_trade_view = "worst"
+        elif any(word in lowered for word in ("show", "list", "table")):
+            backtest_trade_view = "all"
+    if "holding period" in lowered and "paper" not in lowered:
+        backtest_trade_view = "holding"
+    if backtest_trade_view:
+        from engine.agents.hermes_backtest_results import owned_trade_analysis
+        run_id = uuids[0] if uuids else None
+        return await asyncio.to_thread(
+            owned_trade_analysis, user_id, backtest_trade_view, run_id
+        )
+
     backtest_result_request = "backtest" in lowered and any(
         word in lowered for word in ("result", "details", "parameters", "params", "period")
     )

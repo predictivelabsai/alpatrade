@@ -17,6 +17,14 @@
   enabling this branch: `python run_migration.py sql/28_xai_byok_query_gate.sql`.
 - Added network-free tests for the allowance boundary, safe Settings rendering,
   and API-key serialization. No xAI or Hermes calls are made by these tests.
+- Added deterministic Hermes commands for the latest owned backtest's trade
+  table, best/worst trade, and average holding period. Results come directly
+  from user-scoped `alpatrade` tables and emphasize realized P&L and return;
+  these commands never invoke xAI.
+- Clarified the consolidated daily report by separating Alpaca account-equity
+  movement from realized agent P&L, adding a correct all-agent total row, and
+  showing per-trade return plus normalized take-profit/stop-loss reasoning.
+  Empty trade sections now distinguish a valid no-signal day from missing data.
 
 ### In-product daily advisor digest
 
