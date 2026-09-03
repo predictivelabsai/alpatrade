@@ -199,7 +199,7 @@ def test_attach_catalysts_with_nan_news_rows_stays_json_safe():
 def test_search_news_nulls_non_finite_values_from_feed():
     import engine.publicmarkets.news as news_mod
     row = ("Feed title", "https://link", "AAPL", "Apple", None, "earnings",
-           "GlobeNewswire", "summary text", "NaN", float("nan"))
+           "GlobeNewswire", "summary text", "NaN", float("nan"), "en")
     session = MagicMock()
     session.execute.return_value.fetchall.return_value = [row]
     with patch.object(news_mod, "DatabasePool") as pool_cls:
