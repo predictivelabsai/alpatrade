@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import uuid
 from datetime import datetime
@@ -50,6 +51,28 @@ def _sector_for(ticker: str) -> str:
     return next((sector for sector, names in US_SECTORS.items() if ticker in names), "Unknown")
 
 
+def _finite(value: Any) -> float | None:
+    """Coerce to a finite float; NaN/inf/unparseable become None."""
+    if value is None:
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _json_safe(value: Any) -> Any:
+    """Recursively replace non-finite floats with None so JSON serialization never fails."""
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    return value
+
+
 def _ticker_frame(download: pd.DataFrame, ticker: str) -> pd.DataFrame:
     if download.empty:
         return pd.DataFrame()
@@ -83,25 +106,36 @@ def _movement(ticker: str, frame: pd.DataFrame) -> dict[str, Any] | None:
                         & (work.index.time <= datetime.strptime("16:00", "%H:%M").time())]
         if pre.empty or previous.empty:
             continue
-        prev_close = float(previous["Close"].dropna().iloc[-1])
-        closes = pre["Close"].dropna()
-        if not prev_close or closes.empty:
+        prior_closes = previous["Close"].dropna()
+        if prior_closes.empty:
             continue
-        price = float(closes.iloc[-1])
+        prev_close = _finite(prior_closes.iloc[-1])
+        closes = pre["Close"].dropna()
+        if prev_close is None or not prev_close or closes.empty:
+            continue
+        price = _finite(closes.iloc[-1])
+        if price is None:
+            continue
+        opens = pre["Open"].dropna() if "Open" in pre.columns else pd.Series(dtype=float)
+        high = _finite(pre["High"].max()) if "High" in pre.columns else None
+        low = _finite(pre["Low"].min()) if "Low" in pre.columns else None
+        open_price = _finite(opens.iloc[0]) if not opens.empty else None
+        history = [{"timestamp": stamp.isoformat(), "price": round(value, 2)}
+                   for stamp, raw in closes.items()
+                   if (value := _finite(raw)) is not None]
         return {
             "ticker": ticker,
             "company_name": ticker,
             "sector": _sector_for(ticker),
             "industry": "",
             "prev_close": round(prev_close, 2),
-            "premarket_open": round(float(pre["Open"].dropna().iloc[0]), 2),
+            "premarket_open": round(open_price if open_price is not None else price, 2),
             "premarket_close": round(price, 2),
-            "premarket_high": round(float(pre["High"].max()), 2),
-            "premarket_low": round(float(pre["Low"].min()), 2),
+            "premarket_high": round(high if high is not None else price, 2),
+            "premarket_low": round(low if low is not None else price, 2),
             "movement_abs": round(price - prev_close, 2),
             "movement_pct": round((price - prev_close) / prev_close * 100, 2),
-            "history": [{"timestamp": stamp.isoformat(), "price": round(float(value), 2)}
-                        for stamp, value in closes.items()],
+            "history": history,
             "data_source": "yfinance",
             "scan_date": trade_date.isoformat(),
             "timestamp": datetime.now(EASTERN).isoformat(),
@@ -114,7 +148,7 @@ def _attach_catalysts(movers: Iterable[dict[str, Any]]) -> None:
     try:
         from engine.publicmarkets.news import search_news
         for mover in movers:
-            rows = search_news(ticker=mover["ticker"], limit=3)
+            rows = _json_safe(search_news(ticker=mover["ticker"], limit=3))
             mover["catalysts"] = rows
             mover["ai_reasoning"] = rows[0]["summary"] if rows else ""
             mover["ai_sources"] = [
@@ -175,7 +209,7 @@ def scan_premarket(top_n: int = 10) -> dict[str, Any]:
         if row is not None:
             row["sector"] = sector
             movements.append(row)
-    report = build_report(movements, top_n=top_n)
+    report = _json_safe(build_report(movements, top_n=top_n))
     save_report(report)
     return report
 
@@ -224,7 +258,8 @@ def latest_report() -> dict[str, Any] | None:
                 ORDER BY scan_timestamp DESC LIMIT 1
             """)).scalar()
             if value:
-                return value if isinstance(value, dict) else json.loads(value)
+                report = value if isinstance(value, dict) else json.loads(value)
+                return _json_safe(report)
     except Exception as exc:  # noqa: BLE001
         logger.info("Premarket database read unavailable: %s", exc)
     files = sorted(_report_dir().glob("premarket-screener_*.json"),
@@ -232,7 +267,7 @@ def latest_report() -> dict[str, Any] | None:
     if not files:
         return None
     try:
-        return json.loads(files[0].read_text(encoding="utf-8"))
+        return _json_safe(json.loads(files[0].read_text(encoding="utf-8")))
     except (OSError, json.JSONDecodeError):
         return None
 
@@ -251,12 +286,20 @@ def flatten(report: dict[str, Any] | None) -> list[dict[str, Any]]:
 
 def top_movers(report: dict[str, Any] | None = None, limit: int = 10) -> dict[str, list[dict]]:
     rows = flatten(report or latest_report())
+    for row in rows:
+        # Legacy artifacts may carry null movement_pct after NaN sanitization.
+        if row.get("movement_pct") is None:
+            row["movement_pct"] = 0.0
+
+    def pct(row: dict[str, Any]) -> float:
+        return row["movement_pct"]
+
     return {
-        "gainers": sorted((row for row in rows if row.get("movement_pct", 0) > 0),
-                          key=lambda row: row["movement_pct"], reverse=True)[:limit],
-        "fallers": sorted((row for row in rows if row.get("movement_pct", 0) < 0),
-                          key=lambda row: row["movement_pct"])[:limit],
-        "movers": sorted(rows, key=lambda row: abs(row.get("movement_pct", 0)),
+        "gainers": sorted((row for row in rows if row["movement_pct"] > 0),
+                          key=pct, reverse=True)[:limit],
+        "fallers": sorted((row for row in rows if row["movement_pct"] < 0),
+                          key=pct)[:limit],
+        "movers": sorted(rows, key=lambda row: abs(row["movement_pct"]),
                          reverse=True)[:limit],
     }
 
@@ -283,7 +326,7 @@ def summary_markdown(limit: int = 8) -> str:
         up = top["gainers"][index] if index < len(top["gainers"]) else {}
         down = top["fallers"][index] if index < len(top["fallers"]) else {}
         lines.append(
-            f"| {up.get('ticker', '')} | {up.get('movement_pct', 0):+.2f}% | "
-            f"{down.get('ticker', '')} | {down.get('movement_pct', 0):+.2f}% |"
+            f"| {up.get('ticker', '')} | {(up.get('movement_pct') or 0):+.2f}% | "
+            f"{down.get('ticker', '')} | {(down.get('movement_pct') or 0):+.2f}% |"
         )
     return "\n".join(lines)

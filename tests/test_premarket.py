@@ -1,14 +1,17 @@
 import json
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 
 from agents.premarket_agent import PremarketAgent
 from engine.premarket import (
     US_SECTORS,
+    _json_safe,
     _movement,
     build_report,
     flatten,
+    latest_report,
+    scan_premarket,
     top_movers,
     universe_entries,
 )
@@ -116,3 +119,117 @@ def test_premarket_routes_are_registered():
     import app
     paths = {getattr(route, "path", "") for route in app.app.routes}
     assert {"/premarket", "/premarket/data", "/premarket/scan"} <= paths
+
+
+def test_json_safe_replaces_non_finite_floats():
+    payload = _json_safe({"a": float("nan"), "b": [1.5, float("inf")],
+                          "c": {"d": float("-inf")}, "e": "x", "f": 3})
+    assert payload == {"a": None, "b": [1.5, None], "c": {"d": None}, "e": "x", "f": 3}
+
+
+def test_movement_survives_non_finite_bars():
+    index = pd.to_datetime([
+        "2026-07-27 19:55:00+00:00",
+        "2026-07-28 08:00:00+00:00",
+        "2026-07-28 13:25:00+00:00",
+    ])
+    frame = pd.DataFrame({
+        "Open": [100.0, float("nan"), 104.0],
+        "High": [101.0, float("nan"), float("inf")],
+        "Low": [99.0, float("nan"), float("nan")],
+        "Close": [100.0, float("nan"), 105.0],
+        "Volume": [1, 2, 3],
+    }, index=index)
+
+    result = _movement("AAPL", frame)
+
+    assert result["prev_close"] == 100.0
+    assert result["premarket_close"] == 105.0
+    assert result["premarket_open"] == 104.0
+    assert result["premarket_high"] == 105.0
+    assert result["premarket_low"] == 105.0
+    assert json.dumps(result, allow_nan=False)
+
+
+def test_movement_skips_day_without_finite_premarket_close():
+    index = pd.to_datetime([
+        "2026-07-27 19:55:00+00:00",
+        "2026-07-28 08:00:00+00:00",
+    ])
+    frame = pd.DataFrame({
+        "Open": [100.0, float("nan")], "High": [101.0, float("nan")],
+        "Low": [99.0, float("nan")], "Close": [100.0, float("nan")],
+        "Volume": [1, 2],
+    }, index=index)
+    assert _movement("AAPL", frame) is None
+
+
+def test_scan_premarket_returns_json_compliant_report():
+    cols = pd.MultiIndex.from_product([["AAPL"], ["Open", "High", "Low", "Close", "Volume"]])
+    index = pd.to_datetime([
+        "2026-07-27 19:55:00+00:00",
+        "2026-07-28 08:00:00+00:00",
+        "2026-07-28 13:25:00+00:00",
+    ])
+    data = pd.DataFrame(
+        [[100.0, 101.0, 99.0, 100.0, 10],
+         [float("nan"), float("nan"), float("nan"), float("nan"), 20],
+         [float("nan"), float("inf"), float("nan"), 105.0, 30]],
+        columns=cols, index=index)
+    with patch("yfinance.download", return_value=data), \
+            patch("engine.premarket._attach_catalysts"), \
+            patch("engine.premarket.save_report"):
+        report = scan_premarket()
+
+    json.dumps(report, allow_nan=False)
+    tech = report["sectors"]["Technology"]
+    assert any(row["ticker"] == "AAPL" for row in tech["up"] + tech["down"])
+
+
+def test_attach_catalysts_with_nan_news_rows_stays_json_safe():
+    with patch("engine.publicmarkets.news.search_news") as search:
+        search.return_value = [{
+            "title": "t", "link": "http://x", "publisher": "p", "summary": "s",
+            "event": "e", "predicted_side": "NaN", "predicted_move": float("nan"),
+        }]
+        report = build_report([_row("AAPL", "Technology", 1)])
+    json.dumps(report, allow_nan=False)
+
+
+def test_search_news_nulls_non_finite_values_from_feed():
+    import engine.publicmarkets.news as news_mod
+    row = ("Feed title", "https://link", "AAPL", "Apple", None, "earnings",
+           "GlobeNewswire", "summary text", "NaN", float("nan"))
+    session = MagicMock()
+    session.execute.return_value.fetchall.return_value = [row]
+    with patch.object(news_mod, "DatabasePool") as pool_cls:
+        session_ctx = pool_cls.return_value.get_session.return_value
+        session_ctx.__enter__.return_value = session
+        session_ctx.__exit__.return_value = False
+        rows = news_mod.search_news(ticker="AAPL", limit=3)
+    assert rows[0]["predicted_move"] is None
+    assert rows[0]["predicted_side"] is None
+
+
+def test_latest_report_sanitizes_legacy_nan_artifacts(tmp_path, monkeypatch):
+    monkeypatch.setenv("PREMARKET_REPORTS_DIR", str(tmp_path))
+    (tmp_path / "premarket-screener_20260903_080000.json").write_text(json.dumps(
+        {"summary": {}, "sectors": {"Technology": {"up": [{
+            "ticker": "AAPL", "movement_pct": float("nan"),
+            "premarket_high": float("inf"),
+            "catalysts": [{"predicted_move": float("nan")}],
+        }], "down": []}}}), )
+    with patch("engine.db.pool.DatabasePool", side_effect=RuntimeError("no db")):
+        report = latest_report()
+
+    json.dumps(report, allow_nan=False)
+    top = top_movers(report, 5)
+    assert top["movers"][0]["movement_pct"] == 0.0
+
+
+def test_ui_payload_survives_nan_rows_through_starlette():
+    from starlette.responses import JSONResponse
+    report = {"scan_timestamp": "2026-09-03", "summary": {}, "sectors": {
+        "Technology": {"up": [_row("AAPL", "Technology", float("nan"))], "down": []}}}
+    body = JSONResponse(_payload(report, 10)).body
+    assert json.loads(body)["sectors"]["Technology"]["up"][0]["movement_pct"] is None

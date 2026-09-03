@@ -137,11 +137,11 @@ def _page(user):
 
 
 def _payload(report, limit=10):
-    from engine.premarket import top_movers
+    from engine.premarket import _json_safe, top_movers
     if not report:
         return {"error": "No premarket scan is available yet. Run a fresh scan.",
                 "summary": {}, "sectors": {}, "top": {"gainers": [], "fallers": [], "movers": []}}
-    return {**report, "top": top_movers(report, min(max(limit, 1), 25))}
+    return _json_safe({**report, "top": top_movers(report, min(max(limit, 1), 25))})
 
 
 def register(app, rt):

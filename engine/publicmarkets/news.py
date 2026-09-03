@@ -5,9 +5,31 @@ feed). AlpaTrade consumes it read-only.
 """
 from __future__ import annotations
 
+import math
+from typing import Any
+
 from sqlalchemy import text
 
 from engine.db.pool import DatabasePool
+
+
+def _clean_float(value: Any) -> float | None:
+    """Postgres float8 can hold NaN/Infinity; map those to None (JSON-safe)."""
+    if value is None:
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _clean_side(value: Any) -> str | None:
+    """The feed stores unknown sides as the literal text 'NaN'."""
+    if value is None:
+        return None
+    text_value = str(value).strip()
+    return None if text_value.lower() == "nan" else text_value
 
 
 def news_category(event: str = "", title: str = "") -> str:
@@ -54,7 +76,8 @@ def search_news(query: str = "", ticker: str = "", limit: int = 30) -> list[dict
         """), params).fetchall()
     return [{"title": r[0], "link": r[1], "ticker": r[2], "company": r[3],
              "published": str(r[4]) if r[4] else "", "event": r[5], "publisher": r[6],
-             "summary": r[7], "predicted_side": r[8], "predicted_move": r[9]} for r in rows]
+             "summary": r[7], "predicted_side": _clean_side(r[8]),
+             "predicted_move": _clean_float(r[9])} for r in rows]
 
 
 def news_summary(query: str = "", ticker: str = "", limit: int = 15) -> str:
