@@ -841,6 +841,37 @@ async def _dispatch_hermes_job_command(
             f"{report['win_rate']:.1f}%"
             if report["completed_exits"] else "N/A (no completed exits)"
         )
+        open_entries = report.get("open_entries") or []
+        closed_trades = report.get("closed_trades") or []
+        open_lines = [
+            "| Symbol | Qty | Entry | Entered |",
+            "|---|---:|---:|---|",
+        ]
+        for trade in open_entries[:20]:
+            open_lines.append(
+                f"| {trade.get('symbol') or '—'} | {float(trade.get('qty') or 0):,.4g} "
+                f"| ${float(trade.get('entry_price') or 0):,.2f} "
+                f"| {str(trade.get('entry_time') or '—')[:19]} |"
+            )
+        if not open_entries:
+            open_lines.append("| No open entries saved for this run | — | — | — |")
+        exit_lines = [
+            "| Symbol | Qty | Exit | Realized P&L | Return | Reason |",
+            "|---|---:|---:|---:|---:|---|",
+        ]
+        for trade in closed_trades[-20:][::-1]:
+            pnl = float(trade.get("pnl") or 0)
+            pnl_pct = float(trade.get("pnl_pct") or 0)
+            exit_lines.append(
+                f"| {trade.get('symbol') or '—'} | {float(trade.get('qty') or 0):,.4g} "
+                f"| ${float(trade.get('exit_price') or 0):,.2f} "
+                f"| {'+' if pnl >= 0 else '-'}${abs(pnl):,.2f} | {pnl_pct:+.2f}% "
+                f"| {trade.get('reason') or '—'} |"
+            )
+        if not closed_trades:
+            exit_lines.append("| No completed exits saved for this run | — | — | — | — | — |")
+        open_table = "\n".join(open_lines)
+        exit_table = "\n".join(exit_lines)
         return (
             "## Hermes paper analysis\n\n"
             f"- **Status:** `{report['status']}`\n"
@@ -852,6 +883,11 @@ async def _dispatch_hermes_job_command(
             f"- **Win rate:** {win_rate}\n"
             f"- **Duplicate active jobs:** {report['active_duplicate_jobs']}\n\n"
             f"- **Other active account runs:** {report['other_active_account_runs']}\n\n"
+            f"- **Idle since last saved trade:** {float(report.get('idle_hours') or 0):.1f} hours\n\n"
+            f"### Open entries\n{open_table}\n\n"
+            "Unrealized P&L is shown only when a broker-priced position is available; "
+            "it is not inferred as `$0.00` from missing prices.\n\n"
+            f"### Completed exits\n{exit_table}\n\n"
             f"### Why\n{reasons}\n\n"
             f"### Decision\n{report['decision']}\n\n"
             f"### Suggested commands\n{commands}\n\n"
@@ -1113,6 +1149,17 @@ async def _dispatch_hermes_job_command(
             owned_trade_analysis, user_id, backtest_trade_view, run_id
         )
 
+    # Safe Hermes text-to-SQL: natural language selects a fixed read-only query
+    # template. SQL identifiers and tenant ownership cannot be supplied by the
+    # model or user, and the Hermes sidecar receives no database credentials.
+    from engine.agents.hermes_data_qa import is_trade_data_question
+    if is_trade_data_question(lowered):
+        from engine.agents.hermes_data_qa import answer_owned_trade_question
+        run_id = uuids[0] if uuids else None
+        return await asyncio.to_thread(
+            answer_owned_trade_question, user_id, lowered, run_id
+        )
+
     backtest_result_request = "backtest" in lowered and any(
         word in lowered for word in ("result", "details", "parameters", "params", "period")
     )
@@ -1286,6 +1333,29 @@ async def _stream(msg: str, session) -> StreamingResponse:
             history = _load_owned_history(thread_id, user_key) if user_key else []
             _HISTORY[_history_key(uid, thread_id)] = history
         _save_chat_message(thread_id, user_key, "user", msg)
+
+        # Account usage is deterministic and never spends an LLM query.
+        if msg.strip().lower() == "/usage":
+            yield _sse("agent_route", {"slug": "usage", "agent": "Usage"})
+            if not user_key:
+                reply = "Sign in to view your AI usage."
+            else:
+                from engine.ai.query_gate import get_usage_status, render_usage_status
+                from engine.config import get_settings
+                settings = get_settings(user_key)
+                status = await asyncio.to_thread(
+                    get_usage_status, user_key, has_byok=bool(settings.api_key)
+                )
+                reply = render_usage_status(status)
+            yield _sse("token", {"text": reply})
+            history.append({"role": "user", "content": msg})
+            history.append({"role": "assistant", "content": reply})
+            _save_chat_message(
+                thread_id, user_key, "assistant", reply,
+                {"agent": "Usage", "framework": "command", "dispatch": "usage"},
+            )
+            yield _sse("done", {})
+            return
 
         # Durable trading commands are deterministic: queue them before asking
         # the remote Hermes model, so job creation never waits on model planning,
@@ -1565,6 +1635,13 @@ async def _stream(msg: str, session) -> StreamingResponse:
                     "agent": "AlpaTrade AI (Hermes unavailable)",
                 })
                 try:
+                    # A Hermes outage must not bypass the platform allowance
+                    # when its fallback invokes the hosted DeepAgents model.
+                    from engine.ai.query_gate import authorize_query
+                    query_authorization = await asyncio.to_thread(
+                        authorize_query, str(uid) if uid is not None else "",
+                        has_byok=bool(settings.api_key),
+                    )
                     fallback_runtime = get_runtime("deepagents")
                     fallback = fallback_runtime.build(
                         _agui._chat_role(build_chat_model(settings, streaming=True))
@@ -1577,6 +1654,14 @@ async def _stream(msg: str, session) -> StreamingResponse:
                                 full += text
                                 yield _sse("token", {"text": text})
                 except Exception as fallback_error:  # noqa: BLE001
+                    if uid is not None:
+                        try:
+                            from engine.ai.query_gate import refund_query
+                            await asyncio.to_thread(
+                                refund_query, str(uid), query_authorization
+                            )
+                        except Exception:  # noqa: BLE001
+                            pass
                     message = f"Hermes unavailable ({e}); fallback failed ({fallback_error})"
                     yield _sse("error", {"message": message})
                     history.append({"role": "assistant", "content": f"Error: {message}"})
@@ -1600,6 +1685,13 @@ async def _stream(msg: str, session) -> StreamingResponse:
         if tool_chart and "__CHART_DATA__" not in full:
             full += "\n\n" + tool_chart
             yield _sse("token", {"text": "\n\n" + tool_chart})
+        if query_authorization is not None:
+            from engine.ai.query_gate import usage_warning
+            warning = usage_warning(query_authorization)
+            if warning:
+                suffix = f"\n\n> **AI usage warning:** {warning} Use `/usage` for details."
+                full += suffix
+                yield _sse("token", {"text": suffix})
         history.append({"role": "assistant", "content": full})
         follow_ups = (
             _hermes_follow_ups(routed_msg, full)

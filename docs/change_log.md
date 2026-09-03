@@ -13,6 +13,12 @@
   refund their reserved slot, while deterministic Hermes trading commands do
   not consume a model query. The allowance is configurable with
   `FREE_PLATFORM_QUERY_LIMIT` (default `5`).
+- Added a deterministic `/usage` command showing the signed-in user's funding
+  source, used and remaining starter queries, and percentage consumed. A saved
+  chat warning is appended after a successful platform-funded response reaches
+  90% of the allowance; checking usage never consumes a query.
+- Closed the Hermes-outage fallback gap: if the app falls back to the hosted
+  DeepAgents model, that call now reserves/refunds the same user allowance.
 - Added idempotent migration `sql/28_xai_byok_query_gate.sql`. Deploy it before
   enabling this branch: `python run_migration.py sql/28_xai_byok_query_gate.sql`.
 - Added network-free tests for the allowance boundary, safe Settings rendering,
@@ -21,10 +27,18 @@
   table, best/worst trade, and average holding period. Results come directly
   from user-scoped `alpatrade` tables and emphasize realized P&L and return;
   these commands never invoke xAI.
+- Added safe Hermes natural-language trade analytics for owned backtest and
+  paper runs. Questions about P&L, return, win rate, holding time, trade count,
+  and symbol breakdowns select parameterized, read-only SQL templates restricted
+  to `alpatrade`; Hermes receives neither raw SQL execution nor DB credentials.
 - Clarified the consolidated daily report by separating Alpaca account-equity
   movement from realized agent P&L, adding a correct all-agent total row, and
   showing per-trade return plus normalized take-profit/stop-loss reasoning.
   Empty trade sections now distinguish a valid no-signal day from missing data.
+- Expanded Hermes paper-job analysis with open-entry and completed-exit tables,
+  realized return evidence, elapsed idle time, and a review/retest recommendation
+  after 24 hours without any saved trade. Missing broker prices are labeled
+  unavailable instead of being presented as zero unrealized P&L.
 
 ### In-product daily advisor digest
 

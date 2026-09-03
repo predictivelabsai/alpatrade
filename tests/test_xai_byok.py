@@ -15,14 +15,19 @@ class _Result:
 
 
 class _Session:
-    def __init__(self, update_row=(1,)):
+    def __init__(self, update_row=(1,), select_row=None):
         self.update_row = update_row
+        self.select_row = select_row
         self.calls = []
 
     def execute(self, statement, params):
         sql = str(statement)
         self.calls.append((sql, params))
-        return _Result(self.update_row if "RETURNING platform_queries_used" in sql else None)
+        if "RETURNING platform_queries_used" in sql:
+            return _Result(self.update_row)
+        if "SELECT platform_queries_used" in sql:
+            return _Result(self.select_row)
+        return _Result(None)
 
 
 class _Pool:
@@ -50,6 +55,7 @@ def test_query_gate_atomically_reserves_platform_allowance(monkeypatch):
     monkeypatch.setattr("engine.db.pool.get_pool", lambda: _Pool(session))
     auth = query_gate.authorize_query("user-1", has_byok=False)
     assert auth.platform_slot is True
+    assert auth.platform_queries_used == 1
     update = next(call for call in session.calls if "RETURNING" in call[0])
     assert "platform_queries_used <" in update[0]
     assert update[1]["query_limit"] == 5
@@ -63,6 +69,49 @@ def test_query_gate_blocks_after_allowance(monkeypatch):
     )
     with pytest.raises(query_gate.QueryLimitExceeded, match="5 platform-funded"):
         query_gate.authorize_query("user-1", has_byok=False)
+
+
+def test_usage_status_reads_counter_without_incrementing(monkeypatch):
+    from engine.ai import query_gate
+
+    session = _Session(select_row=(4,))
+    monkeypatch.setattr("engine.db.pool.get_pool", lambda: _Pool(session))
+    status = query_gate.get_usage_status("user-1", has_byok=False)
+    assert status == {
+        "funding_source": "platform",
+        "platform_queries_used": 4,
+        "platform_query_limit": 5,
+        "platform_queries_remaining": 1,
+        "percent_used": 80,
+    }
+    assert not any("UPDATE" in sql for sql, _params in session.calls)
+
+
+def test_usage_warning_appears_at_90_percent_boundary():
+    from engine.ai.query_gate import QueryAuthorization, usage_warning
+
+    assert usage_warning(QueryAuthorization(
+        "platform", True, platform_queries_used=4, platform_query_limit=5
+    )) is None
+    warning = usage_warning(QueryAuthorization(
+        "platform", True, platform_queries_used=5, platform_query_limit=5
+    ))
+    assert warning and "used all 5" in warning
+    assert usage_warning(QueryAuthorization("byok")) is None
+
+
+def test_usage_render_discloses_counter_scope():
+    from engine.ai.query_gate import render_usage_status
+
+    rendered = render_usage_status({
+        "funding_source": "platform",
+        "platform_queries_used": 3,
+        "platform_query_limit": 5,
+        "platform_queries_remaining": 2,
+        "percent_used": 60,
+    })
+    assert "3 / 5 (60%)" in rendered
+    assert "Hermes sidecar token/cost usage is not yet included" in rendered
 
 
 def test_settings_xai_key_is_never_rendered(monkeypatch):

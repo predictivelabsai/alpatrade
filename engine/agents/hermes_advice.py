@@ -518,7 +518,8 @@ def analyze_owned_paper_job(job_id: str, user_id: str) -> Optional[dict]:
     """Return a deterministic, owner-scoped paper diagnosis for chat/email actions."""
     with _pool().get_session() as session:
         job = session.execute(text("""
-            SELECT job_id, run_id, candidate_id, account_id, status, config, error
+            SELECT job_id, run_id, candidate_id, account_id, status, config, error,
+                   created_at, heartbeat_at
             FROM alpatrade.hermes_jobs
             WHERE job_id = CAST(:job_id AS UUID) AND user_id = CAST(:uid AS UUID)
               AND kind = 'paper'
@@ -562,6 +563,28 @@ def analyze_owned_paper_job(job_id: str, user_id: str) -> Optional[dict]:
         "active_duplicate_jobs": int(active_duplicates or 0),
         "other_active_account_runs": int(other_account_runs or 0),
     })
+    open_entries = [trade for trade in trades if not _is_closed(trade)]
+    report["open_entries"] = open_entries
+    report["closed_trades"] = [trade for trade in trades if _is_closed(trade)]
+    activity_times = [
+        value for trade in trades
+        for value in (trade.get("created_at"), trade.get("entry_time"), trade.get("exit_time"))
+        if value
+    ]
+    last_activity = max(activity_times, default=job.get("created_at"))
+    if isinstance(last_activity, str):
+        try:
+            last_activity = datetime.fromisoformat(last_activity.replace("Z", "+00:00"))
+        except ValueError:
+            last_activity = None
+    now = datetime.now(timezone.utc)
+    if isinstance(last_activity, datetime):
+        if last_activity.tzinfo is None:
+            last_activity = last_activity.replace(tzinfo=timezone.utc)
+        idle_hours = max((now - last_activity).total_seconds() / 3600, 0.0)
+    else:
+        idle_hours = 0.0
+    report["idle_hours"] = idle_hours
     job_status = str(job["status"] or "").lower()
     if job_status == "failed":
         report["status"] = "FAILED"
@@ -586,6 +609,22 @@ def analyze_owned_paper_job(job_id: str, user_id: str) -> Optional[dict]:
         ]
         report["decision"] = "No strategy is currently being evaluated by this job."
         report["commands"] = ["/hermes show my running jobs"]
+    elif (job_status == "running" and not trades and idle_hours >= 24):
+        report["status"] = "REVIEW"
+        report["status_color"] = WATCH_COLOR
+        report["reasons"] = [
+            f"No entry or exit has been saved for {idle_hours / 24:.1f} days. "
+            "The strategy may be correctly waiting, or its entry threshold may be too selective."
+        ]
+        report["decision"] = (
+            "Review the candidate over a longer backtest window before deciding whether "
+            "to stop this job and launch a newly approved candidate."
+        )
+        report["commands"] = [
+            f"/hermes pause paper job {job_id}",
+            "/hermes run the same buy_the_dip parameter grid over 6 months and maximize Sharpe",
+            f"/hermes analyze paper job {job_id}",
+        ]
     if active_duplicates:
         report["status"] = "RED"
         report["status_color"] = LOSS_COLOR
