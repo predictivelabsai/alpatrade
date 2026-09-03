@@ -943,9 +943,13 @@ def agent_for_user(user_id: str | None):
         return primary_agent
     try:
         s = get_settings(user_id)
-        key = (s.model_provider, s.model_name, s.agent_framework)
+        # A BYOK model client must never be shared across users.
+        key = (user_id if s.api_key else None, s.model_provider, s.model_name,
+               s.agent_framework)
         default = get_settings()
-        if key == (default.model_provider, default.model_name, default.agent_framework):
+        if not s.api_key and (s.model_provider, s.model_name, s.agent_framework) == (
+            default.model_provider, default.model_name, default.agent_framework
+        ):
             return primary_agent
         if key not in _agent_cache:
             # Resolve the runtime per-miss so a framework change is picked up.

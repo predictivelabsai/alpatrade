@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Per-user xAI BYOK and starter allowance
+
+- Added a Settings card for each signed-in user to save, replace, or remove an
+  xAI API key. Keys are Fernet-encrypted in PostgreSQL; the browser receives
+  only a short non-secret hint, and the Show button reveals only newly typed text.
+- Routed DeepAgents and LangGraph model clients through the owning user's xAI
+  key without sharing credential-bearing clients between accounts.
+- Added an atomic five-query platform allowance to web chat. Failed model calls
+  refund their reserved slot, while deterministic Hermes trading commands do
+  not consume a model query. The allowance is configurable with
+  `FREE_PLATFORM_QUERY_LIMIT` (default `5`).
+- Added idempotent migration `sql/28_xai_byok_query_gate.sql`. Deploy it before
+  enabling this branch: `python run_migration.py sql/28_xai_byok_query_gate.sql`.
+- Added network-free tests for the allowance boundary, safe Settings rendering,
+  and API-key serialization. No xAI or Hermes calls are made by these tests.
+
 ### In-product daily advisor digest
 
 - Added a polished `/advisor` page surfacing the persisted post-close advisor

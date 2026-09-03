@@ -1415,6 +1415,27 @@ async def _stream(msg: str, session) -> StreamingResponse:
 
         full = ""
         tool_chart = ""
+        query_authorization = None
+        # Deterministic Hermes trading commands returned above do not spend an
+        # LLM query. Hermes free-form calls use the separately configured sidecar.
+        # This gate protects the AlpaTrade-hosted DeepAgents/LangGraph clients.
+        if selected_framework != "hermes":
+            try:
+                from engine.ai.query_gate import authorize_query
+                query_authorization = await asyncio.to_thread(
+                    authorize_query, str(uid) if uid is not None else "",
+                    has_byok=bool(settings.api_key),
+                )
+            except PermissionError as exc:
+                message = str(exc)
+                yield _sse("error", {"message": message})
+                _save_chat_message(
+                    thread_id, user_key, "assistant", message,
+                    {"agent": display_name, "framework": selected_framework,
+                     "error": True, "code": "query_limit_exceeded"},
+                )
+                yield _sse("done", {})
+                return
         try:
             runtime = get_runtime(selected_framework)
             if runtime_override:
@@ -1511,6 +1532,14 @@ async def _stream(msg: str, session) -> StreamingResponse:
                 full = res.text
                 yield _sse("token", {"text": full})
         except Exception as e:  # noqa: BLE001
+            if selected_framework != "hermes" and uid is not None:
+                try:
+                    from engine.ai.query_gate import refund_query
+                    await asyncio.to_thread(
+                        refund_query, str(uid), query_authorization
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
             # Hermes is an optional sidecar. If it fails before emitting content,
             # transparently return to DeepAgents so chat remains available.
             if selected_framework == "hermes" and not full:
