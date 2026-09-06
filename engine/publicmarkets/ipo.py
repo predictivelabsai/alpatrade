@@ -19,7 +19,9 @@ from __future__ import annotations
 
 import math
 import time
-from datetime import date
+from datetime import date, datetime
+
+import requests
 
 from sqlalchemy import text
 
@@ -36,6 +38,18 @@ _EXCHANGE_REGION = {
 _RECENT_COMPLETED_LIMIT = 12
 _QUOTE_TTL = 900  # seconds
 _quote_cache: dict = {"at": 0.0, "prices": {}}
+_NASDAQ_CALENDAR_TTL = 21_600  # six hours; the calendar changes intraday at most
+_nasdaq_calendar_cache: dict = {"at": 0.0, "rows": []}
+_NASDAQ_IPO_URL = "https://api.nasdaq.com/api/ipo/calendar"
+_NASDAQ_HEADERS = {
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Origin": "https://www.nasdaq.com",
+    "Referer": "https://www.nasdaq.com/market-activity/ipos",
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                   "AppleWebKit/537.36 (KHTML, like Gecko) "
+                   "Chrome/131.0.0.0 Safari/537.36"),
+}
 
 
 def _region(exchange: str) -> str:
@@ -85,6 +99,101 @@ def _return_pct(price: float | None, ipo_price: float | None) -> float | None:
     if not price or not ipo_price:
         return None
     return round((price / ipo_price - 1) * 100, 1)
+
+
+def _company_key(value: str | None) -> str:
+    """Stable enough fallback when the two IPO sources disagree on a ticker."""
+    return "".join(ch for ch in (value or "").upper() if ch.isalnum())
+
+
+def _nasdaq_number(value) -> float | None:
+    if value is None:
+        return None
+    return _f(str(value).replace("$", "").replace(",", "").split("-")[0].strip())
+
+
+def _nasdaq_date(value) -> str:
+    """Convert Nasdaq's M/D/YYYY dates to sortable ISO dates."""
+    if not value:
+        return ""
+    try:
+        return datetime.strptime(str(value), "%m/%d/%Y").date().isoformat()
+    except ValueError:
+        return str(value)[:10]
+
+
+def _calendar_months(months: int = 1) -> list[str | None]:
+    today = date.today()
+    result = []
+    for offset in range(months - 1, -1, -1):
+        year, month = today.year, today.month - offset
+        while month <= 0:
+            year -= 1
+            month += 12
+        result.append(None if offset == 0 else f"{year}-{month:02d}")
+    return result
+
+
+def _nasdaq_calendar_rows(months: int = 1) -> list[dict]:
+    """Current and recent Nasdaq calendar records, cached and fail-open.
+
+    LiquidRound's pipeline is valuable for long-horizon private-company data,
+    but its filed records are a snapshot. Nasdaq is the source that carries
+    the actual price, exchange and expected/priced date needed for the active
+    deal calendar. The default asks only for the active month, keeping a page
+    render bounded even when the public endpoint is slow.
+    """
+    now = time.time()
+    if _nasdaq_calendar_cache["rows"] and now - _nasdaq_calendar_cache["at"] < _NASDAQ_CALENDAR_TTL:
+        return _nasdaq_calendar_cache["rows"]
+
+    records: dict[str, dict] = {}
+    priority = {"filed": 1, "upcoming": 2, "withdrawn": 3, "priced": 4}
+    for month in _calendar_months(months):
+        try:
+            response = requests.get(_NASDAQ_IPO_URL,
+                                    params={"date": month} if month else None,
+                                    headers=_NASDAQ_HEADERS, timeout=5)
+            response.raise_for_status()
+            payload = response.json().get("data") or {}
+            sections = (
+                ("priced", (payload.get("priced") or {}).get("rows") or []),
+                ("upcoming", ((payload.get("upcoming") or {}).get("upcomingTable") or {}).get("rows") or []),
+                ("filed", (payload.get("filed") or {}).get("rows") or []),
+                ("withdrawn", (payload.get("withdrawn") or {}).get("rows") or []),
+            )
+            for kind, rows in sections:
+                for row in rows:
+                    ticker = (row.get("proposedTickerSymbol") or "").strip().upper()
+                    company = (row.get("companyName") or "").strip()
+                    key = ticker or _company_key(company)
+                    if not key:
+                        continue
+                    item = {
+                        "company": company, "ticker": ticker, "kind": kind,
+                        "status": "priced" if kind == "priced" else kind,
+                        "exchange": row.get("proposedExchange") or None,
+                        "proposed_price": _nasdaq_number(row.get("proposedSharePrice")),
+                        "shares_offered": _nasdaq_number(row.get("sharesOffered")),
+                        "deal_value": _nasdaq_number(row.get("dollarValueOfSharesOffered")),
+                        "expected_date": _nasdaq_date(
+                            row.get("pricedDate") or row.get("expectedPriceDate")
+                            or row.get("withdrawDate") or row.get("filedDate")),
+                    }
+                    existing = records.get(key)
+                    if (existing is None or priority[kind] >= priority[existing["kind"]]
+                            or not existing.get("expected_date")):
+                        records[key] = item
+        except (requests.RequestException, ValueError, TypeError):
+            # A public data refresh must never take the dashboard down. Keep
+            # processing other requested months and preserve a prior cache.
+            continue
+
+    result = list(records.values())
+    if not result:
+        return _nasdaq_calendar_cache["rows"]
+    _nasdaq_calendar_cache.update({"at": now, "rows": result})
+    return result
 
 
 def ipo_map_data(limit: int = 300) -> dict:
@@ -163,6 +272,9 @@ def ipo_pipeline_data(limit: int = 100) -> list[dict]:
         """), {"lim": limit}).fetchall()
         priced = _priced_index(s)
 
+    calendar_rows = _nasdaq_calendar_rows()
+    calendar_by_ticker = {r["ticker"]: r for r in calendar_rows if r["ticker"]}
+    calendar_by_company = {_company_key(r["company"]): r for r in calendar_rows if r["company"]}
     filed_tickers = [(r[1] or "").strip().upper() for r in rows if r[2] == "filed"]
     # Recent priced rows the source never repriced need a live quote too.
     recent_needing_quote = [t for t, pr in priced.items()
@@ -184,15 +296,54 @@ def ipo_pipeline_data(limit: int = 100) -> list[dict]:
                 "shares_offered": _f(r[13]), "deal_value": _f(r[14]),
                 "expected_date": str(r[15]) if r[15] else "", "employees": r[16],
                 "website": r[17], "summary": r[18], "status": r[19],
-                "market_cap": None, "return_pct": None}
+                "market_cap": None, "return_pct": None, "source": "liquidround"}
+
+    def _apply_calendar(row: dict, calendar: dict) -> None:
+        """Overlay authoritative active-calendar fields onto a snapshot row."""
+        row.update(
+            exchange=calendar["exchange"] or row["exchange"],
+            proposed_price=calendar["proposed_price"] or row["proposed_price"],
+            shares_offered=calendar["shares_offered"] or row["shares_offered"],
+            deal_value=calendar["deal_value"] or row["deal_value"],
+            expected_date=calendar["expected_date"] or row["expected_date"],
+            source="nasdaq",
+        )
+        if calendar["kind"] == "priced":
+            row.update(kind="ipo_completed", status="priced")
+        elif calendar["kind"] == "withdrawn":
+            row.update(kind="withdrawn", status="withdrawn")
+        elif calendar["kind"] == "upcoming":
+            row.update(kind="upcoming", status="upcoming")
+        else:
+            row["status"] = "filed"
+
+    def _calendar_row(calendar: dict) -> dict:
+        """Make a Nasdaq-only deal compatible with the pipeline response."""
+        kind = "ipo_completed" if calendar["kind"] == "priced" else calendar["kind"]
+        return {
+            "company": calendar["company"], "ticker": calendar["ticker"], "kind": kind,
+            "sector": None, "country": "United States", "exchange": calendar["exchange"],
+            "valuation": None, "last_round": None, "last_round_date": "",
+            "amount_raised": None, "funding_to_date": None, "total_rounds": None,
+            "proposed_price": calendar["proposed_price"],
+            "shares_offered": calendar["shares_offered"], "deal_value": calendar["deal_value"],
+            "expected_date": calendar["expected_date"], "employees": None, "website": None,
+            "summary": None, "status": calendar["status"], "market_cap": None,
+            "return_pct": None, "source": "nasdaq",
+        }
 
     completed: dict[str, dict] = {}
     upcoming: list[dict] = []
     private: list[dict] = []
+    matched_calendar_keys: set[str] = set()
 
     for r in rows:
         row = _row(r)
         ticker = (row["ticker"] or "").strip().upper()
+        calendar = calendar_by_ticker.get(ticker) or calendar_by_company.get(_company_key(row["company"]))
+        if calendar:
+            matched_calendar_keys.add(calendar["ticker"] or _company_key(calendar["company"]))
+            _apply_calendar(row, calendar)
         if row["kind"] == "filed":
             priced_row = priced.get(ticker)
             if priced_row:
@@ -232,6 +383,18 @@ def ipo_pipeline_data(limit: int = 100) -> list[dict]:
         else:
             upcoming.append(row)
 
+    # Include the current calendar's newly filed/upcoming/priced deals even
+    # when the slower shared snapshot has not seen them yet.
+    for calendar in calendar_rows:
+        key = calendar["ticker"] or _company_key(calendar["company"])
+        if key in matched_calendar_keys:
+            continue
+        row = _calendar_row(calendar)
+        if row["kind"] == "ipo_completed":
+            completed.setdefault(key, row)
+        else:
+            upcoming.append(row)
+
     # "Recently completed" comes from the priced-IPO table so it reflects
     # reality instead of the pipeline's nearly-empty completed bucket.
     for ticker, pr in priced.items():
@@ -249,7 +412,7 @@ def ipo_pipeline_data(limit: int = 100) -> list[dict]:
                                                   if pr["ipo_date"] else ""),
             "employees": None, "website": None, "summary": None,
             "status": "priced", "market_cap": pr["market_cap"],
-            "return_pct": pr["return_pct"],
+            "return_pct": pr["return_pct"], "source": "liquidround",
         }
 
     def _completed_key(row):

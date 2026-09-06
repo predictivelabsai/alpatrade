@@ -1,7 +1,7 @@
 """IPO Map + Pipeline dashboards backed by the shared LiquidRound dataset."""
 from __future__ import annotations
 
-from fasthtml.common import A, Div, H1, H2, Option, P, Script, Select, Span, Style
+from fasthtml.common import A, Div, H1, H2, Input, Option, P, Script, Select, Span, Style
 from starlette.responses import JSONResponse
 
 from engine.web.ph_layout import page
@@ -18,6 +18,7 @@ _CSS = """
  border-radius:999px;background:var(--bg-elev)}
 .ip-tabs a.active{background:var(--accent);color:white;border-color:var(--accent)}
 .ipo-filters{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:.65rem;margin-bottom:.8rem}
+.ipo-filterbar{display:grid;grid-template-columns:minmax(180px,2fr) repeat(2,minmax(150px,1fr));gap:.65rem;margin-bottom:.8rem}
 .ipo-filter{width:100%;padding:.45rem .55rem;border:1px solid var(--line);border-radius:.45rem;
  background:var(--bg-elev);color:var(--ink);font:inherit;font-size:.76rem}
 .ipo-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;margin:.8rem 0}
@@ -47,8 +48,8 @@ _CSS = """
 .ipo-pl-track{height:12px;background:var(--bg-raise);border-radius:3px;overflow:hidden}
 .ipo-pl-fill{height:100%;background:var(--accent)}
 .ipo-empty{padding:2rem;text-align:center;color:var(--ink-dim)}
-@media(max-width:800px){.ipo-filters,.ipo-kpis,.ipo-row{grid-template-columns:1fr 1fr}}
-@media(max-width:520px){.ipo-filters,.ipo-kpis,.ipo-row{grid-template-columns:1fr}}
+@media(max-width:800px){.ipo-filters,.ipo-filterbar,.ipo-kpis,.ipo-row{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.ipo-filters,.ipo-filterbar,.ipo-kpis,.ipo-row{grid-template-columns:1fr}}
 """
 
 _COMMON_JS = """
@@ -119,7 +120,18 @@ _PIPELINE_JS = _COMMON_JS + """
  const root=document.getElementById('ipo-pipeline-body');
  const ex=v=>(!v||String(v).toUpperCase()==='UNKNOWN')?'—':esc(v);
  try{
-  const rows=await (await fetch('/ipo-pipeline/data')).json();
+  const allRows=await (await fetch('/ipo-pipeline/data')).json();
+  const search=document.getElementById('pipeline-search'), kind=document.getElementById('pipeline-kind'), sort=document.getElementById('pipeline-sort');
+  function sortRows(rows){return rows.slice().sort((a,b)=>{
+   if(sort.value==='company')return String(a.company||'').localeCompare(String(b.company||''));
+   if(sort.value==='deal')return (b.deal_value||b.valuation||0)-(a.deal_value||a.valuation||0);
+   const ad=a.expected_date||'9999-12-31',bd=b.expected_date||'9999-12-31';
+   return sort.value==='date-desc'?bd.localeCompare(ad):ad.localeCompare(bd);
+  });}
+  function render(){
+  const needle=search.value.trim().toLowerCase();
+  const rows=sortRows(allRows.filter(x=>(!kind.value||x.kind===kind.value)&&(!needle||
+   [x.company,x.ticker,x.exchange,x.status].some(v=>String(v||'').toLowerCase().includes(needle)))));
   const privateRows=rows.filter(x=>x.kind==='private'), completed=rows.filter(x=>x.kind==='ipo_completed');
   const upcoming=rows.filter(x=>x.kind!=='private'&&x.kind!=='ipo_completed');
   document.getElementById('pipeline-kpis').innerHTML=[
@@ -151,6 +163,8 @@ _PIPELINE_JS = _COMMON_JS + """
    esc(x.status||x.kind||'—')+'</td></tr>').join('')+'</tbody></table>':'<div class="ipo-empty">No records.</div>';}
   completedTable('pipeline-completed',completed);upcomingTable('pipeline-upcoming',upcoming);
   root.textContent=rows.length+' pipeline companies · completed verified against priced IPOs and live quotes';
+  }
+  search.addEventListener('input',render);kind.addEventListener('change',render);sort.addEventListener('change',render);render();
  }catch(e){root.innerHTML='<div class="ipo-empty">Could not load pipeline: '+esc(e)+'</div>';}
 })();
 """
@@ -214,6 +228,18 @@ def _pipeline_page(user):
         Div(H1("Companies heading to public markets"),
             P("Private mega-caps and upcoming or filed US IPOs from the shared LiquidRound dataset."),
             _tabs("pipeline"), cls="ipo-hero"),
+        Div(
+            Input(id="pipeline-search", cls="ipo-filter", type="search",
+                  placeholder="Search company, ticker, exchange…", aria_label="Search IPO pipeline"),
+            Select(Option("All deal types", value=""), Option("Upcoming", value="upcoming"),
+                   Option("Filed", value="filed"), Option("Recently completed", value="ipo_completed"),
+                   Option("Private", value="private"), Option("Withdrawn", value="withdrawn"),
+                   id="pipeline-kind", cls="ipo-filter", aria_label="Filter IPO pipeline by deal type"),
+            Select(Option("Expected date: soonest", value="date"), Option("Expected date: latest", value="date-desc"),
+                   Option("Largest deal / valuation", value="deal"), Option("Company: A–Z", value="company"),
+                   id="pipeline-sort", cls="ipo-filter", aria_label="Sort IPO pipeline"),
+            cls="ipo-filterbar",
+        ),
         Div(id="pipeline-kpis", cls="ipo-kpis"),
         Div(H2("Private valuations"), Div(id="pipeline-bars"), cls="ipo-card"),
         Div(H2("Pre-IPO private companies"), Div(id="pipeline-cards", cls="ipo-pl-grid"), cls="ipo-card"),

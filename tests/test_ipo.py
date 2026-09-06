@@ -10,6 +10,7 @@ import engine.publicmarkets.ipo as ipo
 def setup_function(function):
     # Reset the module-level quote cache between tests.
     ipo._quote_cache.update({"at": 0.0, "prices": {}})
+    ipo._nasdaq_calendar_cache.update({"at": 0.0, "rows": []})
 
 
 def _session_with(results_by_table):
@@ -117,8 +118,77 @@ def _priced_rows():
 def _pipeline_data(quotes):
     with patch.object(ipo, "DatabasePool", _session_with(
             {"ipo_pipeline": _pipeline_rows(), "ipo_data": _priced_rows()})), \
-            patch.object(ipo, "_quote_map", return_value=quotes):
+            patch.object(ipo, "_quote_map", return_value=quotes), \
+            patch.object(ipo, "_nasdaq_calendar_rows", return_value=[]):
         return ipo.ipo_pipeline_data()
+
+
+def _nasdaq_row(kind, ticker, company, *, exchange="NASDAQ Capital",
+                price="12.00", date_value="9/08/2026"):
+    row = {
+        "proposedTickerSymbol": ticker,
+        "companyName": company,
+        "proposedExchange": exchange,
+        "proposedSharePrice": price,
+        "sharesOffered": "1,500,000",
+        "dollarValueOfSharesOffered": "$18,000,000",
+    }
+    if kind == "priced":
+        row["pricedDate"] = date_value
+    elif kind == "upcoming":
+        row["expectedPriceDate"] = date_value
+    elif kind == "filed":
+        row["filedDate"] = date_value
+    else:
+        row["withdrawDate"] = date_value
+    return row
+
+
+def test_nasdaq_calendar_parses_priced_upcoming_and_filed_rows():
+    payload = {"data": {
+        "priced": {"rows": [_nasdaq_row("priced", "DONE", "Done Co")]},
+        "upcoming": {"upcomingTable": {"rows": [_nasdaq_row("upcoming", "NEXT", "Next Co")] }},
+        "filed": {"rows": [_nasdaq_row("filed", "FILE", "Filed Co")]},
+        "withdrawn": {"rows": [_nasdaq_row("withdrawn", "GONE", "Gone Co")]},
+    }}
+    response = MagicMock()
+    response.json.return_value = payload
+    with patch.object(ipo, "_calendar_months", return_value=["2026-09"]), \
+            patch.object(ipo.requests, "get", return_value=response):
+        rows = ipo._nasdaq_calendar_rows()
+
+    by_ticker = {row["ticker"]: row for row in rows}
+    assert by_ticker["DONE"]["kind"] == "priced"
+    assert by_ticker["NEXT"]["expected_date"] == "2026-09-08"
+    assert by_ticker["NEXT"]["proposed_price"] == 12.0
+    assert by_ticker["FILE"]["deal_value"] == 18_000_000.0
+    assert by_ticker["GONE"]["kind"] == "withdrawn"
+
+
+def test_pipeline_overlays_current_calendar_and_adds_new_deals():
+    calendar = [
+        {"company": "SIYATA PTT", "ticker": "PTT", "kind": "upcoming", "status": "upcoming",
+         "exchange": "NASDAQ Capital", "proposed_price": 8.0, "shares_offered": 2_000_000,
+         "deal_value": 16_000_000, "expected_date": "2026-09-08"},
+        {"company": "Fresh Listing", "ticker": "FRESH", "kind": "priced", "status": "priced",
+         "exchange": "NYSE", "proposed_price": 20.0, "shares_offered": 1_000_000,
+         "deal_value": 20_000_000, "expected_date": "2026-09-03"},
+    ]
+    with patch.object(ipo, "DatabasePool", _session_with(
+            {"ipo_pipeline": _pipeline_rows(), "ipo_data": _priced_rows()})), \
+            patch.object(ipo, "_quote_map", return_value={}), \
+            patch.object(ipo, "_nasdaq_calendar_rows", return_value=calendar):
+        rows = ipo.ipo_pipeline_data()
+
+    ptt = next(row for row in rows if row["ticker"] == "PTT")
+    assert ptt["kind"] == "upcoming"
+    assert ptt["exchange"] == "NASDAQ Capital"
+    assert ptt["proposed_price"] == 8.0
+    assert ptt["expected_date"] == "2026-09-08"
+    assert ptt["source"] == "nasdaq"
+    fresh = next(row for row in rows if row["ticker"] == "FRESH")
+    assert fresh["kind"] == "ipo_completed"
+    assert fresh["exchange"] == "NYSE"
 
 
 def test_pipeline_reclassifies_priced_and_market_verified_filings():
@@ -176,3 +246,5 @@ def test_pipeline_js_uses_date_and_since_ipo_for_completed_table():
     assert "upcomingTable('pipeline-upcoming',upcoming)" in _PIPELINE_JS
     # UNKNOWN exchange is displayed as an em dash, not the raw string.
     assert "toUpperCase()==='UNKNOWN'" in _PIPELINE_JS
+    assert "pipeline-search" in _PIPELINE_JS
+    assert "pipeline-sort" in _PIPELINE_JS
