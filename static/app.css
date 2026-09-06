@@ -583,7 +583,45 @@ td.neg { color: var(--red); }
     .chat-header-title { font-size: .78rem; }
     .chat-header-agent { font-size: .68rem; }
     .chat-form { padding: .5rem .6rem; }
-    .chat-textarea { font-size: .85rem; padding: .5rem .7rem; }
+    /* Keep editable controls at the browser's no-zoom threshold on touch
+       devices, while preserving the compact shell at tablet widths. */
+    .chat-textarea { min-width: 0; font-size: 16px; padding: .5rem .7rem; }
+    .chat-send, .voice-btn, .mobile-menu-btn, .news-toggle-btn,
+    .right-close { min-height: 44px; }
+    .chat-send { padding: .65rem .9rem; }
+    .voice-btn { width: 44px; height: 44px; }
+    .page-link, .new-chat-btn, .cat-toggle, .agent-item,
+    .sign-in-btn, .signed-in-bar { min-height: 44px; }
+    .page-link { padding-top: .55rem; padding-bottom: .55rem; }
+    .cat-toggle, .agent-item { padding-top: .55rem; padding-bottom: .55rem; }
+    .sample-card { min-width: 0; }
+    .messages { padding-left: .75rem; padding-right: .75rem; }
+    .msg { max-width: 94%; }
+    .content { padding-left: .75rem; padding-right: .75rem; }
+    .right-body { padding-left: .6rem; padding-right: .6rem; }
+}
+
+@media (max-width: 560px) {
+    .left-pane { width: min(300px, 88vw); left: -92vw; }
+    .right-pane { width: 100vw; right: -103vw; }
+    .chat-header-left { min-width: 0; }
+    .chat-header-title, .chat-header-agent { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chat-header-agent { max-width: 34vw; }
+    .chat-form { gap: .35rem; padding: .45rem .5rem; }
+    .chat-textarea { min-height: 44px; }
+    .chat-send { padding-left: .75rem; padding-right: .75rem; }
+    .sample-cards { max-height: 28vh; }
+    .welcome-hero { width: calc(100% - 1.5rem); }
+    .welcome-sub { max-width: 34rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+    }
 }
 
 /* Scrollbar */
