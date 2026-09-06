@@ -10,6 +10,7 @@ from fasthtml.common import A, Div, NotStr, P, Script, Style, Table, Tbody, Td, 
 from starlette.responses import JSONResponse
 
 from engine.web.ph_layout import page
+from engine.web.ph_tables import empty_state, responsive_table
 
 _CSS = """
 
@@ -78,8 +79,9 @@ def _page(user):
           "(Fund-level AUM + activism — per-security holdings aren't in this dataset.)", cls="hf-sub"),
         Div(id="hf-plot", cls="hf-plot"), Div("", id="hf-status", cls="hf-status"),
         NotStr("<h3>Recent activist filings</h3>"),
-        Table(Thead(Tr(Th("Date"), Th("Filer"), Th("Target"), Th("Ticker"), Th("Form"))),
-              Tbody(*act_rows)),
+        responsive_table(Table(Thead(Tr(Th("Date"), Th("Filer"), Th("Target"), Th("Ticker"), Th("Form"))),
+                         Tbody(*act_rows)), label="Recent activist filings") if act_rows else
+        empty_state("No activist filings are available right now.", action="Refresh later or broaden the selected view."),
         cls="hfpage",
     )
     return page("hedgefunds", Style(_CSS), body, Script(_JS),

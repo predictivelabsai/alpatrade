@@ -4,6 +4,7 @@ from __future__ import annotations
 from fasthtml.common import A, Button, Div, Form, Input, NotStr, P, Span, Style, Table, Tbody, Td, Th, Thead, Tr
 
 from engine.web.ph_layout import page
+from engine.web.ph_tables import empty_state, responsive_table
 
 _CSS = """
 
@@ -39,7 +40,7 @@ def _results(q, ticker):
     from engine.publicmarkets.news import search_news
     rows = search_news(q, ticker, limit=40)
     if not rows:
-        return P("No press releases found — try a ticker or a headline keyword.", cls="p-sub")
+        return empty_state("No press releases found.", action="Try a ticker or a headline keyword.")
     trs = []
     for r in rows:
         side = (r["predicted_side"] or "").lower()
@@ -47,7 +48,8 @@ def _results(q, ticker):
         trs.append(Tr(Td(r["published"][:10]), Td(r["ticker"] or ""), Td(title),
                       Td(Span(r["predicted_side"] or "",
                               cls="side-up" if side == "up" else ("side-down" if side == "down" else "")))))
-    return Table(Thead(Tr(Th("Date"), Th("Ticker"), Th("Headline"), Th("Side"))), Tbody(*trs))
+    return responsive_table(Table(Thead(Tr(Th("Date"), Th("Ticker"), Th("Headline"), Th("Side"))),
+                                  Tbody(*trs)), label="Press release results")
 
 
 def _page(user, q="", ticker=""):
