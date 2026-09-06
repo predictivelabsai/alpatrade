@@ -65,6 +65,7 @@ from engine.web import ph_premarket  # noqa: E402
 from engine.web import ph_research  # noqa: E402
 from engine.web import ph_monitoring  # noqa: E402
 from engine.web import ph_data_health  # noqa: E402
+from engine.web import ph_saved_views  # noqa: E402
 from engine.web import ph_reports  # noqa: E402
 from engine.web import ph_advisor  # noqa: E402
 
@@ -87,6 +88,7 @@ ph_premarket.register(app, rt)
 ph_research.register(app, rt)
 ph_monitoring.register(app, rt)
 ph_data_health.register(app, rt)
+ph_saved_views.register(app, rt)
 ph_reports.register(app, rt)  # public /r/{id} — last, unlisted
 
 # --- verticals: per-asset-class surfaces (Phase 1b) ---------------------------

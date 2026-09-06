@@ -201,6 +201,22 @@ def _pnl_loop() -> None:
         time.sleep(60)  # avoid a double-fire in the same minute
 
 
+def _saved_view_alert_loop() -> None:
+    """Generate durable, in-app daily digests for opted-in saved market views."""
+    hour = min(23, max(0, int(os.getenv("SAVED_VIEW_ALERT_HOUR_UTC", "12"))))
+    log.info("saved-view alert scheduler: hour_utc=%s", hour)
+    while True:
+        target = _next_fire("daily", hour)
+        time.sleep(max(1, (target - datetime.now(timezone.utc)).total_seconds()))
+        try:
+            from engine.publicmarkets.saved_views import generate_daily_alerts
+            generated = generate_daily_alerts(datetime.now(timezone.utc).date())
+            log.info("generated %d saved-view alert(s)", generated)
+        except Exception as exc:  # noqa: BLE001
+            log.exception("saved-view alert scheduler failed: %s", exc)
+        time.sleep(60)
+
+
 def start() -> None:
     """Start both worker-owned schedulers once in this process.
 
@@ -227,6 +243,10 @@ def start() -> None:
         ).start()
     else:
         log.info("PnL-report scheduler disabled (PNL_REPORT_FREQUENCY=off)")
+
+    threading.Thread(
+        target=_saved_view_alert_loop, name="saved-view-alert-scheduler", daemon=True
+    ).start()
 
 
 __all__ = ["advisor_is_due", "enqueue_due_advisor_jobs", "start"]
