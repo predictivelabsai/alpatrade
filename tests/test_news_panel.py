@@ -36,15 +36,15 @@ def test_search_news_excludes_non_english_rows():
         captured.update(sql=str(sql), params=params or {})
 
         raw = [
-            ("English headline", "u1", "AAPL", "Apple", None, "e", "p",
+            ("English headline", "u1", "AAPL", None, "Apple", None, "e", "p",
              "s", "up", 1.0, "en"),
-            ("Communiqué semestriel 2024", "u2", "BNP", "BNP", None, "e",
+            ("Communiqué semestriel 2024", "u2", "BNP", None, "BNP", None, "e",
              "p", "s", None, None, "fr"),
-            (_JA, "u3", "TYO", "T", None, "e", "p", "s", None, None, None),
+            (_JA, "u3", "TYO", None, "T", None, "e", "p", "s", None, None, None),
         ]
         # Simulate the SQL gate: language IS NULL OR language = ANY(:langs).
-        gated = [r for r in raw if r[10] is None
-                 or r[10].lower() in captured["params"]["langs"]]
+        gated = [r for r in raw if r[11] is None
+                 or r[11].lower() in captured["params"]["langs"]]
 
         class Result:
             @staticmethod
@@ -66,6 +66,17 @@ def test_search_news_excludes_non_english_rows():
     # 'fr' is excluded by the SQL gate; the NULL-language non-Latin title
     # falls through the SQL but is dropped by the script guard.
     assert [row["title"] for row in rows] == ["English headline"]
+
+
+def test_detect_ticker_prefers_stored_values_and_recognizes_explicit_headlines():
+    from engine.publicmarkets.news import detect_ticker
+
+    assert detect_ticker("Apple news", ticker="aapl") == "AAPL"
+    assert detect_ticker("Apple news", yf_ticker="msft") == "MSFT"
+    assert detect_ticker("Cogent Communications reports results - CCOI") == "CCOI"
+    assert detect_ticker("Investors discuss $HIMS after earnings") == "HIMS"
+    assert detect_ticker("Results: NASDAQ: BRK.B") == "BRK.B"
+    assert detect_ticker("AI outlook improves") == ""
 
 
 def test_rss_ingester_drops_non_english_headlines(monkeypatch):
