@@ -21,6 +21,13 @@ _CSS = """
 .press thead{background:var(--bg-raise)}
 .press a{color:var(--accent)}
 .side-up{color:var(--accent)} .side-down{color:#b0653f}
+@media(max-width:600px){
+  .press{padding-left:.75rem;padding-right:.75rem}
+  .press input[name=q]{min-width:0;width:100%;flex-basis:100%}
+  .press .p-btn{min-height:44px}
+  .press-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .press table{min-width:38rem}
+}
 """
 
 
@@ -47,7 +54,8 @@ def _results(q, ticker):
         trs.append(Tr(Td(r["published"][:10]), Td(r["ticker"] or ""), Td(title),
                       Td(Span(r["predicted_side"] or "",
                               cls="side-up" if side == "up" else ("side-down" if side == "down" else "")))))
-    return Table(Thead(Tr(Th("Date"), Th("Ticker"), Th("Headline"), Th("Side"))), Tbody(*trs))
+    return Div(Table(Thead(Tr(Th("Date"), Th("Ticker"), Th("Headline"), Th("Side"))),
+                     Tbody(*trs)), cls="press-table-scroll")
 
 
 def _page(user, q="", ticker=""):
