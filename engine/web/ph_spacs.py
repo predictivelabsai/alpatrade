@@ -1,7 +1,7 @@
 """SPACs page — screener over the shared liquidround.spac_data. register(app, rt)."""
 from __future__ import annotations
 
-from fasthtml.common import Div, NotStr, P, Style, Table, Tbody, Td, Th, Thead, Tr
+from fasthtml.common import Div, Form, Input, NotStr, Option, P, Select, Style, Table, Tbody, Td, Th, Thead, Tr
 
 from engine.web.ph_layout import page
 
@@ -13,7 +13,14 @@ _CSS = """
 .spacs table{border-collapse:collapse;width:100%;font-size:.82rem}
 .spacs th,.spacs td{border:1px solid var(--line);padding:.4rem .6rem;text-align:left}
 .spacs thead{background:var(--bg-raise)}
+.spac-controls{display:grid;grid-template-columns:minmax(180px,2fr) repeat(2,minmax(150px,1fr)) auto;gap:.6rem;margin:0 0 1rem}
+.spac-controls input,.spac-controls select,.spac-controls button{min-height:2.5rem;padding:.45rem .6rem;border:1px solid var(--line);border-radius:.45rem;background:var(--bg-elev);color:var(--ink);font:inherit;font-size:.8rem}
+.spac-controls button{background:var(--accent);color:var(--bg);cursor:pointer;font-weight:600}
+.spac-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:.6rem}
+.spac-meta{font-size:.72rem;color:var(--ink-dim);margin:-.5rem 0 .7rem}
 .prem-pos{color:var(--accent)} .prem-neg{color:#b0653f}
+@media(max-width:700px){.spac-controls{grid-template-columns:1fr 1fr}.spac-controls input{grid-column:1/-1}}
+@media(max-width:460px){.spac-controls{grid-template-columns:1fr}}
 """
 
 
@@ -28,9 +35,25 @@ def _user(session):
         return None
 
 
-def _page(user):
+def _page(user, q: str = "", status: str = "", sort: str = "trust"):
     from engine.publicmarkets.spacs import spac_list
     rows = spac_list(limit=100)
+    needle = q.strip().lower()
+    if needle:
+        rows = [r for r in rows if needle in " ".join(str(r.get(key) or "")
+                for key in ("ticker", "company", "sponsor", "target", "exchange")).lower()]
+    if status:
+        rows = [r for r in rows if status.lower() in str(r["status"] or "").lower()]
+    if sort == "price":
+        rows.sort(key=lambda r: r["price"] is None, reverse=False)
+        rows.sort(key=lambda r: r["price"] or 0, reverse=True)
+    elif sort == "premium":
+        rows.sort(key=lambda r: r["nav_premium_pct"] is None, reverse=False)
+        rows.sort(key=lambda r: r["nav_premium_pct"] or 0, reverse=True)
+    elif sort == "company":
+        rows.sort(key=lambda r: (r["company"] or "").lower())
+    else:
+        rows.sort(key=lambda r: r["trust_size"] or 0, reverse=True)
 
     def _b(v):
         return f"${v/1e6:.0f}M" if v else "—"
@@ -47,9 +70,22 @@ def _page(user):
     body = Div(
         NotStr("<h1>🔀 SPACs</h1>"),
         P("Special-purpose acquisition companies — trust size, NAV premium, status, targets.", cls="s-sub"),
-        Table(Thead(Tr(Th("Ticker"), Th("Company"), Th("Sponsor"), Th("Status"),
+        Form(
+            Input(name="q", value=q, type="search", placeholder="Search ticker, company, sponsor, target…",
+                  aria_label="Search SPACs"),
+            Select(Option("All statuses", value=""), Option("Searching", value="searching"),
+                   Option("Target announced", value="target"), Option("Completed", value="completed"),
+                   name="status", value=status, aria_label="Filter SPAC status"),
+            Select(Option("Largest trust", value="trust"), Option("Highest price", value="price"),
+                   Option("Highest NAV premium", value="premium"), Option("Company A–Z", value="company"),
+                   name="sort", value=sort, aria_label="Sort SPACs"),
+            NotStr('<button type="submit">Apply</button>'),
+            method="get", action="/spacs", cls="spac-controls",
+        ),
+        P(f"{len(rows)} matching SPACs · prices and NAV premium are refreshed from market data.", cls="spac-meta"),
+        Div(Table(Thead(Tr(Th("Ticker"), Th("Company"), Th("Sponsor"), Th("Status"),
                        Th("Trust"), Th("Price"), Th("NAV prem."), Th("Target"))),
-              Tbody(*trs)),
+              Tbody(*trs)), cls="spac-table-wrap"),
         cls="spacs",
     )
     return page("spacs", Style(_CSS), body, user=user, title="SPACs · AlpaTrade", right_news=False)
@@ -62,7 +98,7 @@ def register(app, rt):
         ph_layout.TOOLS_PAGES.append(entry)
 
     @rt("/spacs", methods=["GET"])
-    def spacs_get(session):
-        return _page(_user(session))
+    def spacs_get(session, q: str = "", status: str = "", sort: str = "trust"):
+        return _page(_user(session), q=q, status=status, sort=sort)
 
     return ["/spacs"]
