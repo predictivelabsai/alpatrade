@@ -8,6 +8,7 @@ from __future__ import annotations
 from fasthtml.common import A, Button, Div, Form, Input, NotStr, Option, P, Select, Span, Style, Table, Tbody, Td, Th, Thead, Tr
 
 from engine.web.ph_layout import page
+from engine.web.ph_tables import empty_state, responsive_table
 
 _CSS = """
 
@@ -50,7 +51,9 @@ def _results(q, ticker, forms):
                   Td(A(f.get("description") or "view", href=f.get("url", "#"), target="_blank")))
                for f in rows]
         return Div(P(f"Recent filings — {head}", cls="f-sub"),
-                   Table(Thead(Tr(Th("Form"), Th("Date"), Th("Document"))), Tbody(*trs)))
+                   responsive_table(Table(Thead(Tr(Th("Form"), Th("Date"), Th("Document"))), Tbody(*trs)),
+                                    label="Company filing results") if trs else
+                   empty_state("No company filings match this filter."))
     if not q:
         return P("Enter a search query, or a ticker to list its filings.", cls="f-sub")
     data = edgar.search_filings(q, forms=forms, ticker=ticker, limit=30)
@@ -60,7 +63,9 @@ def _results(q, ticker, forms):
               Td(A("view", href=r.get("file_url", "#"), target="_blank")))
            for r in data.get("results", [])]
     return Div(P(f"{data.get('total', 0)} results for “{q}”", cls="f-sub"),
-               Table(Thead(Tr(Th("Form"), Th("Entity"), Th("Date"), Th("Doc"))), Tbody(*trs)))
+               responsive_table(Table(Thead(Tr(Th("Form"), Th("Entity"), Th("Date"), Th("Doc"))), Tbody(*trs)),
+                                label="SEC filing search results") if trs else
+               empty_state("No SEC filings match this search."))
 
 
 def _page(user, q="", ticker="", forms=""):

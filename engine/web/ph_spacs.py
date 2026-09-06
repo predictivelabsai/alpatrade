@@ -4,6 +4,7 @@ from __future__ import annotations
 from fasthtml.common import Div, NotStr, P, Style, Table, Tbody, Td, Th, Thead, Tr
 
 from engine.web.ph_layout import page
+from engine.web.ph_tables import empty_state, responsive_table
 
 _CSS = """
 
@@ -32,6 +33,11 @@ def _page(user):
     from engine.publicmarkets.spacs import spac_list
     rows = spac_list(limit=100)
 
+    if not rows:
+        table = empty_state("No SPACs are available right now.", action="Refresh later while the source feed catches up.")
+        return page("spacs", Style(_CSS), Div(NotStr("<h1>🔀 SPACs</h1>"), table, cls="spacs"),
+                    user=user, title="SPACs · AlpaTrade", right_news=False)
+
     def _b(v):
         return f"${v/1e6:.0f}M" if v else "—"
     trs = []
@@ -47,9 +53,9 @@ def _page(user):
     body = Div(
         NotStr("<h1>🔀 SPACs</h1>"),
         P("Special-purpose acquisition companies — trust size, NAV premium, status, targets.", cls="s-sub"),
-        Table(Thead(Tr(Th("Ticker"), Th("Company"), Th("Sponsor"), Th("Status"),
-                       Th("Trust"), Th("Price"), Th("NAV prem."), Th("Target"))),
-              Tbody(*trs)),
+        responsive_table(Table(Thead(Tr(Th("Ticker"), Th("Company"), Th("Sponsor"), Th("Status"),
+                                         Th("Trust"), Th("Price"), Th("NAV prem."), Th("Target"))),
+                               Tbody(*trs)), label="SPAC results"),
         cls="spacs",
     )
     return page("spacs", Style(_CSS), body, user=user, title="SPACs · AlpaTrade", right_news=False)
