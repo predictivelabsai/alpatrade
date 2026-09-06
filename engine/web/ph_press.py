@@ -4,7 +4,7 @@ from __future__ import annotations
 from fasthtml.common import A, Button, Div, Form, Input, NotStr, P, Span, Style, Table, Tbody, Td, Th, Thead, Tr
 
 from engine.web.ph_layout import page
-from engine.web.ph_tables import empty_state, responsive_table
+from engine.web.ph_tables import empty_state, research_card, research_cards, responsive_table
 
 _CSS = """
 
@@ -42,14 +42,19 @@ def _results(q, ticker):
     if not rows:
         return empty_state("No press releases found.", action="Try a ticker or a headline keyword.")
     trs = []
+    cards = []
     for r in rows:
         side = (r["predicted_side"] or "").lower()
         title = A(r["title"] or "", href=r["link"] or "#", target="_blank") if r["link"] else (r["title"] or "")
         trs.append(Tr(Td(r["published"][:10]), Td(r["ticker"] or ""), Td(title),
                       Td(Span(r["predicted_side"] or "",
                               cls="side-up" if side == "up" else ("side-down" if side == "down" else "")))))
-    return responsive_table(Table(Thead(Tr(Th("Date"), Th("Ticker"), Th("Headline"), Th("Side"))),
-                                  Tbody(*trs)), label="Press release results")
+        meta = " · ".join(part for part in (r["published"][:10], r["ticker"], r["predicted_side"]) if part)
+        cards.append(research_card(title=r["title"] or "Press release", meta=meta,
+                                   details=r["summary"] or r["publisher"] or "Open for the source release.", href=r["link"] or ""))
+    return Div(responsive_table(Table(Thead(Tr(Th("Date"), Th("Ticker"), Th("Headline"), Th("Side"))),
+                                      Tbody(*trs)), label="Press release results", mobile_cards=True),
+               research_cards(cards))
 
 
 def _page(user, q="", ticker=""):
