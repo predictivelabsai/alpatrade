@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import html
+import hmac
+import secrets
 
 from fasthtml.common import Div, NotStr, Style
 from starlette.responses import RedirectResponse
@@ -18,6 +20,20 @@ def _user(session):
     uid = session.get("user_id") if session else None
     if not uid:
         return None
+
+
+def _csrf_token(session) -> str:
+    """Create a session-bound CSRF token for all state-changing view actions."""
+    token = session.get("saved_views_csrf")
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session["saved_views_csrf"] = token
+    return token
+
+
+def _valid_csrf(session, token) -> bool:
+    expected = session.get("saved_views_csrf")
+    return bool(expected and token and hmac.compare_digest(str(expected), str(token)))
     try:
         from engine.auth import get_user_by_id
         return get_user_by_id(str(uid))
@@ -25,7 +41,7 @@ def _user(session):
         return None
 
 
-def _render(views: list[dict], alerts: list[dict], message: str = "") -> str:
+def _render(views: list[dict], alerts: list[dict], csrf_token: str, message: str = "") -> str:
     from engine.publicmarkets.saved_views import available_pages
     options = "".join(f"<option value='{key}'>{html.escape(label)}</option>"
                       for key, (label, _path) in available_pages().items())
@@ -34,7 +50,7 @@ def _render(views: list[dict], alerts: list[dict], message: str = "") -> str:
         return (
             f"<li><div class='view-top'><div><a href='{html.escape(view['path'], quote=True)}'>{html.escape(view['name'])}</a>"
             f"<div class='meta'>{html.escape(available_pages()[view['page_key']][0])}</div>{digest}</div>"
-            f"<form method='post' action='/saved-views/{view['view_id']}/delete'><button class='delete' type='submit'>Delete</button></form></div></li>"
+            f"<form method='post' action='/saved-views/{view['view_id']}/delete'><input type='hidden' name='csrf_token' value='{csrf_token}'><button class='delete' type='submit'>Delete</button></form></div></li>"
         )
 
     view_items = "".join(view_item(view) for view in views) or \
@@ -47,12 +63,13 @@ def _render(views: list[dict], alerts: list[dict], message: str = "") -> str:
     return f"""
       <h1>Saved views & alerts</h1><p class='sub'>Save a public-markets filter set and optionally receive one in-app digest each day. No external messages are sent.</p>{notice}
       <div class='saved-grid'><section class='saved-panel'><h2>Save a view</h2><form method='post' action='/saved-views'>
+      <input type='hidden' name='csrf_token' value='{csrf_token}'>
       <input name='name' required maxlength='100' placeholder='Name this view'><select name='page_key'>{options}</select>
       <input name='q' placeholder='Keyword (optional)'><input name='ticker' placeholder='Ticker (optional)' autocapitalize='characters'>
       <select name='form'><option value=''>Any filing form</option><option>8-K</option><option>10-Q</option><option>10-K</option><option>13F-HR</option></select>
       <label class='meta'><input type='checkbox' name='daily_digest'> Daily in-app digest</label><button type='submit'>Save view</button></form></section>
       <section class='saved-panel'><h2>Your views</h2><ul class='saved-list'>{view_items}</ul></section></div>
-      <section class='saved-panel' style='margin-top:1rem'><div class='view-top'><h2>Alert inbox</h2><form method='post' action='/saved-views/alerts/read'><button class='delete' type='submit'>Mark all read</button></form></div><ul class='alert-list'>{alert_items}</ul></section>
+      <section class='saved-panel' style='margin-top:1rem'><div class='view-top'><h2>Alert inbox</h2><form method='post' action='/saved-views/alerts/read'><input type='hidden' name='csrf_token' value='{csrf_token}'><button class='delete' type='submit'>Mark all read</button></form></div><ul class='alert-list'>{alert_items}</ul></section>
     """
 
 
@@ -63,7 +80,7 @@ def register(app, rt):
         if not user:
             return RedirectResponse("/signin", status_code=303)
         from engine.publicmarkets.saved_views import list_alerts, list_views
-        return page("saved-views", Style(_CSS), Div(NotStr(_render(list_views(str(user['user_id'])), list_alerts(str(user['user_id'])), msg)), cls="saved"), user=user, title="Saved Views · AlpaTrade", right_news=False)
+        return page("saved-views", Style(_CSS), Div(NotStr(_render(list_views(str(user['user_id'])), list_alerts(str(user['user_id'])), _csrf_token(session), msg)), cls="saved"), user=user, title="Saved Views · AlpaTrade", right_news=False)
 
     @rt("/saved-views", methods=["POST"])
     async def saved_views_post(session, request):
@@ -71,24 +88,34 @@ def register(app, rt):
         if not user:
             return RedirectResponse("/signin", status_code=303)
         form = await request.form()
+        if not _valid_csrf(session, form.get("csrf_token")):
+            return RedirectResponse("/saved-views?msg=Your+form+expired.+Please+try+again", status_code=303)
+        if form.get("daily_digest") and not user.get("email_verified_at"):
+            return RedirectResponse("/saved-views?msg=Verify+your+email+before+enabling+daily+alerts", status_code=303)
         from engine.publicmarkets.saved_views import save_view
         view_id = save_view(str(user["user_id"]), str(form.get("name") or ""), str(form.get("page_key") or ""), dict(form), bool(form.get("daily_digest")))
         return RedirectResponse("/saved-views?msg=" + ("View+saved" if view_id else "Unable+to+save+view"), status_code=303)
 
     @rt("/saved-views/{view_id}/delete", methods=["POST"])
-    def saved_views_delete(session, view_id: str):
+    async def saved_views_delete(session, request, view_id: str):
         user = _user(session)
         if not user:
             return RedirectResponse("/signin", status_code=303)
+        form = await request.form()
+        if not _valid_csrf(session, form.get("csrf_token")):
+            return RedirectResponse("/saved-views?msg=Your+form+expired.+Please+try+again", status_code=303)
         from engine.publicmarkets.saved_views import delete_view
         delete_view(str(user["user_id"]), view_id)
         return RedirectResponse("/saved-views?msg=View+deleted", status_code=303)
 
     @rt("/saved-views/alerts/read", methods=["POST"])
-    def alerts_read(session):
+    async def alerts_read(session, request):
         user = _user(session)
         if not user:
             return RedirectResponse("/signin", status_code=303)
+        form = await request.form()
+        if not _valid_csrf(session, form.get("csrf_token")):
+            return RedirectResponse("/saved-views?msg=Your+form+expired.+Please+try+again", status_code=303)
         from engine.publicmarkets.saved_views import mark_alerts_read
         mark_alerts_read(str(user["user_id"]))
         return RedirectResponse("/saved-views?msg=Alerts+marked+read", status_code=303)

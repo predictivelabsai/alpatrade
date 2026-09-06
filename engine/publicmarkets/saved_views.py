@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 from datetime import date
+import json
 from urllib.parse import urlencode
+from uuid import UUID
 
 from sqlalchemy import text
 
@@ -55,11 +57,15 @@ def save_view(user_id: str, name: str, page_key: str, filters: dict,
             VALUES (CAST(:uid AS UUID), :name, :page, CAST(:filters AS JSONB), :daily)
             RETURNING view_id
         """), {"uid": user_id, "name": name, "page": page_key,
-               "filters": __import__("json").dumps(_filters(filters)), "daily": daily_digest}).scalar()
+               "filters": json.dumps(_filters(filters)), "daily": daily_digest}).scalar()
     return str(view_id) if view_id else None
 
 
 def delete_view(user_id: str, view_id: str) -> bool:
+    try:
+        UUID(view_id)
+    except (TypeError, ValueError):
+        return False
     with DatabasePool().get_session() as session:
         result = session.execute(text("""
             DELETE FROM alpatrade.saved_market_views
