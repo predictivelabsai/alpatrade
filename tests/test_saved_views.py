@@ -18,6 +18,14 @@ def test_save_view_rejects_unknown_page_without_touching_database():
         pool.assert_not_called()
 
 
+def test_delete_view_rejects_malformed_identifier_without_touching_database():
+    import engine.publicmarkets.saved_views as saved_views
+
+    with patch.object(saved_views, "DatabasePool") as pool:
+        assert not saved_views.delete_view("00000000-0000-0000-0000-000000000001", "not-a-uuid")
+        pool.assert_not_called()
+
+
 def test_generate_daily_alerts_is_idempotent_per_view_and_date():
     import engine.publicmarkets.saved_views as saved_views
 
@@ -50,11 +58,12 @@ def test_saved_view_page_renders_mobile_friendly_controls_and_alert_inbox():
         "alert_id": "alert", "title": "Daily view ready: Upcoming IPOs",
         "body": "Your saved market view is ready to review.", "target_path": "/ipo-pipeline",
         "read_at": None, "created_at": "2026-09-06T12:00:00Z",
-    }])
+    }], "csrf-test-token")
     assert "Saved views & alerts" in html
     assert "Daily in-app digest" in html
     assert "Alert inbox" in html
     assert "Mark all read" in html
+    assert "csrf-test-token" in html
     assert "autocapitalize='characters'" in html
 
 
@@ -63,3 +72,13 @@ def test_scheduler_starts_saved_view_alert_loop():
     from engine.autonomy import schedule
 
     assert "_saved_view_alert_loop" in inspect.getsource(schedule.start)
+
+
+def test_saved_view_csrf_validation_is_session_bound_and_constant_time_safe():
+    from engine.web.ph_saved_views import _csrf_token, _valid_csrf
+
+    session = {}
+    token = _csrf_token(session)
+    assert len(token) >= 32
+    assert _valid_csrf(session, token)
+    assert not _valid_csrf(session, "other-token")
