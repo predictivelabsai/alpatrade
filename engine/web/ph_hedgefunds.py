@@ -10,7 +10,7 @@ from fasthtml.common import A, Div, NotStr, P, Script, Style, Table, Tbody, Td, 
 from starlette.responses import JSONResponse
 
 from engine.web.ph_layout import page
-from engine.web.ph_tables import empty_state, responsive_table
+from engine.web.ph_tables import empty_state, research_card, research_cards, responsive_table
 
 _CSS = """
 
@@ -73,14 +73,26 @@ def _page(user):
                    Td((a["subject"] or "")[:26]), Td(a["ticker"] or ""),
                    Td(A(a["form"] or "view", href=a.get("url") or "#", target="_blank")))
                 for a in acts]
+    act_cards = [
+        research_card(
+            title=a["subject"] or a["ticker"] or "Activist filing",
+            meta=" · ".join(filter(None, (a["date"][:10], a["ticker"], a["form"]))) or "Filing",
+            details=f"Filer: {a['filer'] or 'Not reported'}",
+            href=a.get("url") or "",
+        )
+        for a in acts
+    ]
     body = Div(
         NotStr("<h1>🏦 Hedge Funds</h1>"),
         P("Top institutional managers by 13F portfolio value, and recent activist filings. "
           "(Fund-level AUM + activism — per-security holdings aren't in this dataset.)", cls="hf-sub"),
         Div(id="hf-plot", cls="hf-plot"), Div("", id="hf-status", cls="hf-status"),
         NotStr("<h3>Recent activist filings</h3>"),
-        responsive_table(Table(Thead(Tr(Th("Date"), Th("Filer"), Th("Target"), Th("Ticker"), Th("Form"))),
-                         Tbody(*act_rows)), label="Recent activist filings") if act_rows else
+        Div(
+            responsive_table(Table(Thead(Tr(Th("Date"), Th("Filer"), Th("Target"), Th("Ticker"), Th("Form"))),
+                             Tbody(*act_rows)), label="Recent activist filings", mobile_cards=True),
+            research_cards(act_cards),
+        ) if act_rows else
         empty_state("No activist filings are available right now.", action="Refresh later or broaden the selected view."),
         cls="hfpage",
     )

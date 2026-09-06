@@ -4,7 +4,7 @@ from __future__ import annotations
 from fasthtml.common import Div, NotStr, P, Style, Table, Tbody, Td, Th, Thead, Tr
 
 from engine.web.ph_layout import page
-from engine.web.ph_tables import empty_state, responsive_table
+from engine.web.ph_tables import empty_state, research_card, research_cards, responsive_table
 
 _CSS = """
 
@@ -41,6 +41,7 @@ def _page(user):
     def _b(v):
         return f"${v/1e6:.0f}M" if v else "—"
     trs = []
+    cards = []
     for r in rows:
         p = r["nav_premium_pct"]
         prem = "—" if p is None else NotStr(
@@ -50,12 +51,23 @@ def _page(user):
                       Td(_b(r["trust_size"])),
                       Td(f"${r['price']:,.2f}" if r["price"] else "—"),
                       Td(prem), Td((r["target"] or "—")[:24])))
+        cards.append(research_card(
+            title=r["company"] or r["ticker"] or "SPAC",
+            meta=" · ".join(filter(None, (r["ticker"], r["status"]))) or "SPAC",
+            details=" · ".join((
+                f"Trust {_b(r['trust_size'])}",
+                f"Price ${r['price']:,.2f}" if r["price"] else "Price —",
+                f"Target {r['target']}" if r["target"] else "Target —",
+                f"Sponsor {r['sponsor']}" if r["sponsor"] else "Sponsor —",
+            )),
+        ))
     body = Div(
         NotStr("<h1>🔀 SPACs</h1>"),
         P("Special-purpose acquisition companies — trust size, NAV premium, status, targets.", cls="s-sub"),
         responsive_table(Table(Thead(Tr(Th("Ticker"), Th("Company"), Th("Sponsor"), Th("Status"),
                                          Th("Trust"), Th("Price"), Th("NAV prem."), Th("Target"))),
-                               Tbody(*trs)), label="SPAC results"),
+                               Tbody(*trs)), label="SPAC results", mobile_cards=True),
+        research_cards(cards),
         cls="spacs",
     )
     return page("spacs", Style(_CSS), body, user=user, title="SPACs · AlpaTrade", right_news=False)

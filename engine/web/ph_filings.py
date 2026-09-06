@@ -8,7 +8,7 @@ from __future__ import annotations
 from fasthtml.common import A, Button, Div, Form, Input, NotStr, Option, P, Select, Span, Style, Table, Tbody, Td, Th, Thead, Tr
 
 from engine.web.ph_layout import page
-from engine.web.ph_tables import empty_state, responsive_table
+from engine.web.ph_tables import empty_state, research_card, research_cards, responsive_table
 
 _CSS = """
 
@@ -50,10 +50,13 @@ def _results(q, ticker, forms):
         trs = [Tr(Td(f.get("form_type", "")), Td(f.get("filing_date", "")),
                   Td(A(f.get("description") or "view", href=f.get("url", "#"), target="_blank")))
                for f in rows]
+        cards = [research_card(title=f.get("description") or f.get("form_type") or "SEC filing",
+                               meta=" · ".join(part for part in (f.get("form_type", ""), f.get("filing_date", "")) if part),
+                               details=f"Filed by {head}.", href=f.get("url", "")) for f in rows]
         return Div(P(f"Recent filings — {head}", cls="f-sub"),
                    responsive_table(Table(Thead(Tr(Th("Form"), Th("Date"), Th("Document"))), Tbody(*trs)),
-                                    label="Company filing results") if trs else
-                   empty_state("No company filings match this filter."))
+                                    label="Company filing results", mobile_cards=True) if trs else
+                   empty_state("No company filings match this filter."), research_cards(cards) if trs else "")
     if not q:
         return P("Enter a search query, or a ticker to list its filings.", cls="f-sub")
     data = edgar.search_filings(q, forms=forms, ticker=ticker, limit=30)
@@ -62,10 +65,14 @@ def _results(q, ticker, forms):
     trs = [Tr(Td(r.get("form_type", "")), Td(r.get("entity_name", "")), Td(r.get("filing_date", "")),
               Td(A("view", href=r.get("file_url", "#"), target="_blank")))
            for r in data.get("results", [])]
+    cards = [research_card(title=r.get("entity_name") or "SEC filing",
+                           meta=" · ".join(part for part in (r.get("form_type", ""), r.get("filing_date", "")) if part),
+                           details="Open the SEC filing source for the full document.", href=r.get("file_url", ""))
+             for r in data.get("results", [])]
     return Div(P(f"{data.get('total', 0)} results for “{q}”", cls="f-sub"),
                responsive_table(Table(Thead(Tr(Th("Form"), Th("Entity"), Th("Date"), Th("Doc"))), Tbody(*trs)),
-                                label="SEC filing search results") if trs else
-               empty_state("No SEC filings match this search."))
+                                label="SEC filing search results", mobile_cards=True) if trs else
+               empty_state("No SEC filings match this search."), research_cards(cards) if trs else "")
 
 
 def _page(user, q="", ticker="", forms=""):
