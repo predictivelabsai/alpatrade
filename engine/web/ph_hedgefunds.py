@@ -6,7 +6,7 @@ ownership). Feature-module contract: register(app, rt).
 """
 from __future__ import annotations
 
-from fasthtml.common import A, Div, NotStr, P, Script, Style, Table, Tbody, Td, Th, Thead, Tr
+from fasthtml.common import A, Button, Div, Form, Input, NotStr, Option, P, Script, Select, Style, Table, Tbody, Td, Th, Thead, Tr
 from starlette.responses import JSONResponse
 
 from engine.web.ph_layout import page
@@ -24,6 +24,15 @@ _CSS = """
 .hfpage th,.hfpage td{border:1px solid var(--line);padding:.4rem .6rem;text-align:left}
 .hfpage thead{background:var(--bg-raise)}
 .hfpage a{color:var(--accent)}
+.hf-filters{display:flex;gap:.5rem;flex-wrap:wrap;margin:.65rem 0}
+.hf-filters input,.hf-filters select{font-family:var(--font-body);font-size:.86rem;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line-br);border-radius:.45rem;padding:.5rem .6rem}
+.hf-filters button{font-size:.85rem;color:var(--bg);background:var(--accent);border:0;border-radius:.45rem;padding:.55rem 1.1rem;cursor:pointer}
+@media(max-width:600px){
+  .hfpage{padding-left:.75rem;padding-right:.75rem}
+  .hf-plot{min-height:360px}.hf-filters button{min-height:44px}
+  .hf-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}.hfpage table{min-width:42rem}
+}
 """
 
 _JS = """
@@ -65,21 +74,32 @@ def _b(v):
     return f"${v/1e12:.2f}T" if v >= 1e12 else (f"${v/1e9:.1f}B" if v >= 1e9 else f"${v/1e6:.0f}M")
 
 
-def _page(user):
+def _page(user, ticker="", form="", sort="latest"):
     from engine.publicmarkets.hedge_funds import activist_filings
-    acts = activist_filings(limit=20)
-    act_rows = [Tr(Td(a["date"][:10]), Td((a["filer"] or "")[:34]),
+    acts = activist_filings(ticker=ticker, form=form, sort=sort, limit=20)
+    act_rows = [Tr(Td(a["filed_at"]), Td((a["filer"] or "")[:34]),
                    Td((a["subject"] or "")[:26]), Td(a["ticker"] or ""),
                    Td(A(a["form"] or "view", href=a.get("url") or "#", target="_blank")))
                 for a in acts]
+    filters = Form(
+        Input(name="ticker", placeholder="Target ticker", value=ticker),
+        Select(Option("All forms", value="", selected=not form),
+               Option("Schedule 13D", value="SCHEDULE 13D", selected=form == "SCHEDULE 13D"),
+               Option("Schedule 13D/A", value="SCHEDULE 13D/A", selected=form == "SCHEDULE 13D/A"), name="form"),
+        Select(Option("Latest first", value="latest", selected=sort == "latest"),
+               Option("Oldest first", value="oldest", selected=sort == "oldest"),
+               Option("Target A–Z", value="target", selected=sort == "target"),
+               Option("Filer A–Z", value="filer", selected=sort == "filer"), name="sort"),
+        Button("Apply", type="submit"), method="get", action="/hedge-funds", cls="hf-filters")
     body = Div(
         NotStr("<h1>🏦 Hedge Funds</h1>"),
         P("Top institutional managers by 13F portfolio value, and recent activist filings. "
           "(Fund-level AUM + activism — per-security holdings aren't in this dataset.)", cls="hf-sub"),
         Div(id="hf-plot", cls="hf-plot"), Div("", id="hf-status", cls="hf-status"),
         NotStr("<h3>Recent activist filings</h3>"),
-        Table(Thead(Tr(Th("Date"), Th("Filer"), Th("Target"), Th("Ticker"), Th("Form"))),
-              Tbody(*act_rows)),
+        filters,
+        Div(Table(Thead(Tr(Th("Filed (ET)"), Th("Filer"), Th("Target"), Th("Ticker"), Th("Form"))),
+                  Tbody(*act_rows)), cls="hf-table-scroll"),
         cls="hfpage",
     )
     return page("hedgefunds", Style(_CSS), body, Script(_JS),
@@ -93,8 +113,8 @@ def register(app, rt):
         ph_layout.EXPLORE_PAGES.append(entry)
 
     @rt("/hedge-funds", methods=["GET"])
-    def hf_get(session):
-        return _page(_user(session))
+    def hf_get(session, ticker: str = "", form: str = "", sort: str = "latest"):
+        return _page(_user(session), ticker=ticker, form=form, sort=sort)
 
     @rt("/hedge-funds/data", methods=["GET"])
     def hf_data(limit: int = 40):

@@ -7,6 +7,9 @@ search, and activist filings (13D/activist positions by subject ticker).
 """
 from __future__ import annotations
 
+from functools import lru_cache
+import re
+
 from sqlalchemy import text
 
 from engine.db.pool import DatabasePool
@@ -53,21 +56,87 @@ def fund_search(query: str, limit: int = 20) -> list[dict]:
             for r in rows]
 
 
-def activist_filings(ticker: str = "", limit: int = 25) -> list[dict]:
-    """Recent activist / 13D filings, optionally by subject ticker."""
+def _ticker_for_cik(cik: str | None) -> str:
+    """Resolve a subject CIK through the SEC's cached company ticker list."""
+    if not cik:
+        return ""
+    try:
+        from engine.publicmarkets.edgar import _ticker_to_cik_map
+        normalized = str(int(cik)).zfill(10)
+        return next((ticker for ticker, value in _ticker_to_cik_map().items()
+                     if value == normalized), "")
+    except Exception:  # noqa: BLE001 - a missing ticker must not hide the filing
+        return ""
+
+
+_SUBJECT_NAME_RE = re.compile(
+    r"SUBJECT COMPANY:.*?COMPANY CONFORMED NAME:\s*(?P<name>[^\r\n]+)", re.DOTALL)
+_SUBJECT_CIK_RE = re.compile(
+    r"SUBJECT COMPANY:.*?CENTRAL INDEX KEY:\s*(?P<cik>\d+)", re.DOTALL)
+_FILER_NAME_RE = re.compile(
+    r"FILED BY:.*?COMPANY CONFORMED NAME:\s*(?P<name>[^\r\n]+)", re.DOTALL)
+_ACCEPTED_RE = re.compile(r"ACCEPTANCE-DATETIME(?:>|:)\s*(?P<value>\d{14})")
+
+
+@lru_cache(maxsize=512)
+def _filing_metadata(url: str) -> dict[str, str]:
+    """Read only an EDGAR document header for missing subject/time metadata."""
+    if not url:
+        return {}
+    try:
+        from engine.publicmarkets.edgar import _get
+        response = _get(url, headers={"Accept": "text/plain", "Range": "bytes=0-16383"})
+        header = response.content.decode("utf-8", errors="replace")
+    except Exception:  # noqa: BLE001 - surface the database row even if EDGAR is busy
+        return {}
+    name = _SUBJECT_NAME_RE.search(header)
+    cik = _SUBJECT_CIK_RE.search(header)
+    filer = _FILER_NAME_RE.search(header)
+    accepted = _ACCEPTED_RE.search(header)
+    timestamp = accepted.group("value") if accepted else ""
+    return {"subject": name.group("name").strip() if name else "",
+            "subject_cik": cik.group("cik") if cik else "",
+            "filer": filer.group("name").strip() if filer else "",
+            "filed_at": (f"{timestamp[:4]}-{timestamp[4:6]}-{timestamp[6:8]} "
+                         f"{timestamp[8:10]}:{timestamp[10:12]} ET") if timestamp else ""}
+
+
+def activist_filings(ticker: str = "", form: str = "", limit: int = 25,
+                     sort: str = "latest") -> list[dict]:
+    """Recent activist / 13D filings, enriched from their SEC document headers."""
     where = "WHERE is_activist = TRUE"
-    params: dict = {"lim": limit}
-    if ticker:
-        where += " AND subject_ticker = :tk"
-        params["tk"] = ticker.upper()
+    # Fetch extra candidates for ticker filtering because legacy rows often have
+    # no populated subject_ticker.  The document-header cache makes repeats cheap.
+    params: dict = {"lim": max(50, min(limit * 4 if ticker else limit, 100))}
+    if form:
+        where += " AND form_type = :form"
+        params["form"] = form
     with DatabasePool().get_session() as s:
         rows = s.execute(text(f"""
-            SELECT filer_name, subject_name, subject_ticker, form_type, filing_date, filing_url
+            SELECT filer_name, subject_name, subject_ticker, subject_cik, form_type, filing_date, filing_url
             FROM hedgefolio.activist_filing {where}
             ORDER BY filing_date DESC LIMIT :lim
         """), params).fetchall()
-    return [{"filer": r[0], "subject": r[1], "ticker": r[2], "form": r[3],
-             "date": str(r[4] or ""), "url": r[5]} for r in rows]
+    filings = []
+    for row in rows:
+        metadata = _filing_metadata(row[6])
+        subject_cik = row[3] or metadata.get("subject_cik", "")
+        subject = row[1] or metadata.get("subject", "")
+        subject_ticker = row[2] or _ticker_for_cik(subject_cik)
+        filings.append({"filer": metadata.get("filer") or row[0], "subject": subject, "ticker": subject_ticker,
+                        "form": row[4], "date": str(row[5] or ""),
+                        "filed_at": metadata.get("filed_at") or str(row[5] or ""), "url": row[6]})
+    if ticker:
+        filings = [filing for filing in filings if filing["ticker"] == ticker.upper().strip()]
+    if sort == "oldest":
+        filings.sort(key=lambda filing: filing["filed_at"])
+    elif sort == "target":
+        filings.sort(key=lambda filing: (filing["subject"] or "").lower())
+    elif sort == "filer":
+        filings.sort(key=lambda filing: (filing["filer"] or "").lower())
+    else:
+        filings.sort(key=lambda filing: filing["filed_at"], reverse=True)
+    return filings[:limit]
 
 
 def _b(v: float) -> str:
