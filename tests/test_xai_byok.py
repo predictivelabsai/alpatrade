@@ -135,8 +135,15 @@ def test_settings_xai_key_is_never_rendered(monkeypatch):
     ))
     assert secret not in html
     assert "xai-...1234" in html
+    assert 'id="provider-key-settings"' in html
+    assert 'for="provider-key"' in html
+    assert 'id="provider-key"' in html
+    assert 'name="provider_key"' in html
+    assert "PROVIDER_KEY (xAI)" in html
+    assert "Save provider key" in html
+    assert html.index("PROVIDER_KEY (xAI)") < html.index("Alpaca API keys (Paper)")
     assert "toggleSecret" in html
-    assert "Saved credentials are never sent" in html
+    assert "never sent back to the browser" in html
 
 
 def test_settings_dict_never_exposes_api_key():

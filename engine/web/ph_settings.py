@@ -140,6 +140,49 @@ def _settings_page(user, msg: str = ""):
             cls="s-card",
         ),
 
+        # --- AI provider key (BYOK) --------------------------------------
+        Div(
+            H3("AI provider key (BYOK)"),
+            P(NotStr("Status: "),
+              Span(xai_label, cls=f"s-status {'ok' if xai_status['configured'] else 'no'}"),
+              cls="s-hint"),
+            Form(
+                Input(name="provider", type="hidden", value="xai"),
+                Div(
+                    Label("PROVIDER_KEY (xAI)", fr="provider-key"),
+                    Div(
+                        Input(id="provider-key", name="provider_key", type="password",
+                              autocomplete="new-password", placeholder="xai-…", required=True),
+                        Button("Show", type="button", cls="s-eye",
+                               onclick="toggleSecret('provider-key', this)"),
+                        cls="s-secret",
+                    ),
+                    cls="s-row",
+                ),
+                P("Use your own xAI API key after the platform-funded allowance. "
+                  "It is Fernet-encrypted at rest and never sent back to the browser; "
+                  "Show only reveals what you are typing.", cls="s-hint"),
+                Button("Save provider key", type="submit", cls="s-btn"),
+                method="post", action="/settings/provider-key",
+            ),
+            *(
+                [Form(Input(name="provider", type="hidden", value="xai"),
+                      Button("Remove saved key", type="submit", cls="s-btn s-danger"),
+                      method="post", action="/settings/provider-key/remove")]
+                if xai_status["configured"] else []
+            ),
+            NotStr("""<script>
+function toggleSecret(id, button) {
+  const field = document.getElementById(id);
+  const showing = field.type === 'text';
+  field.type = showing ? 'password' : 'text';
+  button.textContent = showing ? 'Show' : 'Hide';
+}
+</script>"""),
+            id="provider-key-settings",
+            cls="s-card",
+        ),
+
         # --- Alpaca keys (BYOK) -------------------------------------------
         Div(
             H3("Alpaca API keys (Paper)"),
@@ -193,44 +236,6 @@ def _settings_page(user, msg: str = ""):
                 Button("Save providers", type="submit", cls="s-btn"),
                 method="post", action="/settings/preferences",
             ),
-            cls="s-card",
-        ),
-        Div(
-            H3("xAI API key (BYOK)"),
-            P(NotStr("Status: "),
-              Span(xai_label, cls=f"s-status {'ok' if xai_status['configured'] else 'no'}"),
-              cls="s-hint"),
-            Form(
-                Div(
-                    Label("XAI_API_KEY"),
-                    Div(
-                        Input(id="xai-api-key", name="api_key", type="password",
-                              autocomplete="new-password", placeholder="xai-…", required=True),
-                        Button("Show", type="button", cls="s-eye",
-                               onclick="toggleSecret('xai-api-key', this)"),
-                        cls="s-secret",
-                    ),
-                    cls="s-row",
-                ),
-                P("Your key is Fernet-encrypted at rest. Saved credentials are never sent "
-                  "back to the browser; Show only reveals what you are typing.", cls="s-hint"),
-                Button("Save xAI key", type="submit", cls="s-btn"),
-                method="post", action="/settings/provider-key",
-            ),
-            *(
-                [Form(Input(name="provider", type="hidden", value="xai"),
-                      Button("Remove saved key", type="submit", cls="s-btn s-danger"),
-                      method="post", action="/settings/provider-key/remove")]
-                if xai_status["configured"] else []
-            ),
-            NotStr("""<script>
-function toggleSecret(id, button) {
-  const field = document.getElementById(id);
-  const showing = field.type === 'text';
-  field.type = showing ? 'password' : 'text';
-  button.textContent = showing ? 'Show' : 'Hide';
-}
-</script>"""),
             cls="s-card",
         ),
         P(A("← Back to chat", href="/app"), cls="s-hint"),
@@ -303,10 +308,12 @@ def register(app, rt):
         if not user:
             return RedirectResponse("/signin", status_code=303)
         form = await request.form()
-        api_key = (form.get("api_key") or "").strip()
-        if api_key:
+        provider_key = (
+            form.get("provider_key") or form.get("api_key") or ""
+        ).strip()
+        if provider_key:
             from engine.auth import store_provider_api_key
-            store_provider_api_key(user["user_id"], "xai", api_key)
+            store_provider_api_key(user["user_id"], "xai", provider_key)
             try:
                 from agui_app import clear_agent_cache
                 clear_agent_cache()
