@@ -87,11 +87,13 @@ def test_admin_can_filter_all_logs_by_email(monkeypatch):
 
 
 def test_logging_page_shows_private_or_admin_scope(monkeypatch):
-    from engine.ai import activity_logging
+    from engine.ai import activity_logging, llm_usage
     from engine.web.ph_logging import _logging_page
 
     monkeypatch.setattr(activity_logging, "list_user_logs", lambda *a, **k: [])
     monkeypatch.setattr(activity_logging, "list_agent_logs", lambda *a, **k: [])
+    monkeypatch.setattr(llm_usage, "list_usage", lambda *a, **k: [])
+    monkeypatch.setattr(llm_usage, "usage_summary", lambda *a, **k: [])
     regular = to_xml(_logging_page({
         "user_id": "user-1", "email": "user@example.com", "is_admin": False,
     }))
@@ -102,6 +104,8 @@ def test_logging_page_shows_private_or_admin_scope(monkeypatch):
     assert "Filter by user email" not in regular
     assert "activity for all users" in admin
     assert "Filter by user email" in admin
+    assert "LLM usage today" in admin
+    assert "Key source" in admin
 
 
 def test_chat_persistence_also_records_activity(monkeypatch):

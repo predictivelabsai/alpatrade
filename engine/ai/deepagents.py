@@ -599,6 +599,8 @@ class DeepAgentService:
                 for tool in spec.get("tools", ())
             ),
         }
+        funding_source = "platform"
+        measured_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
 
         async def emit(event_type: str, data: dict[str, Any], *, persist: bool = False) -> None:
             nonlocal sequence
@@ -619,6 +621,12 @@ class DeepAgentService:
             await output.put({"event": event_type, "data": data})
 
         try:
+            settings = self.settings_loader(invocation.context.user_id)
+            funding_source = "user_byok" if settings.api_key else "platform"
+            from engine.ai.llm_usage import enforce_daily_budget
+            await asyncio.to_thread(
+                enforce_daily_budget, funding_source=funding_source
+            )
             await emit("session", {
                 "id": response_id,
                 "thread_id": invocation.thread_id,
@@ -718,6 +726,12 @@ class DeepAgentService:
                     ):
                         continue
                     chunk = event.get("data", {}).get("chunk")
+                    from engine.ai.llm_usage import extract_usage
+                    token_usage = extract_usage(chunk)
+                    if token_usage.total_tokens:
+                        measured_usage["input_tokens"] += token_usage.input_tokens
+                        measured_usage["output_tokens"] += token_usage.output_tokens
+                        measured_usage["total_tokens"] += token_usage.total_tokens
                     text_value = _content_text(getattr(chunk, "content", None))
                     if text_value:
                         emitted_text += text_value
@@ -738,6 +752,25 @@ class DeepAgentService:
             final_text = emitted_text or snapshot_text
             if final_text and not emitted_text:
                 await emit("token", {"message_id": assistant_id, "content": final_text})
+            try:
+                from engine.ai.llm_usage import TokenUsage, record_usage
+                await asyncio.to_thread(
+                    record_usage,
+                    user_id=invocation.context.user_id,
+                    thread_id=invocation.thread_id,
+                    request_id=response_id,
+                    agent="deepagents", provider=invocation.provider,
+                    model=invocation.model_name,
+                    funding_source=funding_source,
+                    prompt=invocation.context.current_user_text, response=final_text,
+                    usage=TokenUsage(
+                        measured_usage["input_tokens"], measured_usage["output_tokens"],
+                        measured_usage["total_tokens"],
+                        "measured" if measured_usage["total_tokens"] else "unavailable",
+                    ),
+                )
+            except Exception:  # telemetry must never fail the response
+                logger.warning("Could not persist DeepAgent LLM usage", exc_info=True)
             await asyncio.to_thread(
                 store.save_assistant_message,
                 invocation.context.user_id,

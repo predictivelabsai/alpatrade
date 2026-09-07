@@ -37,6 +37,7 @@ def test_hermes_payload_contains_role_history_and_prompt(monkeypatch):
             {"role": "user", "content": "Optimize AAPL"},
         ],
         "stream": True,
+        "stream_options": {"include_usage": True},
     }
 
 

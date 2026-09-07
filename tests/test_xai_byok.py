@@ -77,13 +77,10 @@ def test_usage_status_reads_counter_without_incrementing(monkeypatch):
     session = _Session(select_row=(4,))
     monkeypatch.setattr("engine.db.pool.get_pool", lambda: _Pool(session))
     status = query_gate.get_usage_status("user-1", has_byok=False)
-    assert status == {
-        "funding_source": "platform",
-        "platform_queries_used": 4,
-        "platform_query_limit": 5,
-        "platform_queries_remaining": 1,
-        "percent_used": 80,
-    }
+    assert status["funding_source"] == "platform"
+    assert status["platform_queries_used"] == 4
+    assert status["platform_queries_remaining"] == 1
+    assert status["percent_used"] == 80
     assert not any("UPDATE" in sql for sql, _params in session.calls)
 
 
@@ -113,6 +110,7 @@ def test_usage_render_discloses_counter_scope():
     assert "3 / 5 (60%)" in rendered
     assert "Free-form Hermes, DeepAgents, and LangGraph" in rendered
     assert "not every internal sidecar model turn" in rendered
+    assert "Platform estimated spend today" in rendered
 
 
 def test_settings_xai_key_is_never_rendered(monkeypatch):

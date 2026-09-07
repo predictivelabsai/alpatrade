@@ -68,11 +68,14 @@ class HermesRuntime:
 
     def _payload(self, agent: HermesAgent, prompt: str,
                  history: Optional[list], *, stream: bool) -> dict[str, Any]:
-        return {
+        payload = {
             "model": os.getenv("HERMES_API_MODEL", "hermes-agent"),
             "messages": self._messages(agent, prompt, history),
             "stream": stream,
         }
+        if stream:
+            payload["stream_options"] = {"include_usage": True}
+        return payload
 
     def run(self, agent: HermesAgent, prompt: str, *,
             history: Optional[list] = None) -> RunResult:
@@ -91,7 +94,8 @@ class HermesRuntime:
     async def astream(self, agent: HermesAgent, prompt: str, *,
                       history: Optional[list] = None,
                       session_id: str | None = None,
-                      session_key: str | None = None) -> AsyncIterator[str]:
+                      session_key: str | None = None,
+                      usage_callback=None) -> AsyncIterator[str]:
         """Stream content deltas without blocking the AlpaTrade web event loop."""
         timeout = float(os.getenv("HERMES_API_TIMEOUT_SECONDS", "180"))
         async with httpx.AsyncClient(timeout=timeout) as client:
@@ -109,6 +113,8 @@ class HermesRuntime:
                     if not data or data == "[DONE]":
                         continue
                     chunk = json.loads(data)
+                    if usage_callback and chunk.get("usage"):
+                        usage_callback(chunk["usage"])
                     text = chunk.get("choices", [{}])[0].get("delta", {}).get("content")
                     if text:
                         yield text

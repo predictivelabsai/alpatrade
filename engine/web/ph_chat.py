@@ -40,6 +40,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import re
 import time
 import tomllib
@@ -1560,6 +1561,15 @@ async def _stream(msg: str, session) -> StreamingResponse:
         full = ""
         tool_chart = ""
         query_authorization = None
+        measured_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+
+        def collect_usage(raw) -> None:
+            from engine.ai.llm_usage import extract_usage
+            usage = extract_usage(raw)
+            if usage.total_tokens:
+                measured_usage["input_tokens"] += usage.input_tokens
+                measured_usage["output_tokens"] += usage.output_tokens
+                measured_usage["total_tokens"] += usage.total_tokens
         # Deterministic Hermes commands returned above are free. Every free-form
         # model request shares one gate. Hermes currently uses the platform key
         # inside its sidecar, so a user's AlpaTrade BYOK cannot bypass that gate.
@@ -1605,6 +1615,7 @@ async def _stream(msg: str, session) -> StreamingResponse:
                     kind = event.get("event", "")
                     if kind == "on_chat_model_stream":
                         chunk = event.get("data", {}).get("chunk")
+                        collect_usage(chunk)
                         if chunk is not None and getattr(chunk, "content", ""):
                             full += chunk.content
                             yield _sse("token", {"text": chunk.content})
@@ -1631,6 +1642,7 @@ async def _stream(msg: str, session) -> StreamingResponse:
                             history=None,
                             session_id=f"alpatrade:{thread_id}",
                             session_key=f"alpatrade-user:{uid or 'anonymous'}",
+                            usage_callback=collect_usage,
                         ):
                             await queue.put(("chunk", item))
                     except Exception as remote_error:  # noqa: BLE001
@@ -1695,6 +1707,7 @@ async def _stream(msg: str, session) -> StreamingResponse:
                     async for event in fallback.astream_events({"messages": lc}, version="v2"):
                         if event.get("event", "") == "on_chat_model_stream":
                             chunk = event.get("data", {}).get("chunk")
+                            collect_usage(chunk)
                             text = getattr(chunk, "content", "") if chunk is not None else ""
                             if text:
                                 full += text
@@ -1738,6 +1751,36 @@ async def _stream(msg: str, session) -> StreamingResponse:
                 suffix = f"\n\n> **AI usage warning:** {warning} Use `/usage` for details."
                 full += suffix
                 yield _sse("token", {"text": suffix})
+        if uid is not None and query_authorization is not None:
+            try:
+                from engine.ai.llm_usage import TokenUsage, record_usage
+                measured = TokenUsage(
+                    measured_usage["input_tokens"], measured_usage["output_tokens"],
+                    measured_usage["total_tokens"],
+                    "measured" if measured_usage["total_tokens"] else "unavailable",
+                )
+                provider = "xai" if selected_framework == "hermes" else settings.model_provider
+                model_name = (
+                    os.getenv("HERMES_API_MODEL", "hermes-agent")
+                    if selected_framework == "hermes" else settings.model_name
+                )
+                await asyncio.to_thread(
+                    record_usage, user_id=str(uid), thread_id=thread_id,
+                    agent=selected_framework, provider=provider, model=model_name,
+                    funding_source=("user_byok" if query_authorization.funding_source == "byok" else "platform"),
+                    prompt=routed_msg, response=full, usage=measured,
+                )
+                from engine.ai.llm_usage import budget_warning
+                cost_warning = await asyncio.to_thread(
+                    budget_warning,
+                    funding_source=("user_byok" if query_authorization.funding_source == "byok" else "platform"),
+                )
+                if cost_warning:
+                    suffix = f"\n\n> **Daily AI budget warning:** {cost_warning}"
+                    full += suffix
+                    yield _sse("token", {"text": suffix})
+            except Exception:  # usage telemetry must never break chat
+                logger.warning("Could not persist LLM usage", exc_info=True)
         history.append({"role": "assistant", "content": full})
         follow_ups = (
             _hermes_follow_ups(routed_msg, full)

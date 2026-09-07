@@ -83,8 +83,41 @@ def _agent_table(items: list[dict]):
     )
 
 
+def _usage_summary_table(items: list[dict]):
+    rows = [Tr(
+        Td(item.get("email") or "—"), Td(item.get("agent_framework") or "—"),
+        Td(item.get("funding_source") or "—"), Td(str(item.get("calls") or 0)),
+        Td(f"{int(item.get('total_tokens') or 0):,}"),
+        Td(f"${float(item.get('estimated_cost_usd') or 0):.4f}"),
+    ) for item in items]
+    if not rows:
+        rows.append(Tr(Td("No LLM usage has been recorded today.", colspan="6")))
+    return Table(Thead(Tr(*[Th(x) for x in (
+        "User", "Agent", "Key source", "Calls", "Tokens", "Est. cost today",
+    )])), Tbody(*rows), cls="log-table")
+
+
+def _usage_table(items: list[dict]):
+    rows = [Tr(
+        Td(_time(item.get("created_at"))), Td(item.get("email") or "—"),
+        Td(item.get("agent_framework") or "—"), Td(item.get("provider") or "—"),
+        Td(item.get("model_name") or "—"), Td(item.get("funding_source") or "—"),
+        Td(f"{int(item.get('input_tokens') or 0):,}"),
+        Td(f"{int(item.get('output_tokens') or 0):,}"),
+        Td(f"${float(item.get('estimated_cost_usd') or 0):.4f}"),
+        Td(item.get("usage_quality") or "—"),
+    ) for item in items]
+    if not rows:
+        rows.append(Tr(Td("No LLM calls have been recorded yet.", colspan="10")))
+    return Table(Thead(Tr(*[Th(x) for x in (
+        "Time", "User", "Agent", "Provider", "Model", "Key source",
+        "Input", "Output", "Est. cost", "Quality",
+    )])), Tbody(*rows), cls="log-table")
+
+
 def _logging_page(user: dict, *, email: str = ""):
     from engine.ai.activity_logging import list_agent_logs, list_user_logs
+    from engine.ai.llm_usage import list_usage, usage_summary
 
     is_admin = bool(user.get("is_admin"))
     user_logs = list_user_logs(
@@ -93,6 +126,8 @@ def _logging_page(user: dict, *, email: str = ""):
     agent_logs = list_agent_logs(
         str(user["user_id"]), is_admin=is_admin, email=email, limit=100,
     )
+    usage_logs = list_usage(str(user["user_id"]), is_admin=is_admin, email=email)
+    usage_totals = usage_summary(str(user["user_id"]), is_admin=is_admin, email=email)
     filter_form = (
         Form(
             Input(type="search", name="email", value=email,
@@ -115,6 +150,12 @@ def _logging_page(user: dict, *, email: str = ""):
         Div(H2(f"User activity ({len(user_logs)})"),
             P("Questions and responses are redacted and capped in size.", cls="muted"),
             _user_table(user_logs), cls="log-card"),
+        Div(H2("LLM usage today"),
+            P("Cost uses configured per-token estimates; Quality identifies measured provider tokens versus estimates.", cls="muted"),
+            _usage_summary_table(usage_totals), cls="log-card"),
+        Div(H2(f"LLM calls ({len(usage_logs)})"),
+            P("Key source reports platform or user BYOK; credential values are never logged.", cls="muted"),
+            _usage_table(usage_logs), cls="log-card"),
         Div(H2(f"Agent activity ({len(agent_logs)})"),
             P("Backtests, paper runs, Hermes jobs, and autonomy jobs mirrored from durable state.",
               cls="muted"),

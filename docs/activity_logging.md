@@ -1,6 +1,6 @@
 # Activity Logging
 
-AlpaTrade keeps two complementary, tenant-scoped histories in PostgreSQL.
+AlpaTrade keeps three complementary, tenant-scoped histories in PostgreSQL.
 
 - `alpatrade.user_logging` pairs a signed-in user's question with its response,
   framework, status, thread, and timestamps. Credential-shaped text is redacted
@@ -8,6 +8,9 @@ AlpaTrade keeps two complementary, tenant-scoped histories in PostgreSQL.
 - `alpatrade.agent_logging` mirrors durable Hermes jobs, canonical backtest and
   paper runs, and autonomy jobs. It records safe identifiers, status, strategy,
   symbols, and progress—not API keys or complete runtime configuration.
+- `alpatrade.llm_usage_logging` records agent, provider/model, token counts,
+  estimated USD cost, measurement quality, and platform versus user BYOK. It
+  never stores credentials or prompt/response text.
 
 Open **Account → Logging** or visit `/admin/logging`. Regular users always see
 only rows matching their `user_id`. Users with `users.is_admin = TRUE` see all
@@ -21,6 +24,7 @@ From the API or AG-UI container after deploying the new revision:
 ```bash
 cd /app
 python run_migration.py sql/29_activity_logging.sql
+python run_migration.py sql/30_llm_usage_logging.sql
 ```
 
 The migration is idempotent. It creates both tables and triggers, then backfills
@@ -38,5 +42,9 @@ prevent a trading job from updating.
 5. Sign in as a non-admin account and confirm another user's email and records
    are not visible.
 
-This feature provides activity history, not exact LLM token/cost accounting.
-Token and dollar budgets require the planned shared model gateway.
+The Logging page includes today's cost by user and agent plus individual calls.
+Provider token metadata is marked `measured`; the fallback is marked
+`estimated`. Dollar amounts use configurable rates and are not provider
+invoices. Configure `PLATFORM_LLM_DAILY_BUDGET_USD` (default `$5`),
+`LLM_INPUT_USD_PER_MILLION`, `LLM_OUTPUT_USD_PER_MILLION`, and corresponding
+`HERMES_*` rates. BYOK calls are logged but do not consume platform budget.
