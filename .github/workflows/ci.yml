@@ -12,7 +12,7 @@ jobs:
     # The suite hits live Alpaca/DB. A socket with no timeout once hung the job for
     # 15+ minutes; without a cap it would sit on a runner for hours and, now that
     # deploys gate on CI, silently block CD.
-    timeout-minutes: 20
+    timeout-minutes: 30
     # `secrets` is not available in a step-level `if`, but it is here. Resolve the
     # presence check once, at job level, so the gate below can read it via `env`.
     env:
@@ -51,7 +51,11 @@ jobs:
       # is configured on the repo. Add it with:  gh secret set DATABASE_URL
       - name: Regression suite (if DB secret present)
         if: ${{ env.HAS_DB_SECRET == 'true' }}
-        timeout-minutes: 10
+        # This suite intentionally reaches the shared DB and selected provider
+        # endpoints. Healthy runs finish in about a minute, but transient
+        # network/database contention can exceed the old 10-minute cap. Keep a
+        # bounded cushion and emit each test name so any future stall is visible.
+        timeout-minutes: 20
         env:
           # The AG-UI tests only need an OpenAI-compatible client to *construct*, so a
           # placeholder is enough and no real key goes near CI. Deliberately NOT
@@ -65,4 +69,4 @@ jobs:
           MASSIVE_API_KEY: ${{ secrets.MASSIVE_API_KEY }}
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-        run: python -m pytest tests/regression_suite.py -q
+        run: python -m pytest tests/regression_suite.py -vv --durations=20
