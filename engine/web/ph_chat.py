@@ -606,6 +606,16 @@ def _save_chat_message(
         save_message(thread_id, role, content, metadata=metadata)
     except Exception as exc:  # noqa: BLE001
         logger.warning("Could not persist chat %s message: %s", thread_id, exc)
+    try:
+        from engine.ai.activity_logging import complete_user_log, start_user_log
+        if role == "user":
+            start_user_log(user_id, thread_id, content)
+        elif role == "assistant":
+            complete_user_log(user_id, thread_id, content, metadata)
+    except Exception as exc:  # noqa: BLE001
+        # Migration 29 can be deployed independently; logging must never take
+        # chat offline while a rolling deployment is in progress.
+        logger.warning("Could not persist activity log for chat %s: %s", thread_id, exc)
 
 
 def _hermes_backtest_config(message: str) -> Optional[dict]:
