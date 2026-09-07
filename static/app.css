@@ -275,6 +275,14 @@ details.agent-group[open] .agent-list { display: flex; flex-direction: column; g
 .chat-header-right { display: flex; align-items: center; gap: .4rem; }
 .mobile-menu-btn { display: none; padding: .3rem .5rem; background: transparent; border: 1px solid var(--line); border-radius: .4rem; color: var(--ink); font-size: 1.1rem; cursor: pointer; }
 
+.chat-action-btn {
+    display: inline-flex; align-items: center; gap: .3rem; padding: .3rem .7rem;
+    background: transparent; border: 1px solid var(--line-br); border-radius: .45rem;
+    color: var(--ink-muted); font-size: .72rem; cursor: pointer;
+    transition: all .15s; font-family: var(--font-body); white-space: nowrap;
+}
+.chat-action-btn:hover { border-color: var(--accent); color: var(--accent); }
+
 .news-toggle-btn {
     padding: .3rem .7rem; background: transparent; border: 1px solid var(--line-br); border-radius: .45rem;
     color: var(--ink-muted); font-size: .72rem; cursor: pointer; transition: all .15s; font-family: var(--font-body);
@@ -586,7 +594,7 @@ td.neg { color: var(--red); }
     /* Keep editable controls at the browser's no-zoom threshold on touch
        devices, while preserving the compact shell at tablet widths. */
     .chat-textarea { min-width: 0; font-size: 16px; padding: .5rem .7rem; }
-    .chat-send, .voice-btn, .mobile-menu-btn, .news-toggle-btn,
+    .chat-send, .voice-btn, .mobile-menu-btn, .chat-action-btn, .news-toggle-btn,
     .right-close { min-height: 44px; }
     .chat-send { padding: .65rem .9rem; }
     .voice-btn { width: 44px; height: 44px; }
@@ -607,6 +615,8 @@ td.neg { color: var(--red); }
     .chat-header-left { min-width: 0; }
     .chat-header-title, .chat-header-agent { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .chat-header-agent { max-width: 34vw; }
+    .chat-action-btn { width: 44px; padding: 0; justify-content: center; }
+    .chat-action-label { display: none; }
     .chat-form { gap: .35rem; padding: .45rem .5rem; }
     .chat-textarea { min-height: 44px; }
     .chat-send { padding-left: .75rem; padding-right: .75rem; }

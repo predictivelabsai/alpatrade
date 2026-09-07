@@ -133,6 +133,21 @@ def test_new_chat_opens_news_and_toggle_uses_directional_controls():
     assert 'aria-controls="right-pane"' in html
 
 
+def test_chat_header_can_copy_transcript_and_share_owned_thread_link():
+    from engine.web.ph_chat import CHAT_JS
+
+    html = to_xml(chat_center())
+
+    assert 'id="copy-chat-btn"' in html
+    assert 'onclick="copyChat()"' in html
+    assert 'id="share-chat-btn"' in html
+    assert 'onclick="shareChat()"' in html
+    assert "window.copyChat=function()" in CHAT_JS
+    assert "message.classList.contains('msg-user')?'You':'AlpaTrade AI'" in CHAT_JS
+    assert "window.shareChat=function()" in CHAT_JS
+    assert "'?thread='+encodeURIComponent(thread)" in CHAT_JS
+
+
 def test_pages_share_a_constrained_scroll_viewport():
     html = to_xml(page("guide", Div("Long page", cls="content"), right_news=False))
     css = (Path(__file__).parents[1] / "static" / "app.css").read_text()

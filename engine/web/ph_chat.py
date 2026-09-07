@@ -135,6 +135,53 @@ CHAT_JS = r"""
     return b;
   }
 
+  function copyText(text){
+    if(navigator.clipboard && window.isSecureContext)
+      return navigator.clipboard.writeText(text);
+    return new Promise(function(resolve,reject){
+      var ta=document.createElement('textarea');
+      ta.value=text;ta.setAttribute('readonly','');
+      ta.style.cssText='position:fixed;opacity:0;pointer-events:none;';
+      document.body.appendChild(ta);ta.select();
+      try{document.execCommand('copy')?resolve():reject(new Error('Copy failed'));}
+      catch(err){reject(err);}
+      ta.remove();
+    });
+  }
+
+  function buttonFeedback(button, message){
+    if(!button)return;
+    var original=button.innerHTML;
+    button.textContent=message;
+    setTimeout(function(){button.innerHTML=original;},2000);
+  }
+
+  window.copyChat=function(){
+    var messages=document.querySelectorAll('#messages .msg'),parts=[];
+    messages.forEach(function(message){
+      var bubble=message.querySelector('.msg-bubble');
+      if(!bubble)return;
+      var role=message.classList.contains('msg-user')?'You':'AlpaTrade AI';
+      parts.push(role+': '+bubble.innerText.trim());
+    });
+    var text=parts.length?parts.join('\n\n'):'No messages yet.';
+    copyText(text).then(function(){
+      buttonFeedback($('#copy-chat-btn'),'✓ Copied');
+    }).catch(function(){
+      buttonFeedback($('#copy-chat-btn'),'Copy failed');
+    });
+  };
+
+  window.shareChat=function(){
+    var thread=window.ALPA_THREAD_ID||'';
+    var url=window.location.origin+'/app'+(thread?'?thread='+encodeURIComponent(thread):'');
+    copyText(url).then(function(){
+      buttonFeedback($('#share-chat-btn'),'✓ Link copied');
+    }).catch(function(){
+      buttonFeedback($('#share-chat-btn'),'Copy failed');
+    });
+  };
+
   function renderFollowUps(bubble, items){
     if(!bubble||!Array.isArray(items)||!items.length)return;
     var wrap=bubble.parentElement,old=wrap.querySelector('.hermes-follow-ups');

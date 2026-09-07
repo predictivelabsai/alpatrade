@@ -539,6 +539,20 @@ def chat_center():
             cls="chat-header-left",
         ),
         Div(
+            Button(
+                Span("📋", aria_hidden="true"),
+                Span("Copy", cls="chat-action-label"),
+                id="copy-chat-btn", cls="chat-action-btn", type="button",
+                title="Copy chat", aria_label="Copy chat",
+                onclick="copyChat()",
+            ),
+            Button(
+                Span("🔗", aria_hidden="true"),
+                Span("Share", cls="chat-action-label"),
+                id="share-chat-btn", cls="chat-action-btn", type="button",
+                title="Copy a link to this chat", aria_label="Copy a link to this chat",
+                onclick="shareChat()",
+            ),
             Button(NotStr('&lt; <span>News</span>'), id="news-btn", cls="news-toggle-btn",
                    type="button", title="Maximize News", aria_expanded="false",
                    aria_controls="right-pane", onclick="toggleNewsPane()"),
