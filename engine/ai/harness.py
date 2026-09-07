@@ -93,7 +93,7 @@ def get_stock_price(ticker: str) -> str:
 
 
 def get_stock_news(ticker: str, limit: int = 5) -> str:
-    """Get latest news headlines for a stock ticker."""
+    """Search Tavily for news from the past week about a stock ticker."""
     try:
         from utils.market_research_util import MarketResearch
         from engine.config import get_settings
@@ -840,7 +840,7 @@ TOOLS = [
     StructuredTool.from_function(get_stock_price, name="get_stock_price",
         description="Get current stock price and recent performance for a ticker symbol."),
     StructuredTool.from_function(get_stock_news, name="get_stock_news",
-        description="Get latest news headlines for a stock ticker."),
+        description="Search Tavily for news from the past week about a stock ticker."),
     StructuredTool.from_function(get_analyst_ratings, name="get_analyst_ratings",
         description="Get analyst ratings and price targets for a stock."),
     StructuredTool.from_function(get_company_profile, name="get_company_profile",

@@ -149,51 +149,32 @@ class MarketResearch:
             logger.warning(f"XAI news failed: {e}")
         return None
 
-    _NAME_CACHE: dict = {}
-
-    def _company_name(self, ticker):
-        """Best-effort company name for a ticker (cached); '' if unknown."""
-        t = (ticker or "").upper()
-        if t in self._NAME_CACHE:
-            return self._NAME_CACHE[t]
-        name = ""
-        try:
-            info = yf.Ticker(t).info
-            name = info.get("shortName") or info.get("longName") or ""
-            # Trim common suffixes so the search query stays tight.
-            for suf in (", Inc.", " Inc.", " Inc", " Corporation", " Corp.", " Corp", ", Ltd.", " Ltd."):
-                if name.endswith(suf):
-                    name = name[: -len(suf)]
-        except Exception:  # noqa: BLE001
-            name = ""
-        self._NAME_CACHE[t] = name
-        return name
-
-    def _news_tavily(self, ticker, limit):
+    def search_news_tavily(self, ticker=None, query="", limit=10, days=7):
+        """Search Tavily's news index with a simple recency-bounded prompt."""
         if not self.tavily_key:
             return None
         try:
-            today = datetime.now().strftime("%B %d, %Y")
+            ticker = (ticker or "").upper().strip()
+            subject = (query or "").strip()
             if ticker:
-                # Include the company name so the search stays on the issuer (e.g.
-                # TSLA → Tesla) rather than drifting to adjacent entities (SpaceX).
-                name = self._company_name(ticker)
-                subject = f'"{name}" ({ticker})' if name else ticker
-                query = f"{subject} stock news earnings analyst {today}"
-            else:
-                query = f"US stock market breaking news headlines {today}"
+                subject = f"{subject} ({ticker} stock)" if subject else f"{ticker} stock"
+            if not subject:
+                subject = "US stock market"
+            search_query = f"Show me news from the past week on this: {subject}"
+            bounded_limit = max(1, min(int(limit), 20))
+            bounded_days = max(1, min(int(days), 30))
             r = requests.post("https://api.tavily.com/search", json={
                 "api_key": self.tavily_key,
-                "query": query,
-                "search_depth": "advanced",
+                "query": search_query,
+                "search_depth": "basic",
                 "topic": "news",
-                "max_results": limit,
-                "days": 3,
+                "max_results": bounded_limit,
+                "days": bounded_days,
             }, timeout=15)
             r.raise_for_status()
             data = r.json()
             articles = []
-            for item in data.get("results", [])[:limit]:
+            for item in data.get("results", [])[:bounded_limit]:
                 # Parse published_date if available
                 time_str = ""
                 pub = item.get("published_date", "")
@@ -206,14 +187,21 @@ class MarketResearch:
                         time_str = pub[:16]
                 articles.append({
                     "time": time_str,
+                    "published": pub,
                     "title": item.get("title", ""),
                     "source": item.get("url", "").split("/")[2] if item.get("url") else "",
                     "url": item.get("url", ""),
+                    "link": item.get("url", ""),
+                    "summary": (item.get("content") or "")[:500],
                 })
             return articles if articles else None
         except Exception as e:
             logger.warning(f"Tavily news failed: {e}")
         return None
+
+    def _news_tavily(self, ticker, limit):
+        """Compatibility wrapper for the formatted news command."""
+        return self.search_news_tavily(ticker=ticker, limit=limit, days=7)
 
     def _format_news(self, ticker, articles, provider="Tavily"):
         label = f": {ticker.upper()}" if ticker else ""

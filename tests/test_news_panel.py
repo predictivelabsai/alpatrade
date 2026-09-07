@@ -68,6 +68,84 @@ def test_search_news_excludes_non_english_rows():
     assert [row["title"] for row in rows] == ["English headline"]
 
 
+def test_tavily_news_search_uses_basic_seven_day_prompt(monkeypatch):
+    from utils.market_research_util import MarketResearch
+
+    captured = {}
+
+    class Response:
+        @staticmethod
+        def raise_for_status():
+            return None
+
+        @staticmethod
+        def json():
+            return {"results": [{
+                "title": "Tesla launches an updated model",
+                "url": "https://example.com/tesla",
+                "published_date": "Sun, 06 Sep 2026 12:00:00 GMT",
+                "content": "A current Tesla news summary.",
+            }]}
+
+    def fake_post(url, json, timeout):
+        captured.update(url=url, payload=json, timeout=timeout)
+        return Response()
+
+    monkeypatch.setattr("utils.market_research_util.requests.post", fake_post)
+    research = MarketResearch()
+    research.tavily_key = "test-key"
+    articles = research.search_news_tavily("TSLA", limit=5)
+
+    assert captured["url"] == "https://api.tavily.com/search"
+    assert captured["payload"]["query"] == (
+        "Show me news from the past week on this: TSLA stock"
+    )
+    assert captured["payload"]["search_depth"] == "basic"
+    assert captured["payload"]["topic"] == "news"
+    assert captured["payload"]["days"] == 7
+    assert captured["payload"]["max_results"] == 5
+    assert articles[0]["summary"] == "A current Tesla news summary."
+
+
+def test_deepagent_news_uses_tavily_before_persisted_feed(monkeypatch):
+    from engine.ai import deepagent_tools
+    from utils.market_research_util import MarketResearch
+
+    expected = [{"title": "Current TSLA headline", "source": "example.com"}]
+    monkeypatch.setattr(
+        MarketResearch, "search_news_tavily", lambda self, **kwargs: expected,
+    )
+    monkeypatch.setattr(
+        "engine.publicmarkets.news.search_news",
+        lambda **kwargs: (_ for _ in ()).throw(AssertionError("DB fallback used")),
+    )
+
+    result = deepagent_tools.search_market_news.invoke({
+        "ticker": "TSLA", "query": "", "limit": 5,
+    })
+
+    assert result == expected
+
+
+def test_deepagent_news_falls_back_when_tavily_is_unavailable(monkeypatch):
+    from engine.ai import deepagent_tools
+    from utils.market_research_util import MarketResearch
+
+    fallback = [{"title": "Stored TSLA release", "ticker": "TSLA"}]
+    monkeypatch.setattr(
+        MarketResearch, "search_news_tavily", lambda self, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "engine.publicmarkets.news.search_news", lambda **kwargs: fallback,
+    )
+
+    result = deepagent_tools.search_market_news.invoke({
+        "ticker": "TSLA", "query": "", "limit": 5,
+    })
+
+    assert result == fallback
+
+
 def test_detect_ticker_prefers_stored_values_and_recognizes_explicit_headlines():
     from engine.publicmarkets.news import detect_ticker
 

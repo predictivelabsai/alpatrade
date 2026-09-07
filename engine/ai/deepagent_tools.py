@@ -290,11 +290,23 @@ def get_market_price(ticker: str) -> dict[str, Any]:
 
 @tool
 def search_market_news(ticker: str = "", query: str = "", limit: int = 10) -> list[dict]:
-    """Search recent public press releases by ticker or headline text."""
-    from engine.publicmarkets.news import search_news
+    """Search Tavily for news from the past week by ticker or topic.
 
-    return search_news(query=query[:100], ticker=_ticker(ticker) if ticker else "",
-                       limit=max(1, min(limit, 20)))
+    The persisted public press-release feed is used only when Tavily is
+    unavailable, so a sparse local ticker mapping cannot hide current news.
+    """
+    symbol = _ticker(ticker) if ticker else ""
+    bounded_limit = max(1, min(limit, 20))
+    from utils.market_research_util import MarketResearch
+
+    articles = MarketResearch().search_news_tavily(
+        ticker=symbol, query=query[:200], limit=bounded_limit, days=7,
+    )
+    if articles:
+        return articles
+
+    from engine.publicmarkets.news import search_news
+    return search_news(query=query[:100], ticker=symbol, limit=bounded_limit)
 
 
 @tool
