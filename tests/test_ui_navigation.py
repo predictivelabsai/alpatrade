@@ -74,6 +74,8 @@ def test_authenticated_sidebar_has_visible_sign_out():
     html = to_xml(_left_pane("dashboard", {"email": "user@example.com"}))
     assert 'href="/logout"' in html
     assert ">Sign out<" in html
+    assert 'href="/admin/logging"' in html
+    assert ">Logging<" in html
 
 
 def test_root_stays_landing_and_login_redirects_to_dashboard():

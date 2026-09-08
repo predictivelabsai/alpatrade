@@ -75,7 +75,7 @@ Multiple agents work this repo concurrently, each in its own worktree + branch:
   worker with full autonomy gated by `AUTONOMY_ENABLED` (paper-only by design). The same
   worker still drains scheduled advisor jobs when full autonomy is off. Controls surface in
   `engine/web/ph_monitoring.py`.
-- **DB**: PostgreSQL with `alpatrade` schema. Migrations in `sql/` (numbered `01_`–`25_`,
+- **DB**: PostgreSQL with `alpatrade` schema. Migrations in `sql/` (numbered `01_`–`30_`,
   idempotent `CREATE TABLE IF NOT EXISTS`). Per-user Alpaca keys live in `user_accounts`
   (Fernet-encrypted BYTEA), **not** `users`. All data tables carry `user_id` (+ `account_id`).
 

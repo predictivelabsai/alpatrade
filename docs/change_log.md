@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+### Unified LLM usage and daily budget
+
+- Added migration 30 and tenant-safe LLM usage records for Hermes, DeepAgents,
+  and LangGraph, including provider/model, input/output tokens, estimated cost,
+  measurement quality, and platform-versus-BYOK attribution. Credentials and
+  prompt text are never stored in the usage table.
+- Restored Hermes streaming usage metadata instead of discarding the sidecar's
+  final usage block. Missing provider metadata is explicitly labeled estimated.
+- Added a shared configurable platform daily budget (default `$5`) and extended
+  `/usage` with today's user/platform estimated spend. BYOK calls bypass platform
+  spending while remaining visible to their owner and administrators.
+- Added administrator-wide daily usage summaries and per-call details under
+  Account → Logging, with existing owner isolation and email filtering.
+- Bumped the package to 0.26.0. Deploy migration 30 before this revision.
+
+### Unified user and agent activity logging
+
+- Added `alpatrade.user_logging` for redacted, size-limited user questions and
+  responses, including framework, outcome, thread, and timestamps.
+- Added `alpatrade.agent_logging` plus idempotent PostgreSQL triggers that mirror
+  Hermes jobs, canonical backtest/paper runs, and autonomy jobs. Migration 29
+  also backfills existing job history without storing credentials or raw configs.
+- Added `/admin/logging`: administrators can inspect and filter all users by
+  email, while non-admin users are forcibly restricted to their own history.
+- Logging failures are isolated from chat availability during rolling deploys.
+- Tests cover migration contracts, secret redaction, ownership enforcement,
+  administrator filtering, chat instrumentation, and private/admin UI states.
+
 ### Per-user xAI BYOK and starter allowance
 
 - Added a Settings card for each signed-in user to save, replace, or remove an
