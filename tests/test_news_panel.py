@@ -1,4 +1,5 @@
 """DB-free tests for the redesigned news panel (layout + feed rendering)."""
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from fastcore.xml import to_xml
@@ -144,6 +145,17 @@ def test_deepagent_news_falls_back_when_tavily_is_unavailable(monkeypatch):
     })
 
     assert result == fallback
+
+
+def test_compose_passes_tavily_credentials_to_chat_services():
+    """Coolify Compose must explicitly forward root variables to containers."""
+    compose = Path("docker-compose.yaml").read_text(encoding="utf-8")
+    api = compose.split("\n  api:", 1)[1].split("\n  hermes-jobs:", 1)[0]
+    agui = compose.split("\n  agui:", 1)[1].split("\n  autonomy:", 1)[0]
+
+    for service in (api, agui):
+        assert "SEARCH_PROVIDER=${SEARCH_PROVIDER:-tavily}" in service
+        assert "TAVILY_API_KEY=${TAVILY_API_KEY:-}" in service
 
 
 def test_detect_ticker_prefers_stored_values_and_recognizes_explicit_headlines():
