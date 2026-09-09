@@ -7,6 +7,7 @@ AlpaTrade-owned trading tools are added through scoped API endpoints in Phase 2.
 from __future__ import annotations
 
 import json
+import logging
 import os
 from dataclasses import dataclass
 from typing import Any, AsyncIterator, Iterator, Optional
@@ -14,6 +15,8 @@ from typing import Any, AsyncIterator, Iterator, Optional
 import httpx
 
 from engine.agents.runtime.base import RoleSpec, RunResult
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -89,6 +92,8 @@ class HermesRuntime:
             response.raise_for_status()
             raw = response.json()
         text = raw["choices"][0]["message"].get("content", "")
+        if raw.get("usage"):
+            self.last_usage = raw["usage"]
         return RunResult(text=text, raw=raw, runtime=self.name)
 
     async def astream(self, agent: HermesAgent, prompt: str, *,
@@ -96,28 +101,52 @@ class HermesRuntime:
                       session_id: str | None = None,
                       session_key: str | None = None,
                       usage_callback=None) -> AsyncIterator[str]:
-        """Stream content deltas without blocking the AlpaTrade web event loop."""
+        """Stream content deltas without blocking the AlpaTrade web event loop.
+
+        Retries once without ``stream_options`` if the gateway rejects the
+        parameter (4xx), so usage capture never blocks chat delivery.
+        """
         timeout = float(os.getenv("HERMES_API_TIMEOUT_SECONDS", "180"))
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            async with client.stream(
-                "POST",
-                f"{self._base_url()}/chat/completions",
-                headers=self._headers(session_id=session_id, session_key=session_key),
-                json=self._payload(agent, prompt, history, stream=True),
-            ) as response:
-                response.raise_for_status()
-                async for line in response.aiter_lines():
-                    if not line.startswith("data:"):
-                        continue
-                    data = line[5:].strip()
-                    if not data or data == "[DONE]":
-                        continue
-                    chunk = json.loads(data)
-                    if usage_callback and chunk.get("usage"):
-                        usage_callback(chunk["usage"])
-                    text = chunk.get("choices", [{}])[0].get("delta", {}).get("content")
-                    if text:
-                        yield text
+        self.last_usage = None
+        payload = self._payload(agent, prompt, history, stream=True)
+        for attempt in (1, 2):
+            try:
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    async with client.stream(
+                        "POST",
+                        f"{self._base_url()}/chat/completions",
+                        headers=self._headers(session_id=session_id, session_key=session_key),
+                        json=payload,
+                    ) as response:
+                        response.raise_for_status()
+                        async for line in response.aiter_lines():
+                            if not line.startswith("data:"):
+                                continue
+                            data = line[5:].strip()
+                            if not data or data == "[DONE]":
+                                continue
+                            chunk = json.loads(data)
+                            if usage_callback and chunk.get("usage"):
+                                self.last_usage = chunk["usage"]
+                                usage_callback(chunk["usage"])
+                            # The final include_usage chunk carries ``usage`` with
+                            # an empty ``choices`` list — guard the index.
+                            choices = chunk.get("choices") or [{}]
+                            text = choices[0].get("delta", {}).get("content")
+                            if text:
+                                yield text
+                return
+            except httpx.HTTPStatusError as exc:
+                status = exc.response.status_code
+                if attempt == 1 and 400 <= status < 500 and status != 429:
+                    logger.warning(
+                        "Hermes gateway rejected stream_options (HTTP %s); retrying without it",
+                        status,
+                    )
+                    payload = {k: v for k, v in payload.items()
+                               if k != "stream_options"}
+                    continue
+                raise
 
     def stream(self, agent: HermesAgent, prompt: str, *,
                history: Optional[list] = None) -> Iterator[str]:
