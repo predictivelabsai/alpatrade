@@ -59,6 +59,11 @@ services:
       - API_SERVICE_KEYS=${API_SERVICE_KEYS:-}
       - ALPATRADE_HERMES_API_KEY=${HERMES_API_SERVER_KEY:-}
       - API_CORS_ORIGINS=${API_CORS_ORIGINS:-}
+      # LangSmith tracing (docs/agent-tracing.md). Key lives in Coolify only.
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-false}
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-alpatrade}
+      - LANGSMITH_ENDPOINT=${LANGSMITH_ENDPOINT:-}
       - POSTMARK_API_KEY=${POSTMARK_API_KEY:-}
       - TO_EMAIL=${TO_EMAIL:-}
       - FROM_EMAIL=${FROM_EMAIL:-}
@@ -140,6 +145,11 @@ services:
       - PNL_REPORT_FREQUENCY=${PNL_REPORT_FREQUENCY:-daily}
       - PNL_REPORT_HOUR_UTC=${PNL_REPORT_HOUR_UTC:-21}
       - PNL_REPORT_TO=${PNL_REPORT_TO:-}
+      # LangSmith tracing (docs/agent-tracing.md). Key lives in Coolify only.
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-false}
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-alpatrade}
+      - LANGSMITH_ENDPOINT=${LANGSMITH_ENDPOINT:-}
     depends_on:
       api:
         condition: service_healthy
@@ -189,6 +199,11 @@ services:
       - MODEL_PROVIDER=${MODEL_PROVIDER:-}
       - DEFAULT_MODEL=${DEFAULT_MODEL:-}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+      # LangSmith tracing (docs/agent-tracing.md). Key lives in Coolify only.
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-false}
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-alpatrade}
+      - LANGSMITH_ENDPOINT=${LANGSMITH_ENDPOINT:-}
       - POSTMARK_API_KEY=${POSTMARK_API_KEY:-}
       - TO_EMAIL=${TO_EMAIL:-}
       - FROM_EMAIL=${FROM_EMAIL:-}

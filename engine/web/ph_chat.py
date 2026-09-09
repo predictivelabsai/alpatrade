@@ -1562,6 +1562,17 @@ async def _stream(msg: str, session) -> StreamingResponse:
         tool_chart = ""
         query_authorization = None
         measured_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+        # Trace metadata lets LangSmith and deepagent_events group every
+        # chat-model call under one user thread (docs/agent-tracing.md).
+        # Bound before the try so the Hermes→DeepAgents fallback (running in
+        # the except below) can always reference it.
+        lc_config = {
+            "metadata": {
+                "user_id": str(uid) if uid is not None else None,
+                "thread_id": thread_id,
+                "framework": selected_framework,
+            },
+        }
 
         def collect_usage(raw) -> None:
             from engine.ai.llm_usage import extract_usage
@@ -1611,7 +1622,9 @@ async def _stream(msg: str, session) -> StreamingResponse:
                 agent = _agui.agent_for_user(str(uid) if uid is not None else None)
             if hasattr(agent, "astream_events"):
                 # LangGraph-family runtimes: fine-grained token + tool events (default path).
-                async for event in agent.astream_events({"messages": lc}, version="v2"):
+                async for event in agent.astream_events(
+                    {"messages": lc}, version="v2", config=lc_config
+                ):
                     kind = event.get("event", "")
                     if kind == "on_chat_model_stream":
                         chunk = event.get("data", {}).get("chunk")
@@ -1704,7 +1717,9 @@ async def _stream(msg: str, session) -> StreamingResponse:
                     fallback = fallback_runtime.build(
                         _agui._chat_role(build_chat_model(settings, streaming=True))
                     )
-                    async for event in fallback.astream_events({"messages": lc}, version="v2"):
+                    async for event in fallback.astream_events(
+                        {"messages": lc}, version="v2", config=lc_config
+                    ):
                         if event.get("event", "") == "on_chat_model_stream":
                             chunk = event.get("data", {}).get("chunk")
                             collect_usage(chunk)
