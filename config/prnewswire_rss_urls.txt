@@ -1,0 +1,15 @@
+# PR Newswire - All News Releases
+https://www.prnewswire.com/rss/news-releases-list.rss
+https://www.prnewswire.com/rss/business-technology-latest-news/business-technology-latest-news-list.rss
+https://www.prnewswire.com/rss/consumer-technology-latest-news/consumer-technology-latest-news-list.rss
+https://www.prnewswire.com/rss/energy-latest-news/energy-latest-news-list.rss
+https://www.prnewswire.com/rss/entertainment-media-latest-news/entertainment-media-latest-news-list.rss
+https://www.prnewswire.com/rss/environment-latest-news/environment-latest-news-list.rss
+https://www.prnewswire.com/rss/general-business-latest-news/general-business-latest-news-list.rss
+https://www.prnewswire.com/rss/heavy-industry-manufacturing-latest-news/heavy-industry-manufacturing-latest-news-list.rss
+https://www.prnewswire.com/rss/health-latest-news/health-latest-news-list.rss
+https://www.prnewswire.com/rss/multicultural-latest-news/multicultural-latest-news-list.rss
+https://www.prnewswire.com/rss/policy-public-interest-latest-news/policy-public-interest-latest-news-list.rss
+https://www.prnewswire.com/rss/sports-latest-news/sports-latest-news-list.rss
+https://www.prnewswire.com/rss/telecommunications-latest-news/telecommunications-latest-news-list.rss
+https://www.prnewswire.com/rss/travel-latest-news/travel-latest-news-list.rss

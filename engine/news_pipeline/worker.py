@@ -97,15 +97,21 @@ class Worker:
     def _realtime_cycle(self) -> bool:
         state = self.repo.checkpoint(self.job_name, self.shard_index, self.shard_count)
         processed, failed, inserted = int(state["processed_count"] or 0), int(state["failed_count"] or 0), None
-        articles = list(self._retry(self.publishers.collect))[:self.batch_size]
-        for article in articles:
+        accepted = 0
+        for article in self._retry(self.publishers.collect):
+            exists = getattr(self.repo, "article_exists", lambda *_: False)
+            if exists(str(article.get("publisher") or ""), str(article.get("link") or "")):
+                continue
             try:
                 enriched = self._retry(lambda article=article: self.pipeline.enrich(article))
                 inserted = self._retry(lambda: self.repo.insert_enriched(enriched)) or inserted
                 processed += 1
+                accepted += 1
             except (IncompleteArticle, MissingEventModel, *RETRYABLE) as exc:
                 failed += 1
                 _event(logging.ERROR, "article_retryable", source_link=bool(article.get("link")), error_type=type(exc).__name__)
+            if accepted >= self.batch_size:
+                break
         self.repo.update_checkpoint(self.job_name, self.shard_index, self.shard_count,
             last_inserted_news_id=inserted, processed_count=processed, failed_count=failed,
             status="running", last_successful_cycle=datetime.now(timezone.utc), last_error=None)

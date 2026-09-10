@@ -24,6 +24,14 @@ class NewsRepository:
     def __init__(self, engine):
         self.engine = engine
 
+    def article_exists(self, publisher: str, link: str) -> bool:
+        if not link:
+            return False
+        with self.engine.connect() as conn:
+            return bool(conn.execute(text(
+                "SELECT 1 FROM public.news WHERE publisher=:publisher AND link=:link LIMIT 1"
+            ), {"publisher": publisher, "link": link}).scalar())
+
     @staticmethod
     def lock_key(job_name: str, shard_index: int) -> int:
         return int.from_bytes(hashlib.sha256(f"{job_name}:{shard_index}".encode()).digest()[:8], "big", signed=True)

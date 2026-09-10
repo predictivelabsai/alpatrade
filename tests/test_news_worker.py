@@ -6,6 +6,7 @@ import pytest
 from engine.news_pipeline.events import normalize_event
 from engine.news_pipeline.models import EventModels, MissingEventModel, ModelRegistry
 from engine.news_pipeline.pipeline import IncompleteArticle, NewsPipeline
+from engine.news_pipeline.publishers import FinespressoPublishers, finespresso_feed_inventory
 from engine.news_pipeline.repository import NewsRepository
 from engine.news_pipeline.validation import finite_move, missing_enrichment_fields
 from engine.news_pipeline.worker import Worker
@@ -96,6 +97,31 @@ class RealtimeRepo(FakeRepo):
     def insert_enriched(self, row):
         self.inserted += 1
         return 99
+
+
+def test_finespresso_inventory_is_default_without_new_environment_variable(monkeypatch):
+    monkeypatch.delenv("NEWS_PUBLISHER_FEEDS", raising=False)
+    publishers = FinespressoPublishers()
+    names = {publisher for publisher, _, _ in publishers.feeds}
+    assert {"baltics", "prnewswire", "globenewswire_sector",
+            "globenewswire_industry", "globenewswire_country_dk"} <= names
+    assert len(finespresso_feed_inventory()) > 100
+
+
+def test_realtime_skips_existing_links_before_enrichment():
+    repo = RealtimeRepo()
+    repo.article_exists = lambda publisher, link: link == "existing"
+    publishers = MagicMock()
+    publishers.collect.return_value = [
+        {"title": "Old", "publisher": "p", "link": "existing"},
+        {"title": "New", "publisher": "p", "link": "new"},
+    ]
+    pipeline = MagicMock()
+    pipeline.enrich.return_value = dict(VALID)
+    Worker("realtime", 5, 60, 0, 1, repository=repo, pipeline=pipeline,
+           publishers=publishers)._realtime_cycle()
+    pipeline.enrich.assert_called_once()
+    assert pipeline.enrich.call_args.args[0]["link"] == "new"
 
 
 def test_realtime_worker_inserts_fully_enriched_article():

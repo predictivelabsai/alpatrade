@@ -1,0 +1,34 @@
+{
+  "dk": {
+    "rss_url": "https://www.globenewswire.com/RssFeed/country/Denmark/feedTitle/GlobeNewswire%20-%20News%20from%20Denmark",
+    "ticker_suffix": "CO"
+  },
+  "ee": {
+    "rss_url": "https://www.globenewswire.com/RssFeed/country/Estonia/feedTitle/GlobeNewswire%20-%20News%20from%20Estonia",
+    "ticker_suffix": "TL"
+  },
+  "fi": {
+    "rss_url": "https://www.globenewswire.com/RssFeed/country/Finland/feedTitle/GlobeNewswire%20-%20News%20from%20Finland",
+    "ticker_suffix": "HE"
+  },
+  "is": {
+    "rss_url": "https://www.globenewswire.com/RssFeed/country/Iceland/feedTitle/GlobeNewswire%20-%20News%20from%20Iceland",
+    "ticker_suffix": "IC"
+  },
+  "lv": {
+    "rss_url": "https://www.globenewswire.com/RssFeed/country/Latvia/feedTitle/GlobeNewswire%20-%20News%20from%20Latvia",
+    "ticker_suffix": "RG"
+  },
+  "lt": {
+    "rss_url": "https://www.globenewswire.com/RssFeed/country/Lithuania/feedTitle/GlobeNewswire%20-%20News%20from%20Lithuania",
+    "ticker_suffix": "VS"
+  },
+  "no": {
+    "rss_url": "https://www.globenewswire.com/RssFeed/country/Norway/feedTitle/GlobeNewswire%20-%20News%20from%20Norway",
+    "ticker_suffix": "OS"
+  },
+  "se": {
+    "rss_url": "https://www.globenewswire.com/RssFeed/country/Sweden/feedTitle/GlobeNewswire%20-%20News%20from%20Sweden",
+    "ticker_suffix": "ST"
+  }
+}

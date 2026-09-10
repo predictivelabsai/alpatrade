@@ -28,7 +28,7 @@ python -m engine.news_pipeline.worker --mode backfill --batch-size 25 --shard-in
 
 Multiple backfill services may use distinct shard indexes with the same shard count. PostgreSQL advisory locks reject duplicate workers for the same mode and shard.
 
-Configure variable names only: `DATABASE_URL`, `XAI_API_KEY`, `XAI_MODEL`, required market-data keys such as `EODHD_API_KEY`, `NEWS_MODEL_STORAGE_PATH`, `NEWS_PUBLISHER_FEEDS`, `NEWS_WORKER_MODE`, `NEWS_WORKER_BATCH_SIZE`, `NEWS_WORKER_INTERVAL_SECONDS`, `NEWS_WORKER_SHARD_INDEX`, and `NEWS_WORKER_SHARD_COUNT`. Never place values in Git.
+Configure variable names only: `DATABASE_URL`, `XAI_API_KEY`, `XAI_MODEL`, required market-data keys such as `EODHD_API_KEY`, `NEWS_MODEL_STORAGE_PATH`, `NEWS_WORKER_MODE`, `NEWS_WORKER_BATCH_SIZE`, `NEWS_WORKER_INTERVAL_SECONDS`, `NEWS_WORKER_SHARD_INDEX`, and `NEWS_WORKER_SHARD_COUNT`. Never place values in Git. `NEWS_PUBLISHER_FEEDS` is an optional comma-separated override; when omitted, the worker loads the publisher inventory ported from Finespresso Admin.
 
 ## Verification and monitoring
 
