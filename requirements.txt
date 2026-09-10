@@ -31,3 +31,5 @@ ag-ui-protocol
 psutil
 authlib
 feedparser
+joblib>=1.3
+scikit-learn==1.6.1

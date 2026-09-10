@@ -1,11 +1,13 @@
 """Owner/admin activity history at ``/admin/logging``."""
 from __future__ import annotations
 
+import html
 import json
+import re
 
 from fasthtml.common import (
     A, Div, Form, H1, H2, Input, P, Span, Style, Table, Tbody, Td, Th,
-    Thead, Tr,
+    Thead, Tr, NotStr,
 )
 from starlette.responses import RedirectResponse
 
@@ -21,8 +23,12 @@ justify-content:space-between;gap:1rem;align-items:flex-end;flex-wrap:wrap}
 padding:1rem;margin-top:1rem;overflow:auto}.log-table{width:100%;font-size:.76rem;
 border-collapse:collapse}.log-table th,.log-table td{padding:.55rem;border-bottom:1px solid
 var(--line);vertical-align:top;text-align:left}.log-table th{font-size:.66rem;
-text-transform:uppercase;letter-spacing:.05em}.log-text{max-width:420px;white-space:pre-wrap;
-overflow-wrap:anywhere}.log-status{font:650 .68rem var(--font-mono);padding:.16rem .4rem;
+text-transform:uppercase;letter-spacing:.05em}.log-text{max-width:520px;white-space:pre-wrap;
+overflow-wrap:anywhere}.log-response{min-width:360px;max-width:620px}.response-table{width:100%;
+border-collapse:collapse;margin:.35rem 0;font-size:.74rem}.response-table th,.response-table td{
+padding:.38rem .48rem;border:1px solid var(--line);white-space:normal}.response-table th{
+background:var(--bg-raise);font-size:.68rem}.response-copy{white-space:normal;line-height:1.45}
+.log-status{font:650 .68rem var(--font-mono);padding:.16rem .4rem;
 border-radius:999px;background:var(--bg-raise)}.log-error{color:#b4472f}
 @media(max-width:760px){.logging{padding:.8rem}.log-card{padding:.5rem}}
 """
@@ -37,6 +43,37 @@ def _short(value, limit: int = 500) -> str:
     return text if len(text) <= limit else text[:limit] + "…"
 
 
+_TABLE_DIVIDER = re.compile(r"^\s*\|?(?:\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\s*\|?\s*$")
+
+
+def _cells(line: str) -> list[str]:
+    return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+
+def _render_response(value, limit: int = 2000):
+    """Render Markdown tables while escaping all user- and model-provided text."""
+    lines = str(value or "—")[:limit].splitlines()
+    output: list[str] = []
+    index = 0
+    while index < len(lines):
+        if index + 1 < len(lines) and "|" in lines[index] and _TABLE_DIVIDER.match(lines[index + 1]):
+            headers = _cells(lines[index])
+            rows: list[list[str]] = []
+            index += 2
+            while index < len(lines) and "|" in lines[index] and lines[index].strip():
+                rows.append(_cells(lines[index]))
+                index += 1
+            head = "".join(f"<th>{html.escape(cell)}</th>" for cell in headers)
+            body = "".join("<tr>" + "".join(
+                f"<td>{html.escape(row[pos] if pos < len(row) else '')}</td>"
+                for pos in range(len(headers))) + "</tr>" for row in rows)
+            output.append(f'<table class="response-table"><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>')
+            continue
+        output.append(html.escape(lines[index]))
+        index += 1
+    return NotStr('<div class="response-copy">' + "<br>".join(output) + "</div>")
+
+
 def _user_table(items: list[dict]):
     rows = []
     for item in items:
@@ -46,7 +83,7 @@ def _user_table(items: list[dict]):
             Td(item.get("agent_framework") or "pending"),
             Td(Span(item.get("status") or "—", cls="log-status")),
             Td(_short(item.get("request_text")), cls="log-text"),
-            Td(_short(item.get("response_text")), cls="log-text"),
+            Td(_render_response(item.get("response_text")), cls="log-text log-response"),
             Td(_short(item.get("error")), cls="log-text log-error"),
         ))
     if not rows:

@@ -100,3 +100,24 @@ def data_health_snapshot() -> list[dict]:
                                "max_age_hours": source["max_age_hours"], "gaps": [],
                                "status": "critical", "error": str(exc)})
     return health
+
+
+def news_worker_snapshot() -> list[dict]:
+    """Return durable news-worker progress for the monitoring UI."""
+    incomplete = """company IS NULL OR btrim(company)='' OR language IS NULL OR btrim(language)=''
+        OR title_en IS NULL OR btrim(title_en)='' OR content_en IS NULL OR btrim(content_en)=''
+        OR predicted_side IS NULL OR upper(btrim(predicted_side)) NOT IN ('UP','DOWN','NEUTRAL')
+        OR predicted_move IS NULL OR predicted_move::text IN ('NaN','Infinity','-Infinity')
+        OR reason IS NULL OR btrim(reason)=''"""
+    try:
+        with DatabasePool().get_session() as session:
+            total = int(session.execute(text("SELECT count(*) FROM public.news WHERE event='press_releases'")).scalar() or 0)
+            remaining = int(session.execute(text(f"SELECT count(*) FROM public.news WHERE event='press_releases' AND ({incomplete})")).scalar() or 0)
+            rows = session.execute(text("SELECT * FROM alpatrade.news_worker_jobs ORDER BY updated_at DESC")).mappings().all()
+        return [{**dict(row), "mode": str(row["job_name"]).removeprefix("news-"),
+                 "remaining_incomplete_rows": remaining,
+                 "completion_percentage": round(100 * (total - remaining) / total, 2) if total else 100.0}
+                for row in rows]
+    except Exception as exc:
+        return [{"mode": "unavailable", "status": "error", "last_error": type(exc).__name__,
+                 "remaining_incomplete_rows": None, "completion_percentage": None}]

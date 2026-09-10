@@ -1877,7 +1877,9 @@ def _news_card(item: dict):
     if item.get("side"):
         side = item["side"]
         side_cls = "side-up" if side == "up" else ("side-down" if side == "down" else "side-neutral")
-        header_left.append(Span(side, cls=f"news-side {side_cls}"))
+        move = item.get("move")
+        label = side if move is None else f"{side} {float(move):+.2f}%"
+        header_left.append(Span(label, cls=f"news-side {side_cls}"))
     meta_cls = "news-time" + (f" {item['meta_cls']}" if item.get("meta_cls") else "")
     parts = [
         Div(Div(*header_left, cls="news-item-meta"),
@@ -2091,8 +2093,12 @@ def register(app, rt):
         """Unified market-news feed: a 'Latest' stream by default plus category
         filter pills. Merges premarket movers, press releases (public.news) and
         multi-source RSS headlines into one date-sorted feed of rich cards."""
-        from fasthtml.common import P, to_xml
+        from fasthtml.common import Button, Div, Form, Input, Option, P, Select, to_xml
         from starlette.responses import HTMLResponse
+
+        query = request.query_params
+        news_filters = {name: str(query.get(name, "")) for name in
+                        ("ticker", "company", "event", "predicted_side", "date_from", "date_to")}
 
         items = []  # {cat, source, meta, meta_cls, title, summary, link, side, sort}
 
@@ -2120,7 +2126,7 @@ def register(app, rt):
         # 2. Press releases from the shared public.news feed.
         try:
             from engine.publicmarkets.news import news_category, search_news
-            for row in search_news(limit=60):
+            for row in search_news(limit=60, **news_filters):
                 side = (row.get("predicted_side") or "").lower().strip()
                 if side in ("", "nan", "none", "null", "n/a", "na"):
                     side = ""
@@ -2130,9 +2136,10 @@ def register(app, rt):
                     "meta": (row.get("published") or "")[:10],
                     "meta_cls": "",
                     "title": row.get("title") or "",
-                    "summary": (row.get("summary") or "").strip(),
+                    "summary": (row.get("reason") or row.get("summary") or "").strip(),
                     "link": row.get("link") or "#",
                     "side": side,
+                    "move": row.get("predicted_move"),
                     "sort": row.get("published") or "",
                 })
         except Exception:  # noqa: BLE001
@@ -2162,6 +2169,19 @@ def register(app, rt):
                              cls="news-empty")
         else:
             body = _news_feed(items)
+
+        filter_form = Form(
+            Input(name="ticker", value=news_filters["ticker"], placeholder="Ticker"),
+            Input(name="company", value=news_filters["company"], placeholder="Company"),
+            Input(name="event", value=news_filters["event"], placeholder="Event"),
+            Select(Option("Any side", value=""), *[
+                Option(side, value=side, selected=news_filters["predicted_side"].upper() == side)
+                for side in ("UP", "DOWN", "NEUTRAL")], name="predicted_side"),
+            Input(name="date_from", type="date", value=news_filters["date_from"], title="From date"),
+            Input(name="date_to", type="date", value=news_filters["date_to"], title="To date"),
+            Button("Filter", type="submit"), method="get", action="/news",
+            hx_get="/news", hx_target="#right-content", cls="news-filter-form")
+        body = Div(filter_form, body)
 
         # The right-pane loads this via htmx (HX-Request header) and swaps the
         # fragment in. A direct browser navigation would otherwise render the

@@ -1,0 +1,34 @@
+"""One enrichment path shared by realtime articles and backfill rows."""
+from __future__ import annotations
+
+from typing import Any
+
+from news_scheduler.events import normalize_event
+from news_scheduler.models import MissingEventModel, ModelRegistry, predict
+from news_scheduler.validation import missing_enrichment_fields, normalized_enrichment
+
+
+class IncompleteArticle(RuntimeError):
+    def __init__(self, fields: list[str]):
+        self.fields = fields
+        super().__init__("incomplete enrichment: " + ", ".join(fields))
+
+
+class NewsPipeline:
+    def __init__(self, models: ModelRegistry, xai):
+        self.models, self.xai = models, xai
+
+    def enrich(self, article: dict[str, Any]) -> dict[str, Any]:
+        allowed = self.models.available_events() if hasattr(self.models, "available_events") else ()
+        row = (self.xai.metadata(dict(article), allowed_events=allowed)
+               if allowed else self.xai.metadata(dict(article)))
+        row["event_standardized"] = normalize_event(row.get("event"))
+        if allowed and row["event_standardized"] not in allowed:
+            raise MissingEventModel("XAI event is outside the trained model registry")
+        row = predict(row, self.models.for_event(row["event_standardized"]))
+        row["reason"] = self.xai.reason(row)
+        row = normalized_enrichment(row)
+        missing = missing_enrichment_fields(row)
+        if missing:
+            raise IncompleteArticle(missing)
+        return row

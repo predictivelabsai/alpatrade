@@ -1,7 +1,7 @@
 """Press Releases page — search the shared public.news feed. register(app, rt)."""
 from __future__ import annotations
 
-from fasthtml.common import A, Button, Div, Form, Input, NotStr, P, Span, Style, Table, Tbody, Td, Th, Thead, Tr
+from fasthtml.common import A, Button, Div, Form, Input, NotStr, Option, P, Select, Span, Style, Table, Tbody, Td, Th, Thead, Tr
 
 from engine.web.ph_layout import page
 
@@ -42,32 +42,42 @@ def _user(session):
         return None
 
 
-def _results(q, ticker):
+def _results(q, ticker, company="", event="", side="", date_from="", date_to=""):
     from engine.publicmarkets.news import search_news
-    rows = search_news(q, ticker, limit=40)
+    rows = search_news(q, ticker, limit=40, company=company, event=event,
+                       predicted_side=side, date_from=date_from, date_to=date_to)
     if not rows:
         return P("No press releases found — try a ticker or a headline keyword.", cls="p-sub")
     trs = []
     for r in rows:
         side = (r["predicted_side"] or "").lower()
         title = A(r["title"] or "", href=r["link"] or "#", target="_blank") if r["link"] else (r["title"] or "")
-        trs.append(Tr(Td(r["published"][:10]), Td(r["ticker"] or ""), Td(title),
+        move = "" if r["predicted_move"] is None else f"{r['predicted_move']:+.2f}%"
+        trs.append(Tr(Td(r["published"][:10]), Td(r["company"] or ""), Td(r["ticker"] or ""),
+                      Td(r["publisher"] or ""), Td(r["event"] or ""), Td(title),
                       Td(Span(r["predicted_side"] or "",
-                              cls="side-up" if side == "up" else ("side-down" if side == "down" else "")))))
-    return Div(Table(Thead(Tr(Th("Date"), Th("Ticker"), Th("Headline"), Th("Side"))),
+                              cls="side-up" if side == "up" else ("side-down" if side == "down" else ""))),
+                      Td(move), Td(r.get("reason") or "")))
+    return Div(Table(Thead(Tr(Th("Date"), Th("Company"), Th("Ticker"), Th("Publisher"),
+                              Th("Event"), Th("English headline"), Th("Side"), Th("Move"), Th("XAI reason"))),
                      Tbody(*trs)), cls="press-table-scroll")
 
 
-def _page(user, q="", ticker=""):
+def _page(user, q="", ticker="", company="", event="", side="", date_from="", date_to=""):
     form = Form(
         Input(name="q", placeholder="Headline keyword (e.g. 'earnings', 'guidance')", value=q),
         Input(name="ticker", placeholder="Ticker (optional)", value=ticker, style="width:10rem"),
+        Input(name="company", placeholder="Company", value=company),
+        Input(name="event", placeholder="Event", value=event),
+        Select(Option("Any side", value=""), *[Option(v, value=v, selected=side.upper() == v) for v in ("UP", "DOWN", "NEUTRAL")], name="side"),
+        Input(name="date_from", type="date", value=date_from, title="From date"),
+        Input(name="date_to", type="date", value=date_to, title="To date"),
         Button("Search", type="submit", cls="p-btn"),
         method="get", action="/press",
     )
     body = Div(NotStr("<h1>📰 Press Releases</h1>"),
                P("Company news & press releases with a modeled directional read.", cls="p-sub"),
-               form, _results(q, ticker), cls="press")
+               form, _results(q, ticker, company, event, side, date_from, date_to), cls="press")
     return page("press", Style(_CSS), body, user=user, title="Press Releases · AlpaTrade", right_news=False)
 
 
@@ -78,7 +88,8 @@ def register(app, rt):
         ph_layout.TOOLS_PAGES.append(entry)
 
     @rt("/press", methods=["GET"])
-    def press_get(session, q: str = "", ticker: str = ""):
-        return _page(_user(session), q=q, ticker=ticker)
+    def press_get(session, q: str = "", ticker: str = "", company: str = "", event: str = "",
+                  side: str = "", date_from: str = "", date_to: str = ""):
+        return _page(_user(session), q, ticker, company, event, side, date_from, date_to)
 
     return ["/press"]

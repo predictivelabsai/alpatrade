@@ -100,7 +100,9 @@ def categorized_news(limit: int = 60) -> dict[str, list[dict]]:
     return categories
 
 
-def search_news(query: str = "", ticker: str = "", limit: int = 30) -> list[dict]:
+def search_news(query: str = "", ticker: str = "", limit: int = 30, *, company: str = "",
+                event: str = "", predicted_side: str = "", date_from: str = "",
+                date_to: str = "") -> list[dict]:
     """Recent English press releases, optionally filtered by headline query
     and/or ticker. Non-English rows are excluded at the SQL level so the
     limit still applies to the surviving rows."""
@@ -117,12 +119,28 @@ def search_news(query: str = "", ticker: str = "", limit: int = 30) -> list[dict
         params.update({"tk": symbol, "tk_dollar": f"%${symbol}%",
                        "tk_exchange": f"%: {symbol}%", "tk_suffix": f"% - {symbol}%"})
     if query:
-        where.append("title ILIKE :q")
+        where.append("COALESCE(title_en,title) ILIKE :q")
         params["q"] = f"%{query}%"
+    if company:
+        where.append("company ILIKE :company")
+        params["company"] = f"%{company.strip()}%"
+    if event:
+        where.append("event ILIKE :event")
+        params["event"] = f"%{event.strip()}%"
+    if predicted_side:
+        where.append("upper(btrim(predicted_side)) = :side")
+        params["side"] = predicted_side.strip().upper()
+    if date_from:
+        where.append("published_date >= CAST(:date_from AS date)")
+        params["date_from"] = date_from
+    if date_to:
+        where.append("published_date < CAST(:date_to AS date) + INTERVAL '1 day'")
+        params["date_to"] = date_to
     with DatabasePool().get_session() as s:
         rows = s.execute(text(f"""
-            SELECT title, link, ticker, yf_ticker, company, published_date, event, publisher,
-                   publisher_summary, predicted_side, predicted_move, language
+            SELECT COALESCE(NULLIF(title_en,''),title) AS title, link, ticker, yf_ticker,
+                   company, published_date, event, publisher, publisher_summary,
+                   predicted_side, predicted_move, language, reason
             FROM public.news
             WHERE {' AND '.join(where)}
             ORDER BY published_date DESC NULLS LAST
@@ -131,7 +149,7 @@ def search_news(query: str = "", ticker: str = "", limit: int = 30) -> list[dict
     return [{"title": r[0], "link": r[1], "ticker": detect_ticker(r[0], r[2], r[3]), "company": r[4],
              "published": str(r[5]) if r[5] else "", "event": r[6], "publisher": r[7],
              "summary": r[8], "predicted_side": _clean_side(r[9]),
-             "predicted_move": _clean_float(r[10])}
+             "predicted_move": _clean_float(r[10]), "reason": r[12] if len(r) > 12 else ""}
             for r in rows
             # Rows without language metadata still pass the script guard.
             if r[11] or is_english_text(r[0])]

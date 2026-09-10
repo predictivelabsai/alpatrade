@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Finespresso realtime news and resumable backfill
+
+- Added a dedicated realtime/backfill news worker with graceful shutdown,
+  bounded retry, deterministic sharding, PostgreSQL checkpoints, and advisory locks.
+- Preserved event-specific classifier/regressor selection from Finespresso and
+  reject incomplete, placeholder, non-finite, or missing-model results.
+- Added enriched press-release fields and filters plus worker progress in Data Health.
+- Added a read-only News Scheduler dashboard with latest rows, event/prediction
+  summaries, and durable sanitized activity events (migration 32).
+- Logging now renders agent Markdown tables as accessible HTML tables, and run
+  persistence replaces non-finite metrics with JSON null instead of failing a run.
+- Added Coolify service configuration and focused DB-free worker tests.
+- Bumped the package to 0.27.0. Deploy migration 31 before starting the worker.
+
 ### Unified LLM usage and daily budget
 
 - Added migration 30 and tenant-safe LLM usage records for Hermes, DeepAgents,

@@ -40,7 +40,7 @@ def _age(value):
     return f"{value:.1f}h ago"
 
 
-def _render(rows: list[dict]) -> str:
+def _render(rows: list[dict], workers: list[dict] | None = None) -> str:
     counts = {status: sum(row["status"] == status for row in rows)
               for status in ("healthy", "warning", "critical")}
     summary = "".join(f"<span class='health-chip {status}'>{count} {status}</span>"
@@ -58,9 +58,24 @@ def _render(rows: list[dict]) -> str:
             f"<td><span class='status {row['status']}'>{row['status']}</span></td>"
             f"<td>{row['total']:,}</td><td>{html.escape(updated_text)}<br><span class='muted'>{_age(row.get('age_hours'))}</span></td>"
             f"<td>{row['max_age_hours']}h</td><td>{gap_html}</td></tr>")
+    worker_rows = []
+    for worker in workers or []:
+        cycle = worker.get("last_successful_cycle")
+        cycle = cycle.isoformat(timespec="minutes") if cycle else "â€”"
+        pct = worker.get("completion_percentage")
+        worker_rows.append(
+            f"<tr><td>{html.escape(str(worker.get('mode','â€”')))}</td><td>{html.escape(str(worker.get('status','â€”')))}</td>"
+            f"<td>{worker.get('last_processed_news_id') or 'â€”'}</td><td>{worker.get('last_inserted_news_id') or 'â€”'}</td>"
+            f"<td>{worker.get('processed_count',0)}</td><td>{worker.get('failed_count',0)}</td>"
+            f"<td>{worker.get('remaining_incomplete_rows','â€”')}</td><td>{pct if pct is not None else 'â€”'}%</td>"
+            f"<td>{cycle}</td><td>{html.escape(str(worker.get('last_error') or 'â€”'))}</td></tr>")
+    worker_table = ("<h2>News worker</h2><div class='health-scroll'><table><thead><tr><th>Mode</th><th>Status</th>"
+                    "<th>Last processed</th><th>Last inserted</th><th>Processed</th><th>Failed</th><th>Remaining</th>"
+                    "<th>Complete</th><th>Last cycle</th><th>Latest error</th></tr></thead><tbody>" +
+                    ("".join(worker_rows) or "<tr><td colspan='10'>No worker checkpoint yet.</td></tr>") + "</tbody></table></div>")
     return f"""
       <h1>Data health</h1><p class='sub'>Read-only ingestion signals from the source tables. Freshness uses the feed’s own update timestamp; gaps count required fields before UI enrichment.</p>
-      <div class='health-summary'>{summary}</div><div class='health-scroll'><table><thead><tr><th>Source</th><th>Status</th><th>Rows</th><th>Last source update</th><th>SLO</th><th>Field gaps</th></tr></thead><tbody>{''.join(body)}</tbody></table></div>
+      <div class='health-summary'>{summary}</div><div class='health-scroll'><table><thead><tr><th>Source</th><th>Status</th><th>Rows</th><th>Last source update</th><th>SLO</th><th>Field gaps</th></tr></thead><tbody>{''.join(body)}</tbody></table></div>{worker_table}
     """
 
 
@@ -76,8 +91,8 @@ def register(app, rt):
             return RedirectResponse("/signin", status_code=303)
         if not user.get("is_admin"):
             return RedirectResponse("/dashboard", status_code=303)
-        from engine.publicmarkets.observability import data_health_snapshot
-        return page("data-health", Style(_CSS), Div(NotStr(_render(data_health_snapshot())), cls="data-health"),
+        from engine.publicmarkets.observability import data_health_snapshot, news_worker_snapshot
+        return page("data-health", Style(_CSS), Div(NotStr(_render(data_health_snapshot(), news_worker_snapshot())), cls="data-health"),
                     user=user, title="Data Health · AlpaTrade", right_news=False)
 
     return ["/monitoring/data-health"]
