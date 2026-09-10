@@ -75,4 +75,4 @@ press_releases: https://www.globenewswire.com/RssFeed/subjectcode/72-Press%20Rel
 prospectus_announcement_of_prospectus: https://www.globenewswire.com/RssFeed/subjectcode/63-Prospectus%202fAnnouncement%20Of%20Prospectus/feedTitle/GlobeNewswire%20-%20Prospectus%2C%20Announcement%20Of%20Prospectus
 regulatory_information: https://www.globenewswire.com/RssFeed/subjectcode/73-Regulatory%20Information/feedTitle/GlobeNewswire%20-%20Regulatory%20Information
 trading_information: https://www.globenewswire.com/RssFeed/subjectcode/68-Trading%20Information/feedTitle/GlobeNewswire%20-%20Trading%20Information
-warrants_and_certificates: https://www.globenewswire.com/RssFeed/subjectcode/82-Warrants%20And%20Certificates/feedTitle/GlobeNewswire%20-%20Warrants%20And%20Certificates 
+warrants_and_certificates: https://www.globenewswire.com/RssFeed/subjectcode/82-Warrants%20And%20Certificates/feedTitle/GlobeNewswire%20-%20Warrants%20And%20Certificates

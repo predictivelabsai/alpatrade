@@ -173,4 +173,4 @@ alternative_electricity: https://www.globenewswire.com/RssFeed/industry/7537-Alt
 conventional_electricity: https://www.globenewswire.com/RssFeed/industry/7535-Conventional%20Electricity/feedTitle/GlobeNewswire%20-%20Industry%20News%20on%20Conventional%20Electricity
 gas_distribution: https://www.globenewswire.com/RssFeed/industry/7573-Gas%20Distribution/feedTitle/GlobeNewswire%20-%20Industry%20News%20on%20Gas%20Distribution
 multiutilities: https://www.globenewswire.com/RssFeed/industry/7575-Multiutilities/feedTitle/GlobeNewswire%20-%20Industry%20News%20on%20Multiutilities
-water: https://www.globenewswire.com/RssFeed/industry/7577-Water/feedTitle/GlobeNewswire%20-%20Industry%20News%20on%20Water 
+water: https://www.globenewswire.com/RssFeed/industry/7577-Water/feedTitle/GlobeNewswire%20-%20Industry%20News%20on%20Water
