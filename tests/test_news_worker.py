@@ -228,7 +228,10 @@ def test_worker_event_migration_is_sanitized_and_durable():
 def test_news_scheduler_is_registered_in_research_navigation():
     source = open("engine/web/ph_news_scheduler.py", encoding="utf-8").read()
     assert '"News Scheduler", "/research/news-scheduler"' in source
-    assert "Latest 5 fully enriched articles" in source
+    assert "Fully enriched articles" in source
+    assert "Top companies" in source and "Top publishers" in source
+    assert "LIMIT :limit OFFSET :offset" in source
+    assert "Page {page_number} of {total_pages}" in source
     assert "news_worker_events" in source
 
 

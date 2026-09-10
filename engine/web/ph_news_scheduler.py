@@ -14,17 +14,24 @@ _CSS = """
 font-size:.84rem}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.7rem;
 margin:1rem 0}.card,.panel{background:var(--paper);border:1px solid var(--line);border-radius:12px;
 padding:1rem}.card strong{display:block;font-size:1.12rem;margin-top:.3rem}.grid{display:grid;
-grid-template-columns:1fr 1fr;gap:1rem}.panel{margin-bottom:1rem;overflow:auto}.ns table{width:100%;
+grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.panel{margin-bottom:1rem;overflow:auto}.ns table{width:100%;
 border-collapse:collapse;font-size:.78rem}.ns th,.ns td{padding:.48rem;border-bottom:1px solid var(--line);
 text-align:left;vertical-align:top}.ns th{text-transform:uppercase;font-size:.66rem;letter-spacing:.05em}
 .badge{font:650 .68rem var(--font-mono);padding:.15rem .4rem;border-radius:999px;background:var(--bg-raise)}
-.bar{display:flex;align-items:center;gap:.5rem;margin:.38rem 0}.bar-track{height:.55rem;background:var(--bg-raise);
-border-radius:5px;flex:1;overflow:hidden}.bar-fill{height:100%;background:var(--accent)}.reason{min-width:260px;
-max-width:430px}.ok{color:var(--accent)}.bad{color:#b4472f}@media(max-width:800px){.grid{grid-template-columns:1fr}.ns{padding:.8rem}}
+.bar{display:grid;grid-template-columns:minmax(8rem,12rem) minmax(6rem,1fr) 4.2rem;align-items:center;
+gap:.65rem;margin:.48rem 0}.bar-label{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-count{text-align:right;font-variant-numeric:tabular-nums}.bar-track{height:.62rem;background:var(--bg-raise);
+border-radius:5px;overflow:hidden}.bar-fill{height:100%;background:var(--accent)}.reason{min-width:260px;
+max-width:430px}.pager{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:.9rem 0 0}
+.pager-links{display:flex;gap:.5rem}.pager a,.pager span{padding:.38rem .7rem;border:1px solid var(--line);
+border-radius:7px;text-decoration:none}.pager .disabled{opacity:.45}.table-scroll{overflow-x:auto}
+.ok{color:var(--accent)}.bad{color:#b4472f}@media(max-width:800px){.grid{grid-template-columns:1fr}.ns{padding:.8rem}
+.bar{grid-template-columns:minmax(7rem,10rem) minmax(4rem,1fr) 3.4rem}}
 """
 
 
-def _load_dashboard() -> dict:
+def _load_dashboard(page_number: int = 1, page_size: int = 5) -> dict:
+    offset = (page_number - 1) * page_size
     with DatabasePool().engine.connect() as conn:
         jobs = [dict(row) for row in conn.execute(text(
             "SELECT * FROM alpatrade.news_worker_jobs ORDER BY updated_at DESC LIMIT 8"
@@ -35,8 +42,13 @@ def _load_dashboard() -> dict:
             FROM public.news
             WHERE title_en IS NOT NULL AND company IS NOT NULL
               AND predicted_side IN ('UP','DOWN','NEUTRAL') AND predicted_move IS NOT NULL
-            ORDER BY id DESC LIMIT 5
-        """)).mappings()]
+            ORDER BY id DESC LIMIT :limit OFFSET :offset
+        """), {"limit": page_size, "offset": offset}).mappings()]
+        total_articles = int(conn.execute(text("""
+            SELECT count(*) FROM public.news
+            WHERE title_en IS NOT NULL AND company IS NOT NULL
+              AND predicted_side IN ('UP','DOWN','NEUTRAL') AND predicted_move IS NOT NULL
+        """)).scalar() or 0)
         sides = [dict(row) for row in conn.execute(text("""
             SELECT predicted_side label, count(*) count FROM public.news
             WHERE predicted_side IN ('UP','DOWN','NEUTRAL')
@@ -47,6 +59,16 @@ def _load_dashboard() -> dict:
             WHERE predicted_side IN ('UP','DOWN','NEUTRAL')
             GROUP BY event ORDER BY count(*) DESC LIMIT 8
         """)).mappings()]
+        companies = [dict(row) for row in conn.execute(text("""
+            SELECT company label, count(*) count FROM public.news
+            WHERE predicted_side IN ('UP','DOWN','NEUTRAL') AND company IS NOT NULL
+            GROUP BY company ORDER BY count(*) DESC LIMIT 8
+        """)).mappings()]
+        publishers = [dict(row) for row in conn.execute(text("""
+            SELECT publisher label, count(*) count FROM public.news
+            WHERE predicted_side IN ('UP','DOWN','NEUTRAL') AND publisher IS NOT NULL
+            GROUP BY publisher ORDER BY count(*) DESC LIMIT 8
+        """)).mappings()]
         try:
             activity = [dict(row) for row in conn.execute(text("""
                 SELECT created_at, event_name, status, news_id, publisher, details
@@ -54,23 +76,26 @@ def _load_dashboard() -> dict:
             """)).mappings()]
         except Exception:
             activity = []
-    return {"jobs": jobs, "latest": latest, "sides": sides, "events": events,
-            "activity": activity}
+    return {"jobs": jobs, "latest": latest, "total_articles": total_articles,
+            "sides": sides, "events": events, "companies": companies,
+            "publishers": publishers, "activity": activity}
 
 
 def _bars(items: list[dict]):
     maximum = max([int(item["count"]) for item in items] or [1])
-    return Div(*[Div(Span(str(item["label"]), style="width:9rem"),
+    return Div(*[Div(Span(str(item["label"]), cls="bar-label", title=str(item["label"])),
                          Div(Div(cls="bar-fill", style=f"width:{100 * int(item['count']) / maximum:.1f}%"),
-                             cls="bar-track"), Span(str(item["count"])), cls="bar") for item in items])
+                             cls="bar-track"), Span(f"{int(item['count']):,}", cls="bar-count"), cls="bar") for item in items])
 
 
-def _dashboard(user: dict):
+def _dashboard(user: dict, page_number: int = 1):
+    page_number = max(1, int(page_number or 1))
     try:
-        data = _load_dashboard()
+        data = _load_dashboard(page_number)
         error = None
     except Exception as exc:  # DB/schema rollout should produce a useful page, not a 500
-        data = {"jobs": [], "latest": [], "sides": [], "events": [], "activity": []}
+        data = {"jobs": [], "latest": [], "total_articles": 0, "sides": [],
+                "events": [], "companies": [], "publishers": [], "activity": []}
         error = type(exc).__name__
     jobs = data["jobs"]
     current = jobs[0] if jobs else {}
@@ -97,15 +122,23 @@ def _dashboard(user: dict):
                         Td(Span(row.get("status"), cls="badge")), Td(row.get("news_id") or "—"),
                         Td(row.get("publisher") or "—"), Td(str(row.get("details") or {})))
                      for row in data["activity"]]
+    total_pages = max(1, (int(data["total_articles"]) + 4) // 5)
+    pager = Div(Span(f"Page {page_number} of {total_pages} · {int(data['total_articles']):,} enriched articles"),
+        Div(A("Previous", href=f"/research/news-scheduler?p={page_number - 1}") if page_number > 1
+              else Span("Previous", cls="disabled"),
+            A("Next", href=f"/research/news-scheduler?p={page_number + 1}") if page_number < total_pages
+              else Span("Next", cls="disabled"), cls="pager-links"), cls="pager")
     body = Div(H1("News Scheduler"),
         P("Realtime Finespresso ingestion, event-specific ML prediction and XAI reasoning. This page is read-only.", cls="sub"),
         P(f"Dashboard unavailable ({error}). Apply sql/31_news_worker_jobs.sql and sql/32_news_worker_events.sql." if error else "", cls="bad"),
         cards,
         Div(Div(H2("Prediction sides"), _bars(data["sides"]), cls="panel"),
             Div(H2("Top events"), _bars(data["events"]), cls="panel"), cls="grid"),
-        Div(H2("Latest 5 fully enriched articles"), Table(Thead(Tr(*[Th(x) for x in
+        Div(Div(H2("Top companies"), _bars(data["companies"]), cls="panel"),
+            Div(H2("Top publishers"), _bars(data["publishers"]), cls="panel"), cls="grid"),
+        Div(H2("Fully enriched articles"), Div(Table(Thead(Tr(*[Th(x) for x in
             ("ID", "Published", "Company", "Ticker", "Publisher", "Event", "English headline", "Side", "Move", "XAI reason", "Source")])),
-            Tbody(*(latest_rows or [Tr(Td("No fully enriched news rows found.", colspan="11"))]))), cls="panel"),
+            Tbody(*(latest_rows or [Tr(Td("No fully enriched news rows found.", colspan="11"))]))), cls="table-scroll"), pager, cls="panel"),
         Div(H2("Worker activity"), P("Durable sanitized events; article content and credentials are never logged.", cls="sub"),
             Table(Thead(Tr(*[Th(x) for x in ("Time", "Event", "Status", "News ID", "Publisher", "Details")])),
                   Tbody(*(activity_rows or [Tr(Td("No events yet. Run migration 32, then allow one worker cycle.", colspan="6"))]))), cls="panel"), cls="ns")
@@ -119,10 +152,10 @@ def register(app, rt):
         ph_layout.RESEARCH_PAGES.append(entry)
 
     @rt("/research/news-scheduler", methods=["GET"])
-    def news_scheduler_get(session):
+    def news_scheduler_get(session, p: int = 1):
         user = current_user(session)
         if not user:
             return RedirectResponse("/signin", status_code=303)
-        return _dashboard(user)
+        return _dashboard(user, p)
 
     return ["/research/news-scheduler"]
