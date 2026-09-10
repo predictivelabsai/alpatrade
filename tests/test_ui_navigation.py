@@ -185,7 +185,7 @@ def test_research_pages_have_separate_submenu_entries():
     paths = {href for _label, href, _key in ph_layout.RESEARCH_PAGES}
     assert paths == {
         "/research/premarket", "/research/models", "/research/news",
-        "/research/timing", "/research/history",
+        "/research/timing", "/research/history", "/research/news-scheduler",
     }
 
 

@@ -51,6 +51,12 @@ class Worker:
         self.pipeline = pipeline or NewsPipeline(ModelRegistry(pool.engine), XAIEnricher())
         self.publishers = publishers or RSSPublishers()
 
+    def _record(self, event_name: str, status: str, **values) -> None:
+        try:
+            self.repo.record_event(self.job_name, self.shard_index, event_name, status, **values)
+        except Exception as exc:  # monitoring must never stop ingestion
+            _event(logging.WARNING, "event_record_failed", error_type=type(exc).__name__)
+
     def _retry(self, action, *, attempts: int = 4):
         for attempt in range(attempts):
             try:
@@ -105,8 +111,21 @@ class Worker:
             attempted += 1
             try:
                 enriched = self._retry(lambda article=article: self.pipeline.enrich(article))
-                inserted = self._retry(lambda: self.repo.insert_enriched(enriched)) or inserted
+                inserted_now = self._retry(lambda: self.repo.insert_enriched(enriched))
+                inserted = inserted_now or inserted
                 processed += 1
+                if inserted_now:
+                    _event(logging.INFO, "article_inserted", news_id=inserted_now,
+                           publisher=article.get("publisher"),
+                           model_event=enriched.get("event_standardized"),
+                           predicted_side=enriched.get("predicted_side"),
+                           predicted_move=enriched.get("predicted_move"))
+                    self._record("article_inserted", "completed", news_id=inserted_now,
+                                 publisher=article.get("publisher"), details={
+                                     "model_event": enriched.get("event_standardized"),
+                                     "predicted_side": enriched.get("predicted_side"),
+                                     "predicted_move": enriched.get("predicted_move"),
+                                 })
             except (IncompleteArticle, MissingEventModel, *RETRYABLE) as exc:
                 failed += 1
                 missing = list(exc.fields) if isinstance(exc, IncompleteArticle) else []
@@ -118,6 +137,8 @@ class Worker:
                     failed_count=failed, status="error",
                     last_error=f"{type(exc).__name__}: missing={missing}",
                 )
+                self._record("article_retryable", "error", publisher=article.get("publisher"),
+                             details={"error_type": type(exc).__name__, "missing_fields": missing})
                 return True
             # Batch size is a hard cost/resource ceiling, not an insert target.
             if attempted >= self.batch_size:
@@ -125,6 +146,11 @@ class Worker:
         self.repo.update_checkpoint(self.job_name, self.shard_index, self.shard_count,
             last_inserted_news_id=inserted, processed_count=processed, failed_count=failed,
             status="running", last_successful_cycle=datetime.now(timezone.utc), last_error=None)
+        _event(logging.INFO, "cycle_completed", mode=self.mode, attempted=attempted,
+               processed_count=processed, failed_count=failed, last_inserted_news_id=inserted)
+        self._record("cycle_completed", "completed", news_id=inserted,
+                     details={"attempted": attempted, "processed_count": processed,
+                              "failed_count": failed})
         return True
 
     def run(self) -> int:
@@ -136,6 +162,8 @@ class Worker:
             self.repo.update_checkpoint(self.job_name, self.shard_index, self.shard_count,
                                         status="running", started_at=datetime.now(timezone.utc), last_error=None)
             _event(logging.INFO, "worker_started", mode=self.mode, shard=self.shard_index, shard_count=self.shard_count)
+            self._record("worker_started", "running", details={"mode": self.mode,
+                         "shard_count": self.shard_count})
             try:
                 while not STOP.is_set():
                     has_more = self._backfill_cycle() if self.mode == "backfill" else self._realtime_cycle()

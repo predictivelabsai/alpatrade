@@ -108,6 +108,18 @@ def test_logging_page_shows_private_or_admin_scope(monkeypatch):
     assert "Key source" in admin
 
 
+def test_logging_response_renders_markdown_table_and_escapes_html():
+    from engine.web.ph_logging import _render_response
+
+    rendered = str(_render_response(
+        "Positions\n| Symbol | P&L |\n|---|---|\n| <AAPL> | +$12 |"
+    ))
+    assert '<table class="response-table">' in rendered
+    assert "<th>Symbol</th>" in rendered
+    assert "&lt;AAPL&gt;" in rendered
+    assert "<AAPL>" not in rendered
+
+
 def test_chat_persistence_also_records_activity(monkeypatch):
     from engine.ai import activity_logging, chat_store
     from engine.web.ph_chat import _save_chat_message

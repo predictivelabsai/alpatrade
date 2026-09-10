@@ -8,9 +8,14 @@ Run once before starting a worker:
 
 ```bash
 python run_migration.py sql/31_news_worker_jobs.sql
+python run_migration.py sql/32_news_worker_events.sql
 ```
 
-The migration creates `alpatrade.news_worker_jobs`. It stores shard checkpoints, counts, status, timestamps, and sanitized errors. Models are selected from `public.model_tracking`; optional mounted event-model bundles use `NEWS_MODEL_STORAGE_PATH`. Enriched articles remain in `public.news`. Web, API, and agent paths only read that feed.
+The migrations create `alpatrade.news_worker_jobs` and `alpatrade.news_worker_events`.
+They store shard checkpoints and sanitized operational events; neither table stores
+article content or credentials. Models are selected from `public.model_tracking`;
+optional mounted event-model bundles use `NEWS_MODEL_STORAGE_PATH`. Enriched articles
+remain in `public.news`. Web, API, and agent paths only read that feed.
 
 ## Coolify service
 
@@ -32,6 +37,10 @@ Configure variable names only: `DATABASE_URL`, `XAI_API_KEY`, `XAI_MODEL`, requi
 
 ## Verification and monitoring
 
-Open `/monitoring/data-health` as an administrator to see mode, state, last successful cycle, last processed/inserted IDs, counts, remaining rows, completion percentage, and sanitized error. Use `/press` to filter enriched results by ticker, company, event, side, and date range.
+Open `/research/news-scheduler` to see current worker state, prediction/event totals,
+the latest five fully enriched articles, and durable worker activity. Open
+`/monitoring/data-health` as an administrator for backfill completion and sanitized
+errors. Use `/press` to filter enriched results by ticker, company, event, side, and
+date range. Coolify logs also emit `article_inserted` and `cycle_completed` events.
 
 Stopping or redeploying is safe: each committed article advances the PostgreSQL checkpoint. A restarted worker resumes from that ID, and realtime inserts are idempotent by publisher and source link.

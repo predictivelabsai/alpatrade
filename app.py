@@ -68,6 +68,7 @@ from engine.web import ph_data_health  # noqa: E402
 from engine.web import ph_reports  # noqa: E402
 from engine.web import ph_advisor  # noqa: E402
 from engine.web import ph_logging  # noqa: E402
+from engine.web import ph_news_scheduler  # noqa: E402
 
 ph_landing.register(app, rt)
 ph_auth.register(app, rt)
@@ -89,6 +90,7 @@ ph_research.register(app, rt)
 ph_monitoring.register(app, rt)
 ph_data_health.register(app, rt)
 ph_logging.register(app, rt)
+ph_news_scheduler.register(app, rt)
 ph_reports.register(app, rt)  # public /r/{id} — last, unlisted
 
 # --- verticals: per-asset-class surfaces (Phase 1b) ---------------------------

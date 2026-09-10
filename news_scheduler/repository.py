@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 from contextlib import contextmanager
 from typing import Any, Iterable
+import json
 
 from sqlalchemy import text
 
@@ -31,6 +32,19 @@ class NewsRepository:
             return bool(conn.execute(text(
                 "SELECT 1 FROM public.news WHERE publisher=:publisher AND link=:link LIMIT 1"
             ), {"publisher": publisher, "link": link}).scalar())
+
+    def record_event(self, job_name: str, shard_index: int, event_name: str,
+                     status: str, *, news_id: int | None = None,
+                     publisher: str | None = None, details: dict | None = None) -> None:
+        with self.engine.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO alpatrade.news_worker_events
+                    (job_name, shard_index, event_name, status, news_id, publisher, details)
+                VALUES (:job, :shard, :event, :status, :news_id, :publisher,
+                        CAST(:details AS jsonb))
+            """), {"job": job_name, "shard": shard_index, "event": event_name,
+                    "status": status, "news_id": news_id, "publisher": publisher,
+                    "details": json.dumps(details or {})})
 
     @staticmethod
     def lock_key(job_name: str, shard_index: int) -> int:

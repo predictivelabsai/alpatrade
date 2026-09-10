@@ -219,6 +219,19 @@ def test_migration_contains_durable_checkpoint_and_unique_shard_key():
     assert "last_processed_news_id" in sql and "failed_count" in sql
 
 
+def test_worker_event_migration_is_sanitized_and_durable():
+    sql = open("sql/32_news_worker_events.sql", encoding="utf-8").read()
+    assert "alpatrade.news_worker_events" in sql
+    assert "details JSONB" in sql
+
+
+def test_news_scheduler_is_registered_in_research_navigation():
+    source = open("engine/web/ph_news_scheduler.py", encoding="utf-8").read()
+    assert '"News Scheduler", "/research/news-scheduler"' in source
+    assert "Latest 5 fully enriched articles" in source
+    assert "news_worker_events" in source
+
+
 def test_existing_press_release_query_returns_enriched_fields(monkeypatch):
     import engine.publicmarkets.news as news
     db_row = ("English title", "https://example.test/1", "AAPL", "AAPL", "Apple", None,

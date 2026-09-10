@@ -197,6 +197,18 @@ def stop_duplicate_paper_runs(keep_run_id: str, strategy_slug: str,
     return count
 
 
+def _json_safe(value):
+    """Recursively replace non-finite numbers before PostgreSQL JSON writes."""
+    import math
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    return value
+
+
 def update_run(run_id: str, status: str, results: Dict = None):
     """Update an existing run with final status and results."""
     backend = get_storage_backend()
@@ -216,7 +228,7 @@ def update_run(run_id: str, status: str, results: Dict = None):
             {
                 "run_id": run_id,
                 "status": status,
-                "results": json.dumps(results or {}, default=str),
+                "results": json.dumps(_json_safe(results or {}), default=str, allow_nan=False),
                 "completed_at": datetime.now(timezone.utc),
             },
         )
