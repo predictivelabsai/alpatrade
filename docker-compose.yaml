@@ -75,6 +75,30 @@ services:
       start_period: 15s
     restart: unless-stopped
 
+  # Dedicated Finespresso publisher/enrichment worker. It is the only
+  # AlpaTrade service permitted to mutate public.news.
+  news-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.agui
+    command: ["python", "-m", "engine.news_pipeline.worker"]
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - DB_POOL_SIZE=${NEWS_WORKER_DB_POOL_SIZE:-2}
+      - DB_MAX_OVERFLOW=${NEWS_WORKER_DB_MAX_OVERFLOW:-1}
+      - DB_APPLICATION_NAME=alpatrade-news-worker
+      - XAI_API_KEY=${XAI_API_KEY}
+      - XAI_MODEL=${XAI_MODEL:-grok-4-1-fast-reasoning}
+      - NEWS_PUBLISHER_FEEDS=${NEWS_PUBLISHER_FEEDS:-}
+      - NEWS_MODEL_STORAGE_PATH=${NEWS_MODEL_STORAGE_PATH:-}
+      - NEWS_WORKER_MODE=${NEWS_WORKER_MODE:-realtime}
+      - NEWS_WORKER_BATCH_SIZE=${NEWS_WORKER_BATCH_SIZE:-25}
+      - NEWS_WORKER_INTERVAL_SECONDS=${NEWS_WORKER_INTERVAL_SECONDS:-3600}
+      - NEWS_WORKER_SHARD_INDEX=${NEWS_WORKER_SHARD_INDEX:-0}
+      - NEWS_WORKER_SHARD_COUNT=${NEWS_WORKER_SHARD_COUNT:-1}
+      - EODHD_API_KEY=${EODHD_API_KEY:-}
+    restart: unless-stopped
+
   # Durable executor for scoped Hermes backtest and paper jobs. This is an
   # AlpaTrade service, not the Hermes model container; it owns DB/broker access
   # and derives every job's user_id from the API's validated delegation.

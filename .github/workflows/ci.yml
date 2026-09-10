@@ -45,6 +45,9 @@ jobs:
       - name: LLM usage unit tests
         run: python -m pytest tests/test_llm_usage.py -q
 
+      - name: News worker unit tests
+        run: python -m pytest tests/test_news_worker.py -q
+
       - name: Unit tests
         timeout-minutes: 5
         env:
