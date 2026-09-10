@@ -99,4 +99,13 @@ def data_health_snapshot() -> list[dict]:
                                "last_updated": None, "age_hours": None,
                                "max_age_hours": source["max_age_hours"], "gaps": [],
                                "status": "critical", "error": str(exc)})
+    from engine.premarket_data import enabled
+    if enabled():
+        try:
+            from engine.premarket_data import health_snapshot
+            health.extend(health_snapshot())
+        except Exception:
+            health.append({"key": "premarket", "label": "Premarket snapshots and commentary", "total": 0,
+                           "last_updated": None, "age_hours": None, "max_age_hours": 24,
+                           "gaps": [], "status": "critical", "error": "Premarket schema or database unavailable."})
     return health

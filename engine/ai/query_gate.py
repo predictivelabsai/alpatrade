@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import math
 import os
+from contextlib import nullcontext
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -109,7 +110,7 @@ def render_usage_status(status: dict[str, object]) -> str:
     )
 
 
-def authorize_query(user_id: str, *, has_byok: bool) -> QueryAuthorization:
+def authorize_query(user_id: str, *, has_byok: bool, session=None) -> QueryAuthorization:
     """Use BYOK or atomically reserve one of the user's platform-funded calls."""
     if has_byok:
         return QueryAuthorization("byok")
@@ -118,7 +119,7 @@ def authorize_query(user_id: str, *, has_byok: bool) -> QueryAuthorization:
     from engine.ai.llm_usage import enforce_daily_budget
     enforce_daily_budget(funding_source="platform")
     from engine.db.pool import get_pool
-    with get_pool().get_session() as session:
+    with (nullcontext(session) if session is not None else get_pool().get_session()) as session:
         session.execute(text("""
             INSERT INTO alpatrade.user_ai_query_allowances (user_id)
             VALUES (:user_id) ON CONFLICT (user_id) DO NOTHING
@@ -143,12 +144,12 @@ def authorize_query(user_id: str, *, has_byok: bool) -> QueryAuthorization:
     )
 
 
-def refund_query(user_id: str, authorization: QueryAuthorization | None) -> None:
+def refund_query(user_id: str, authorization: QueryAuthorization | None, *, session=None) -> None:
     """Return a reserved platform slot when the model request fails."""
     if not authorization or not authorization.platform_slot:
         return
     from engine.db.pool import get_pool
-    with get_pool().get_session() as session:
+    with (nullcontext(session) if session is not None else get_pool().get_session()) as session:
         session.execute(text("""
             UPDATE alpatrade.user_ai_query_allowances
             SET platform_queries_used = GREATEST(platform_queries_used - 1, 0),

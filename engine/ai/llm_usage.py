@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import math
 import os
+from contextlib import nullcontext
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
@@ -30,6 +31,7 @@ class TokenUsage:
     output_tokens: int = 0
     total_tokens: int = 0
     quality: str = "unavailable"
+    cost_usd: Decimal | None = None
 
 
 def _int(value: Any) -> int:
@@ -50,7 +52,14 @@ def extract_usage(value: Any) -> TokenUsage:
     inp = _int(nested.get("input_tokens", nested.get("prompt_tokens")))
     out = _int(nested.get("output_tokens", nested.get("completion_tokens")))
     total = _int(nested.get("total_tokens")) or inp + out
-    return TokenUsage(inp, out, total, "measured" if total else "unavailable")
+    cost = None
+    try:
+        ticks = Decimal(str(nested.get("cost_in_usd_ticks")))
+        if ticks.is_finite() and ticks >= 0:
+            cost = ticks / Decimal(10_000_000_000)
+    except ArithmeticError:
+        pass
+    return TokenUsage(inp, out, total, "measured" if total else "unavailable", cost)
 
 
 def estimate_usage(prompt: str, response: str) -> TokenUsage:
@@ -122,10 +131,11 @@ def budget_warning(*, funding_source: str) -> str | None:
 def record_usage(*, user_id: str, thread_id: str | None, agent: str,
                  provider: str, model: str, funding_source: str,
                  prompt: str, response: str, usage: TokenUsage | None = None,
-                 request_id: str | None = None, job_id: str | None = None) -> None:
+                 request_id: str | None = None, job_id: str | None = None, session=None) -> None:
     final = usage if usage and usage.total_tokens else estimate_usage(prompt, response)
-    cost = estimate_cost(final, agent=agent, model=model)
-    with get_pool().get_session() as session:
+    measured_cost = usage.cost_usd if usage else None
+    cost = measured_cost if measured_cost is not None else estimate_cost(final, agent=agent, model=model)
+    with (nullcontext(session) if session is not None else get_pool().get_session()) as session:
         session.execute(text("""
             INSERT INTO alpatrade.llm_usage_logging
               (user_id, thread_id, request_id, job_id, agent_framework, provider,
@@ -140,7 +150,7 @@ def record_usage(*, user_id: str, thread_id: str | None, agent: str,
                  "input": final.input_tokens, "output": final.output_tokens,
                  "total": final.total_tokens, "cost": cost,
                  "quality": final.quality,
-                 "metadata": json.dumps({"pricing": "configured_estimate"})})
+                 "metadata": json.dumps({"pricing": "provider_reported" if measured_cost is not None else "configured_estimate"})})
 
 
 def list_usage(requester_id: str, *, is_admin: bool, email: str = "", limit: int = 100) -> list[dict]:

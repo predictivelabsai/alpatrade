@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "alpatrade"
-version = "0.26.0"
+version = "0.27.0"
 description = "Multi-asset trading platform — shared backtesting & paper-trading engine across equities, crypto, FX, and prediction markets"
 readme = "README.md"
 license = "MIT"
@@ -30,7 +30,10 @@ dependencies = [
     "yfinance>=0.2",
     "python-dotenv>=1.0",
     "requests>=2.31",
-    "openai>=1.0",
+    "openai>=1.68.2",
+    "exchange-calendars>=4.5,<5",
+    "bleach>=6.1,<7",
+    "markdown-it-py>=3,<5",
     "alpaca-py>=0.20",
     "sqlalchemy>=2.0",
     "psycopg2-binary>=2.9",
