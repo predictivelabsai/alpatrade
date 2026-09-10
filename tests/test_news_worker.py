@@ -51,6 +51,26 @@ def test_missing_model_is_not_silently_replaced():
         registry.load("earnings", "classifier")
 
 
+def test_available_events_requires_both_event_models():
+    engine = MagicMock()
+    connection = engine.connect.return_value.__enter__.return_value
+    connection.execute.return_value.scalars.return_value.all.return_value = ["earnings", "annual_events"]
+    assert ModelRegistry(engine).available_events() == ("earnings", "annual_events")
+
+
+def test_pipeline_constrains_xai_to_model_backed_events(monkeypatch):
+    models = FakeModels()
+    models.available_events = lambda: ("earnings",)
+    xai = MagicMock()
+    xai.metadata.return_value = {"title": "T", "content": "C", "company": "A",
+                                 "language": "en", "title_en": "T", "content_en": "C",
+                                 "event": "unknown_event"}
+    with pytest.raises(MissingEventModel):
+        NewsPipeline(models, xai).enrich({"title": "T", "content": "C"})
+    xai.metadata.assert_called_once_with({"title": "T", "content": "C"},
+                                         allowed_events=("earnings",))
+
+
 class FakeXAI:
     def metadata(self, row):
         return {**row, "company": "Apple", "language": "en", "title_en": row["title"],
@@ -122,6 +142,20 @@ def test_realtime_skips_existing_links_before_enrichment():
            publishers=publishers)._realtime_cycle()
     pipeline.enrich.assert_called_once()
     assert pipeline.enrich.call_args.args[0]["link"] == "new"
+
+
+def test_realtime_failures_cannot_exceed_batch_cost_ceiling():
+    repo = RealtimeRepo()
+    publishers = MagicMock()
+    publishers.collect.return_value = [
+        {"title": str(i), "publisher": "p", "link": str(i)} for i in range(20)
+    ]
+    pipeline = MagicMock()
+    pipeline.enrich.side_effect = MissingEventModel("missing")
+    Worker("realtime", 3, 60, 0, 1, repository=repo, pipeline=pipeline,
+           publishers=publishers)._realtime_cycle()
+    assert pipeline.enrich.call_count == 3
+    assert repo.state["failed_count"] == 3
 
 
 def test_realtime_worker_inserts_fully_enriched_article():

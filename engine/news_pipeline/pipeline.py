@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from engine.news_pipeline.events import normalize_event
-from engine.news_pipeline.models import ModelRegistry, predict
+from engine.news_pipeline.models import MissingEventModel, ModelRegistry, predict
 from engine.news_pipeline.validation import missing_enrichment_fields, normalized_enrichment
 
 
@@ -19,8 +19,12 @@ class NewsPipeline:
         self.models, self.xai = models, xai
 
     def enrich(self, article: dict[str, Any]) -> dict[str, Any]:
-        row = self.xai.metadata(dict(article))
+        allowed = self.models.available_events() if hasattr(self.models, "available_events") else ()
+        row = (self.xai.metadata(dict(article), allowed_events=allowed)
+               if allowed else self.xai.metadata(dict(article)))
         row["event_standardized"] = normalize_event(row.get("event"))
+        if allowed and row["event_standardized"] not in allowed:
+            raise MissingEventModel("XAI event is outside the trained model registry")
         row = predict(row, self.models.for_event(row["event_standardized"]))
         row["reason"] = self.xai.reason(row)
         row = normalized_enrichment(row)

@@ -22,13 +22,17 @@ class XAIEnricher:
         self.client = client or OpenAI(api_key=os.environ["XAI_API_KEY"], base_url="https://api.x.ai/v1")
         self.model = model or os.getenv("XAI_MODEL", "grok-4-1-fast-reasoning")
 
-    def metadata(self, row: dict[str, Any]) -> dict[str, Any]:
+    def metadata(self, row: dict[str, Any], *, allowed_events: tuple[str, ...] | None = None) -> dict[str, Any]:
         prompt = {"title": row.get("title"), "content": row.get("content"), "event": row.get("event")}
+        if allowed_events:
+            prompt["allowed_events"] = list(allowed_events)
         response = self.client.chat.completions.create(
             model=self.model, temperature=0, max_tokens=1000,
             messages=[{"role": "system", "content": (
                 "Return only JSON with company, ticker, yf_ticker, language (ISO code), title_en, content_en, event. "
-                "Detect the issuer, listed ticker and language, translate faithfully to English, and classify/retain a concise financial event name. "
+                "Detect the issuer, listed ticker and language, translate faithfully to English. "
+                "When allowed_events is supplied, event MUST exactly equal one value from that list. "
+                "Otherwise classify/retain a concise financial event name. "
                 "Use an empty ticker only when it cannot be identified.")},
                 {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)}])
         return {**row, **_json(response.choices[0].message.content or "")}

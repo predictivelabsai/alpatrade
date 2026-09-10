@@ -42,6 +42,30 @@ class ModelRegistry:
     def __init__(self, engine):
         self.engine = engine
         self._cache: dict[tuple[str, str], dict[str, Any]] = {}
+        self._available_events: tuple[str, ...] | None = None
+
+    def available_events(self) -> tuple[str, ...]:
+        """Return only events having usable classifier and regressor records."""
+        if self._available_events is None:
+            with self.engine.connect() as conn:
+                rows = conn.execute(text("""
+                    SELECT DISTINCT c.event_type
+                    FROM public.model_tracking c
+                    WHERE c.model_type='classifier' AND c.accuracy >= 0.5
+                      AND (c.model_id LIKE '%actual_sid%' OR c.model_id LIKE '%actual_side%')
+                      AND EXISTS (
+                        SELECT 1 FROM public.model_tracking r
+                        WHERE r.event_type=c.event_type AND r.model_type='regressor'
+                          AND (r.model_id LIKE '%price_change_percentage%'
+                               OR r.model_id LIKE '%price_chan%')
+                          AND r.model_id NOT LIKE '%nextday%'
+                      )
+                    ORDER BY c.event_type
+                """)).scalars().all()
+            self._available_events = tuple(str(row) for row in rows if row)
+        if not self._available_events:
+            raise MissingEventModel("no events have both classifier and regressor models")
+        return self._available_events
 
     def _model_id(self, event: str, kind: str) -> str:
         accuracy = "AND accuracy >= 0.5" if kind == "classifier" else ""
