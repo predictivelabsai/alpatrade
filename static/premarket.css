@@ -1,0 +1,44 @@
+/* Extend AlpaTrade's type and forest palette; scope every rule to this module. */
+.pmv{width:100%;max-width:1180px;margin:0 auto;padding:1rem 1.25rem 3rem;color:var(--ink)}
+.pmv .pmv-heading h1{font-size:1.65rem;line-height:1.2;margin:0;font-weight:650}
+.pmv .pmv-sub{color:var(--ink-muted);font-size:.85rem;margin:.4rem 0 1.25rem}
+.pmv .pmv-tabs{display:flex;gap:1.5rem;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:1rem}
+.pmv .pmv-tabs a{white-space:nowrap;color:var(--ink-muted);font-size:.85rem;padding:.65rem 0;text-decoration:none;border-bottom:2px solid transparent}
+.pmv .pmv-tabs a.active{border-color:var(--accent);color:var(--accent);font-weight:600}
+.pmv .pmv-controls{display:flex;align-items:end;flex-wrap:wrap;gap:.75rem;margin-bottom:.8rem}
+.pmv .pmv-controls label{display:flex;flex-direction:column;gap:.3rem;font-size:.75rem;color:var(--ink-muted)}
+.pmv input,.pmv select{font:inherit;min-height:38px;padding:.45rem .55rem;background:var(--bg-elev);border:1px solid var(--line);border-radius:5px;color:var(--ink)}
+.pmv input[type=search]{min-width:250px}.pmv .pmv-button{min-height:38px;padding:.5rem .8rem;border:0;border-radius:5px;background:var(--accent);color:#fff;cursor:pointer;font:inherit;font-size:.8rem}
+.pmv .pmv-button:disabled{opacity:.6;cursor:wait}.pmv a:focus-visible,.pmv button:focus-visible,.pmv input:focus-visible,.pmv select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.pmv #pmv-status{font-size:.78rem;color:var(--ink-muted);min-height:1.3rem;margin:.4rem 0 .8rem}
+.pmv .pmv-notice{font-size:.8rem;line-height:1.5;border-left:3px solid #b58b43;padding:.45rem .75rem;background:var(--bg-elev);margin:.5rem 0}
+.pmv .pmv-metrics{display:flex;flex-wrap:wrap;gap:1rem 2.25rem;padding:1.15rem 0;margin-bottom:1rem;border-bottom:1px solid var(--line)}
+.pmv .pmv-metrics dl{margin:0}.pmv .pmv-metrics dt{font-size:.76rem;color:var(--ink-muted);margin-bottom:.3rem}
+.pmv .pmv-metrics dd{margin:0;font-size:1.35rem;font-variant-numeric:tabular-nums;font-weight:600}
+.pmv .pmv-columns{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.pmv section{margin-bottom:1.75rem}.pmv h2{font-size:1rem;font-weight:650;margin:0 0 .8rem}.pmv h3{font-size:.95rem;margin:0 0 .5rem}
+.pmv .pmv-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--bg-elev)}
+.pmv table{width:100%;border-collapse:collapse;text-align:left;font-size:.82rem}
+.pmv th,.pmv td{padding:.65rem .75rem;border-bottom:1px solid var(--line);vertical-align:top}
+.pmv th{font-weight:500;color:var(--ink-muted);font-size:.73rem;background:var(--bg)}.pmv tbody tr:last-child td{border:0}
+.pmv a{color:var(--accent)}.pmv td a{font-weight:600;text-decoration:none}.pmv td a:hover{text-decoration:underline}
+.pmv .pmv-number{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.pmv .pmv-up{color:#1F7A4D}.pmv .pmv-down{color:#B4472F}.pmv .pmv-muted{color:var(--ink-muted)}
+.pmv .pmv-company{display:block;font-size:.72rem;color:var(--ink-muted);font-weight:400;margin-top:.2rem;max-width:24rem}
+.pmv .pmv-preview{margin:.35rem 0 .1rem;max-width:65ch;font-size:.77rem;line-height:1.5;color:var(--ink-muted)}
+.pmv .pmv-breadth{display:grid;grid-template-columns:minmax(9rem,1.6fr) 2fr 6rem;align-items:center;gap:1rem;padding:.65rem 0;border-bottom:1px solid var(--line);font-size:.8rem}
+.pmv .pmv-breadth a{text-decoration:none}.pmv .pmv-bar{height:10px;background:var(--line);border-radius:3px;display:flex;overflow:hidden}
+.pmv .pmv-bar .up{background:#4c9a75}.pmv .pmv-bar .down{background:#B4472F}
+.pmv .pmv-empty{padding:1.5rem .8rem;color:var(--ink-muted);line-height:1.65;font-size:.85rem}
+.pmv .pmv-stock-price{font-size:2.2rem;font-weight:650;font-variant-numeric:tabular-nums;margin:.3rem 0}
+.pmv .pmv-stock-meta{font-size:.82rem;line-height:1.7;color:var(--ink-muted)}
+.pmv .pmv-chart{min-height:290px;margin:1rem 0;border-bottom:1px solid var(--line)}
+.pmv .pmv-analysis{max-width:78ch;font-size:.9rem;line-height:1.75;overflow-wrap:anywhere}
+.pmv .pmv-analysis h2,.pmv .pmv-analysis h3,.pmv .pmv-analysis h4{margin-top:1.1rem}
+.pmv .pmv-analysis ul,.pmv .pmv-analysis ol{padding-left:1.4rem}.pmv .pmv-analysis p{margin:.65rem 0}
+.pmv details{padding:1rem 0;border-top:1px solid var(--line)}.pmv summary{cursor:pointer;font-size:.95rem;font-weight:600}
+.pmv .pmv-sources{font-size:.8rem;padding-left:1.2rem;line-height:1.7}.pmv .pmv-dates{display:flex;flex-wrap:wrap;gap:.5rem;margin:.75rem 0 1.5rem}
+.pmv .pmv-dates a{font-size:.78rem;padding:.35rem .6rem;border:1px solid var(--line);border-radius:4px;text-decoration:none}
+.pmv [hidden]{display:none!important}
+@media(max-width:800px){.pmv .pmv-columns{grid-template-columns:1fr;gap:0}.pmv{padding:.75rem .8rem 2rem}.pmv .pmv-tabs{gap:1rem}.pmv .pmv-metrics{gap:1rem 1.5rem}.pmv .pmv-breadth{grid-template-columns:minmax(8rem,1.6fr) 1fr 4.5rem;gap:.5rem}.pmv .pmv-controls{align-items:stretch}.pmv .pmv-controls label{flex:1 1 130px}.pmv th,.pmv td{padding:.6rem .5rem}}
+@media(prefers-reduced-motion:reduce){.pmv *{scroll-behavior:auto!important;transition:none!important}}

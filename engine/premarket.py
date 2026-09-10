@@ -197,6 +197,16 @@ def build_report(movements: list[dict[str, Any]], top_n: int = 10) -> dict[str, 
 
 def scan_premarket(top_n: int = 10) -> dict[str, Any]:
     """Run a batched extended-hours scan and return a Finespresso-shaped report."""
+    from engine.premarket_data import enabled
+    if enabled():
+        from engine.premarket_data import dashboard
+        from engine.premarket_jobs import schedule
+        schedule()
+        report = dashboard(limit=top_n)
+        report["run_id"] = str(uuid.uuid4())
+        if report["summary"]["total_stocks_scanned"]:
+            save_report(report)
+        return report
     import yfinance as yf
     universe = symbols()
     data = yf.download(
@@ -226,7 +236,7 @@ def save_report(report: dict[str, Any]) -> Path:
     try:
         _save_database(report)
     except Exception as exc:  # noqa: BLE001
-        logger.info("Premarket database persistence unavailable: %s", exc)
+        logger.info("Premarket database persistence unavailable (%s)", type(exc).__name__)
     return path
 
 
@@ -249,6 +259,10 @@ def _save_database(report: dict[str, Any]) -> None:
 
 def latest_report() -> dict[str, Any] | None:
     """Load the newest database report, falling back to compatible JSON."""
+    from engine.premarket_data import enabled
+    if enabled():
+        from engine.premarket_data import dashboard
+        return dashboard(include_earnings=False)
     try:
         from sqlalchemy import text
         from engine.db.pool import DatabasePool
@@ -275,6 +289,8 @@ def latest_report() -> dict[str, Any] | None:
 def flatten(report: dict[str, Any] | None) -> list[dict[str, Any]]:
     if not report:
         return []
+    if report.get("schema_version") == 2 and "rows" in report:
+        return [row for row in report["rows"] if row.get("available")]
     rows = []
     for sector, bucket in report.get("sectors", {}).items():
         for direction in ("up", "down"):
