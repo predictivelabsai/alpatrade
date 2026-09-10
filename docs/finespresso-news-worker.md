@@ -17,13 +17,13 @@ The migration creates `alpatrade.news_worker_jobs`. It stores shard checkpoints,
 Create a second service from the same repository and commit as the web application. Use `Dockerfile.agui` and this command:
 
 ```bash
-python -m engine.news_pipeline.worker --mode realtime
+python -m news_scheduler.worker --mode realtime
 ```
 
 For a bounded, resumable historical worker use:
 
 ```bash
-python -m engine.news_pipeline.worker --mode backfill --batch-size 25 --shard-index 0 --shard-count 1
+python -m news_scheduler.worker --mode backfill --batch-size 25 --shard-index 0 --shard-count 1
 ```
 
 Multiple backfill services may use distinct shard indexes with the same shard count. PostgreSQL advisory locks reject duplicate workers for the same mode and shard.

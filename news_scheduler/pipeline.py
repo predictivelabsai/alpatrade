@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from engine.news_pipeline.events import normalize_event
-from engine.news_pipeline.models import MissingEventModel, ModelRegistry, predict
-from engine.news_pipeline.validation import missing_enrichment_fields, normalized_enrichment
+from news_scheduler.events import normalize_event
+from news_scheduler.models import MissingEventModel, ModelRegistry, predict
+from news_scheduler.validation import missing_enrichment_fields, normalized_enrichment
 
 
 class IncompleteArticle(RuntimeError):

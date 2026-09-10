@@ -81,7 +81,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.agui
-    command: ["python", "-m", "engine.news_pipeline.worker"]
+    command: ["python", "-m", "news_scheduler.worker"]
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - DB_POOL_SIZE=${NEWS_WORKER_DB_POOL_SIZE:-2}

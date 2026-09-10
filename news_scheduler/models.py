@@ -16,8 +16,8 @@ import numpy as np
 import pandas as pd
 from sqlalchemy import text
 
-from engine.news_pipeline.events import normalize_event
-from engine.news_pipeline.validation import finite_move
+from news_scheduler.events import normalize_event
+from news_scheduler.validation import finite_move
 
 try:
     import joblib
@@ -87,15 +87,36 @@ class ModelRegistry:
     def _load(blob: bytes | None) -> Any:
         if not blob:
             return None
+        if isinstance(blob, memoryview):
+            blob = blob.tobytes()
+        if isinstance(blob, str):
+            encoded = blob[2:] if blob.startswith("\\x") else blob[1:] if blob.startswith("x") else ""
+            if encoded and len(encoded) % 2 == 0:
+                try:
+                    blob = bytes.fromhex(encoded)
+                except ValueError:
+                    blob = blob.encode()
+            else:
+                blob = blob.encode()
+        elif isinstance(blob, (bytes, bytearray)):
+            raw = bytes(blob)
+            prefix = 2 if raw.startswith(b"\\x") else 1 if raw.startswith(b"x") else 0
+            if prefix:
+                try:
+                    blob = bytes.fromhex(raw[prefix:].decode("ascii"))
+                except (UnicodeDecodeError, ValueError):
+                    blob = raw
+        joblib_error: Exception | None = None
         if joblib is not None:
             try:
                 return joblib.load(io.BytesIO(blob))
-            except Exception:
-                pass
+            except Exception as exc:
+                joblib_error = exc
         try:
             return pickle.loads(blob)
         except Exception as exc:
-            raise MissingEventModel("model artifact cannot be deserialized; install joblib/scikit-learn") from exc
+            detail = f"joblib={type(joblib_error).__name__}: {joblib_error}" if joblib_error else "joblib unavailable"
+            raise MissingEventModel(f"model artifact cannot be deserialized ({detail})") from exc
 
     def load(self, event: str, kind: str) -> dict[str, Any]:
         event = normalize_event(event)

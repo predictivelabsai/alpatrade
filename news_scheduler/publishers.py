@@ -9,8 +9,10 @@ from typing import Iterable
 
 import feedparser
 
+from news_scheduler.utils.scrape.web_util import fetch_url_content
 
-_CONFIG = Path(__file__).resolve().parents[2] / "config"
+
+_CONFIG = Path(__file__).resolve().parent / "config"
 _BALTICS = "https://nasdaqbaltic.com/statistics/en/news?rss=1&num=100"
 
 
@@ -53,10 +55,17 @@ class FinespressoPublishers:
             for item in parsed.entries:
                 content = (item.get("content", [{}])[0].get("value")
                            if item.get("content") else item.get("summary") or "")
+                link = item.get("link") or ""
+                if not str(content).strip() and link:
+                    fetched = fetch_url_content(
+                        link, timeout=15,
+                        use_improved_extraction=publisher in {"prnewswire", "euronext"},
+                    )
+                    content = "" if str(fetched).lower().startswith("failed to") else fetched
                 yield {
                     "title": item.get("title") or "",
                     "content": content,
-                    "link": item.get("link") or "",
+                    "link": link,
                     "publisher": publisher,
                     "publisher_topic": topic,
                     "published_date": item.get("published") or datetime.now(timezone.utc),

@@ -15,11 +15,11 @@ from sqlalchemy.exc import DBAPIError, OperationalError
 from openai import APIConnectionError, APITimeoutError, RateLimitError
 
 from engine.db.pool import DatabasePool
-from engine.news_pipeline.models import MissingEventModel, ModelRegistry
-from engine.news_pipeline.pipeline import IncompleteArticle, NewsPipeline
-from engine.news_pipeline.publishers import RSSPublishers
-from engine.news_pipeline.repository import NewsRepository
-from engine.news_pipeline.xai import XAIEnricher
+from news_scheduler.models import MissingEventModel, ModelRegistry
+from news_scheduler.pipeline import IncompleteArticle, NewsPipeline
+from news_scheduler.publishers import RSSPublishers
+from news_scheduler.repository import NewsRepository
+from news_scheduler.xai import XAIEnricher
 
 log = logging.getLogger("alpatrade.news_worker")
 STOP = threading.Event()
@@ -109,7 +109,16 @@ class Worker:
                 processed += 1
             except (IncompleteArticle, MissingEventModel, *RETRYABLE) as exc:
                 failed += 1
-                _event(logging.ERROR, "article_retryable", source_link=bool(article.get("link")), error_type=type(exc).__name__)
+                missing = list(exc.fields) if isinstance(exc, IncompleteArticle) else []
+                _event(logging.ERROR, "article_retryable", source_link=bool(article.get("link")),
+                       error_type=type(exc).__name__, missing_fields=missing)
+                self.repo.update_checkpoint(
+                    self.job_name, self.shard_index, self.shard_count,
+                    last_inserted_news_id=inserted, processed_count=processed,
+                    failed_count=failed, status="error",
+                    last_error=f"{type(exc).__name__}: missing={missing}",
+                )
+                return True
             # Batch size is a hard cost/resource ceiling, not an insert target.
             if attempted >= self.batch_size:
                 break

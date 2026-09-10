@@ -7,7 +7,7 @@ from typing import Any, Iterable
 
 from sqlalchemy import text
 
-from engine.news_pipeline.validation import REQUIRED_FIELDS
+from news_scheduler.validation import REQUIRED_FIELDS
 
 _MISSING_SQL = " OR ".join([
     "company IS NULL OR btrim(company)='' OR lower(btrim(company)) IN ('nan','n/a','error in summarization')",
