@@ -13,7 +13,7 @@ class PremarketAgent:
         report = scan_premarket(top_n=limit) if refresh else latest_report()
         return {
             "agent": self.name,
-            "status": "complete" if report else "no_data",
+            "status": report.get("status", "complete") if report else "no_data",
             "report": report,
             "top": top_movers(report, limit) if report else {
                 "gainers": [], "fallers": [], "movers": [],
