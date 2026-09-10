@@ -1,7 +1,7 @@
 """Read-only News Scheduler operations dashboard."""
 from __future__ import annotations
 
-from fasthtml.common import Div, H1, H2, P, Span, Strong, Style, Table, Tbody, Td, Th, Thead, Tr
+from fasthtml.common import A, Div, H1, H2, P, Span, Strong, Style, Table, Tbody, Td, Th, Thead, Tr
 from sqlalchemy import text
 from starlette.responses import RedirectResponse
 
@@ -81,14 +81,18 @@ def _dashboard(user: dict):
         Div(Span("Mode", cls="sub"), Strong(current.get("job_name") or "—"), cls="card"),
         Div(Span("Last inserted news ID", cls="sub"), Strong(str(latest_id)), cls="card"),
         Div(Span("Processed / failed", cls="sub"), Strong(f"{current.get('processed_count', 0)} / {current.get('failed_count', 0)}"), cls="card"),
+        Div(Span("Last successful cycle", cls="sub"), Strong(str(current.get("last_successful_cycle") or "—")[:19]), cls="card"),
         cls="cards",
     )
     latest_rows = [Tr(Td(row.get("id")), Td(str(row.get("published_date") or "")[:19]),
                       Td(row.get("company") or "—"), Td(row.get("ticker") or "—"),
                       Td(row.get("publisher") or "—"), Td(row.get("event") or "—"),
+                      Td(row.get("title_en") or "—"),
                       Td(Span(row.get("predicted_side") or "—", cls="badge")),
                       Td(f"{float(row['predicted_move']):+.2f}%"),
-                      Td(row.get("reason") or "—", cls="reason")) for row in data["latest"]]
+                      Td(row.get("reason") or "—", cls="reason"),
+                      Td(A("Open", href=row.get("link"), target="_blank") if row.get("link") else "—"))
+                   for row in data["latest"]]
     activity_rows = [Tr(Td(str(row.get("created_at") or "")[:19]), Td(row.get("event_name")),
                         Td(Span(row.get("status"), cls="badge")), Td(row.get("news_id") or "—"),
                         Td(row.get("publisher") or "—"), Td(str(row.get("details") or {})))
@@ -100,8 +104,8 @@ def _dashboard(user: dict):
         Div(Div(H2("Prediction sides"), _bars(data["sides"]), cls="panel"),
             Div(H2("Top events"), _bars(data["events"]), cls="panel"), cls="grid"),
         Div(H2("Latest 5 fully enriched articles"), Table(Thead(Tr(*[Th(x) for x in
-            ("ID", "Published", "Company", "Ticker", "Publisher", "Event", "Side", "Move", "XAI reason")])),
-            Tbody(*(latest_rows or [Tr(Td("No fully enriched news rows found.", colspan="9"))]))), cls="panel"),
+            ("ID", "Published", "Company", "Ticker", "Publisher", "Event", "English headline", "Side", "Move", "XAI reason", "Source")])),
+            Tbody(*(latest_rows or [Tr(Td("No fully enriched news rows found.", colspan="11"))]))), cls="panel"),
         Div(H2("Worker activity"), P("Durable sanitized events; article content and credentials are never logged.", cls="sub"),
             Table(Thead(Tr(*[Th(x) for x in ("Time", "Event", "Status", "News ID", "Publisher", "Details")])),
                   Tbody(*(activity_rows or [Tr(Td("No events yet. Run migration 32, then allow one worker cycle.", colspan="6"))]))), cls="panel"), cls="ns")
