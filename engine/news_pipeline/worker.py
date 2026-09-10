@@ -40,7 +40,10 @@ def _safe_error(exc: Exception) -> str:
 class Worker:
     def __init__(self, mode: str, batch_size: int, interval: int, shard_index: int, shard_count: int,
                  repository=None, pipeline=None, publishers=None):
-        pool = DatabasePool()
+        # Keep dependency injection genuinely DB-free for unit tests and local
+        # tooling. Production constructs both defaults and therefore still
+        # requires DATABASE_URL before the worker can start.
+        pool = DatabasePool() if repository is None or pipeline is None else None
         self.mode, self.batch_size, self.interval = mode, batch_size, interval
         self.shard_index, self.shard_count = shard_index, shard_count
         self.job_name = f"news-{mode}"
