@@ -212,12 +212,19 @@ def test_euronext_collector_preserves_original_source_fields(monkeypatch):
       <td>13 Sep 2026 08:00 CEST</td><td>Issuer SA</td>
       <td><a href='/news/1'>Results</a></td><td>Technology</td><td>Earnings</td>
       </tr></tbody></table>""")
-    monkeypatch.setattr("news_scheduler.publishers.requests.get", lambda *a, **k: response)
+    requested = []
+    monkeypatch.setattr(
+        "news_scheduler.publishers.requests.get",
+        lambda url, **kwargs: requested.append(url) or response,
+    )
     monkeypatch.setattr("news_scheduler.publishers._content", lambda *a, **k: "Body")
     row = next(FinespressoPublishers._euronext())
     assert row["publisher"] == "euronext" and row["company"] == "Issuer SA"
     assert row["link"].startswith("https://live.euronext.com/")
     assert row["industry"] == "Technology" and row["publisher_topic"] == "Earnings"
+    assert requested == [
+        "https://live.euronext.com/en/listview/company-press-releases/404/all?page=0"
+    ]
 
 
 def test_realtime_skips_existing_links_before_enrichment():

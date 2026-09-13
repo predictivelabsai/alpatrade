@@ -18,7 +18,9 @@ from news_scheduler.utils.scrape.web_util import fetch_url_content
 
 _CONFIG = Path(__file__).resolve().parent / "config"
 _BALTICS = "https://nasdaqbaltic.com/statistics/en/news?rss=1&num=100"
-_EURONEXT = "https://live.euronext.com/en/products/equities/company-news"
+# The former company-news page now returns an anti-bot 202/empty response to
+# server-side clients. This official list view serves the same five-column table.
+_EURONEXT = "https://live.euronext.com/en/listview/company-press-releases/404/all?page=0"
 _EURONEXT_ROOT = "https://live.euronext.com"
 _OMX = "https://api.news.eu.nasdaq.com/news/query.action"
 LOGGER = logging.getLogger("alpatrade.news_worker")

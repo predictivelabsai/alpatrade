@@ -13,6 +13,8 @@
   Scheduler distinguishes enriched, retryable, and pending records.
 - Restored all seven independently scheduled Finespresso publisher groups, including
   Euronext and OMX, with fair bounded collection and per-publisher cycle summaries.
+- Replaced Euronext's obsolete anti-bot company-news URL with its official server-
+  readable press-release list view; Baltics RSS remains healthy and unchanged.
 
 ### Finespresso realtime news and resumable backfill
 
