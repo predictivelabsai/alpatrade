@@ -156,6 +156,70 @@ def test_finespresso_inventory_is_default_without_new_environment_variable(monke
     assert len(finespresso_feed_inventory()) > 100
 
 
+def test_finespresso_scheduler_exposes_all_original_publisher_jobs(monkeypatch):
+    monkeypatch.delenv("NEWS_PUBLISHER_FEEDS", raising=False)
+    publishers = FinespressoPublishers()
+    monkeypatch.setattr(publishers, "_euronext", lambda: iter(()))
+    monkeypatch.setattr(publishers, "_omx", lambda: iter(()))
+    assert [name for name, _ in publishers.groups()] == [
+        "baltics", "euronext", "omx", "globenewswire_sector",
+        "globenewswire_country", "globenewswire_industry", "prnewswire",
+    ]
+
+
+def test_publisher_collection_round_robins_instead_of_starving_later_jobs(monkeypatch):
+    publishers = FinespressoPublishers("https://example.test/feed")
+    publishers.groups = lambda: [
+        ("busy", iter([{"publisher": "busy", "link": str(i)} for i in range(5)])),
+        ("quiet", iter([{"publisher": "quiet", "link": "q"}])),
+        ("last", iter([{"publisher": "last", "link": "z"}])),
+    ]
+    rows = list(publishers.collect())
+    assert [row["publisher"] for row in rows[:3]] == ["busy", "quiet", "last"]
+    assert len(rows) == 7
+
+
+def test_failed_publisher_does_not_block_remaining_publishers():
+    def broken():
+        raise RuntimeError("publisher unavailable")
+        yield
+
+    publishers = FinespressoPublishers("https://example.test/feed")
+    publishers.groups = lambda: [
+        ("broken", broken()),
+        ("healthy", iter([{"publisher": "healthy", "link": "ok"}])),
+    ]
+    assert list(publishers.collect()) == [{"publisher": "healthy", "link": "ok"}]
+
+
+def test_omx_collector_preserves_original_source_fields(monkeypatch):
+    response = MagicMock()
+    response.json.return_value = {"results": {"item": [{
+        "published": "2026-09-13 08:00:00 +0000", "languages": ["en"],
+        "language": "en", "company": "Issuer", "headline": "Notice",
+        "messageUrl": "https://example.test/omx", "cnsCategory": "Company news",
+        "market": "Main Market",
+    }]}}
+    monkeypatch.setattr("news_scheduler.publishers.requests.get", lambda *a, **k: response)
+    monkeypatch.setattr("news_scheduler.publishers._content", lambda *a, **k: "Body")
+    row = next(FinespressoPublishers._omx())
+    assert row["publisher"] == "omx" and row["company"] == "Issuer"
+    assert row["publisher_topic"] == "Company news" and row["content"] == "Body"
+
+
+def test_euronext_collector_preserves_original_source_fields(monkeypatch):
+    response = MagicMock(text="""<table class='table'><tbody><tr>
+      <td>13 Sep 2026 08:00 CEST</td><td>Issuer SA</td>
+      <td><a href='/news/1'>Results</a></td><td>Technology</td><td>Earnings</td>
+      </tr></tbody></table>""")
+    monkeypatch.setattr("news_scheduler.publishers.requests.get", lambda *a, **k: response)
+    monkeypatch.setattr("news_scheduler.publishers._content", lambda *a, **k: "Body")
+    row = next(FinespressoPublishers._euronext())
+    assert row["publisher"] == "euronext" and row["company"] == "Issuer SA"
+    assert row["link"].startswith("https://live.euronext.com/")
+    assert row["industry"] == "Technology" and row["publisher_topic"] == "Earnings"
+
+
 def test_realtime_skips_existing_links_before_enrichment():
     repo = RealtimeRepo()
     repo.article_exists = lambda publisher, link: link == "existing"

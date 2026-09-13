@@ -6,6 +6,12 @@ translation, event, event-specific ML, and XAI-reason enrichment. Successful fie
 are retained. Missing fields remain SQL `NULL` and mark the article retryable for the
 backfill worker; textual placeholders are never saved.
 
+Realtime collection preserves the seven Finespresso publisher jobs: Baltics,
+Euronext, OMX, GlobeNewswire sector, GlobeNewswire country, GlobeNewswire industry,
+and PR Newswire. They are interleaved fairly inside the configured batch ceiling, so
+a high-volume source cannot prevent later sources from running. A failure in one
+publisher is logged by publisher name and does not block the remaining jobs.
+
 ## Database setup
 
 Run once before starting a worker:
@@ -58,3 +64,7 @@ with later articles, and remains `running`. Backfill scans every incomplete news
 regardless of its current event label and retries it in bounded, resumable passes.
 Stopping or redeploying is safe, and realtime inserts are idempotent by publisher and
 source link.
+
+Each completed cycle also emits `publisher_cycle_summary` with attempted, enriched,
+partial, and failed counts per publisher job. These counts contain no article text or
+credentials and make publisher starvation or feed failures visible in Coolify logs.

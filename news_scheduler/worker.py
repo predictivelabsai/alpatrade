@@ -124,11 +124,16 @@ class Worker:
         processed, failed, inserted = int(state["processed_count"] or 0), int(state["failed_count"] or 0), None
         attempted = 0
         completed_this_cycle = partial_this_cycle = 0
+        publisher_counts: dict[str, dict[str, int]] = {}
         for article in self._retry(self.publishers.collect):
             exists = getattr(self.repo, "article_exists", lambda *_: False)
             if exists(str(article.get("publisher") or ""), str(article.get("link") or "")):
                 continue
             attempted += 1
+            publisher_job = str(article.get("publisher_job") or article.get("publisher") or "unknown")
+            publisher_stats = publisher_counts.setdefault(
+                publisher_job, {"attempted": 0, "enriched": 0, "partial": 0, "failed": 0})
+            publisher_stats["attempted"] += 1
             try:
                 # Match the original Finespresso behavior: save first, then
                 # retain every enrichment field that succeeds.
@@ -141,6 +146,7 @@ class Worker:
                 self._retry(lambda: self.repo.update_partial(inserted_now, enriched, missing))
                 if not missing:
                     completed_this_cycle += 1
+                    publisher_stats["enriched"] += 1
                     _event(logging.INFO, "article_inserted", news_id=inserted_now,
                            publisher=article.get("publisher"),
                            model_event=enriched.get("event_standardized"),
@@ -155,6 +161,7 @@ class Worker:
                 else:
                     partial_this_cycle += 1
                     failed += 1
+                    publisher_stats["partial"] += 1
                     _event(logging.WARNING, "article_saved_partial", news_id=inserted_now,
                            publisher=article.get("publisher"), missing_fields=missing,
                            issue_types=issues)
@@ -163,6 +170,7 @@ class Worker:
                                      "missing_fields": missing, "issue_types": issues})
             except RETRYABLE as exc:
                 failed += 1
+                publisher_stats["failed"] += 1
                 _event(logging.ERROR, "article_retryable", source_link=bool(article.get("link")),
                        error_type=type(exc).__name__)
                 self._record("article_retryable", "error", publisher=article.get("publisher"),
@@ -180,7 +188,8 @@ class Worker:
         self._record("cycle_completed", "completed", news_id=inserted,
                      details={"attempted": attempted, "enriched": completed_this_cycle,
                               "partial": partial_this_cycle, "processed_count": processed,
-                              "failed_count": failed})
+                              "failed_count": failed, "publishers": publisher_counts})
+        _event(logging.INFO, "publisher_cycle_summary", publishers=publisher_counts)
         return True
 
     def run(self) -> int:

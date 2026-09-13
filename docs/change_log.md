@@ -11,6 +11,8 @@
   continuously scheduled worker or block later articles.
 - Backfill now retries incomplete rows across every event type, and the News
   Scheduler distinguishes enriched, retryable, and pending records.
+- Restored all seven independently scheduled Finespresso publisher groups, including
+  Euronext and OMX, with fair bounded collection and per-publisher cycle summaries.
 
 ### Finespresso realtime news and resumable backfill
 
