@@ -15,8 +15,8 @@ from sqlalchemy.exc import DBAPIError, OperationalError
 from openai import APIConnectionError, APITimeoutError, RateLimitError
 
 from engine.db.pool import DatabasePool
-from news_scheduler.models import MissingEventModel, ModelRegistry
-from news_scheduler.pipeline import IncompleteArticle, NewsPipeline
+from news_scheduler.models import ModelRegistry
+from news_scheduler.pipeline import NewsPipeline
 from news_scheduler.publishers import RSSPublishers
 from news_scheduler.repository import NewsRepository
 from news_scheduler.xai import XAIEnricher
@@ -73,6 +73,17 @@ class Worker:
         rows = self._retry(lambda: self.repo.incomplete(int(state["last_processed_news_id"] or 0), self.batch_size,
                                                         self.shard_index, self.shard_count))
         if not rows:
+            remaining = self.repo.remaining(self.shard_index, self.shard_count)
+            if remaining:
+                # A complete pass may leave retryable rows behind. Rewind the
+                # durable cursor so a later bounded cycle can try them again.
+                self.repo.update_checkpoint(
+                    self.job_name, self.shard_index, self.shard_count,
+                    last_processed_news_id=0, status="running",
+                    last_successful_cycle=datetime.now(timezone.utc),
+                    last_error=None,
+                )
+                return True
             self.repo.update_checkpoint(self.job_name, self.shard_index, self.shard_count,
                                         status="stopped", last_successful_cycle=datetime.now(timezone.utc), last_error=None)
             return False
@@ -83,18 +94,26 @@ class Worker:
                 break
             candidate_id = int(row["id"])
             try:
-                enriched = self._retry(lambda row=row: self.pipeline.enrich(row))
-                self._retry(lambda: self.repo.update_enriched(candidate_id, enriched))
+                enriched, missing, issues = self.pipeline.enrich_best_effort(row)
+                self._retry(lambda: self.repo.update_partial(candidate_id, enriched, missing))
                 processed += 1
                 last_id = candidate_id
-            except (IncompleteArticle, MissingEventModel, *RETRYABLE) as exc:
+                if missing:
+                    failed += 1
+                    _event(logging.WARNING, "backfill_retryable", news_id=candidate_id,
+                           missing_fields=missing, issue_types=issues)
+                    self._record("backfill_retryable", "retryable", news_id=candidate_id,
+                                 publisher=row.get("publisher"), details={
+                                     "missing_fields": missing, "issue_types": issues})
+                else:
+                    self._record("backfill_enriched", "completed", news_id=candidate_id,
+                                 publisher=row.get("publisher"))
+            except RETRYABLE as exc:
                 failed += 1
                 _event(logging.ERROR, "article_retryable", news_id=candidate_id, error_type=type(exc).__name__)
-                # Never advance beyond a failed row: the next cycle/restart retries it.
-                self.repo.update_checkpoint(self.job_name, self.shard_index, self.shard_count,
-                    last_processed_news_id=last_id, processed_count=processed, failed_count=failed,
-                    last_error=_safe_error(exc), status="running")
-                return True
+                # Advance within this pass so one database/provider failure
+                # cannot block every later row; the cursor rewinds after a pass.
+                last_id = candidate_id
             self.repo.update_checkpoint(self.job_name, self.shard_index, self.shard_count,
                 last_processed_news_id=last_id, processed_count=processed, failed_count=failed,
                 last_error=None, status="running", last_successful_cycle=datetime.now(timezone.utc))
@@ -104,17 +123,30 @@ class Worker:
         state = self.repo.checkpoint(self.job_name, self.shard_index, self.shard_count)
         processed, failed, inserted = int(state["processed_count"] or 0), int(state["failed_count"] or 0), None
         attempted = 0
+        completed_this_cycle = partial_this_cycle = 0
+        publisher_counts: dict[str, dict[str, int]] = {}
         for article in self._retry(self.publishers.collect):
             exists = getattr(self.repo, "article_exists", lambda *_: False)
             if exists(str(article.get("publisher") or ""), str(article.get("link") or "")):
                 continue
             attempted += 1
+            publisher_job = str(article.get("publisher_job") or article.get("publisher") or "unknown")
+            publisher_stats = publisher_counts.setdefault(
+                publisher_job, {"attempted": 0, "enriched": 0, "partial": 0, "failed": 0})
+            publisher_stats["attempted"] += 1
             try:
-                enriched = self._retry(lambda article=article: self.pipeline.enrich(article))
-                inserted_now = self._retry(lambda: self.repo.insert_enriched(enriched))
+                # Match the original Finespresso behavior: save first, then
+                # retain every enrichment field that succeeds.
+                inserted_now = self._retry(lambda: self.repo.insert_pending(article))
                 inserted = inserted_now or inserted
+                if inserted_now is None:  # another worker won the idempotency race
+                    continue
                 processed += 1
-                if inserted_now:
+                enriched, missing, issues = self.pipeline.enrich_best_effort(article)
+                self._retry(lambda: self.repo.update_partial(inserted_now, enriched, missing))
+                if not missing:
+                    completed_this_cycle += 1
+                    publisher_stats["enriched"] += 1
                     _event(logging.INFO, "article_inserted", news_id=inserted_now,
                            publisher=article.get("publisher"),
                            model_event=enriched.get("event_standardized"),
@@ -126,20 +158,24 @@ class Worker:
                                      "predicted_side": enriched.get("predicted_side"),
                                      "predicted_move": enriched.get("predicted_move"),
                                  })
-            except (IncompleteArticle, MissingEventModel, *RETRYABLE) as exc:
+                else:
+                    partial_this_cycle += 1
+                    failed += 1
+                    publisher_stats["partial"] += 1
+                    _event(logging.WARNING, "article_saved_partial", news_id=inserted_now,
+                           publisher=article.get("publisher"), missing_fields=missing,
+                           issue_types=issues)
+                    self._record("article_saved_partial", "retryable", news_id=inserted_now,
+                                 publisher=article.get("publisher"), details={
+                                     "missing_fields": missing, "issue_types": issues})
+            except RETRYABLE as exc:
                 failed += 1
-                missing = list(exc.fields) if isinstance(exc, IncompleteArticle) else []
+                publisher_stats["failed"] += 1
                 _event(logging.ERROR, "article_retryable", source_link=bool(article.get("link")),
-                       error_type=type(exc).__name__, missing_fields=missing)
-                self.repo.update_checkpoint(
-                    self.job_name, self.shard_index, self.shard_count,
-                    last_inserted_news_id=inserted, processed_count=processed,
-                    failed_count=failed, status="error",
-                    last_error=f"{type(exc).__name__}: missing={missing}",
-                )
+                       error_type=type(exc).__name__)
                 self._record("article_retryable", "error", publisher=article.get("publisher"),
-                             details={"error_type": type(exc).__name__, "missing_fields": missing})
-                return True
+                             details={"error_type": type(exc).__name__})
+                continue
             # Batch size is a hard cost/resource ceiling, not an insert target.
             if attempted >= self.batch_size:
                 break
@@ -147,10 +183,13 @@ class Worker:
             last_inserted_news_id=inserted, processed_count=processed, failed_count=failed,
             status="running", last_successful_cycle=datetime.now(timezone.utc), last_error=None)
         _event(logging.INFO, "cycle_completed", mode=self.mode, attempted=attempted,
+               enriched=completed_this_cycle, partial=partial_this_cycle,
                processed_count=processed, failed_count=failed, last_inserted_news_id=inserted)
         self._record("cycle_completed", "completed", news_id=inserted,
-                     details={"attempted": attempted, "processed_count": processed,
-                              "failed_count": failed})
+                     details={"attempted": attempted, "enriched": completed_this_cycle,
+                              "partial": partial_this_cycle, "processed_count": processed,
+                              "failed_count": failed, "publishers": publisher_counts})
+        _event(logging.INFO, "publisher_cycle_summary", publishers=publisher_counts)
         return True
 
     def run(self) -> int:
@@ -166,11 +205,24 @@ class Worker:
                          "shard_count": self.shard_count})
             try:
                 while not STOP.is_set():
-                    has_more = self._backfill_cycle() if self.mode == "backfill" else self._realtime_cycle()
+                    try:
+                        has_more = self._backfill_cycle() if self.mode == "backfill" else self._realtime_cycle()
+                    except Exception as exc:
+                        # A failed cycle is observable but never terminates the
+                        # continuously scheduled worker.
+                        try:
+                            self.repo.update_checkpoint(
+                                self.job_name, self.shard_index, self.shard_count,
+                                status="running", last_error=_safe_error(exc))
+                            self._record("cycle_failed", "error", details={
+                                "error_type": type(exc).__name__})
+                        except Exception:
+                            pass
+                        _event(logging.ERROR, "cycle_failed", error_type=type(exc).__name__)
+                        has_more = True
                     if self.mode == "backfill" and not has_more:
                         break
-                    if self.mode == "realtime":
-                        STOP.wait(self.interval)
+                    STOP.wait(self.interval)
             except Exception as exc:
                 self.repo.update_checkpoint(self.job_name, self.shard_index, self.shard_count,
                                             status="error", last_error=_safe_error(exc))

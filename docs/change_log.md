@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Continuous partial news ingestion
+
+- Restored the original Finespresso behavior of saving every unique publisher
+  article while retaining successful enrichment fields and using SQL nulls for
+  unavailable values.
+- Individual enrichment and publisher-cycle failures no longer terminate the
+  continuously scheduled worker or block later articles.
+- Backfill now retries incomplete rows across every event type, and the News
+  Scheduler distinguishes enriched, retryable, and pending records.
+- Restored all seven independently scheduled Finespresso publisher groups, including
+  Euronext and OMX, with fair bounded collection and per-publisher cycle summaries.
+- Replaced Euronext's obsolete anti-bot company-news URL with its official server-
+  readable press-release list view; Baltics RSS remains healthy and unchanged.
+
 ### Finespresso realtime news and resumable backfill
 
 - Added a dedicated realtime/backfill news worker with graceful shutdown,

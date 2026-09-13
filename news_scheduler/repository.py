@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import hashlib
 from contextlib import contextmanager
-from typing import Any, Iterable
+from typing import Any
 import json
 
 from sqlalchemy import text
 
-from news_scheduler.validation import REQUIRED_FIELDS
+from news_scheduler.validation import REQUIRED_FIELDS, finite_move, invalid_text
 
 _MISSING_SQL = " OR ".join([
     "company IS NULL OR btrim(company)='' OR lower(btrim(company)) IN ('nan','n/a','error in summarization')",
@@ -87,14 +87,14 @@ class NewsRepository:
     def incomplete(self, after_id: int, limit: int, shard_index: int, shard_count: int) -> list[dict]:
         with self.engine.connect() as conn:
             rows = conn.execute(text(f"""SELECT * FROM public.news WHERE id>:after
-                AND mod(id,:count)=:shard AND event='press_releases'
+                AND mod(id,:count)=:shard
                 AND ({_MISSING_SQL}) ORDER BY id LIMIT :limit"""),
                 {"after": after_id, "count": shard_count, "shard": shard_index, "limit": limit}).mappings().all()
         return [dict(row) for row in rows]
 
     def remaining(self, shard_index: int = 0, shard_count: int = 1) -> int:
         with self.engine.connect() as conn:
-            return int(conn.execute(text(f"SELECT count(*) FROM public.news WHERE mod(id,:count)=:shard AND event='press_releases' AND ({_MISSING_SQL})"),
+            return int(conn.execute(text(f"SELECT count(*) FROM public.news WHERE mod(id,:count)=:shard AND ({_MISSING_SQL})"),
                                     {"count": shard_count, "shard": shard_index}).scalar() or 0)
 
     def update_enriched(self, article_id: int, row: dict[str, Any]) -> None:
@@ -118,6 +118,54 @@ class NewsRepository:
                 RETURNING id
             """), values).scalar()
         return int(result) if result is not None else None
+
+    @staticmethod
+    def _values(row: dict[str, Any]) -> dict[str, Any]:
+        values = {name: row.get(name) for name in (
+            "title", "content", "link", "publisher", "published_date", "ticker",
+            "yf_ticker", "company", "language", "title_en", "content_en", "reason",
+        )}
+        for name, value in list(values.items()):
+            if isinstance(value, str) and invalid_text(value):
+                values[name] = None
+        values["event"] = row.get("event_standardized") or row.get("event")
+        side = str(row.get("predicted_side") or "").strip().upper()
+        values["predicted_side"] = side if side in ("UP", "DOWN", "NEUTRAL") else None
+        values["predicted_move"] = finite_move(row.get("predicted_move"))
+        return values
+
+    def insert_pending(self, row: dict[str, Any]) -> int | None:
+        """Persist a unique raw article before optional enrichment can fail."""
+        values = self._values(row)
+        with self.engine.begin() as conn:
+            result = conn.execute(text("""
+                INSERT INTO public.news(title, content, link, publisher, published_date,
+                    ticker, yf_ticker, event, company, language, title_en, content_en,
+                    predicted_side, predicted_move, reason, status)
+                SELECT :title,:content,:link,:publisher,:published_date,:ticker,:yf_ticker,
+                    :event,:company,:language,:title_en,:content_en,:predicted_side,
+                    :predicted_move,:reason,'pending_enrichment'
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM public.news WHERE link=:link AND publisher=:publisher)
+                RETURNING id
+            """), values).scalar()
+        return int(result) if result is not None else None
+
+    def update_partial(self, article_id: int, row: dict[str, Any], missing: list[str]) -> None:
+        """Keep every successful field and mark the row for backfill if needed."""
+        values = {**self._values(row), "id": article_id,
+                  "status": "retryable" if missing else "enriched"}
+        with self.engine.begin() as conn:
+            conn.execute(text("""
+                UPDATE public.news SET
+                    company=COALESCE(:company,company), language=COALESCE(:language,language),
+                    title_en=COALESCE(:title_en,title_en), content_en=COALESCE(:content_en,content_en),
+                    ticker=COALESCE(:ticker,ticker), yf_ticker=COALESCE(:yf_ticker,yf_ticker),
+                    event=COALESCE(:event,event), predicted_side=COALESCE(:predicted_side,predicted_side),
+                    predicted_move=COALESCE(:predicted_move,predicted_move),
+                    reason=COALESCE(:reason,reason), status=:status
+                WHERE id=:id
+            """), values)
 
     def status(self) -> list[dict]:
         with self.engine.connect() as conn:

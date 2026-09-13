@@ -36,6 +36,12 @@ def _load_dashboard(page_number: int = 1, page_size: int = 5) -> dict:
         jobs = [dict(row) for row in conn.execute(text(
             "SELECT * FROM alpatrade.news_worker_jobs ORDER BY updated_at DESC LIMIT 8"
         )).mappings()]
+        enrichment = dict(conn.execute(text("""
+            SELECT count(*) FILTER (WHERE status='enriched') enriched,
+                   count(*) FILTER (WHERE status='retryable') retryable,
+                   count(*) FILTER (WHERE status='pending_enrichment') pending
+            FROM public.news
+        """)).mappings().one())
         latest = [dict(row) for row in conn.execute(text("""
             SELECT id, published_date, company, COALESCE(ticker,yf_ticker) ticker,
                    publisher, event, predicted_side, predicted_move, reason, title_en, link
@@ -76,7 +82,7 @@ def _load_dashboard(page_number: int = 1, page_size: int = 5) -> dict:
             """)).mappings()]
         except Exception:
             activity = []
-    return {"jobs": jobs, "latest": latest, "total_articles": total_articles,
+    return {"jobs": jobs, "enrichment": enrichment, "latest": latest, "total_articles": total_articles,
             "sides": sides, "events": events, "companies": companies,
             "publishers": publishers, "activity": activity}
 
@@ -94,11 +100,12 @@ def _dashboard(user: dict, page_number: int = 1):
         data = _load_dashboard(page_number)
         error = None
     except Exception as exc:  # DB/schema rollout should produce a useful page, not a 500
-        data = {"jobs": [], "latest": [], "total_articles": 0, "sides": [],
+        data = {"jobs": [], "enrichment": {}, "latest": [], "total_articles": 0, "sides": [],
                 "events": [], "companies": [], "publishers": [], "activity": []}
         error = type(exc).__name__
     jobs = data["jobs"]
     current = jobs[0] if jobs else {}
+    enrichment = data["enrichment"]
     status = current.get("status") or "not configured"
     latest_id = current.get("last_inserted_news_id") or "—"
     cards = Div(
@@ -106,6 +113,10 @@ def _dashboard(user: dict, page_number: int = 1):
         Div(Span("Mode", cls="sub"), Strong(current.get("job_name") or "—"), cls="card"),
         Div(Span("Last inserted news ID", cls="sub"), Strong(str(latest_id)), cls="card"),
         Div(Span("Processed / failed", cls="sub"), Strong(f"{current.get('processed_count', 0)} / {current.get('failed_count', 0)}"), cls="card"),
+        Div(Span("Enriched / retryable", cls="sub"), Strong(
+            f"{int(enrichment.get('enriched') or 0):,} / {int(enrichment.get('retryable') or 0):,}"), cls="card"),
+        Div(Span("Pending enrichment", cls="sub"), Strong(
+            f"{int(enrichment.get('pending') or 0):,}"), cls="card"),
         Div(Span("Last successful cycle", cls="sub"), Strong(str(current.get("last_successful_cycle") or "—")[:19]), cls="card"),
         cls="cards",
     )
