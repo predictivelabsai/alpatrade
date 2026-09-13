@@ -8,6 +8,7 @@ search, and activist filings (13D/activist positions by subject ticker).
 from __future__ import annotations
 
 from functools import lru_cache
+import math
 import re
 
 from sqlalchemy import text
@@ -17,7 +18,8 @@ from engine.db.pool import DatabasePool
 
 def _f(v):
     try:
-        return float(v)
+        value = float(v)
+        return value if math.isfinite(value) else None
     except (TypeError, ValueError):
         return 0.0
 
@@ -34,9 +36,9 @@ def top_funds(limit: int = 40) -> list[dict]:
             WHERE sp.table_value_total IS NOT NULL AND sp.table_value_total > 0
             ORDER BY cp.filingmanager_name, cp.report_calendar_or_quarter DESC
         """)).fetchall()
-    funds = [{"name": r[0], "value": _f(r[1]), "holdings": int(r[2] or 0), "period": str(r[3] or "")}
+    funds = [{"name": r[0], "value": _f(r[1]), "holdings": int(_f(r[2]) or 0), "period": str(r[3] or "")}
              for r in rows]
-    funds.sort(key=lambda f: f["value"], reverse=True)
+    funds.sort(key=lambda f: (f["value"] is not None, f["value"] or 0.0), reverse=True)
     return funds[:limit]
 
 
@@ -52,7 +54,7 @@ def fund_search(query: str, limit: int = 20) -> list[dict]:
             ORDER BY cp.filingmanager_name, cp.report_calendar_or_quarter DESC
             LIMIT :lim
         """), {"q": f"%{query}%", "lim": limit}).fetchall()
-    return [{"name": r[0], "value": _f(r[1]), "holdings": int(r[2] or 0), "period": str(r[3] or "")}
+    return [{"name": r[0], "value": _f(r[1]), "holdings": int(_f(r[2]) or 0), "period": str(r[3] or "")}
             for r in rows]
 
 
@@ -139,7 +141,9 @@ def activist_filings(ticker: str = "", form: str = "", limit: int = 25,
     return filings[:limit]
 
 
-def _b(v: float) -> str:
+def _b(v: float | None) -> str:
+    if v is None:
+        return "—"
     return f"${v/1e12:.2f}T" if v >= 1e12 else (f"${v/1e9:.1f}B" if v >= 1e9 else f"${v/1e6:.0f}M")
 
 
