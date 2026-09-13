@@ -1,7 +1,9 @@
 """Read-only News Scheduler operations dashboard."""
 from __future__ import annotations
 
-from fasthtml.common import A, Div, H1, H2, P, Span, Strong, Style, Table, Tbody, Td, Th, Thead, Tr
+from datetime import datetime, timezone
+
+from fasthtml.common import A, Button, Div, H1, H2, P, Span, Strong, Style, Table, Tbody, Td, Th, Thead, Tr
 from sqlalchemy import text
 from starlette.responses import RedirectResponse
 
@@ -26,7 +28,10 @@ max-width:430px}.pager{display:flex;align-items:center;justify-content:space-bet
 .pager-links{display:flex;gap:.5rem}.pager a,.pager span{padding:.38rem .7rem;border:1px solid var(--line);
 border-radius:7px;text-decoration:none}.pager .disabled{opacity:.45}.table-scroll{overflow-x:auto}
 .ok{color:var(--accent)}.bad{color:#b4472f}@media(max-width:800px){.grid{grid-template-columns:1fr}.ns{padding:.8rem}
-.bar{grid-template-columns:minmax(7rem,10rem) minmax(4rem,1fr) 3.4rem}}
+.bar{grid-template-columns:minmax(7rem,10rem) minmax(4rem,1fr) 3.4rem}}.ns-head{display:flex;align-items:center;
+justify-content:space-between;gap:1rem;flex-wrap:wrap}.ns-actions{display:flex;align-items:center;gap:.65rem}
+.ns-actions button{border:1px solid var(--line);background:#fff;border-radius:.45rem;padding:.5rem .75rem;color:var(--ink);
+cursor:pointer}.updated{color:var(--ink-muted);font-size:.78rem}
 """
 
 
@@ -139,7 +144,10 @@ def _dashboard(user: dict, page_number: int = 1):
               else Span("Previous", cls="disabled"),
             A("Next", href=f"/research/news-scheduler?p={page_number + 1}") if page_number < total_pages
               else Span("Next", cls="disabled"), cls="pager-links"), cls="pager")
-    body = Div(H1("News Scheduler"),
+    updated = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
+    body = Div(Div(H1("News Scheduler"),
+        Div(A(Button("Refresh", type="button"), href=f"/research/news-scheduler?p={page_number}"),
+            Span(f"updated {updated}", cls="updated"), cls="ns-actions"), cls="ns-head"),
         P("Realtime Finespresso ingestion, event-specific ML prediction and XAI reasoning. This page is read-only.", cls="sub"),
         P(f"Dashboard unavailable ({error}). Apply sql/31_news_worker_jobs.sql and sql/32_news_worker_events.sql." if error else "", cls="bad"),
         cards,
