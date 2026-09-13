@@ -9,7 +9,7 @@ from news_scheduler.pipeline import IncompleteArticle, NewsPipeline
 from news_scheduler.publishers import FinespressoPublishers, finespresso_feed_inventory
 from news_scheduler.repository import NewsRepository
 from news_scheduler.validation import finite_move, missing_enrichment_fields
-from news_scheduler.worker import Worker
+from news_scheduler.worker import STOP, Worker
 
 
 VALID = {"company": "Apple", "language": "en", "title_en": "Title", "content_en": "Body",
@@ -108,6 +108,22 @@ def test_incomplete_article_remains_retryable(monkeypatch):
         NewsPipeline(FakeModels(), xai).enrich({"title": "Results", "content": "Revenue rose"})
 
 
+def test_best_effort_pipeline_retains_partial_fields_for_database_retry(monkeypatch):
+    models = FakeModels()
+    models.available_events = lambda: ("earnings",)
+    xai = MagicMock()
+    xai.metadata.side_effect = RuntimeError("provider unavailable")
+    xai.reason.side_effect = RuntimeError("provider unavailable")
+    row, missing, issues = NewsPipeline(models, xai).enrich_best_effort({
+        "title": "Original title", "content": "Original content",
+        "publisher": "test", "link": "https://example.test/news",
+    })
+    assert row["title"] == "Original title" and row["content"] == "Original content"
+    assert "company" in missing and "reason" in missing
+    assert issues == ["metadata:RuntimeError", "prediction:KeyError",
+                      "reason:RuntimeError"]
+
+
 class FakeRepo:
     def __init__(self, acquired=True):
         self.acquired, self.saved, self.inserted, self.updates = acquired, 0, 0, []
@@ -117,13 +133,18 @@ class FakeRepo:
     @contextmanager
     def lock(self, *args): yield self.acquired
     def incomplete(self, after, limit, shard, count): return []
+    def remaining(self, shard=0, count=1): return 0
     def update_checkpoint(self, *args, **values): self.state.update(values); self.updates.append(values)
 
 
 class RealtimeRepo(FakeRepo):
-    def insert_enriched(self, row):
+    def insert_pending(self, row):
         self.inserted += 1
         return 99
+
+    def update_partial(self, article_id, row, missing):
+        self.saved += 1
+        self.last_missing = missing
 
 
 def test_finespresso_inventory_is_default_without_new_environment_variable(monkeypatch):
@@ -144,11 +165,11 @@ def test_realtime_skips_existing_links_before_enrichment():
         {"title": "New", "publisher": "p", "link": "new"},
     ]
     pipeline = MagicMock()
-    pipeline.enrich.return_value = dict(VALID)
+    pipeline.enrich_best_effort.return_value = (dict(VALID), [], [])
     Worker("realtime", 5, 60, 0, 1, repository=repo, pipeline=pipeline,
            publishers=publishers)._realtime_cycle()
-    pipeline.enrich.assert_called_once()
-    assert pipeline.enrich.call_args.args[0]["link"] == "new"
+    pipeline.enrich_best_effort.assert_called_once()
+    assert pipeline.enrich_best_effort.call_args.args[0]["link"] == "new"
 
 
 def test_realtime_failures_cannot_exceed_batch_cost_ceiling():
@@ -158,11 +179,15 @@ def test_realtime_failures_cannot_exceed_batch_cost_ceiling():
         {"title": str(i), "publisher": "p", "link": str(i)} for i in range(20)
     ]
     pipeline = MagicMock()
-    pipeline.enrich.side_effect = MissingEventModel("missing")
+    pipeline.enrich_best_effort.return_value = (
+        {"title": "partial"}, ["company", "predicted_side"],
+        ["metadata:RuntimeError", "prediction:MissingEventModel"],
+    )
     Worker("realtime", 3, 60, 0, 1, repository=repo, pipeline=pipeline,
            publishers=publishers)._realtime_cycle()
-    assert pipeline.enrich.call_count == 1
-    assert repo.state["failed_count"] == 1
+    assert pipeline.enrich_best_effort.call_count == 3
+    assert repo.state["failed_count"] == 3
+    assert repo.inserted == 3
 
 
 def test_realtime_worker_inserts_fully_enriched_article():
@@ -170,23 +195,56 @@ def test_realtime_worker_inserts_fully_enriched_article():
     publishers = MagicMock()
     publishers.collect.return_value = [{"title": "News"}]
     pipeline = MagicMock()
-    pipeline.enrich.return_value = dict(VALID)
+    pipeline.enrich_best_effort.return_value = (dict(VALID), [], [])
     worker = Worker("realtime", 5, 60, 0, 1, repository=repo, pipeline=pipeline, publishers=publishers)
     assert worker._realtime_cycle() is True
     assert repo.inserted == 1 and repo.state["last_inserted_news_id"] == 99
 
 
-def test_realtime_worker_does_not_insert_incomplete_article():
+def test_realtime_worker_saves_incomplete_article_and_continues():
     repo = RealtimeRepo()
     publishers = MagicMock()
-    publishers.collect.return_value = [{"title": "News"}]
+    publishers.collect.return_value = [{"title": "News"}, {"title": "Next"}]
     pipeline = MagicMock()
-    pipeline.enrich.side_effect = IncompleteArticle(["reason"])
+    pipeline.enrich_best_effort.side_effect = [
+        ({"title": "News"}, ["reason"], ["reason:RuntimeError"]),
+        (dict(VALID), [], []),
+    ]
     worker = Worker("realtime", 5, 60, 0, 1, repository=repo, pipeline=pipeline, publishers=publishers)
     worker._realtime_cycle()
-    assert repo.inserted == 0 and repo.state["failed_count"] == 1
-    assert repo.state["status"] == "error"
-    assert repo.state["last_error"] == "IncompleteArticle: missing=['reason']"
+    assert repo.inserted == 2 and repo.saved == 2
+    assert pipeline.enrich_best_effort.call_count == 2
+    assert repo.state["failed_count"] == 1
+    assert repo.state["status"] == "running"
+    assert repo.state["last_error"] is None
+
+
+def test_repository_converts_placeholders_to_database_nulls():
+    values = NewsRepository._values({
+        "title": "Headline", "company": "N/A", "reason": "Error in summarization",
+        "predicted_side": "NaN", "predicted_move": float("inf"),
+    })
+    assert values["title"] == "Headline"
+    assert values["company"] is None and values["reason"] is None
+    assert values["predicted_side"] is None and values["predicted_move"] is None
+
+
+def test_backfill_retains_partial_result_and_advances_to_later_rows():
+    repo = RealtimeRepo()
+    repo.incomplete = lambda *args: [
+        {"id": 5, "publisher": "p", "title": "First"},
+        {"id": 7, "publisher": "p", "title": "Second"},
+    ]
+    pipeline = MagicMock()
+    pipeline.enrich_best_effort.side_effect = [
+        ({"title": "First"}, ["company"], ["metadata:RuntimeError"]),
+        ({**VALID, "title": "Second"}, [], []),
+    ]
+    worker = Worker("backfill", 10, 60, 0, 1, repository=repo,
+                    pipeline=pipeline, publishers=MagicMock())
+    assert worker._backfill_cycle() is True
+    assert pipeline.enrich_best_effort.call_count == 2
+    assert repo.saved == 2 and repo.state["last_processed_news_id"] == 7
 
 
 def test_durable_checkpoint_resume_uses_saved_cursor():
@@ -201,16 +259,33 @@ def test_duplicate_worker_lock_returns_without_work():
     assert worker.run() == 2
 
 
+def test_realtime_worker_survives_cycle_exception_until_shutdown():
+    repo = FakeRepo()
+    worker = Worker("realtime", 1, 1, 0, 1, repository=repo,
+                    pipeline=MagicMock(), publishers=MagicMock())
+    def fail_cycle():
+        STOP.set()
+        raise RuntimeError("bad publisher cycle")
+    worker._realtime_cycle = fail_cycle
+    try:
+        assert worker.run() == 0
+        assert any(update.get("last_error") for update in repo.updates)
+    finally:
+        STOP.clear()
+
+
 def test_shards_use_disjoint_modulo_predicate():
     assert NewsRepository.lock_key("news-backfill", 0) != NewsRepository.lock_key("news-backfill", 1)
     source = open("news_scheduler/repository.py", encoding="utf-8").read()
-    assert "mod(id,:count)=:shard" in source and "event='press_releases'" in source
+    assert "mod(id,:count)=:shard" in source
+    assert "event='press_releases'" not in source
 
 
 def test_realtime_insert_is_idempotent_at_repository_contract():
     source = open("news_scheduler/repository.py", encoding="utf-8").read()
     assert "WHERE NOT EXISTS" in source
     assert "link=:link AND publisher=:publisher" in source
+    assert "pending_enrichment" in source and "retryable" in source
 
 
 def test_migration_contains_durable_checkpoint_and_unique_shard_key():

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Continuous partial news ingestion
+
+- Restored the original Finespresso behavior of saving every unique publisher
+  article while retaining successful enrichment fields and using SQL nulls for
+  unavailable values.
+- Individual enrichment and publisher-cycle failures no longer terminate the
+  continuously scheduled worker or block later articles.
+- Backfill now retries incomplete rows across every event type, and the News
+  Scheduler distinguishes enriched, retryable, and pending records.
+
 ### Finespresso realtime news and resumable backfill
 
 - Added a dedicated realtime/backfill news worker with graceful shutdown,

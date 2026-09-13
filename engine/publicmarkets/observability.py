@@ -111,8 +111,8 @@ def news_worker_snapshot() -> list[dict]:
         OR reason IS NULL OR btrim(reason)=''"""
     try:
         with DatabasePool().get_session() as session:
-            total = int(session.execute(text("SELECT count(*) FROM public.news WHERE event='press_releases'")).scalar() or 0)
-            remaining = int(session.execute(text(f"SELECT count(*) FROM public.news WHERE event='press_releases' AND ({incomplete})")).scalar() or 0)
+            total = int(session.execute(text("SELECT count(*) FROM public.news")).scalar() or 0)
+            remaining = int(session.execute(text(f"SELECT count(*) FROM public.news WHERE ({incomplete})")).scalar() or 0)
             rows = session.execute(text("SELECT * FROM alpatrade.news_worker_jobs ORDER BY updated_at DESC")).mappings().all()
         return [{**dict(row), "mode": str(row["job_name"]).removeprefix("news-"),
                  "remaining_incomplete_rows": remaining,

@@ -32,3 +32,35 @@ class NewsPipeline:
         if missing:
             raise IncompleteArticle(missing)
         return row
+
+    def enrich_best_effort(self, article: dict[str, Any]) -> tuple[dict[str, Any], list[str], list[str]]:
+        """Run every enrichment stage and retain successful fields.
+
+        This mirrors the original Finespresso scheduler: a failure in one stage
+        does not discard the downloaded article or prevent later stages from
+        being attempted. Exceptions are returned as sanitized type names so the
+        worker can persist a retryable row without logging article content.
+        """
+        row = dict(article)
+        issues: list[str] = []
+        try:
+            allowed = self.models.available_events() if hasattr(self.models, "available_events") else ()
+            metadata = (self.xai.metadata(dict(row), allowed_events=allowed)
+                        if allowed else self.xai.metadata(dict(row)))
+            row.update(metadata or {})
+        except Exception as exc:  # each stage is independent by design
+            issues.append(f"metadata:{type(exc).__name__}")
+
+        row["event_standardized"] = normalize_event(row.get("event"))
+        try:
+            row = predict(row, self.models.for_event(row["event_standardized"]))
+        except Exception as exc:
+            issues.append(f"prediction:{type(exc).__name__}")
+
+        try:
+            row["reason"] = self.xai.reason(row)
+        except Exception as exc:
+            issues.append(f"reason:{type(exc).__name__}")
+
+        row = normalized_enrichment(row)
+        return row, missing_enrichment_fields(row), issues
