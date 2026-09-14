@@ -7,6 +7,7 @@ plus a text insight summary for the chat tool.
 from __future__ import annotations
 
 import logging
+import math
 from datetime import datetime, timedelta
 
 log = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ def sector_returns(years: int = 5) -> dict:
             hist["Year"] = hist.index.year
             for yr, grp in hist.groupby("Year"):
                 first, last = float(grp["Close"].iloc[0]), float(grp["Close"].iloc[-1])
-                if first:
+                if math.isfinite(first) and math.isfinite(last) and first:
                     per_sector.setdefault(sector, {})[int(yr)] = round((last / first - 1) * 100, 1)
                     years_seen.add(int(yr))
         except Exception as e:  # noqa: BLE001

@@ -30,6 +30,10 @@ border-radius:7px;text-decoration:none}.pager .disabled{opacity:.45}.table-scrol
 """
 
 
+def _format_predicted_move(value) -> str:
+    return "—" if value is None else f"{float(value):+.2f}%"
+
+
 def _load_dashboard(page_number: int = 1, page_size: int = 5) -> dict:
     offset = (page_number - 1) * page_size
     with DatabasePool().engine.connect() as conn:
@@ -44,16 +48,19 @@ def _load_dashboard(page_number: int = 1, page_size: int = 5) -> dict:
         """)).mappings().one())
         latest = [dict(row) for row in conn.execute(text("""
             SELECT id, published_date, company, COALESCE(ticker,yf_ticker) ticker,
-                   publisher, event, predicted_side, predicted_move, reason, title_en, link
+                   publisher, event, predicted_side,
+                   NULLIF(predicted_move, 'NaN'::float8) predicted_move, reason, title_en, link
             FROM public.news
             WHERE title_en IS NOT NULL AND company IS NOT NULL
-              AND predicted_side IN ('UP','DOWN','NEUTRAL') AND predicted_move IS NOT NULL
+              AND predicted_side IN ('UP','DOWN','NEUTRAL')
+              AND NULLIF(predicted_move, 'NaN'::float8) IS NOT NULL
             ORDER BY id DESC LIMIT :limit OFFSET :offset
         """), {"limit": page_size, "offset": offset}).mappings()]
         total_articles = int(conn.execute(text("""
             SELECT count(*) FROM public.news
             WHERE title_en IS NOT NULL AND company IS NOT NULL
-              AND predicted_side IN ('UP','DOWN','NEUTRAL') AND predicted_move IS NOT NULL
+              AND predicted_side IN ('UP','DOWN','NEUTRAL')
+              AND NULLIF(predicted_move, 'NaN'::float8) IS NOT NULL
         """)).scalar() or 0)
         sides = [dict(row) for row in conn.execute(text("""
             SELECT predicted_side label, count(*) count FROM public.news
@@ -125,7 +132,7 @@ def _dashboard(user: dict, page_number: int = 1):
                       Td(row.get("publisher") or "—"), Td(row.get("event") or "—"),
                       Td(row.get("title_en") or "—"),
                       Td(Span(row.get("predicted_side") or "—", cls="badge")),
-                      Td(f"{float(row['predicted_move']):+.2f}%"),
+                      Td(_format_predicted_move(row.get("predicted_move"))),
                       Td(row.get("reason") or "—", cls="reason"),
                       Td(A("Open", href=row.get("link"), target="_blank") if row.get("link") else "—"))
                    for row in data["latest"]]
