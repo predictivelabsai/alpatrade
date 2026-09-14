@@ -1,7 +1,9 @@
 """SPACs page — screener over the shared liquidround.spac_data. register(app, rt)."""
 from __future__ import annotations
 
-from fasthtml.common import Div, Form, Input, NotStr, Option, P, Select, Style, Table, Tbody, Td, Th, Thead, Tr
+from urllib.parse import urlencode
+
+from fasthtml.common import A, Button, Div, Form, Input, NotStr, Option, P, Select, Style, Table, Tbody, Td, Th, Thead, Tr
 
 from engine.web.ph_layout import page
 
@@ -18,6 +20,9 @@ _CSS = """
 .spac-controls button{background:var(--accent);color:var(--bg);cursor:pointer;font-weight:600}
 .spac-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:.6rem}
 .spac-meta{font-size:.72rem;color:var(--ink-dim);margin:-.5rem 0 .7rem}
+.spac-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}.spac-head button{min-height:2.5rem;
+padding:.45rem .6rem;border:1px solid var(--line);border-radius:.45rem;background:var(--bg-elev);color:var(--ink);font:inherit;
+font-size:.8rem;cursor:pointer}
 .prem-pos{color:var(--accent)} .prem-neg{color:#b0653f}
 @media(max-width:700px){.spac-controls{grid-template-columns:1fr 1fr}.spac-controls input{grid-column:1/-1}}
 @media(max-width:460px){.spac-controls{grid-template-columns:1fr}}
@@ -67,8 +72,23 @@ def _page(user, q: str = "", status: str = "", sort: str = "trust"):
                       Td(_b(r["trust_size"])),
                       Td(f"${r['price']:,.2f}" if r["price"] else "—"),
                       Td(prem), Td((r["target"] or "—")[:24])))
+    try:
+        from sqlalchemy import text
+
+        from engine.db.pool import DatabasePool
+        with DatabasePool().engine.connect() as conn:
+            latest = conn.execute(text("SELECT max(last_updated) FROM liquidround.spac_data")).scalar()
+        freshness = (f"Data as of {latest.strftime('%Y-%m-%d %H:%M UTC')}"
+                     if latest else "Data as of: weekly scrape (Thu 05:00 UTC)")
+    except Exception:  # noqa: BLE001
+        freshness = "Data as of: weekly scrape (Thu 05:00 UTC)"
+    refresh_params = {k: v for k, v in (("q", q), ("status", status)) if v}
+    if sort != "trust":
+        refresh_params["sort"] = sort
+    refresh_href = "/spacs" + (f"?{urlencode(refresh_params)}" if refresh_params else "")
     body = Div(
-        NotStr("<h1>🔀 SPACs</h1>"),
+        Div(NotStr("<h1>🔀 SPACs</h1>"),
+            A(Button("Refresh", type="button"), href=refresh_href), cls="spac-head"),
         P("Special-purpose acquisition companies — trust size, NAV premium, status, targets.", cls="s-sub"),
         Form(
             Input(name="q", value=q, type="search", placeholder="Search ticker, company, sponsor, target…",
@@ -83,6 +103,7 @@ def _page(user, q: str = "", status: str = "", sort: str = "trust"):
             method="get", action="/spacs", cls="spac-controls",
         ),
         P(f"{len(rows)} matching SPACs · prices and NAV premium are refreshed from market data.", cls="spac-meta"),
+        P(freshness, cls="spac-meta"),
         Div(Table(Thead(Tr(Th("Ticker"), Th("Company"), Th("Sponsor"), Th("Status"),
                        Th("Trust"), Th("Price"), Th("NAV prem."), Th("Target"))),
               Tbody(*trs)), cls="spac-table-wrap"),
