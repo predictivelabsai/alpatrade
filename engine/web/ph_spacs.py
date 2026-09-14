@@ -1,6 +1,8 @@
 """SPACs page — screener over the shared liquidround.spac_data. register(app, rt)."""
 from __future__ import annotations
 
+from urllib.parse import urlencode
+
 from fasthtml.common import A, Button, Div, Form, Input, NotStr, Option, P, Select, Style, Table, Tbody, Td, Th, Thead, Tr
 
 from engine.web.ph_layout import page
@@ -80,9 +82,13 @@ def _page(user, q: str = "", status: str = "", sort: str = "trust"):
                      if latest else "Data as of: weekly scrape (Thu 05:00 UTC)")
     except Exception:  # noqa: BLE001
         freshness = "Data as of: weekly scrape (Thu 05:00 UTC)"
+    refresh_params = {k: v for k, v in (("q", q), ("status", status)) if v}
+    if sort != "trust":
+        refresh_params["sort"] = sort
+    refresh_href = "/spacs" + (f"?{urlencode(refresh_params)}" if refresh_params else "")
     body = Div(
         Div(NotStr("<h1>🔀 SPACs</h1>"),
-            A(Button("Refresh", type="button"), href="/spacs"), cls="spac-head"),
+            A(Button("Refresh", type="button"), href=refresh_href), cls="spac-head"),
         P("Special-purpose acquisition companies — trust size, NAV premium, status, targets.", cls="s-sub"),
         Form(
             Input(name="q", value=q, type="search", placeholder="Search ticker, company, sponsor, target…",
