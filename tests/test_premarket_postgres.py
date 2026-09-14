@@ -74,9 +74,9 @@ def isolated_pool():
                     (1,1,'2026-08-07','grok','Saved Grok'),(2,1,'2026-08-07','gemini','Saved Gemini');
             """))
             for migration in ["16_premarket_scans.sql", "28_xai_byok_query_gate.sql",
-                              "30_llm_usage_logging.sql", "31_premarket_migration.sql"]:
+                              "30_llm_usage_logging.sql", "33_premarket_migration.sql"]:
                 session.execute(text((ROOT / "sql" / migration).read_text()))
-            session.execute(text((ROOT / "sql/31_premarket_migration.sql").read_text()))
+            session.execute(text((ROOT / "sql/33_premarket_migration.sql").read_text()))
             session.execute(text("INSERT INTO alpatrade.users VALUES (:uid)"), {"uid": USER})
         yield pool
     finally:
