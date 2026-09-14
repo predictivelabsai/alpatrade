@@ -152,10 +152,28 @@ def register(app, rt):
 
     @rt("/premarket", methods=["GET"])
     def premarket_get(session):
+        from engine.premarket_data import enabled
+        if enabled():
+            from engine.web.ph_premarket_v2 import screen
+            return screen(_user(session))
         return _page(_user(session))
 
     @rt("/premarket/data", methods=["GET"])
-    def premarket_data(limit: int = 10):
+    def premarket_data(limit: int = 10, date: str = "", sector: str = "", run_id: str = "",
+                       historical: bool = False):
+        from engine import premarket_data as data
+        if data.enabled():
+            from engine.web.ph_premarket_v2 import public_payload, response_error
+            try:
+                if run_id:
+                    report = data.report_by_run(run_id)
+                else:
+                    if historical and not date:
+                        date = next(iter(data.available_dates()), "")
+                    report = data.dashboard(date, sector, limit)
+                return JSONResponse(public_payload(report, limit))
+            except Exception as exc:
+                return response_error(exc)
         from engine.premarket import latest_report
         return JSONResponse(_payload(latest_report(), limit))
 
@@ -165,8 +183,13 @@ def register(app, rt):
             import asyncio
             from engine.premarket import scan_premarket
             report = await asyncio.to_thread(scan_premarket)
+            from engine.premarket_data import enabled
+            if enabled():
+                from engine.web.ph_premarket_v2 import public_payload
+                return JSONResponse(public_payload(report, 10))
             return JSONResponse(_payload(report, 10))
         except Exception as exc:  # noqa: BLE001
-            return JSONResponse({"error": str(exc)}, status_code=502)
+            return JSONResponse({"error": "Premarket collection is temporarily unavailable."}, status_code=502)
 
-    return ["/premarket", "/premarket/data", "/premarket/scan"]
+    from engine.web.ph_premarket_v2 import register as register_v2
+    return ["/premarket", "/premarket/data", "/premarket/scan", *register_v2(app, rt, _user)]
