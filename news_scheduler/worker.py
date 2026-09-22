@@ -70,10 +70,14 @@ class Worker:
 
     def _backfill_cycle(self) -> bool:
         state = self.repo.checkpoint(self.job_name, self.shard_index, self.shard_count)
-        rows = self._retry(lambda: self.repo.incomplete(int(state["last_processed_news_id"] or 0), self.batch_size,
-                                                        self.shard_index, self.shard_count))
+        targeted = self.mode == "company-backfill"
+        fetch = self.repo.incomplete_company_type if targeted else self.repo.incomplete
+        count_remaining = (self.repo.remaining_company_type if targeted
+                           else self.repo.remaining)
+        rows = self._retry(lambda: fetch(int(state["last_processed_news_id"] or 0), self.batch_size,
+                                         self.shard_index, self.shard_count))
         if not rows:
-            remaining = self.repo.remaining(self.shard_index, self.shard_count)
+            remaining = count_remaining(self.shard_index, self.shard_count)
             if remaining:
                 # A complete pass may leave retryable rows behind. Rewind the
                 # durable cursor so a later bounded cycle can try them again.
@@ -206,7 +210,8 @@ class Worker:
             try:
                 while not STOP.is_set():
                     try:
-                        has_more = self._backfill_cycle() if self.mode == "backfill" else self._realtime_cycle()
+                        has_more = (self._realtime_cycle() if self.mode == "realtime"
+                                    else self._backfill_cycle())
                     except Exception as exc:
                         # A failed cycle is observable but never terminates the
                         # continuously scheduled worker.
@@ -220,7 +225,7 @@ class Worker:
                             pass
                         _event(logging.ERROR, "cycle_failed", error_type=type(exc).__name__)
                         has_more = True
-                    if self.mode == "backfill" and not has_more:
+                    if self.mode != "realtime" and not has_more:
                         break
                     STOP.wait(self.interval)
             except Exception as exc:
@@ -237,7 +242,8 @@ class Worker:
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("realtime", "backfill"), default=os.getenv("NEWS_WORKER_MODE", "realtime"))
+    parser.add_argument("--mode", choices=("realtime", "backfill", "company-backfill"),
+                        default=os.getenv("NEWS_WORKER_MODE", "realtime"))
     parser.add_argument("--batch-size", type=int, default=int(os.getenv("NEWS_WORKER_BATCH_SIZE", "25")))
     parser.add_argument("--interval", type=int, default=int(os.getenv("NEWS_WORKER_INTERVAL_SECONDS", "3600")))
     parser.add_argument("--shard-index", type=int, default=int(os.getenv("NEWS_WORKER_SHARD_INDEX", "0")))

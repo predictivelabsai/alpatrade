@@ -5,7 +5,13 @@ from typing import Any
 
 from news_scheduler.events import normalize_event
 from news_scheduler.models import MissingEventModel, ModelRegistry, predict
-from news_scheduler.validation import missing_enrichment_fields, normalized_enrichment
+from news_scheduler.validation import (
+    VALID_SIDES,
+    finite_move,
+    invalid_text,
+    missing_enrichment_fields,
+    normalized_enrichment,
+)
 
 
 class IncompleteArticle(RuntimeError):
@@ -42,25 +48,39 @@ class NewsPipeline:
         worker can persist a retryable row without logging article content.
         """
         row = dict(article)
+        original_ticker = row.get("ticker")
+        original_yf_ticker = row.get("yf_ticker")
         issues: list[str] = []
         try:
             allowed = self.models.available_events() if hasattr(self.models, "available_events") else ()
             metadata = (self.xai.metadata(dict(row), allowed_events=allowed)
                         if allowed else self.xai.metadata(dict(row)))
             row.update(metadata or {})
+            # Never let an empty model response erase deterministic listing
+            # evidence already stored by a publisher or an earlier pass.
+            if invalid_text(row.get("ticker")) and not invalid_text(original_ticker):
+                row["ticker"] = original_ticker
+            if invalid_text(row.get("yf_ticker")) and not invalid_text(original_yf_ticker):
+                row["yf_ticker"] = original_yf_ticker
         except Exception as exc:  # each stage is independent by design
             issues.append(f"metadata:{type(exc).__name__}")
 
         row["event_standardized"] = normalize_event(row.get("event"))
-        try:
-            row = predict(row, self.models.for_event(row["event_standardized"]))
-        except Exception as exc:
-            issues.append(f"prediction:{type(exc).__name__}")
+        has_prediction = (
+            str(row.get("predicted_side") or "").strip().upper() in VALID_SIDES
+            and finite_move(row.get("predicted_move")) is not None
+        )
+        if not has_prediction:
+            try:
+                row = predict(row, self.models.for_event(row["event_standardized"]))
+            except Exception as exc:
+                issues.append(f"prediction:{type(exc).__name__}")
 
-        try:
-            row["reason"] = self.xai.reason(row)
-        except Exception as exc:
-            issues.append(f"reason:{type(exc).__name__}")
+        if invalid_text(row.get("reason")):
+            try:
+                row["reason"] = self.xai.reason(row)
+            except Exception as exc:
+                issues.append(f"reason:{type(exc).__name__}")
 
         row = normalized_enrichment(row)
         return row, missing_enrichment_fields(row), issues

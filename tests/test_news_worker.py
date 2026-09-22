@@ -12,7 +12,7 @@ from news_scheduler.validation import finite_move, missing_enrichment_fields
 from news_scheduler.worker import STOP, Worker
 
 
-VALID = {"company": "Apple", "language": "en", "title_en": "Title", "content_en": "Body",
+VALID = {"company": "Apple", "company_type": "public", "language": "en", "title_en": "Title", "content_en": "Body",
          "predicted_side": "UP", "predicted_move": 1.2, "reason": "Model rationale"}
 
 
@@ -80,7 +80,7 @@ def test_pipeline_constrains_xai_to_model_backed_events(monkeypatch):
 
 class FakeXAI:
     def metadata(self, row):
-        return {**row, "company": "Apple", "language": "en", "title_en": row["title"],
+        return {**row, "company": "Apple", "company_type": "public", "language": "en", "title_en": row["title"],
                 "content_en": row["content"], "event": "earnings"}
 
     def reason(self, row):

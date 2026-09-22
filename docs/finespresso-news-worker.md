@@ -6,6 +6,11 @@ translation, event, event-specific ML, and XAI-reason enrichment. Successful fie
 are retained. Missing fields remain SQL `NULL` and mark the article retryable for the
 backfill worker; textual placeholders are never saved.
 
+Issuer enrichment also records `company_type` as `public` or `private`. A stored
+ticker is deterministic public-company evidence; otherwise the existing XAI metadata
+request classifies the issuer without adding another model call. Unresolved values
+remain retryable instead of being guessed.
+
 Realtime collection preserves the seven Finespresso publisher jobs: Baltics,
 Euronext, OMX, GlobeNewswire sector, GlobeNewswire country, GlobeNewswire industry,
 and PR Newswire. They are interleaved fairly inside the configured batch ceiling, so
@@ -19,6 +24,7 @@ Run once before starting a worker:
 ```bash
 python run_migration.py sql/31_news_worker_jobs.sql
 python run_migration.py sql/32_news_worker_events.sql
+python run_migration.py sql/34_news_company_type.sql
 ```
 
 The migrations create `alpatrade.news_worker_jobs` and `alpatrade.news_worker_events`.
@@ -53,8 +59,17 @@ overrides the publisher inventory ported from Finespresso Admin.
 
 ## Verification and monitoring
 
-Open `/research/news-scheduler` to see worker state, enriched/retryable/pending counts,
-prediction/event totals, fully enriched articles, and durable worker activity. Open
+After migration 34, run the targeted resumable backfill to classify historical rows
+without waiting behind unrelated incomplete enrichment:
+
+```bash
+python -m news_scheduler.worker --mode company-backfill --batch-size 25 --shard-index 0 --shard-count 1
+```
+
+It has its own `news-company-backfill` checkpoint. Open
+`/research/news-scheduler` to filter articles by public/private issuer and see worker
+state, coverage, enriched/retryable/pending counts, prediction/event totals, fully
+enriched articles, and durable worker activity. Open
 `/monitoring/data-health` as an administrator for backfill completion and sanitized
 errors. Use `/press` to filter enriched results. Coolify logs emit `article_inserted`,
 `article_saved_partial`, and `cycle_completed` events.

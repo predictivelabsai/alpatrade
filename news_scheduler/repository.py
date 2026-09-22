@@ -18,6 +18,7 @@ _MISSING_SQL = " OR ".join([
     "predicted_side IS NULL OR upper(btrim(predicted_side)) NOT IN ('UP','DOWN','NEUTRAL')",
     "predicted_move IS NULL OR predicted_move::text IN ('NaN','Infinity','-Infinity')",
     "reason IS NULL OR btrim(reason)='' OR lower(btrim(reason)) IN ('nan','n/a','error in summarization')",
+    "company_type IS NULL OR company_type NOT IN ('public','private')",
 ])
 
 
@@ -97,13 +98,36 @@ class NewsRepository:
             return int(conn.execute(text(f"SELECT count(*) FROM public.news WHERE mod(id,:count)=:shard AND ({_MISSING_SQL})"),
                                     {"count": shard_count, "shard": shard_index}).scalar() or 0)
 
+    def incomplete_company_type(self, after_id: int, limit: int, shard_index: int,
+                                shard_count: int) -> list[dict]:
+        with self.engine.connect() as conn:
+            rows = conn.execute(text("""SELECT * FROM public.news WHERE id>:after
+                AND mod(id,:count)=:shard
+                AND (company_type IS NULL OR company_type NOT IN ('public','private'))
+                ORDER BY id LIMIT :limit"""), {
+                    "after": after_id, "count": shard_count,
+                    "shard": shard_index, "limit": limit,
+                }).mappings().all()
+        return [dict(row) for row in rows]
+
+    def remaining_company_type(self, shard_index: int = 0,
+                               shard_count: int = 1) -> int:
+        with self.engine.connect() as conn:
+            return int(conn.execute(text("""SELECT count(*) FROM public.news
+                WHERE mod(id,:count)=:shard
+                  AND (company_type IS NULL OR company_type NOT IN ('public','private'))"""), {
+                    "count": shard_count, "shard": shard_index,
+                }).scalar() or 0)
+
     def update_enriched(self, article_id: int, row: dict[str, Any]) -> None:
         values = {name: row[name] for name in REQUIRED_FIELDS}
-        values.update({"id": article_id, "event": row.get("event_standardized") or row.get("event")})
+        values.update({"id": article_id, "event": row.get("event_standardized") or row.get("event"),
+                       "company_type": row.get("company_type")})
         with self.engine.begin() as conn:
             conn.execute(text("""UPDATE public.news SET company=:company, language=:language,
                 title_en=:title_en, content_en=:content_en, predicted_side=:predicted_side,
-                predicted_move=:predicted_move, reason=:reason, event=:event
+                predicted_move=:predicted_move, reason=:reason, event=:event,
+                company_type=:company_type
                 WHERE id=:id"""), values)
 
     def insert_enriched(self, row: dict[str, Any]) -> int | None:
@@ -111,9 +135,9 @@ class NewsRepository:
         with self.engine.begin() as conn:
             result = conn.execute(text("""
                 INSERT INTO public.news(title, content, link, publisher, published_date, ticker, yf_ticker,
-                    event, company, language, title_en, content_en, predicted_side, predicted_move, reason)
+                    event, company, company_type, language, title_en, content_en, predicted_side, predicted_move, reason)
                 SELECT :title,:content,:link,:publisher,:published_date,:ticker,:yf_ticker,:event_standardized,
-                    :company,:language,:title_en,:content_en,:predicted_side,:predicted_move,:reason
+                    :company,:company_type,:language,:title_en,:content_en,:predicted_side,:predicted_move,:reason
                 WHERE NOT EXISTS (SELECT 1 FROM public.news WHERE link=:link AND publisher=:publisher)
                 RETURNING id
             """), values).scalar()
@@ -123,7 +147,7 @@ class NewsRepository:
     def _values(row: dict[str, Any]) -> dict[str, Any]:
         values = {name: row.get(name) for name in (
             "title", "content", "link", "publisher", "published_date", "ticker",
-            "yf_ticker", "company", "language", "title_en", "content_en", "reason",
+            "yf_ticker", "company", "company_type", "language", "title_en", "content_en", "reason",
         )}
         for name, value in list(values.items()):
             if isinstance(value, str) and invalid_text(value):
@@ -140,10 +164,10 @@ class NewsRepository:
         with self.engine.begin() as conn:
             result = conn.execute(text("""
                 INSERT INTO public.news(title, content, link, publisher, published_date,
-                    ticker, yf_ticker, event, company, language, title_en, content_en,
+                    ticker, yf_ticker, event, company, company_type, language, title_en, content_en,
                     predicted_side, predicted_move, reason, status)
                 SELECT :title,:content,:link,:publisher,:published_date,:ticker,:yf_ticker,
-                    :event,:company,:language,:title_en,:content_en,:predicted_side,
+                    :event,:company,:company_type,:language,:title_en,:content_en,:predicted_side,
                     :predicted_move,:reason,'pending_enrichment'
                 WHERE NOT EXISTS (
                     SELECT 1 FROM public.news WHERE link=:link AND publisher=:publisher)
@@ -158,7 +182,9 @@ class NewsRepository:
         with self.engine.begin() as conn:
             conn.execute(text("""
                 UPDATE public.news SET
-                    company=COALESCE(:company,company), language=COALESCE(:language,language),
+                    company=COALESCE(:company,company),
+                    company_type=COALESCE(:company_type,company_type),
+                    language=COALESCE(:language,language),
                     title_en=COALESCE(:title_en,title_en), content_en=COALESCE(:content_en,content_en),
                     ticker=COALESCE(:ticker,ticker), yf_ticker=COALESCE(:yf_ticker,yf_ticker),
                     event=COALESCE(:event,event), predicted_side=COALESCE(:predicted_side,predicted_side),
