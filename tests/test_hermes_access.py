@@ -13,6 +13,7 @@ from engine.agents.hermes_access import (
 
 def test_delegation_is_user_scoped_and_short_lived(monkeypatch):
     monkeypatch.setenv("JWT_SECRET", "unit-test-secret")
+    monkeypatch.setenv("HERMES_ENABLED", "true")
     token = create_hermes_delegation(
         "11111111-1111-1111-1111-111111111111", "thread-7"
     )
@@ -50,6 +51,7 @@ def test_api_dependency_requires_dedicated_key(monkeypatch):
     from api_app import require_hermes_user
 
     monkeypatch.setenv("JWT_SECRET", "unit-test-secret")
+    monkeypatch.setenv("HERMES_ENABLED", "true")
     monkeypatch.setenv("ALPATRADE_HERMES_API_KEY", "broker-only-secret")
     token = create_hermes_delegation(
         "11111111-1111-1111-1111-111111111111", "thread-7"

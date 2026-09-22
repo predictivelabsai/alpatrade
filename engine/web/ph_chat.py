@@ -1381,6 +1381,23 @@ async def _stream(msg: str, session) -> StreamingResponse:
         compat["user"] = {"user_id": str(uid)}
 
     async def gen():
+        if runtime_override == "hermes_disabled":
+            user_key = str(uid) if uid is not None else ""
+            reply = (
+                "Hermes is currently disabled. Continue without `/hermes` to use "
+                "the default DeepAgents assistant."
+            )
+            yield _sse("session", {"sid": thread_id})
+            _save_chat_message(thread_id, user_key, "user", msg)
+            yield _sse("agent_route", {"slug": "deepagents", "agent": "AlpaTrade AI"})
+            yield _sse("token", {"text": reply})
+            _save_chat_message(
+                thread_id, user_key, "assistant", reply,
+                {"agent": "AlpaTrade AI", "framework": "deepagents",
+                 "dispatch": "hermes_disabled"},
+            )
+            yield _sse("done", {})
+            return
         # Bind the signed-in user so the shared agent's Alpaca tools resolve
         # per-user keys (never the shared env account).
         _agui.set_request_user(str(uid) if uid is not None else None)

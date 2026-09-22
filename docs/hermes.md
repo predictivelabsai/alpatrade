@@ -628,9 +628,12 @@ Never paste secret values into an issue, pull request, chat, or log excerpt.
 
 ## Rollback and upgrade
 
-To disable Hermes without affecting normal chat, remove or scale down the
-`hermes` service; DeepAgents remains the application default. Preserve the
-`hermes-data` volume if the agent may be restored later.
+Hermes is disabled by default without deleting its code, database history, or
+`hermes-data` volume. Normal chat uses DeepAgents, with LangGraph as its safe
+fallback; the UI hides Hermes shortcuts and the restricted broker returns 503.
+Both Hermes Compose services are behind the `hermes` profile. To deliberately
+restore the integration, set `HERMES_ENABLED=true` for `agui` and `api`, enable
+the `hermes` Compose profile, and redeploy. Do not recreate the volume.
 
 Before upgrading Hermes, back up the volume, change `HERMES_IMAGE_TAG` to a
 reviewed release, redeploy once, and repeat the health and `/hermes` checks.

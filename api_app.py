@@ -191,6 +191,9 @@ async def require_hermes_user(
     x_hermes_delegation: Optional[str] = Header(None, alias="X-Hermes-Delegation"),
 ) -> Dict:
     """Authenticate Hermes without granting it the general AlpaTrade API key."""
+    from engine.agents.hermes_feature import hermes_enabled
+    if not hermes_enabled():
+        raise HTTPException(status_code=503, detail="Hermes is disabled")
     configured = os.getenv("ALPATRADE_HERMES_API_KEY", "")
     if not configured or not x_hermes_key or not secrets.compare_digest(
         configured, x_hermes_key

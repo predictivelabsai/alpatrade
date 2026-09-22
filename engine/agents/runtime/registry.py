@@ -27,7 +27,7 @@ _ALIASES = {
     "lang-graph": "langgraph", "lang_graph": "langgraph",
 }
 _FALLBACK = "deepagents"
-_FALLBACK_ORDER = ("deepagents", "langgraph", "hermes")
+_FALLBACK_ORDER = ("deepagents", "langgraph")
 
 
 def _load(key: str):

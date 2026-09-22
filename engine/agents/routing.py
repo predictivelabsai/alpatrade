@@ -16,4 +16,8 @@ def agent_override(message: str) -> tuple[str | None, str]:
     runtime = _RUNTIME_PREFIXES.get(first.lower())
     if not runtime:
         return None, message
+    if runtime == "hermes":
+        from engine.agents.hermes_feature import hermes_enabled
+        if not hermes_enabled():
+            return "hermes_disabled", remainder.strip() if separator else ""
     return runtime, remainder.strip() if separator else ""

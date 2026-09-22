@@ -41,7 +41,7 @@ MODEL_NAMES = {
 }
 MARKET_DATA_PROVIDERS = ["yfinance", "alpaca"]
 SEARCH_PROVIDERS = ["tavily", "exa"]
-AGENT_FRAMEWORKS = ["deepagents", "langgraph", "hermes"]
+AGENT_FRAMEWORKS = ["deepagents", "langgraph"]
 
 _DEFAULTS = {
     "model_provider": "xai",
@@ -163,6 +163,10 @@ def get_settings(user_id: str | None = None) -> Settings:
             pass
     if data.get("market_data_provider") not in MARKET_DATA_PROVIDERS:
         data["market_data_provider"] = _DEFAULTS["market_data_provider"]
+    # A previously saved Hermes preference must not reactivate a disabled
+    # integration. Only currently exposed frameworks may be selected.
+    if data.get("agent_framework") not in AGENT_FRAMEWORKS:
+        data["agent_framework"] = _DEFAULTS["agent_framework"]
     data["api_key"] = None
     if user_id:
         try:
