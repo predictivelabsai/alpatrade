@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from fasthtml.common import A, Button, Div, H1, H2, P, Span, Strong, Style, Table, Tbody, Td, Th, Thead, Tr
+from fasthtml.common import A, Button, Div, Form, H1, H2, Option, P, Select, Span, Strong, Style, Table, Tbody, Td, Th, Thead, Tr
 from sqlalchemy import text
 from starlette.responses import RedirectResponse
 
@@ -32,6 +32,9 @@ border-radius:7px;text-decoration:none}.pager .disabled{opacity:.45}.table-scrol
 justify-content:space-between;gap:1rem;flex-wrap:wrap}.ns-actions{display:flex;align-items:center;gap:.65rem}
 .ns-actions button{border:1px solid var(--line);background:#fff;border-radius:.45rem;padding:.5rem .75rem;color:var(--ink);
 cursor:pointer}.updated{color:var(--ink-muted);font-size:.78rem}
+.ns-filter{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin:.8rem 0}
+.ns-filter select,.ns-filter button{border:1px solid var(--line);background:var(--paper);border-radius:.45rem;
+padding:.5rem .7rem;color:var(--ink)}
 """
 
 
@@ -39,8 +42,11 @@ def _format_predicted_move(value) -> str:
     return "—" if value is None else f"{float(value):+.2f}%"
 
 
-def _load_dashboard(page_number: int = 1, page_size: int = 5) -> dict:
+def _load_dashboard(page_number: int = 1, page_size: int = 5,
+                    company_type: str = "") -> dict:
     offset = (page_number - 1) * page_size
+    company_type = company_type if company_type in {"public", "private"} else ""
+    visibility_sql = " AND company_type=:company_type" if company_type else ""
     with DatabasePool().engine.connect() as conn:
         jobs = [dict(row) for row in conn.execute(text(
             "SELECT * FROM alpatrade.news_worker_jobs ORDER BY updated_at DESC LIMIT 8"
@@ -51,22 +57,29 @@ def _load_dashboard(page_number: int = 1, page_size: int = 5) -> dict:
                    count(*) FILTER (WHERE status='pending_enrichment') pending
             FROM public.news
         """)).mappings().one())
-        latest = [dict(row) for row in conn.execute(text("""
+        latest = [dict(row) for row in conn.execute(text(f"""
             SELECT id, published_date, company, COALESCE(ticker,yf_ticker) ticker,
-                   publisher, event, predicted_side,
+                   company_type, publisher, event, predicted_side,
                    NULLIF(predicted_move, 'NaN'::float8) predicted_move, reason, title_en, link
             FROM public.news
             WHERE title_en IS NOT NULL AND company IS NOT NULL
               AND predicted_side IN ('UP','DOWN','NEUTRAL')
               AND NULLIF(predicted_move, 'NaN'::float8) IS NOT NULL
+              {visibility_sql}
             ORDER BY id DESC LIMIT :limit OFFSET :offset
-        """), {"limit": page_size, "offset": offset}).mappings()]
-        total_articles = int(conn.execute(text("""
+        """), {"limit": page_size, "offset": offset,
+                 "company_type": company_type}).mappings()]
+        total_articles = int(conn.execute(text(f"""
             SELECT count(*) FROM public.news
             WHERE title_en IS NOT NULL AND company IS NOT NULL
               AND predicted_side IN ('UP','DOWN','NEUTRAL')
               AND NULLIF(predicted_move, 'NaN'::float8) IS NOT NULL
-        """)).scalar() or 0)
+              {visibility_sql}
+        """), {"company_type": company_type}).scalar() or 0)
+        company_types = [dict(row) for row in conn.execute(text("""
+            SELECT COALESCE(company_type,'unclassified') label, count(*) count
+            FROM public.news GROUP BY company_type ORDER BY count(*) DESC
+        """)).mappings()]
         sides = [dict(row) for row in conn.execute(text("""
             SELECT predicted_side label, count(*) count FROM public.news
             WHERE predicted_side IN ('UP','DOWN','NEUTRAL')
@@ -96,6 +109,7 @@ def _load_dashboard(page_number: int = 1, page_size: int = 5) -> dict:
             activity = []
     return {"jobs": jobs, "enrichment": enrichment, "latest": latest, "total_articles": total_articles,
             "sides": sides, "events": events, "companies": companies,
+            "company_types": company_types, "company_type": company_type,
             "publishers": publishers, "activity": activity}
 
 
@@ -106,14 +120,15 @@ def _bars(items: list[dict]):
                              cls="bar-track"), Span(f"{int(item['count']):,}", cls="bar-count"), cls="bar") for item in items])
 
 
-def _dashboard(user: dict, page_number: int = 1):
+def _dashboard(user: dict, page_number: int = 1, company_type: str = ""):
     page_number = max(1, int(page_number or 1))
     try:
-        data = _load_dashboard(page_number)
+        data = _load_dashboard(page_number, company_type=company_type)
         error = None
     except Exception as exc:  # DB/schema rollout should produce a useful page, not a 500
         data = {"jobs": [], "enrichment": {}, "latest": [], "total_articles": 0, "sides": [],
-                "events": [], "companies": [], "publishers": [], "activity": []}
+                "events": [], "companies": [], "company_types": [],
+                "company_type": "", "publishers": [], "activity": []}
         error = type(exc).__name__
     jobs = data["jobs"]
     current = jobs[0] if jobs else {}
@@ -134,6 +149,7 @@ def _dashboard(user: dict, page_number: int = 1):
     )
     latest_rows = [Tr(Td(row.get("id")), Td(str(row.get("published_date") or "")[:19]),
                       Td(row.get("company") or "—"), Td(row.get("ticker") or "—"),
+                      Td(Span((row.get("company_type") or "unclassified").title(), cls="badge")),
                       Td(row.get("publisher") or "—"), Td(row.get("event") or "—"),
                       Td(row.get("title_en") or "—"),
                       Td(Span(row.get("predicted_side") or "—", cls="badge")),
@@ -146,25 +162,37 @@ def _dashboard(user: dict, page_number: int = 1):
                         Td(row.get("publisher") or "—"), Td(str(row.get("details") or {})))
                      for row in data["activity"]]
     total_pages = max(1, (int(data["total_articles"]) + 4) // 5)
+    filter_suffix = f"&company_type={data['company_type']}" if data["company_type"] else ""
     pager = Div(Span(f"Page {page_number} of {total_pages} · {int(data['total_articles']):,} enriched articles"),
-        Div(A("Previous", href=f"/research/news-scheduler?p={page_number - 1}") if page_number > 1
+        Div(A("Previous", href=f"/research/news-scheduler?p={page_number - 1}{filter_suffix}") if page_number > 1
               else Span("Previous", cls="disabled"),
-            A("Next", href=f"/research/news-scheduler?p={page_number + 1}") if page_number < total_pages
+            A("Next", href=f"/research/news-scheduler?p={page_number + 1}{filter_suffix}") if page_number < total_pages
               else Span("Next", cls="disabled"), cls="pager-links"), cls="pager")
+    filters = Form(
+        Select(Option("All companies", value="", selected=not data["company_type"]),
+               Option("Public companies", value="public", selected=data["company_type"] == "public"),
+               Option("Private companies", value="private", selected=data["company_type"] == "private"),
+               name="company_type", aria_label="Filter by public or private company"),
+        Button("Apply filter", type="submit"), method="get",
+        action="/research/news-scheduler", cls="ns-filter",
+    )
     updated = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
     body = Div(Div(H1("News Scheduler"),
-        Div(A(Button("Refresh", type="button"), href=f"/research/news-scheduler?p={page_number}"),
+        Div(A(Button("Refresh", type="button"), href=f"/research/news-scheduler?p={page_number}{filter_suffix}"),
             Span(f"updated {updated}", cls="updated"), cls="ns-actions"), cls="ns-head"),
         P("Realtime Finespresso ingestion, event-specific ML prediction and XAI reasoning. This page is read-only.", cls="sub"),
-        P(f"Dashboard unavailable ({error}). Apply sql/31_news_worker_jobs.sql and sql/32_news_worker_events.sql." if error else "", cls="bad"),
+        P(f"Dashboard unavailable ({error}). Apply scheduler migrations through sql/34_news_company_type.sql." if error else "", cls="bad"),
         cards,
+        filters,
         Div(Div(H2("Prediction sides"), _bars(data["sides"]), cls="panel"),
-            Div(H2("Top events"), _bars(data["events"]), cls="panel"), cls="grid"),
-        Div(Div(H2("Top companies"), _bars(data["companies"]), cls="panel"),
+            Div(H2("Public / private coverage"), _bars(data["company_types"]), cls="panel"), cls="grid"),
+        Div(Div(H2("Top events"), _bars(data["events"]), cls="panel"),
+            Div(H2("Top companies"), _bars(data["companies"]), cls="panel"), cls="grid"),
+        Div(
             Div(H2("Top publishers"), _bars(data["publishers"]), cls="panel"), cls="grid"),
         Div(H2("Fully enriched articles"), Div(Table(Thead(Tr(*[Th(x) for x in
-            ("ID", "Published", "Company", "Ticker", "Publisher", "Event", "English headline", "Side", "Move", "XAI reason", "Source")])),
-            Tbody(*(latest_rows or [Tr(Td("No fully enriched news rows found.", colspan="11"))]))), cls="table-scroll"), pager, cls="panel"),
+            ("ID", "Published", "Company", "Ticker", "Type", "Publisher", "Event", "English headline", "Side", "Move", "XAI reason", "Source")])),
+            Tbody(*(latest_rows or [Tr(Td("No fully enriched news rows found.", colspan="12"))]))), cls="table-scroll"), pager, cls="panel"),
         Div(H2("Worker activity"), P("Durable sanitized events; article content and credentials are never logged.", cls="sub"),
             Table(Thead(Tr(*[Th(x) for x in ("Time", "Event", "Status", "News ID", "Publisher", "Details")])),
                   Tbody(*(activity_rows or [Tr(Td("No events yet. Run migration 32, then allow one worker cycle.", colspan="6"))]))), cls="panel"), cls="ns")
@@ -178,10 +206,10 @@ def register(app, rt):
         ph_layout.RESEARCH_PAGES.append(entry)
 
     @rt("/research/news-scheduler", methods=["GET"])
-    def news_scheduler_get(session, p: int = 1):
+    def news_scheduler_get(session, p: int = 1, company_type: str = ""):
         user = current_user(session)
         if not user:
             return RedirectResponse("/signin", status_code=303)
-        return _dashboard(user, p)
+        return _dashboard(user, p, company_type)
 
     return ["/research/news-scheduler"]
