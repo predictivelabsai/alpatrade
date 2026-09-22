@@ -9,6 +9,12 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
+@pytest.fixture(autouse=True)
+def _enable_hermes_for_runtime_contracts(monkeypatch):
+    """Keep legacy runtime contracts testable while production defaults off."""
+    monkeypatch.setenv("HERMES_ENABLED", "true")
+
+
 def test_hermes_build_is_remote_role_not_langgraph():
     from engine.agents.runtime.base import RoleSpec
     from engine.agents.runtime.hermes_rt import HermesAgent, HermesRuntime

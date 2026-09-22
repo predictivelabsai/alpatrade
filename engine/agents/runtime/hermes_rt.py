@@ -31,9 +31,8 @@ class HermesRuntime:
 
     @staticmethod
     def available() -> bool:
-        # The HTTP adapter has no optional dependency. Connectivity is checked per
-        # request so a temporarily unavailable sidecar can fall back cleanly.
-        return True
+        from engine.agents.hermes_feature import hermes_enabled
+        return hermes_enabled()
 
     @staticmethod
     def _base_url() -> str:

@@ -104,7 +104,6 @@ ALPHA_RESEARCH_SHORTCUTS = [
 MAIN_NAV = [
     ("AI Runtime", [
         ("/usage", "view your AI query allowance without spending a query"),
-        ("/hermes ", "use Hermes for one message"),
         ("/deepagents ", "use DeepAgents for one message"),
         ("/langgraph ", "use LangGraph for one message"),
     ]),

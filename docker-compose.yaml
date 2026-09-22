@@ -2,6 +2,7 @@ services:
   # Nous Hermes Agent gateway. Port 8642 remains private to the Compose network;
   # authenticated users enter through AlpaTrade's existing /app chat route.
   hermes:
+    profiles: ["hermes"]
     image: nousresearch/hermes-agent:${HERMES_IMAGE_TAG:-v2026.7.7.2}
     command: ["gateway", "run"]
     environment:
@@ -58,6 +59,7 @@ services:
       - API_SERVICE_KEY=${API_SERVICE_KEY:-}
       - API_SERVICE_KEYS=${API_SERVICE_KEYS:-}
       - ALPATRADE_HERMES_API_KEY=${HERMES_API_SERVER_KEY:-}
+      - HERMES_ENABLED=${HERMES_ENABLED:-false}
       - API_CORS_ORIGINS=${API_CORS_ORIGINS:-}
       # LangSmith tracing (docs/agent-tracing.md). Key lives in Coolify only.
       - LANGSMITH_TRACING=${LANGSMITH_TRACING:-false}
@@ -103,6 +105,7 @@ services:
   # AlpaTrade service, not the Hermes model container; it owns DB/broker access
   # and derives every job's user_id from the API's validated delegation.
   hermes-jobs:
+    profiles: ["hermes"]
     build:
       context: .
       dockerfile: Dockerfile.agui
@@ -166,6 +169,7 @@ services:
       - HERMES_API_URL=http://hermes:8642/v1
       - HERMES_API_SERVER_KEY=${HERMES_API_SERVER_KEY:-}
       - HERMES_API_MODEL=${HERMES_API_MODEL:-hermes-agent}
+      - HERMES_ENABLED=${HERMES_ENABLED:-false}
       - PNL_REPORT_FREQUENCY=${PNL_REPORT_FREQUENCY:-daily}
       - PNL_REPORT_HOUR_UTC=${PNL_REPORT_HOUR_UTC:-21}
       - PNL_REPORT_TO=${PNL_REPORT_TO:-}

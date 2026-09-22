@@ -51,23 +51,16 @@ def test_one_message_runtime_overrides_remain_in_command_surface():
                                  if label == "AI Runtime"))
 
     assert set(runtime_commands) == {
-        "/usage", "/hermes ", "/deepagents ", "/langgraph ",
+        "/usage", "/deepagents ", "/langgraph ",
     }
     assert "AI Runtime" not in html
 
 
-def test_sidebar_offers_guided_hermes_workflow_without_ids():
+def test_sidebar_hides_disabled_hermes_workflow():
     html = to_xml(_left_pane("app", {"email": "user@example.com"}))
 
-    assert "Hermes — Start Here" in html
-    assert "Hermes — Backtest" in html
-    assert "Hermes — Paper Trade" in html
-    assert "Hermes — Monitor" in html
-    assert "/hermes help" in html
-    assert "/hermes show my latest backtest result" in html
-    assert "/hermes start my best candidate in continuous paper trading" in html
-    assert "/hermes analyze my running paper job" in html
-    assert "onclick=\"fillChat('/hermes help')\"" in html
+    assert "Hermes" not in html
+    assert "/hermes" not in html
 
 
 def test_authenticated_sidebar_has_visible_sign_out():

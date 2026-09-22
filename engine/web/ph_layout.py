@@ -37,7 +37,6 @@ from fasthtml.common import (
 from engine.web.ph_commands import (
     AGENT_SHORTCUTS,
     ALPHA_RESEARCH_SHORTCUTS,
-    HERMES_SHORTCUTS,
 )
 
 # --- CDN assets -------------------------------------------------------------
@@ -438,7 +437,7 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             _nav_section(
                 "Agents",
                 Div(*[_menu_group(lbl, items, active)
-                      for lbl, items in AGENT_SHORTCUTS + HERMES_SHORTCUTS],
+                      for lbl, items in AGENT_SHORTCUTS],
                     cls="agent-browser"),
                 icon="sec-agents",
                 opened=active == "app",
