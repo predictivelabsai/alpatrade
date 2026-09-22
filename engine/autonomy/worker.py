@@ -142,6 +142,9 @@ def _advisor_loop(worker_id: str) -> None:
 
 
 def loop(worker_id: str = "worker-1") -> None:
+    # Research collection is independent of both trading and advisor queues.
+    from engine.premarket_jobs import start as start_premarket
+    start_premarket()
     # The NYSE-aware advisor scheduler is owned only by this worker process.
     try:
         from engine.autonomy.schedule import start as start_scheduler

@@ -48,6 +48,9 @@ _SNAPSHOT_DROP_KEYS = frozenset({"history", "catalysts", "ai_reasoning", "ai_sou
 
 def _flatten_report(report: dict[str, Any]) -> list[dict[str, Any]]:
     """Flatten a persisted scan report into de-duplicated mover rows."""
+    if report.get("schema_version") == 2 and "rows" in report:
+        return [{key: value for key, value in row.items() if key not in _SNAPSHOT_DROP_KEYS}
+                for row in report["rows"]]
     movers: list[dict[str, Any]] = []
     for bucket in report.get("sectors", {}).values():
         for direction in ("up", "down"):
@@ -60,6 +63,10 @@ def _flatten_report(report: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def premarket_snapshot(run_id: str | None = None, limit: int = 1000) -> list[dict]:
+    from engine.premarket_data import enabled
+    if enabled() and not run_id:
+        from engine.premarket_data import dashboard
+        return _flatten_report(dashboard(include_earnings=False))[:max(1, min(limit, 10000))]
     params: dict[str, Any] = {"limit": max(1, min(limit, 2500))}
     clause = ""
     if run_id:

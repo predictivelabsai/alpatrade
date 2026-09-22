@@ -211,7 +211,11 @@ def register(app, rt):
         return RedirectResponse("/research/premarket", status_code=302)
 
     @rt("/research/premarket", methods=["GET"])
-    def premarket(session):
+    def premarket(session, run_id: str = ""):
+        from engine.premarket_data import enabled
+        if enabled():
+            from urllib.parse import urlencode
+            return RedirectResponse("/premarket/history" + ("?" + urlencode({"run_id": run_id}) if run_id else ""), status_code=302)
         return _shell("research-premarket", "☀ Premarket Research",
                       "Sector breadth and movers from the latest premarket scan. "
                       "Fresh scans appear here automatically.",
@@ -245,6 +249,16 @@ def register(app, rt):
     def api_premarket(run_id: str = ""):
         from engine.research.data import premarket_runs, premarket_snapshot
         try:
+            from engine.premarket_data import enabled
+            if enabled():
+                from engine.premarket_data import dashboard, report_by_run
+                from engine.research.data import _flatten_report
+                report = report_by_run(run_id) if run_id else dashboard(include_earnings=False)
+                return JSONResponse(_json_content({
+                    "run": {"run_id": report.get("run_id"), "timestamp": report.get("scan_timestamp"),
+                            "scan_type": report.get("scan_type"), **report.get("summary", {})},
+                    "rows": _flatten_report(report),
+                }))
             runs = premarket_runs(1)
             return JSONResponse(_json_content({"run": runs[0] if runs else None,
                                                "rows": premarket_snapshot(run_id or None)}))
