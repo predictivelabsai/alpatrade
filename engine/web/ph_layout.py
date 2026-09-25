@@ -420,6 +420,7 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
                     _page_link("Dashboard", "/dashboard", "dashboard", active),
                     _page_link("Backtests", "/backtests", "backtests", active),
                     _page_link("Paper runs", "/paper", "paper", active),
+                    _page_link("Live runs", "/live", "live", active),
                     *_TRADE_EXTRA(active),
                     cls="page-links",
                 ),

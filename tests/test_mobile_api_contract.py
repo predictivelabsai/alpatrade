@@ -72,6 +72,11 @@ def test_agent_catalog_covers_core_and_specialized_agents():
     assert all(len(agent["skills"]) >= 4 for agent in agents)
 
 
+def _vary(resp):
+    # Newer Starlette (1.7+) CORS middleware appends "Origin"; only Accept matters here.
+    return {t.strip() for t in resp.headers.get("vary", "").split(",")}
+
+
 def test_browser_navigation_uses_formatted_docs_while_api_clients_get_json():
     client = TestClient(app, follow_redirects=False)
 
@@ -80,16 +85,16 @@ def test_browser_navigation_uses_formatted_docs_while_api_clients_get_json():
 
     assert catalog.status_code == 307
     assert catalog.headers["location"] == "/redoc#tag/agent-invocation"
-    assert catalog.headers["vary"] == "Accept"
+    assert "Accept" in _vary(catalog)
     assert schema.status_code == 307
     assert schema.headers["location"] == "/redoc"
-    assert schema.headers["vary"] == "Accept"
+    assert "Accept" in _vary(schema)
     json_catalog = client.get("/v2/agents", headers={"Accept": "application/json"})
     json_schema = client.get("/openapi.json", headers={"Accept": "application/json"})
     assert json_catalog.status_code == 200
-    assert json_catalog.headers["vary"] == "Accept"
+    assert "Accept" in _vary(json_catalog)
     assert json_schema.status_code == 200
-    assert json_schema.headers["vary"] == "Accept"
+    assert "Accept" in _vary(json_schema)
 
 
 def test_openapi_documents_agent_skills_and_redoc_groups():

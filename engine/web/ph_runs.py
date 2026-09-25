@@ -71,7 +71,7 @@ _LIMIT = 25
 
 _RUN_SQL = """
     SELECT r.run_id, r.mode, r.strategy, r.strategy_slug, r.status,
-           r.started_at, r.completed_at,
+           r.started_at, r.completed_at, r.config AS run_config, r.results AS run_results,
            s.params, s.total_return, s.sharpe_ratio
     FROM alpatrade.runs r
     LEFT JOIN alpatrade.backtest_summaries s
@@ -90,6 +90,9 @@ _MODE_EMPTY = {
         "<p>No paper runs yet. Backtest a strategy first — the deploy step appears on "
         "the <a href='/dashboard'>dashboard</a> and the <a href='/backtests'>backtests "
         "list</a> once a run exists.</p>"),
+    "live": (
+        "<p>No live runs yet. Live strategies run outside the app (e.g. "
+        "<code>scripts/live_btd_minhold.py --live</code>) and report here.</p>"),
 }
 
 
@@ -196,6 +199,46 @@ def _paper_row(r: dict) -> str:
         f"<td><span class='run-id'>{html.escape(str(r['run_id'])[:8])}</span></td></tr>")
 
 
+def _as_dict(v) -> dict:
+    if isinstance(v, str):
+        try:
+            v = json.loads(v)
+        except Exception:  # noqa: BLE001
+            return {}
+    return v if isinstance(v, dict) else {}
+
+
+def _pct(v) -> str:
+    if not isinstance(v, (int, float)):
+        return '<span class="muted">—</span>'
+    cls = "ret-pos" if v >= 0 else "ret-neg"
+    return f"<span class='{cls}'>{v:+.2f}%</span>"
+
+
+def _live_row(r: dict) -> str:
+    cfg = _as_dict(r.get("run_config"))
+    latest = _as_dict(_as_dict(r.get("run_results")).get("latest"))
+    status = html.escape(str(r.get("status") or "unknown"))
+    started = str(r.get("started_at") or "")[:16].replace("T", " ")
+    params = (f"dip {cfg.get('dip_threshold')}% / TP {cfg.get('take_profit')}% / "
+              f"SL {cfg.get('stop_loss')}% / hold {cfg.get('min_hold_days')}-{cfg.get('hold_days')}d"
+              f" / size {float(cfg.get('position_size') or 0) * 100:.1f}%") if cfg else "—"
+    pnl = latest.get("total_pnl")
+    pnl_txt = f"${pnl:+,.2f}" if isinstance(pnl, (int, float)) else "—"
+    acct = html.escape(str(cfg.get("account_number") or "live"))
+    upd = html.escape(str(latest.get("as_of") or "")[:16].replace("T", " "))
+    return (
+        f"<tr><td class='slug'>{html.escape(str(r.get('strategy') or 'live'))}</td>"
+        f"<td>{acct}</td><td class='num'>{html.escape(pnl_txt)}</td>"
+        f"<td class='num'>{_pct(latest.get('strategy_return_pct'))}</td>"
+        f"<td class='num'>{_pct(latest.get('spy_return_pct'))}</td>"
+        f"<td class='num'>{int(latest.get('open_positions') or 0)} / "
+        f"{int(latest.get('closed_trades') or 0)}</td>"
+        f"<td>{html.escape(params)}</td><td>{html.escape(started)}</td><td>{upd}</td>"
+        f"<td><span class='status {status}'>{status}</span></td>"
+        f"<td><span class='run-id'>{html.escape(str(r['run_id'])[:8])}</span></td></tr>")
+
+
 def _presets_strip() -> str:
     """One-click strategy presets — curated agent:backtest starting configs."""
     links = "".join(
@@ -214,11 +257,13 @@ def _render(mode: str, rows: list[dict]) -> str:
         "<div class='runs-tabs'>"
         f"<a class='{'active' if mode == 'backtest' else ''}' href='/backtests'>Backtests</a>"
         f"<a class='{'active' if mode == 'paper' else ''}' href='/paper'>Paper runs</a>"
+        f"<a class='{'active' if mode == 'live' else ''}' href='/live'>Live runs</a>"
         "</div>"
     )
-    title = "Backtests" if mode == "backtest" else "Paper runs"
-    sub = ("Your grid-searched strategies, ready to deploy"
-           if mode == "backtest" else "Your live paper-trading sessions")
+    title = {"backtest": "Backtests", "paper": "Paper runs"}.get(mode, "Live runs")
+    sub = {"backtest": "Your grid-searched strategies, ready to deploy",
+           "paper": "Your live paper-trading sessions"}.get(
+               mode, "Real-money strategies on your live broker account")
     head = (
         f"<div class='runs-head'><div><h1>{title}</h1>"
         f"<span class='muted'>{sub}</span></div>"
@@ -239,6 +284,17 @@ def _render(mode: str, rows: list[dict]) -> str:
             "</tr></thead><tbody>" + rows_html + "</tbody></table></div>"
             "<p class='muted' style='font-size:.72rem'>Latest "
             f"{len(rows)} backtest runs for your login.</p>"
+        )
+    elif mode == "live":
+        rows_html = "".join(_live_row(r) for r in rows)
+        body = (
+            "<div class='runs-tblwrap'><table><thead><tr>"
+            "<th>Strategy</th><th>Account</th><th>P&amp;L</th><th>Return</th><th>SPY</th>"
+            "<th>Open / closed</th><th>Params</th><th>Started</th><th>Updated</th>"
+            "<th>Status</th><th>Run</th>"
+            "</tr></thead><tbody>" + rows_html + "</tbody></table></div>"
+            "<p class='muted' style='font-size:.72rem'>Latest "
+            f"{len(rows)} live runs for your login. Return = runner P&amp;L / equity at start.</p>"
         )
     else:
         rows_html = "".join(_paper_row(r) for r in rows)
@@ -283,4 +339,19 @@ def register(app, rt):
         return page("paper", Style(_CSS), center, user=user,
                     title="Paper runs · AlpaTrade", right_news=False)
 
-    return ["/backtests", "/paper"]
+    @rt("/live")
+    def live_get(session):
+        user_id = session.get("user_id")
+        if not user_id:
+            return RedirectResponse("/signin", status_code=303)
+        rows = _list_runs("live", str(user_id))
+        try:
+            from engine.auth import get_user_by_id
+            user = get_user_by_id(str(user_id))
+        except Exception:  # noqa: BLE001
+            user = None
+        center = Div(NotStr(_render("live", rows)))
+        return page("live", Style(_CSS), center, user=user,
+                    title="Live runs · AlpaTrade", right_news=False)
+
+    return ["/backtests", "/paper", "/live"]

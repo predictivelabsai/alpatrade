@@ -48,3 +48,20 @@ loginctl enable-linger $USER   # keep user timers running when logged out
 # off:  systemctl --user disable --now alpatrade-btd.timer
 ```
 Logs: `~/.alpatrade-live/logs/btd.log` and `journalctl --user -u alpatrade-btd`.
+
+## Recording in AlpaTrade (alpatrade.chat → Trade → Live runs, `/live`)
+
+`--live` passes write, best-effort, to the app DB (`DATABASE_URL`) under the AlpaTrade user
+`$BTD_USER_EMAIL` (default `kaljuvee@gmail.com`; if no such user exists recording is disabled,
+never created):
+
+| table | content |
+|---|---|
+| `alpatrade.runs` | one row, `mode='live'`, strategy "Mag-7 BTD min-hold 3d", config = params + account number; `results.latest` each pass, `results.daily[<session date>]` once per day after the close |
+| `alpatrade.trades` | `trade_type='live'`, one row per round trip keyed by entry `client_order_id` (submitted → filled → exited, with P&L) |
+| `alpatrade.positions` | runner-owned open/closed positions |
+| `alpatrade.pnl_summary` | aggregate row (symbol NULL) |
+
+`account_id` stays NULL (the live account is not linked in `user_accounts`). The run id is kept
+in `~/.alpatrade-live/state.json` (`rec.run_id`). Any DB error logs a warning and disables recording
+for that pass only. Verify DB access without trading: `scripts/live_btd_minhold.py --record-test`.
