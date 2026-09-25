@@ -78,6 +78,19 @@ class AlpacaAPI:
     def is_paper(self):
         return self.paper
 
+    # Order-mutating calls are paper-only. The app never trades a live account:
+    # live accounts are shown read-only via engine.brokers.alpaca_live_readonly,
+    # and the standalone live runner uses its own client. This guard makes that
+    # an invariant of the shared wrapper rather than a convention of each caller.
+    LIVE_ORDER_REFUSAL = ("Refusing to modify a LIVE Alpaca account: AlpaTrade order, "
+                          "cancel and close actions are paper-only.")
+
+    def _live_refusal(self, action: str) -> Optional[Dict]:
+        if self.paper is True:
+            return None
+        logger.warning("Blocked %s on a live (non-paper) Alpaca client", action)
+        return {"error": self.LIVE_ORDER_REFUSAL, "refused": True}
+
     def get_cash_flows(self, day: str) -> float:
         """Net external cash flow (deposits − withdrawals) on a UTC date.
 
@@ -182,6 +195,9 @@ class AlpacaAPI:
 
     def create_order(self, symbol, qty=None, side='buy', type='market', time_in_force='day',
                      notional=None, limit_price=None, **kwargs):
+        refused = self._live_refusal("create_order")
+        if refused:
+            return refused
         from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest
         from alpaca.trading.enums import OrderSide, TimeInForce
         try:
@@ -313,6 +329,9 @@ class AlpacaAPI:
         Returns:
             Cancellation result or error
         """
+        refused = self._live_refusal("cancel_order")
+        if refused:
+            return refused
         try:
             self.trading_client.cancel_order_by_id(order_id)
             logger.info(f"Order {order_id} canceled successfully")
@@ -322,6 +341,9 @@ class AlpacaAPI:
             return {"error": str(e)}
 
     def cancel_all_orders(self):
+        refused = self._live_refusal("cancel_all_orders")
+        if refused:
+            return refused
         try:
             self.trading_client.cancel_orders()
             return {"status": "all_orders_cancelled"}
@@ -353,6 +375,9 @@ class AlpacaAPI:
     def close_position(self, symbol: str, qty: Optional[Union[int, float]] = None,
                       percentage: Optional[float] = None) -> Dict:
         """Close a position"""
+        refused = self._live_refusal("close_position")
+        if refused:
+            return refused
         try:
             if qty is not None:
                 self.trading_client.close_position(symbol, qty=qty)
@@ -369,6 +394,9 @@ class AlpacaAPI:
     
     def close_all_positions(self, cancel_orders: bool = False) -> Dict:
         """Close all positions"""
+        refused = self._live_refusal("close_all_positions")
+        if refused:
+            return refused
         try:
             self.trading_client.close_all_positions(cancel_orders=cancel_orders)
             return {"status": "all_positions_closed"}

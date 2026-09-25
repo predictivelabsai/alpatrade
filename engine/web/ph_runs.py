@@ -258,6 +258,7 @@ def _render(mode: str, rows: list[dict]) -> str:
         f"<a class='{'active' if mode == 'backtest' else ''}' href='/backtests'>Backtests</a>"
         f"<a class='{'active' if mode == 'paper' else ''}' href='/paper'>Paper runs</a>"
         f"<a class='{'active' if mode == 'live' else ''}' href='/live'>Live runs</a>"
+        "<a href='/live/account'>Live account</a>"
         "</div>"
     )
     title = {"backtest": "Backtests", "paper": "Paper runs"}.get(mode, "Live runs")

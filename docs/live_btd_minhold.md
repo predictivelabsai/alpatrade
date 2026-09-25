@@ -65,3 +65,33 @@ never created):
 `account_id` stays NULL (the live account is not linked in `user_accounts`). The run id is kept
 in `~/.alpatrade-live/state.json` (`rec.run_id`). Any DB error logs a warning and disables recording
 for that pass only. Verify DB access without trading: `scripts/live_btd_minhold.py --record-test`.
+
+## Read-only live account view (`/live/account`)
+
+Sidebar → Trade → **Live account** shows the signed-in user's linked Alpaca LIVE
+account: equity, cash, buying power, day P&L (equity − last_equity), positions and
+open orders. It is strictly read-only:
+
+- `engine/brokers/alpaca_live_readonly.py` issues only `GET /v2/account`,
+  `GET /v2/positions`, `GET /v2/orders?status=open` against the fixed host
+  `https://api.alpaca.markets`, and refuses to render if the returned account number
+  differs from the linked one. (Alpaca has no read-only trading keys, so this is
+  enforced in code.)
+- Keys live Fernet-encrypted in `alpatrade.user_live_broker_accounts`
+  (`sql/35_live_broker_accounts.sql`, `read_only` CHECK-constrained TRUE), a table
+  separate from `alpatrade.user_accounts`, so chat trading tools, paper jobs,
+  reconcile/cleanup and the account switcher never see them.
+- `AlpacaAPI` order/cancel/close methods refuse non-paper clients, and
+  `store_alpaca_keys` refuses live (`AK…`) key IDs.
+
+Link / re-link (e.g. after regenerating keys) from a checkout whose `.env` has the
+prod `DATABASE_URL`/`ENCRYPTION_KEY` and `ALPACA_LIVE_*`:
+
+    python run_migration.py sql/35_live_broker_accounts.sql   # once
+    python scripts/link_live_account.py --email you@example.com --check
+    python scripts/link_live_account.py --email you@example.com
+    python scripts/link_live_account.py --email you@example.com --unlink
+
+Local UI testing: start the app with `ALPATRADE_DEV_LOGIN=1` and open
+`http://localhost:5001/dev/login?email=...` (route only exists with that env var and
+only answers loopback clients with a localhost Host header; never set it in prod).

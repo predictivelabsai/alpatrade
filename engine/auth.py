@@ -207,12 +207,28 @@ def link_google_id(email: str, google_id: str) -> bool:
 # Alpaca key management
 # ---------------------------------------------------------------------------
 
+LIVE_KEY_REFUSAL = ("These are Alpaca LIVE keys. AlpaTrade trading accounts are paper-only; "
+                    "use paper keys (they start with PK).")
+
+
+def is_live_alpaca_key(api_key: Optional[str]) -> bool:
+    """True for an Alpaca live-trading key ID (``AK…``)."""
+    return (api_key or "").strip().upper().startswith("AK")
+
+
 def store_alpaca_keys(user_id: str, api_key: str, secret_key: str, account_name: str = "Default Account", account_id: Optional[str] = None) -> str:
     """
     Encrypt and store Alpaca API keys for a user account.
     If account_id is provided, updates existing account; otherwise inserts new one.
     Returns the account_id.
+
+    Refuses Alpaca LIVE key IDs (``AK…``; paper key IDs start with ``PK``): this
+    table feeds every paper trading path and the account switcher, so a live
+    account must never land here. Live accounts are linked read-only in
+    ``alpatrade.user_live_broker_accounts`` (see :mod:`engine.live_accounts`).
     """
+    if is_live_alpaca_key(api_key):
+        raise ValueError(LIVE_KEY_REFUSAL)
     from sqlalchemy import text
     pool = _get_pool()
     with pool.get_session() as session:
