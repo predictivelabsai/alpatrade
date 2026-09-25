@@ -100,7 +100,8 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                         atr_exit_mult: Optional[float] = None,
                         conservative_metrics: bool = False,
                         conservative_execution: bool = False,
-                        slippage_bps: float = 0.0) -> Tuple[pd.DataFrame, Dict]:
+                        slippage_bps: float = 0.0,
+                        min_hold_days: int = 0) -> Tuple[pd.DataFrame, Dict]:
     """
     Backtest buy-the-dip strategy
     
@@ -116,6 +117,8 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
         dip_threshold: Percentage drop to trigger buy (e.g., 0.02 = 2%)
         hold_days: Max days/periods to hold before a time-based exit.
                    0 or None = no limit; the trade runs until TP/SL hits.
+        min_hold_days: Calendar days before TP/SL may fire (true PDT min-hold).
+                       Time-based max exit still allowed at hold_days.
         take_profit: Take profit percentage (e.g., 0.01 = 1%)
         stop_loss: Stop loss percentage (e.g., 0.005 = 0.5%)
         interval: Data interval ('1d', '60m', '30m', '15m', '5m')
@@ -280,7 +283,9 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
 
             # Try intraday exit first for precise TP/SL ordering
             intraday_result = None
-            if intraday_exit and can_day_trade and intraday_data:
+            days_held_pre = (current_date.date() - trade['entry_date_raw']).days
+            tpsl_ok_pre = days_held_pre >= int(trade.get('min_hold_days') or 0)
+            if intraday_exit and can_day_trade and tpsl_ok_pre and intraday_data:
                 intraday_result = _check_intraday_exit(
                     symbol, trade, current_date, intraday_data, pdt_tracker
                 )
@@ -295,8 +300,10 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                 if hasattr(exit_display_time, 'astimezone'):
                     exit_display_time = exit_display_time.astimezone(pytz.timezone('US/Eastern'))
             else:
-                hit_tp = can_day_trade and float(current_bar['High']) >= trade['target_price']
-                hit_sl = can_day_trade and float(current_bar['Low']) <= trade['stop_price']
+                days_held = (current_date.date() - trade['entry_date_raw']).days
+                tpsl_ok = days_held >= int(trade.get('min_hold_days') or 0)
+                hit_tp = tpsl_ok and can_day_trade and float(current_bar['High']) >= trade['target_price']
+                hit_sl = tpsl_ok and can_day_trade and float(current_bar['Low']) <= trade['stop_price']
                 hit_end = (trade['max_exit_time'] is not None
                            and current_date >= trade['max_exit_time'])
 
@@ -434,6 +441,7 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                     # None = no time-based exit; the trade runs to TP/SL.
                     'max_exit_time': (current_date + timedelta(days=hold_days)
                                       if hold_days else None),
+                    'min_hold_days': int(min_hold_days or 0),
                     'dip_pct': dip_pct
                 }
         
