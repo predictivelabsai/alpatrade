@@ -26,6 +26,10 @@ import pandas as pd
 # A report date more than this many days after the previous one means a filing is
 # missing; the chain breaks instead of silently holding a stale book.
 MAX_PERIOD_GAP_DAYS = 120
+# The latest book is held forward at most this long: a quarter (~92d) plus the 45-day
+# filing deadline and a little slack. Past that the next 13F is overdue (or the
+# manager stopped filing, e.g. Scion) and the estimate stops instead of going stale.
+MAX_TRAILING_DAYS = 140
 
 
 @dataclass
@@ -124,6 +128,10 @@ def daily_returns(filings: list[Filing], prices: pd.DataFrame, method: str = "qu
                 index, filing.period_of_report + timedelta(days=MAX_PERIOD_GAP_DAYS))
         else:
             hard_end = index[-1]
+            if nxt is None:
+                cap = _last_on_or_before(
+                    index, filing.period_of_report + timedelta(days=MAX_TRAILING_DAYS))
+                hard_end = min(hard_end, cap) if cap is not None else hard_end
         end = entry_date(nxt, method, index) if nxt is not None else hard_end
         if end is None:
             end = index[-1]

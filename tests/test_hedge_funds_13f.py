@@ -257,3 +257,36 @@ def test_thousands_candidates_skip_large_average_positions():
     from engine.publicmarkets.hedge_funds import _thousands_candidates
     rows = [("big", 5.7e12, 50651), ("baupost", 5_115_380, 22), ("none", None, 10), ("zero", 1e6, 0)]
     assert _thousands_candidates(rows) == ["baupost"]
+
+
+def test_latest_book_is_not_held_past_overdue_filing():
+    prices = _prices()
+    f = Filing(date(2024, 3, 29), date(2024, 5, 15), [Position("b", 1, "BBB")])
+    daily, periods = daily_returns([f], prices, "quarter_end")
+    assert periods[0].end <= date(2024, 8, 16)          # 140-day cap, not 2025-01-10
+    rows = {r["label"]: r for r in summarize(daily, prices["SPY"], first_year=2024)}
+    assert rows["TTM"]["fund"] is None and rows["TTM"]["spy"] is not None
+
+
+def test_build_filings_picks_larger_affiliate_book():
+    from engine.publicmarkets.hf13f_store import build_filings
+    q = date(2026, 6, 30)
+    stub = {"form_type": "13F-HR", "amendment_type": None, "filing_date": date(2026, 8, 14), "filer": "A",
+            "rows": [{"cusip": "X", "value": 1.0, "ticker": "X", "put_call": None, "sh_prn_type": "SH"}]}
+    book = {"form_type": "13F-HR", "amendment_type": None, "filing_date": date(2026, 8, 14), "filer": "B",
+            "rows": [{"cusip": "Y", "value": 10.0, "ticker": "Y", "put_call": None, "sh_prn_type": "SH"},
+                     {"cusip": "Z", "value": 99.0, "ticker": "Z", "put_call": "CALL", "sh_prn_type": "SH"}]}
+    [f] = build_filings({q: [stub, book]}, "quarter_end")
+    assert [p.ticker for p in f.positions] == ["Y", "Z"]
+    assert f.filing_date == date(2026, 8, 14)
+
+
+def test_performance_by_cik_only_lists_funds_with_estimates(monkeypatch):
+    import engine.publicmarkets.hedge_funds as hf
+    monkeypatch.setattr(hf, "performance_rows", lambda method="quarter_end": {
+        "labels": ["2024", "2025", "TTM"], "spy": {}, "computed_at": None,
+        "funds": [{"cik": "1", "returns": {"2025": {"fund": 0.1}, "TTM": {"fund": 0.2}}},
+                  {"cik": "2", "returns": {"TTM": {"fund": None}}}, {"cik": "3", "returns": {}}]})
+    out = hf.performance_by_cik()
+    assert list(out) == ["1"]
+    assert out["1"]["last_year"]["label"] == "2025" and out["1"]["TTM"]["fund"] == 0.2

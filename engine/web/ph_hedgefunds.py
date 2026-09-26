@@ -34,6 +34,7 @@ _CSS = """
 .hf-note b{color:var(--ink)}
 .hfpage td.num,.hfpage th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .hf-pos{color:#1F7A4D}.hf-neg{color:#B23B3B}.hf-na{color:var(--ink-muted)}
+.hf-small{font-size:.72rem;color:var(--ink-muted)}.hf-nowrap{white-space:nowrap}
 .hf-spy td{background:var(--bg-raise);font-weight:600}
 .hf-badge{display:inline-block;font-size:.68rem;padding:.05rem .35rem;border-radius:.3rem;
   background:var(--bg-raise);border:1px solid var(--line);color:var(--ink-muted);margin-left:.3rem}
@@ -150,8 +151,9 @@ def _performance_section(method: str):
         ttm = rets.get("TTM") or {}
         excess = (ttm["fund"] - ttm["spy"]) if ttm.get("fund") is not None and ttm.get("spy") is not None else None
         cov = ttm.get("coverage")
-        latest = f"{f['latest_period']} (filed {f['latest_filed']})" if f["latest_period"] else "n/a"
-        body.append(Tr(Td(f["name"]), Td(latest), Td(_money(f["value"]), cls="num"),
+        latest = (Td(f["latest_period"], Div(f"filed {f['latest_filed']}", cls="hf-small"), cls="hf-nowrap")
+                  if f["latest_period"] else Td(Span("n/a", cls="hf-na")))
+        body.append(Tr(Td(f["name"]), latest, Td(_money(f["value"]), cls="num"),
                        Td(f"{f['positions']:,}" if f["positions"] is not None else "—", cls="num"),
                        *cells, Td(_pct(excess), cls="num"),
                        Td(f"{cov * 100:.0f}%" if cov is not None else "n/a", cls="num")))

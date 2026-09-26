@@ -334,7 +334,7 @@ def performance_rows(method: str = "quarter_end") -> dict:
             latest = s.execute(text("""
                 SELECT DISTINCT ON (cik) cik, period_of_report, filing_date, value_total_usd, n_positions
                 FROM alpatrade.hf13f_filings WHERE form_type = '13F-HR'
-                ORDER BY cik, period_of_report DESC, filing_date DESC
+                ORDER BY cik, period_of_report DESC, value_total_usd DESC NULLS LAST, filing_date DESC
             """)).fetchall()
             funds_all = s.execute(text(
                 "SELECT cik, display_name FROM alpatrade.hf13f_funds ORDER BY display_name")).fetchall()
@@ -371,6 +371,8 @@ def performance_by_cik(method: str = "quarter_end") -> dict[str, dict]:
     last_year = years[-1] if years else None
     out = {}
     for f in data["funds"]:
+        if not any(r.get("fund") is not None for r in f["returns"].values()):
+            continue  # no estimate yet -> not "with 13F-implied returns"
         entry = {}
         if "TTM" in f["returns"]:
             entry["TTM"] = f["returns"]["TTM"]

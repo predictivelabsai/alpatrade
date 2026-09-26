@@ -39,6 +39,7 @@ def main(argv=None) -> int:
     ap.add_argument("--cik", action="append", help="limit to CIK(s) (default: starter set)")
     ap.add_argument("--top", type=int, default=0, help="also map the N most widely held CUSIPs")
     ap.add_argument("--refresh", action="store_true", help="re-download filings already stored")
+    ap.add_argument("--price-cache", help="optional pickle path to cache Yahoo prices between runs")
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     funds = hf13f.STARTER_FUNDS
@@ -53,7 +54,7 @@ def main(argv=None) -> int:
         print("map", hf13f_store.map_cusips(extra_top_n=args.top), flush=True)
     if args.cmd in ("compute", "all"):
         ciks = [f[0] for f in funds] if args.cik else None
-        report = hf13f_store.compute_performance(ciks)
+        report = hf13f_store.compute_performance(ciks, price_cache=args.price_cache)
         for name, rows in report.items():
             print(f"\n{name}")
             for label, (fund, spy) in rows.items():

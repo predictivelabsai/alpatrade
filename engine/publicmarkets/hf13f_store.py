@@ -25,9 +25,12 @@ def _session():
 
 
 def ingest_fund(cik: str, display_name: str, since: date, refresh: bool = False) -> dict:
-    """Pull every 13F-HR(/A) with period >= since for one fund into alpatrade.hf13f_*."""
-    name, refs = hf13f.list_13f_filings(cik, since)
+    """Pull every 13F-HR(/A) with period >= since for one fund (plus its affiliate
+    filers in hf13f.ALT_CIKS) into alpatrade.hf13f_*."""
     cik10 = str(int(cik)).zfill(10)
+    name, refs = hf13f.list_13f_filings(cik, since)
+    for alt in hf13f.ALT_CIKS.get(cik10, []):
+        refs += hf13f.list_13f_filings(alt, since)[1]
     with _session() as s:
         s.execute(text("""
             INSERT INTO alpatrade.hf13f_funds (cik, name, display_name, is_starter)
@@ -54,9 +57,11 @@ def ingest_fund(cik: str, display_name: str, since: date, refresh: bool = False)
                       {"a": ref.accession})
             s.execute(text("""
                 INSERT INTO alpatrade.hf13f_filings (accession_number, cik, form_type, amendment_type,
-                    period_of_report, filing_date, value_multiplier, value_total_usd, n_positions, info_table_url)
-                VALUES (:a, :c, :f, :at, :p, :fd, :m, :t, :n, :u)
-            """), {"a": ref.accession, "c": cik10, "f": ref.form_type, "at": amendment_type,
+                    period_of_report, filing_date, value_multiplier, value_total_usd, n_positions,
+                    info_table_url, filer_cik)
+                VALUES (:a, :c, :f, :at, :p, :fd, :m, :t, :n, :u, :fc)
+            """), {"a": ref.accession, "c": cik10, "fc": None if ref.cik == cik10 else ref.cik,
+                   "f": ref.form_type, "at": amendment_type,
                    "p": ref.period_of_report, "fd": ref.filing_date, "m": mult, "t": total,
                    "n": len(rows), "u": url})
             if rows:
@@ -207,7 +212,8 @@ def load_fund_filings(cik: str) -> dict[date, list[dict]]:
     """period -> list of filing dicts with mapped rows."""
     with _session() as s:
         frows = s.execute(text("""
-            SELECT accession_number, form_type, amendment_type, period_of_report, filing_date
+            SELECT accession_number, form_type, amendment_type, period_of_report, filing_date,
+                   COALESCE(filer_cik, cik)
             FROM alpatrade.hf13f_filings WHERE cik = :c ORDER BY period_of_report, filing_date
         """), {"c": cik}).fetchall()
         hrows = s.execute(text("""
@@ -222,28 +228,62 @@ def load_fund_filings(cik: str) -> dict[date, list[dict]]:
         by_acc[a].append({"cusip": cu, "value": float(v), "put_call": pc, "sh_prn_type": st,
                           "ticker": t})
     periods: dict[date, list[dict]] = defaultdict(list)
-    for a, form, at, period, fdate in frows:
+    for a, form, at, period, fdate, filer in frows:
         periods[period].append({"accession": a, "form_type": form, "amendment_type": at,
-                                "filing_date": fdate, "rows": by_acc.get(a, [])})
+                                "filing_date": fdate, "filer": filer, "rows": by_acc.get(a, [])})
     return dict(periods)
 
 
+def _long_value(rows: list[dict]) -> float:
+    return sum(r["value"] for r in rows
+               if not (r.get("put_call") or "") and (r.get("sh_prn_type") or "SH") == "SH")
+
+
 def build_filings(periods: dict[date, list[dict]], method: str) -> list[Filing]:
+    """One Filing per quarter. With affiliate filers, the larger long book wins."""
     out = []
-    for period, fs in sorted(periods.items()):
-        originals = [f for f in fs if f["form_type"] == "13F-HR"]
-        first_known = min((f["filing_date"] for f in (originals or fs)))
-        as_of = first_known if method == "follow_filing" else None
-        rows = hf13f.effective_holdings(fs, as_of=as_of)
-        if not rows:
+    for period, all_fs in sorted(periods.items()):
+        best = None
+        for filer in sorted({f.get("filer") for f in all_fs}, key=str):
+            fs = [f for f in all_fs if f.get("filer") == filer]
+            originals = [f for f in fs if f["form_type"] == "13F-HR"]
+            first_known = min(f["filing_date"] for f in (originals or fs))
+            as_of = first_known if method == "follow_filing" else None
+            rows = hf13f.effective_holdings(fs, as_of=as_of)
+            if rows and (best is None or _long_value(rows) > best[0]):
+                best = (_long_value(rows), first_known, rows)
+        if best is None:
             continue
+        _, first_known, rows = best
         out.append(Filing(period, first_known, [Position(r["cusip"], r["value"], r["ticker"],
                                                          r["put_call"], r["sh_prn_type"]) for r in rows]))
     return out
 
 
+def cached_prices(tickers: list[str], start: date, cache_path: str | None) -> pd.DataFrame:
+    """download_prices with an optional local pickle cache (dev reruns); only
+    tickers missing from the cache are fetched, and the cache must be from today."""
+    import os
+    cached = None
+    if cache_path and os.path.exists(cache_path):
+        cached = pd.read_pickle(cache_path)
+        if cached.empty or cached.index.min() > pd.Timestamp(start) or \
+                date.fromtimestamp(os.path.getmtime(cache_path)) != date.today():
+            cached = None
+    missing = sorted(set(tickers) - set(cached.columns if cached is not None else []))
+    fresh = download_prices(missing, start) if missing else pd.DataFrame()
+    prices = fresh if cached is None else (cached if fresh.empty else cached.join(fresh, how="outer"))
+    if cache_path and not prices.empty:
+        # Remember tickers Yahoo had nothing for, so reruns don't refetch them.
+        for t in missing:
+            if t not in prices.columns:
+                prices[t] = float("nan")
+        prices.to_pickle(cache_path)
+    return prices
+
+
 def compute_performance(ciks: list[str] | None = None, prices: pd.DataFrame | None = None,
-                        first_year: int | None = None) -> dict:
+                        first_year: int | None = None, price_cache: str | None = None) -> dict:
     with _session() as s:
         funds = s.execute(text("SELECT cik, display_name FROM alpatrade.hf13f_funds ORDER BY cik")).fetchall()
     if ciks:
@@ -260,7 +300,7 @@ def compute_performance(ciks: list[str] | None = None, prices: pd.DataFrame | No
                 earliest = min(earliest, f.period_of_report)
                 tickers |= {p.ticker for p in f.positions if p.ticker}
     if prices is None:
-        prices = download_prices(sorted(tickers), earliest - timedelta(days=10))
+        prices = cached_prices(sorted(tickers), earliest - timedelta(days=10), price_cache)
     if "SPY" not in prices.columns:
         raise RuntimeError("SPY prices unavailable — cannot compute")
     report = {}

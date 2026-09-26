@@ -30,6 +30,9 @@ CREATE TABLE IF NOT EXISTS alpatrade.hf13f_filings (
     info_table_url TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+-- Filer CIK when a fund's book moved to a successor/affiliate filer (e.g. Pershing
+-- Square Capital Mgmt -> Pershing Square Inc. from Q2-2026); NULL = same as cik.
+ALTER TABLE alpatrade.hf13f_filings ADD COLUMN IF NOT EXISTS filer_cik VARCHAR(10);
 CREATE INDEX IF NOT EXISTS idx_hf13f_filings_cik_period
     ON alpatrade.hf13f_filings(cik, period_of_report);
 

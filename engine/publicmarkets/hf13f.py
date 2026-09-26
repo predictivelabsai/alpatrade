@@ -35,6 +35,12 @@ STARTER_FUNDS: list[tuple[str, str]] = [
     ("0001536411", "Duquesne Family Office"),
 ]
 
+# Affiliate / successor filers whose 13F-HRs belong to the same book. Per quarter
+# the filer reporting the larger long-equity book wins (the other files 13F-NT or a
+# stub). Pershing Square Capital Mgmt filed 13F-NT for Q2-2026; Pershing Square Inc.
+# (CIK 2026053) filed the holdings.
+ALT_CIKS: dict[str, list[str]] = {"0001336528": ["0002026053"]}
+
 METHODS = ("quarter_end", "follow_filing")
 METHOD_LABELS = {"quarter_end": "13F-implied (held from quarter end)",
                  "follow_filing": "Follow-the-filing (bought after filing date)"}
