@@ -90,7 +90,9 @@ def test_client_exposes_no_mutating_operations():
     for verb in (".post(", ".delete(", ".patch(", ".put(", ".request(", "TradingClient"):
         assert verb not in src, verb
     assert ro.LIVE_BASE_URL == "https://api.alpaca.markets"
-    assert set(ro.ALLOWED_GETS) == {"/v2/account", "/v2/positions", "/v2/orders"}
+    assert set(ro.ALLOWED_GETS) == {"/v2/account", "/v2/positions", "/v2/orders",
+                                    "/v2/account/activities/FILL",
+                                    "/v2/account/portfolio/history", "/v2/calendar"}
 
 
 def test_account_number_mismatch_refuses_display():
@@ -172,7 +174,9 @@ def test_live_link_table_is_only_used_by_the_readonly_view():
     """Structural isolation: no chat tool / paper job / reconcile / cleanup code can
     reach the live credentials, because only these files reference them."""
     allowed = {"engine/live_accounts.py", "engine/web/ph_live_account.py",
-               "scripts/link_live_account.py", "tests/test_live_account.py"}
+               "scripts/link_live_account.py", "tests/test_live_account.py",
+               # GET-only daily live report (owner-only email) and its tests
+               "scripts/daily_live_report.py", "tests/test_daily_live_report.py"}
     pat = re.compile(r"user_live_broker_accounts|engine\.live_accounts|get_live_account_credentials"
                      r"|alpaca_live_readonly")
     hits = set()

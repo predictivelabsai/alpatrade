@@ -103,6 +103,46 @@ def send_email_to(to_email: str, subject: str, body_html: str) -> bool:
         return False
 
 
+def send_email_to_result(to_email: str, subject: str, body_html: str) -> Dict[str, Any]:
+    """Like :func:`send_email_to` but returns Postmark's MessageID.
+
+    Returns ``{"ok": bool, "message_id": str | None, "error": str | None}``; the
+    error never contains the server token.
+    """
+    api_key = os.getenv("POSTMARK_API_KEY")
+    from_email = os.getenv("FROM_EMAIL")
+    if not all([api_key, from_email, to_email]):
+        logger.warning("Postmark env vars not set (POSTMARK_API_KEY, FROM_EMAIL)")
+        return {"ok": False, "message_id": None, "error": "email not configured"}
+    try:
+        resp = requests.post(
+            "https://api.postmarkapp.com/email",
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "X-Postmark-Server-Token": api_key,
+            },
+            json={
+                "From": from_email,
+                "To": to_email,
+                "Subject": subject,
+                "HtmlBody": body_html,
+                "MessageStream": "outbound",
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        payload = resp.json() if resp.content else {}
+        message_id = payload.get("MessageID") if isinstance(payload, dict) else None
+        logger.info(f"Email sent to {to_email}: {subject} (MessageID={message_id})")
+        return {"ok": True, "message_id": message_id, "error": None}
+    except Exception as e:
+        status = getattr(getattr(e, "response", None), "status_code", None)
+        logger.error(f"Failed to send email to {to_email}: {type(e).__name__} {status or ''}")
+        return {"ok": False, "message_id": None,
+                "error": f"{type(e).__name__}{f' HTTP {status}' if status else ''}"}
+
+
 def send_hermes_daily_report(
     report: Dict[str, Any], *, account_name: str = "", user_name: str = "",
     to_email: str,

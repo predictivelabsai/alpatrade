@@ -16,6 +16,16 @@ PnL-report scheduler:
     PNL_REPORT_FREQUENCY = daily | off      (default: daily)
     PNL_REPORT_HOUR_UTC  = 21               (0-23; ~1h after the 20:00 UTC US close)
     Account owners are resolved from DB; no cross-account distribution list is used.
+
+Live-report scheduler (scripts/daily_live_report.py — separate from the paper report):
+  Polls like the advisor. On US trading days only (Alpaca calendar via each owner's
+  GET-only live client; weekends/holidays send nothing) it fires once the session
+  close + delay has passed — 16:20 ET = 23:20 Tallinn by default, DST-proof — and
+  emails each linked live account's report to that account's own user email only.
+  A DB claim (alpatrade.live_report_deliveries) keeps it once per account per day.
+    LIVE_REPORT_ENABLED              = true      (default)
+    LIVE_REPORT_CLOSE_DELAY_MINUTES  = 20
+    LIVE_REPORT_POLL_SECONDS         = 60
 """
 from __future__ import annotations
 
@@ -89,6 +99,87 @@ def _run_pnl_report():
                      target["account_id"], "sent" if ok else "FAILED")
     except Exception as e:  # noqa: BLE001
         log.exception("daily PnL report failed: %s", e)
+
+
+def _live_enabled() -> bool:
+    return os.getenv("LIVE_REPORT_ENABLED", "true").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
+
+
+def _live_delay_minutes() -> int:
+    return max(0, int(os.getenv("LIVE_REPORT_CLOSE_DELAY_MINUTES", "20")))
+
+
+_live_done: set[tuple[date, str, str]] = set()
+_live_closes: dict[date, Optional[datetime]] = {}
+
+
+def run_due_live_reports(now: Optional[datetime] = None) -> list[dict]:
+    """Send today's live report to each linked owner once the close + delay passed.
+
+    Returns one result dict per attempted target. No-op on non-trading days."""
+    if not _live_enabled():
+        return []
+    from engine.reporting.advisor import EASTERN
+    from scripts.daily_live_report import (
+        client_for, report_targets, send_report, session_for,
+    )
+
+    now = now or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    session_date = now.astimezone(EASTERN).date()
+    _live_done.intersection_update({k for k in _live_done if k[0] == session_date})
+    for cached in list(_live_closes):
+        if cached != session_date:
+            _live_closes.pop(cached, None)
+    if session_date in _live_closes and _live_closes[session_date] is None:
+        return []  # known non-trading day
+    targets = [t for t in report_targets()
+               if (session_date, t["user_id"], t["account_number"]) not in _live_done]
+    if not targets:
+        return []
+    results = []
+    for target in targets:
+        key = (session_date, target["user_id"], target["account_number"])
+        try:
+            client = client_for(target)
+            if client is None:
+                _live_done.add(key)
+                continue
+            if session_date not in _live_closes:
+                sess = session_for(client, session_date)
+                _live_closes[session_date] = sess["close"] if sess else None
+            close = _live_closes[session_date]
+            if close is None:
+                log.info("live report: %s is not a trading day — nothing sent", session_date)
+                return results
+            if not advisor_is_due(now, close, _live_delay_minutes()):
+                return results
+            res = send_report(target, day=session_date, client=client)
+            _live_done.add(key)
+            results.append(res)
+            log.info("daily LIVE report acct=%s → owner: %s%s", target["account_number"],
+                     "sent" if res.get("sent") else "not sent",
+                     f" ({res.get('error')})" if res.get("error") else "")
+        except Exception as exc:  # noqa: BLE001 — one owner cannot block the others
+            log.exception("daily LIVE report acct=%s failed: %s",
+                          target.get("account_number"), exc)
+            _live_done.add(key)
+    return results
+
+
+def _live_loop() -> None:
+    poll_seconds = max(30, int(os.getenv("LIVE_REPORT_POLL_SECONDS", "60")))
+    log.info("live-report scheduler started (close delay=%sm, poll=%ss)",
+             _live_delay_minutes(), poll_seconds)
+    while True:
+        try:
+            run_due_live_reports()
+        except Exception as exc:  # noqa: BLE001
+            log.exception("live-report scheduling tick failed: %s", exc)
+        threading.Event().wait(poll_seconds)
 
 
 def advisor_is_due(
@@ -202,7 +293,7 @@ def _pnl_loop() -> None:
 
 
 def start() -> None:
-    """Start both worker-owned schedulers once in this process.
+    """Start the worker-owned schedulers once in this process.
 
     The advisor scheduler runs when ADVISOR_ENABLED is set; the nightly PnL-report
     scheduler runs unless PNL_REPORT_FREQUENCY is 'off'. They are independent, so
@@ -228,5 +319,12 @@ def start() -> None:
     else:
         log.info("PnL-report scheduler disabled (PNL_REPORT_FREQUENCY=off)")
 
+    if _live_enabled():
+        threading.Thread(
+            target=_live_loop, name="live-report-scheduler", daemon=True
+        ).start()
+    else:
+        log.info("live-report scheduler disabled (LIVE_REPORT_ENABLED=false)")
 
-__all__ = ["advisor_is_due", "enqueue_due_advisor_jobs", "start"]
+
+__all__ = ["advisor_is_due", "enqueue_due_advisor_jobs", "run_due_live_reports", "start"]
