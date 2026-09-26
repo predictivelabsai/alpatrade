@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Mac backup instance of the live Mag-7 BTD runner (docs/live_btd_minhold.md, "Failover").
+  Fires every 5 minutes, every hour, every day (launchd uses the Mac's local zone, e.g.
+  Europe/Tallinn); the script itself no-ops outside Mon-Fri 09:00-16:05 America/New_York,
+  so DST differences between the EU and the US need no handling here.
+  Install:  sed "s#__REPO__#$HOME/dev/plai/alpatrade#g; s#__HOME__#$HOME#g" \
+              deploy/launchd/com.predictivelabs.alpatrade-btd.plist > ~/Library/LaunchAgents/com.predictivelabs.alpatrade-btd.plist
+            launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.predictivelabs.alpatrade-btd.plist
+  Off:      launchctl bootout gui/$(id -u)/com.predictivelabs.alpatrade-btd
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.predictivelabs.alpatrade-btd</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>__REPO__/.venv/bin/python</string>
+        <string>__REPO__/scripts/live_btd_minhold.py</string>
+        <string>--live</string>
+        <string>--pos-frac</string>
+        <string>0.142857</string>
+    </array>
+    <key>WorkingDirectory</key><string>__REPO__</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>BTD_ROLE</key><string>backup</string>
+        <key>BTD_INSTANCE</key><string>mac</string>
+        <key>PATH</key><string>/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
+    </dict>
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Minute</key><integer>5</integer></dict>
+        <dict><key>Minute</key><integer>10</integer></dict>
+        <dict><key>Minute</key><integer>15</integer></dict>
+        <dict><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Minute</key><integer>25</integer></dict>
+        <dict><key>Minute</key><integer>30</integer></dict>
+        <dict><key>Minute</key><integer>35</integer></dict>
+        <dict><key>Minute</key><integer>40</integer></dict>
+        <dict><key>Minute</key><integer>45</integer></dict>
+        <dict><key>Minute</key><integer>50</integer></dict>
+        <dict><key>Minute</key><integer>55</integer></dict>
+    </array>
+    <key>RunAtLoad</key><false/>
+    <key>ProcessType</key><string>Background</string>
+    <key>StandardOutPath</key><string>__HOME__/.alpatrade-live/logs/launchd.out.log</string>
+    <key>StandardErrorPath</key><string>__HOME__/.alpatrade-live/logs/launchd.err.log</string>
+</dict>
+</plist>

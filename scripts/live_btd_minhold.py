@@ -20,6 +20,22 @@ $BTD_USER_EMAIL (default kaljuvee@gmail.com). Best-effort: DB errors are logged 
 never block or change trading. `--record-test` writes a marked test run, reads it
 back and deletes it (no orders, no Alpaca writes).
 
+Failover (HP primary + Mac backup, see utils/live_btd_state.py for the full design):
+the authoritative runner state (owned positions, pending orders, last entries, run id)
+lives in alpatrade.live_runner_state; ~/.alpatrade-live/state.json is only a local cache.
+Each --live pass takes a DB lease in one transaction and writes a heartbeat
+(alpatrade.live_runner_heartbeats); only the lease holder trades. The primary acts
+whenever the lease is free or its own; the backup (BTD_ROLE=backup) acts only when the
+primary's heartbeat is older than --takeover-min (12) or it already holds the lease, and
+hands the lease back as soon as the primary is alive again. DB unreachable -> no entries;
+exits only for locally cached positions if this instance held the lease on its last
+decided pass. Before every buy, Alpaca is re-checked for a position / open order /
+already-used client order id in that symbol. Passes outside Mon-Fri 09:00-16:05 ET are
+no-ops (so launchd/cron can simply fire every 5 minutes) unless --any-time.
+Seed the DB state once:  python scripts/live_btd_minhold.py --seed-state --seed-run-id <uuid>
+Instance identity: BTD_INSTANCE (default hostname), BTD_ROLE primary|backup (default primary),
+from the environment or the repo .env.
+
 Each invocation is one idempotent pass (run from cron/systemd every 5 min in RTH):
   1. exits : positions opened by this runner that are >= MIN_HOLD calendar days old (ET)
              -> sell if P&L >= +TP or <= -SL, or if age >= MAX_HOLD and we're in the
@@ -28,7 +44,7 @@ Each invocation is one idempotent pass (run from cron/systemd every 5 min in RTH
              ref = previous daily close (default) or 20-bar high (repo backtester).
              Notional (fractional) market buy, one position per symbol, cash-only.
 """
-import argparse, fcntl, json, logging, os, sys
+import argparse, fcntl, json, logging, os, socket, subprocess, sys, time
 from datetime import datetime, date, timedelta, time as dtime
 from zoneinfo import ZoneInfo
 import requests
@@ -36,6 +52,9 @@ from dotenv import dotenv_values
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.live_btd_store import LiveRecorder, STRATEGY_NAME, STRATEGY_SLUG  # noqa: E402
+from utils.live_btd_state import (RunnerStateStore, LeaseResult, alpaca_symbol_busy,  # noqa: E402
+                                  adopt_runner_position, degraded_policy, empty_state,
+                                  in_session_gate, merge_dirty_cache, normalize_state)
 
 ET = ZoneInfo("America/New_York")
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -64,11 +83,26 @@ p.add_argument("--live", action="store_true", help="really submit orders to the 
 p.add_argument("--ignore-hours", action="store_true", help="dry-run only: evaluate as if in entry window")
 p.add_argument("--record-test", action="store_true",
                help="write a clearly marked test run to the AlpaTrade DB, read it back, delete it; no orders")
+p.add_argument("--role", choices=["primary", "backup"], default=None,
+               help="failover role (default: $BTD_ROLE or primary)")
+p.add_argument("--instance", default=None, help="instance name for the lease (default: $BTD_INSTANCE or hostname)")
+p.add_argument("--lease-ttl-min", type=float, default=8.0, help="leader lease TTL (minutes)")
+p.add_argument("--takeover-min", type=float, default=12.0,
+               help="backup takes over when the primary's heartbeat is older than this (minutes)")
+p.add_argument("--any-time", action="store_true",
+               help="run the pass even outside Mon-Fri 09:00-16:05 ET (trading is still gated by /v2/clock)")
+p.add_argument("--seed-state", action="store_true",
+               help="create the authoritative DB state row (empty positions/pending) and exit; no orders")
+p.add_argument("--seed-run-id", default=None, help="run id to seed (the existing alpatrade.runs row)")
+p.add_argument("--force-seed", action="store_true", help="overwrite an existing state row when seeding")
 a = p.parse_args()
 
 EXECUTE = bool(a.live)
 if EXECUTE and a.ignore_hours:
     sys.exit("--ignore-hours is dry-run only.")
+# Session gate first, before any logging/API call, so a 24x7 5-minute schedule is cheap.
+if not (a.any_time or a.ignore_hours or a.record_test or a.seed_state) and not in_session_gate(datetime.now(ET)):
+    sys.exit(0)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s",
     handlers=[logging.StreamHandler(), logging.FileHandler(os.path.join(HERE, "logs", "btd.log"))])
@@ -81,6 +115,16 @@ DB_URL = os.environ.get("DATABASE_URL") or env.get("DATABASE_URL")
 USER_EMAIL = os.environ.get("BTD_USER_EMAIL", "kaljuvee@gmail.com")
 ACCOUNT_NO = env.get("ALPACA_LIVE_ACCOUNT") or os.environ.get("ALPACA_LIVE_ACCOUNT")
 BASE = env.get("ALPACA_LIVE_BASE_URL", "https://api.alpaca.markets").rstrip("/")
+ROLE = a.role or os.environ.get("BTD_ROLE") or env.get("BTD_ROLE") or "primary"
+INSTANCE = a.instance or os.environ.get("BTD_INSTANCE") or env.get("BTD_INSTANCE") or socket.gethostname()
+if ROLE not in ("primary", "backup"):
+    sys.exit(f"BTD_ROLE must be primary or backup, got {ROLE!r}")
+
+def code_version():
+    try:
+        return subprocess.run(["git", "-C", REPO, "rev-parse", "--short", "HEAD"], capture_output=True,
+                              text=True, timeout=5).stdout.strip() or None
+    except Exception: return None  # noqa: BLE001
 H = {"APCA-API-KEY-ID": env["ALPACA_LIVE_API_KEY"], "APCA-API-SECRET-KEY": env["ALPACA_LIVE_SECRET_KEY"]}
 
 def get(url, **params):
@@ -101,12 +145,18 @@ def win(s, now):
     mins = (datetime.fromisoformat(clock["next_close"]).astimezone(ET) - now).total_seconds() / 60
     return near <= mins <= far
 
+CACHE_META = ("acted_last", "db_dirty", "cache_written_at", "cache_instance", "db_version")
+
 def load_state():
+    """Local cache (authoritative state is in the DB). Returns the raw cache document."""
     try: return json.load(open(STATE))
     except FileNotFoundError: return {"positions": {}}
 
 def save_state(s):
-    tmp = STATE + ".tmp"; json.dump(s, open(tmp, "w"), indent=2); os.replace(tmp, STATE)
+    tmp = STATE + ".tmp"; json.dump(s, open(tmp, "w"), indent=2, default=str); os.replace(tmp, STATE)
+
+def strip_meta(doc):
+    return normalize_state({k: v for k, v in (doc or {}).items() if k not in CACHE_META})
 
 def run_config(extra=None):
     return {"strategy_name": STRATEGY_NAME, "strategy_slug": STRATEGY_SLUG, "mode": "live",
@@ -115,6 +165,45 @@ def run_config(extra=None):
             "stop_loss": a.sl, "min_hold_days": a.min_hold, "hold_days": a.max_hold,
             "position_size": a.pos_frac, "sizing": "notional, fraction of equity, cash only",
             "runner": "scripts/live_btd_minhold.py", **(extra or {})}
+
+def make_store(account_number):
+    if not DB_URL: return None
+    return RunnerStateStore(DB_URL, f"{STRATEGY_SLUG}:{account_number}", instance=INSTANCE, role=ROLE,
+                            log=log, lease_ttl_s=a.lease_ttl_min * 60, takeover_s=a.takeover_min * 60,
+                            code_version=code_version())
+
+if a.seed_state:
+    if not a.seed_run_id: sys.exit("--seed-state needs --seed-run-id")
+    acct0 = get(f"{BASE}/v2/account"); pos0 = get(f"{BASE}/v2/positions")
+    oo0 = get(f"{BASE}/v2/orders", status="open", limit=500)
+    basket = {s.strip().upper() for s in a.symbols.split(",") if s.strip()}
+    log.info("seed: Alpaca account %s equity=%s cash=%s positions=%s open_orders=%s",
+             acct0.get("account_number"), acct0.get("equity"), acct0.get("cash"),
+             [(x["symbol"], x["qty"], x.get("asset_class")) for x in pos0], [(o["symbol"], o["side"]) for o in oo0])
+    clash = sorted({x["symbol"] for x in pos0} & basket | {o["symbol"] for o in oo0} & basket)
+    if clash and not a.force_seed:
+        sys.exit(f"seed: basket symbols held/pending at Alpaca {clash}; they would be treated as pre-existing. "
+                 "Re-run with --force-seed if that is intended.")
+    store = make_store(acct0["account_number"])
+    if not store: sys.exit("seed: DATABASE_URL not set")
+    from sqlalchemy import text
+    st = empty_state(a.seed_run_id)
+    with store._engine.connect() as c:
+        run = c.execute(text("SELECT config, results FROM alpatrade.runs WHERE run_id = :r"),
+                        {"r": a.seed_run_id}).first()
+    if run is None: sys.exit(f"seed: run {a.seed_run_id} not found in alpatrade.runs")
+    cfg = run.config or {}; res = run.results or {}
+    st["rec"].update({"start_equity": cfg.get("start_equity"), "start_spy": cfg.get("start_spy"),
+                      "started": cfg.get("started")})
+    daily = res.get("daily") or {}
+    if daily: st["rec"]["last_daily"] = max(daily)
+    st["seeded"] = {"at": datetime.now(ET).isoformat(), "by": INSTANCE,
+                    "from": "last known HP state (positions {}, pending [])",
+                    "preexisting_positions": sorted(x["symbol"] for x in pos0)}
+    ok = store.seed(st, a.seed_run_id, force=a.force_seed)
+    log.info("seed: %s state row %s (run %s): %s", "wrote" if ok else "NOT overwritten (exists; use --force-seed)",
+             store.runner_key, a.seed_run_id, json.dumps(st, default=str))
+    sys.exit(0 if ok else 1)
 
 if a.record_test:
     rec = LiveRecorder(DB_URL, USER_EMAIL, log=log)
@@ -153,10 +242,74 @@ except BlockingIOError: sys.exit("another run in progress")
 now = datetime.now(ET); today = now.date()
 clock = get(f"{BASE}/v2/clock")
 acct = get(f"{BASE}/v2/account")
+
+# ---------------- failover: DB lease + authoritative state ----------------
+cache = load_state()
+store = make_store(acct.get("account_number") or ACCOUNT_NO)
+DEGRADED = False          # DB unreachable: no entries, exits from local cache only
+ALLOW_ENTRIES = True
+DEADLINE = float("inf")   # local monotonic lease deadline for order submission
+if EXECUTE:
+    lr = store.acquire() if store else LeaseResult(ok=False, reason="DATABASE_URL not set")
+    if lr.ok and lr.missing:
+        log.error("failover: %s -> not trading", lr.reason)
+        cache["acted_last"] = False; save_state(cache); sys.exit(0)
+    if lr.ok and not lr.act:
+        log.info("failover: %s [%s/%s] -> standby, no action this pass", lr.reason, INSTANCE, ROLE)
+        cached = normalize_state(lr.state)  # refresh the local cache from the authoritative state
+        save_state({**cached, "acted_last": False, "db_dirty": False, "cache_written_at": now.isoformat(),
+                    "cache_instance": INSTANCE, "db_version": lr.version})
+        sys.exit(0)
+    if lr.ok:
+        state = normalize_state(lr.state); DEADLINE = lr.deadline_mono
+        if cache.get("db_dirty"):
+            state = merge_dirty_cache(state, strip_meta(cache))
+            log.warning("failover: merged local changes made while the DB was unreachable")
+        log.info("failover: %s [%s/%s] lease until %s (state v%s, run %s)", lr.reason, INSTANCE, ROLE,
+                 lr.lease_expires_at, lr.version, (state.get("rec") or {}).get("run_id"))
+    else:
+        pol = degraded_policy(cache)
+        log.warning("failover: %s -> DEGRADED: %s", lr.reason, pol["reason"])
+        if not pol["exits"]: sys.exit(0)
+        DEGRADED = True; ALLOW_ENTRIES = False; state = strip_meta(cache)
+else:
+    lr = store.peek() if store else LeaseResult(ok=False, reason="DATABASE_URL not set")
+    if lr.ok and not lr.missing:
+        state = normalize_state(lr.state)
+        log.info("failover (dry-run, read-only): state v%s run %s positions=%s pending=%d | lease=%s until %s | "
+                 "primary heartbeat=%s | as %s/%s a live pass would: %s (%s)", lr.version, state["rec"].get("run_id"),
+                 sorted(state["positions"]), len(state["rec"]["pending"]), lr.info.get("lease_holder"),
+                 lr.info.get("lease_expires_at"), lr.info.get("primary_last_pass"), INSTANCE, ROLE,
+                 "ACT" if lr.act else "STAND BY", lr.reason)
+        for hb in lr.info.get("heartbeats", []):
+            log.info("failover heartbeat: %s", hb)
+    else:
+        state = strip_meta(cache)
+        log.warning("failover (dry-run): %s -> using the local cache", lr.reason)
+
+def lease_ok():
+    if not EXECUTE or DEGRADED: return True
+    if time.monotonic() < DEADLINE: return True
+    log.error("failover: local lease deadline passed -> not submitting further orders this pass"); return False
+
+def persist():
+    """Authoritative write to the DB (only while holding the lease) + local cache."""
+    if not EXECUTE: return
+    ok = False if DEGRADED else bool(store and store.save(state))
+    save_state({**state, "acted_last": True, "db_dirty": not ok, "cache_written_at": datetime.now(ET).isoformat(),
+                "cache_instance": INSTANCE})
+
 positions = {x["symbol"]: x for x in get(f"{BASE}/v2/positions")}
 open_orders = get(f"{BASE}/v2/orders", status="open", limit=500)
-state = load_state()
 syms = [s.strip().upper() for s in a.symbols.split(",") if s.strip()]
+if EXECUTE and not DEGRADED:  # safety net: re-adopt runner entries the state lost track of
+    for sym in syms:
+        if sym in positions and sym not in state["positions"]:
+            meta = adopt_runner_position(get, BASE, sym)
+            if meta:
+                state["positions"][sym] = meta
+                log.warning("%s: broker position came from a runner entry (%s) but was not in state -> adopted",
+                            sym, meta["client_id"])
 
 equity = float(acct["equity"]); cash = float(acct["cash"])
 nmbp = float(acct.get("non_marginable_buying_power", cash))
@@ -169,8 +322,8 @@ if acct.get("trading_blocked") or acct.get("account_blocked"):
 market_ok = clock["is_open"] or (a.ignore_hours and not EXECUTE)
 
 # ---------------- recording (best-effort, never affects trading) ----------------
-rec = LiveRecorder(DB_URL, USER_EMAIL, log=log) if EXECUTE else None
-R = state.setdefault("rec", {}) if EXECUTE else {}
+rec = LiveRecorder(DB_URL, USER_EMAIL, log=log) if EXECUTE and not DEGRADED else None
+R = state.setdefault("rec", {}) if EXECUTE else {}  # degraded: pending exits are kept in the cache
 R.setdefault("pending", [])
 
 def record_pending_fills():
@@ -231,6 +384,7 @@ for sym, meta in list(state["positions"].items()):
     if entry_d >= today:  # PDT guard: never a same-day round trip
         log.warning("%s: PDT guard refuses same-day exit", sym); continue
     if sym in pending_sell or not market_ok: continue
+    if not lease_ok(): break
     xcid = f"btdx-{sym}-{today:%Y%m%d}"
     post_order({"symbol": sym, "qty": pos["qty_available"], "side": "sell", "type": "market",
                 "time_in_force": "day", "client_order_id": xcid})
@@ -239,6 +393,7 @@ for sym, meta in list(state["positions"].items()):
         if not any(it["cid"] == xcid for it in R["pending"]):
             R["pending"].append({"cid": xcid, "side": "sell", "sym": sym, "reason": reason,
                                  "entry_cid": meta.get("client_id") or f"btd-{sym}-{meta['entry_date'].replace('-', '')}"})
+        persist()
 # never touch positions not opened by this runner
 for sym in positions:
     if sym not in state["positions"]:
@@ -246,7 +401,9 @@ for sym in positions:
 
 # ---------------- entries ----------------
 in_entry = win(a.entry_window, now)
-if not (in_entry or (a.ignore_hours and not EXECUTE)):
+if not ALLOW_ENTRIES:
+    log.warning("failover: entries disabled this pass (DB unreachable, cannot prove exclusivity)")
+elif not (in_entry or (a.ignore_hours and not EXECUTE)):
     log.info("outside entry window (%s min before close) -> no entries", a.entry_window)
 else:
     snaps = get(f"{DATA_URL}/v2/stocks/snapshots", symbols=",".join(syms), feed=a.feed)
@@ -289,6 +446,10 @@ else:
         if notional > avail:
             log.info("%s: notional $%.2f > available cash $%.2f -> skip (no margin)", sym, notional, avail); continue
         cid = f"btd-{sym}-{today:%Y%m%d}"
+        busy = alpaca_symbol_busy(get, BASE, sym, cid)
+        if busy:
+            log.info("%s: %s -> skip (pre-buy safety check)", sym, busy); continue
+        if not lease_ok(): break
         post_order({"symbol": sym, "notional": f"{notional:.2f}", "side": "buy", "type": "market",
                     "time_in_force": "day", "client_order_id": cid})
         avail -= notional; exposure += notional
@@ -297,6 +458,7 @@ else:
                                        "dip": dip, "client_id": cid}
             state.setdefault("last_entry", {})[sym] = today.isoformat()
             R["pending"].append({"cid": cid, "side": "buy", "sym": sym})
+            persist()
             if rec and R.get("run_id"): rec.entry_submitted(R["run_id"], sym, cid, notional, dip, ref)
 # ---------------- performance (best-effort) ----------------
 if rec and rec.enabled and R.get("run_id"):
@@ -329,5 +491,5 @@ if rec and rec.enabled and R.get("run_id"):
     except Exception as exc:  # noqa: BLE001
         log.warning("record: performance failed: %s", exc)
 
-if EXECUTE: save_state(state)
+persist()
 log.info("pass complete")
