@@ -95,6 +95,41 @@ Code: pure maths in `engine/publicmarkets/hf13f_perf.py` (unit-tested with synth
 EDGAR/OpenFIGI in `engine/publicmarkets/hf13f.py`, and DB plus job in
 `engine/publicmarkets/hf13f_store.py`.
 
+Extra rules added during phase 1:
+
+* **Stale book cap.** The latest book is held for at most 140 days after its quarter end (one
+  quarter, plus the 45-day deadline, plus slack). After that the estimate stops. This matters for
+  Scion, which stopped filing after Q3-2025.
+* **Affiliate filers** (`hf13f.ALT_CIKS`). Pershing Square Capital Mgmt filed a 13F-NT for Q2-2026,
+  and Pershing Square Inc. (CIK 2026053) filed the holdings. For each quarter the larger long book
+  wins.
+* **Issuer-prefix fallback.** Old CUSIPs from reverse splits or re-domiciles stop resolving on
+  OpenFIGI. For common shares only, they reuse the ticker of a mapped CUSIP with the same 6-character
+  issuer ID.
+
+### Phase-1 results (computed 2026-09-26, prices to 2026-09-25)
+
+13F-implied (quarter-end) returns vs SPY:
+
+| Fund | 2021 | 2022 | 2023 | 2024 | 2025 | YTD 2026 | TTM | TTM coverage |
+|---|---|---|---|---|---|---|---|---|
+| SPY | +28.7% | -18.2% | +26.2% | +24.9% | +17.7% | +14.0% | +18.5% | |
+| Berkshire Hathaway | +30.2% | -16.3% | +24.1% | +22.4% | +11.4% | +12.2% | +16.7% | 96% |
+| Renaissance Technologies | +21.8% | -14.5% | +21.8% | +22.6% | +21.6% | +19.5% | +20.6% | 91% |
+| Pershing Square | +38.6% | -22.6% | +35.7% | +15.1% | +13.4% | +1.8% | +5.1% | 100% |
+| Tiger Global | -11.7% | -51.4% | +57.3% | +46.5% | +25.8% | +3.7% | +2.6% | 93% |
+| Duquesne Family Office | +13.1% | -25.7% | +47.1% | +71.2% | +37.0% | +35.9% | +51.6% | 86% |
+
+Sanity check:
+
+* The SPY window returns match SPY's published total returns (2022 -18.2%, 2023 +26.2%,
+  2024 +24.9%).
+* Berkshire's 13F book tracks its Apple, BAC, AXP, KO and energy weights. It is *not* BRK-B stock,
+  which returned +29.0%, +3.3%, +15.5%, +27.1%, +10.9% and +0.6% YTD over the same years.
+* Mapping coverage: OpenFIGI resolved about 60% of all CUSIPs seen, most of the unresolved ones
+  delisted or acquired. By value, the priced share of long books averages about 92% over TTM windows.
+  Baupost is the lowest (about 45% in 2024).
+
 ## 5. Caveats (shown in the UI)
 
 * Only **long US-listed 13(f) securities** are covered. There are no shorts, cash, bonds, credit,
