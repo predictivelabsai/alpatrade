@@ -213,7 +213,11 @@ services:
       - PREMARKET_REQUESTS_PER_MINUTE=${PREMARKET_REQUESTS_PER_MINUTE:-60}
       - MASSIVE_API_KEY=${MASSIVE_API_KEY}
       - FINNHUB_API_KEY=${FINNHUB_API_KEY}
-      - AUTONOMY_ENABLED=${AUTONOMY_ENABLED:-true}
+      # PAUSED 2026-09-28 (LLM cost incident: failing runs re-enqueued in a hot loop).
+      # Deliberately NOT read from the Coolify AUTONOMY_ENABLED value. Only the scout/run
+      # loop stops; the advisor, PnL and LIVE report schedulers in this process keep
+      # running. Re-enable by setting AUTONOMY_SCOUT_ENABLED=true in Coolify + redeploy.
+      - AUTONOMY_ENABLED=${AUTONOMY_SCOUT_ENABLED:-false}
       - AUTONOMY_SCAN_SECONDS=${AUTONOMY_SCAN_SECONDS:-300}
       - AUTONOMY_STRATEGY=${AUTONOMY_STRATEGY:-btd}
       - AUTONOMY_HEARTBEAT_SECONDS=${AUTONOMY_HEARTBEAT_SECONDS:-30}
