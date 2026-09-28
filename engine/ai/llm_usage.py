@@ -13,7 +13,7 @@ from sqlalchemy import text
 
 from engine.db.pool import get_pool
 
-PLATFORM_DAILY_BUDGET_USD = Decimal(os.getenv("PLATFORM_LLM_DAILY_BUDGET_USD", "5"))
+PLATFORM_DAILY_BUDGET_USD = Decimal(os.getenv("PLATFORM_LLM_DAILY_BUDGET_USD", "3"))
 # Deployment may override prices without a release. Values are USD / 1M tokens.
 DEFAULT_INPUT_USD_PER_M = Decimal(os.getenv("LLM_INPUT_USD_PER_MILLION", "1.25"))
 DEFAULT_OUTPUT_USD_PER_M = Decimal(os.getenv("LLM_OUTPUT_USD_PER_MILLION", "2.50"))
