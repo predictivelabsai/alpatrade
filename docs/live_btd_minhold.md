@@ -50,27 +50,31 @@ loginctl enable-linger $USER   # keep user timers running when logged out
 ```
 Logs: `~/.alpatrade-live/logs/btd.log` and `journalctl --user -u alpatrade-btd`.
 
-## Failover: HP primary + Mac backup (`utils/live_btd_state.py`)
+## Failover: HP primary + Mac backup + box tertiary (`utils/live_btd_state.py`)
 
-Two instances may run the same `--live` pass every 5 minutes: the HP workstation
-(systemd timer above, `BTD_ROLE` unset = `primary`) and Mac.home (launchd,
-`BTD_ROLE=backup`, `BTD_INSTANCE=mac`). They coordinate only through Postgres:
+Three instances may run the same `--live` pass every 5 minutes: the HP workstation
+(systemd timer above, `BTD_ROLE=primary`, `BTD_INSTANCE=hp`), Mac.home (launchd,
+`BTD_ROLE=backup`, `BTD_INSTANCE=mac`), and the agent Linux box (`BTD_ROLE=tertiary`,
+`BTD_INSTANCE=box`). They coordinate only through Postgres:
 
 | table | content |
 |---|---|
 | `alpatrade.live_runner_state` | one row per runner (`buy_the_dip_mag7_minhold_live:<account>`): JSON state (owned positions, pending orders, last entries, `rec.run_id` + start equity/SPY) + `version` + leader lease (holder, host, role, acquired/expires) |
 | `alpatrade.live_runner_heartbeats` | one row per instance: last live pass, last acting pass, decision (`act/renew/takeover/standby/handback/holdoff/missing`), code version |
 
-Per `--live` pass, one transaction locks the state row (`SELECT … FOR UPDATE`, DB clock):
+Priority order: **primary > backup > tertiary**. Per `--live` pass, one transaction locks the
+state row (`SELECT … FOR UPDATE`, DB clock):
 - a live lease held by another instance → stand by;
 - **primary** → act (take/renew the 8-min lease);
 - **backup** → act only if the primary's last heartbeat is older than 12 min (`--takeover-min`)
-  or it already holds the lease; as soon as the primary heartbeats again (its standby passes
-  still write heartbeats) the backup expires its lease and the primary resumes on its next pass.
-  No takeover during 09:00–09:12 ET (the primary's heartbeat is from the previous session).
+  or it already holds the lease; hands back as soon as the primary is fresh again;
+- **tertiary** → act only if BOTH primary and backup heartbeats are older than 12 min (or it
+  already holds the lease); hands back as soon as either higher role is fresh again;
+- no takeover by backup/tertiary during 09:00–09:12 ET (the primary's heartbeat is from the
+  previous session);
 - every live pass writes its heartbeat in that transaction; the acting instance writes the state
   back after every order and at the end, only while it still holds the lease, and stops submitting
-  orders once its local lease deadline (TTL − 60 s) has passed.
+  orders once its local lease deadline (TTL − 60 s) has passed;
 - missing state row → nobody trades (seed it: `--seed-state --seed-run-id <run uuid>`).
 
 **DB unreachable** (chosen policy): the instance cannot prove it is alone, so it never buys.

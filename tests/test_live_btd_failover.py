@@ -1,4 +1,4 @@
-"""Failover for the live BTD runner: DB lease/heartbeat protocol (HP primary, Mac backup).
+"""Failover for the live BTD runner: DB lease/heartbeat protocol (HP / Mac / box).
 
 Pure policy tests always run. The PostgreSQL tests run against an isolated, freshly
 created database when LIVE_BTD_TEST_DATABASE_URL (or PREMARKET_TEST_DATABASE_URL) names a
@@ -28,14 +28,28 @@ M = timedelta(minutes=1)
 # ------------------------------------------------------------------ pure policy
 def d(**kw):
     base = dict(me="mac", role="backup", now=T0, lease_holder=None, lease_expires_at=None,
-                primary_last_pass=None, takeover_s=720, holdoff=False)
+                higher_heartbeats={"primary": None}, takeover_s=720, holdoff=False)
+    base.update(kw)
+    if "primary_last_pass" in base and "higher_heartbeats" not in kw:
+        base["higher_heartbeats"] = {"primary": base.pop("primary_last_pass")}
+    else:
+        base.pop("primary_last_pass", None)
+    return decide(**base)
+
+
+def d3(**kw):
+    """Tertiary (box) decision helper; higher roles default to never-seen."""
+    base = dict(me="box", role="tertiary", now=T0, lease_holder=None, lease_expires_at=None,
+                higher_heartbeats={"primary": None, "backup": None}, takeover_s=720, holdoff=False)
     base.update(kw)
     return decide(**base)
 
 
 def test_foreign_live_lease_always_blocks():
-    for role in ("primary", "backup"):
-        r = d(me="x", role=role, lease_holder="other", lease_expires_at=T0 + M)
+    for role in ("primary", "backup", "tertiary"):
+        r = d(me="x", role=role, lease_holder="other", lease_expires_at=T0 + M,
+              higher_heartbeats={"primary": None, "backup": None} if role == "tertiary"
+              else ({"primary": None} if role == "backup" else {}))
         assert not r.act and "lease held by other" in r.reason
 
 
@@ -60,6 +74,37 @@ def test_backup_renews_own_lease_while_primary_stale_and_hands_back_when_primary
     assert d(lease_holder="mac", lease_expires_at=T0 + M, primary_last_pass=T0 - 30 * M).code == "renew"
     r = d(lease_holder="mac", lease_expires_at=T0 + M, primary_last_pass=T0 - M)
     assert not r.act and r.release and r.code == "handback"
+
+
+def test_tertiary_stands_by_while_primary_or_backup_fresh():
+    assert not d3(higher_heartbeats={"primary": T0 - 5 * M, "backup": T0 - 30 * M}).act
+    assert not d3(higher_heartbeats={"primary": T0 - 30 * M, "backup": T0 - 5 * M}).act
+    r = d3(higher_heartbeats={"primary": T0 - 5 * M, "backup": T0 - 5 * M})
+    assert not r.act and "primary" in r.reason  # highest fresh superior named
+
+
+def test_tertiary_takes_over_only_when_both_higher_stale():
+    r = d3(higher_heartbeats={"primary": T0 - 13 * M, "backup": T0 - 13 * M})
+    assert r.act and r.code == "takeover"
+    assert d3(higher_heartbeats={"primary": None, "backup": None}).act
+    # one fresh higher role is enough to block
+    assert not d3(higher_heartbeats={"primary": T0 - 13 * M, "backup": T0 - 5 * M}).act
+    assert not d3(higher_heartbeats={"primary": T0 - 5 * M, "backup": T0 - 13 * M}).act
+
+
+def test_tertiary_renews_and_hands_back_to_either_higher_role():
+    stale = {"primary": T0 - 30 * M, "backup": T0 - 30 * M}
+    assert d3(lease_holder="box", lease_expires_at=T0 + M, higher_heartbeats=stale).code == "renew"
+    r = d3(lease_holder="box", lease_expires_at=T0 + M,
+           higher_heartbeats={"primary": T0 - M, "backup": T0 - 30 * M})
+    assert not r.act and r.release and r.code == "handback" and "primary" in r.reason
+    r = d3(lease_holder="box", lease_expires_at=T0 + M,
+           higher_heartbeats={"primary": T0 - 30 * M, "backup": T0 - M})
+    assert not r.act and r.release and r.code == "handback" and "backup" in r.reason
+
+
+def test_tertiary_holdoff_at_session_start():
+    assert d3(holdoff=True, higher_heartbeats={"primary": T0 - 30 * M, "backup": T0 - 30 * M}).code == "holdoff"
 
 
 def test_backup_holdoff_at_session_start():
@@ -145,6 +190,12 @@ def test_unreachable_db_is_reported_not_raised():
     assert not s.peek().ok and s.save({"positions": {}}) is False
 
 
+def test_invalid_role_rejected():
+    import pytest as _pytest
+    with _pytest.raises(ValueError):
+        RunnerStateStore("postgresql://u:p@127.0.0.1:1/x", "k", role="secondary")
+
+
 # ------------------------------------------------------------- PostgreSQL protocol
 @pytest.fixture(scope="module")
 def pg_url():
@@ -172,7 +223,8 @@ def stores(url, key=None):
     key = key or "test:" + uuid.uuid4().hex[:8]
     hp = RunnerStateStore(url, key, instance="hp", role="primary", host="julian-HP")
     mac = RunnerStateStore(url, key, instance="mac", role="backup", host="Mac.home")
-    return hp, mac
+    box = RunnerStateStore(url, key, instance="box", role="tertiary", host="agent-box")
+    return hp, mac, box
 
 
 def db_now(store):
@@ -182,7 +234,7 @@ def db_now(store):
 
 
 def test_pg_missing_row_never_acts_then_seed(pg_url):
-    hp, mac = stores(pg_url)
+    hp, mac, box = stores(pg_url)
     r = hp.acquire()
     assert r.ok and r.missing and not r.act
     assert hp.seed(empty_state("abced9a9"), "abced9a9")
@@ -192,7 +244,7 @@ def test_pg_missing_row_never_acts_then_seed(pg_url):
 
 
 def test_pg_full_failover_cycle(pg_url):
-    hp, mac = stores(pg_url)
+    hp, mac, box = stores(pg_url)
     hp.seed(empty_state("run-1"), "run-1")
     t = db_now(hp)
     et = lambda x: x.astimezone(ET).replace(hour=15)  # noqa: E731 - mid-session, no hold-off
@@ -214,8 +266,46 @@ def test_pg_full_failover_cycle(pg_url):
     assert hbs["hp"]["role"] == "primary" and hbs["mac"]["last_decision"] == "standby"
 
 
+def test_pg_three_tier_failover_cycle(pg_url):
+    """Tertiary acts only when both primary and backup are stale; yields to either."""
+    hp, mac, box = stores(pg_url)
+    hp.seed(empty_state("run-3"), "run-3")
+    t = db_now(hp)
+    et = lambda x: x.astimezone(ET).replace(hour=15)  # noqa: E731
+    assert hp.acquire(t, et(t)).act
+    assert not mac.acquire(t + M, et(t)).act
+    assert not box.acquire(t + M, et(t)).act                          # primary fresh
+    # primary silent 13 min: backup takes over; tertiary still stands by (backup fresh)
+    r = mac.acquire(t + 13 * M, et(t))
+    assert r.act and r.info["decision"] == "takeover"
+    assert not box.acquire(t + 14 * M, et(t)).act
+    # backup also silent: tertiary takes over
+    r = box.acquire(t + 26 * M, et(t))
+    assert r.act and r.info["decision"] == "takeover"
+    s = r.state; s["positions"]["TSLA"] = {"entry_date": "2026-09-28", "client_id": "btd-TSLA-20260928"}
+    assert box.save(s)
+    # mac returns while box holds lease: mac stands by (lease held), then box hands back to mac
+    r = mac.acquire(t + 27 * M, et(t))
+    assert not r.act and "lease held by box" in r.reason
+    r = box.acquire(t + 28 * M, et(t))
+    assert not r.act and r.info["decision"] == "handback" and "backup" in r.reason
+    r = mac.acquire(t + 29 * M, et(t))
+    assert r.act and "TSLA" in r.state["positions"]
+    # primary returns: mac hands back, primary resumes
+    r = hp.acquire(t + 30 * M, et(t))
+    assert not r.act and "lease held by mac" in r.reason
+    r = mac.acquire(t + 31 * M, et(t))
+    assert not r.act and r.info["decision"] == "handback"
+    r = hp.acquire(t + 32 * M, et(t))
+    assert r.act and "TSLA" in r.state["positions"]
+    assert not box.acquire(t + 33 * M, et(t)).act
+    hbs = {h["instance"]: h for h in box.peek(t + 33 * M).info["heartbeats"]}
+    assert hbs["hp"]["role"] == "primary" and hbs["mac"]["role"] == "backup"
+    assert hbs["box"]["role"] == "tertiary" and hbs["box"]["last_decision"] == "standby"
+
+
 def test_pg_backup_holdoff_and_dry_run_peek_writes_nothing(pg_url):
-    hp, mac = stores(pg_url)
+    hp, mac, box = stores(pg_url)
     hp.seed(empty_state("r"), "r")
     t = db_now(mac)
     p = mac.peek(t)
@@ -228,15 +318,15 @@ def test_pg_backup_holdoff_and_dry_run_peek_writes_nothing(pg_url):
 
 def test_pg_concurrent_acquire_exactly_one_acts(pg_url):
     for _ in range(8):
-        hp, mac = stores(pg_url)
+        hp, mac, box = stores(pg_url)
         hp.seed(empty_state("r"), "r")
         t = db_now(hp); mid = t.astimezone(ET).replace(hour=15)
-        res, barrier = {}, threading.Barrier(2)
+        res, barrier = {}, threading.Barrier(3)
 
         def go(s):
             barrier.wait()
             res[s.instance] = s.acquire(t, mid)
-        th = [threading.Thread(target=go, args=(s,)) for s in (hp, mac)]
+        th = [threading.Thread(target=go, args=(s,)) for s in (hp, mac, box)]
         [x.start() for x in th]; [x.join() for x in th]
         assert all(r.ok for r in res.values())
         assert sum(r.act for r in res.values()) == 1, {k: v.reason for k, v in res.items()}

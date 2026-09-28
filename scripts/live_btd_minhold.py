@@ -20,21 +20,21 @@ $BTD_USER_EMAIL (default kaljuvee@gmail.com). Best-effort: DB errors are logged 
 never block or change trading. `--record-test` writes a marked test run, reads it
 back and deletes it (no orders, no Alpaca writes).
 
-Failover (HP primary + Mac backup, see utils/live_btd_state.py for the full design):
+Failover (HP primary + Mac backup + box tertiary, see utils/live_btd_state.py):
 the authoritative runner state (owned positions, pending orders, last entries, run id)
 lives in alpatrade.live_runner_state; ~/.alpatrade-live/state.json is only a local cache.
 Each --live pass takes a DB lease in one transaction and writes a heartbeat
-(alpatrade.live_runner_heartbeats); only the lease holder trades. The primary acts
-whenever the lease is free or its own; the backup (BTD_ROLE=backup) acts only when the
-primary's heartbeat is older than --takeover-min (12) or it already holds the lease, and
-hands the lease back as soon as the primary is alive again. DB unreachable -> no entries;
-exits only for locally cached positions if this instance held the lease on its last
-decided pass. Before every buy, Alpaca is re-checked for a position / open order /
-already-used client order id in that symbol. Passes outside Mon-Fri 09:00-16:05 ET are
-no-ops (so launchd/cron can simply fire every 5 minutes) unless --any-time.
-Seed the DB state once:  python scripts/live_btd_minhold.py --seed-state --seed-run-id <uuid>
-Instance identity: BTD_INSTANCE (default hostname), BTD_ROLE primary|backup (default primary),
-from the environment or the repo .env.
+(alpatrade.live_runner_heartbeats); only the lease holder trades. Priority primary >
+backup > tertiary. The primary acts whenever the lease is free or its own; backup/tertiary
+act only when every higher-priority heartbeat is older than --takeover-min (12) or they
+already hold the lease, and hand the lease back as soon as any higher role is alive again.
+DB unreachable -> no entries; exits only for locally cached positions if this instance held
+the lease on its last decided pass. Before every buy, Alpaca is re-checked for a position /
+open order / already-used client order id in that symbol. Passes outside Mon-Fri
+09:00-16:05 ET are no-ops (so launchd/cron can simply fire every 5 minutes) unless
+--any-time. Seed the DB state once:  python scripts/live_btd_minhold.py --seed-state
+--seed-run-id <uuid>. Instance identity: BTD_INSTANCE (default hostname), BTD_ROLE
+primary|backup|tertiary (default primary), from the environment or the repo .env.
 
 Each invocation is one idempotent pass (run from cron/systemd every 5 min in RTH):
   1. exits : positions opened by this runner that are >= MIN_HOLD calendar days old (ET)
@@ -83,12 +83,12 @@ p.add_argument("--live", action="store_true", help="really submit orders to the 
 p.add_argument("--ignore-hours", action="store_true", help="dry-run only: evaluate as if in entry window")
 p.add_argument("--record-test", action="store_true",
                help="write a clearly marked test run to the AlpaTrade DB, read it back, delete it; no orders")
-p.add_argument("--role", choices=["primary", "backup"], default=None,
+p.add_argument("--role", choices=["primary", "backup", "tertiary"], default=None,
                help="failover role (default: $BTD_ROLE or primary)")
 p.add_argument("--instance", default=None, help="instance name for the lease (default: $BTD_INSTANCE or hostname)")
 p.add_argument("--lease-ttl-min", type=float, default=8.0, help="leader lease TTL (minutes)")
 p.add_argument("--takeover-min", type=float, default=12.0,
-               help="backup takes over when the primary's heartbeat is older than this (minutes)")
+               help="lower role takes over when every higher-priority heartbeat is older than this (minutes)")
 p.add_argument("--any-time", action="store_true",
                help="run the pass even outside Mon-Fri 09:00-16:05 ET (trading is still gated by /v2/clock)")
 p.add_argument("--seed-state", action="store_true",
@@ -117,8 +117,8 @@ ACCOUNT_NO = env.get("ALPACA_LIVE_ACCOUNT") or os.environ.get("ALPACA_LIVE_ACCOU
 BASE = env.get("ALPACA_LIVE_BASE_URL", "https://api.alpaca.markets").rstrip("/")
 ROLE = a.role or os.environ.get("BTD_ROLE") or env.get("BTD_ROLE") or "primary"
 INSTANCE = a.instance or os.environ.get("BTD_INSTANCE") or env.get("BTD_INSTANCE") or socket.gethostname()
-if ROLE not in ("primary", "backup"):
-    sys.exit(f"BTD_ROLE must be primary or backup, got {ROLE!r}")
+if ROLE not in ("primary", "backup", "tertiary"):
+    sys.exit(f"BTD_ROLE must be primary, backup or tertiary, got {ROLE!r}")
 
 def code_version():
     try:
@@ -277,9 +277,10 @@ else:
     if lr.ok and not lr.missing:
         state = normalize_state(lr.state)
         log.info("failover (dry-run, read-only): state v%s run %s positions=%s pending=%d | lease=%s until %s | "
-                 "primary heartbeat=%s | as %s/%s a live pass would: %s (%s)", lr.version, state["rec"].get("run_id"),
+                 "higher heartbeats=%s | as %s/%s a live pass would: %s (%s)", lr.version, state["rec"].get("run_id"),
                  sorted(state["positions"]), len(state["rec"]["pending"]), lr.info.get("lease_holder"),
-                 lr.info.get("lease_expires_at"), lr.info.get("primary_last_pass"), INSTANCE, ROLE,
+                 lr.info.get("lease_expires_at"), lr.info.get("higher_heartbeats") or {
+                     "primary": lr.info.get("primary_last_pass")}, INSTANCE, ROLE,
                  "ACT" if lr.act else "STAND BY", lr.reason)
         for hb in lr.info.get("heartbeats", []):
             log.info("failover heartbeat: %s", hb)

@@ -1,34 +1,38 @@
-"""Authoritative state + leader lease for the live BTD runner (HP primary, Mac backup).
+"""Authoritative state + leader lease for the live BTD runner (3-tier failover).
 
-Why: two machines can run ``scripts/live_btd_minhold.py`` against the same real-money
-Alpaca account (the HP workstation = primary, Mac.home = backup). They must never both
-trade and neither may lose track of the positions the runner owns. The authoritative
-runner state therefore lives in AlpaTrade Postgres, not in a machine-local file:
+Why: three machines can run ``scripts/live_btd_minhold.py`` against the same real-money
+Alpaca account (HP = primary, Mac.home = backup, agent Linux box = tertiary). They must
+never both trade and neither may lose track of the positions the runner owns. The
+authoritative runner state therefore lives in AlpaTrade Postgres, not in a machine-local
+file:
 
 * ``alpatrade.live_runner_state``      one row per runner (``runner_key``): the JSON state
   (owned positions, pending orders, last entries, run id + recording metadata), a
   monotonically increasing ``version`` and the leader **lease** (holder, host, role,
   acquired_at, expires_at).
 * ``alpatrade.live_runner_heartbeats`` one row per (runner, instance): last live pass,
-  last pass that acted, the decision taken. This is the "is the primary alive?" signal.
+  last pass that acted, the decision taken. This is the "is a higher-priority role alive?"
+  signal.
 
-Per-pass protocol (``RunnerStateStore.acquire``), all inside ONE transaction that holds
-``SELECT ... FOR UPDATE`` on the state row, using the DB clock (no host clock skew):
+Priority order: primary > backup > tertiary. Per-pass protocol (``RunnerStateStore.acquire``),
+all inside ONE transaction that holds ``SELECT ... FOR UPDATE`` on the state row, using the
+DB clock (no host clock skew):
 
 1. lease held by someone else and not expired            -> stand by.
 2. role=primary                                          -> act (take / renew the lease).
-3. role=backup and a primary heartbeat is fresh (< takeover, default 12 min)
-                                                         -> stand by; if the backup holds
+3. role=backup|tertiary and any higher-priority heartbeat
+   is fresh (< takeover, default 12 min)                 -> stand by; if this instance holds
                                                             the lease it hands it back
-                                                            (expires it) so the primary
+                                                            (expires it) so the higher role
                                                             resumes on its next pass.
-4. role=backup, backup already holds the live lease      -> act (renew).
-5. role=backup, primary stale/absent, lease free/expired -> act (take over), except during
+4. role=backup|tertiary, already holds the live lease    -> act (renew).
+5. role=backup|tertiary, all higher roles stale/absent,
+   lease free/expired                                    -> act (take over), except during
    the first ``takeover`` minutes after 09:00 ET (primary gets its first passes of the day).
 
 Every live pass (acting or not) upserts its heartbeat in the same transaction. The lease
 TTL (default 8 min) is shorter than the takeover threshold (12 min), so a dead holder's
-lease has always expired before the backup considers the primary stale. The acting
+lease has always expired before a lower role considers higher roles stale. The acting
 instance only submits orders while its *local monotonic* lease deadline (TTL minus a
 safety margin, measured from before the acquire query) has not passed, and writes the
 state back (``save``) only while it still holds the lease.
@@ -67,6 +71,8 @@ DEFAULT_LEASE_TTL_S = 8 * 60
 DEFAULT_TAKEOVER_S = 12 * 60
 LEASE_SAFETY_MARGIN_S = 60
 SESSION_GATE = (dtime(9, 0), dtime(16, 5))   # ET, Mon-Fri; passes outside are no-ops
+ROLES = ("primary", "backup", "tertiary")
+ROLE_RANK = {r: i for i, r in enumerate(ROLES)}
 
 DDL = """
 CREATE TABLE IF NOT EXISTS alpatrade.live_runner_state (
@@ -117,7 +123,7 @@ def normalize_state(s: Optional[Dict[str, Any]]) -> Dict[str, Any]:
 class Decision:
     act: bool
     reason: str
-    release: bool = False       # backup hands the lease back to the primary
+    release: bool = False       # lower role hands the lease back to a higher one
     code: str = "standby"       # act | renew | takeover | standby | handback | holdoff
 
 
@@ -134,8 +140,17 @@ def in_backup_holdoff(now_et: datetime, takeover_s: float = DEFAULT_TAKEOVER_S) 
 
 
 def decide(*, me: str, role: str, now: datetime, lease_holder: Optional[str],
-           lease_expires_at: Optional[datetime], primary_last_pass: Optional[datetime],
+           lease_expires_at: Optional[datetime],
+           higher_heartbeats: Optional[Dict[str, Optional[datetime]]] = None,
            takeover_s: float = DEFAULT_TAKEOVER_S, holdoff: bool = False) -> Decision:
+    """Lease decision for ``role`` given higher-priority heartbeats.
+
+    ``higher_heartbeats`` maps each strictly-higher role name (by ``ROLE_RANK``) to that
+    role's newest live ``last_pass_at`` (or None if never seen). Backup passes
+    ``{"primary": ...}``; tertiary passes ``{"primary": ..., "backup": ...}``.
+    """
+    if role not in ROLE_RANK:
+        raise ValueError(f"role must be one of {ROLES}, got {role!r}")
     lease_live = bool(lease_holder) and lease_expires_at is not None and lease_expires_at > now
     mine = lease_live and lease_holder == me
     if lease_live and not mine:
@@ -143,19 +158,33 @@ def decide(*, me: str, role: str, now: datetime, lease_holder: Optional[str],
     if role == "primary":
         return Decision(True, "primary: renewing lease" if mine else "primary: lease free/expired -> taking it",
                         code="renew" if mine else "act")
-    primary_fresh = primary_last_pass is not None and (now - primary_last_pass).total_seconds() < takeover_s
-    if primary_fresh:
-        age = int((now - primary_last_pass).total_seconds())
+    higher = higher_heartbeats or {}
+    # Highest-priority fresh superior wins (primary before backup).
+    fresh = None
+    for sup in ROLES:
+        if ROLE_RANK[sup] >= ROLE_RANK[role]:
+            break
+        hb = higher.get(sup)
+        if hb is not None and (now - hb).total_seconds() < takeover_s:
+            fresh = (sup, hb)
+            break
+    if fresh:
+        sup, hb = fresh
+        age = int((now - hb).total_seconds())
         if mine:
-            return Decision(False, f"backup: primary is back (heartbeat {age}s old) -> handing lease back",
+            return Decision(False, f"{role}: {sup} is back (heartbeat {age}s old) -> handing lease back",
                             release=True, code="handback")
-        return Decision(False, f"backup: primary heartbeat fresh ({age}s old) -> stand by")
+        return Decision(False, f"{role}: {sup} heartbeat fresh ({age}s old) -> stand by")
     if mine:
-        return Decision(True, "backup: already holds the lease, primary still stale -> renewing", code="renew")
+        return Decision(True, f"{role}: already holds the lease, higher roles still stale -> renewing",
+                        code="renew")
     if holdoff:
-        return Decision(False, "backup: session-start hold-off (primary gets the first passes)", code="holdoff")
-    seen = primary_last_pass.isoformat() if primary_last_pass else "never"
-    return Decision(True, f"backup: primary heartbeat stale (last {seen}) -> taking over", code="takeover")
+        return Decision(False, f"{role}: session-start hold-off (primary gets the first passes)",
+                        code="holdoff")
+    parts = [f"{sup} last {higher[sup].isoformat() if higher.get(sup) else 'never'}"
+             for sup in ROLES if ROLE_RANK[sup] < ROLE_RANK[role]]
+    detail = ", ".join(parts) if parts else "no higher roles"
+    return Decision(True, f"{role}: higher heartbeats stale ({detail}) -> taking over", code="takeover")
 
 
 def degraded_policy(cache: Dict[str, Any]) -> Dict[str, Any]:
@@ -256,8 +285,8 @@ class RunnerStateStore:
                  role: str = "primary", host: Optional[str] = None, log: logging.Logger = LOG,
                  engine=None, lease_ttl_s: float = DEFAULT_LEASE_TTL_S,
                  takeover_s: float = DEFAULT_TAKEOVER_S, code_version: Optional[str] = None):
-        if role not in ("primary", "backup"):
-            raise ValueError("role must be primary or backup")
+        if role not in ROLES:
+            raise ValueError(f"role must be one of {ROLES}, got {role!r}")
         self.log, self.runner_key, self.role = log, runner_key, role
         self.host = host or socket.gethostname()
         self.instance = instance or self.host
@@ -290,11 +319,18 @@ class RunnerStateStore:
     def _state_of(v) -> Dict[str, Any]:
         return normalize_state(json.loads(v) if isinstance(v, str) else v)
 
-    def _primary_last_pass(self, c, text):
-        return c.execute(text("""
-            SELECT MAX(last_pass_at) FROM alpatrade.live_runner_heartbeats
-             WHERE runner_key = :k AND role = 'primary' AND instance <> :me AND mode = 'live'
-        """), {"k": self.runner_key, "me": self.instance}).scalar()
+    def _higher_roles(self) -> List[str]:
+        return [r for r in ROLES if ROLE_RANK[r] < ROLE_RANK[self.role]]
+
+    def _higher_last_passes(self, c, text) -> Dict[str, Optional[datetime]]:
+        """Newest live heartbeat per strictly-higher role (excludes this instance)."""
+        out: Dict[str, Optional[datetime]] = {r: None for r in self._higher_roles()}
+        for role in list(out):
+            out[role] = c.execute(text("""
+                SELECT MAX(last_pass_at) FROM alpatrade.live_runner_heartbeats
+                 WHERE runner_key = :k AND role = :role AND instance <> :me AND mode = 'live'
+            """), {"k": self.runner_key, "role": role, "me": self.instance}).scalar()
+        return out
 
     # ------------------------------------------------------------------ protocol
     def acquire(self, now: Optional[datetime] = None, now_et: Optional[datetime] = None) -> LeaseResult:
@@ -314,10 +350,11 @@ class RunnerStateStore:
                     self._heartbeat(c, text, now, False, "missing", "no state row; seed it (--seed-state)")
                     return LeaseResult(ok=True, act=False, missing=True,
                                        reason=f"no state row for {self.runner_key}; seed it first (--seed-state)")
-                prim = self._primary_last_pass(c, text)
-                holdoff = self.role == "backup" and in_backup_holdoff((now_et or now.astimezone(ET)), self.takeover_s)
+                higher = self._higher_last_passes(c, text)
+                holdoff = (self.role != "primary"
+                           and in_backup_holdoff((now_et or now.astimezone(ET)), self.takeover_s))
                 d = decide(me=self.instance, role=self.role, now=now, lease_holder=row.lease_holder,
-                           lease_expires_at=row.lease_expires_at, primary_last_pass=prim,
+                           lease_expires_at=row.lease_expires_at, higher_heartbeats=higher,
                            takeover_s=self.takeover_s, holdoff=holdoff)
                 expires = None
                 if d.act:
@@ -342,7 +379,9 @@ class RunnerStateStore:
                     version=int(row.version), run_id=row.run_id, lease_expires_at=expires,
                     deadline_mono=(t0 + self.lease_ttl_s - LEASE_SAFETY_MARGIN_S) if d.act else 0.0,
                     info={"lease_holder": row.lease_holder, "lease_expires_at": row.lease_expires_at,
-                          "primary_last_pass": prim, "decision": d.code, "db_now": db_now})
+                          "higher_heartbeats": higher,
+                          "primary_last_pass": higher.get("primary"),
+                          "decision": d.code, "db_now": db_now})
         except Exception as exc:  # noqa: BLE001
             return LeaseResult(ok=False, reason=f"DB unreachable: {str(exc).splitlines()[0][:200]}")
 
@@ -378,10 +417,11 @@ class RunnerStateStore:
                     row = None
                 if row is None:
                     return LeaseResult(ok=True, missing=True, reason=f"no state row for {self.runner_key}")
-                prim = self._primary_last_pass(c, text)
-                holdoff = self.role == "backup" and in_backup_holdoff((now_et or now.astimezone(ET)), self.takeover_s)
+                higher = self._higher_last_passes(c, text)
+                holdoff = (self.role != "primary"
+                           and in_backup_holdoff((now_et or now.astimezone(ET)), self.takeover_s))
                 d = decide(me=self.instance, role=self.role, now=now, lease_holder=row.lease_holder,
-                           lease_expires_at=row.lease_expires_at, primary_last_pass=prim,
+                           lease_expires_at=row.lease_expires_at, higher_heartbeats=higher,
                            takeover_s=self.takeover_s, holdoff=holdoff)
                 hbs = [dict(r._mapping) for r in c.execute(text("""
                     SELECT instance, host, role, last_pass_at, last_acted_at, last_decision
@@ -390,7 +430,9 @@ class RunnerStateStore:
                 return LeaseResult(ok=True, act=d.act, reason=d.reason, state=self._state_of(row.state),
                                    version=int(row.version), run_id=row.run_id,
                                    info={"lease_holder": row.lease_holder, "lease_expires_at": row.lease_expires_at,
-                                         "primary_last_pass": prim, "decision": d.code, "heartbeats": hbs,
+                                         "higher_heartbeats": higher,
+                                         "primary_last_pass": higher.get("primary"),
+                                         "decision": d.code, "heartbeats": hbs,
                                          "db_now": db_now})
         except Exception as exc:  # noqa: BLE001
             return LeaseResult(ok=False, reason=f"DB unreachable: {str(exc).splitlines()[0][:200]}")
