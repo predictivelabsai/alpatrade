@@ -127,6 +127,16 @@ def pending_count() -> int:
     return int(n or 0)
 
 
+def full_runs_created_today() -> int:
+    """Autonomy 'full' runs created since UTC midnight (daily self-feed cap)."""
+    with _pool().get_session() as s:
+        n = s.execute(text("""
+            SELECT COUNT(*) FROM alpatrade.autonomy_runs
+            WHERE kind = 'full' AND created_at >= date_trunc('day', NOW() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
+        """)).scalar()
+    return int(n or 0)
+
+
 def requeue_unfinished(stale_seconds: int = 300) -> int:
     """Return runs stuck in 'running' with a stale heartbeat back to 'queued'."""
     with _pool().get_session() as s:

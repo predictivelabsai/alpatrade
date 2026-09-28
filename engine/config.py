@@ -27,25 +27,42 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Choices surfaced in the Settings dropdowns and the effective fallbacks.
 # grok-4.5 is listed but is region-locked on some XAI accounts (403); grok-4.3 is
-# the newest model verified to answer, so it is the default.
+# the newest model verified to answer, so it is the default. The grok-4-1-fast /
+# grok-4-fast / grok-3 slugs were retired by xAI on 2026-05-15: they still answer
+# but are silently served (and billed) as grok-4.3, so they are no longer offered.
 # ---------------------------------------------------------------------------
 
 MODEL_PROVIDERS = ["xai", "openai", "anthropic"]
 # Order matters for XAI: the self-heal fallback (_resolve_xai_model) walks this list
 # and picks the first callable model, so keep the preferred default first.
 MODEL_NAMES = {
-    "xai": ["grok-4-1-fast-reasoning", "grok-4-1-fast-non-reasoning", "grok-4.3",
-            "grok-3-mini", "grok-4.5"],
+    "xai": ["grok-4.3", "grok-4.5"],
     "openai": ["gpt-4o", "gpt-4o-mini"],
     "anthropic": ["claude-sonnet-5", "claude-opus-4-8", "claude-haiku-4-5"],
 }
+# xAI retired these on 2026-05-15; requests are redirected to grok-4.3 and billed
+# at its rates anyway, so map them explicitly (lets us set reasoning_effort).
+RETIRED_XAI_MODELS = frozenset({
+    "grok-4-1-fast-reasoning", "grok-4-1-fast-non-reasoning", "grok-4-fast-reasoning",
+    "grok-4-fast-non-reasoning", "grok-4-0709", "grok-4", "grok-3", "grok-3-mini",
+    "grok-3-mini-fast", "grok-4-fast",
+})
+
+
+def current_xai_model(model: str | None) -> str:
+    """Return a current xAI model name for ``model`` (retired slugs → grok-4.3)."""
+    if not model or model.strip().lower() in RETIRED_XAI_MODELS:
+        return "grok-4.3"
+    return model.strip()
+
+
 MARKET_DATA_PROVIDERS = ["yfinance", "alpaca"]
 SEARCH_PROVIDERS = ["tavily", "exa"]
 AGENT_FRAMEWORKS = ["deepagents", "langgraph"]
 
 _DEFAULTS = {
     "model_provider": "xai",
-    "model_name": "grok-4-1-fast-reasoning",
+    "model_name": "grok-4.3",
     "market_data_provider": "yfinance",
     "search_provider": "tavily",
     "agent_framework": "deepagents",
@@ -178,8 +195,13 @@ def get_settings(user_id: str | None = None) -> Settings:
 
 
 def build_chat_model(settings: Settings | None = None, *, streaming: bool = True,
-                     temperature: float = 0.5, max_tokens: int = 3000):
-    """Instantiate a LangChain chat model for the resolved model provider/name."""
+                     temperature: float = 0.5, max_tokens: int = 3000,
+                     reasoning_effort: str | None = None):
+    """Instantiate a LangChain chat model for the resolved model provider/name.
+
+    ``reasoning_effort`` is forwarded to XAI only (grok-4.3 accepts none/low/
+    medium/high/xhigh, default low); background one-liners pass ``"none"``.
+    """
     settings = settings or get_settings()
     provider = (settings.model_provider or "xai").lower()
     model = settings.model_name or _DEFAULTS["model_name"]
@@ -195,9 +217,12 @@ def build_chat_model(settings: Settings | None = None, *, streaming: bool = True
             model = _DEFAULTS["model_name"]
 
     base_url, key_env = _OPENAI_COMPAT.get(provider, _OPENAI_COMPAT["xai"])
+    if provider == "xai":
+        model = current_xai_model(model)
     if provider == "xai" and not settings.api_key:
         model = _resolve_xai_model(model)
     from langchain_openai import ChatOpenAI
+    extra = {"reasoning_effort": reasoning_effort} if (reasoning_effort and provider == "xai") else {}
     return ChatOpenAI(
         api_key=settings.api_key or os.getenv(key_env),
         base_url=base_url,
@@ -205,4 +230,5 @@ def build_chat_model(settings: Settings | None = None, *, streaming: bool = True
         temperature=temperature,
         max_tokens=max_tokens,
         streaming=streaming,
+        **extra,
     )

@@ -80,7 +80,7 @@ def store_run(run_id: str, mode: str, strategy: str = None,
                 "run_id": run_id,
                 "mode": mode,
                 "strategy": strategy,
-                "config": json.dumps(config or {}, default=str),
+                "config": json.dumps(_json_safe(config or {}), default=str, allow_nan=False),
                 "started_at": datetime.now(timezone.utc),
                 "strategy_slug": strategy_slug,
                 "user_id": user_id,
@@ -328,7 +328,7 @@ def _store_backtest_db(run_id: str, best: Dict, all_results: List[Dict],
                 {
                     "run_id": run_id,
                     "idx": idx,
-                    "params": json.dumps(params, default=str),
+                    "params": json.dumps(_json_safe(params), default=str, allow_nan=False),
                     "total_return": _py(variation.get("total_return")),
                     "total_pnl": _py(variation.get("total_pnl")),
                     "win_rate": _py(variation.get("win_rate")),
@@ -582,7 +582,7 @@ def fetch_recent_day_trades(window_days: int = 7,
             WHERE trade_type = 'paper'
               AND exit_time IS NOT NULL
               AND DATE(entry_time) = DATE(exit_time)
-              AND exit_time >= NOW() - INTERVAL :days
+              AND exit_time >= NOW() - CAST(:days AS INTERVAL)
         """
         bind: Dict[str, Any] = {"days": f"{window_days} days"}
         if user_id:

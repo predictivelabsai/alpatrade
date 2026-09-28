@@ -133,6 +133,11 @@ class Worker:
             exists = getattr(self.repo, "article_exists", lambda *_: False)
             if exists(str(article.get("publisher") or ""), str(article.get("link") or "")):
                 continue
+            # Batch size is a hard cost/resource ceiling, not an insert target. It is
+            # checked here (not after the try) so failing articles count too — the
+            # Sep 2026 insert failure otherwise walked all ~3,400 feed items per cycle.
+            if attempted >= self.batch_size:
+                break
             attempted += 1
             publisher_job = str(article.get("publisher_job") or article.get("publisher") or "unknown")
             publisher_stats = publisher_counts.setdefault(
@@ -180,9 +185,6 @@ class Worker:
                 self._record("article_retryable", "error", publisher=article.get("publisher"),
                              details={"error_type": type(exc).__name__})
                 continue
-            # Batch size is a hard cost/resource ceiling, not an insert target.
-            if attempted >= self.batch_size:
-                break
         self.repo.update_checkpoint(self.job_name, self.shard_index, self.shard_count,
             last_inserted_news_id=inserted, processed_count=processed, failed_count=failed,
             status="running", last_successful_cycle=datetime.now(timezone.utc), last_error=None)

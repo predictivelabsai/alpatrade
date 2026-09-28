@@ -29,6 +29,77 @@ HEARTBEAT_SECONDS = int(os.getenv("AUTONOMY_HEARTBEAT_SECONDS", "30"))
 # Paper runs left 'running' by an interrupted/redeployed process are swept to
 # 'stopped' once their heartbeat is older than this (default 30 min).
 RUNS_STALE_SECONDS = int(os.getenv("RUNS_STALE_SECONDS", "1800"))
+# Loop guards (2026-09-28 cost incident: failing runs were re-enqueued back to back,
+# ~1,000-1,500 runs/day, each making LLM calls).
+MAX_CONSECUTIVE_FAILURES = max(1, int(os.getenv("AUTONOMY_MAX_CONSECUTIVE_FAILURES", "5")))
+FAILURE_PAUSE_SECONDS = max(60, int(os.getenv("AUTONOMY_FAILURE_PAUSE_SECONDS", "21600")))
+MAX_BACKOFF_SECONDS = max(1, int(os.getenv("AUTONOMY_MAX_BACKOFF_SECONDS", "3600")))
+MAX_RUNS_PER_DAY = max(0, int(os.getenv("AUTONOMY_MAX_RUNS_PER_DAY", "24")))
+
+_outcome = threading.local()
+
+
+def last_outcome() -> str | None:
+    """Outcome of this thread's most recent ``run_one``: ok / failed / cancelled."""
+    return getattr(_outcome, "value", None)
+
+
+class LoopGuard:
+    """Back-off and circuit breaker for the self-feeding autonomy loop.
+
+    Every failed run makes the loop sleep at least ``SCAN_SECONDS``, doubling per
+    consecutive failure (capped). After ``MAX_CONSECUTIVE_FAILURES`` in a row the
+    loop pauses (no scouting, no claiming) for ``FAILURE_PAUSE_SECONDS`` and says so
+    loudly in the log and in ``autonomy_events``.
+    """
+
+    def __init__(self, *, max_failures: int = MAX_CONSECUTIVE_FAILURES,
+                 pause_seconds: int = FAILURE_PAUSE_SECONDS,
+                 base_seconds: int | None = None,
+                 max_backoff: int = MAX_BACKOFF_SECONDS, clock=time.monotonic):
+        self.max_failures = max_failures
+        self.pause_seconds = pause_seconds
+        self.base_seconds = max(1, SCAN_SECONDS if base_seconds is None else base_seconds)
+        self.max_backoff = max(max_backoff, self.base_seconds)
+        self.clock = clock
+        self.failures = 0
+        self.paused_until = 0.0
+
+    def paused(self) -> bool:
+        return self.clock() < self.paused_until
+
+    def record(self, outcome: str | None) -> None:
+        if outcome == "failed":
+            self.failures += 1
+            if self.failures >= self.max_failures:
+                self.paused_until = self.clock() + self.pause_seconds
+                msg = (f"autonomy loop PAUSED for {self.pause_seconds}s after "
+                       f"{self.failures} consecutive failed runs")
+                log.error(msg)
+                try:
+                    store.append_event(None, msg, level="error")
+                except Exception:  # noqa: BLE001 — never let the guard crash the loop
+                    pass
+                self.failures = 0
+        elif outcome == "ok":
+            self.failures = 0
+
+    def sleep_seconds(self, failed: bool) -> int:
+        if not failed:
+            return self.base_seconds
+        exp = max(self.failures - 1, 0)
+        return int(min(self.base_seconds * (2 ** exp), self.max_backoff))
+
+
+def self_feed_allowed(max_per_day: int = MAX_RUNS_PER_DAY) -> bool:
+    """Daily cap on autonomy 'full' runs; fails closed if the count is unavailable."""
+    if max_per_day <= 0:
+        return False
+    try:
+        return queue.full_runs_created_today() < max_per_day
+    except Exception as e:  # noqa: BLE001
+        log.warning("daily run cap check failed (%s); not self-feeding", e)
+        return False
 
 
 def scout_owner() -> tuple[str | None, str | None]:
@@ -59,6 +130,7 @@ def _enabled() -> bool:
 
 def run_one(worker_id: str, *, advisor_only: bool = False) -> bool:
     """Claim and run a single queued run. Returns True if one was processed."""
+    _outcome.value = None
     claimed = queue.claim(worker_id, advisor_only=advisor_only)
     if not claimed:
         return False
@@ -104,9 +176,12 @@ def run_one(worker_id: str, *, advisor_only: bool = False) -> bool:
             raise JobCancelled("job cancelled")
         queue.ack(run_id)
         store.append_event(run_id, "run complete")
+        _outcome.value = "ok"
     except JobCancelled:
         store.append_event(run_id, "run cancelled")
+        _outcome.value = "cancelled"
     except Exception as e:  # noqa: BLE001
+        _outcome.value = "failed"
         no_retry = claimed.get("kind") in {"full", "deepagent_paper", "deepagent_full"}
         status = queue.fail(run_id, str(e), max_attempts=1 if no_retry else MAX_ATTEMPTS)
         store.append_event(run_id, f"run errored → {status}", level="error")
@@ -161,7 +236,9 @@ def loop(worker_id: str = "worker-1") -> None:
         log.warning(
             "AUTONOMY_ENABLED is off — only scheduled daily-advisor jobs will run."
         )
-    log.info("autonomy worker %s starting (scan=%ss)", worker_id, SCAN_SECONDS)
+    log.info("autonomy worker %s starting (scan=%ss, max %s runs/day, pause after %s failures)",
+             worker_id, SCAN_SECONDS, MAX_RUNS_PER_DAY, MAX_CONSECUTIVE_FAILURES)
+    guard = LoopGuard()
     while True:
         if not _enabled():
             try:
@@ -186,8 +263,12 @@ def loop(worker_id: str = "worker-1") -> None:
                 log.info("requeued %d stale run(s)", reclaimed)
             if uncertain:
                 log.warning("failed %d uncertain paper-capable run(s)", uncertain)
-            # Self-feed: when the queue is idle, the Scout enqueues one new run.
-            if queue.pending_count() == 0:
+            if guard.paused():
+                time.sleep(SCAN_SECONDS)
+                continue
+            # Self-feed: when the queue is idle and under the daily cap, the Scout
+            # enqueues one new run.
+            if queue.pending_count() == 0 and self_feed_allowed():
                 from engine.autonomy import scout
                 # Attribute the self-fed run to the configured owner so it is a
                 # tenant-scoped session (not an orphan) and the dedup guard applies.
@@ -200,11 +281,16 @@ def loop(worker_id: str = "worker-1") -> None:
                 if rid:
                     log.info("scout enqueued run %s (owner=%s)", rid,
                              (owner_uid[:8] if owner_uid else "unattributed"))
-            drained = 0
+            failed = False
             while run_one(worker_id):
-                drained += 1
-            if not drained:
-                time.sleep(SCAN_SECONDS)
+                outcome = last_outcome()
+                guard.record(outcome)
+                if outcome == "failed" or guard.paused():
+                    failed = outcome == "failed"
+                    break
+            # Always wait between ticks: a finished (or failed) run must never
+            # immediately trigger another scout + run (the Sep 2026 hot loop).
+            time.sleep(guard.sleep_seconds(failed))
         except Exception as e:  # noqa: BLE001 — never let one tick kill the worker
             log.exception("worker tick failed: %s", e)
             time.sleep(min(SCAN_SECONDS, 30))

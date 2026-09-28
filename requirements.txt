@@ -9,7 +9,9 @@ exchange-calendars>=4.5,<5
 bleach>=6.1,<7
 markdown-it-py>=3,<5
 alpaca-py
-sqlalchemy
+# <2.1: SQLAlchemy 2.1 switched the default postgresql:// driver to psycopg 3,
+# whose server-side binding broke several queries in prod (2026-09-25).
+sqlalchemy>=2.0,<2.1
 psycopg2-binary
 psycopg[binary,pool]>=3.2,<4
 langchain-openai

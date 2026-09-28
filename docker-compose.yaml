@@ -95,7 +95,9 @@ services:
       - DB_MAX_OVERFLOW=${NEWS_WORKER_DB_MAX_OVERFLOW:-1}
       - DB_APPLICATION_NAME=alpatrade-news-worker
       - XAI_API_KEY=${XAI_API_KEY}
-      - XAI_MODEL=${XAI_MODEL:-grok-4-1-fast-reasoning}
+      - XAI_MODEL=${XAI_MODEL:-grok-4.3}
+      - XAI_REASONING_EFFORT=${XAI_REASONING_EFFORT:-none}
+      - PLATFORM_LLM_DAILY_BUDGET_USD=${PLATFORM_LLM_DAILY_BUDGET_USD:-5}
       - NEWS_PUBLISHER_FEEDS=${NEWS_PUBLISHER_FEEDS:-}
       - NEWS_MODEL_STORAGE_PATH=${NEWS_MODEL_STORAGE_PATH:-}
       - NEWS_WORKER_MODE=${NEWS_WORKER_MODE:-realtime}
@@ -245,6 +247,7 @@ services:
       - XAI_API_KEY=${XAI_API_KEY:-}
       - MODEL_PROVIDER=${MODEL_PROVIDER:-}
       - DEFAULT_MODEL=${DEFAULT_MODEL:-}
+      - PLATFORM_LLM_DAILY_BUDGET_USD=${PLATFORM_LLM_DAILY_BUDGET_USD:-5}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
       # LangSmith tracing (docs/agent-tracing.md). Key lives in Coolify only.
       - LANGSMITH_TRACING=${LANGSMITH_TRACING:-false}

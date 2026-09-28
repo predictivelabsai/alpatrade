@@ -32,6 +32,23 @@ POOL_TIMEOUT = int(os.getenv("DB_POOL_TIMEOUT", "10"))    # fail fast instead of
 APPLICATION_NAME = os.getenv("DB_APPLICATION_NAME", "alpatrade")
 
 
+def normalize_driver(url: str) -> str:
+    """Pin plain ``postgresql://`` URLs to psycopg2.
+
+    SQLAlchemy 2.1 made psycopg 3 the default driver for ``postgresql://``. Its
+    server-side parameter binding rejects SQL that psycopg2 accepted
+    (``INTERVAL $1``, untyped ``INSERT ... SELECT $1``), which silently broke
+    paper trading and the news worker after an unpinned rebuild on 2026-09-25.
+    An explicit ``+driver`` in the URL is left untouched.
+    """
+    if not url:
+        return url
+    for prefix in ("postgresql://", "postgres://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg2://" + url[len(prefix):]
+    return url
+
+
 class DatabasePool:
     """SQLAlchemy connection pool with session context manager.
 
@@ -68,7 +85,7 @@ class DatabasePool:
     def _setup(self, database_url: str) -> None:
         self.database_url = database_url
         self.engine = create_engine(
-            database_url,
+            normalize_driver(database_url),
             pool_size=POOL_SIZE,
             max_overflow=MAX_OVERFLOW,
             pool_recycle=POOL_RECYCLE,

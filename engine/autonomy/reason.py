@@ -1,80 +1,73 @@
-"""Reasoning helper — lets autonomy pipeline nodes delegate to the agent runtime.
+"""Reasoning helper — short, cosmetic LLM notes for autonomy pipeline nodes.
 
-The pipeline nodes previously called the legacy ``Orchestrator`` / ``ReportAgent``
-directly, bypassing the pluggable runtime layer (``engine.agents.runtime``).
-This module provides a thin ``reason()`` function that builds a one-shot agent
-from the configured runtime (LangGraph / deepagents / hermes / pydantic-ai) and
-asks it a question, returning the text. Nodes use it for the *judgement* parts
-(e.g. "which of these strategies should we promote?") while keeping the
-deterministic risk-gate (``policy.py``) and execution (``Orchestrator``) as
-pure-function guards — the LLM never bypasses ``allow_live=False``.
+Nodes use ``reason()`` for one- or two-sentence annotations ("why did these params
+win?"). The notes only go into ``autonomy_events``; every decision stays with the
+deterministic risk gate (``policy.py``) and execution (``Orchestrator``), and the
+LLM never bypasses ``allow_live=False``.
 
-Best-effort: on any runtime failure, returns ``""`` so the caller falls back to
-the deterministic path. No node ever crashes because the LLM was unavailable.
+This used to build a full deepagents agent per call, which sent ~6,300 prompt
+tokens (planning/filesystem/sub-agent tool schemas) for a one-line note, on a
+retired model slug billed as grok-4.3. It is now a single plain chat call with
+reasoning disabled, a small output cap, the platform daily budget applied, and
+usage recorded in ``alpatrade.llm_usage_logging``.
+
+Best-effort: on any failure (including an exhausted budget) it returns ``""`` so
+the caller falls back to the deterministic path.
 """
 from __future__ import annotations
 
 import logging
-from typing import Optional
-
-from engine.agents.runtime.base import RoleSpec
+import os
 
 log = logging.getLogger("autonomy.reason")
 
-# Module-level cache: build the reasoning agent once per framework, invalidated
-# by clear_reasoning_cache() (called when a user changes agent_framework).
-_reasoning_agent = None
-_reasoning_framework: Optional[str] = None
-
-
-def _get_reasoning_agent():
-    """Build (or return cached) the reasoning agent for the configured framework.
-
-    Rebuilds when the configured framework changes, so a settings change is
-    picked up on the next call without a process restart (Phase 3b).
-    """
-    global _reasoning_agent, _reasoning_framework
-    from engine.config import get_settings
-    from engine.agents.runtime.registry import get_runtime
-
-    s = get_settings()
-    fw = s.agent_framework
-    if _reasoning_agent is None or _reasoning_framework != fw:
-        runtime = get_runtime(fw)
-        spec = RoleSpec(
-            name="alpatrade-reasoner",
-            instructions=(
-                "You are the reasoning layer of an autonomous paper-trading pipeline. "
-                "Given structured data (backtest summaries, paper-trade outcomes, regime "
-                "labels), produce a concise decision. Be decisive and numerate. Never "
-                "recommend live orders — this is paper-only. Output plain text."
-            ),
-            temperature=0.3,
-            max_tokens=800,
-        )
-        _reasoning_agent = runtime.build(spec)
-        _reasoning_framework = fw
-        log.info("reasoning agent built via %s runtime", fw)
-    return _reasoning_agent
+SYSTEM_PROMPT = (
+    "You are the reasoning layer of an autonomous paper-trading pipeline. "
+    "Given structured data (backtest summaries, paper-trade outcomes, regime "
+    "labels), produce a concise decision. Be decisive and numerate. Never "
+    "recommend live orders — this is paper-only. Output plain text."
+)
+MAX_TOKENS = int(os.getenv("AUTONOMY_REASON_MAX_TOKENS", "200"))
+REASONING_EFFORT = os.getenv("AUTONOMY_REASONING_EFFORT", "none")
 
 
 def clear_reasoning_cache() -> None:
-    """Invalidate the cached reasoning agent (call on framework/settings change)."""
-    global _reasoning_agent, _reasoning_framework
-    _reasoning_agent = None
-    _reasoning_framework = None
+    """Kept for callers that invalidate on settings change; nothing is cached now."""
+    return None
 
 
-def reason(prompt: str) -> str:
-    """Ask the configured runtime a reasoning question. Returns '' on any failure."""
+def _build_model(settings):
+    from engine.config import build_chat_model
+    return build_chat_model(settings, streaming=False, temperature=0.3,
+                            max_tokens=MAX_TOKENS, reasoning_effort=REASONING_EFFORT)
+
+
+def reason(prompt: str, *, job_id: str | None = None) -> str:
+    """Ask the configured model one short question. Returns '' on any failure."""
     try:
+        from engine.ai.llm_usage import enforce_daily_budget, extract_usage, record_usage
         from engine.config import get_settings
-        from engine.agents.runtime.registry import get_runtime
-        s = get_settings()
-        runtime = get_runtime(s.agent_framework)
-        agent = _get_reasoning_agent()
-        result = runtime.run(agent, prompt)
-        return result.text or ""
+
+        settings = get_settings()
+        funding = "user_byok" if settings.api_key else "platform"
+        enforce_daily_budget(funding_source=funding)
+        model = _build_model(settings)
+        msg = model.invoke([("system", SYSTEM_PROMPT), ("user", prompt)])
+        text = getattr(msg, "content", "") or ""
+        if isinstance(text, list):  # content blocks
+            text = " ".join(str(b.get("text", "")) if isinstance(b, dict) else str(b) for b in text)
+        try:
+            record_usage(
+                user_id=None, thread_id=None, agent="autonomy",
+                provider=settings.model_provider or "xai",
+                model=getattr(model, "model_name", None) or getattr(model, "model", None)
+                or settings.model_name,
+                funding_source=funding, prompt=SYSTEM_PROMPT + prompt, response=text,
+                usage=extract_usage(msg), job_id=job_id,
+            )
+        except Exception as e:  # noqa: BLE001 — accounting must not break the node
+            log.warning("autonomy usage logging failed: %s", e)
+        return text.strip()
     except Exception as e:  # noqa: BLE001
         log.warning("reason() failed (%s); falling back to deterministic path.", e)
         return ""
