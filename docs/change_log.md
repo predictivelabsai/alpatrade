@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Per-user daily email report preferences
+
+- Settings has a new "Email reports" card with checkboxes for the daily live
+  trading report and the daily paper trading report. Users can turn both off. An
+  option is disabled, with a note, when the user has no linked live account or no
+  paper keys.
+- Preferences are stored in `alpatrade.user_report_preferences` (migration 39,
+  idempotent). A user without a row gets the defaults: live on, paper off. The
+  migration keeps the paper report on for users who received it successfully in
+  the last 14 days.
+- The live report scheduler and the paper report scheduler both skip users who
+  opted out and log each skip. Live delivery tracking
+  (`live_report_deliveries`) is unchanged. If the preference lookup fails, the
+  senders fall back to their previous behaviour and log a warning.
+- Tests: `tests/test_report_preferences.py` (DB-free, added to CI).
+
 ### Continuous partial news ingestion
 
 - Restored the original Finespresso behavior of saving every unique publisher

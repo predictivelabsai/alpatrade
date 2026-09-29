@@ -16,6 +16,8 @@ PnL-report scheduler:
     PNL_REPORT_FREQUENCY = daily | off      (default: daily)
     PNL_REPORT_HOUR_UTC  = 21               (0-23; ~1h after the 20:00 UTC US close)
     Account owners are resolved from DB; no cross-account distribution list is used.
+    Only owners with report_paper_daily ON (alpatrade.user_report_preferences,
+    default OFF — set on /settings) are emailed; opted-out owners are logged and skipped.
 
 Live-report scheduler (scripts/daily_live_report.py — separate from the paper report):
   Polls like the advisor. On US trading days only (Alpaca calendar via each owner's
@@ -23,6 +25,8 @@ Live-report scheduler (scripts/daily_live_report.py — separate from the paper 
   close + delay has passed — 16:20 ET = 23:20 Tallinn by default, DST-proof — and
   emails each linked live account's report to that account's own user email only.
   A DB claim (alpatrade.live_report_deliveries) keeps it once per account per day.
+  Owners with report_live_daily OFF (default ON — set on /settings) are skipped
+  and logged once per day; no delivery row is written for them.
     LIVE_REPORT_ENABLED              = true      (default)
     LIVE_REPORT_CLOSE_DELAY_MINUTES  = 20
     LIVE_REPORT_POLL_SECONDS         = 60
@@ -76,8 +80,13 @@ def _run_pnl_report():
             render, report_targets,
         )
         from utils.email_util import send_email_to
+        from engine.reporting.preferences import PAPER, filter_opted_in
         day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        for target in report_targets():
+        targets = report_targets()
+        wanted = filter_opted_in(targets, PAPER, "daily PnL report")
+        log.info("daily PnL report: %d account target(s), %d opted in, %d skipped",
+                 len(targets), len(wanted), len(targets) - len(wanted))
+        for target in wanted:
             if not claim_report_delivery(target["user_id"], target["account_id"], day):
                 continue
             ok = False
@@ -122,6 +131,7 @@ def run_due_live_reports(now: Optional[datetime] = None) -> list[dict]:
     if not _live_enabled():
         return []
     from engine.reporting.advisor import EASTERN
+    from engine.reporting.preferences import DEFAULTS, LIVE, preferences_for
     from scripts.daily_live_report import (
         client_for, report_targets, send_report, session_for,
     )
@@ -141,6 +151,8 @@ def run_due_live_reports(now: Optional[datetime] = None) -> list[dict]:
     if not targets:
         return []
     results = []
+    prefs: Optional[dict] = None
+    prefs_loaded = False
     for target in targets:
         key = (session_date, target["user_id"], target["account_number"])
         try:
@@ -157,6 +169,18 @@ def run_due_live_reports(now: Optional[datetime] = None) -> list[dict]:
                 return results
             if not advisor_is_due(now, close, _live_delay_minutes()):
                 return results
+            if not prefs_loaded:  # once per due tick, not every poll
+                prefs = preferences_for(t["user_id"] for t in targets)
+                prefs_loaded = True
+                if prefs is None:
+                    log.warning("live report: preferences unavailable — sending to all targets")
+            if prefs is not None and not prefs.get(target["user_id"], DEFAULTS).get(LIVE, True):
+                _live_done.add(key)
+                results.append({"ok": True, "sent": False, "skipped": "opted_out",
+                                "account_number": target["account_number"]})
+                log.info("daily LIVE report acct=%s skipped: owner opted out in Settings",
+                         target["account_number"])
+                continue
             res = send_report(target, day=session_date, client=client)
             _live_done.add(key)
             results.append(res)

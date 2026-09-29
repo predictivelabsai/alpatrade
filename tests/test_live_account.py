@@ -176,7 +176,9 @@ def test_live_link_table_is_only_used_by_the_readonly_view():
     allowed = {"engine/live_accounts.py", "engine/web/ph_live_account.py",
                "scripts/link_live_account.py", "tests/test_live_account.py",
                # GET-only daily live report (owner-only email) and its tests
-               "scripts/daily_live_report.py", "tests/test_daily_live_report.py"}
+               "scripts/daily_live_report.py", "tests/test_daily_live_report.py",
+               # Settings page: presence check only (list_live_accounts, no key material)
+               "engine/web/ph_settings.py"}
     pat = re.compile(r"user_live_broker_accounts|engine\.live_accounts|get_live_account_credentials"
                      r"|alpaca_live_readonly")
     hits = set()
@@ -192,6 +194,9 @@ def test_live_link_table_is_only_used_by_the_readonly_view():
     hits.discard("engine/brokers/alpaca.py")  # comment only
     hits.discard("engine/auth.py")  # docstring pointer only
     assert hits <= allowed, hits - allowed
+    settings_src = (ROOT / "engine/web/ph_settings.py").read_text()
+    assert "get_live_account_credentials" not in settings_src
+    assert "alpaca_live_readonly" not in settings_src
 
 
 # ---- per-user credential scoping ---------------------------------------------

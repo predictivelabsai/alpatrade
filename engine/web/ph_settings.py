@@ -11,6 +11,11 @@ Reached from the left-menu "⚙ Settings" link. Renders through
 * **Providers** — model / market-data / search / agent-framework selections stored
   in ``alpatrade.user_settings`` (:func:`engine.auth.store_user_settings`) and
   resolved by :mod:`engine.config`.
+* **Email reports** — which daily emails the user receives (live / paper), stored
+  in ``alpatrade.user_report_preferences``
+  (:mod:`engine.reporting.preferences`) and honoured by the schedulers in
+  :mod:`engine.autonomy.schedule`. An option is disabled when the user has no
+  matching Alpaca account (no live link / no paper keys).
 
 Feature-module contract: :func:`register(app, rt)` attaches the routes.
 """
@@ -58,6 +63,13 @@ _SETTINGS_CSS = """
 .settings .s-eye{border:1px solid var(--line-br);background:var(--bg);color:var(--ink);
   border-radius:.45rem;padding:.5rem .65rem;cursor:pointer}
 .settings .s-danger{background:transparent;color:#9b3c30;border:1px solid #c98b82}
+.settings .s-check{display:flex;gap:.6rem;align-items:flex-start;margin-bottom:.8rem}
+.settings .s-check input{margin-top:.2rem;width:1rem;height:1rem;accent-color:var(--accent)}
+.settings .s-check .s-check-label{font-size:.88rem;color:var(--ink);font-weight:600}
+.settings .s-check .s-check-note{display:block;font-size:.76rem;color:var(--ink-dim);
+  font-weight:400;margin-top:.1rem}
+.settings .s-check.off{opacity:.55}
+.settings .s-check.off .s-check-label{cursor:not-allowed}
 """
 
 
@@ -89,6 +101,67 @@ def _model_name_options(current):
             seen.add(m)
             opts.append(Option(labels.get(m, m), value=m, selected=(m == current)))
     return opts
+
+
+def _has_live_account(user_id: str) -> bool:
+    try:
+        from engine.live_accounts import list_live_accounts
+        return bool(list_live_accounts(user_id))
+    except Exception:  # noqa: BLE001 — table missing / DB down
+        return False
+
+
+def _has_paper_keys(user_id: str) -> bool:
+    try:
+        from engine.auth import get_user_accounts
+        return bool(get_user_accounts(user_id))
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _report_option(field: str, title: str, when: str, checked: bool,
+                   available: bool, missing_note):
+    """One report checkbox; disabled (with a note) when the user lacks the keys."""
+    box = Input(type="checkbox", id=f"pref-{field}", name=field, value="1",
+                checked=bool(checked and available), disabled=not available)
+    note = when if available else missing_note
+    return Div(
+        box,
+        Label(Span(title, cls="s-check-label"), Span(note, cls="s-check-note"),
+              fr=f"pref-{field}"),
+        cls=f"s-check{'' if available else ' off'}",
+    )
+
+
+def _report_card(user_id: str, has_paper: bool, has_live: bool):
+    from engine.reporting.preferences import LIVE, PAPER, get_report_preferences
+    prefs = get_report_preferences(user_id)
+    return Div(
+        H3("Email reports"),
+        P("Choose which daily reports are emailed to your sign-in address. "
+          "You can turn both off.", cls="s-hint"),
+        Form(
+            _report_option(
+                LIVE, "Daily live trading report",
+                "Your linked live Alpaca account — fills, P&L, positions and orders. "
+                "Sent after the US close on trading days (~23:20 Tallinn).",
+                prefs[LIVE], has_live,
+                NotStr("Needs a linked live Alpaca account — see "
+                       "<a href='/live/account'>Live account</a>."),
+            ),
+            _report_option(
+                PAPER, "Daily paper trading report",
+                "Your paper Alpaca account — equity, day P&L, positions and the "
+                "day's paper trades. Sent nightly.",
+                prefs[PAPER], has_paper,
+                "Needs your Alpaca paper keys — add them above to enable this report.",
+            ),
+            Button("Save email reports", type="submit", cls="s-btn"),
+            method="post", action="/settings/reports",
+        ),
+        id="report-settings",
+        cls="s-card",
+    )
 
 
 def _settings_page(user, msg: str = ""):
@@ -203,6 +276,10 @@ function toggleSecret(id, button) {
             cls="s-card",
         ),
 
+        # --- Email reports ------------------------------------------------
+        _report_card(user["user_id"], has_paper=bool(accounts),
+                     has_live=_has_live_account(user["user_id"])),
+
         # --- Providers ----------------------------------------------------
         Div(
             H3("Providers"),
@@ -302,6 +379,24 @@ def register(app, rt):
             pass
         return RedirectResponse("/settings?msg=saved", status_code=303)
 
+    @app.post("/settings/reports")
+    async def settings_reports(session, request):
+        user = _user(session)
+        if not user:
+            return RedirectResponse("/signin", status_code=303)
+        form = await request.form()
+        from engine.reporting.preferences import LIVE, PAPER, store_report_preferences
+        # Unchecked (and disabled) checkboxes are simply absent from the form, so
+        # only write the options the user could actually toggle; a disabled one
+        # keeps its stored value until the matching account is connected.
+        updates = {}
+        if _has_live_account(user["user_id"]):
+            updates[LIVE] = form.get(LIVE) == "1"
+        if _has_paper_keys(user["user_id"]):
+            updates[PAPER] = form.get(PAPER) == "1"
+        store_report_preferences(user["user_id"], **updates)
+        return RedirectResponse("/settings?msg=saved", status_code=303)
+
     @app.post("/settings/provider-key")
     async def settings_provider_key(session, request):
         user = _user(session)
@@ -338,5 +433,5 @@ def register(app, rt):
                 pass
         return RedirectResponse("/settings?msg=saved", status_code=303)
 
-    return ["/settings", "/settings/keys", "/settings/preferences",
+    return ["/settings", "/settings/keys", "/settings/preferences", "/settings/reports",
             "/settings/provider-key", "/settings/provider-key/remove"]

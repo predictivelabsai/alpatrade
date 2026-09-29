@@ -279,6 +279,8 @@ def sched(monkeypatch):
     monkeypatch.setenv("LIVE_REPORT_ENABLED", "true")
     monkeypatch.setattr(rep, "report_targets", lambda email=None: [TARGET])
     monkeypatch.setattr(rep, "client_for", lambda t: _client())
+    from engine.reporting import preferences
+    monkeypatch.setattr(preferences, "preferences_for", lambda ids: {})  # all defaults
     calls = []
     monkeypatch.setattr(rep, "send_report",
                         lambda t, day=None, client=None, **k: calls.append((t["email"], day))

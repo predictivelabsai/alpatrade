@@ -11,7 +11,9 @@ recorded run/trades (``alpatrade.runs`` mode='live', ``alpatrade.trades``
 trade_type='live'), renders an HTML digest and emails it via Postmark.
 
 Recipient: only the linked user's own email (``alpatrade.users.email``); there is
-no distribution list and no ``--to`` override.
+no distribution list and no ``--to`` override. Owners who turned the
+"Daily live trading report" off on /settings (``report_live_daily`` in
+``alpatrade.user_report_preferences``) are skipped unless ``--force`` is given.
 
 Scheduled by engine.autonomy.schedule (session close + LIVE_REPORT_CLOSE_DELAY_MINUTES,
 trading days only — weekends/holidays are skipped via Alpaca's calendar).
@@ -845,6 +847,14 @@ def main() -> int:
     if not targets:
         print("no active live-account links found" + (f" for {args.email}" if args.email else ""))
         return 2
+    if args.send and not args.force:
+        from engine.reporting.preferences import LIVE, filter_opted_in
+        wanted = filter_opted_in(targets, LIVE, "daily LIVE report")
+        for t in targets:
+            if t not in wanted:
+                print(f"skip {t['account_number']}: owner opted out of the daily live "
+                      "report in Settings (use --force to send anyway)")
+        targets = wanted
     rc = 0
     for t in targets:
         html_out = args.html_out
