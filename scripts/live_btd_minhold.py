@@ -7,9 +7,14 @@ Orders are only submitted with `--live`. Credentials come from ALPACA_LIVE_API_K
 ALPACA_LIVE_SECRET_KEY / ALPACA_LIVE_BASE_URL in the environment or the repo .env.
 State + logs live outside the repo in $BTD_STATE_DIR (default ~/.alpatrade-live).
 
-Sizing (default): 10% of current equity per position, notional/fractional, one position
-per symbol, cash only (never exceeds min(cash, non_marginable_buying_power)).
-Use --pos-frac 0.142857 for 1/7 of equity per name (fully deployed at 7 positions).
+Params: read every pass from alpatrade.strategy_configs (utils/live_btd_config.py;
+--strategy <name|id> or $BTD_STRATEGY, default buy_the_dip_mag7_minhold_live). Explicit CLI
+flags override the row (testing); code defaults apply only if the row cannot be read, and then
+a --live pass places no entries. The loaded params and their source are logged each pass.
+Sizing: pos_frac of current equity per position (live row: 1/7; code default 10%),
+notional/fractional, one position per symbol, cash only (never exceeds min(cash, non_marginable_buying_power)).
+Exits: market/DAY in the regular session; optional extended-hours limit exits (bid discount,
+reprice, DAY-market fallback at the open) per the row's `execution` settings (off by default).
 
 Example (dry run):  python scripts/live_btd_minhold.py --ignore-hours
 Example (live):     python scripts/live_btd_minhold.py --live
@@ -52,6 +57,8 @@ from dotenv import dotenv_values
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.live_btd_store import LiveRecorder, STRATEGY_NAME, STRATEGY_SLUG  # noqa: E402
+from utils.live_btd_config import (DEFAULT_PARAMS, DEFAULT_STRATEGY, exit_order,  # noqa: E402
+                                   ext_exit_action, resolve as resolve_config)
 from utils.live_btd_state import (RunnerStateStore, LeaseResult, alpaca_symbol_busy,  # noqa: E402
                                   adopt_runner_position, degraded_policy, empty_state,
                                   in_session_gate, merge_dirty_cache, normalize_state)
@@ -65,20 +72,25 @@ ENV_PATH = os.path.join(REPO, ".env")
 DATA_URL = "https://data.alpaca.markets"
 
 p = argparse.ArgumentParser()
-p.add_argument("--symbols", default="AAPL,MSFT,GOOGL,AMZN,META,TSLA,NVDA")
-p.add_argument("--dip", type=float, default=3.0)
-p.add_argument("--tp", type=float, default=8.0)
-p.add_argument("--sl", type=float, default=1.5)
-p.add_argument("--min-hold", type=int, default=3, help="calendar days before TP/SL allowed")
-p.add_argument("--max-hold", type=int, default=3, help="calendar days; exit at close window once reached")
-p.add_argument("--pos-frac", type=float, default=0.10, help="fraction of equity per position")
-p.add_argument("--max-exposure", type=float, default=0.0, help="$ cap on total exposure (0 = cash only)")
-p.add_argument("--ref", choices=["prev_close", "high20"], default="high20",
-               help="dip reference: high20 = 20-bar high (matches utils/buy_the_dip.py backtests); prev_close = prior daily close")
-p.add_argument("--feed", default="iex")
-p.add_argument("--entry-window", default="15-5",
-               help="minutes before the session close (from /v2/clock, so half-days work): 15-5 = 15:45-15:55 ET")
-p.add_argument("--close-window", default="15-2", help="minutes before close for max-hold exits")
+# Strategy params come from alpatrade.strategy_configs (utils/live_btd_config.py).
+# Precedence per key: explicit flag below > DB row > DEFAULT_PARAMS. Flags default to None
+# so "not given" is distinguishable; use them only for testing / one-off overrides.
+p.add_argument("--strategy", default=None,
+               help=f"alpatrade.strategy_configs name or numeric id (default: $BTD_STRATEGY or {DEFAULT_STRATEGY})")
+p.add_argument("--symbols", default=None, help=f"override (default {','.join(DEFAULT_PARAMS['symbols'])})")
+p.add_argument("--dip", type=float, default=None, help="override, %% below ref (default 3)")
+p.add_argument("--tp", type=float, default=None, help="override, take profit %% (default 8)")
+p.add_argument("--sl", type=float, default=None, help="override, stop loss %% (default 1.5)")
+p.add_argument("--min-hold", type=int, default=None, help="override: calendar days before TP/SL allowed (default 3)")
+p.add_argument("--max-hold", type=int, default=None, help="override: calendar days; exit at close window once reached (default 3)")
+p.add_argument("--pos-frac", type=float, default=None, help="override: fraction of equity per position (default 0.10)")
+p.add_argument("--max-exposure", type=float, default=None, help="override: $ cap on total exposure (0 = cash only)")
+p.add_argument("--ref", choices=["prev_close", "high20"], default=None,
+               help="override dip reference: high20 = 20-bar high (default); prev_close = prior daily close")
+p.add_argument("--feed", default=None, help="override market-data feed (default iex)")
+p.add_argument("--entry-window", default=None,
+               help="override: minutes before the session close (from /v2/clock): 15-5 = 15:45-15:55 ET (default)")
+p.add_argument("--close-window", default=None, help="override: minutes before close for max-hold exits (default 15-2)")
 p.add_argument("--live", action="store_true", help="really submit orders to the LIVE account (default: dry run)")
 p.add_argument("--ignore-hours", action="store_true", help="dry-run only: evaluate as if in entry window")
 p.add_argument("--record-test", action="store_true",
@@ -120,6 +132,18 @@ INSTANCE = a.instance or os.environ.get("BTD_INSTANCE") or env.get("BTD_INSTANCE
 if ROLE not in ("primary", "backup", "tertiary"):
     sys.exit(f"BTD_ROLE must be primary, backup or tertiary, got {ROLE!r}")
 
+# ---------------- strategy config (shared DB row; CLI flags override) ----------------
+STRATEGY = a.strategy or os.environ.get("BTD_STRATEGY") or env.get("BTD_STRATEGY") or DEFAULT_STRATEGY
+_PKEYS = ("symbols", "dip", "tp", "sl", "min_hold", "max_hold", "pos_frac", "max_exposure", "ref", "feed",
+          "entry_window", "close_window")
+CFG = resolve_config(STRATEGY, {k: getattr(a, k) for k in _PKEYS}, database_url=DB_URL)
+for _k, _v in CFG.params.items():
+    setattr(a, _k, ",".join(_v) if _k == "symbols" else _v)
+EXEC = CFG.execution
+(log.info if CFG.db_ok else log.warning)(
+    "strategy config [%s/%s]: source=%s params=%s sources=%s execution=%s", INSTANCE, ROLE, CFG.source,
+    json.dumps(CFG.params, sort_keys=True), json.dumps(CFG.sources, sort_keys=True), json.dumps(EXEC, sort_keys=True))
+
 def code_version():
     try:
         return subprocess.run(["git", "-C", REPO, "rev-parse", "--short", "HEAD"], capture_output=True,
@@ -137,6 +161,24 @@ def post_order(body):
     if r.status_code == 422 and "client_order_id" in r.text:
         log.warning("duplicate client_order_id %s -> already submitted, skipping", body.get("client_order_id")); return {}
     r.raise_for_status(); return r.json()
+
+def broker_call(method, path, body=None):
+    """PATCH/DELETE on the trading API (live only; dry run logs)."""
+    if not EXECUTE:
+        log.info("DRY-RUN would %s %s %s", method, path, json.dumps(body) if body else ""); return {"dry_run": True}
+    r = requests.request(method, f"{BASE}{path}", headers=H, json=body, timeout=20)
+    r.raise_for_status(); return r.json() if r.content else {}
+
+def latest_bid(sym):
+    q = get(f"{DATA_URL}/v2/stocks/{sym}/quotes/latest", feed=a.feed).get("quote") or {}
+    return float(q.get("bp") or 0)
+
+def ext_session(now):
+    """Extended/overnight session: market closed but a trading session is near (pre-market,
+    overnight on a trading night, or the weekday 16:00-20:00 ET post-market)."""
+    if clock.get("is_open"): return False
+    nxt = datetime.fromisoformat(clock["next_open"]).astimezone(ET)
+    return (nxt - now).total_seconds() <= 20.5 * 3600 or (now.weekday() < 5 and dtime(16) <= now.time() < dtime(20))
 
 def win(s, now):
     """True if the market is open and now is within [hi, lo] minutes of today's close."""
@@ -164,7 +206,8 @@ def run_config(extra=None):
             "dip_threshold": a.dip, "dip_reference": a.ref, "take_profit": a.tp,
             "stop_loss": a.sl, "min_hold_days": a.min_hold, "hold_days": a.max_hold,
             "position_size": a.pos_frac, "sizing": "notional, fraction of equity, cash only",
-            "runner": "scripts/live_btd_minhold.py", **(extra or {})}
+            "max_exposure": a.max_exposure, "entry_window": a.entry_window, "close_window": a.close_window,
+            "feed": a.feed, "runner": "scripts/live_btd_minhold.py", **CFG.snapshot(), **(extra or {})}
 
 def make_store(account_number):
     if not DB_URL: return None
@@ -288,6 +331,12 @@ else:
         state = strip_meta(cache)
         log.warning("failover (dry-run): %s -> using the local cache", lr.reason)
 
+if not CFG.db_ok:
+    if EXECUTE:
+        ALLOW_ENTRIES = False
+    log.warning("strategy config not loaded from the DB (%s) -> %s", CFG.error,
+                "entries disabled this pass" if EXECUTE else "a live pass would disable entries")
+
 def lease_ok():
     if not EXECUTE or DEGRADED: return True
     if time.monotonic() < DEADLINE: return True
@@ -362,6 +411,54 @@ if rec and rec.enabled:
     except Exception as exc:  # noqa: BLE001
         log.warning("record: setup failed: %s", exc)
 
+# ---------------- extended-hours exit management (reprice / fall back at the open) ----------------
+EXT = EXEC["extended_hours_exit"]
+OPEN_ST = ("new", "accepted", "pending_new", "partially_filled", "held", "accepted_for_bidding", "pending_replace")
+
+def manage_ext_exits():
+    if not EXECUTE: return
+    for it in R.get("pending", []):
+        x = it.get("ext")
+        if it.get("side") != "sell" or not x: continue
+        try:
+            o = get(f"{BASE}/v2/orders:by_client_order_id", client_order_id=it["cid"])
+        except Exception as exc:  # noqa: BLE001
+            log.warning("ext-exit: lookup %s failed: %s", it["cid"], exc); continue
+        if o.get("status") not in OPEN_ST: continue
+        act = ext_exit_action(submitted_at=datetime.fromisoformat(x["submitted_at"]), now=now,
+                              reprices=int(x.get("reprices", 0)), market_open=bool(clock.get("is_open")),
+                              execution=EXEC)
+        log.info("ext-exit: %s %s status=%s limit=%s reprices=%s -> %s", it["sym"], it["cid"], o.get("status"),
+                 o.get("limit_price"), x.get("reprices"), act)
+        if act == "wait" or not lease_ok(): continue
+        try:
+            if act == "reprice":
+                n = int(x.get("reprices", 0)) + 1; ncid = f"{x['base_cid']}-r{n}"
+                px = exit_order(it["sym"], o["qty"], ncid, "extended", EXEC, latest_bid(it["sym"]))["limit_price"]
+                broker_call("PATCH", f"/v2/orders/{o['id']}", {"limit_price": px, "client_order_id": ncid})
+                it["cid"] = ncid; x.update(reprices=n, submitted_at=now.isoformat())
+            else:  # regular session open: cancel the limit, DAY market for what is left
+                broker_call("DELETE", f"/v2/orders/{o['id']}")
+                for _ in range(10):
+                    o = get(f"{BASE}/v2/orders/{o['id']}")
+                    if o.get("status") not in OPEN_ST + ("pending_cancel",): break
+                    time.sleep(1)
+                left = float(o.get("qty") or 0) - float(o.get("filled_qty") or 0)
+                if o.get("status") in OPEN_ST + ("pending_cancel",) or left <= 0:
+                    log.info("ext-exit: %s status=%s left=%s -> no fallback this pass", it["sym"], o.get("status"), left)
+                    continue
+                mcid = f"{x['base_cid']}-mkt"
+                post_order(exit_order(it["sym"], f"{left:g}", mcid, "regular", EXEC))
+                if float(o.get("filled_qty") or 0) > 0:  # keep the partial for record_pending_fills
+                    R["pending"].append({k: v for k, v in it.items() if k != "ext"} | {"cid": mcid})
+                else:
+                    it["cid"] = mcid; it.pop("ext", None)
+            persist()
+        except Exception as exc:  # noqa: BLE001
+            log.warning("ext-exit: %s %s failed: %s", it["sym"], act, exc)
+
+manage_ext_exits()
+
 # ---------------- exits ----------------
 pending_sell = {o["symbol"] for o in open_orders if o["side"] == "sell"}
 for sym, meta in list(state["positions"].items()):
@@ -384,16 +481,30 @@ for sym, meta in list(state["positions"].items()):
     if not reason: continue
     if entry_d >= today:  # PDT guard: never a same-day round trip
         log.warning("%s: PDT guard refuses same-day exit", sym); continue
-    if sym in pending_sell or not market_ok: continue
+    if sym in pending_sell: continue
+    if market_ok: session = "regular"
+    elif EXT["enabled"] and ext_session(now): session = "extended"
+    else:
+        if not clock.get("is_open") and not EXT["enabled"]:
+            log.info("%s: market closed, extended-hours exits disabled in the strategy config -> wait", sym)
+        continue
     if not lease_ok(): break
     xcid = f"btdx-{sym}-{today:%Y%m%d}"
-    post_order({"symbol": sym, "qty": pos["qty_available"], "side": "sell", "type": "market",
-                "time_in_force": "day", "client_order_id": xcid})
+    try:
+        body = exit_order(sym, pos["qty_available"], xcid, session, EXEC,
+                          latest_bid(sym) if session == "extended" else None)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("%s: cannot build %s exit (%s) -> skip this pass", sym, session, exc); continue
+    log.info("%s: %s-session exit %s", sym, session, json.dumps(body))
+    post_order(body)
     if EXECUTE:
         meta["exit_submitted"] = now.isoformat()
         if not any(it["cid"] == xcid for it in R["pending"]):
-            R["pending"].append({"cid": xcid, "side": "sell", "sym": sym, "reason": reason,
-                                 "entry_cid": meta.get("client_id") or f"btd-{sym}-{meta['entry_date'].replace('-', '')}"})
+            item = {"cid": xcid, "side": "sell", "sym": sym, "reason": reason,
+                    "entry_cid": meta.get("client_id") or f"btd-{sym}-{meta['entry_date'].replace('-', '')}"}
+            if session == "extended":
+                item["ext"] = {"base_cid": xcid, "submitted_at": now.isoformat(), "reprices": 0}
+            R["pending"].append(item)
         persist()
 # never touch positions not opened by this runner
 for sym in positions:
@@ -403,7 +514,7 @@ for sym in positions:
 # ---------------- entries ----------------
 in_entry = win(a.entry_window, now)
 if not ALLOW_ENTRIES:
-    log.warning("failover: entries disabled this pass (DB unreachable, cannot prove exclusivity)")
+    log.warning("entries disabled this pass (DB unreachable or strategy config not loaded from the DB)")
 elif not (in_entry or (a.ignore_hours and not EXECUTE)):
     log.info("outside entry window (%s min before close) -> no entries", a.entry_window)
 else:

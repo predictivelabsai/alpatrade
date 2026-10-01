@@ -8,6 +8,8 @@
   Install:  sed "s#__REPO__#$HOME/dev/plai/alpatrade#g; s#__HOME__#$HOME#g" \
               deploy/launchd/com.predictivelabs.alpatrade-btd.plist > ~/Library/LaunchAgents/com.predictivelabs.alpatrade-btd.plist
             launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.predictivelabs.alpatrade-btd.plist
+  Params:   read from alpatrade.strategy_configs (docs/live_btd_minhold.md, "Strategy config");
+            do not add param flags here.
   Off:      launchctl bootout gui/$(id -u)/com.predictivelabs.alpatrade-btd
 -->
 <plist version="1.0">
@@ -18,8 +20,6 @@
         <string>__REPO__/.venv/bin/python</string>
         <string>__REPO__/scripts/live_btd_minhold.py</string>
         <string>--live</string>
-        <string>--pos-frac</string>
-        <string>0.142857</string>
     </array>
     <key>WorkingDirectory</key><string>__REPO__</string>
     <key>EnvironmentVariables</key>

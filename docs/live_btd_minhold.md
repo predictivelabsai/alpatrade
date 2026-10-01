@@ -4,12 +4,14 @@ Standalone runner for the LIVE Alpaca account. It is **not** imported by the web
 and **not** started by `docker-compose.yaml`, so deploying alpatrade.chat never runs it.
 Nothing trades unless you pass `--live`.
 
-Strategy defaults: AAPL MSFT GOOGL AMZN META TSLA NVDA; buy when price is ≥3% below the
-20-bar high (same reference as `utils/buy_the_dip.py`; `--ref prev_close` for a
-close-to-close dip); TP +8%, SL −1.5%, min-hold 3 calendar days (TP/SL cannot fire
+Strategy parameters live in the DB, not in scheduler flags: one row of
+`alpatrade.strategy_configs` (see **Strategy config** below) is read by every instance on
+every pass. Current live row `buy_the_dip_mag7_minhold_live`: AAPL MSFT GOOGL AMZN META TSLA
+NVDA; buy when price is ≥3% below the 20-bar high (`ref: high20`, same reference as
+`utils/buy_the_dip.py`); TP +8%, SL −1.5%, min-hold 3 calendar days (TP/SL cannot fire
 earlier), max-hold 3 calendar days (exit in the last minutes of the first session on/after day 3).
-Sizing: 10% of equity per position (`--pos-frac 0.142857` = 1/7), notional/fractional
-market orders, one position per symbol, cash only (≤ min(cash, non_marginable_buying_power)).
+Sizing: `pos_frac 0.142857` = 1/7 of equity per position (code default without the DB: 10%),
+notional/fractional market orders, one position per symbol, cash only (≤ min(cash, non_marginable_buying_power)).
 The runner only manages positions it opened (authoritative state in the AlpaTrade DB,
 `alpatrade.live_runner_state`; `$BTD_STATE_DIR/state.json`, default `~/.alpatrade-live`, is a
 local cache only); pre-existing positions are ignored but block a new entry in that symbol.
@@ -33,6 +35,7 @@ Type=oneshot
 WorkingDirectory=%h/dev/plai/alpatrade
 ExecStart=%h/dev/plai/alpatrade/.venv/bin/python scripts/live_btd_minhold.py --live
 ```
+(no param flags: params come from `alpatrade.strategy_configs`)
 `~/.config/systemd/user/alpatrade-btd.timer`
 ```ini
 [Unit]
@@ -150,3 +153,37 @@ prod `DATABASE_URL`/`ENCRYPTION_KEY` and `ALPACA_LIVE_*`:
 Local UI testing: start the app with `ALPATRADE_DEV_LOGIN=1` and open
 `http://localhost:5001/dev/login?email=...` (route only exists with that env var and
 only answers loopback clients with a localhost Host header; never set it in prod).
+
+
+## Strategy config (`alpatrade.strategy_configs`, `utils/live_btd_config.py`)
+
+Migration: `python run_migration.py sql/40_strategy_configs.sql` (idempotent; the seed row
+is `ON CONFLICT DO NOTHING`, so re-running never overwrites edits).
+
+| column | content |
+|---|---|
+| `name` | lookup key; the runner uses `--strategy <name or id>`, else `$BTD_STRATEGY`, else `buy_the_dip_mag7_minhold_live` |
+| `params` | `symbols, dip, tp, sl, min_hold, max_hold, pos_frac, max_exposure, ref, feed, entry_window, close_window` |
+| `execution` | `regular_hours_exit` (market, day) and `extended_hours_exit` (see below) |
+| `version` | bump on every edit; logged on every pass and snapshotted with the source into the run config |
+
+Precedence per key: explicit CLI flag (testing / one-off) > DB row > code defaults.
+Every pass logs `strategy config [instance/role]: source=db:alpatrade.strategy_configs#<id> <name> v<n>
+params=… sources=… execution=…`. If the row cannot be read (DB unreachable, missing/inactive row,
+invalid values) the pass uses the code defaults, logs a warning, and a `--live` pass **places no
+entries** (exits still run). Edit params with SQL, e.g.
+
+```sql
+UPDATE alpatrade.strategy_configs
+SET params = params || '{"pos_frac": 0.142857}', version = version + 1, updated_at = NOW(), updated_by = 'julian'
+WHERE name = 'buy_the_dip_mag7_minhold_live';
+```
+
+**Exit execution.** Regular session: market, DAY. Extended/overnight session (market closed,
+pre-market / post-market / overnight on a trading night): `limit` at `bid × (1 − discount_bps/10000)`
+(default 15 bps, rounded down to the tick), `extended_hours=true`, DAY; reprice to the current bid
+discount after `reprice_after_min` (5) minutes, at most `max_reprices` (2) times; when the regular
+session opens, cancel and sell the remainder with a DAY market order. Off unless
+`execution.extended_hours_exit.enabled` is `true` (seeded `false`; the runner's session gate is
+09:00–16:05 ET and the HP timer fires 09:00–15:55 ET, so in practice extended-hours exits would
+happen 09:00–09:30 ET pre-market unless a pass is run with `--any-time`).
