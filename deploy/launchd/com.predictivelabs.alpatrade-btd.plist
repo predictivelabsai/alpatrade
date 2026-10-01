@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  Mac backup instance of the live Mag-7 BTD runner (docs/live_btd_minhold.md, "Failover").
-  Fires every 5 minutes, every hour, every day (launchd uses the Mac's local zone, e.g.
-  Europe/Tallinn); the script itself no-ops outside Mon-Fri 09:00-16:05 America/New_York,
-  so DST differences between the EU and the US need no handling here.
-  Install:  sed "s#__REPO__#$HOME/dev/plai/alpatrade#g; s#__HOME__#$HOME#g" \
-              deploy/launchd/com.predictivelabs.alpatrade-btd.plist > ~/Library/LaunchAgents/com.predictivelabs.alpatrade-btd.plist
+  Mac backup instance of the live Mag-7 BTD runner (docs/strategy_methodology.md).
+  launchd only STARTS and KEEPS ALIVE the long-running in-memory event scheduler
+  (KeepAlive + RunAtLoad); there is no StartCalendarInterval — all event timing (09:31 open,
+  15:45-15:55 entries, ~15:58 close, 3-min lease heartbeats, holidays/early closes from the
+  Alpaca calendar) lives in scripts/live_btd_scheduler.py. Params: alpatrade.strategy_configs.
+  Install:  sed "s#/Users/juliankaljuvee#$HOME#g" deploy/launchd/com.predictivelabs.alpatrade-btd.plist \
+              > ~/Library/LaunchAgents/com.predictivelabs.alpatrade-btd.plist
             launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.predictivelabs.alpatrade-btd.plist
-  Params:   read from alpatrade.strategy_configs (docs/live_btd_minhold.md, "Strategy config");
-            do not add param flags here.
+  Reload config: launchctl kill HUP gui/$(id -u)/com.predictivelabs.alpatrade-btd
   Off:      launchctl bootout gui/$(id -u)/com.predictivelabs.alpatrade-btd
 -->
 <plist version="1.0">
@@ -17,35 +17,24 @@
     <key>Label</key><string>com.predictivelabs.alpatrade-btd</string>
     <key>ProgramArguments</key>
     <array>
-        <string>__REPO__/.venv/bin/python</string>
-        <string>__REPO__/scripts/live_btd_minhold.py</string>
+        <string>/Users/juliankaljuvee/dev/plai/alpatrade/.venv/bin/python</string>
+        <string>/Users/juliankaljuvee/dev/plai/alpatrade/scripts/live_btd_scheduler.py</string>
         <string>--live</string>
     </array>
-    <key>WorkingDirectory</key><string>__REPO__</string>
+    <key>WorkingDirectory</key><string>/Users/juliankaljuvee/dev/plai/alpatrade</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>BTD_ROLE</key><string>backup</string>
         <key>BTD_INSTANCE</key><string>mac</string>
+        <key>PYTHONUNBUFFERED</key><string>1</string>
         <key>PATH</key><string>/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
     </dict>
-    <key>StartCalendarInterval</key>
-    <array>
-        <dict><key>Minute</key><integer>0</integer></dict>
-        <dict><key>Minute</key><integer>5</integer></dict>
-        <dict><key>Minute</key><integer>10</integer></dict>
-        <dict><key>Minute</key><integer>15</integer></dict>
-        <dict><key>Minute</key><integer>20</integer></dict>
-        <dict><key>Minute</key><integer>25</integer></dict>
-        <dict><key>Minute</key><integer>30</integer></dict>
-        <dict><key>Minute</key><integer>35</integer></dict>
-        <dict><key>Minute</key><integer>40</integer></dict>
-        <dict><key>Minute</key><integer>45</integer></dict>
-        <dict><key>Minute</key><integer>50</integer></dict>
-        <dict><key>Minute</key><integer>55</integer></dict>
-    </array>
-    <key>RunAtLoad</key><false/>
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key><true/>
+    <key>ThrottleInterval</key><integer>15</integer>
+    <key>ExitTimeOut</key><integer>300</integer>
     <key>ProcessType</key><string>Background</string>
-    <key>StandardOutPath</key><string>__HOME__/.alpatrade-live/logs/launchd.out.log</string>
-    <key>StandardErrorPath</key><string>__HOME__/.alpatrade-live/logs/launchd.err.log</string>
+    <key>StandardOutPath</key><string>/Users/juliankaljuvee/.alpatrade-live/logs/launchd.out.log</string>
+    <key>StandardErrorPath</key><string>/Users/juliankaljuvee/.alpatrade-live/logs/launchd.err.log</string>
 </dict>
 </plist>

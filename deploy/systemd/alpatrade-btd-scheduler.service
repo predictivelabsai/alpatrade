@@ -1,0 +1,27 @@
+# HP primary: user unit that only STARTS and KEEPS ALIVE the in-memory event scheduler.
+# No timer, no schedule here — all event timing is in scripts/live_btd_scheduler.py.
+# Role/instance come from the repo .env (BTD_ROLE=primary, BTD_INSTANCE=hp); params from
+# alpatrade.strategy_configs. Install:
+#   cp deploy/systemd/alpatrade-btd-scheduler.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now alpatrade-btd-scheduler.service
+#   loginctl enable-linger $USER
+# Reload strategy config:  systemctl --user reload alpatrade-btd-scheduler   (SIGHUP)
+[Unit]
+Description=AlpaTrade live Mag-7 BTD event scheduler (in-memory; supervisor only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/dev/plai/alpatrade
+ExecStart=%h/dev/plai/alpatrade/.venv/bin/python scripts/live_btd_scheduler.py --live
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=15
+# let an in-flight event pass finish (<= 240 s watchdog) before SIGKILL
+KillSignal=SIGTERM
+TimeoutStopSec=300
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

@@ -1,219 +1,60 @@
 #!/usr/bin/env python3
-"""Mag-7 buy-the-dip LIVE runner with TRUE calendar min-hold (PDT-safe).
+"""Mag-7 buy-the-dip LIVE runner, single pass (CLI). The pass logic lives in
+utils/live_btd_runner.py; the long-running in-memory event scheduler that drives it on the
+HP / Mac / box is scripts/live_btd_scheduler.py (docs/strategy_methodology.md).
 
-Standalone: not imported by the web app/API and not started by docker-compose.
-Default is DRY RUN (computes signals, prints intended orders, submits nothing).
-Orders are only submitted with `--live`. Credentials come from ALPACA_LIVE_API_KEY /
+Default is DRY RUN (computes everything, prints intended orders, submits nothing).
+Orders are only submitted with `--live`. Credentials: ALPACA_LIVE_API_KEY /
 ALPACA_LIVE_SECRET_KEY / ALPACA_LIVE_BASE_URL in the environment or the repo .env.
-State + logs live outside the repo in $BTD_STATE_DIR (default ~/.alpatrade-live).
 
-Params: read every pass from alpatrade.strategy_configs (utils/live_btd_config.py;
---strategy <name|id> or $BTD_STRATEGY, default buy_the_dip_mag7_minhold_live). Explicit CLI
-flags override the row (testing); code defaults apply only if the row cannot be read, and then
-a --live pass places no entries. The loaded params and their source are logged each pass.
-Sizing: pos_frac of current equity per position (live row: 1/7; code default 10%),
-notional/fractional, one position per symbol, cash only (never exceeds min(cash, non_marginable_buying_power)).
-Exits: market/DAY in the regular session; optional extended-hours limit exits (bid discount,
-reprice, DAY-market fallback at the open) per the row's `execution` settings (off by default).
+Params: alpatrade.strategy_configs (--strategy <name|id> or $BTD_STRATEGY, default
+buy_the_dip_mag7_minhold_live); explicit flags override the row (testing); code defaults apply
+only if the row cannot be read, and then a --live pass places no entries.
 
-Example (dry run):  python scripts/live_btd_minhold.py --ignore-hours
-Example (live):     python scripts/live_btd_minhold.py --live
+Events (--event, default auto = chosen from the market clock):
+  open   place/refresh broker-side TP/SL exits for positions past the calendar min-hold
+         (never on the buy date: PDT-safe); market sell if already beyond TP/SL
+  entry  dip check + buys in the entry window (15:45-15:55 ET)
+  close  max-hold exits in the close window (cancels the runner's broker exits first)
+  post   record fills / performance only
+  heartbeat  DB lease renew only
 
-Recording: live passes also write the run, its trades (trade_type='live'), runner-owned
-positions and performance into AlpaTrade's DB (DATABASE_URL) under the AlpaTrade user
-$BTD_USER_EMAIL (default kaljuvee@gmail.com). Best-effort: DB errors are logged and
-never block or change trading. `--record-test` writes a marked test run, reads it
-back and deletes it (no orders, no Alpaca writes).
-
-Failover (HP primary + Mac backup + box tertiary, see utils/live_btd_state.py):
-the authoritative runner state (owned positions, pending orders, last entries, run id)
-lives in alpatrade.live_runner_state; ~/.alpatrade-live/state.json is only a local cache.
-Each --live pass takes a DB lease in one transaction and writes a heartbeat
-(alpatrade.live_runner_heartbeats); only the lease holder trades. Priority primary >
-backup > tertiary. The primary acts whenever the lease is free or its own; backup/tertiary
-act only when every higher-priority heartbeat is older than --takeover-min (12) or they
-already hold the lease, and hand the lease back as soon as any higher role is alive again.
-DB unreachable -> no entries; exits only for locally cached positions if this instance held
-the lease on its last decided pass. Before every buy, Alpaca is re-checked for a position /
-open order / already-used client order id in that symbol. Passes outside Mon-Fri
-09:00-16:05 ET are no-ops (so launchd/cron can simply fire every 5 minutes) unless
---any-time. Seed the DB state once:  python scripts/live_btd_minhold.py --seed-state
---seed-run-id <uuid>. Instance identity: BTD_INSTANCE (default hostname), BTD_ROLE
-primary|backup|tertiary (default primary), from the environment or the repo .env.
-
-Each invocation is one idempotent pass (run from cron/systemd every 5 min in RTH):
-  1. exits : positions opened by this runner that are >= MIN_HOLD calendar days old (ET)
-             -> sell if P&L >= +TP or <= -SL, or if age >= MAX_HOLD and we're in the
-             close window. Never sells a position opened today (PDT guard).
-  2. entries: only in the ENTRY window (default 15:45-15:55 ET). dip = (ref - last)/ref,
-             ref = previous daily close (default) or 20-bar high (repo backtester).
-             Notional (fractional) market buy, one position per symbol, cash-only.
+Examples:  python scripts/live_btd_minhold.py                     # dry run, auto event
+           python scripts/live_btd_minhold.py --event entry --ignore-hours
+Seed the DB state once: python scripts/live_btd_minhold.py --seed-state --seed-run-id <uuid>
 """
-import argparse, fcntl, json, logging, os, socket, subprocess, sys, time
-from datetime import datetime, date, timedelta, time as dtime
-from zoneinfo import ZoneInfo
-import requests
-from dotenv import dotenv_values
+import json, os, sys
+from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils.live_btd_store import LiveRecorder, STRATEGY_NAME, STRATEGY_SLUG  # noqa: E402
-from utils.live_btd_config import (DEFAULT_PARAMS, DEFAULT_STRATEGY, exit_order,  # noqa: E402
-                                   ext_exit_action, resolve as resolve_config)
-from utils.live_btd_state import (RunnerStateStore, LeaseResult, alpaca_symbol_busy,  # noqa: E402
-                                  adopt_runner_position, degraded_policy, empty_state,
-                                  in_session_gate, merge_dirty_cache, normalize_state)
+from utils.live_btd_runner import (ET, PassStop, Runner, build_parser, setup_logging)  # noqa: E402
+from utils.live_btd_state import empty_state, in_session_gate  # noqa: E402
+from utils.live_btd_store import LiveRecorder, STRATEGY_NAME  # noqa: E402
 
-ET = ZoneInfo("America/New_York")
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-HERE = os.path.expanduser(os.getenv("BTD_STATE_DIR", "~/.alpatrade-live"))
-os.makedirs(os.path.join(HERE, "logs"), exist_ok=True)
-STATE = os.path.join(HERE, "state.json")
-ENV_PATH = os.path.join(REPO, ".env")
-DATA_URL = "https://data.alpaca.markets"
-
-p = argparse.ArgumentParser()
-# Strategy params come from alpatrade.strategy_configs (utils/live_btd_config.py).
-# Precedence per key: explicit flag below > DB row > DEFAULT_PARAMS. Flags default to None
-# so "not given" is distinguishable; use them only for testing / one-off overrides.
-p.add_argument("--strategy", default=None,
-               help=f"alpatrade.strategy_configs name or numeric id (default: $BTD_STRATEGY or {DEFAULT_STRATEGY})")
-p.add_argument("--symbols", default=None, help=f"override (default {','.join(DEFAULT_PARAMS['symbols'])})")
-p.add_argument("--dip", type=float, default=None, help="override, %% below ref (default 3)")
-p.add_argument("--tp", type=float, default=None, help="override, take profit %% (default 8)")
-p.add_argument("--sl", type=float, default=None, help="override, stop loss %% (default 1.5)")
-p.add_argument("--min-hold", type=int, default=None, help="override: calendar days before TP/SL allowed (default 3)")
-p.add_argument("--max-hold", type=int, default=None, help="override: calendar days; exit at close window once reached (default 3)")
-p.add_argument("--pos-frac", type=float, default=None, help="override: fraction of equity per position (default 0.10)")
-p.add_argument("--max-exposure", type=float, default=None, help="override: $ cap on total exposure (0 = cash only)")
-p.add_argument("--ref", choices=["prev_close", "high20"], default=None,
-               help="override dip reference: high20 = 20-bar high (default); prev_close = prior daily close")
-p.add_argument("--feed", default=None, help="override market-data feed (default iex)")
-p.add_argument("--entry-window", default=None,
-               help="override: minutes before the session close (from /v2/clock): 15-5 = 15:45-15:55 ET (default)")
-p.add_argument("--close-window", default=None, help="override: minutes before close for max-hold exits (default 15-2)")
-p.add_argument("--live", action="store_true", help="really submit orders to the LIVE account (default: dry run)")
-p.add_argument("--ignore-hours", action="store_true", help="dry-run only: evaluate as if in entry window")
-p.add_argument("--record-test", action="store_true",
-               help="write a clearly marked test run to the AlpaTrade DB, read it back, delete it; no orders")
-p.add_argument("--role", choices=["primary", "backup", "tertiary"], default=None,
-               help="failover role (default: $BTD_ROLE or primary)")
-p.add_argument("--instance", default=None, help="instance name for the lease (default: $BTD_INSTANCE or hostname)")
-p.add_argument("--lease-ttl-min", type=float, default=8.0, help="leader lease TTL (minutes)")
-p.add_argument("--takeover-min", type=float, default=12.0,
-               help="lower role takes over when every higher-priority heartbeat is older than this (minutes)")
-p.add_argument("--any-time", action="store_true",
-               help="run the pass even outside Mon-Fri 09:00-16:05 ET (trading is still gated by /v2/clock)")
-p.add_argument("--seed-state", action="store_true",
-               help="create the authoritative DB state row (empty positions/pending) and exit; no orders")
-p.add_argument("--seed-run-id", default=None, help="run id to seed (the existing alpatrade.runs row)")
-p.add_argument("--force-seed", action="store_true", help="overwrite an existing state row when seeding")
-a = p.parse_args()
-
-EXECUTE = bool(a.live)
-if EXECUTE and a.ignore_hours:
+a = build_parser().parse_args()
+if a.live and a.ignore_hours:
     sys.exit("--ignore-hours is dry-run only.")
-# Session gate first, before any logging/API call, so a 24x7 5-minute schedule is cheap.
 if not (a.any_time or a.ignore_hours or a.record_test or a.seed_state) and not in_session_gate(datetime.now(ET)):
     sys.exit(0)
-
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s",
-    handlers=[logging.StreamHandler(), logging.FileHandler(os.path.join(HERE, "logs", "btd.log"))])
-log = logging.getLogger("btd")
-
-env = {**dotenv_values(ENV_PATH), **{k: v for k, v in os.environ.items() if k.startswith("ALPACA_LIVE_")}}
-if not env.get("ALPACA_LIVE_API_KEY") or not env.get("ALPACA_LIVE_SECRET_KEY"):
-    sys.exit("ALPACA_LIVE_API_KEY / ALPACA_LIVE_SECRET_KEY not set")
-DB_URL = os.environ.get("DATABASE_URL") or env.get("DATABASE_URL")
-USER_EMAIL = os.environ.get("BTD_USER_EMAIL", "kaljuvee@gmail.com")
-ACCOUNT_NO = env.get("ALPACA_LIVE_ACCOUNT") or os.environ.get("ALPACA_LIVE_ACCOUNT")
-BASE = env.get("ALPACA_LIVE_BASE_URL", "https://api.alpaca.markets").rstrip("/")
-ROLE = a.role or os.environ.get("BTD_ROLE") or env.get("BTD_ROLE") or "primary"
-INSTANCE = a.instance or os.environ.get("BTD_INSTANCE") or env.get("BTD_INSTANCE") or socket.gethostname()
-if ROLE not in ("primary", "backup", "tertiary"):
-    sys.exit(f"BTD_ROLE must be primary, backup or tertiary, got {ROLE!r}")
-
-# ---------------- strategy config (shared DB row; CLI flags override) ----------------
-STRATEGY = a.strategy or os.environ.get("BTD_STRATEGY") or env.get("BTD_STRATEGY") or DEFAULT_STRATEGY
-_PKEYS = ("symbols", "dip", "tp", "sl", "min_hold", "max_hold", "pos_frac", "max_exposure", "ref", "feed",
-          "entry_window", "close_window")
-CFG = resolve_config(STRATEGY, {k: getattr(a, k) for k in _PKEYS}, database_url=DB_URL)
+log = setup_logging()
+try:
+    runner = Runner(a, log)
+except PassStop as s:
+    sys.exit(s.code)
+CFG = runner.load_config()
 for _k, _v in CFG.params.items():
     setattr(a, _k, ",".join(_v) if _k == "symbols" else _v)
-EXEC = CFG.execution
-(log.info if CFG.db_ok else log.warning)(
-    "strategy config [%s/%s]: source=%s params=%s sources=%s execution=%s", INSTANCE, ROLE, CFG.source,
-    json.dumps(CFG.params, sort_keys=True), json.dumps(CFG.sources, sort_keys=True), json.dumps(EXEC, sort_keys=True))
+get, BASE, DB_URL, USER_EMAIL, INSTANCE = runner.get, runner.base, runner.db_url, runner.user_email, runner.instance
 
-def code_version():
-    try:
-        return subprocess.run(["git", "-C", REPO, "rev-parse", "--short", "HEAD"], capture_output=True,
-                              text=True, timeout=5).stdout.strip() or None
-    except Exception: return None  # noqa: BLE001
-H = {"APCA-API-KEY-ID": env["ALPACA_LIVE_API_KEY"], "APCA-API-SECRET-KEY": env["ALPACA_LIVE_SECRET_KEY"]}
-
-def get(url, **params):
-    r = requests.get(url, headers=H, params=params, timeout=20); r.raise_for_status(); return r.json()
-
-def post_order(body):
-    if not EXECUTE:
-        log.info("DRY-RUN would POST /v2/orders %s", json.dumps(body)); return {"dry_run": True}
-    r = requests.post(f"{BASE}/v2/orders", headers=H, json=body, timeout=20)
-    if r.status_code == 422 and "client_order_id" in r.text:
-        log.warning("duplicate client_order_id %s -> already submitted, skipping", body.get("client_order_id")); return {}
-    r.raise_for_status(); return r.json()
-
-def broker_call(method, path, body=None):
-    """PATCH/DELETE on the trading API (live only; dry run logs)."""
-    if not EXECUTE:
-        log.info("DRY-RUN would %s %s %s", method, path, json.dumps(body) if body else ""); return {"dry_run": True}
-    r = requests.request(method, f"{BASE}{path}", headers=H, json=body, timeout=20)
-    r.raise_for_status(); return r.json() if r.content else {}
-
-def latest_bid(sym):
-    q = get(f"{DATA_URL}/v2/stocks/{sym}/quotes/latest", feed=a.feed).get("quote") or {}
-    return float(q.get("bp") or 0)
-
-def ext_session(now):
-    """Extended/overnight session: market closed but a trading session is near (pre-market,
-    overnight on a trading night, or the weekday 16:00-20:00 ET post-market)."""
-    if clock.get("is_open"): return False
-    nxt = datetime.fromisoformat(clock["next_open"]).astimezone(ET)
-    return (nxt - now).total_seconds() <= 20.5 * 3600 or (now.weekday() < 5 and dtime(16) <= now.time() < dtime(20))
-
-def win(s, now):
-    """True if the market is open and now is within [hi, lo] minutes of today's close."""
-    if not clock.get("is_open"): return False
-    far, near = [float(x) for x in s.split("-")]
-    mins = (datetime.fromisoformat(clock["next_close"]).astimezone(ET) - now).total_seconds() / 60
-    return near <= mins <= far
-
-CACHE_META = ("acted_last", "db_dirty", "cache_written_at", "cache_instance", "db_version")
-
-def load_state():
-    """Local cache (authoritative state is in the DB). Returns the raw cache document."""
-    try: return json.load(open(STATE))
-    except FileNotFoundError: return {"positions": {}}
-
-def save_state(s):
-    tmp = STATE + ".tmp"; json.dump(s, open(tmp, "w"), indent=2, default=str); os.replace(tmp, STATE)
-
-def strip_meta(doc):
-    return normalize_state({k: v for k, v in (doc or {}).items() if k not in CACHE_META})
-
-def run_config(extra=None):
-    return {"strategy_name": STRATEGY_NAME, "strategy_slug": STRATEGY_SLUG, "mode": "live",
-            "broker": "alpaca", "account_number": ACCOUNT_NO, "symbols": a.symbols.split(","),
-            "dip_threshold": a.dip, "dip_reference": a.ref, "take_profit": a.tp,
-            "stop_loss": a.sl, "min_hold_days": a.min_hold, "hold_days": a.max_hold,
-            "position_size": a.pos_frac, "sizing": "notional, fraction of equity, cash only",
-            "max_exposure": a.max_exposure, "entry_window": a.entry_window, "close_window": a.close_window,
-            "feed": a.feed, "runner": "scripts/live_btd_minhold.py", **CFG.snapshot(), **(extra or {})}
 
 def make_store(account_number):
-    if not DB_URL: return None
-    return RunnerStateStore(DB_URL, f"{STRATEGY_SLUG}:{account_number}", instance=INSTANCE, role=ROLE,
-                            log=log, lease_ttl_s=a.lease_ttl_min * 60, takeover_s=a.takeover_min * 60,
-                            code_version=code_version())
+    return runner.store(account_number)
+
+
+def run_config(extra=None):
+    return {"strategy_name": STRATEGY_NAME, "mode": "live", "symbols": CFG.params["symbols"],
+            "take_profit": a.tp, "stop_loss": a.sl, **CFG.snapshot(), **(extra or {})}
+
 
 if a.seed_state:
     if not a.seed_run_id: sys.exit("--seed-state needs --seed-run-id")
@@ -278,330 +119,11 @@ if a.record_test:
     log.info("record-test cleanup: remaining run rows=%s (enabled=%s)", left, rec.enabled)
     sys.exit(0 if rec.enabled and left == 0 else 1)
 
-lock = open(os.path.join(HERE, ".lock"), "w")
-try: fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-except BlockingIOError: sys.exit("another run in progress")
 
-now = datetime.now(ET); today = now.date()
-clock = get(f"{BASE}/v2/clock")
-acct = get(f"{BASE}/v2/account")
-
-# ---------------- failover: DB lease + authoritative state ----------------
-cache = load_state()
-store = make_store(acct.get("account_number") or ACCOUNT_NO)
-DEGRADED = False          # DB unreachable: no entries, exits from local cache only
-ALLOW_ENTRIES = True
-DEADLINE = float("inf")   # local monotonic lease deadline for order submission
-if EXECUTE:
-    lr = store.acquire() if store else LeaseResult(ok=False, reason="DATABASE_URL not set")
-    if lr.ok and lr.missing:
-        log.error("failover: %s -> not trading", lr.reason)
-        cache["acted_last"] = False; save_state(cache); sys.exit(0)
-    if lr.ok and not lr.act:
-        log.info("failover: %s [%s/%s] -> standby, no action this pass", lr.reason, INSTANCE, ROLE)
-        cached = normalize_state(lr.state)  # refresh the local cache from the authoritative state
-        save_state({**cached, "acted_last": False, "db_dirty": False, "cache_written_at": now.isoformat(),
-                    "cache_instance": INSTANCE, "db_version": lr.version})
-        sys.exit(0)
-    if lr.ok:
-        state = normalize_state(lr.state); DEADLINE = lr.deadline_mono
-        if cache.get("db_dirty"):
-            state = merge_dirty_cache(state, strip_meta(cache))
-            log.warning("failover: merged local changes made while the DB was unreachable")
-        log.info("failover: %s [%s/%s] lease until %s (state v%s, run %s)", lr.reason, INSTANCE, ROLE,
-                 lr.lease_expires_at, lr.version, (state.get("rec") or {}).get("run_id"))
-    else:
-        pol = degraded_policy(cache)
-        log.warning("failover: %s -> DEGRADED: %s", lr.reason, pol["reason"])
-        if not pol["exits"]: sys.exit(0)
-        DEGRADED = True; ALLOW_ENTRIES = False; state = strip_meta(cache)
-else:
-    lr = store.peek() if store else LeaseResult(ok=False, reason="DATABASE_URL not set")
-    if lr.ok and not lr.missing:
-        state = normalize_state(lr.state)
-        log.info("failover (dry-run, read-only): state v%s run %s positions=%s pending=%d | lease=%s until %s | "
-                 "higher heartbeats=%s | as %s/%s a live pass would: %s (%s)", lr.version, state["rec"].get("run_id"),
-                 sorted(state["positions"]), len(state["rec"]["pending"]), lr.info.get("lease_holder"),
-                 lr.info.get("lease_expires_at"), lr.info.get("higher_heartbeats") or {
-                     "primary": lr.info.get("primary_last_pass")}, INSTANCE, ROLE,
-                 "ACT" if lr.act else "STAND BY", lr.reason)
-        for hb in lr.info.get("heartbeats", []):
-            log.info("failover heartbeat: %s", hb)
-    else:
-        state = strip_meta(cache)
-        log.warning("failover (dry-run): %s -> using the local cache", lr.reason)
-
-if not CFG.db_ok:
-    if EXECUTE:
-        ALLOW_ENTRIES = False
-    log.warning("strategy config not loaded from the DB (%s) -> %s", CFG.error,
-                "entries disabled this pass" if EXECUTE else "a live pass would disable entries")
-
-def lease_ok():
-    if not EXECUTE or DEGRADED: return True
-    if time.monotonic() < DEADLINE: return True
-    log.error("failover: local lease deadline passed -> not submitting further orders this pass"); return False
-
-def persist():
-    """Authoritative write to the DB (only while holding the lease) + local cache."""
-    if not EXECUTE: return
-    ok = False if DEGRADED else bool(store and store.save(state))
-    save_state({**state, "acted_last": True, "db_dirty": not ok, "cache_written_at": datetime.now(ET).isoformat(),
-                "cache_instance": INSTANCE})
-
-positions = {x["symbol"]: x for x in get(f"{BASE}/v2/positions")}
-open_orders = get(f"{BASE}/v2/orders", status="open", limit=500)
-syms = [s.strip().upper() for s in a.symbols.split(",") if s.strip()]
-if EXECUTE and not DEGRADED:  # safety net: re-adopt runner entries the state lost track of
-    for sym in syms:
-        if sym in positions and sym not in state["positions"]:
-            meta = adopt_runner_position(get, BASE, sym)
-            if meta:
-                state["positions"][sym] = meta
-                log.warning("%s: broker position came from a runner entry (%s) but was not in state -> adopted",
-                            sym, meta["client_id"])
-
-equity = float(acct["equity"]); cash = float(acct["cash"])
-nmbp = float(acct.get("non_marginable_buying_power", cash))
-dtc = acct.get("daytrade_count")  # removed by Alpaca 2026-07-06 (FINRA retired PDT); None = n/a
-log.info("MODE=%s market_open=%s equity=%.2f cash=%.2f nonmarg_bp=%.2f bp=%.2f daytrade_count=%s PDT=%s blocked=%s",
-         "LIVE" if EXECUTE else "DRY-RUN", clock["is_open"], equity, cash, nmbp, float(acct["buying_power"]),
-         dtc, acct.get("pattern_day_trader"), acct.get("trading_blocked"))
-if acct.get("trading_blocked") or acct.get("account_blocked"):
-    sys.exit("account blocked")
-market_ok = clock["is_open"] or (a.ignore_hours and not EXECUTE)
-
-# ---------------- recording (best-effort, never affects trading) ----------------
-rec = LiveRecorder(DB_URL, USER_EMAIL, log=log) if EXECUTE and not DEGRADED else None
-R = state.setdefault("rec", {}) if EXECUTE else {}  # degraded: pending exits are kept in the cache
-R.setdefault("pending", [])
-
-def record_pending_fills():
-    """Poll orders this runner submitted; record fills / failures. Read-only broker calls."""
-    if not rec or not R.get("run_id"): return
-    keep = []
-    for it in R["pending"]:
-        try:
-            o = get(f"{BASE}/v2/orders:by_client_order_id", client_order_id=it["cid"])
-        except Exception as exc:  # noqa: BLE001
-            log.warning("record: order lookup %s failed: %s", it["cid"], exc); keep.append(it); continue
-        st = o.get("status"); fq = float(o.get("filled_qty") or 0); fp = float(o.get("filled_avg_price") or 0)
-        final = st in ("filled", "canceled", "expired", "rejected", "done_for_day", "replaced")
-        if not final: keep.append(it); continue
-        if it["side"] == "buy":
-            if fq > 0: rec.entry_filled(R["run_id"], it["cid"], fq, fp, o.get("filled_at"), a.tp, a.sl)
-            else: rec.entry_failed(R["run_id"], it["cid"], st)
-        elif fq > 0:
-            rec.exit_filled(R["run_id"], it["entry_cid"], fq, fp, o.get("filled_at"), it.get("reason"))
-        log.info("record: %s %s %s qty=%s px=%s", it["side"], it["cid"], st, fq, fp)
-    R["pending"] = keep
-
-if rec and rec.enabled:
-    try:
-        if not R.get("run_id"):
-            R["start_equity"] = equity; R["started"] = today.isoformat()
-            try:
-                R["start_spy"] = float(get(f"{DATA_URL}/v2/stocks/snapshots", symbols="SPY", feed=a.feed)["SPY"]["latestTrade"]["p"])
-            except Exception: R["start_spy"] = None  # noqa: BLE001
-        rid = rec.ensure_run(R.get("run_id"), run_config({"start_equity": R.get("start_equity"),
-                                                         "start_spy": R.get("start_spy"), "started": R.get("started")}))
-        if rid and not R.get("run_id"):
-            R["run_id"] = rid; log.info("record: AlpaTrade run %s (user %s)", rid, rec.user_id)
-        record_pending_fills()
-    except Exception as exc:  # noqa: BLE001
-        log.warning("record: setup failed: %s", exc)
-
-# ---------------- extended-hours exit management (reprice / fall back at the open) ----------------
-EXT = EXEC["extended_hours_exit"]
-OPEN_ST = ("new", "accepted", "pending_new", "partially_filled", "held", "accepted_for_bidding", "pending_replace")
-
-def manage_ext_exits():
-    if not EXECUTE: return
-    for it in R.get("pending", []):
-        x = it.get("ext")
-        if it.get("side") != "sell" or not x: continue
-        try:
-            o = get(f"{BASE}/v2/orders:by_client_order_id", client_order_id=it["cid"])
-        except Exception as exc:  # noqa: BLE001
-            log.warning("ext-exit: lookup %s failed: %s", it["cid"], exc); continue
-        if o.get("status") not in OPEN_ST: continue
-        act = ext_exit_action(submitted_at=datetime.fromisoformat(x["submitted_at"]), now=now,
-                              reprices=int(x.get("reprices", 0)), market_open=bool(clock.get("is_open")),
-                              execution=EXEC)
-        log.info("ext-exit: %s %s status=%s limit=%s reprices=%s -> %s", it["sym"], it["cid"], o.get("status"),
-                 o.get("limit_price"), x.get("reprices"), act)
-        if act == "wait" or not lease_ok(): continue
-        try:
-            if act == "reprice":
-                n = int(x.get("reprices", 0)) + 1; ncid = f"{x['base_cid']}-r{n}"
-                px = exit_order(it["sym"], o["qty"], ncid, "extended", EXEC, latest_bid(it["sym"]))["limit_price"]
-                broker_call("PATCH", f"/v2/orders/{o['id']}", {"limit_price": px, "client_order_id": ncid})
-                it["cid"] = ncid; x.update(reprices=n, submitted_at=now.isoformat())
-            else:  # regular session open: cancel the limit, DAY market for what is left
-                broker_call("DELETE", f"/v2/orders/{o['id']}")
-                for _ in range(10):
-                    o = get(f"{BASE}/v2/orders/{o['id']}")
-                    if o.get("status") not in OPEN_ST + ("pending_cancel",): break
-                    time.sleep(1)
-                left = float(o.get("qty") or 0) - float(o.get("filled_qty") or 0)
-                if o.get("status") in OPEN_ST + ("pending_cancel",) or left <= 0:
-                    log.info("ext-exit: %s status=%s left=%s -> no fallback this pass", it["sym"], o.get("status"), left)
-                    continue
-                mcid = f"{x['base_cid']}-mkt"
-                post_order(exit_order(it["sym"], f"{left:g}", mcid, "regular", EXEC))
-                if float(o.get("filled_qty") or 0) > 0:  # keep the partial for record_pending_fills
-                    R["pending"].append({k: v for k, v in it.items() if k != "ext"} | {"cid": mcid})
-                else:
-                    it["cid"] = mcid; it.pop("ext", None)
-            persist()
-        except Exception as exc:  # noqa: BLE001
-            log.warning("ext-exit: %s %s failed: %s", it["sym"], act, exc)
-
-manage_ext_exits()
-
-# ---------------- exits ----------------
-pending_sell = {o["symbol"] for o in open_orders if o["side"] == "sell"}
-for sym, meta in list(state["positions"].items()):
-    pos = positions.get(sym)
-    if not pos and any(o["symbol"] == sym and o["side"] == "buy" for o in open_orders):
-        log.info("%s: entry order still open -> keep tracking", sym); continue
-    if not pos:
-        log.info("%s: tracked but no broker position -> dropping from state", sym)
-        state["positions"].pop(sym); continue
-    entry_d = date.fromisoformat(meta["entry_date"])
-    age = (today - entry_d).days
-    plpc = float(pos["unrealized_plpc"]) * 100
-    reason = None
-    if age >= a.min_hold:
-        if plpc >= a.tp: reason = f"TP {plpc:.2f}%"
-        elif plpc <= -a.sl: reason = f"SL {plpc:.2f}%"
-    if not reason and age >= a.max_hold and (win(a.close_window, now) or a.ignore_hours):
-        reason = f"MAX_HOLD age={age}d pl={plpc:.2f}%"
-    log.info("%s: held age=%dd pl=%.2f%% qty=%s -> %s", sym, age, plpc, pos["qty"], reason or "hold")
-    if not reason: continue
-    if entry_d >= today:  # PDT guard: never a same-day round trip
-        log.warning("%s: PDT guard refuses same-day exit", sym); continue
-    if sym in pending_sell: continue
-    if market_ok: session = "regular"
-    elif EXT["enabled"] and ext_session(now): session = "extended"
-    else:
-        if not clock.get("is_open") and not EXT["enabled"]:
-            log.info("%s: market closed, extended-hours exits disabled in the strategy config -> wait", sym)
-        continue
-    if not lease_ok(): break
-    xcid = f"btdx-{sym}-{today:%Y%m%d}"
-    try:
-        body = exit_order(sym, pos["qty_available"], xcid, session, EXEC,
-                          latest_bid(sym) if session == "extended" else None)
-    except Exception as exc:  # noqa: BLE001
-        log.warning("%s: cannot build %s exit (%s) -> skip this pass", sym, session, exc); continue
-    log.info("%s: %s-session exit %s", sym, session, json.dumps(body))
-    post_order(body)
-    if EXECUTE:
-        meta["exit_submitted"] = now.isoformat()
-        if not any(it["cid"] == xcid for it in R["pending"]):
-            item = {"cid": xcid, "side": "sell", "sym": sym, "reason": reason,
-                    "entry_cid": meta.get("client_id") or f"btd-{sym}-{meta['entry_date'].replace('-', '')}"}
-            if session == "extended":
-                item["ext"] = {"base_cid": xcid, "submitted_at": now.isoformat(), "reprices": 0}
-            R["pending"].append(item)
-        persist()
-# never touch positions not opened by this runner
-for sym in positions:
-    if sym not in state["positions"]:
-        log.info("%s: pre-existing/untracked position -> ignored by runner (blocks new entry)", sym)
-
-# ---------------- entries ----------------
-in_entry = win(a.entry_window, now)
-if not ALLOW_ENTRIES:
-    log.warning("entries disabled this pass (DB unreachable or strategy config not loaded from the DB)")
-elif not (in_entry or (a.ignore_hours and not EXECUTE)):
-    log.info("outside entry window (%s min before close) -> no entries", a.entry_window)
-else:
-    snaps = get(f"{DATA_URL}/v2/stocks/snapshots", symbols=",".join(syms), feed=a.feed)
-    bars = get(f"{DATA_URL}/v2/stocks/bars", symbols=",".join(syms), timeframe="1Day",
-               start=(today - timedelta(days=40)).isoformat(), feed=a.feed, limit=1000, adjustment="split")["bars"]
-    pending_buy_val = sum(float(o.get("notional") or 0) or float(o.get("qty") or 0) * float(o.get("limit_price") or 0) for o in open_orders if o["side"] == "buy")
-    exposure = sum(abs(float(p["market_value"])) for p in positions.values())
-    avail = min(cash, nmbp) - pending_buy_val
-    target = round(equity * a.pos_frac, 2)
-    log.info("sizing: target/position=$%.2f (%.1f%% equity) available_cash=$%.2f exposure=$%.2f",
-             target, a.pos_frac * 100, avail, exposure)
-    for sym in syms:
-        sn = snaps.get(sym) or {}
-        last = float((sn.get("latestTrade") or {}).get("p") or 0)
-        daily = sn.get("dailyBar") or {}; prev = sn.get("prevDailyBar") or {}
-        # prev close = last completed session before today's session
-        # dailyBar dated today => today's session exists, prev close = prevDailyBar;
-        # otherwise (pre-open) the last completed session is dailyBar itself.
-        if daily.get("t", "")[:10] == today.isoformat(): prev_close = float(prev.get("c") or 0)
-        else: prev_close = float(daily.get("c") or 0)
-        high20 = max([b["h"] for b in bars.get(sym, [])][-20:] or [0])
-        ref = prev_close if a.ref == "prev_close" else high20
-        dip = (ref - last) / ref * 100 if ref else 0
-        dip_h = (high20 - last) / high20 * 100 if high20 else 0
-        sig = dip >= a.dip
-        log.info("%s: last=%.2f prev_close=%.2f dip_vs_prev=%.2f%% | high20=%.2f dip_vs_high20=%.2f%% -> %s",
-                 sym, last, prev_close, (prev_close - last) / prev_close * 100 if prev_close else 0,
-                 high20, dip_h, "SIGNAL" if sig else "no")
-        if not sig: continue
-        if sym in positions or sym in state["positions"] or any(o["symbol"] == sym for o in open_orders):
-            log.info("%s: already held/pending -> skip (one per symbol)", sym); continue
-        if state.get("last_entry", {}).get(sym) == today.isoformat():
-            log.info("%s: already entered today -> skip", sym); continue
-        asset = get(f"{BASE}/v2/assets/{sym}")
-        if not (asset.get("tradable") and asset.get("fractionable")):
-            log.info("%s: not tradable/fractionable -> skip", sym); continue
-        notional = target
-        if a.max_exposure and exposure + notional > a.max_exposure:
-            log.info("%s: would exceed exposure cap $%.0f -> skip", sym, a.max_exposure); continue
-        if notional > avail:
-            log.info("%s: notional $%.2f > available cash $%.2f -> skip (no margin)", sym, notional, avail); continue
-        cid = f"btd-{sym}-{today:%Y%m%d}"
-        busy = alpaca_symbol_busy(get, BASE, sym, cid)
-        if busy:
-            log.info("%s: %s -> skip (pre-buy safety check)", sym, busy); continue
-        if not lease_ok(): break
-        post_order({"symbol": sym, "notional": f"{notional:.2f}", "side": "buy", "type": "market",
-                    "time_in_force": "day", "client_order_id": cid})
-        avail -= notional; exposure += notional
-        if EXECUTE:
-            state["positions"][sym] = {"entry_date": today.isoformat(), "notional": notional, "ref": ref,
-                                       "dip": dip, "client_id": cid}
-            state.setdefault("last_entry", {})[sym] = today.isoformat()
-            R["pending"].append({"cid": cid, "side": "buy", "sym": sym})
-            persist()
-            if rec and R.get("run_id"): rec.entry_submitted(R["run_id"], sym, cid, notional, dip, ref)
-# ---------------- performance (best-effort) ----------------
-if rec and rec.enabled and R.get("run_id"):
-    try:
-        mine = [positions[s] for s in state["positions"] if s in positions]
-        rec.sync_positions(R["run_id"], mine, {s: m.get("entry_date") for s, m in state["positions"].items()})
-        closed = rec.realized(R["run_id"]) or {}
-        unreal = sum(float(x["unrealized_pl"]) for x in mine)
-        realized = float(closed.get("total_pnl") or 0)
-        start_eq = float(R.get("start_equity") or equity)
-        spy = None; spy_day = None
-        try:
-            sn = get(f"{DATA_URL}/v2/stocks/snapshots", symbols="SPY", feed=a.feed)["SPY"]
-            spy = float(sn["latestTrade"]["p"]); spy_day = (sn.get("dailyBar") or {}).get("t", "")[:10] or None
-        except Exception: pass  # noqa: BLE001
-        perf = {"as_of": now.isoformat(), "account_number": ACCOUNT_NO, "equity": equity, "cash": cash,
-                "start_equity": start_eq, "open_positions": len(mine),
-                "exposure": round(sum(float(x["market_value"]) for x in mine), 2),
-                "realized_pnl": round(realized, 2), "unrealized_pnl": round(unreal, 2),
-                "total_pnl": round(realized + unreal, 2),
-                "strategy_return_pct": round((realized + unreal) / start_eq * 100, 3) if start_eq else None,
-                "account_return_pct": round((equity / start_eq - 1) * 100, 3) if start_eq else None,
-                "closed_trades": int(closed.get("trade_count") or 0), "spy": spy,
-                "spy_return_pct": round((spy / R["start_spy"] - 1) * 100, 3) if spy and R.get("start_spy") else None}
-        daily_key = None
-        if not clock["is_open"] and spy_day and R.get("last_daily") != spy_day:
-            daily_key = spy_day  # last completed session: once per day, after the close
-        if rec.record_performance(R["run_id"], perf, daily_key=daily_key, closed=closed) and daily_key:
-            R["last_daily"] = daily_key; log.info("record: daily performance snapshot %s", daily_key)
-    except Exception as exc:  # noqa: BLE001
-        log.warning("record: performance failed: %s", exc)
-
-persist()
-log.info("pass complete")
+if a.event == "heartbeat":
+    lr = runner.heartbeat()
+    log.info("heartbeat%s: ok=%s act=%s reason=%s", "" if a.live else " (dry-run: read-only peek, nothing written)",
+             lr.ok, lr.act, lr.reason)
+    sys.exit(0)
+res = runner.run([a.event], CFG)
+sys.exit(res.code)

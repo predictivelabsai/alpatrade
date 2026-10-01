@@ -4,59 +4,44 @@ Standalone runner for the LIVE Alpaca account. It is **not** imported by the web
 and **not** started by `docker-compose.yaml`, so deploying alpatrade.chat never runs it.
 Nothing trades unless you pass `--live`.
 
-Strategy parameters live in the DB, not in scheduler flags: one row of
-`alpatrade.strategy_configs` (see **Strategy config** below) is read by every instance on
-every pass. Current live row `buy_the_dip_mag7_minhold_live`: AAPL MSFT GOOGL AMZN META TSLA
-NVDA; buy when price is ≥3% below the 20-bar high (`ref: high20`, same reference as
-`utils/buy_the_dip.py`); TP +8%, SL −1.5%, min-hold 3 calendar days (TP/SL cannot fire
-earlier), max-hold 3 calendar days (exit in the last minutes of the first session on/after day 3).
-Sizing: `pos_frac 0.142857` = 1/7 of equity per position (code default without the DB: 10%),
-notional/fractional market orders, one position per symbol, cash only (≤ min(cash, non_marginable_buying_power)).
-The runner only manages positions it opened (authoritative state in the AlpaTrade DB,
-`alpatrade.live_runner_state`; `$BTD_STATE_DIR/state.json`, default `~/.alpatrade-live`, is a
-local cache only); pre-existing positions are ignored but block a new entry in that symbol.
+> **Methodology, event scheduler, supervisors and config:** see
+> [`docs/strategy_methodology.md`](strategy_methodology.md). This page keeps the operational
+> details (failover protocol, recording, read-only account view).
 
-Each run = one idempotent pass (flock, deterministic `client_order_id`s, state file):
-exits all session, entries only 15→5 min before the close (reads `/v2/clock`, so half-days work).
+Strategy parameters live in the DB (`alpatrade.strategy_configs`, row
+`buy_the_dip_mag7_minhold_live`): Mag-7, dip ≥3% vs the 20-day high, TP +8%, SL −1.5%,
+min-hold = max-hold = 3 calendar days, 1/7 of equity per position, cash only. The runner only
+manages positions it opened (authoritative state in `alpatrade.live_runner_state`;
+`$BTD_STATE_DIR/state.json`, default `~/.alpatrade-live`, is a local cache only); pre-existing
+positions are ignored but block a new entry in that symbol.
+
+The logic is `utils/live_btd_runner.py`, driven by one long-running in-memory event scheduler
+per machine (`scripts/live_btd_scheduler.py`): 09:31 ET broker-side TP/SL (OCO + stop) for
+positions past the min-hold, 15:45/15:50/15:55 ET entries, ~15:58 ET max-hold exits,
+16:03 ET recording, plus a 3-minute DB-lease heartbeat. No cron, no timers, no 5-minute scans.
 
 ```bash
-# dry run (no orders); --ignore-hours evaluates as if in the entry window
-.venv/bin/python scripts/live_btd_minhold.py --ignore-hours
+# single dry-run pass (no orders); --event auto picks by the clock
+.venv/bin/python scripts/live_btd_minhold.py --event entry --ignore-hours
+# the scheduler in dry-run mode (same events, no orders)
+.venv/bin/python scripts/live_btd_scheduler.py
 ```
 
-## Switching it on (manual, not done by CI)
+## Supervisors (start + keep alive only)
 
-`~/.config/systemd/user/alpatrade-btd.service`
-```ini
-[Unit]
-Description=AlpaTrade live Mag-7 BTD min-hold pass
-[Service]
-Type=oneshot
-WorkingDirectory=%h/dev/plai/alpatrade
-ExecStart=%h/dev/plai/alpatrade/.venv/bin/python scripts/live_btd_minhold.py --live
-```
-(no param flags: params come from `alpatrade.strategy_configs`)
-`~/.config/systemd/user/alpatrade-btd.timer`
-```ini
-[Unit]
-Description=Every 5 min in US market hours
-[Timer]
-OnCalendar=Mon..Fri *-*-* 09..15:00/5:00 America/New_York
-Persistent=false
-[Install]
-WantedBy=timers.target
-```
-```bash
-systemctl --user daemon-reload && systemctl --user enable --now alpatrade-btd.timer
-loginctl enable-linger $USER   # keep user timers running when logged out
-# off:  systemctl --user disable --now alpatrade-btd.timer
-```
-Logs: `~/.alpatrade-live/logs/btd.log` and `journalctl --user -u alpatrade-btd`.
+| machine | role | supervisor | file |
+|---|---|---|---|
+| HP | primary | systemd user service, `Restart=always` (no timer) | `deploy/systemd/alpatrade-btd-scheduler.service` |
+| Mac.home | backup | launchd agent, `KeepAlive` + `RunAtLoad` (no calendar interval) | `deploy/launchd/com.predictivelabs.alpatrade-btd.plist` |
+| agent box | tertiary | `setsid nohup` + `flock` keep-alive loop (no systemd/cron on the box) | `deploy/box/btd-keepalive.sh` |
+
+Logs: `~/.alpatrade-live/logs/btd.log` (runner + scheduler) and the supervisor's own log
+(`journalctl --user -u alpatrade-btd-scheduler`, `launchd.*.log`, box `logs/loop.log`).
 
 ## Failover: HP primary + Mac backup + box tertiary (`utils/live_btd_state.py`)
 
-Three instances may run the same `--live` pass every 5 minutes: the HP workstation
-(systemd timer above, `BTD_ROLE=primary`, `BTD_INSTANCE=hp`), Mac.home (launchd,
+Three instances run the same event scheduler: the HP workstation
+(systemd service above, `BTD_ROLE=primary`, `BTD_INSTANCE=hp`), Mac.home (launchd,
 `BTD_ROLE=backup`, `BTD_INSTANCE=mac`), and the agent Linux box (`BTD_ROLE=tertiary`,
 `BTD_INSTANCE=box`). They coordinate only through Postgres:
 
@@ -93,11 +78,11 @@ from the state is re-adopted; anything else stays pre-existing (ignored, blocks 
 
 **Dry run** reads the DB state and logs what a live pass would decide; it never takes the lease or
 writes a heartbeat. Passes outside Mon–Fri 09:00–16:05 ET exit immediately (`--any-time` overrides;
-orders still require `/v2/clock` open), so schedulers can fire every 5 minutes.
+orders still require `/v2/clock` open). The event scheduler only calls the runner at event times.
 
-Mac (launchd; fires every 5 min in local time, the script handles the ET session):
+Mac (launchd KeepAlive agent running the scheduler; the scheduler handles the ET session):
 ```bash
-sed "s#__REPO__#$HOME/dev/plai/alpatrade#g; s#__HOME__#$HOME#g" deploy/launchd/com.predictivelabs.alpatrade-btd.plist \
+sed "s#/Users/juliankaljuvee#$HOME#g" deploy/launchd/com.predictivelabs.alpatrade-btd.plist \
   > ~/Library/LaunchAgents/com.predictivelabs.alpatrade-btd.plist
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.predictivelabs.alpatrade-btd.plist
 launchctl print gui/$(id -u)/com.predictivelabs.alpatrade-btd | head   # status
@@ -184,6 +169,10 @@ pre-market / post-market / overnight on a trading night): `limit` at `bid × (1 
 (default 15 bps, rounded down to the tick), `extended_hours=true`, DAY; reprice to the current bid
 discount after `reprice_after_min` (5) minutes, at most `max_reprices` (2) times; when the regular
 session opens, cancel and sell the remainder with a DAY market order. Off unless
-`execution.extended_hours_exit.enabled` is `true` (seeded `false`; the runner's session gate is
-09:00–16:05 ET and the HP timer fires 09:00–15:55 ET, so in practice extended-hours exits would
-happen 09:00–09:30 ET pre-market unless a pass is run with `--any-time`).
+`execution.extended_hours_exit.enabled` is `true` (seeded `false`). The scheduler's exit events
+(09:31 and ~15:58 ET) are in the regular session, so the extended-hours path is only used by a
+manual pass run outside it (`--event close --any-time`).
+
+**Broker-side TP/SL.** See `docs/strategy_methodology.md`: at the 09:31 ET open event the runner
+places DAY exit orders for positions past the min-hold (OCO for whole shares + stop for the
+fraction; one stop for the full qty if the OCO is rejected), never on the buy date.

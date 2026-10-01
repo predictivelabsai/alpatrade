@@ -162,12 +162,12 @@ def test_migration_is_idempotent_sql():
 
 
 def test_runner_param_flags_default_to_none():
-    src = (ROOT / "scripts" / "live_btd_minhold.py").read_text()
+    src = (ROOT / "utils" / "live_btd_runner.py").read_text()
     for flag in ("symbols", "dip", "tp", "sl", "min-hold", "max-hold", "pos-frac", "max-exposure",
                  "ref", "feed", "entry-window", "close-window"):
         m = re.search(rf'add_argument\("--{flag}"[^\n]*', src)
         assert m and "default=None" in m.group(0), flag
-    assert "ALLOW_ENTRIES = False" in src.split("if not CFG.db_ok:")[1].split("def lease_ok")[0]
+    assert "ALLOW_ENTRIES = False" in src.split("if not cfg.db_ok:")[1].split("def lease_ok")[0]
 
 
 @pytest.fixture(scope="module")
@@ -207,6 +207,18 @@ def test_postgres_migration_seed_and_resolve(pg_url):
     cfg = resolve(DEFAULT_STRATEGY, {}, database_url=pg_url)
     assert cfg.db_ok and cfg.version == 2
     assert cfg.params == {**HP_PARAMS, "dip": 3.5}
+    # sql/41: any edit bumps the version (and notifies) even if the UPDATE does not
+    with eng.begin() as c:
+        c.execute(text((ROOT / "sql" / "41_strategy_config_versioning.sql").read_text()))
+        c.execute(text((ROOT / "sql" / "41_strategy_config_versioning.sql").read_text()))
+        c.execute(text("UPDATE alpatrade.strategy_configs SET params = params || '{\"tp\": 9}' WHERE name = :n"),
+                  {"n": DEFAULT_STRATEGY})
+        c.execute(text("UPDATE alpatrade.strategy_configs SET version = version + 1 WHERE name = :n"),
+                  {"n": DEFAULT_STRATEGY})   # explicit bump: +1 only, not +2
+        c.execute(text("UPDATE alpatrade.strategy_configs SET description = 'x' WHERE name = :n"),
+                  {"n": DEFAULT_STRATEGY})   # non-config column: no bump
+    cfg = resolve(DEFAULT_STRATEGY, {}, database_url=pg_url)
+    assert cfg.version == 4 and cfg.params["tp"] == 9.0
     by_id = resolve(str(cfg.config_id), {}, database_url=pg_url)
     assert by_id.db_ok and by_id.params == cfg.params
     assert not resolve("nope", {}, database_url=pg_url).db_ok
