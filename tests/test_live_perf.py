@@ -62,3 +62,22 @@ def test_empty_without_run():
     assert lp.equity_curves(HistClient(), {}) == {}
     assert lp.svg_equity_chart({}) == ""
     assert lp.png_equity_chart({}) == b""
+
+
+def test_png_equity_chart_has_dates_and_hires():
+    """Email PNG must be sharp (hi-res default) and include axis date ticks."""
+    from io import BytesIO
+    from PIL import Image
+    curves = {
+        "dates": ["2026-09-01", "2026-09-15", "2026-09-30", "2026-10-06"],
+        "account_idx": [100.0, 102.0, 101.0, 104.0],
+        "spy_idx": [100.0, 101.0, 100.5, 102.0],
+    }
+    png = lp.png_equity_chart(curves)
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    im = Image.open(BytesIO(png))
+    # Default display size is larger than the old 560x200 email chart.
+    assert im.size[0] >= 800 and im.size[1] >= 300
+    # Hi-res path still works when scale=1
+    small = lp.png_equity_chart(curves, width=400, height=160, scale=1)
+    assert small[:8] == b"\x89PNG\r\n\x1a\n"

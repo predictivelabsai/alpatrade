@@ -1,5 +1,22 @@
 # Change Log
 
+## 2026-10-06 — Dashboard: one account view + Live/Paper dropdown; sharper LIVE email chart
+
+- **Dashboard duplicate fix:** `/dashboard` no longer stacks Live vs SPY on top of
+  the paper Portfolio P&L. One page at a time — pick Live or Paper (or a specific
+  account) from the account dropdown. The dropdown is always visible when accounts
+  exist (including error states); it had effectively disappeared under the dual pane.
+- **Live mode:** equity KPIs, since-start vs SPY curve, open positions (BNBX hidden),
+  open orders. Cash-only runner sizing unchanged.
+- **Paper mode:** richer paper view — portfolio P&L, advisor, rankings, recent paper
+  strategy activity table, full open positions. No live block on paper.
+- **LIVE email chart:** PNG rendered at 2× then downsampled (default 1120×420) for
+  sharper Gmail display; visible x-axis date ticks (e.g. Sep 01 … Oct 06).
+- **BNBX:** still excluded from LIVE email current-positions table and UPL (defense
+  in depth in `_positions_table` + runner open lots); footnote only. Force-resend
+  after deploy for verification.
+- No margin/leverage changes.
+
 ## 2026-10-06 — LIVE email chart (MMG CID pattern) + hide BNBX + leverage WF
 
 - Email chart: match MMG admin-main Postmark inline pattern — PNG attachment with

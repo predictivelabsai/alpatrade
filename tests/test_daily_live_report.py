@@ -357,4 +357,7 @@ def test_bnbx_zombie_excluded_from_positions_and_upl(db, monkeypatch):
     html = rep.render(d)
     assert "BNBX" in html  # footnote
     assert "<b>BNBX</b>" not in html  # not in the positions table
+    # No positions/runner table row may lead with BNBX
+    import re
+    assert not re.search(r"<td[^>]*>\s*<b>BNBX</b>", html)
     assert "Excluded from this report" in html

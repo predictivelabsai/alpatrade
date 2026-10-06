@@ -59,6 +59,26 @@ _CSS = """
 .live-spy a.more{font-size:.78rem;color:var(--accent);text-decoration:none;margin-left:.55rem}
 .live-spy .pos{color:#147a4b}.live-spy .neg{color:#b43b35}
 @media(max-width:820px){.live-spy .live-spy-grid{grid-template-columns:1fr}}
+/* ---- Paper strategy activity ---- */
+.paper-ctx{background:#fff;border:1px solid var(--line);border-radius:.65rem;padding:1rem 1.1rem;margin:.8rem 0 0}
+.paper-ctx h2{font-size:.95rem;margin:0 0 .55rem}
+.paper-ctx table{width:100%;border-collapse:collapse;font-size:.8rem}
+.paper-ctx th,.paper-ctx td{padding:.4rem .45rem;border-bottom:1px solid var(--line);text-align:left}
+.paper-ctx th{font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted)}
+.paper-ctx td.num{text-align:right;font-variant-numeric:tabular-nums}
+.paper-ctx .status{font-size:.7rem;border:1px solid var(--line);border-radius:1rem;padding:.1rem .4rem}
+.paper-ctx .status.running{border-color:var(--accent);color:var(--accent)}
+.paper-ctx a.more{font-size:.78rem;color:var(--accent);text-decoration:none;margin-left:.55rem}
+.paper-ctx .slug{font-family:var(--font-mono);font-size:.74rem}
+.mode-badge{font-size:.68rem;border:1px solid var(--line);border-radius:1rem;padding:.1rem .45rem;
+ margin-left:.35rem;font-weight:650;vertical-align:middle;color:var(--ink-muted)}
+.mode-badge.live{border-color:#b43b35;color:#b43b35}
+.pos-full{margin-top:.8rem}
+.pos-full table{width:100%;border-collapse:collapse;font-size:.84rem;font-variant-numeric:tabular-nums}
+.pos-full th,.pos-full td{padding:.45rem .55rem;border-bottom:1px solid var(--line)}
+.pos-full th{font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted);text-align:left}
+.pos-full td.num,.pos-full th.num{text-align:right}
+.pos-full td.sym{font-family:var(--font-mono);font-weight:650}
 /* ---- Start Here checklist (progressive onboarding; retires when complete) ---- */
 .start-here{background:var(--bg-elev);border:1px solid var(--line);border-radius:.65rem;
  padding:1.05rem 1.15rem .6rem;margin:0 0 .85rem;position:relative;overflow:hidden}
@@ -160,7 +180,7 @@ def _cls_live(v) -> str:
 
 
 def _live_spy_panel(live: dict) -> str:
-    """Render Live vs SPY summary + Plotly chart for the main dashboard."""
+    """Render Live vs SPY summary + Plotly chart (live mode only)."""
     if not live or not live.get("linked"):
         return ""
     if live.get("error") and not live.get("perf") and not live.get("curves"):
@@ -204,7 +224,6 @@ def _live_spy_panel(live: dict) -> str:
     table = ("<table>" + "".join(
         f"<tr><td class='k'>{k}</td><td>{v}</td></tr>" for k, v in rows
     ) + "</table>") if rows else "<p class='muted'>No live runner run recorded yet.</p>"
-    chart = ""
     if curves.get("dates"):
         chart = (
             "<div id='dash-live-equity-chart' class='chart'></div>"
@@ -234,6 +253,47 @@ def _metric(label: str, value: str, tone: str = "") -> str:
     return f"<div class='metric'><div class='label'>{label}</div><div class='value {tone}'>{value}</div></div>"
 
 
+def _is_live_view(data: dict, selected_id: str | None) -> bool:
+    """True when the dashboard should show the live-only body (not paper)."""
+    from engine.reporting.pnl_dashboard import is_live_dashboard_id
+    chosen = selected_id or data.get("account_id")
+    if is_live_dashboard_id(chosen) or is_live_dashboard_id(data.get("account_id")):
+        return True
+    return str(data.get("environment") or "") == "live"
+
+
+def _account_controls(data: dict, selected_id: str | None) -> str:
+    """Always-visible account dropdown + period tabs (restores the switcher)."""
+    accounts = data.get("accounts") or []
+    if not accounts:
+        return ""
+    chosen = selected_id or data.get("account_id") or accounts[0]["account_id"]
+    # Prefer an owned id that exists in the catalog.
+    ids = {str(a["account_id"]) for a in accounts}
+    if chosen not in ids and chosen != "all":
+        chosen = data.get("account_id") if data.get("account_id") in ids else accounts[0]["account_id"]
+    all_label = "All paper accounts" if data.get("has_live") else "All accounts"
+    options = [f"<option value='all'{ ' selected' if chosen == 'all' else ''}>{all_label}</option>"]
+    for a in accounts:
+        aid = html.escape(str(a["account_id"]))
+        sel = " selected" if chosen == a["account_id"] else ""
+        options.append(
+            f"<option value='{aid}'{sel}>{html.escape(a['account_name'])}</option>")
+    period = data.get("period") or "daily"
+    period_links = "".join(
+        f"<a class='{'active' if p == period else ''}' "
+        f"href='/dashboard?account_id={html.escape(str(chosen))}&period={p}'>{p.title()}</a>"
+        for p in ("daily", "weekly", "monthly"))
+    return f"""
+      <form class="dash-controls" method="get" action="/dashboard">
+       <select name="account_id" aria-label="Account" onchange="this.form.submit()">{''.join(options)}</select>
+       <input type="hidden" name="period" value="{html.escape(period)}">
+       <div class="periods">{period_links}</div>
+       <button class="dash-news" type="button" onclick="toggleNewsPane()">News</button>
+       <a class="dash-signout" href="/logout">Sign out</a>
+      </form>"""
+
+
 def _rank_table(rows: list[dict], kind: str) -> str:
     body = []
     for i, row in enumerate(rows, 1):
@@ -241,7 +301,7 @@ def _rank_table(rows: list[dict], kind: str) -> str:
         suffix = "$" if kind == "paper" else "%"
         shown = f"{suffix}{metric:,.2f}" if kind == "paper" else f"{metric:,.2f}{suffix}"
         body.append(
-            f"<tr><td>{i}. {html.escape(str(row.get('strategy_slug') or 'Unknown'))}</td>"
+            f"<tr><td>{html.escape(str(row.get('strategy_slug') or 'Unknown'))}</td>"
             f"<td>{shown}</td><td>{row.get('avg_win_rate', 0):.1f}%</td></tr>")
     if not body:
         if kind == "backtest":
@@ -259,6 +319,116 @@ def _rank_table(rows: list[dict], kind: str) -> str:
         f"{' hidden' if kind != 'paper' else ''}><thead><tr><th>Strategy</th>"
         f"<th>{'PnL' if kind == 'paper' else 'Annual return'}</th><th>Win rate</th></tr></thead>"
         f"<tbody>{''.join(body)}</tbody></table>")
+
+
+def _paper_runs_panel(runs: list[dict]) -> str:
+    """Recent paper runs — makes the paper dashboard show what paper is doing."""
+    link = "<a class='more' href='/paper'>All paper runs →</a>"
+    if not runs:
+        return (
+            f"<section class='paper-ctx' aria-label='Paper strategy activity'>"
+            f"<h2>Paper strategy activity {link}</h2>"
+            "<p class='muted' style='margin:0'>No paper runs yet for this account. "
+            "Deploy a backtested strategy from Start here or the "
+            "<a href='/backtests'>backtests</a> page.</p></section>"
+        )
+    rows = []
+    for r in runs[:8]:
+        status = html.escape(str(r.get("status") or "unknown"))
+        slug = html.escape(str(r.get("strategy_slug") or r.get("strategy") or "paper"))
+        started = str(r.get("started_at") or "")[:16].replace("T", " ")
+        pnl = r.get("total_pnl")
+        try:
+            pnl_s = f"${float(pnl):,.2f}" if pnl is not None else "—"
+            pnl_cls = "positive" if float(pnl or 0) > 0 else ("negative" if float(pnl or 0) < 0 else "")
+        except (TypeError, ValueError):
+            pnl_s, pnl_cls = "—", ""
+        trades = r.get("total_trades")
+        trades_s = str(int(trades)) if trades is not None else "—"
+        rows.append(
+            f"<tr><td class='slug'>{slug}</td>"
+            f"<td><span class='status {status}'>{status}</span></td>"
+            f"<td class='num {pnl_cls}'>{pnl_s}</td>"
+            f"<td class='num'>{trades_s}</td>"
+            f"<td class='muted'>{html.escape(started)}</td></tr>")
+    return (
+        f"<section class='paper-ctx' aria-label='Paper strategy activity'>"
+        f"<h2>Paper strategy activity {link}</h2>"
+        "<table><thead><tr><th>Strategy</th><th>Status</th>"
+        "<th class='num'>P&amp;L</th><th class='num'>Trades</th><th>Started</th>"
+        f"</tr></thead><tbody>{''.join(rows)}</tbody></table></section>"
+    )
+
+
+def _positions_full(positions: list[dict], footnote: str = "") -> str:
+    """Full open-positions table (paper or live), BNBX already filtered upstream."""
+    if not positions:
+        return ("<section class='panel pos-full'><h2>Open positions</h2>"
+                "<p class='muted'>No open positions.</p></section>")
+    rows = []
+    for p in sorted(positions, key=lambda x: str(x.get("symbol") or "")):
+        sym = html.escape(str(p.get("symbol") or "?"))
+        try:
+            qty = float(p.get("qty") or 0)
+            qty_s = f"{qty:,.0f}" if qty == int(qty) else f"{qty:,.4f}".rstrip("0").rstrip(".")
+        except (TypeError, ValueError):
+            qty_s = "—"
+        try:
+            pl = float(p.get("unrealized_pl") or 0)
+            plpc = float(p.get("unrealized_plpc") or 0)
+            # Alpaca often returns plpc as fraction
+            if abs(plpc) <= 1.5:
+                plpc *= 100
+            mv = float(p.get("market_value") or 0)
+            px = float(p.get("current_price") or 0)
+            avg = float(p.get("avg_entry_price") or 0)
+        except (TypeError, ValueError):
+            pl = plpc = mv = px = avg = 0.0
+        tone = "positive" if pl > 0 else ("negative" if pl < 0 else "")
+        rows.append(
+            f"<tr><td class='sym'>{sym}</td>"
+            f"<td class='num'>{qty_s}</td>"
+            f"<td class='num'>{_money(avg)}</td>"
+            f"<td class='num'>{_money(px)}</td>"
+            f"<td class='num'>{_money(mv)}</td>"
+            f"<td class='num {tone}'>{_money(pl)}</td>"
+            f"<td class='num {tone}'>{plpc:+.2f}%</td></tr>")
+    foot = f"<p class='muted' style='font-size:.78rem;margin:.5rem 0 0'>{footnote}</p>" if footnote else ""
+    return (
+        "<section class='panel pos-full'><h2>Open positions "
+        f"({len(positions)})</h2>"
+        "<table><thead><tr><th>Symbol</th><th class='num'>Qty</th>"
+        "<th class='num'>Avg entry</th><th class='num'>Price</th>"
+        "<th class='num'>Market value</th><th class='num'>Unrealized P&amp;L</th>"
+        "<th class='num'>Unrealized %</th></tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody></table>{foot}</section>"
+    )
+
+
+def _live_orders_brief(orders: list[dict]) -> str:
+    if not orders:
+        return ("<section class='panel pos-full'><h2>Open orders</h2>"
+                "<p class='muted'>No open orders.</p></section>")
+    rows = []
+    for o in orders[:20]:
+        sym = html.escape(str(o.get("symbol") or "?"))
+        side = html.escape(str(o.get("side") or ""))
+        typ = html.escape(str(o.get("type") or o.get("order_type") or ""))
+        status = html.escape(str(o.get("status") or ""))
+        qty = o.get("qty")
+        try:
+            qty_s = f"{float(qty):g}" if qty not in (None, "") else "—"
+        except (TypeError, ValueError):
+            qty_s = "—"
+        rows.append(
+            f"<tr><td class='sym'>{sym}</td><td>{side}</td><td>{typ}</td>"
+            f"<td class='num'>{qty_s}</td><td>{status}</td></tr>")
+    return (
+        f"<section class='panel pos-full'><h2>Open orders ({len(orders)})</h2>"
+        "<table><thead><tr><th>Symbol</th><th>Side</th><th>Type</th>"
+        "<th class='num'>Qty</th><th>Status</th></tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody></table></section>"
+    )
 
 
 def _start_here(state: dict) -> str:
@@ -349,12 +519,9 @@ def _start_here(state: dict) -> str:
     pct = int(round(100 * done_steps / 3))
     rows = []
     for title, desc, s, num, actions in steps:
-        cls = "sh-step" + (f" {s}" if s else "")
-        aria = ' aria-current="step"' if s == "now" else ""
-        marker = "✓" if s == "done" else num
         rows.append(
-            f"<div class='sh-step {s}'{aria}>"
-            f"<div class='sh-num' aria-hidden='true'>{marker}</div>"
+            f"<div class='sh-step {s}'>"
+            f"<div class='sh-num' aria-hidden='true'>{'✓' if s == 'done' else num}</div>"
             f"<div><p class='sh-title'>{title}</p><p class='sh-desc'>{desc}</p>{actions}</div>"
             f"</div>"
         )
@@ -378,8 +545,8 @@ def _advisor_cards(data: dict) -> str:
                 data.get("account_id") or "").startswith("live:"):
             return (
                 "<p class='ai-copy'>Daily trading advisor is paper-only. "
-                "For this live account see the <a href='/live/account'>Live account</a> "
-                "page and the daily LIVE email.</p>"
+                "For this live account see the performance panel above and the "
+                "daily LIVE email.</p>"
             )
         return (
             "<p class='ai-copy'>No post-close daily advisor report has been generated "
@@ -445,11 +612,61 @@ def _advisor_cards(data: dict) -> str:
     )
 
 
-def _render(data: dict, selected_id: str | None) -> str:
-    live_panel = _live_spy_panel(data.get("live") or {})
+def _render_live(data: dict, selected_id: str | None) -> str:
+    """Single live dashboard body — vs-SPY curve, KPIs, positions, orders."""
+    controls = _account_controls(data, selected_id)
+    live = data.get("live") or {}
+    title = html.escape(str(data.get("account_name") or "Live account"))
+    head = f"""
+      <div class="dash-head"><div><h1>Live account <span class="mode-badge live">LIVE</span></h1>
+      <div class="muted">{title} · read-only broker view · updated {(data.get('as_of') or '')[:16].replace('T',' ')} UTC</div></div>
+      {controls}</div>"""
+    if "equity" not in data and live.get("error"):
+        return head + f"<div class='error'>{html.escape(str(live.get('error')))}</div>"
+    if "equity" not in data:
+        errors = "".join(f"<p>{html.escape(e['message'])}</p>" for e in data.get("errors", []))
+        return head + f"<div class='empty'><h1>Live portfolio unavailable</h1><div class='error'>{errors}</div></div>"
+    pnl_tone = "positive" if data.get("period_pnl", 0) >= 0 else "negative"
+    period = data.get("period") or "daily"
+    metrics = f"""
+      <div class="metric-grid">
+       {_metric('Equity', _money(data['equity']))}
+       {_metric(f'{period.title()} P&L', _money(data['period_pnl']), pnl_tone)}
+       {_metric('Period return', f"{data['period_pct']:+.2f}%", pnl_tone)}
+       {_metric('Unrealized P&L', _money(data['unrealized_pnl']),
+                'positive' if data['unrealized_pnl'] >= 0 else 'negative')}
+       {_metric('Cash', _money(data['cash']))}
+       {_metric('Buying power', _money(data['buying_power']))}
+       {_metric('Connection', 'Live')}
+       {_metric('Open positions', str(len(data.get('positions') or live.get('positions') or [])))}
+      </div>"""
+    spy = _live_spy_panel(live)
+    positions = data.get("positions") or live.get("positions") or []
+    footnote = ("BNBX (zombie OTC) is held at the broker but hidden here."
+                if live.get("had_bnbx") else "")
+    orders = live.get("orders") or []
+    return (head + metrics + spy
+            + _positions_full(positions, footnote)
+            + _live_orders_brief(orders)
+            + "<p class='muted' style='font-size:.74rem;margin:1rem 0 0'>"
+              "Read-only: this view cannot place or cancel orders. "
+              "Cash-only sizing stays in effect for the overnight runner. "
+              "<a href='/live/account'>Full live account page →</a></p>")
+
+
+def _render_paper(data: dict, selected_id: str | None) -> str:
+    """Single paper dashboard — portfolio P&L, advisor, rankings, paper runs."""
+    controls = _account_controls(data, selected_id)
+    checklist = ""
+    state = data.get("start_here") or {}
+    if not all((state.get("keys"), state.get("backtests"), state.get("paper"))):
+        try:
+            checklist = _start_here(state)
+        except Exception:  # noqa: BLE001
+            checklist = ""
     if data.get("needs_account"):
         return (
-            f"{live_panel}"
+            f"{checklist}"
             "<div class='empty'><h1>Connect an Alpaca account</h1>"
             "<p class='muted'>Add an account to see equity, P&amp;L and strategy "
             "performance — and to trade the strategies you've backtested.</p>"
@@ -462,20 +679,14 @@ def _render(data: dict, selected_id: str | None) -> str:
         if any("unauthorized" in str(e.get("message", "")).lower() for e in data.get("errors", [])):
             cta = ("<p style='margin:.9rem 0 0'><a href='/settings'>"
                    "Update your Alpaca keys →</a></p>")
-        return f"{live_panel}<div class='empty'><h1>Portfolio unavailable</h1><div class='error'>{errors}</div>{cta}</div>"
+        head = ""
+        if data.get("accounts"):
+            head = f"""<div class="dash-head"><div><h1>Portfolio P&amp;L</h1>
+            <div class="muted">Paper · select another account if this one failed</div></div>
+            {controls}</div>"""
+        return f"{checklist}{head}<div class='empty'><h1>Portfolio unavailable</h1><div class='error'>{errors}</div>{cta}</div>"
     chosen = selected_id or data["account_id"]
-    all_label = "All paper accounts" if data.get("has_live") else "All accounts"
-    options = [f"<option value='all'>{all_label}</option>"] + [
-        f"<option value='{html.escape(str(a['account_id']))}' "
-        f"{'selected' if chosen == a['account_id'] else ''}>"
-        f"{html.escape(a['account_name'])}</option>" for a in data["accounts"]
-    ]
-    if chosen == "all":
-        options[0] = f"<option value='all' selected>{all_label}</option>"
     period = data["period"]
-    period_links = "".join(
-        f"<a class='{'active' if p == period else ''}' href='/dashboard?account_id={chosen}&period={p}'>{p.title()}</a>"
-        for p in ("daily", "weekly", "monthly"))
     pnl_tone = "positive" if data["period_pnl"] >= 0 else "negative"
     rows = "".join(
         f"<tr><td>{html.escape(str(r['symbol']))}</td><td class='{'positive' if r['pnl'] >= 0 else 'negative'}'>"
@@ -483,31 +694,19 @@ def _render(data: dict, selected_id: str | None) -> str:
         for r in data["contributors"][:8]
     ) or "<tr><td colspan='3' class='muted'>No open contributors.</td></tr>"
     advisor_html = _advisor_cards(data)
-    checklist = ""
-    state = data.get("start_here") or {}
-    if not all((state.get("keys"), state.get("backtests"), state.get("paper"))):
-        try:
-            checklist = _start_here(state)
-        except Exception:  # noqa: BLE001
-            checklist = ""  # never let onboarding break the P&L page
+    env_label = html.escape(str(data.get("environment") or "paper").title())
     return f"""
       {checklist}
-      {live_panel}
-      <div class="dash-head"><div><h1>Portfolio P&amp;L</h1>
+      <div class="dash-head"><div><h1>Portfolio P&amp;L <span class="mode-badge">PAPER</span></h1>
       <div class="muted">{html.escape(data['account_name'])} · calendar {period} · updated {data['as_of'][:16].replace('T',' ') } UTC</div></div>
-      <form class="dash-controls" method="get" action="/dashboard">
-       <select name="account_id" aria-label="Portfolio account" onchange="this.form.submit()">{''.join(options)}</select>
-       <input type="hidden" name="period" value="{period}"><div class="periods">{period_links}</div>
-       <button class="dash-news" type="button" onclick="toggleNewsPane()">News</button>
-       <a class="dash-signout" href="/logout">Sign out</a>
-      </form></div>
+      {controls}</div>
       <div class="metric-grid">
        {_metric('Equity', _money(data['equity']))}
        {_metric(f'{period.title()} P&L', _money(data['period_pnl']), pnl_tone)}
        {_metric('Period return', f"{data['period_pct']:+.2f}%", pnl_tone)}
        {_metric('Unrealized P&L', _money(data['unrealized_pnl']), 'positive' if data['unrealized_pnl'] >= 0 else 'negative')}
        {_metric('Cash', _money(data['cash']))}{_metric('Buying power', _money(data['buying_power']))}
-       {_metric('Accounts', str(len(data['accounts'])))}{_metric('Connection', data['environment'].title())}
+       {_metric('Accounts', str(len(data['accounts'])))}{_metric('Connection', env_label)}
       </div>
       <div class="panel-grid"><section class="panel"><h2>Equity curve</h2><div id="equity-chart" class="chart"></div></section>
        <section class="panel"><h2>Daily trading advisor</h2>{advisor_html}</section></div>
@@ -515,10 +714,19 @@ def _render(data: dict, selected_id: str | None) -> str:
        <section class="panel"><div class="panel-head"><h2>Strategy rankings</h2>
        <span class="rank-tabs"><button class="active" data-kind="paper" onclick="showRanks('paper')">Paper</button>
        <button data-kind="backtest" onclick="showRanks('backtest')">Backtest</button></span></div>
-       {_rank_table(data['paper_rankings'], 'paper')}{_rank_table(data['backtest_rankings'], 'backtest')}</section></div>
+       {_rank_table(data.get('paper_rankings') or [], 'paper')}{_rank_table(data.get('backtest_rankings') or [], 'backtest')}</section></div>
+      {_paper_runs_panel(data.get('paper_runs') or [])}
+      {_positions_full(data.get('positions') or [])}
       <section class="panel" style="margin-top:.8rem"><h2>Top open-position contributors</h2>
        <table class="contributors"><thead><tr><th>Symbol</th><th>P&amp;L</th><th>Market value</th></tr></thead><tbody>{rows}</tbody></table></section>
     """
+
+
+def _render(data: dict, selected_id: str | None) -> str:
+    """One dashboard at a time: live OR paper, switched by the account dropdown."""
+    if _is_live_view(data, selected_id):
+        return _render_live(data, selected_id)
+    return _render_paper(data, selected_id)
 
 
 def register(app, rt):
@@ -535,23 +743,38 @@ def register(app, rt):
             session["dashboard_account_id"] = data["account_id"]
         selected = requested
         uid = str(user_id)
-        # Start Here checklist — read-only state queries; any failure just
-        # hides the card rather than breaking the dashboard.
-        try:
-            data["start_here"] = {
-                "keys": onboarding.has_linked_account(uid),
-                "backtests": onboarding.has_backtests(uid),
-                "paper": onboarding.has_paper_activity(uid),
-                "latest": onboarding.latest_backtest_config(uid),
-            }
-        except Exception:  # noqa: BLE001
+        live_mode = _is_live_view(data, selected)
+        # Start Here checklist — paper onboarding only.
+        if not live_mode:
+            try:
+                data["start_here"] = {
+                    "keys": onboarding.has_linked_account(uid),
+                    "backtests": onboarding.has_backtests(uid),
+                    "paper": onboarding.has_paper_activity(uid),
+                    "latest": onboarding.latest_backtest_config(uid),
+                }
+            except Exception:  # noqa: BLE001
+                data["start_here"] = {}
+            try:
+                from agents.report_agent import ReportAgent
+                ranking_account = (
+                    None if data.get("account_id") == "all" else data.get("account_id"))
+                data["paper_runs"] = ReportAgent().summary(
+                    trade_type="paper", limit=8, user_id=uid,
+                    account_id=ranking_account)
+            except Exception:  # noqa: BLE001
+                data["paper_runs"] = []
+        else:
             data["start_here"] = {}
-        # Live vs SPY on the main dashboard when a live broker is linked.
-        # Best-effort: never block the paper/portfolio P&L view.
-        try:
-            from engine.web.ph_live_account import load_view
-            data["live"] = load_view(uid)
-        except Exception:  # noqa: BLE001
+            data["paper_runs"] = []
+        # Live vs SPY + orders only when viewing a live account (no stacked paper).
+        if live_mode:
+            try:
+                from engine.web.ph_live_account import load_view
+                data["live"] = load_view(uid)
+            except Exception:  # noqa: BLE001
+                data["live"] = {}
+        else:
             data["live"] = {}
         live_curves = (data.get("live") or {}).get("curves") or {}
         serializable = {

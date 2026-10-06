@@ -376,3 +376,123 @@ def test_render_all_label_mentions_paper_when_live_linked():
     assert "All paper accounts" in html
     assert "live:885504372" in html
     assert "LIVE" in html
+
+
+def test_paper_view_does_not_stack_live_panel():
+    """Selecting paper must not keep the Live vs SPY block on the same page."""
+    from engine.web import ph_pnl
+    data = {
+        "account_id": "paper-1",
+        "account_name": "Paper One",
+        "accounts": [
+            {"account_id": "paper-1", "account_name": "Paper One"},
+            {"account_id": "live:885504372", "account_name": "Alpaca live · 885504372 (LIVE)"},
+        ],
+        "has_live": True,
+        "period": "daily",
+        "equity": 100.0,
+        "period_pnl": 1.0,
+        "period_pct": 1.0,
+        "unrealized_pnl": 0.0,
+        "cash": 50.0,
+        "buying_power": 50.0,
+        "environment": "paper",
+        "as_of": "2026-10-06T12:00:00+00:00",
+        "contributors": [],
+        "paper_rankings": [],
+        "backtest_rankings": [],
+        "advisor_reports": [],
+        "advisor_history": [],
+        "paper_runs": [
+            {"strategy_slug": "buy_the_dip", "status": "running",
+             "total_pnl": 12.5, "total_trades": 3, "started_at": "2026-10-01T14:00:00"},
+        ],
+        "positions": [],
+        "history": {"timestamps": [], "equity": []},
+        "live": {  # even if mistakenly present, paper render must ignore it
+            "linked": True,
+            "account_number": "885504372",
+            "perf": {"account_pnl": 1},
+            "curves": {"dates": ["2026-10-01"], "account_idx": [100], "spy_idx": [100]},
+        },
+    }
+    html = ph_pnl._render(data, "paper-1")
+    assert "Live account vs SPY" not in html
+    assert "PAPER" in html
+    assert 'name="account_id"' in html
+    assert "live:885504372" in html
+    assert "Paper strategy activity" in html
+    assert "buy_the_dip" in html
+
+
+def test_live_view_shows_spy_curve_and_dropdown():
+    from engine.web import ph_pnl
+    data = {
+        "account_id": "live:885504372",
+        "account_name": "Alpaca live · 885504372 (LIVE)",
+        "accounts": [
+            {"account_id": "paper-1", "account_name": "Paper One"},
+            {"account_id": "live:885504372", "account_name": "Alpaca live · 885504372 (LIVE)"},
+        ],
+        "has_live": True,
+        "period": "daily",
+        "equity": 2800.0,
+        "period_pnl": -0.3,
+        "period_pct": -0.01,
+        "unrealized_pnl": 10.0,
+        "cash": 500.0,
+        "buying_power": 9800.0,
+        "environment": "live",
+        "as_of": "2026-10-06T12:00:00+00:00",
+        "contributors": [],
+        "positions": [{"symbol": "AAPL", "qty": 1, "avg_entry_price": 100,
+                      "current_price": 105, "market_value": 105,
+                      "unrealized_pl": 5, "unrealized_plpc": 0.05}],
+        "history": {"timestamps": [], "equity": []},
+        "live": {
+            "linked": True,
+            "account_number": "885504372",
+            "had_bnbx": True,
+            "orders": [],
+            "perf": {
+                "started": "2026-09-01",
+                "start_equity": 2500,
+                "account_pnl": 300,
+                "account_return_pct": 12.0,
+                "spy_return_pct": 5.0,
+                "spy_start": 400,
+                "spy": 420,
+                "excess_pct": 7.0,
+            },
+            "curves": {"dates": ["2026-09-01", "2026-10-01"],
+                       "account_idx": [100, 112], "spy_idx": [100, 105]},
+        },
+    }
+    html = ph_pnl._render(data, "live:885504372")
+    assert "Live account vs SPY" in html
+    assert "dash-live-equity-chart" in html
+    assert 'name="account_id"' in html
+    assert "paper-1" in html
+    assert 'mode-badge">PAPER' not in html
+    assert "Open positions" in html
+    assert "AAPL" in html
+    assert "BNBX" in html  # footnote only
+    assert "Daily trading advisor" not in html  # paper-only panel
+
+
+def test_error_page_keeps_account_dropdown_when_catalog_present():
+    from engine.web import ph_pnl
+    data = {
+        "errors": [{"account_id": "paper-1", "message": "unauthorized"}],
+        "period": "daily",
+        "accounts": [
+            {"account_id": "paper-1", "account_name": "Paper One"},
+            {"account_id": "live:885504372", "account_name": "Alpaca live · 885504372 (LIVE)"},
+        ],
+        "has_live": True,
+        "environment": "paper",
+    }
+    html = ph_pnl._render(data, "paper-1")
+    assert 'name="account_id"' in html
+    assert "live:885504372" in html
+    assert "Live account vs SPY" not in html

@@ -271,11 +271,13 @@ def svg_equity_chart(curves: dict, width: int = 560, height: int = 180) -> str:
 
 
 
-def png_equity_chart(curves: dict, width: int = 560, height: int = 200) -> bytes:
+def png_equity_chart(curves: dict, width: int = 1120, height: int = 420,
+                     scale: int = 2) -> bytes:
     """PNG equity curve (account vs SPY, index 100) for email CID attachments.
 
-    Gmail strips inline ``<svg>``; a CID-attached PNG is the reliable email path.
-    Returns empty bytes when there is nothing to draw.
+    Renders at ``width*scale`` × ``height*scale`` then downsamples for a sharp
+    Gmail display. Draws visible x-axis dates. Returns empty bytes when there
+    is nothing to draw.
     """
     if not curves or not curves.get("dates"):
         return b""
@@ -292,7 +294,9 @@ def png_equity_chart(curves: dict, width: int = 560, height: int = 200) -> bytes
         ymax = ymin + 1.0
     pad = (ymax - ymin) * 0.08
     ymin, ymax = ymin - pad, ymax + pad
-    left, right, top, bottom = 36, width - 12, 14, height - 24
+
+    W, H = width * scale, height * scale
+    left, right, top, bottom = 56 * scale, W - 24 * scale, 28 * scale, H - 48 * scale
     n = len(pts) - 1
 
     def xy(i, y):
@@ -306,35 +310,97 @@ def png_equity_chart(curves: dict, width: int = 560, height: int = 200) -> bytes
         log.warning("Pillow missing; cannot render email equity PNG")
         return b""
 
-    im = Image.new("RGB", (width, height), "#FFFFFF")
+    im = Image.new("RGB", (W, H), "#FFFFFF")
     draw = ImageDraw.Draw(im)
-    draw.rectangle([0, 0, width - 1, height - 1], outline="#E4E1D7")
+    # Outer frame
+    draw.rectangle([0, 0, W - 1, H - 1], outline="#E4E1D7", width=scale)
+    # Plot area border
+    draw.rectangle([left, top, right, bottom], outline="#E4E1D7", width=max(1, scale // 2))
+
+    font = ImageFont.load_default()
+    try:
+        # Prefer a real TTF when available (sharper date labels in Gmail).
+        for cand in (
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            "/System/Library/Fonts/Supplemental/Arial.ttf",
+        ):
+            from pathlib import Path as _P
+            if _P(cand).is_file():
+                font = ImageFont.truetype(cand, 11 * scale)
+                break
+    except Exception:  # noqa: BLE001
+        pass
+
+    # Y-axis ticks (3 levels)
+    for frac in (0.0, 0.5, 1.0):
+        yv = ymin + (ymax - ymin) * frac
+        _, yy = xy(0, yv)
+        draw.line([(left, yy), (right, yy)], fill="#EEEBE3", width=max(1, scale // 2))
+        label = f"{yv:.0f}"
+        draw.text((8 * scale, yy - 6 * scale), label, fill="#7A867E", font=font)
+
     if ymin <= 100 <= ymax:
         y0 = xy(0, 100.0)[1]
-        # dashed baseline at index 100
         x = left
+        dash = 4 * scale
+        gap = 4 * scale
         while x < right:
-            draw.line([(x, y0), (min(x + 3, right), y0)], fill="#D5D2C8", width=1)
-            x += 6
+            draw.line([(x, y0), (min(x + dash, right), y0)], fill="#D5D2C8", width=scale)
+            x += dash + gap
+
     spy_pts = [xy(i, sv) for i, (_, _, sv) in enumerate(pts) if sv is not None]
     acct_pts = [xy(i, av) for i, (_, av, _) in enumerate(pts)]
     if len(spy_pts) >= 2:
-        draw.line(spy_pts, fill="#7A867E", width=2)
+        draw.line(spy_pts, fill="#7A867E", width=2 * scale)
     if len(acct_pts) >= 2:
-        draw.line(acct_pts, fill="#1F5D43", width=3)
-    try:
-        font = ImageFont.load_default()
-    except Exception:  # noqa: BLE001
-        font = None
-    label = f"{dates[0][5:]} → {dates[-1][5:]} · index 100 at start"
-    draw.text((left, height - 14), label, fill="#7A867E", font=font)
-    # right-aligned legend approx
-    draw.text((right - 48, 2), "Account", fill="#1F5D43", font=font)
-    draw.text((right - 100, 2), "SPY", fill="#7A867E", font=font)
+        draw.line(acct_pts, fill="#1F5D43", width=3 * scale)
+
+    # X-axis date labels (first, ~mid, last — plus extras when many points)
+    date_idxs = [0, n]
+    if n >= 4:
+        date_idxs = sorted(set([0, n // 4, n // 2, (3 * n) // 4, n]))
+    elif n >= 2:
+        date_idxs = [0, n // 2, n]
+    for i in date_idxs:
+        # map chart index i back to original dates via pts
+        src_i = pts[i][0]
+        raw = str(dates[src_i])
+        # YYYY-MM-DD → Mon DD
+        label = raw
+        try:
+            from datetime import date as _date
+            d = _date.fromisoformat(raw[:10])
+            label = d.strftime("%b %d")
+        except Exception:  # noqa: BLE001
+            label = raw[5:10] if len(raw) >= 10 else raw
+        xx, _ = xy(i, ymin)
+        draw.line([(xx, bottom), (xx, bottom + 4 * scale)], fill="#C8C4B8", width=scale)
+        # center-ish text under tick
+        tw = draw.textlength(label, font=font) if hasattr(draw, "textlength") else len(label) * 6 * scale
+        draw.text((xx - tw / 2, bottom + 8 * scale), label, fill="#5A635C", font=font)
+
+    # Legend
+    draw.text((left, 6 * scale), "Account", fill="#1F5D43", font=font)
+    legend_w = draw.textlength("Account", font=font) if hasattr(draw, "textlength") else 50 * scale
+    draw.text((left + legend_w + 16 * scale, 6 * scale), "SPY", fill="#7A867E", font=font)
+    draw.text((left + legend_w + 56 * scale, 6 * scale),
+              "index 100 at live start", fill="#9AA39C", font=font)
+
+    if scale > 1:
+        # High-quality downsample for crisp Gmail rendering
+        try:
+            resample = Image.Resampling.LANCZOS
+        except AttributeError:  # pragma: no cover — Pillow < 9
+            resample = Image.LANCZOS
+        im = im.resize((width, height), resample)
+
     import io
     buf = io.BytesIO()
     im.save(buf, format="PNG", optimize=True)
     return buf.getvalue()
+
+
 
 
 

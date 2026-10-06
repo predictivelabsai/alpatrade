@@ -485,6 +485,8 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
         et = _ts(t.get("entry_time"))
         xt = _ts(t.get("exit_time"))
         if t.get("exit_price") is None and _f(t.get("shares")) > 0 and et:
+            if str(t.get("symbol") or "").upper() in IGNORED_POSITION_SYMBOLS:
+                continue
             ed = et.astimezone(ET).date()
             p = pos_by_sym.get(t.get("symbol")) or {}
             runner_open.append({
@@ -596,6 +598,8 @@ def _ignored_note(d: dict) -> str:
 
 
 def _positions_table(positions: list[dict]) -> str:
+    positions = [p for p in (positions or [])
+                 if str(p.get("symbol") or "").upper() not in IGNORED_POSITION_SYMBOLS]
     rows = ""
     for p in sorted(positions, key=lambda x: _f(x.get("market_value")), reverse=True):
         pl = _f(p.get("unrealized_pl"))
@@ -719,6 +723,8 @@ def _runner_block(d: dict) -> str:
             f"<div style='font-size:12px;color:#415046'>{params}</div></div>")
     rows = ""
     for r in d.get("runner_open") or []:
+        if str(r.get("symbol") or "").upper() in IGNORED_POSITION_SYMBOLS:
+            continue
         rows += (f"<tr><td><b>{_e(r['symbol'])}</b></td><td>{r['entry_date']:%a %b %d}</td>"
                  f"<td {_R}>{_qty(r['qty'])}</td><td {_R}>{_money(r['entry_price'])}</td>"
                  f"<td {_R} style='color:{_col(r['upl'])}'>{_money(r['upl'], True)} ({_pct(r['uplpc'])})</td>"
