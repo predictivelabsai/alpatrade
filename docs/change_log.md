@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Daily paper email agent status
+
+- The current-agent benchmark now shows only enabled DeepAgents and LangGraph
+  activity; empty placeholder rows and obsolete Hermes commands were removed.
+- Historical Hermes exits remain in a clearly labeled archived section so YTD
+  accounting stays accurate without presenting Hermes as an active runtime.
+- Recommended prompts now cover current paper-risk review, walk-forward strategy
+  comparison, out-of-sample evidence, and parameter drift.
+
 ### Per-user daily email report preferences
 
 - Settings has a new "Email reports" card with checkboxes for the daily live

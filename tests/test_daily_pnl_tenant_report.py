@@ -113,7 +113,9 @@ def test_render_separates_framework_benchmark_and_periods():
 
     html = report.render(data)
     assert "Month to date" in html and "Year to date" in html
-    assert "Hermes" in html and "DeepAgents" in html and "LangGraph" in html
+    assert "DeepAgents" in html and "LangGraph" in html
+    assert "Archived agent history" in html and "Hermes is disabled" in html
+    assert "/hermes" not in html
     assert "realized paper trades only" in html
     assert "Agent status &amp; recommended next steps" in html
 
