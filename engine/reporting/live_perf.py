@@ -2,7 +2,7 @@
 
 Builds:
 * a since-start summary (account return, SPY return, excess, strategy P&L)
-* daily equity curves (account $ and SPY, plus index-100 series for Plotly / SVG)
+* daily equity curves (account $ and SPY, plus index-100 series for Plotly / SVG / email PNG)
 
 Callers supply a GET-only live client (portfolio history) and the runner ``run``
 row; this module never reads credentials itself.
@@ -270,9 +270,77 @@ def svg_equity_chart(curves: dict, width: int = 560, height: int = 180) -> str:
 </svg>""".strip()
 
 
+
+def png_equity_chart(curves: dict, width: int = 560, height: int = 180) -> bytes:
+    """PNG equity curve (account vs SPY, index 100) for email CID attachments.
+
+    Gmail strips inline ``<svg>``; a CID-attached PNG is the reliable email path.
+    Returns empty bytes when there is nothing to draw.
+    """
+    if not curves or not curves.get("dates"):
+        return b""
+    dates = curves["dates"]
+    a = curves.get("account_idx") or []
+    s = curves.get("spy_idx") or []
+    pts = [(i, a[i], s[i] if i < len(s) else None) for i in range(len(dates))
+           if i < len(a) and a[i] is not None]
+    if len(pts) < 2:
+        return b""
+    ys = [p[1] for p in pts] + [p[2] for p in pts if p[2] is not None]
+    ymin, ymax = min(ys), max(ys)
+    if ymax <= ymin:
+        ymax = ymin + 1.0
+    pad = (ymax - ymin) * 0.08
+    ymin, ymax = ymin - pad, ymax + pad
+    left, right, top, bottom = 36, width - 12, 14, height - 24
+    n = len(pts) - 1
+
+    def xy(i, y):
+        x = left + (right - left) * (i / n)
+        yy = top + (bottom - top) * (1 - (y - ymin) / (ymax - ymin))
+        return int(round(x)), int(round(yy))
+
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:  # pragma: no cover
+        log.warning("Pillow missing; cannot render email equity PNG")
+        return b""
+
+    im = Image.new("RGB", (width, height), "#FFFFFF")
+    draw = ImageDraw.Draw(im)
+    if ymin <= 100 <= ymax:
+        y0 = xy(0, 100.0)[1]
+        # dashed baseline at index 100
+        x = left
+        while x < right:
+            draw.line([(x, y0), (min(x + 3, right), y0)], fill="#D5D2C8", width=1)
+            x += 6
+    spy_pts = [xy(i, sv) for i, (_, _, sv) in enumerate(pts) if sv is not None]
+    acct_pts = [xy(i, av) for i, (_, av, _) in enumerate(pts)]
+    if len(spy_pts) >= 2:
+        draw.line(spy_pts, fill="#7A867E", width=2)
+    if len(acct_pts) >= 2:
+        draw.line(acct_pts, fill="#1F5D43", width=3)
+    try:
+        font = ImageFont.load_default()
+    except Exception:  # noqa: BLE001
+        font = None
+    label = f"{dates[0][5:]} → {dates[-1][5:]} · index 100 at start"
+    draw.text((left, height - 14), label, fill="#7A867E", font=font)
+    # right-aligned legend approx
+    draw.text((right - 48, 2), "Account", fill="#1F5D43", font=font)
+    draw.text((right - 100, 2), "SPY", fill="#7A867E", font=font)
+    import io
+    buf = io.BytesIO()
+    im.save(buf, format="PNG", optimize=True)
+    return buf.getvalue()
+
+
+
 __all__ = [
     "equity_curves",
     "performance_since_start",
     "spy_close",
     "svg_equity_chart",
+    "png_equity_chart",
 ]

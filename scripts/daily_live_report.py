@@ -608,16 +608,38 @@ def _orders_table(orders: list[dict]) -> str:
 
 
 
+CURVE_CID = "live-equity-curve"
+
+
+def curve_png_attachment(curves: dict) -> dict | None:
+    """Postmark inline PNG attachment for the account-vs-SPY curve, or None."""
+    import base64
+    from engine.reporting.live_perf import png_equity_chart
+    png = png_equity_chart(curves or {})
+    if not png:
+        return None
+    return {
+        "Name": "live-equity-curve.png",
+        "Content": base64.b64encode(png).decode("ascii"),
+        "ContentType": "image/png",
+        "ContentID": f"cid:{CURVE_CID}",
+    }
+
+
 def _curves_block(d: dict) -> str:
-    """Inline SVG equity curve (account vs SPY, index 100) for email clients."""
-    from engine.reporting.live_perf import svg_equity_chart
-    svg = svg_equity_chart(d.get("curves") or {})
-    if not svg:
+    """CID-referenced PNG equity curve (Gmail strips inline SVG)."""
+    curves = d.get("curves") or {}
+    idx = curves.get("account_idx") or []
+    if len(curves.get("dates") or []) < 2 or sum(1 for v in idx if v is not None) < 2:
         return ""
-    return (f"<div style='margin:.4rem 0 .6rem;border:1px solid #E4E1D7;border-radius:6px;"
-            f"padding:6px;background:#fff'>{svg}</div>"
-            f"<p style='font-size:11px;color:{MUTED};margin:.1rem 0 .4rem'>Indexed to 100 at "
-            "the live runner start. Account line is broker equity; SPY is the ETF close.</p>")
+    return (
+        f"<div style='margin:.4rem 0 .6rem;border:1px solid #E4E1D7;border-radius:6px;"
+        f"padding:6px;background:#fff'>"
+        f"<img src='cid:{CURVE_CID}' width='560' height='180' alt='Live account vs SPY "
+        f"(index 100)' style='display:block;max-width:100%;height:auto;border:0'/></div>"
+        f"<p style='font-size:11px;color:{MUTED};margin:.1rem 0 .4rem'>Indexed to 100 at "
+        "the live runner start. Account line is broker equity; SPY is the ETF close.</p>"
+    )
 
 
 def _perf_block(d: dict) -> str:
@@ -824,8 +846,17 @@ def send_report(target: dict, day: date | None = None, force: bool = False,
         return {"ok": False, "error": "no live credentials"}
     d = gather(client, target, day=day)
     html_body = render(d)
+    att = curve_png_attachment(d.get("curves") or {})
+    attachments = [att] if att else None
     if html_out:
-        Path(html_out).write_text(html_body)
+        # Browser preview of the saved HTML cannot resolve cid:; embed data URI there.
+        preview = html_body
+        if att:
+            preview = preview.replace(
+                f"cid:{CURVE_CID}",
+                f"data:image/png;base64,{att['Content']}",
+            )
+        Path(html_out).write_text(preview)
     out = {"ok": True, "day": d["day"], "data": d, "sent": False, "message_id": None}
     if d.get("no_trading_day") or not send:
         return out
@@ -833,7 +864,9 @@ def send_report(target: dict, day: date | None = None, force: bool = False,
         return {**out, "ok": False, "error": "already sent (use --force to resend)"}
     res = {"ok": False, "message_id": None, "error": None}
     try:
-        res = send_email_to_result(target["email"], subject_for(d), html_body)
+        res = send_email_to_result(
+            target["email"], subject_for(d), html_body, attachments=attachments,
+        )
     finally:
         finish_live_delivery(target["user_id"], target["account_number"], d["day"],
                              bool(res.get("ok")), res.get("message_id"))

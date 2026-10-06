@@ -203,7 +203,7 @@ def test_render_contains_all_sections_and_no_secrets(db):
                    "CRCL", "AFRM", "+$25.93", "n/a", "Current positions", "GOOGL",
                    "Open orders", "AAPL", "Live runner", "Mon Sep 28", "SIGNAL", "near",
                    "SPY since start", "+2.00%", "-0.50%", "REAL MONEY",
-                   "index 100 at start", "<svg"):
+                   "cid:live-equity-curve", "<img"):
         assert needle in html, needle
     assert "AKTESTKEY" not in html and "SECRETVALUE" not in html
     assert rep.subject_for(d).startswith("AlpaTrade LIVE PnL — Sep 25, 2026 (+$150")
@@ -214,7 +214,7 @@ def test_render_contains_all_sections_and_no_secrets(db):
 def test_send_report_goes_only_to_owner_and_returns_message_id(db, monkeypatch, tmp_path):
     sent = []
     monkeypatch.setattr("utils.email_util.send_email_to_result",
-                        lambda to, subj, body: sent.append((to, subj)) or
+                        lambda to, subj, body, attachments=None: sent.append((to, subj, attachments)) or
                         {"ok": True, "message_id": "pm-123", "error": None})
     claims, finishes = [], []
     monkeypatch.setattr(rep, "claim_live_delivery",
@@ -225,9 +225,14 @@ def test_send_report_goes_only_to_owner_and_returns_message_id(db, monkeypatch, 
     res = rep.send_report(TARGET, client=_client(), html_out=str(out),
                           day=date(2026, 9, 25))
     assert res["sent"] and res["message_id"] == "pm-123"
-    assert [to for to, _ in sent] == ["kaljuvee@gmail.com"]
+    assert [to for to, _, _ in sent] == ["kaljuvee@gmail.com"]
+    atts = sent[0][2]
+    assert atts and atts[0]["ContentType"] == "image/png"
+    assert atts[0]["ContentID"] == "cid:live-equity-curve"
     assert claims == ["2026-09-25"] and finishes == [(True, "pm-123")]
-    assert "Daily LIVE report" in out.read_text()
+    saved = out.read_text()
+    assert "Daily LIVE report" in saved
+    assert "data:image/png;base64," in saved  # html-out uses data URI for preview
 
 
 def test_already_delivered_is_not_resent(db, monkeypatch):

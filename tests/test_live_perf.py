@@ -53,9 +53,12 @@ def test_equity_curves_index_and_svg(monkeypatch):
     assert curves["spy_idx"][1] == pytest.approx(102.0)
     svg = lp.svg_equity_chart(curves)
     assert "svg" in svg and "Account" in svg and "SPY" in svg
+    png = lp.png_equity_chart(curves)
+    assert png[:8] == b"\x89PNG\r\n\x1a\n" and len(png) > 200
 
 
 def test_empty_without_run():
     assert lp.performance_since_start(100, {}, spy=1) == {}
     assert lp.equity_curves(HistClient(), {}) == {}
     assert lp.svg_equity_chart({}) == ""
+    assert lp.png_equity_chart({}) == b""

@@ -103,8 +103,17 @@ def send_email_to(to_email: str, subject: str, body_html: str) -> bool:
         return False
 
 
-def send_email_to_result(to_email: str, subject: str, body_html: str) -> Dict[str, Any]:
+def send_email_to_result(
+    to_email: str,
+    subject: str,
+    body_html: str,
+    attachments: List[Dict[str, Any]] | None = None,
+) -> Dict[str, Any]:
     """Like :func:`send_email_to` but returns Postmark's MessageID.
+
+    ``attachments`` is an optional list of Postmark attachment dicts
+    (``Name``, ``Content`` base64, ``ContentType``, optional ``ContentID`` for
+    inline CID images referenced as ``cid:...`` in ``body_html``).
 
     Returns ``{"ok": bool, "message_id": str | None, "error": str | None}``; the
     error never contains the server token.
@@ -115,6 +124,15 @@ def send_email_to_result(to_email: str, subject: str, body_html: str) -> Dict[st
         logger.warning("Postmark env vars not set (POSTMARK_API_KEY, FROM_EMAIL)")
         return {"ok": False, "message_id": None, "error": "email not configured"}
     try:
+        payload: Dict[str, Any] = {
+            "From": from_email,
+            "To": to_email,
+            "Subject": subject,
+            "HtmlBody": body_html,
+            "MessageStream": "outbound",
+        }
+        if attachments:
+            payload["Attachments"] = attachments
         resp = requests.post(
             "https://api.postmarkapp.com/email",
             headers={
@@ -122,13 +140,7 @@ def send_email_to_result(to_email: str, subject: str, body_html: str) -> Dict[st
                 "Content-Type": "application/json",
                 "X-Postmark-Server-Token": api_key,
             },
-            json={
-                "From": from_email,
-                "To": to_email,
-                "Subject": subject,
-                "HtmlBody": body_html,
-                "MessageStream": "outbound",
-            },
+            json=payload,
             timeout=15,
         )
         resp.raise_for_status()

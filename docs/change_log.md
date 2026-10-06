@@ -1,5 +1,18 @@
 # Change Log
 
+## 2026-10-06 — LIVE email equity curve visible in Gmail (CID PNG)
+
+- Root cause: daily LIVE email embedded an inline SVG equity curve; Gmail strips
+  `<svg>` so Julian saw the SPY numbers but no chart (confirmed on the Oct 06
+  resend: HTML had SVG, zero image attachments).
+- Fix: render the same account-vs-SPY index-100 curve as a PNG via Pillow
+  (`live_perf.png_equity_chart`), reference it as `cid:live-equity-curve`, and
+  send it as a Postmark inline attachment (`ContentID`). Saved `--html-out`
+  previews still use a data URI so the chart opens in a browser.
+- `send_email_to_result` accepts optional `attachments`. No paper email / no trades.
+- Tests: PNG bytes, CID in rendered HTML, attachment on send, Postmark payload.
+
+
 ## 2026-10-06 — Live account in /dashboard account dropdown
 
 - Root cause: live Alpaca links live in `user_live_broker_accounts` (read-only);

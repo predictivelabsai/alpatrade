@@ -64,3 +64,29 @@ def test_send_email_to_return_type_is_boolean(monkeypatch):
                         lambda *a, **k: _FakeResp(200))
     result = email_util.send_email_to("x@example.eu", "s", "b")
     assert isinstance(result, bool)
+
+
+def test_send_email_to_result_includes_inline_attachments(monkeypatch):
+    captured = {}
+
+    def fake_post(url, headers=None, json=None, timeout=None):
+        captured["json"] = json
+        return _FakeResp(200)
+
+    monkeypatch.setenv("POSTMARK_API_KEY", "tok")
+    monkeypatch.setenv("FROM_EMAIL", "reports@example.com")
+    monkeypatch.setattr(email_util.requests, "post", fake_post)
+    # MessageID path uses raise_for_status + json(); wrap fake
+    class Resp(_FakeResp):
+        content = b"{}"
+        def json(self):
+            return {"MessageID": "m-1"}
+    monkeypatch.setattr(email_util.requests, "post",
+                        lambda *a, **k: captured.update(k) or Resp())
+    att = [{"Name": "c.png", "Content": "aaa", "ContentType": "image/png",
+            "ContentID": "cid:live-equity-curve"}]
+    out = email_util.send_email_to_result(
+        "jk@example.eu", "S", "<img src=\"cid:live-equity-curve\">", attachments=att,
+    )
+    assert out["ok"] is True
+    assert captured["json"]["Attachments"] == att
