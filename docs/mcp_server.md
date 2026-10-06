@@ -14,6 +14,21 @@ Set these locally; never put values in repository files or CLI arguments:
 
 ## Run locally
 
+### Guided web setup
+
+Signed-in users can open **Settings → MCP Connections** (or
+`/settings/mcp`), enter the local AlpaTrade repository path, and generate
+copy-ready setup for Codex, Claude Code, or another JSON-compatible MCP client.
+The generated user token expires after seven days and appears only in that POST
+response. The browser never writes desktop client configuration itself: copy one
+generated command, run it locally, then restart the client.
+
+The page creates a normal tenant JWT; all existing API ownership checks and the
+MCP server's bounded, paper-only tool catalog still apply. Never paste generated
+configuration into chat, source control, screenshots, or support tickets.
+
+### Manual setup
+
 ```powershell
 $env:ALPATRADE_API_URL = "https://api.alpatrade.chat"
 $env:ALPATRADE_ACCESS_TOKEN = "<your-user-jwt>"

@@ -31,6 +31,9 @@
 
 - Added a FastMCP stdio server so Codex, Claude, and other MCP-capable CLIs can
   use tenant-scoped AlpaTrade API tools with their own bearer token.
+- Added a signed-in MCP Connections wizard that generates seven-day, copy-ready
+  Codex, Claude Code, and generic JSON client configuration without placing the
+  token in a URL or application log.
 - Added explicit research, reporting, DeepAgents, and paper-only operations;
   confirmed paper orders require `confirmation="PAPER"`, while arbitrary HTTP,
   SQL, broker secrets, and live trading remain unavailable.
