@@ -148,7 +148,14 @@ def _kpis(s: dict) -> str:
         for lbl, val, sub, cls in cards) + "</div>"
 
 
+def _filter_zombie_positions(positions: list[dict]) -> list[dict]:
+    """Drop BNBX and other untradable leftovers from the live UI."""
+    return [p for p in (positions or [])
+            if str(p.get("symbol") or "").upper() not in {"BNBX"}]
+
+
 def _positions_table(positions: list[dict]) -> str:
+    positions = _filter_zombie_positions(positions)
     if not positions:
         return "<div class='empty'>No open positions.</div>"
     rows = []
@@ -294,8 +301,11 @@ def load_view(user_id: str) -> dict:
         logger.warning("live account snapshot failed: %s", type(exc).__name__)
         out["error"] = "Could not read the live account right now."
         return out
+    had_bnbx = any(str(p.get("symbol") or "").upper() == "BNBX"
+                   for p in (snap.get("positions") or []))
     out.update(summary=summarize_account(snap["account"]),
-               positions=snap["positions"], orders=snap["orders"])
+               positions=_filter_zombie_positions(snap["positions"]), orders=snap["orders"],
+               had_bnbx=had_bnbx)
     # Performance vs SPY + equity curves (best-effort; never blocks the page).
     try:
         from datetime import datetime
@@ -347,6 +357,7 @@ def render(view: dict) -> str:
                 + _curves_section(view.get("curves") or {})
                 + f"<h2>Positions ({len(view.get('positions') or [])})</h2>"
                 + _positions_table(view.get("positions") or [])
+                + ('<p class="muted" style="font-size:.8rem">BNBX (zombie OTC) is held at the broker but hidden here.</p>' if view.get("had_bnbx") else "")
                 + f"<h2>Open orders ({len(view.get('orders') or [])})</h2>"
                 + _orders_table(view.get("orders") or []))
     foot = ("<p class='ro'>Read-only: this page only reads your account from Alpaca "

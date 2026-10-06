@@ -271,7 +271,7 @@ def svg_equity_chart(curves: dict, width: int = 560, height: int = 180) -> str:
 
 
 
-def png_equity_chart(curves: dict, width: int = 560, height: int = 180) -> bytes:
+def png_equity_chart(curves: dict, width: int = 560, height: int = 200) -> bytes:
     """PNG equity curve (account vs SPY, index 100) for email CID attachments.
 
     Gmail strips inline ``<svg>``; a CID-attached PNG is the reliable email path.
@@ -308,6 +308,7 @@ def png_equity_chart(curves: dict, width: int = 560, height: int = 180) -> bytes
 
     im = Image.new("RGB", (width, height), "#FFFFFF")
     draw = ImageDraw.Draw(im)
+    draw.rectangle([0, 0, width - 1, height - 1], outline="#E4E1D7")
     if ymin <= 100 <= ymax:
         y0 = xy(0, 100.0)[1]
         # dashed baseline at index 100

@@ -203,7 +203,7 @@ def test_render_contains_all_sections_and_no_secrets(db):
                    "CRCL", "AFRM", "+$25.93", "n/a", "Current positions", "GOOGL",
                    "Open orders", "AAPL", "Live runner", "Mon Sep 28", "SIGNAL", "near",
                    "SPY since start", "+2.00%", "-0.50%", "REAL MONEY",
-                   "cid:live-equity-curve", "<img"):
+                   "cid:live-equity-curve", '<img src="cid:live-equity-curve"'):
         assert needle in html, needle
     assert "AKTESTKEY" not in html and "SECRETVALUE" not in html
     assert rep.subject_for(d).startswith("AlpaTrade LIVE PnL — Sep 25, 2026 (+$150")
@@ -214,7 +214,7 @@ def test_render_contains_all_sections_and_no_secrets(db):
 def test_send_report_goes_only_to_owner_and_returns_message_id(db, monkeypatch, tmp_path):
     sent = []
     monkeypatch.setattr("utils.email_util.send_email_to_result",
-                        lambda to, subj, body, attachments=None: sent.append((to, subj, attachments)) or
+                        lambda to, subj, body, attachments=None, text_body=None: sent.append((to, subj, attachments)) or
                         {"ok": True, "message_id": "pm-123", "error": None})
     claims, finishes = [], []
     monkeypatch.setattr(rep, "claim_live_delivery",
@@ -334,3 +334,27 @@ def test_paper_report_remains_paper_only():
     assert "trade_type = 'paper'" in inspect.getsource(paper.gather_trades)
     assert "user_accounts" in inspect.getsource(paper.report_targets)
     assert "live" not in inspect.getsource(paper.report_targets).lower()
+
+
+def test_bnbx_zombie_excluded_from_positions_and_upl(db, monkeypatch):
+    """BNBX must not appear in the positions table or open UPL total."""
+    http = FakeHTTP()
+    # Inject a BNBX zombie into the fake positions response
+    orig_get = http.get
+    def get(url, headers=None, params=None, timeout=None):
+        resp = orig_get(url, headers=headers, params=params, timeout=timeout)
+        path = url.replace(ro.LIVE_BASE_URL, "")
+        if path == "/v2/positions":
+            body = POSITIONS + [{"symbol": "BNBX", "qty": "15", "avg_entry_price": "3.94",
+                                 "current_price": "0.14", "market_value": "2.05",
+                                 "unrealized_pl": "-57", "unrealized_plpc": "-0.965"}]
+            return __import__("types").SimpleNamespace(status_code=200, json=lambda: body)
+        return resp
+    http.get = get
+    d = rep.gather(_client(http), TARGET, now=SAT)
+    assert all(p.get("symbol") != "BNBX" for p in d["positions"])
+    assert any(p.get("symbol") == "BNBX" for p in d["ignored_positions"])
+    html = rep.render(d)
+    assert "BNBX" in html  # footnote
+    assert "<b>BNBX</b>" not in html  # not in the positions table
+    assert "Excluded from this report" in html

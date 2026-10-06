@@ -178,7 +178,10 @@ def test_live_link_table_is_only_used_by_the_readonly_view():
                # GET-only daily live report (owner-only email) and its tests
                "scripts/daily_live_report.py", "tests/test_daily_live_report.py",
                # Settings page: presence check only (list_live_accounts, no key material)
-               "engine/web/ph_settings.py"}
+               "engine/web/ph_settings.py",
+               # Dashboard live dropdown / vs-SPY curve (GET-only client, no trading)
+               "engine/reporting/pnl_dashboard.py", "tests/test_pnl_dashboard.py",
+               "engine/web/ph_pnl.py"}
     pat = re.compile(r"user_live_broker_accounts|engine\.live_accounts|get_live_account_credentials"
                      r"|alpaca_live_readonly")
     hits = set()

@@ -108,12 +108,14 @@ def send_email_to_result(
     subject: str,
     body_html: str,
     attachments: List[Dict[str, Any]] | None = None,
+    text_body: str | None = None,
 ) -> Dict[str, Any]:
     """Like :func:`send_email_to` but returns Postmark's MessageID.
 
     ``attachments`` is an optional list of Postmark attachment dicts
     (``Name``, ``Content`` base64, ``ContentType``, optional ``ContentID`` for
-    inline CID images referenced as ``cid:...`` in ``body_html``).
+    inline CID images referenced as ``cid:...`` in ``body_html``) — same pattern
+    as MMG admin-main ``marketing/daily_report.py``.
 
     Returns ``{"ok": bool, "message_id": str | None, "error": str | None}``; the
     error never contains the server token.
@@ -131,6 +133,8 @@ def send_email_to_result(
             "HtmlBody": body_html,
             "MessageStream": "outbound",
         }
+        if text_body:
+            payload["TextBody"] = text_body
         if attachments:
             payload["Attachments"] = attachments
         resp = requests.post(

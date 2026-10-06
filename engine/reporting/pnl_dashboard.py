@@ -145,6 +145,8 @@ def _one_account(user_id: str, account: dict, period: str) -> dict[str, Any]:
     positions = client.get_positions()
     if not isinstance(positions, list):
         positions = []
+    positions = [p for p in positions
+                 if str(p.get("symbol") or "").upper() not in {"BNBX"}]
     try:
         history = _history(client, start, end)
     except Exception as exc:  # noqa: BLE001
@@ -204,6 +206,8 @@ def _one_live_account(user_id: str, account: dict, period: str) -> dict[str, Any
     positions = snap.get("positions") or []
     if not isinstance(positions, list):
         positions = []
+    positions = [p for p in positions
+                 if str(p.get("symbol") or "").upper() not in {"BNBX"}]
     try:
         hist_raw = client.get_portfolio_history(
             start.date().isoformat(),

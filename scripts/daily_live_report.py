@@ -48,6 +48,8 @@ ET = ZoneInfo("America/New_York")
 REPORT_KIND = "daily_live"
 GREEN, RED, MUTED = "#1F5D43", "#b0653f", "#7A867E"
 NEAR_SIGNAL_FRACTION = 2 / 3  # a dip >= 2/3 of the threshold is shown as "near"
+# Zombie / untradable leftovers excluded from report tables & open UPL (still on broker).
+IGNORED_POSITION_SYMBOLS = frozenset({"BNBX"})
 
 
 # --------------------------------------------------------------------------- utils
@@ -425,6 +427,10 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
 
     acct = client.get_account()
     positions = client.get_positions()
+    ignored_positions = [p for p in positions
+                         if str(p.get("symbol") or "").upper() in IGNORED_POSITION_SYMBOLS]
+    positions = [p for p in positions
+                 if str(p.get("symbol") or "").upper() not in IGNORED_POSITION_SYMBOLS]
     open_orders = client.get_open_orders()
     equity, last_equity = _f(acct.get("equity")), _f(acct.get("last_equity"))
     backdated = now.date() != day
@@ -539,7 +545,7 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
         "day_pnl": day_pnl, "day_pct": day_pct, "cash": _f(acct.get("cash")),
         "buying_power": _f(acct.get("buying_power")),
         "long_market_value": _f(acct.get("long_market_value")),
-        "positions": positions, "open_orders": open_orders, "fills": orders,
+        "positions": positions, "ignored_positions": ignored_positions, "open_orders": open_orders, "fills": orders,
         "run": run, "perf": perf, "curves": curves, "runner_open": runner_open, "runner_actions": actions,
         "runner_heartbeat": hb, "signals": signals, "warnings": warnings,
         "db_ok": _db_ok(), "account_ok": True,
@@ -570,6 +576,23 @@ def _fills_table(fills: list[dict]) -> str:
     return (f"<table {_TABLE}><thead><tr {_TH}><th>Time</th><th>Symbol</th><th>Side</th>"
             "<th>Qty</th><th>Avg price</th><th>Value</th><th>Realised P&amp;L</th>"
             f"<th>Source</th></tr></thead><tbody>{rows}</tbody></table>")
+
+
+def _ignored_note(d: dict) -> str:
+    ignored = d.get("ignored_positions") or []
+    if not ignored:
+        return ""
+    bits = []
+    for p in ignored:
+        bits.append(
+            f"{_e(p.get('symbol'))} {_qty(p.get('qty'))} sh · mark {_money(_f(p.get('market_value')))} · "
+            f"UPL {_money(_f(p.get('unrealized_pl')), True)}"
+        )
+    return (
+        f"<p style='font-size:11px;color:{MUTED};margin:.2rem 0 .4rem'>Excluded from this "
+        f"report (zombie / untradable on Alpaca): {'; '.join(bits)}. Still held at the broker; "
+        "not sized by the Mag-7 runner.</p>"
+    )
 
 
 def _positions_table(positions: list[dict]) -> str:
@@ -627,17 +650,22 @@ def curve_png_attachment(curves: dict) -> dict | None:
 
 
 def _curves_block(d: dict) -> str:
-    """CID-referenced PNG equity curve (Gmail strips inline SVG)."""
-    curves = d.get("curves") or {}
-    idx = curves.get("account_idx") or []
-    if len(curves.get("dates") or []) < 2 or sum(1 for v in idx if v is not None) < 2:
+    """CID-referenced PNG equity curve — same Postmark inline pattern as MMG admin-main.
+
+    Gmail strips inline ``<svg>``; MMG uses ``<img src="cid:…">`` + Postmark
+    ``ContentID: cid:…`` PNG attachments (see marketing/daily_report.py).
+    """
+    from engine.reporting.live_perf import png_equity_chart
+    if not png_equity_chart(d.get("curves") or {}):
         return ""
+    # Match MMG _chart_tag: double-quoted attributes, display:block, bordered.
     return (
-        f"<div style='margin:.4rem 0 .6rem;border:1px solid #E4E1D7;border-radius:6px;"
-        f"padding:6px;background:#fff'>"
-        f"<img src='cid:{CURVE_CID}' width='560' height='180' alt='Live account vs SPY "
-        f"(index 100)' style='display:block;max-width:100%;height:auto;border:0'/></div>"
-        f"<p style='font-size:11px;color:{MUTED};margin:.1rem 0 .4rem'>Indexed to 100 at "
+        f'<div style="margin:.4rem 0 .6rem;">'
+        f'<img src="cid:{CURVE_CID}" width="560" alt="Live account vs SPY (index 100)" '
+        f'style="display:block;width:100%;max-width:560px;height:auto;margin:0;'
+        f'border:1px solid #E4E1D7;border-radius:6px;background:#fff">'
+        f"</div>"
+        f'<p style="font-size:11px;color:{MUTED};margin:.1rem 0 .4rem">Indexed to 100 at '
         "the live runner start. Account line is broker equity; SPY is the ETF close.</p>"
     )
 
@@ -789,6 +817,7 @@ def render(d: dict) -> str:
   {_fills_table(fills)}
   <h3>Current positions ({len(d.get('positions') or [])})</h3>
   {_positions_table(d.get('positions') or [])}
+  {_ignored_note(d)}
   <h3>Open orders ({len(d.get('open_orders') or [])})</h3>
   {_orders_table(d.get('open_orders') or [])}
   <h3>Live runner (Mag-7 buy-the-dip)</h3>
@@ -865,7 +894,8 @@ def send_report(target: dict, day: date | None = None, force: bool = False,
     res = {"ok": False, "message_id": None, "error": None}
     try:
         res = send_email_to_result(
-            target["email"], subject_for(d), html_body, attachments=attachments,
+            target["email"], subject_for(d), html_body,
+            attachments=attachments, text_body=plain_summary(d),
         )
     finally:
         finish_live_delivery(target["user_id"], target["account_number"], d["day"],

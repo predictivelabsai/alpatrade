@@ -1,5 +1,18 @@
 # Change Log
 
+## 2026-10-06 — LIVE email chart (MMG CID pattern) + hide BNBX + leverage WF
+
+- Email chart: match MMG admin-main Postmark inline pattern — PNG attachment with
+  `ContentID: cid:live-equity-curve`, `<img src="cid:…">` (double-quoted), plus
+  `TextBody`. Gmail strips inline SVG; earlier CID attempt used single-quoted img.
+- BNBX zombie OTC position excluded from LIVE email positions/UPL, `/live/account`,
+  and `/dashboard` live view (footnote notes it is still held at the broker).
+- Scratch leverage walk-forward (`scripts/scratch/btd_leverage_wf.py` on HP): Mag-7
+  BTD min-hold cash-only vs 1.5x/2x buying power — at pos_frac 1/7 leverage barely
+  changes OOS results (cash already covers slots). Do not enable live margin yet.
+- No paper email. No live trades from this change.
+
+
 ## 2026-10-06 — LIVE email equity curve visible in Gmail (CID PNG)
 
 - Root cause: daily LIVE email embedded an inline SVG equity curve; Gmail strips
