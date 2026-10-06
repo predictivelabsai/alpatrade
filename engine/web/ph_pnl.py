@@ -374,6 +374,13 @@ def _start_here(state: dict) -> str:
 def _advisor_cards(data: dict) -> str:
     reports = data.get("advisor_reports") or []
     if not reports:
+        if str(data.get("environment") or "") == "live" or str(
+                data.get("account_id") or "").startswith("live:"):
+            return (
+                "<p class='ai-copy'>Daily trading advisor is paper-only. "
+                "For this live account see the <a href='/live/account'>Live account</a> "
+                "page and the daily LIVE email.</p>"
+            )
         return (
             "<p class='ai-copy'>No post-close daily advisor report has been generated "
             "for this paper account yet.</p><p class='advisor-note'>Reports appear after "
@@ -457,12 +464,14 @@ def _render(data: dict, selected_id: str | None) -> str:
                    "Update your Alpaca keys →</a></p>")
         return f"{live_panel}<div class='empty'><h1>Portfolio unavailable</h1><div class='error'>{errors}</div>{cta}</div>"
     chosen = selected_id or data["account_id"]
-    options = ["<option value='all'>All accounts</option>"] + [
-        f"<option value='{a['account_id']}' {'selected' if chosen == a['account_id'] else ''}>"
+    all_label = "All paper accounts" if data.get("has_live") else "All accounts"
+    options = [f"<option value='all'>{all_label}</option>"] + [
+        f"<option value='{html.escape(str(a['account_id']))}' "
+        f"{'selected' if chosen == a['account_id'] else ''}>"
         f"{html.escape(a['account_name'])}</option>" for a in data["accounts"]
     ]
     if chosen == "all":
-        options[0] = "<option value='all' selected>All accounts</option>"
+        options[0] = f"<option value='all' selected>{all_label}</option>"
     period = data["period"]
     period_links = "".join(
         f"<a class='{'active' if p == period else ''}' href='/dashboard?account_id={chosen}&period={p}'>{p.title()}</a>"

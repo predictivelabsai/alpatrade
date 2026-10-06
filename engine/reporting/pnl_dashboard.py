@@ -14,6 +14,50 @@ from engine.brokers.alpaca import AlpacaAPI
 
 logger = logging.getLogger(__name__)
 
+# Live rows use this prefix so they never collide with paper UUIDs in user_accounts.
+# Trading tools still read get_user_accounts() only — never these ids.
+LIVE_ACCOUNT_PREFIX = "live:"
+
+
+def is_live_dashboard_id(account_id: str | None) -> bool:
+    return bool(account_id) and str(account_id).startswith(LIVE_ACCOUNT_PREFIX)
+
+
+def live_dashboard_id(account_number: str) -> str:
+    return f"{LIVE_ACCOUNT_PREFIX}{account_number}"
+
+
+def _list_live_accounts(user_id: str) -> list[dict]:
+    """Display-safe live links; isolated for tests to monkeypatch."""
+    from engine.live_accounts import list_live_accounts
+    return list_live_accounts(user_id)
+
+
+def _catalog(user_id: str) -> tuple[list[dict], list[dict]]:
+    """Paper accounts (user_accounts) plus synthetic live dropdown rows."""
+    paper = []
+    for row in get_user_accounts(user_id):
+        item = dict(row)
+        item["kind"] = "paper"
+        paper.append(item)
+    live: list[dict] = []
+    try:
+        for row in _list_live_accounts(user_id):
+            num = str(row.get("account_number") or "").strip()
+            if not num:
+                continue
+            label = (row.get("label") or "Alpaca live").strip()
+            live.append({
+                "account_id": live_dashboard_id(num),
+                "account_name": f"{label} · {num} (LIVE)",
+                "account_number": num,
+                "kind": "live",
+                "is_active": True,
+            })
+    except Exception as exc:  # noqa: BLE001 — table missing / DB down
+        logger.warning("live account list unavailable: %s", type(exc).__name__)
+    return paper, live
+
 
 def period_bounds(period: str, now: datetime | None = None) -> tuple[datetime, datetime]:
     """Return UTC bounds for the current calendar day, week, or month."""
@@ -137,6 +181,85 @@ def _one_account(user_id: str, account: dict, period: str) -> dict[str, Any]:
     }
 
 
+def _one_live_account(user_id: str, account: dict, period: str) -> dict[str, Any]:
+    """Read-only live snapshot shaped like `_one_account` for the dashboard."""
+    from engine.brokers.alpaca_live_readonly import (
+        LiveReadOnlyClient, LiveReadOnlyError, summarize_account,
+    )
+    from engine.live_accounts import get_live_account_credentials
+
+    start, end = period_bounds(period)
+    creds = get_live_account_credentials(user_id, account.get("account_number"))
+    if not creds:
+        raise ValueError("Live account credentials are unavailable.")
+    client = LiveReadOnlyClient(
+        creds["api_key"], creds["secret_key"],
+        expected_account_number=creds["account_number"],
+    )
+    try:
+        snap = client.snapshot()
+    except LiveReadOnlyError as exc:
+        raise ValueError(str(exc)) from exc
+    live = summarize_account(snap["account"])
+    positions = snap.get("positions") or []
+    if not isinstance(positions, list):
+        positions = []
+    try:
+        hist_raw = client.get_portfolio_history(
+            start.date().isoformat(),
+            end.date().isoformat(),
+            timeframe="1H" if start.date() == end.date() else "1D",
+        )
+        timestamps = hist_raw.get("timestamp") or []
+        equity_hist = hist_raw.get("equity") or []
+        history = {
+            "timestamps": [
+                datetime.fromtimestamp(int(v), tz=timezone.utc).isoformat()
+                for v in timestamps
+            ],
+            "equity": [_number(v) for v in equity_hist],
+            "pnl": [_number(v) for v in (hist_raw.get("profit_loss") or [])],
+            "pnl_pct": [_number(v) for v in (hist_raw.get("profit_loss_pct") or [])],
+        }
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Live portfolio history unavailable for %s: %s",
+                       account["account_id"], exc)
+        history = {
+            "timestamps": [end.isoformat()],
+            "equity": [_number(live.get("equity"))],
+            "pnl": [], "pnl_pct": [],
+        }
+    contributors = sorted(
+        ({
+            "symbol": p.get("symbol", "?"),
+            "pnl": _number(p.get("unrealized_pl")),
+            "pnl_pct": _number(p.get("unrealized_plpc")) * 100,
+            "market_value": _number(p.get("market_value")),
+        } for p in positions),
+        key=lambda row: row["pnl"],
+        reverse=True,
+    )
+    equity = _number(live.get("equity"))
+    baseline = history["equity"][0] if history["equity"] else _number(live.get("last_equity"))
+    period_pnl = equity - baseline
+    return {
+        "account_id": account["account_id"],
+        "account_name": account["account_name"],
+        "environment": "live",
+        "equity": equity,
+        "portfolio_value": equity,
+        "cash": _number(live.get("cash")),
+        "buying_power": _number(live.get("buying_power")),
+        "period_pnl": period_pnl,
+        "period_pct": period_pnl / baseline * 100 if baseline else 0.0,
+        "unrealized_pnl": sum(row["pnl"] for row in contributors),
+        "history": history,
+        "contributors": contributors,
+        "positions": positions,
+    }
+
+
+
 def _aggregate(accounts: list[dict[str, Any]], period: str) -> dict[str, Any]:
     by_time: dict[str, float] = defaultdict(float)
     for account in accounts:
@@ -175,9 +298,16 @@ def _aggregate(accounts: list[dict[str, Any]], period: str) -> dict[str, Any]:
 
 
 def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[str, Any]:
-    """Build the dashboard, enforcing ownership for every requested account."""
+    """Build the dashboard, enforcing ownership for every requested account.
+
+    Paper accounts come from ``user_accounts``. Linked live broker accounts
+    (``user_live_broker_accounts``) appear in the same dropdown with ids
+    ``live:<account_number>`` and load through the read-only live client.
+    ``all`` still aggregates paper only so live money is never mixed in.
+    """
     period = period if period in {"daily", "weekly", "monthly"} else "daily"
-    accounts = get_user_accounts(user_id)
+    paper, live = _catalog(user_id)
+    accounts = paper + live  # dropdown catalog
     if not accounts:
         return {"needs_account": True, "accounts": [], "period": period}
     requested = account_id if account_id == "all" or any(
@@ -185,12 +315,20 @@ def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[st
     ) else None
     loaded, errors = [], {}
 
+    def _load_one(account: dict) -> dict[str, Any]:
+        if account.get("kind") == "live" or is_live_dashboard_id(account.get("account_id")):
+            return _one_live_account(user_id, account, period)
+        return _one_account(user_id, account, period)
+
     def _attempt(req: str | None) -> None:
         for account in accounts:
+            # "All accounts" = all paper; live stays a separate selection.
+            if req == "all" and account.get("kind") == "live":
+                continue
             if req not in (None, "all") and account["account_id"] != req:
                 continue
             try:
-                loaded.append(_one_account(user_id, account, period))
+                loaded.append(_load_one(account))
             except Exception as exc:  # noqa: BLE001
                 errors[account["account_id"]] = {
                     "account_id": account["account_id"], "message": str(exc),
@@ -205,41 +343,47 @@ def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[st
     if not loaded:
         # Nothing loaded; surface the errors instead of an empty selection.
         return {"needs_account": False, "accounts": accounts, "errors": list(errors.values()),
-                "period": period}
+                "period": period, "has_live": bool(live)}
     selected = _aggregate(loaded, period) if requested == "all" else max(
         loaded, key=lambda row: (bool(row["history"]["equity"]), row["equity"])
     )
-    ranking_account = None if selected["account_id"] == "all" else selected["account_id"]
+    live_selected = is_live_dashboard_id(selected["account_id"])
+    ranking_account = (
+        None if selected["account_id"] == "all" or live_selected
+        else selected["account_id"]
+    )
     reporter = ReportAgent()
     advisor_history: list[dict[str, Any]] = []
     latest_advisors: list[dict[str, Any]] = []
-    try:
-        from engine.reporting.advisor import list_reports_for_user
+    if not live_selected:
+        try:
+            from engine.reporting.advisor import list_reports_for_user
 
-        advisor_history = list_reports_for_user(
-            user_id, account_id=ranking_account,
-            limit=100 if ranking_account is None else 20,
-        )
-        if selected["account_id"] == "all":
-            seen_accounts = set()
-            for report in advisor_history:
-                if report["account_id"] not in seen_accounts:
-                    latest_advisors.append(report)
-                    seen_accounts.add(report["account_id"])
-        elif advisor_history:
-            latest_advisors = advisor_history[:1]
-    except Exception as exc:  # noqa: BLE001
-        # The dashboard remains available before migration 19 is applied.
-        logger.warning("Daily advisor reports unavailable: %s", type(exc).__name__)
+            advisor_history = list_reports_for_user(
+                user_id, account_id=ranking_account,
+                limit=100 if ranking_account is None else 20,
+            )
+            if selected["account_id"] == "all":
+                seen_accounts = set()
+                for report in advisor_history:
+                    if report["account_id"] not in seen_accounts:
+                        latest_advisors.append(report)
+                        seen_accounts.add(report["account_id"])
+            elif advisor_history:
+                latest_advisors = advisor_history[:1]
+        except Exception as exc:  # noqa: BLE001
+            # The dashboard remains available before migration 19 is applied.
+            logger.warning("Daily advisor reports unavailable: %s", type(exc).__name__)
     return {
         **selected,
         "needs_account": False,
         "accounts": accounts,
+        "has_live": bool(live),
         "errors": list(errors.values()),
         "period": period,
-        "paper_rankings": reporter.top_strategies(
+        "paper_rankings": [] if live_selected else reporter.top_strategies(
             trade_type="paper", limit=8, user_id=user_id, account_id=ranking_account),
-        "backtest_rankings": reporter.top_strategies(
+        "backtest_rankings": [] if live_selected else reporter.top_strategies(
             trade_type="backtest", limit=8, user_id=user_id, account_id=ranking_account),
         "advisor_report": latest_advisors[0] if latest_advisors else None,
         "advisor_reports": latest_advisors,

@@ -1,14 +1,17 @@
 """Per-user READ-ONLY live broker account links (``alpatrade.user_live_broker_accounts``).
 
 Deliberately a separate table from ``alpatrade.user_accounts``: every paper
-trading path (chat tools, paper jobs, reconcile, cleanup, P&L dashboard, the
-account switcher) reads ``user_accounts`` only, so a live account linked here is
-structurally invisible to them. Rows carry ``read_only = TRUE`` (enforced by a
-CHECK constraint) and keys are Fernet-encrypted with the app's ENCRYPTION_KEY via
+trading path (chat tools, paper jobs, reconcile, cleanup) reads
+``user_accounts`` only, so a live account linked here is structurally invisible
+to them. The Portfolio P&L dashboard (``/dashboard``) may *list* these rows in
+its account dropdown and load them through the read-only live client with
+synthetic ids ``live:<account_number>`` — it never places orders. Rows carry
+``read_only = TRUE`` (enforced by a CHECK constraint) and keys are
+Fernet-encrypted with the app's ENCRYPTION_KEY via
 :func:`engine.auth.encrypt_key`, exactly like ``user_accounts``.
 
-Only :mod:`engine.web.ph_live_account` (the GET-only view) and the operator CLI
-``scripts/link_live_account.py`` import this module.
+Importers: :mod:`engine.web.ph_live_account`, :mod:`engine.reporting.pnl_dashboard`
+(display only), and the operator CLI ``scripts/link_live_account.py``.
 """
 from __future__ import annotations
 

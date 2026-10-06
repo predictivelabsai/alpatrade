@@ -1,5 +1,16 @@
 # Change Log
 
+## 2026-10-06 — Live account in /dashboard account dropdown
+
+- Root cause: live Alpaca links live in `user_live_broker_accounts` (read-only);
+  `/dashboard` only listed `user_accounts` (paper), so Julian saw paper only
+  despite a linked live account 885504372 and working live email / `/live/account`.
+- Fix: dashboard catalog includes linked live rows as `live:<account_number>`
+  and loads them via the GET-only live client. "All accounts" stays paper-only
+  (label becomes "All paper accounts" when a live link exists). Trading tools
+  still cannot see live keys.
+- Tests: `tests/test_pnl_dashboard.py` live dropdown / select / all-paper / render.
+
 
 ## 2026-10-06 — Live vs SPY equity curve on /dashboard
 

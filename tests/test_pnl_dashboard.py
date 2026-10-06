@@ -4,6 +4,13 @@ import pytest
 
 from engine.reporting import pnl_dashboard as dashboard
 
+@pytest.fixture(autouse=True)
+def _no_live_accounts(monkeypatch):
+    """Keep existing paper-only tests free of live-broker DB access."""
+    monkeypatch.setattr(dashboard, "_list_live_accounts", lambda _uid: [])
+
+
+
 
 @pytest.mark.parametrize(
     ("period", "expected"),
@@ -240,3 +247,132 @@ def test_failing_selected_account_reports_each_attempt_once(monkeypatch):
 
     assert attempts == ["broken", "broken"]  # selected attempt, then fallback
     assert len(data["errors"]) == 1
+
+
+def test_live_accounts_appear_in_dropdown_catalog(monkeypatch):
+    accounts = [_account("paper-1", "Paper One")]
+    monkeypatch.setattr(dashboard, "get_user_accounts", lambda _uid: accounts)
+    monkeypatch.setattr(
+        dashboard, "_list_live_accounts",
+        lambda _uid: [{"account_number": "885504372", "label": "Alpaca live"}],
+    )
+    monkeypatch.setattr(
+        dashboard, "_one_account",
+        lambda _uid, account, _period: _portfolio(account, 11_000),
+    )
+    monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
+
+    data = dashboard.dashboard_data("user-1", None, "daily")
+
+    ids = [a["account_id"] for a in data["accounts"]]
+    assert "paper-1" in ids
+    assert "live:885504372" in ids
+    assert data["has_live"] is True
+    live_row = next(a for a in data["accounts"] if a["account_id"].startswith("live:"))
+    assert "LIVE" in live_row["account_name"]
+    assert "885504372" in live_row["account_name"]
+
+
+def test_selecting_live_account_loads_readonly_snapshot(monkeypatch):
+    accounts = [_account("paper-1", "Paper One")]
+    monkeypatch.setattr(dashboard, "get_user_accounts", lambda _uid: accounts)
+    monkeypatch.setattr(
+        dashboard, "_list_live_accounts",
+        lambda _uid: [{"account_number": "885504372", "label": "Alpaca live"}],
+    )
+
+    def fake_live(_uid, account, _period):
+        return {
+            "account_id": account["account_id"],
+            "account_name": account["account_name"],
+            "environment": "live",
+            "equity": 2810.14,
+            "portfolio_value": 2810.14,
+            "cash": 2405.47,
+            "buying_power": 10_000,
+            "period_pnl": 19.58,
+            "period_pct": 0.70,
+            "unrealized_pnl": 0.42,
+            "history": {"timestamps": ["2026-10-05T20:00:00+00:00"],
+                        "equity": [2810.14], "pnl": [], "pnl_pct": []},
+            "contributors": [],
+            "positions": [],
+        }
+
+    monkeypatch.setattr(dashboard, "_one_live_account", fake_live)
+    monkeypatch.setattr(
+        dashboard, "_one_account",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("paper path must not run")),
+    )
+    monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
+
+    data = dashboard.dashboard_data("user-1", "live:885504372", "daily")
+
+    assert data["account_id"] == "live:885504372"
+    assert data["environment"] == "live"
+    assert data["equity"] == 2810.14
+    assert data["paper_rankings"] == []
+    assert data["advisor_reports"] == []
+
+
+def test_all_accounts_aggregates_paper_only(monkeypatch):
+    accounts = [_account("one", "One"), _account("two", "Two")]
+    monkeypatch.setattr(dashboard, "get_user_accounts", lambda _uid: accounts)
+    monkeypatch.setattr(
+        dashboard, "_list_live_accounts",
+        lambda _uid: [{"account_number": "885504372", "label": "Alpaca live"}],
+    )
+    loaded = []
+
+    def load_paper(_uid, account, _period):
+        loaded.append(("paper", account["account_id"]))
+        return _portfolio(account, 10_000)
+
+    def load_live(_uid, account, _period):
+        loaded.append(("live", account["account_id"]))
+        return {
+            **_portfolio(account, 2_800),
+            "environment": "live",
+        }
+
+    monkeypatch.setattr(dashboard, "_one_account", load_paper)
+    monkeypatch.setattr(dashboard, "_one_live_account", load_live)
+    monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
+
+    data = dashboard.dashboard_data("user-1", "all", "weekly")
+
+    assert [kind for kind, _ in loaded] == ["paper", "paper"]
+    assert data["account_id"] == "all"
+    assert data["equity"] == 20_000
+
+
+def test_render_all_label_mentions_paper_when_live_linked():
+    from engine.web import ph_pnl
+    data = {
+        "account_id": "paper-1",
+        "account_name": "Paper One",
+        "accounts": [
+            {"account_id": "paper-1", "account_name": "Paper One"},
+            {"account_id": "live:885504372", "account_name": "Alpaca live · 885504372 (LIVE)"},
+        ],
+        "has_live": True,
+        "period": "daily",
+        "equity": 100.0,
+        "period_pnl": 1.0,
+        "period_pct": 1.0,
+        "unrealized_pnl": 0.0,
+        "cash": 50.0,
+        "buying_power": 50.0,
+        "environment": "paper",
+        "as_of": "2026-10-06T12:00:00+00:00",
+        "contributors": [],
+        "paper_rankings": [],
+        "backtest_rankings": [],
+        "advisor_reports": [],
+        "advisor_history": [],
+        "history": {"timestamps": [], "equity": []},
+    }
+    html = ph_pnl._render(data, "paper-1")
+    assert "All paper accounts" in html
+    assert "live:885504372" in html
+    assert "LIVE" in html
