@@ -303,6 +303,20 @@ uv run python web_app.py
 uv run uvicorn api_app:app --host 0.0.0.0 --port 5001 --reload
 ```
 
+### Connect an MCP Client
+
+AlpaTrade exposes authenticated, tenant-scoped research and paper-trading tools
+to Codex, Claude, and other MCP-capable clients. The server uses stdio by
+default and delegates authorization to the existing REST API.
+
+```bash
+uv run alpatrade-mcp
+```
+
+Set `ALPATRADE_API_URL` and `ALPATRADE_ACCESS_TOKEN` in the client environment.
+See [docs/mcp_server.md](docs/mcp_server.md) for client configuration and
+security restrictions. Live-order tools are not exposed.
+
 ## License
 
 MIT

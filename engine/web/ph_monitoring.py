@@ -27,6 +27,10 @@ color:#9b302b}.run{margin:.7rem 0}.run-head{justify-content:space-between;gap:1r
 padding:.25rem .5rem;background:#ecece8}.pill.running{background:#fff0c8;color:#775a00}.pill.done{background:#dcefe5;
 color:#176441}.pill.failed{background:#f8dedb;color:#9b302b}.muted{font-size:.78rem;color:var(--ink-muted)}
 .error{color:#9b302b}.empty{text-align:center;padding:2rem}.retry{float:right}
+.comparison-table{width:100%;border-collapse:collapse;margin-top:.75rem;font-size:.78rem}.comparison-table th,
+.comparison-table td{padding:.45rem .5rem;border-bottom:1px solid var(--line);text-align:right}
+.comparison-table th:first-child,.comparison-table td:first-child{text-align:left}.job-kind{font-size:.72rem;
+color:var(--ink-muted);font-family:var(--font-mono);margin-left:.45rem}
 .funnel{background:#fff;border:1px solid var(--line);border-radius:.65rem;padding:1rem 1.2rem;margin:1rem 0}
 .funnel h2{font-size:.95rem;margin:0 0 .2rem}.funnel .muted{display:block;margin-bottom:.7rem}
 .fr{display:grid;grid-template-columns:10.5rem 1fr 4.2rem;gap:1rem;align-items:center;padding:.4rem 0;font-size:.84rem}
@@ -40,6 +44,36 @@ color:#176441}.pill.failed{background:#f8dedb;color:#9b302b}.muted{font-size:.78
 
 _NODES = ("scout", "backtest", "policy_gate", "validate_backtest",
           "paper_trade", "reconcile", "refit", "promote")
+
+
+def _comparison_html(outputs: dict) -> str:
+    wrapper = outputs.get("strategy_comparison") or {}
+    result = wrapper.get("result") if isinstance(wrapper, dict) else None
+    if not isinstance(result, dict):
+        return ""
+    rows = []
+    for row in result.get("results") or []:
+        if not isinstance(row, dict):
+            continue
+        win_rate = row.get("oos_win_rate")
+        rows.append(
+            "<tr>"
+            f"<td>{html.escape(str(row.get('strategy', '—')))}</td>"
+            f"<td>{html.escape(str(row.get('horizon', '—')))}</td>"
+            f"<td>{float(row.get('oos_return') or 0):+.2f}%</td>"
+            f"<td>{float(row.get('benchmark_return') or 0):+.2f}%</td>"
+            f"<td>{int(row.get('oos_trades') or 0)}</td>"
+            f"<td>{'—' if win_rate is None else f'{float(win_rate):.1f}%'}</td>"
+            f"<td>{html.escape(str(row.get('status', '—')).replace('_', ' '))}</td>"
+            "</tr>"
+        )
+    if not rows:
+        return ""
+    return (
+        "<table class='comparison-table'><thead><tr><th>Strategy</th><th>Window</th>"
+        "<th>OOS return</th><th>SPY</th><th>Trades</th><th>Win rate</th>"
+        "<th>Evidence</th></tr></thead><tbody>" + "".join(rows) + "</tbody></table>"
+    )
 
 
 def _user(session):
@@ -57,16 +91,26 @@ def pipeline_snapshot(user_id: str) -> dict:
     """Return user-scoped run status without exposing other tenants' runs."""
     with DatabasePool().get_session() as session:
         rows = session.execute(text("""
-            SELECT r.run_id, r.status, r.attempt, r.claimed_by, r.heartbeat_at,
+            WITH recent_runs AS (
+                SELECT * FROM alpatrade.autonomy_runs
+                WHERE user_id = :uid OR user_id IS NULL
+                ORDER BY created_at DESC
+                LIMIT 30
+            )
+            SELECT r.run_id, r.kind, r.status, r.attempt, r.claimed_by, r.heartbeat_at,
                    r.error, r.created_at, r.updated_at, r.account_id,
                    (r.heartbeat_at > NOW() - INTERVAL '90 seconds') AS heartbeat_fresh,
                    COALESCE(jsonb_object_agg(s.node, s.status)
-                     FILTER (WHERE s.node IS NOT NULL), '{}'::jsonb) AS steps
-            FROM alpatrade.autonomy_runs r
+                     FILTER (WHERE s.node IS NOT NULL), '{}'::jsonb) AS steps,
+                   COALESCE(jsonb_object_agg(s.node, s.output)
+                     FILTER (WHERE s.node IS NOT NULL
+                       AND r.kind = 'deepagent_comparison'), '{}'::jsonb) AS outputs
+            FROM recent_runs r
             LEFT JOIN alpatrade.autonomy_run_steps s ON s.run_id = r.run_id
-            WHERE r.user_id = :uid OR r.user_id IS NULL
-            GROUP BY r.run_id
-            ORDER BY r.created_at DESC LIMIT 30
+            GROUP BY r.run_id, r.kind, r.status, r.attempt, r.claimed_by,
+                     r.heartbeat_at, r.error, r.created_at, r.updated_at,
+                     r.account_id
+            ORDER BY r.created_at DESC
         """), {"uid": user_id}).mappings().all()
         accounts = session.execute(text("""
             SELECT account_id, account_name FROM alpatrade.user_accounts
@@ -146,9 +190,10 @@ def _render(data: dict, message: str = "", activation: str = "") -> str:
     runs = []
     for run in data["runs"]:
         steps = run["steps"] or {}
+        nodes = tuple(steps) if run.get("kind") != "full" and steps else _NODES
         pipeline = "".join(
             f"<span class='step {html.escape(str(steps.get(node, '')))}'>{html.escape(node.replace('_', ' '))}</span>"
-            for node in _NODES)
+            for node in nodes)
         heartbeat = run["heartbeat_at"].isoformat(timespec="seconds") if run["heartbeat_at"] else "not claimed"
         retry = ""
         if run["status"] == "failed":
@@ -158,9 +203,11 @@ def _render(data: dict, message: str = "", activation: str = "") -> str:
         error = f"<div class='error'>{html.escape(str(run['error']))}</div>" if run["error"] else ""
         runs.append(
             f"<section class='run'><div class='run-head'><strong>{str(run['run_id'])[:8]}</strong>"
+            f"<span class='job-kind'>{html.escape(str(run.get('kind') or 'full').replace('_', ' '))}</span>"
             f"<span class='pill {run['status']}'>{html.escape(run['status'])}</span></div>{pipeline}"
             f"<div class='muted'>attempt {run['attempt']} · worker {html.escape(run['claimed_by'] or '—')}"
-            f" · heartbeat {heartbeat}</div>{error}{retry}<div style='clear:both'></div></section>")
+            f" · heartbeat {heartbeat}</div>{error}{_comparison_html(run.get('outputs') or {})}"
+            f"{retry}<div style='clear:both'></div></section>")
     message_html = f"<p>{html.escape(message)}</p>" if message else ""
     empty = "<div class='run empty'>No pipeline runs for this user yet.</div>"
     return f"""

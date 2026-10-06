@@ -455,19 +455,22 @@ class BacktestAgent:
         dip_thresholds = variations.get("dip_threshold", [0.05])
         take_profits = variations.get("take_profit", [0.01])
         hold_days_list = variations.get("hold_days", [2])
+        min_hold_days_list = variations.get("min_hold_days", [0])
         stop_losses = variations.get("stop_loss", [0.005])
         position_sizes = variations.get("position_size", [0.10])
 
         grid = list(itertools.product(
-            dip_thresholds, take_profits, hold_days_list, stop_losses, position_sizes
+            dip_thresholds, take_profits, hold_days_list, min_hold_days_list,
+            stop_losses, position_sizes
         ))
 
         logger.info(f"Parameter grid: {len(grid)} combinations")
         results = []
 
-        for i, (dip, tp, hd, sl, ps) in enumerate(grid):
+        for i, (dip, tp, hd, min_hd, sl, ps) in enumerate(grid):
             logger.info(
-                f"  [{i + 1}/{len(grid)}] dip={dip}, tp={tp}, hold={hd}, sl={sl}, ps={ps}"
+                f"  [{i + 1}/{len(grid)}] dip={dip}, tp={tp}, hold={hd}, "
+                f"min_hold={min_hd}, sl={sl}, ps={ps}"
             )
             try:
                 bt_result = backtest_buy_the_dip(
@@ -478,6 +481,7 @@ class BacktestAgent:
                     position_size=ps,
                     dip_threshold=dip,
                     hold_days=hd,
+                    min_hold_days=min_hd,
                     take_profit=tp,
                     stop_loss=sl,
                     data_source=data_source,
@@ -500,7 +504,8 @@ class BacktestAgent:
                         "run_id": run_id,
                         "variation_index": i,
                         "params": {"dip_threshold": dip, "take_profit": tp,
-                                   "hold_days": hd, "stop_loss": sl, "position_size": ps},
+                                   "hold_days": hd, "min_hold_days": min_hd,
+                                   "stop_loss": sl, "position_size": ps},
                         "error": "no_price_data",
                         "sharpe_ratio": 0,
                     })
@@ -520,6 +525,7 @@ class BacktestAgent:
                         "dip_threshold": dip,
                         "take_profit": tp,
                         "hold_days": hd,
+                        "min_hold_days": min_hd,
                         "stop_loss": sl,
                         "position_size": ps,
                         "symbols": symbols,
@@ -545,7 +551,8 @@ class BacktestAgent:
                     "run_id": run_id,
                     "variation_index": i,
                     "params": {"dip_threshold": dip, "take_profit": tp,
-                               "hold_days": hd, "stop_loss": sl, "position_size": ps},
+                               "hold_days": hd, "min_hold_days": min_hd,
+                               "stop_loss": sl, "position_size": ps},
                     "error": str(e),
                     "sharpe_ratio": 0,
                 })

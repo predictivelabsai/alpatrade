@@ -18,6 +18,31 @@
   senders fall back to their previous behaviour and log a warning.
 - Tests: `tests/test_report_preferences.py` (DB-free, added to CI).
 
+### AlpaTrade MCP server
+
+- Added a FastMCP stdio server so Codex, Claude, and other MCP-capable CLIs can
+  use tenant-scoped AlpaTrade API tools with their own bearer token.
+- Added explicit research, reporting, DeepAgents, and paper-only operations;
+  confirmed paper orders require `confirmation="PAPER"`, while arbitrary HTTP,
+  SQL, broker secrets, and live trading remain unavailable.
+- Added loopback-only streamable HTTP mode and client setup documentation in
+  `docs/mcp_server.md`; public HTTP binding is blocked until MCP OAuth exists.
+
+### Durable multi-strategy walk-forward routing
+
+- Added one DeepAgents comparison action that routes multi-strategy, multi-horizon,
+  walk-forward, robustness, and SPY-relative requests into a durable parent job.
+- Added chronological expanding-train/OOS folds and a consolidated comparison with
+  train return, stitched OOS return/P&L, SPY excess return, trades, win rate, fold
+  consistency, warnings, and explicit promotion eligibility.
+- Buy-the-Dip is grid-optimized inside each training fold; Momentum and VIX are
+  honestly labeled fixed-configuration until explicit grids are provided.
+- Added true `min_hold_days` propagation to the grid backtester. Maximum hold and
+  minimum hold are no longer conflated for PDT-safe research.
+- Added a research-only worker lane so explicit backtest/comparison jobs continue
+  while autonomous scouting is disabled; it cannot claim paper or full-cycle jobs.
+- Bumped the package to 0.28.0. No database migration is required.
+
 ### Continuous partial news ingestion
 
 - Restored the original Finespresso behavior of saving every unique publisher

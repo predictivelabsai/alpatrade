@@ -47,6 +47,7 @@ prefer `engine.*`.
   tenant-scoped tools and six native specialists (including the read-only daily advisor)
 - **Namespaced API shell** (`api.py`, port 5002) — optional compatibility mount under `/api/v1/equities`
 - **AG-UI Chat** (`agui_app.py`, port 5003) — LangGraph chat agent (XAI Grok) with WebSocket streaming
+- **MCP server** (`python -m engine.mcp.server`, stdio by default) — explicit tenant-scoped REST API tools for MCP-capable CLIs; optional HTTP is loopback-only on port 8765
 - **Rich CLI** (entry point: `cli.py` → `tui/pt_cli.py` → `tui/command_processor.py`; console script `alpatrade`)
 - **PostgreSQL** with `alpatrade` schema, accessed via SQLAlchemy (`engine.db.pool`)
 - **Config**: `config/parameters.yaml` (strategy params), `.env` (API keys)

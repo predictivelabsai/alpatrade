@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "alpatrade"
-version = "0.27.0"
+version = "0.28.0"
 description = "Multi-asset trading platform — shared backtesting & paper-trading engine across equities, crypto, FX, and prediction markets"
 readme = "README.md"
 license = "MIT"
@@ -48,6 +48,7 @@ dependencies = [
     "langgraph-checkpoint-postgres>=3.0,<4",
     "psycopg[binary,pool]>=3.2,<4",
     "psutil>=5.9",
+    "fastmcp==3.4.7",
 ]
 
 [project.optional-dependencies]
@@ -78,6 +79,7 @@ Repository = "https://github.com/predictivelabsai/alpatrade"
 
 [project.scripts]
 alpatrade = "cli:main"
+alpatrade-mcp = "engine.mcp.server:main"
 
 [tool.setuptools]
 py-modules = ["cli", "web_app", "agui_app"]

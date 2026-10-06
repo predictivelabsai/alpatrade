@@ -185,7 +185,7 @@ def test_live_link_table_is_only_used_by_the_readonly_view():
     for sub in ("engine", "utils", "agents", "verticals", "tui", "scripts", "tests"):
         for p in (ROOT / sub).rglob("*.py"):
             if pat.search(p.read_text(errors="ignore")):
-                hits.add(str(p.relative_to(ROOT)))
+                hits.add(p.relative_to(ROOT).as_posix())
     for top in ("app.py", "api_app.py", "agui_app.py", "api.py", "web_app.py", "main.py"):
         p = ROOT / top
         if p.exists() and pat.search(p.read_text(errors="ignore")):

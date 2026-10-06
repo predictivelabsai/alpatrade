@@ -128,10 +128,16 @@ def _enabled() -> bool:
     return os.getenv("AUTONOMY_ENABLED", "false").lower() in ("1", "true", "yes", "on")
 
 
-def run_one(worker_id: str, *, advisor_only: bool = False) -> bool:
+def run_one(worker_id: str, *, advisor_only: bool = False,
+            research_only: bool = False) -> bool:
     """Claim and run a single queued run. Returns True if one was processed."""
     _outcome.value = None
-    claimed = queue.claim(worker_id, advisor_only=advisor_only)
+    if research_only:
+        claimed = queue.claim(worker_id, research_only=True)
+    elif advisor_only:
+        claimed = queue.claim(worker_id, advisor_only=True)
+    else:
+        claimed = queue.claim(worker_id)
     if not claimed:
         return False
     run_id = claimed["run_id"]
@@ -216,6 +222,25 @@ def _advisor_loop(worker_id: str) -> None:
             time.sleep(ADVISOR_POLL_SECONDS)
 
 
+def _research_loop(worker_id: str) -> None:
+    """Drain explicit user research while autonomous scouting is disabled.
+
+    This lane accepts only deterministic DeepAgent backtest/comparison jobs. It
+    cannot claim paper, full-cycle, advisor, or self-fed autonomy work.
+    """
+    log.info("research queue lane %s starting (poll=%ss)", worker_id, ADVISOR_POLL_SECONDS)
+    while True:
+        try:
+            drained = 0
+            while run_one(worker_id, research_only=True):
+                drained += 1
+            if not drained:
+                time.sleep(ADVISOR_POLL_SECONDS)
+        except Exception as exc:  # noqa: BLE001
+            log.exception("research queue lane failed: %s", exc)
+            time.sleep(ADVISOR_POLL_SECONDS)
+
+
 def loop(worker_id: str = "worker-1") -> None:
     # Research collection is independent of both trading and advisor queues.
     from engine.premarket_jobs import start as start_premarket
@@ -230,6 +255,12 @@ def loop(worker_id: str = "worker-1") -> None:
         target=_advisor_loop,
         args=(f"{worker_id}-advisor",),
         name="daily-advisor-worker",
+        daemon=True,
+    ).start()
+    threading.Thread(
+        target=_research_loop,
+        args=(f"{worker_id}-research",),
+        name="deepagent-research-worker",
         daemon=True,
     ).start()
     if not _enabled():

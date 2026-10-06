@@ -426,8 +426,23 @@ def deepagent_job_pipeline(
             "delivery": delivery_summary,
         }}
 
+    def strategy_comparison(ctx: dict) -> dict:
+        from agents.backtest_agent import _benchmark_return
+        from engine.backtest.comparison import run_comparison
+
+        result = run_comparison(
+            dict(ctx.get("config") or {}),
+            # One orchestrator per child gives every train/OOS evaluation its own
+            # auditable run_id instead of repeatedly overwriting one run record.
+            runner=lambda config: orchestrator().run_backtest(config),
+            benchmarker=_benchmark_return,
+        )
+        return {"ctx": {"comparison_result": result}, "result": result}
+
     if kind == "deepagent_backtest":
         return Pipeline([("backtest", backtest)])
+    if kind == "deepagent_comparison":
+        return Pipeline([("strategy_comparison", strategy_comparison)])
     if kind == "deepagent_paper":
         return Pipeline([("paper_trade", paper)])
     if kind == "deepagent_full":
