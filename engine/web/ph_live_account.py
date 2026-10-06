@@ -55,6 +55,14 @@ _CSS = """
 .la .err{color:#9b302b;background:#fff0ee;padding:.7rem .9rem;border-radius:.45rem;font-size:.84rem}
 .la .ro{font-size:.74rem;color:var(--ink-muted);margin-top:1.2rem}
 .la a.refresh{font-size:.78rem;color:var(--accent);text-decoration:none;margin-left:.6rem}
+.la-perf{background:var(--bg-elev);border:1px solid var(--line);border-radius:.65rem;padding:1rem 1.1rem;margin:1rem 0}
+.la-perf table{width:auto;border-collapse:collapse;font-size:.84rem;font-variant-numeric:tabular-nums}
+.la-perf td{padding:.22rem .9rem .22rem 0;border:0;white-space:nowrap}
+.la-perf td.k{color:var(--ink-muted)}
+.la-perf .note{font-size:.72rem;color:var(--ink-dim);margin:.45rem 0 0}
+.la-chart{background:var(--bg-elev);border:1px solid var(--line);border-radius:.65rem;padding:.6rem .7rem 1rem;margin:1rem 0}
+.la-chart h2{margin:.2rem 0 .4rem}
+.la-chart .chart{width:100%;min-height:280px}
 @media(max-width:820px){.la-kpis{grid-template-columns:repeat(2,1fr)}}
 """
 
@@ -65,6 +73,31 @@ document.querySelectorAll('.la time[datetime]').forEach(function(t){
   if(!isNaN(d)){t.textContent=d.toLocaleString([], {month:'short',day:'numeric',
     hour:'2-digit',minute:'2-digit'});t.title=t.getAttribute('datetime');}
 });
+</script>
+"""
+
+_EQUITY_CHART_JS = """
+<script>
+(function(){
+  var el=document.getElementById('live-equity-chart');
+  var raw=document.getElementById('live-equity-data');
+  if(!el||!raw||!window.Plotly)return;
+  var d; try{d=JSON.parse(raw.textContent);}catch(e){return;}
+  if(!d||!d.dates||!d.dates.length)return;
+  var base={paper_bgcolor:'#fff',plot_bgcolor:'#f7f6f1',font:{family:'Inter,system-ui',color:'#2d352f'},
+    margin:{t:28,r:18,b:42,l:48},legend:{orientation:'h',y:1.12,x:0},
+    xaxis:{showgrid:false},yaxis:{title:'Index (100 = start)',zeroline:false}};
+  var traces=[];
+  if(d.account_idx&&d.account_idx.some(function(v){return v!=null;}))
+    traces.push({x:d.dates,y:d.account_idx,name:'Live account',type:'scatter',mode:'lines',
+      line:{color:'#1f5d43',width:2.6},
+      hovertemplate:'%{x}<br>Account %{y:.2f}<extra></extra>'});
+  if(d.spy_idx&&d.spy_idx.some(function(v){return v!=null;}))
+    traces.push({x:d.dates,y:d.spy_idx,name:'SPY',type:'scatter',mode:'lines',
+      line:{color:'#7a867e',width:2},
+      hovertemplate:'%{x}<br>SPY %{y:.2f}<extra></extra>'});
+  if(traces.length) Plotly.newPlot(el,traces,base,{responsive:true,displayModeBar:false});
+})();
 </script>
 """
 
@@ -174,6 +207,65 @@ def _head(sub: str, badge: str = "") -> str:
             f"<span class='muted'>{sub}</span></div>{_tabs()}</div>")
 
 
+
+def _pct(v) -> str:
+    x = _num(v)
+    if x is None:
+        return "—"
+    return f"{x:+.2f}%"
+
+
+def _perf_section(perf: dict) -> str:
+    if not perf:
+        return ("<div class='la-perf'><h2 style='margin:0 0 .5rem'>Performance since live start vs SPY</h2>"
+                "<p class='muted' style='margin:0'>No live runner run is recorded for this account yet.</p></div>")
+    started = perf.get("started")
+    if hasattr(started, "strftime"):
+        started_s = started.strftime("%b %d, %Y")
+    else:
+        started_s = _e(str(started or "—")[:10])
+    ex = perf.get("excess_pct")
+    rows = [
+        ("Live run started", f"{started_s} · start equity {_money(perf.get('start_equity'))}"),
+        ("Account since start",
+         f"<b class='{_cls(perf.get('account_pnl'))}'>{_money(perf.get('account_pnl'), True)} "
+         f"({_pct(perf.get('account_return_pct'))})</b>"),
+        ("SPY since start",
+         f"{_pct(perf.get('spy_return_pct'))} <span class='muted'>"
+         f"({_money(perf.get('spy_start'))} → {_money(perf.get('spy'))})</span>"),
+        ("Excess vs SPY", f"<b class='{_cls(ex)}'>{_pct(ex)}</b>"),
+    ]
+    if perf.get("strategy_pnl") is not None:
+        rows.append((
+            "Runner strategy P&amp;L",
+            f"{_money(perf.get('strategy_pnl'), True)} <span class='muted'>realised "
+            f"{_money(perf.get('strategy_realized') or 0, True)} · open "
+            f"{_money(perf.get('strategy_unrealized'), True)}"
+            f" · {int(_num(perf.get('closed_trades')) or 0)} closed</span>"))
+    body = "".join(f"<tr><td class='k'>{k}</td><td>{v}</td></tr>" for k, v in rows)
+    return (f"<div class='la-perf'><h2 style='margin:0 0 .5rem'>Performance since live start vs SPY</h2>"
+            f"<table>{body}</table>"
+            "<p class='note'>Account return is equity vs the equity when the runner started; "
+            "deposits/withdrawals and pre-existing holdings are included.</p></div>")
+
+
+def _curves_section(curves: dict) -> str:
+    import json
+    if not curves or not curves.get("dates"):
+        return ""
+    payload = json.dumps({
+        "dates": curves.get("dates") or [],
+        "account_idx": curves.get("account_idx") or [],
+        "spy_idx": curves.get("spy_idx") or [],
+    })
+    return (f"<div class='la-chart'><h2>Equity curve vs SPY</h2>"
+            f"<div id='live-equity-chart' class='chart'></div>"
+            f"<script type='application/json' id='live-equity-data'>{payload}</script>"
+            "<p class='muted' style='margin:.35rem 0 0;font-size:.72rem'>"
+            "Both series indexed to 100 at the live runner start. Account = broker equity; "
+            "SPY = ETF close.</p></div>")
+
+
 def load_view(user_id: str) -> dict:
     """Resolve the user's live link and fetch a read-only snapshot.
 
@@ -204,6 +296,34 @@ def load_view(user_id: str) -> dict:
         return out
     out.update(summary=summarize_account(snap["account"]),
                positions=snap["positions"], orders=snap["orders"])
+    # Performance vs SPY + equity curves (best-effort; never blocks the page).
+    try:
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        from engine.reporting.live_perf import equity_curves, performance_since_start
+        from scripts.daily_live_report import live_run, runner_trades
+        run = live_run(user_id, creds["account_number"])
+        rtrades = runner_trades(run.get("run_id"))
+        # Open runner lots with unrealised from current positions
+        pos_by = {p.get("symbol"): p for p in snap["positions"]}
+        runner_open = []
+        for t in rtrades:
+            if t.get("exit_price") is None and float(t.get("shares") or 0) > 0:
+                p = pos_by.get(t.get("symbol")) or {}
+                try:
+                    upl = float(p.get("unrealized_pl")) if p else 0.0
+                except (TypeError, ValueError):
+                    upl = 0.0
+                runner_open.append({"symbol": t.get("symbol"), "upl": upl})
+        equity = (out.get("summary") or {}).get("equity")
+        today = datetime.now(ZoneInfo("America/New_York")).date()
+        out["perf"] = performance_since_start(equity, run, day=today, runner_open=runner_open)
+        out["curves"] = equity_curves(client, run, end=today) or {}
+        out["run_id"] = run.get("run_id")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("live perf/curves failed: %s", type(exc).__name__)
+        out.setdefault("perf", {})
+        out.setdefault("curves", {})
     return out
 
 
@@ -223,6 +343,8 @@ def render(view: dict) -> str:
     else:
         s = view.get("summary") or {}
         body = (_kpis(s)
+                + _perf_section(view.get("perf") or {})
+                + _curves_section(view.get("curves") or {})
                 + f"<h2>Positions ({len(view.get('positions') or [])})</h2>"
                 + _positions_table(view.get("positions") or [])
                 + f"<h2>Open orders ({len(view.get('orders') or [])})</h2>"
@@ -232,7 +354,7 @@ def render(view: dict) -> str:
             "and this account is not available to chat trading tools or paper jobs. "
             "Runner-tracked strategy trades and performance are under "
             "<a href='/live'>Live runs</a>.</p>")
-    return f"<div class='la'>{_head(sub, badge)}{body}{foot}</div>{_LOCAL_TIME_JS}"
+    return f"<div class='la'>{_head(sub, badge)}{body}{foot}</div>{_LOCAL_TIME_JS}{_EQUITY_CHART_JS}"
 
 
 def register(app, rt):

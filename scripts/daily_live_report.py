@@ -371,22 +371,8 @@ def _historical_equity(client, day: date):
 
 def spy_close(day: date, run: dict) -> float | None:
     """SPY close for ``day`` (market-data feed), else the runner's recorded SPY."""
-    try:
-        import pandas as pd
-        from engine.feeds.market_data import get_historical_data
-        df = get_historical_data("SPY", datetime.combine(day - timedelta(days=7), dtime.min),
-                                 datetime.combine(day + timedelta(days=1), dtime.min),
-                                 timeframe="day")
-        if df is not None and not df.empty and "Close" in df:
-            closes = df["Close"].dropna()
-            closes = closes[pd.to_datetime(closes.index).date <= day]
-            if len(closes):
-                return float(closes.iloc[-1])
-    except Exception:  # noqa: BLE001
-        pass
-    res = run.get("results") or {}
-    snap = (res.get("daily") or {}).get(day.isoformat()) or {}
-    return _fn(snap.get("spy")) or _fn((res.get("latest") or {}).get("spy"))
+    from engine.reporting.live_perf import spy_close as _spy
+    return _spy(day, run)
 
 
 def dip_signals(symbols: list[str], day: date, threshold: float) -> list[dict]:
@@ -533,6 +519,14 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
                 "closed_trades": latest.get("closed_trades")}
         perf["strategy_pnl"] = _f(perf["strategy_realized"]) + _f(perf["strategy_unrealized"])
 
+    curves: dict = {}
+    if run.get("run_id"):
+        try:
+            from engine.reporting.live_perf import equity_curves
+            curves = equity_curves(client, run, end=day) or {}
+        except Exception:  # noqa: BLE001
+            curves = {}
+
     signals = []
     if with_signals and run.get("run_id"):
         signals = dip_signals([s for s in (cfg.get("symbols") or [])],
@@ -546,7 +540,7 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
         "buying_power": _f(acct.get("buying_power")),
         "long_market_value": _f(acct.get("long_market_value")),
         "positions": positions, "open_orders": open_orders, "fills": orders,
-        "run": run, "perf": perf, "runner_open": runner_open, "runner_actions": actions,
+        "run": run, "perf": perf, "curves": curves, "runner_open": runner_open, "runner_actions": actions,
         "runner_heartbeat": hb, "signals": signals, "warnings": warnings,
         "db_ok": _db_ok(), "account_ok": True,
     }
@@ -611,6 +605,19 @@ def _orders_table(orders: list[dict]) -> str:
     return (f"<table {_TABLE}><thead><tr {_TH}><th>Symbol</th><th>Side</th><th>Type</th>"
             "<th>Size</th><th>TIF</th><th>Status</th><th>Submitted</th></tr></thead>"
             f"<tbody>{rows}</tbody></table>")
+
+
+
+def _curves_block(d: dict) -> str:
+    """Inline SVG equity curve (account vs SPY, index 100) for email clients."""
+    from engine.reporting.live_perf import svg_equity_chart
+    svg = svg_equity_chart(d.get("curves") or {})
+    if not svg:
+        return ""
+    return (f"<div style='margin:.4rem 0 .6rem;border:1px solid #E4E1D7;border-radius:6px;"
+            f"padding:6px;background:#fff'>{svg}</div>"
+            f"<p style='font-size:11px;color:{MUTED};margin:.1rem 0 .4rem'>Indexed to 100 at "
+            "the live runner start. Account line is broker equity; SPY is the ETF close.</p>")
 
 
 def _perf_block(d: dict) -> str:
@@ -751,6 +758,7 @@ def render(d: dict) -> str:
   </table>
   <h3 style="margin:.9rem 0 .2rem">Performance since live start vs SPY</h3>
   {_perf_block(d)}
+  {_curves_block(d)}
   <h3>Fills this session ({len(fills)})</h3>
   <p style="color:#415046;font-size:13px;margin:.15rem 0 .4rem">{buys} buy · {sells} sell ·
      realised P&amp;L <b style="color:{_col(sum(realised))}">{_money(sum(realised), True) if realised else '—'}</b>

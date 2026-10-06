@@ -1,5 +1,14 @@
 # Change Log
 
+
+## 2026-10-06 — Live vs SPY on /live/account + email equity curve
+
+- Shared helper `engine/reporting/live_perf.py`: since-start account/SPY/excess summary
+  and daily equity curves (index 100).
+- `/live/account` shows the SPY comparison table and a Plotly equity curve (account vs SPY).
+- Daily LIVE email includes the same comparison plus an inline SVG equity curve.
+- Paper daily email: preference row for Julian kept live ON / paper OFF (Settings path).
+
 ## Unreleased
 
 ### Per-user daily email report preferences

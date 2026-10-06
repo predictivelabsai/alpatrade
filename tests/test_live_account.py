@@ -267,6 +267,9 @@ def test_page_renders_summary_positions_orders_without_controls(monkeypatch):
     assert "$1,200.25" in html and "$2,400.50" in html
     assert 'id="live-positions"' in html or "id='live-positions'" in html
     assert "AFRM" in html and "BNBX" in html and "$744.00" in html and "+3.16%" in html
+    # Perf/curves are best-effort; heading appears when empty-run message or data loads.
+    assert "Performance since live start vs SPY" in html
+
     assert "live-orders" in html and ">sell<" in html and ">day<" in html and ">accepted<" in html
     body = html.split("la-head", 1)[1]
     assert "<form" not in body and "<button" not in body and "hx-post" not in body

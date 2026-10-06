@@ -97,6 +97,17 @@ def db(monkeypatch):
     monkeypatch.setattr(rep, "dip_signals", lambda syms, day, thr: [
         {"symbol": "GOOGL", "close": 204, "high20": 212, "dip": 3.8, "status": "signal"},
         {"symbol": "AMZN", "close": 220, "high20": 225, "dip": 2.2, "status": "near"}])
+    monkeypatch.setattr(
+        "engine.reporting.live_perf.equity_curves",
+        lambda client, run, end=None, spy_series=None: {
+            "dates": ["2026-09-24", "2026-09-25"],
+            "account": [10000.0, 10150.0],
+            "spy": [600.0, 612.0],
+            "account_idx": [100.0, 101.5],
+            "spy_idx": [100.0, 102.0],
+            "start_equity": 10000.0, "start_spy": 600.0,
+            "start_date": "2026-09-24", "end_date": "2026-09-25",
+        })
 
 
 SAT = datetime(2026, 9, 26, 7, 50, tzinfo=timezone.utc)  # Sat 10:50 Tallinn
@@ -191,7 +202,8 @@ def test_render_contains_all_sections_and_no_secrets(db):
     for needle in ("Daily LIVE report", "885504372", "+$150.00", "Fills this session",
                    "CRCL", "AFRM", "+$25.93", "n/a", "Current positions", "GOOGL",
                    "Open orders", "AAPL", "Live runner", "Mon Sep 28", "SIGNAL", "near",
-                   "SPY since start", "+2.00%", "-0.50%", "REAL MONEY"):
+                   "SPY since start", "+2.00%", "-0.50%", "REAL MONEY",
+                   "index 100 at start", "<svg"):
         assert needle in html, needle
     assert "AKTESTKEY" not in html and "SECRETVALUE" not in html
     assert rep.subject_for(d).startswith("AlpaTrade LIVE PnL — Sep 25, 2026 (+$150")
