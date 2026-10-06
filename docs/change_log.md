@@ -1,5 +1,17 @@
 # Change Log
 
+## 2026-10-07 — Dashboard periods: MTD (default) and YTD only
+
+- Account dashboard period tabs are now **MTD** (month-to-date, default) and
+  **YTD** (year-to-date). Daily and weekly options removed from the UI.
+- Period P&L, period return, and the paper equity curve use calendar MTD/YTD
+  bounds (UTC). KPI labels read e.g. "MTD P&L" / "YTD return".
+- Applies to both Live and Paper modes via the same period tabs; Live vs-SPY
+  since-start curve is unchanged (not period-scoped).
+- Legacy query values `daily` / `weekly` / `monthly` map to MTD so old links
+  still work. Cash-only runner, BNBX exclusion, and LIVE email unchanged.
+
+
 ## 2026-10-06 — Dashboard: one account view + Live/Paper dropdown; sharper LIVE email chart
 
 - **Dashboard duplicate fix:** `/dashboard` no longer stacks Live vs SPY on top of

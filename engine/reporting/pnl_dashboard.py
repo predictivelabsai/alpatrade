@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, time, timezone
 from typing import Any
 
 from alpaca.trading.requests import GetPortfolioHistoryRequest
@@ -59,16 +59,40 @@ def _catalog(user_id: str) -> tuple[list[dict], list[dict]]:
     return paper, live
 
 
+# Canonical dashboard periods (UI + API). Legacy aliases map in normalize_period.
+DASHBOARD_PERIODS = ("mtd", "ytd")
+DEFAULT_PERIOD = "mtd"
+_PERIOD_ALIASES = {
+    "mtd": "mtd",
+    "ytd": "ytd",
+    "monthly": "mtd",  # legacy
+    "daily": "mtd",
+    "weekly": "mtd",
+    "month": "mtd",
+    "year": "ytd",
+}
+
+
+def normalize_period(period: str | None) -> str:
+    """Map UI/query values to mtd|ytd; unknown → MTD default."""
+    key = (period or "").strip().lower()
+    return _PERIOD_ALIASES.get(key, DEFAULT_PERIOD)
+
+
+def period_label(period: str) -> str:
+    """Short display label for KPIs and tabs."""
+    return {"mtd": "MTD", "ytd": "YTD"}.get(normalize_period(period), "MTD")
+
+
 def period_bounds(period: str, now: datetime | None = None) -> tuple[datetime, datetime]:
-    """Return UTC bounds for the current calendar day, week, or month."""
+    """Return UTC bounds for month-to-date or year-to-date."""
     now = now or datetime.now(timezone.utc)
     now = now.astimezone(timezone.utc)
-    if period == "weekly":
-        start_date = now.date() - timedelta(days=now.weekday())
-    elif period == "monthly":
+    period = normalize_period(period)
+    if period == "ytd":
+        start_date = now.date().replace(month=1, day=1)
+    else:  # mtd
         start_date = now.date().replace(day=1)
-    else:
-        start_date = now.date()
     return datetime.combine(start_date, time.min, tzinfo=timezone.utc), now
 
 
@@ -309,7 +333,7 @@ def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[st
     ``live:<account_number>`` and load through the read-only live client.
     ``all`` still aggregates paper only so live money is never mixed in.
     """
-    period = period if period in {"daily", "weekly", "monthly"} else "daily"
+    period = normalize_period(period)
     paper, live = _catalog(user_id)
     accounts = paper + live  # dropdown catalog
     if not accounts:

@@ -8,7 +8,7 @@ from urllib.parse import quote as _urlquote
 from fasthtml.common import Div, NotStr, Style
 from starlette.responses import RedirectResponse
 
-from engine.reporting.pnl_dashboard import dashboard_data
+from engine.reporting.pnl_dashboard import dashboard_data, normalize_period, period_label
 from engine.web import onboarding
 from engine.web.ph_layout import page
 
@@ -279,11 +279,12 @@ def _account_controls(data: dict, selected_id: str | None) -> str:
         sel = " selected" if chosen == a["account_id"] else ""
         options.append(
             f"<option value='{aid}'{sel}>{html.escape(a['account_name'])}</option>")
-    period = data.get("period") or "daily"
+    period = normalize_period(data.get("period"))
     period_links = "".join(
         f"<a class='{'active' if p == period else ''}' "
-        f"href='/dashboard?account_id={html.escape(str(chosen))}&period={p}'>{p.title()}</a>"
-        for p in ("daily", "weekly", "monthly"))
+        f"href='/dashboard?account_id={html.escape(str(chosen))}&period={p}'>"
+        f"{period_label(p)}</a>"
+        for p in ("mtd", "ytd"))
     return f"""
       <form class="dash-controls" method="get" action="/dashboard">
        <select name="account_id" aria-label="Account" onchange="this.form.submit()">{''.join(options)}</select>
@@ -627,12 +628,13 @@ def _render_live(data: dict, selected_id: str | None) -> str:
         errors = "".join(f"<p>{html.escape(e['message'])}</p>" for e in data.get("errors", []))
         return head + f"<div class='empty'><h1>Live portfolio unavailable</h1><div class='error'>{errors}</div></div>"
     pnl_tone = "positive" if data.get("period_pnl", 0) >= 0 else "negative"
-    period = data.get("period") or "daily"
+    period = normalize_period(data.get("period"))
+    plab = period_label(period)
     metrics = f"""
       <div class="metric-grid">
        {_metric('Equity', _money(data['equity']))}
-       {_metric(f'{period.title()} P&L', _money(data['period_pnl']), pnl_tone)}
-       {_metric('Period return', f"{data['period_pct']:+.2f}%", pnl_tone)}
+       {_metric(f'{plab} P&L', _money(data['period_pnl']), pnl_tone)}
+       {_metric(f'{plab} return', f"{data['period_pct']:+.2f}%", pnl_tone)}
        {_metric('Unrealized P&L', _money(data['unrealized_pnl']),
                 'positive' if data['unrealized_pnl'] >= 0 else 'negative')}
        {_metric('Cash', _money(data['cash']))}
@@ -686,7 +688,8 @@ def _render_paper(data: dict, selected_id: str | None) -> str:
             {controls}</div>"""
         return f"{checklist}{head}<div class='empty'><h1>Portfolio unavailable</h1><div class='error'>{errors}</div>{cta}</div>"
     chosen = selected_id or data["account_id"]
-    period = data["period"]
+    period = normalize_period(data.get("period"))
+    plab = period_label(period)
     pnl_tone = "positive" if data["period_pnl"] >= 0 else "negative"
     rows = "".join(
         f"<tr><td>{html.escape(str(r['symbol']))}</td><td class='{'positive' if r['pnl'] >= 0 else 'negative'}'>"
@@ -698,12 +701,12 @@ def _render_paper(data: dict, selected_id: str | None) -> str:
     return f"""
       {checklist}
       <div class="dash-head"><div><h1>Portfolio P&amp;L <span class="mode-badge">PAPER</span></h1>
-      <div class="muted">{html.escape(data['account_name'])} · calendar {period} · updated {data['as_of'][:16].replace('T',' ') } UTC</div></div>
+      <div class="muted">{html.escape(data['account_name'])} · {plab} · updated {data['as_of'][:16].replace('T',' ') } UTC</div></div>
       {controls}</div>
       <div class="metric-grid">
        {_metric('Equity', _money(data['equity']))}
-       {_metric(f'{period.title()} P&L', _money(data['period_pnl']), pnl_tone)}
-       {_metric('Period return', f"{data['period_pct']:+.2f}%", pnl_tone)}
+       {_metric(f'{plab} P&L', _money(data['period_pnl']), pnl_tone)}
+       {_metric(f'{plab} return', f"{data['period_pct']:+.2f}%", pnl_tone)}
        {_metric('Unrealized P&L', _money(data['unrealized_pnl']), 'positive' if data['unrealized_pnl'] >= 0 else 'negative')}
        {_metric('Cash', _money(data['cash']))}{_metric('Buying power', _money(data['buying_power']))}
        {_metric('Accounts', str(len(data['accounts'])))}{_metric('Connection', env_label)}
@@ -731,7 +734,7 @@ def _render(data: dict, selected_id: str | None) -> str:
 
 def register(app, rt):
     @rt("/dashboard")
-    def dashboard(session, account_id: str = "", period: str = "daily"):
+    def dashboard(session, account_id: str = "", period: str = "mtd"):
         user_id = session.get("user_id")
         if not user_id:
             return RedirectResponse("/signin", status_code=303)

@@ -15,9 +15,10 @@ def _no_live_accounts(monkeypatch):
 @pytest.mark.parametrize(
     ("period", "expected"),
     [
-        ("daily", datetime(2026, 7, 28, tzinfo=timezone.utc)),
-        ("weekly", datetime(2026, 7, 27, tzinfo=timezone.utc)),
-        ("monthly", datetime(2026, 7, 1, tzinfo=timezone.utc)),
+        ("mtd", datetime(2026, 7, 1, tzinfo=timezone.utc)),
+        ("ytd", datetime(2026, 1, 1, tzinfo=timezone.utc)),
+        ("monthly", datetime(2026, 7, 1, tzinfo=timezone.utc)),  # legacy → mtd
+        ("daily", datetime(2026, 7, 1, tzinfo=timezone.utc)),  # legacy → mtd
     ],
 )
 def test_calendar_period_bounds(period, expected):
@@ -25,6 +26,15 @@ def test_calendar_period_bounds(period, expected):
     start, end = dashboard.period_bounds(period, now)
     assert start == expected
     assert end == now
+
+
+def test_normalize_period_defaults_and_aliases():
+    assert dashboard.normalize_period(None) == "mtd"
+    assert dashboard.normalize_period("") == "mtd"
+    assert dashboard.normalize_period("YTD") == "ytd"
+    assert dashboard.normalize_period("weekly") == "mtd"
+    assert dashboard.period_label("ytd") == "YTD"
+    assert dashboard.period_label("mtd") == "MTD"
 
 
 def _account(account_id, name):
@@ -60,7 +70,7 @@ def test_default_account_prefers_account_with_largest_usable_portfolio(monkeypat
     )
     monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
 
-    data = dashboard.dashboard_data("user-1", None, "daily")
+    data = dashboard.dashboard_data("user-1", None, "mtd")
 
     assert data["account_id"] == "funded"
     assert data["equity"] == 25_000
@@ -78,7 +88,7 @@ def test_all_accounts_aggregates_without_leaking_unowned_account(monkeypatch):
     monkeypatch.setattr(dashboard, "_one_account", load)
     monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
 
-    data = dashboard.dashboard_data("user-1", "all", "weekly")
+    data = dashboard.dashboard_data("user-1", "all", "ytd")
 
     assert loaded == ["one", "two"]
     assert data["account_id"] == "all"
@@ -94,7 +104,7 @@ def test_unknown_account_id_never_selects_foreign_account(monkeypatch):
     )
     monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
 
-    data = dashboard.dashboard_data("user-1", "foreign", "monthly")
+    data = dashboard.dashboard_data("user-1", "foreign", "mtd")
 
     assert data["account_id"] == "owned"
 
@@ -128,7 +138,7 @@ def test_dashboard_reads_the_latest_persisted_advisor_for_the_owned_account(monk
 
     monkeypatch.setattr("engine.reporting.advisor.list_reports_for_user", reports)
 
-    data = dashboard.dashboard_data("user-1", "owned", "daily")
+    data = dashboard.dashboard_data("user-1", "owned", "mtd")
 
     assert observed == {"user_id": "user-1", "account_id": "owned", "limit": 20}
     assert data["advisor_report"] is report
@@ -137,7 +147,7 @@ def test_dashboard_reads_the_latest_persisted_advisor_for_the_owned_account(monk
 
 def test_no_account_returns_onboarding_state(monkeypatch):
     monkeypatch.setattr(dashboard, "get_user_accounts", lambda _uid: [])
-    assert dashboard.dashboard_data("user-1", None, "daily")["needs_account"] is True
+    assert dashboard.dashboard_data("user-1", None, "mtd")["needs_account"] is True
 
 
 def test_unauthorized_keys_get_actionable_guidance(monkeypatch):
@@ -187,7 +197,7 @@ def test_error_page_offers_the_settings_cta_for_bad_keys():
                         "message": "Could not read this Alpaca account: "
                                    "Alpaca rejected the stored API keys for this "
                                    "account (unauthorized)."}],
-            "period": "daily"}
+            "period": "mtd"}
     rendered = ph_pnl._render(data, None)
 
     assert "Update your Alpaca keys" in rendered
@@ -204,7 +214,7 @@ def test_failing_selected_account_returns_errors_instead_of_crashing(monkeypatch
     monkeypatch.setattr(dashboard, "_one_account", load)
     monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
 
-    data = dashboard.dashboard_data("user-1", "broken", "daily")
+    data = dashboard.dashboard_data("user-1", "broken", "mtd")
 
     assert "equity" not in data
     assert data["errors"] == [
@@ -224,7 +234,7 @@ def test_failing_remembered_account_falls_back_to_other_accounts(monkeypatch):
     monkeypatch.setattr(dashboard, "_one_account", load)
     monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
 
-    data = dashboard.dashboard_data("user-1", "stale", "daily")
+    data = dashboard.dashboard_data("user-1", "stale", "mtd")
 
     assert data["account_id"] == "healthy"
     assert data["equity"] == 12_000
@@ -243,7 +253,7 @@ def test_failing_selected_account_reports_each_attempt_once(monkeypatch):
     monkeypatch.setattr(dashboard, "_one_account", load)
     monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
 
-    data = dashboard.dashboard_data("user-1", "broken", "daily")
+    data = dashboard.dashboard_data("user-1", "broken", "mtd")
 
     assert attempts == ["broken", "broken"]  # selected attempt, then fallback
     assert len(data["errors"]) == 1
@@ -262,7 +272,7 @@ def test_live_accounts_appear_in_dropdown_catalog(monkeypatch):
     )
     monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
 
-    data = dashboard.dashboard_data("user-1", None, "daily")
+    data = dashboard.dashboard_data("user-1", None, "mtd")
 
     ids = [a["account_id"] for a in data["accounts"]]
     assert "paper-1" in ids
@@ -306,7 +316,7 @@ def test_selecting_live_account_loads_readonly_snapshot(monkeypatch):
     )
     monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
 
-    data = dashboard.dashboard_data("user-1", "live:885504372", "daily")
+    data = dashboard.dashboard_data("user-1", "live:885504372", "mtd")
 
     assert data["account_id"] == "live:885504372"
     assert data["environment"] == "live"
@@ -339,7 +349,7 @@ def test_all_accounts_aggregates_paper_only(monkeypatch):
     monkeypatch.setattr(dashboard, "_one_live_account", load_live)
     monkeypatch.setattr(dashboard.ReportAgent, "top_strategies", lambda *a, **kw: [])
 
-    data = dashboard.dashboard_data("user-1", "all", "weekly")
+    data = dashboard.dashboard_data("user-1", "all", "ytd")
 
     assert [kind for kind, _ in loaded] == ["paper", "paper"]
     assert data["account_id"] == "all"
@@ -356,7 +366,7 @@ def test_render_all_label_mentions_paper_when_live_linked():
             {"account_id": "live:885504372", "account_name": "Alpaca live · 885504372 (LIVE)"},
         ],
         "has_live": True,
-        "period": "daily",
+        "period": "mtd",
         "equity": 100.0,
         "period_pnl": 1.0,
         "period_pct": 1.0,
@@ -376,6 +386,11 @@ def test_render_all_label_mentions_paper_when_live_linked():
     assert "All paper accounts" in html
     assert "live:885504372" in html
     assert "LIVE" in html
+    assert "period=mtd" in html and ">MTD<" in html
+    assert "period=ytd" in html and ">YTD<" in html
+    assert "period=daily" not in html
+    assert "period=weekly" not in html
+    assert "MTD P&L" in html
 
 
 def test_paper_view_does_not_stack_live_panel():
@@ -389,7 +404,7 @@ def test_paper_view_does_not_stack_live_panel():
             {"account_id": "live:885504372", "account_name": "Alpaca live · 885504372 (LIVE)"},
         ],
         "has_live": True,
-        "period": "daily",
+        "period": "mtd",
         "equity": 100.0,
         "period_pnl": 1.0,
         "period_pct": 1.0,
@@ -435,7 +450,7 @@ def test_live_view_shows_spy_curve_and_dropdown():
             {"account_id": "live:885504372", "account_name": "Alpaca live · 885504372 (LIVE)"},
         ],
         "has_live": True,
-        "period": "daily",
+        "period": "mtd",
         "equity": 2800.0,
         "period_pnl": -0.3,
         "period_pct": -0.01,
@@ -484,7 +499,7 @@ def test_error_page_keeps_account_dropdown_when_catalog_present():
     from engine.web import ph_pnl
     data = {
         "errors": [{"account_id": "paper-1", "message": "unauthorized"}],
-        "period": "daily",
+        "period": "mtd",
         "accounts": [
             {"account_id": "paper-1", "account_name": "Paper One"},
             {"account_id": "live:885504372", "account_name": "Alpaca live · 885504372 (LIVE)"},
