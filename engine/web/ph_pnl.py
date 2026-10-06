@@ -45,6 +45,20 @@ _CSS = """
  padding:.6rem 1rem;border-radius:.5rem;text-decoration:none}.error{color:#9b302b;background:#fff0ee;padding:.7rem;border-radius:.4rem}
 @media(max-width:820px){.metric-grid{grid-template-columns:repeat(2,1fr)}.panel-grid{grid-template-columns:1fr}}
 @media(max-width:480px){.metric-grid{grid-template-columns:1fr 1fr}.metric{padding:.75rem}.chart{height:285px}}
+/* ---- Live account vs SPY (linked live broker) ---- */
+.live-spy{background:#fff;border:1px solid var(--line);border-radius:.65rem;padding:1rem 1.1rem;margin:0 0 .8rem}
+.live-spy h2{font-size:.95rem;margin:0 0 .55rem}
+.live-spy .live-spy-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:.9rem;align-items:start}
+.live-spy table{width:auto;border-collapse:collapse;font-size:.84rem;font-variant-numeric:tabular-nums}
+.live-spy td{padding:.22rem .9rem .22rem 0;border:0;white-space:nowrap}
+.live-spy td.k{color:var(--ink-muted)}
+.live-spy .note{font-size:.72rem;color:var(--ink-dim);margin:.45rem 0 0}
+.live-spy .chart{height:300px;min-height:260px}
+.live-spy .badge{font-size:.68rem;border:1px solid #b43b35;color:#b43b35;border-radius:1rem;
+ padding:.1rem .45rem;margin-left:.35rem;font-weight:650;vertical-align:middle}
+.live-spy a.more{font-size:.78rem;color:var(--accent);text-decoration:none;margin-left:.55rem}
+.live-spy .pos{color:#147a4b}.live-spy .neg{color:#b43b35}
+@media(max-width:820px){.live-spy .live-spy-grid{grid-template-columns:1fr}}
 /* ---- Start Here checklist (progressive onboarding; retires when complete) ---- */
 .start-here{background:var(--bg-elev);border:1px solid var(--line);border-radius:.65rem;
  padding:1.05rem 1.15rem .6rem;margin:0 0 .85rem;position:relative;overflow:hidden}
@@ -102,8 +116,114 @@ _JS = """
   document.querySelectorAll('.rank-table').forEach(x=>x.hidden=x.dataset.kind!==kind);
   document.querySelectorAll('.rank-tabs button').forEach(x=>x.classList.toggle('active',x.dataset.kind===kind));
  };
+ const lv=d.live_curves; const el=document.getElementById('dash-live-equity-chart');
+ if(lv&&el&&lv.dates&&lv.dates.length){
+  const lbase={paper_bgcolor:'#fff',plot_bgcolor:'#f7f6f1',font:{family:'Inter,system-ui',color:'#2d352f'},
+   margin:{t:28,r:18,b:42,l:48},legend:{orientation:'h',y:1.12,x:0},
+   xaxis:{showgrid:false},yaxis:{title:'Index (100 = start)',zeroline:false}};
+  const traces=[];
+  if(lv.account_idx&&lv.account_idx.some(v=>v!=null))
+   traces.push({x:lv.dates,y:lv.account_idx,name:'Live account',type:'scatter',mode:'lines',
+    line:{color:'#1f5d43',width:2.6},hovertemplate:'%{x}<br>Account %{y:.2f}<extra></extra>'});
+  if(lv.spy_idx&&lv.spy_idx.some(v=>v!=null))
+   traces.push({x:lv.dates,y:lv.spy_idx,name:'SPY',type:'scatter',mode:'lines',
+    line:{color:'#7a867e',width:2},hovertemplate:'%{x}<br>SPY %{y:.2f}<extra></extra>'});
+  if(traces.length) Plotly.newPlot(el,traces,lbase,{responsive:true,displayModeBar:false});
+ }
 })();
 """
+
+
+
+def _money_live(v, signed: bool = False) -> str:
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        return "—"
+    return f"{'+' if signed and x > 0 else ''}{'-' if x < 0 else ''}${abs(x):,.2f}"
+
+
+def _pct_live(v) -> str:
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        return "—"
+    return f"{x:+.2f}%"
+
+
+def _cls_live(v) -> str:
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        return ""
+    return "" if x == 0 else ("pos" if x > 0 else "neg")
+
+
+def _live_spy_panel(live: dict) -> str:
+    """Render Live vs SPY summary + Plotly chart for the main dashboard."""
+    if not live or not live.get("linked"):
+        return ""
+    if live.get("error") and not live.get("perf") and not live.get("curves"):
+        return (
+            "<section class='live-spy' aria-label='Live account vs SPY'>"
+            "<h2>Live account vs SPY <span class='badge'>LIVE</span>"
+            "<a class='more' href='/live/account'>Open live account →</a></h2>"
+            f"<p class='muted'>{html.escape(str(live.get('error')))}</p></section>"
+        )
+    perf = live.get("perf") or {}
+    curves = live.get("curves") or {}
+    acct = html.escape(str(live.get("account_number") or ""))
+    started = perf.get("started")
+    if hasattr(started, "strftime"):
+        started_s = started.strftime("%b %d, %Y")
+    else:
+        started_s = html.escape(str(started or "—")[:10])
+    ex = perf.get("excess_pct")
+    rows = []
+    if perf:
+        rows = [
+            ("Live run started",
+             f"{started_s} · start equity {_money_live(perf.get('start_equity'))}"),
+            ("Account since start",
+             f"<b class='{_cls_live(perf.get('account_pnl'))}'>"
+             f"{_money_live(perf.get('account_pnl'), True)} "
+             f"({_pct_live(perf.get('account_return_pct'))})</b>"),
+            ("SPY since start",
+             f"{_pct_live(perf.get('spy_return_pct'))} "
+             f"<span class='muted'>({_money_live(perf.get('spy_start'))} → "
+             f"{_money_live(perf.get('spy'))})</span>"),
+            ("Excess vs SPY",
+             f"<b class='{_cls_live(ex)}'>{_pct_live(ex)}</b>"),
+        ]
+        if perf.get("strategy_pnl") is not None:
+            rows.append((
+                "Runner strategy P&amp;L",
+                f"{_money_live(perf.get('strategy_pnl'), True)} "
+                f"<span class='muted'>· {int(float(perf.get('closed_trades') or 0))} closed</span>",
+            ))
+    table = ("<table>" + "".join(
+        f"<tr><td class='k'>{k}</td><td>{v}</td></tr>" for k, v in rows
+    ) + "</table>") if rows else "<p class='muted'>No live runner run recorded yet.</p>"
+    chart = ""
+    if curves.get("dates"):
+        chart = (
+            "<div id='dash-live-equity-chart' class='chart'></div>"
+            "<p class='note'>Both series indexed to 100 at live runner start. "
+            "Account = broker equity; SPY = ETF close.</p>"
+        )
+    else:
+        chart = "<p class='muted'>Equity curve unavailable right now.</p>"
+    return f"""
+      <section class="live-spy" aria-label="Live account vs SPY">
+        <h2>Live account vs SPY <span class="badge">LIVE</span>
+          <a class="more" href="/live/account">Account {acct} →</a></h2>
+        <div class="live-spy-grid">
+          <div>{table}<p class="note">Account return is equity vs the equity when the
+            runner started; deposits/withdrawals and pre-existing holdings are included.</p></div>
+          <div>{chart}</div>
+        </div>
+      </section>
+    """
 
 
 def _money(value: float) -> str:
@@ -319,8 +439,10 @@ def _advisor_cards(data: dict) -> str:
 
 
 def _render(data: dict, selected_id: str | None) -> str:
+    live_panel = _live_spy_panel(data.get("live") or {})
     if data.get("needs_account"):
         return (
+            f"{live_panel}"
             "<div class='empty'><h1>Connect an Alpaca account</h1>"
             "<p class='muted'>Add an account to see equity, P&amp;L and strategy "
             "performance — and to trade the strategies you've backtested.</p>"
@@ -333,7 +455,7 @@ def _render(data: dict, selected_id: str | None) -> str:
         if any("unauthorized" in str(e.get("message", "")).lower() for e in data.get("errors", [])):
             cta = ("<p style='margin:.9rem 0 0'><a href='/settings'>"
                    "Update your Alpaca keys →</a></p>")
-        return f"<div class='empty'><h1>Portfolio unavailable</h1><div class='error'>{errors}</div>{cta}</div>"
+        return f"{live_panel}<div class='empty'><h1>Portfolio unavailable</h1><div class='error'>{errors}</div>{cta}</div>"
     chosen = selected_id or data["account_id"]
     options = ["<option value='all'>All accounts</option>"] + [
         f"<option value='{a['account_id']}' {'selected' if chosen == a['account_id'] else ''}>"
@@ -361,6 +483,7 @@ def _render(data: dict, selected_id: str | None) -> str:
             checklist = ""  # never let onboarding break the P&L page
     return f"""
       {checklist}
+      {live_panel}
       <div class="dash-head"><div><h1>Portfolio P&amp;L</h1>
       <div class="muted">{html.escape(data['account_name'])} · calendar {period} · updated {data['as_of'][:16].replace('T',' ') } UTC</div></div>
       <form class="dash-controls" method="get" action="/dashboard">
@@ -414,7 +537,22 @@ def register(app, rt):
             }
         except Exception:  # noqa: BLE001
             data["start_here"] = {}
-        serializable = {k: data.get(k) for k in ("history", "contributors")}
+        # Live vs SPY on the main dashboard when a live broker is linked.
+        # Best-effort: never block the paper/portfolio P&L view.
+        try:
+            from engine.web.ph_live_account import load_view
+            data["live"] = load_view(uid)
+        except Exception:  # noqa: BLE001
+            data["live"] = {}
+        live_curves = (data.get("live") or {}).get("curves") or {}
+        serializable = {
+            k: data.get(k) for k in ("history", "contributors")
+        }
+        serializable["live_curves"] = {
+            "dates": live_curves.get("dates") or [],
+            "account_idx": live_curves.get("account_idx") or [],
+            "spy_idx": live_curves.get("spy_idx") or [],
+        }
         try:
             from engine.auth import get_user_by_id
             user = get_user_by_id(str(user_id))

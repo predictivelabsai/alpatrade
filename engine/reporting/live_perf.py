@@ -1,4 +1,4 @@
-"""Live-account performance vs SPY — shared by the daily LIVE email and /live/account.
+"""Live-account performance vs SPY — shared by the daily LIVE email, /live/account, and /dashboard.
 
 Builds:
 * a since-start summary (account return, SPY return, excess, strategy P&L)

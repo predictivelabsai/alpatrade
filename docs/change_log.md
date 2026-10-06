@@ -1,6 +1,14 @@
 # Change Log
 
 
+## 2026-10-06 — Live vs SPY equity curve on /dashboard
+
+- Main dashboard (`/dashboard`) now shows the same Live account vs SPY summary
+  and Plotly index-100 equity curve when a live broker account is linked
+  (reuses `ph_live_account.load_view` / `live_perf`). Previously only on
+  `/live/account` and the daily LIVE email.
+- Paper daily email remains off for Julian; live daily email unchanged.
+
 ## 2026-10-06 — Live vs SPY on /live/account + email equity curve
 
 - Shared helper `engine/reporting/live_perf.py`: since-start account/SPY/excess summary
