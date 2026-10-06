@@ -817,7 +817,7 @@ def send_report(target: dict, day: date | None = None, force: bool = False,
     d = gather(client, target, day=day)
     html_body = render(d)
     if html_out:
-        Path(html_out).write_text(html_body)
+        Path(html_out).write_text(html_body, encoding="utf-8")
     out = {"ok": True, "day": d["day"], "data": d, "sent": False, "message_id": None}
     if d.get("no_trading_day") or not send:
         return out

@@ -109,14 +109,15 @@ def test_render_risk_marks_short_history_sharpe_preliminary():
     assert "-6.94" in html and "preliminary" in html
 
 
-def test_idle_report_explains_failed_latest_hermes_job():
+def test_idle_report_recommends_enabled_agent_actions_only():
     html = report._render_agent_next_steps({
         "active_runs": [], "agent_performance": [],
         "latest_hermes_paper_job": {"status": "failed", "error": "worker stopped"},
     })
-    assert "No active strategy" in html
-    assert "no trades or P&amp;L can be generated" in html
-    assert "worker stopped" in html
+    assert "No active paper strategy" in html
+    assert "new paper run" in html
+    assert "walk-forward validation" in html
+    assert "Hermes" not in html and "worker stopped" not in html
 
 
 def test_render_risk_empty_without_stats():
@@ -129,7 +130,7 @@ def test_render_health_banner_when_source_down():
     assert report._render_health({"db_ok": True, "account_ok": True}) == ""
 
 
-def test_agent_benchmark_adds_correct_all_agent_totals():
+def test_agent_benchmark_separates_enabled_total_from_archived_hermes():
     rows = [
         {"agent_name": "Hermes", "framework": "hermes", "today_pnl": 12,
          "today_exits": 1, "mtd_pnl": 30, "mtd_exits": 2,
@@ -139,11 +140,14 @@ def test_agent_benchmark_adds_correct_all_agent_totals():
          "ytd_pnl": 10, "ytd_exits": 1, "win_rate": 100, "run_count": 1},
     ]
     html = report._render_agent_benchmark({"agent_performance": rows})
-    assert "All attributed agents" in html
-    assert "$+10.00 (2 exits)" in html
-    assert "$+35.00" in html
-    assert "$+50.00" in html
-    assert "60.0%" in html
+    assert "Enabled agents total" in html
+    assert "$-2.00 (1 exits)" in html
+    assert "$+5.00" in html
+    assert "$+10.00" in html
+    assert "100.0%" in html
+    assert "Archived agent history" in html
+    assert "Hermes is disabled" in html
+    assert "$+40.00" in html
 
 
 def test_daily_pnl_scope_explains_broker_vs_agent_numbers():

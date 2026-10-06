@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Daily paper email agent status
+
+- The current-agent benchmark now shows only enabled DeepAgents and LangGraph
+  activity; empty placeholder rows and obsolete Hermes commands were removed.
+- Historical Hermes exits remain in a clearly labeled archived section so YTD
+  accounting stays accurate without presenting Hermes as an active runtime.
+- Recommended prompts now cover current paper-risk review, walk-forward strategy
+  comparison, out-of-sample evidence, and parameter drift.
+
 ### Per-user daily email report preferences
 
 - Settings has a new "Email reports" card with checkboxes for the daily live
@@ -17,6 +26,34 @@
   (`live_report_deliveries`) is unchanged. If the preference lookup fails, the
   senders fall back to their previous behaviour and log a warning.
 - Tests: `tests/test_report_preferences.py` (DB-free, added to CI).
+
+### AlpaTrade MCP server
+
+- Added a FastMCP stdio server so Codex, Claude, and other MCP-capable CLIs can
+  use tenant-scoped AlpaTrade API tools with their own bearer token.
+- Added a signed-in MCP Connections wizard that generates seven-day, copy-ready
+  Codex, Claude Code, and generic JSON client configuration without placing the
+  token in a URL or application log.
+- Added explicit research, reporting, DeepAgents, and paper-only operations;
+  confirmed paper orders require `confirmation="PAPER"`, while arbitrary HTTP,
+  SQL, broker secrets, and live trading remain unavailable.
+- Added loopback-only streamable HTTP mode and client setup documentation in
+  `docs/mcp_server.md`; public HTTP binding is blocked until MCP OAuth exists.
+
+### Durable multi-strategy walk-forward routing
+
+- Added one DeepAgents comparison action that routes multi-strategy, multi-horizon,
+  walk-forward, robustness, and SPY-relative requests into a durable parent job.
+- Added chronological expanding-train/OOS folds and a consolidated comparison with
+  train return, stitched OOS return/P&L, SPY excess return, trades, win rate, fold
+  consistency, warnings, and explicit promotion eligibility.
+- Buy-the-Dip is grid-optimized inside each training fold; Momentum and VIX are
+  honestly labeled fixed-configuration until explicit grids are provided.
+- Added true `min_hold_days` propagation to the grid backtester. Maximum hold and
+  minimum hold are no longer conflated for PDT-safe research.
+- Added a research-only worker lane so explicit backtest/comparison jobs continue
+  while autonomous scouting is disabled; it cannot claim paper or full-cycle jobs.
+- Bumped the package to 0.28.0. No database migration is required.
 
 ### Continuous partial news ingestion
 

@@ -60,6 +60,10 @@ _STRATEGY_LABELS = {
     "box_wedge": "Box-Wedge",
 }
 
+# Hermes remains in historical accounting, but it is no longer an enabled
+# runtime. Keep active email guidance focused on frameworks users can run now.
+_ENABLED_AGENT_FRAMEWORKS = {"deepagents", "langgraph"}
+
 
 def recipients(override: str | None = None) -> list[str]:
     """Explicit operator recipients only; never use a hard-coded distribution list."""
@@ -206,9 +210,12 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
         "positions": positions,
         "trades": trades,
         "runs": runs,
-        "active_runs": active_runs(user_id=user_id, account_id=account_id,
-                                   framework=framework),
-        "latest_hermes_paper_job": latest_hermes_paper_job(user_id, account_id),
+        "active_runs": [
+            run for run in active_runs(user_id=user_id, account_id=account_id,
+                                       framework=framework)
+            if framework or str(run.get("agent_framework") or "").lower()
+            in _ENABLED_AGENT_FRAMEWORKS
+        ],
         "agent_performance": agent_performance(
             user_id, account_id, framework, day=target_day
         ),
@@ -573,20 +580,6 @@ def agent_performance(user_id: str | None, account_id: str | None,
             """), params)
             cols = result.keys()
             rows = [dict(zip(cols, row)) for row in result.fetchall()]
-            if framework:
-                return rows
-            present = {str(row.get("framework") or "").lower() for row in rows}
-            for slug, name in (("hermes", "Hermes"),
-                               ("deepagents", "DeepAgents"),
-                               ("langgraph", "LangGraph")):
-                if slug not in present:
-                    rows.append({
-                        "framework": slug, "agent_name": name,
-                        "today_exits": 0, "today_pnl": 0,
-                        "mtd_exits": 0, "mtd_pnl": 0,
-                        "ytd_exits": 0, "ytd_pnl": 0,
-                        "win_rate": 0, "run_count": 0, "has_data": False,
-                    })
             return rows
     except Exception:  # noqa: BLE001
         return []
@@ -939,12 +932,22 @@ def _render_risk(d: dict) -> str:
 def _render_agent_benchmark(d: dict) -> str:
     rows = d.get("agent_performance") or []
     if not rows:
-        return ("<h3>Agent benchmark</h3><p style='color:#7A867E;font-size:12px'>"
-                "No closed, attributed paper trades in the current year.</p>")
+        return ("<h3>Enabled-agent performance</h3>"
+                "<p style='color:#7A867E;font-size:12px'>No closed paper trades "
+                "are attributed to an enabled agent in the current year.</p>")
+    current = [
+        row for row in rows
+        if str(row.get("framework") or "").lower() in _ENABLED_AGENT_FRAMEWORKS
+    ]
+    archived = [
+        row for row in rows
+        if str(row.get("framework") or "").lower() == "hermes"
+        and int(row.get("ytd_exits") or 0) > 0
+    ]
     body = ""
     total_today = total_mtd = total_ytd = 0.0
     total_today_exits = total_mtd_exits = total_ytd_exits = 0
-    for row in rows:
+    for row in current:
         today, mtd, ytd = (_f(row.get("today_pnl")), _f(row.get("mtd_pnl")),
                            _f(row.get("ytd_pnl")))
         has_data = row.get("has_data", int(row.get("ytd_exits") or 0) > 0)
@@ -968,25 +971,49 @@ def _render_agent_benchmark(d: dict) -> str:
                  f"<td>{int(row.get('run_count') or 0)}</td></tr>")
     weighted_wins = sum(
         _f(row.get("win_rate")) * int(row.get("ytd_exits") or 0)
-        for row in rows
+        for row in current
     )
     total_win_rate = weighted_wins / total_ytd_exits if total_ytd_exits else 0.0
-    body += (
-        "<tr style='background:#EFEDE4;font-weight:700'><td>All attributed agents</td>"
-        f"<td style='color:{'#1F5D43' if total_today >= 0 else '#b0653f'}'>"
-        f"${total_today:+,.2f} ({total_today_exits} exits)</td>"
-        f"<td style='color:{'#1F5D43' if total_mtd >= 0 else '#b0653f'}'>"
-        f"${total_mtd:+,.2f}</td><td>{total_mtd_exits}</td>"
-        f"<td style='color:{'#1F5D43' if total_ytd >= 0 else '#b0653f'}'>"
-        f"${total_ytd:+,.2f}</td><td>{total_win_rate:.1f}%</td><td>—</td></tr>"
-    )
-    return ("<h3>Agent benchmark — realized paper trades only</h3>"
+    if current:
+        body += (
+            "<tr style='background:#EFEDE4;font-weight:700'><td>Enabled agents total</td>"
+            f"<td style='color:{'#1F5D43' if total_today >= 0 else '#b0653f'}'>"
+            f"${total_today:+,.2f} ({total_today_exits} exits)</td>"
+            f"<td style='color:{'#1F5D43' if total_mtd >= 0 else '#b0653f'}'>"
+            f"${total_mtd:+,.2f}</td><td>{total_mtd_exits}</td>"
+            f"<td style='color:{'#1F5D43' if total_ytd >= 0 else '#b0653f'}'>"
+            f"${total_ytd:+,.2f}</td><td>{total_win_rate:.1f}%</td><td>—</td></tr>"
+        )
+    else:
+        body = ("<tr><td colspan='7' style='color:#7A867E'>No enabled agent has "
+                "closed, attributed paper trades this year.</td></tr>")
+
+    archived_html = ""
+    if archived:
+        archive_rows = "".join(
+            "<tr><td>Hermes <small>(disabled)</small></td>"
+            f"<td>${_f(row.get('ytd_pnl')):+,.2f}</td>"
+            f"<td>{int(row.get('ytd_exits') or 0)}</td>"
+            f"<td>{_f(row.get('win_rate')):.1f}%</td></tr>"
+            for row in archived
+        )
+        archived_html = (
+            "<h4 style='margin-bottom:.2rem'>Archived agent history</h4>"
+            "<p style='font-size:12px;color:#7A867E'>Hermes is disabled. Historical "
+            "Hermes exits remain visible for accurate accounting but are not an active "
+            "agent recommendation.</p>"
+            "<table border='1' cellpadding='6' style='border-collapse:collapse;font-size:12px'>"
+            "<thead><tr><th>Archived agent</th><th>YTD P&amp;L</th><th>YTD exits</th>"
+            f"<th>Win rate</th></tr></thead><tbody>{archive_rows}</tbody></table>"
+        )
+
+    return ("<h3>Enabled-agent performance — realized paper trades only</h3>"
             "<p style='font-size:12px;color:#7A867E'>Account equity is shared and is not assigned "
             "to an agent. This table compares only exits linked to each run.</p>"
             "<table border='1' cellpadding='6' style='border-collapse:collapse;font-size:13px'>"
             "<thead><tr><th>Agent</th><th>Today</th><th>MTD P&amp;L</th><th>MTD exits</th>"
             "<th>YTD P&amp;L</th><th>YTD win rate</th><th>Runs</th></tr></thead>"
-            f"<tbody>{body}</tbody></table>")
+            f"<tbody>{body}</tbody></table>{archived_html}")
 
 
 def _render_daily_pnl_scope(d: dict) -> str:
@@ -1032,44 +1059,39 @@ def _render_equity_reconciliation(d: dict) -> str:
 
 
 def _render_agent_next_steps(d: dict) -> str:
-    """One compact action section replaces a second agent-specific daily email."""
-    rows = d.get("agent_performance") or []
-    hermes = next((r for r in rows if r.get("framework") == "hermes"), None)
-    note = "No Hermes exits are attributed yet."
-    if hermes and int(hermes.get("ytd_exits") or 0):
-        today = _f(hermes.get("today_pnl"))
-        note = ("No realized Hermes activity today; continue paper observation."
-                if int(hermes.get("today_exits") or 0) == 0 else
-                f"Hermes realized ${today:+,.2f} today; review risk and backtest drift.")
+    """Recommend actions for enabled agents without advertising disabled Hermes."""
+    rows = [
+        row for row in (d.get("agent_performance") or [])
+        if str(row.get("framework") or "").lower() in _ENABLED_AGENT_FRAMEWORKS
+    ]
+    today_exits = sum(int(row.get("today_exits") or 0) for row in rows)
+    today_pnl = sum(_f(row.get("today_pnl")) for row in rows)
+    note = (
+        "No realized activity from enabled agents today; continue paper observation."
+        if today_exits == 0 else
+        f"Enabled agents realized ${today_pnl:+,.2f} across {today_exits} exits today; "
+        "review risk and backtest drift."
+    )
     active = list(d.get("active_runs") or [])
-    latest = d.get("latest_hermes_paper_job") or {}
     activity_alert = ""
     if not active:
-        status = str(latest.get("status") or "").lower()
-        if status == "failed":
-            from engine.agents.hermes_advice import safe_failure_reason
-            reason = safe_failure_reason(latest.get("error"))
-            activity_alert = (
-                "<p style='background:#FCE8E6;border-left:4px solid #B4472F;"
-                "padding:8px 10px'><b>No active strategy — no trades or P&amp;L can be "
-                f"generated.</b><br>Latest Hermes paper job failed: {_e(reason)}</p>"
-            )
-        else:
-            activity_alert = (
-                "<p style='background:#FFF8E6;border-left:4px solid #b7791f;"
-                "padding:8px 10px'><b>No active strategy — no trades or strategy P&amp;L "
-                "can be generated.</b></p>"
-            )
+        activity_alert = (
+            "<p style='background:#FFF8E6;border-left:4px solid #b7791f;"
+            "padding:8px 10px'><b>No active paper strategy.</b><br>No strategy can create "
+            "trades or agent P&amp;L until a new paper run is started.</p>"
+        )
     return (
         "<h3>Agent status &amp; recommended next steps</h3>"
         f"{activity_alert}"
         f"<p style='font-size:13px'>{_e(note)}</p>"
         "<ul style='font-size:13px'>"
-        "<li><code>/hermes analyze my running paper job</code></li>"
-        "<li><code>/hermes show my latest backtest result</code></li>"
-        "<li>Default DeepAgents and LangGraph appear above after they own completed paper exits.</li>"
-        "</ul><p style='font-size:12px;color:#7A867E'>Immediate entry/exit advice remains a "
-        "separate opt-in alert and is not suppressed by this consolidated daily digest.</p>"
+        "<li><code>Analyze my running paper strategy and explain current risk.</code></li>"
+        "<li><code>Compare Buy the Dip, Momentum and VIX using walk-forward validation.</code></li>"
+        "<li><code>Show my latest backtest and whether it has enough out-of-sample evidence.</code></li>"
+        "<li><code>Review whether my current entry and exit parameters are drifting.</code></li>"
+        "</ul><p style='font-size:12px;color:#7A867E'>DeepAgents is the default agent. "
+        "LangGraph is shown when it owns activity. Immediate entry/exit alerts remain a "
+        "separate opt-in notification.</p>"
     )
 
 

@@ -749,6 +749,44 @@ def queue_backtest(strategy: str = "buy_the_dip", symbols: list[str] | None = No
 
 
 @tool
+def queue_multi_strategy_comparison(
+    strategies: list[str] | None = None,
+    symbols: list[str] | None = None,
+    horizons: list[str] | None = None,
+    initial_capital: float = 10_000.0,
+    min_hold_days: int = 3,
+    folds: int = 3,
+    objective: str = "sharpe_ratio",
+    runtime: ToolRuntime[DeepAgentContext] = None,
+) -> dict:
+    """Queue a durable walk-forward/OOS strategy comparison.
+
+    Use this instead of several queue_backtest calls when a user asks to compare
+    strategies, horizons, a basket, robustness, walk-forward, or performance versus
+    SPY. Buy-the-Dip is grid-optimized per training fold; Momentum and VIX are
+    transparently reported as fixed-configuration comparisons. No paper job is
+    started and no candidate is promoted automatically.
+    """
+    from engine.backtest.comparison import normalize_spec
+
+    config = normalize_spec({
+        "strategies": strategies or ["buy_the_dip", "momentum", "vix"],
+        "symbols": [_ticker(symbol) for symbol in (symbols or [])[:25]],
+        "horizons": horizons or ["3m", "1y"],
+        "initial_capital": initial_capital,
+        "min_hold_days": min_hold_days,
+        "folds": folds,
+        "objective": objective,
+    })
+    return _enqueue(
+        runtime,
+        "queue_multi_strategy_comparison",
+        "deepagent_comparison",
+        config,
+    )
+
+
+@tool
 def queue_advisor_backtest(
     report_id: str,
     recommendation_id: str,
@@ -1103,7 +1141,8 @@ PORTFOLIO_TOOLS = (
 )
 
 STRATEGY_TOOLS = (
-    queue_backtest, queue_advisor_backtest, validate_run, compare_strategy_results,
+    queue_backtest, queue_multi_strategy_comparison, queue_advisor_backtest,
+    validate_run, compare_strategy_results,
     get_recent_runs, get_run_report, get_job_status, get_job_events, get_job_results,
 )
 

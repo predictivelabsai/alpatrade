@@ -52,6 +52,7 @@ from engine.web import ph_chat  # noqa: E402
 from engine.web import ph_guide  # noqa: E402
 from engine.web import ph_charts  # noqa: E402
 from engine.web import ph_settings  # noqa: E402
+from engine.web import ph_mcp  # noqa: E402
 from engine.web import ph_pnl  # noqa: E402
 from engine.web import ph_runs  # noqa: E402
 from engine.web import ph_live_account  # noqa: E402
@@ -78,6 +79,7 @@ ph_chat.register(app, rt)
 ph_guide.register(app, rt)
 ph_charts.register(app, rt)
 ph_settings.register(app, rt)
+ph_mcp.register(app, rt)
 ph_pnl.register(app, rt)
 ph_runs.register(app, rt)
 ph_live_account.register(app, rt)

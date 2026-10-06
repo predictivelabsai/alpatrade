@@ -280,6 +280,15 @@ function toggleSecret(id, button) {
         _report_card(user["user_id"], has_paper=bool(accounts),
                      has_live=_has_live_account(user["user_id"])),
 
+        Div(
+            H3("MCP connections"),
+            P("Connect Codex, Claude Code or another MCP client to this AlpaTrade "
+              "account with a guided, copy-ready setup.", cls="s-hint"),
+            A("Open connection wizard →", href="/settings/mcp", cls="s-btn",
+              style="display:inline-block;text-decoration:none"),
+            cls="s-card",
+        ),
+
         # --- Providers ----------------------------------------------------
         Div(
             H3("Providers"),
