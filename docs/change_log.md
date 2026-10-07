@@ -1,5 +1,18 @@
 # Change Log
 
+## 2026-10-07 — Annualised return KPI (dashboard + LIVE email)
+
+- `/dashboard` (Live and Paper): the "Connection" KPI box is replaced by
+  **Annualised return** for the selected period (MTD default / YTD).
+  Formula: simple `return × 252 / trading_days`; tooltip also shows compounded
+  `(1+r)^(252/d)−1`. Trading days = NYSE sessions elapsed in the window
+  (completed sessions only, ET; rule-based holiday calendar). Shows "—" when < 1 day.
+- LIVE daily email: new "Annualised return" table — MTD, YTD and since live start
+  (return, trading days, simple, compounded) + plain-text summary lines.
+  Email chart (CID PNG 2×, date axis) and BNBX exclusion unchanged.
+- New `engine/reporting/annualize.py` + `tests/test_annualize.py`. No changes to
+  live trading, cash-only sizing, or schedules.
+
 ## 2026-10-07 — Dashboard periods: MTD (default) and YTD only
 
 - Account dashboard period tabs are now **MTD** (month-to-date, default) and

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from datetime import datetime, time, timezone
+from datetime import datetime, time, timedelta, timezone
 from typing import Any
 
 from alpaca.trading.requests import GetPortfolioHistoryRequest
@@ -94,6 +94,18 @@ def period_bounds(period: str, now: datetime | None = None) -> tuple[datetime, d
     else:  # mtd
         start_date = now.date().replace(day=1)
     return datetime.combine(start_date, time.min, tzinfo=timezone.utc), now
+
+
+def period_annualized(period: str, period_pct, now: datetime | None = None) -> dict:
+    """Annualised period return: simple r*252/d and compounded, d = NYSE days elapsed."""
+    from zoneinfo import ZoneInfo
+    from engine.reporting.annualize import annualize, trading_days_between
+    start, end = period_bounds(period, now)
+    end_dt = end.astimezone(ZoneInfo("America/New_York"))
+    end_et = end_dt.date()
+    if end_dt.hour < 16:  # today's session not closed yet (ET) — count completed days only
+        end_et -= timedelta(days=1)
+    return annualize(period_pct, trading_days_between(start.date(), end_et))
 
 
 def _friendly_error(raw: str) -> str:
@@ -402,8 +414,13 @@ def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[st
         except Exception as exc:  # noqa: BLE001
             # The dashboard remains available before migration 19 is applied.
             logger.warning("Daily advisor reports unavailable: %s", type(exc).__name__)
+    try:
+        annualized = period_annualized(period, selected.get("period_pct"))
+    except Exception:  # noqa: BLE001
+        annualized = {"simple_pct": None, "compound_pct": None, "days": 0}
     return {
         **selected,
+        "annualized": annualized,
         "needs_account": False,
         "accounts": accounts,
         "has_live": bool(live),

@@ -535,6 +535,12 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
         except Exception:  # noqa: BLE001
             curves = {}
 
+    try:
+        from engine.reporting.live_perf import period_annualized
+        annualized = period_annualized(client, day, equity_day, perf, run)
+    except Exception:  # noqa: BLE001
+        annualized = {}
+
     signals = []
     if with_signals and run.get("run_id"):
         signals = dip_signals([s for s in (cfg.get("symbols") or [])],
@@ -548,7 +554,7 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
         "buying_power": _f(acct.get("buying_power")),
         "long_market_value": _f(acct.get("long_market_value")),
         "positions": positions, "ignored_positions": ignored_positions, "open_orders": open_orders, "fills": orders,
-        "run": run, "perf": perf, "curves": curves, "runner_open": runner_open, "runner_actions": actions,
+        "run": run, "perf": perf, "annualized": annualized, "curves": curves, "runner_open": runner_open, "runner_actions": actions,
         "runner_heartbeat": hb, "signals": signals, "warnings": warnings,
         "db_ok": _db_ok(), "account_ok": True,
     }
@@ -672,6 +678,29 @@ def _curves_block(d: dict) -> str:
         f'<p style="font-size:11px;color:{MUTED};margin:.1rem 0 .4rem">Indexed to 100 at '
         "the live runner start. Account line is broker equity; SPY is the ETF close.</p>"
     )
+
+
+def _ann_block(d: dict) -> str:
+    """Annualised return table: MTD / YTD / since start (simple ×252/d + compounded)."""
+    a = d.get("annualized") or {}
+    rows = ""
+    for key, label in (("mtd", "MTD"), ("ytd", "YTD"), ("since_start", "Since start")):
+        x = a.get(key)
+        if not x:
+            continue
+        simp, comp = x.get("simple_pct"), x.get("compound_pct")
+        rows += (f"<tr><td>{label}</td><td {_R}>{_pct(x.get('return_pct'))}</td>"
+                 f"<td {_R}>{x.get('days', 0)}</td>"
+                 f"<td {_R}><b style='color:{_col(simp)}'>{_pct(simp)}</b></td>"
+                 f"<td {_R}>{_pct(comp)}</td></tr>")
+    if not rows:
+        return ""
+    return ("<h3 style='font-size:14px;margin:14px 0 4px'>Annualised return</h3>"
+            f"<table {_TABLE}><thead><tr {_TH}><th>Period</th><th>Return</th><th>Trading days</th>"
+            "<th>Annualised (simple)</th><th>Compounded</th></tr></thead><tbody>"
+            f"{rows}</tbody></table>"
+            f"<p style='font-size:11px;color:{MUTED};margin:.2rem 0'>Simple: return × 252 / days; "
+            "compounded: (1+r)^(252/d)−1. Short windows extrapolate aggressively.</p>")
 
 
 def _perf_block(d: dict) -> str:
@@ -814,6 +843,7 @@ def render(d: dict) -> str:
   </table>
   <h3 style="margin:.9rem 0 .2rem">Performance since live start vs SPY</h3>
   {_perf_block(d)}
+  {_ann_block(d)}
   {_curves_block(d)}
   <h3>Fills this session ({len(fills)})</h3>
   <p style="color:#415046;font-size:13px;margin:.15rem 0 .4rem">{buys} buy · {sells} sell ·
@@ -867,6 +897,10 @@ def plain_summary(d: dict) -> str:
     if p:
         lines.append(f"  since start: acct {_pct(p.get('account_return_pct'))} vs SPY "
                      f"{_pct(p.get('spy_return_pct'))}")
+    for k, x in (d.get("annualized") or {}).items():
+        lines.append(f"  annualised {k}: {_pct(x.get('simple_pct'))} simple, "
+                     f"{_pct(x.get('compound_pct'))} compounded ({x.get('days')}d, "
+                     f"return {_pct(x.get('return_pct'))})")
     lines += [f"  WARNING: {w}" for w in d.get("warnings") or []]
     return "\n".join(lines)
 

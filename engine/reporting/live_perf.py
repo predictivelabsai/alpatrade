@@ -411,3 +411,33 @@ __all__ = [
     "svg_equity_chart",
     "png_equity_chart",
 ]
+
+
+def period_annualized(client, day: date, equity_day: float,
+                      perf: Optional[dict] = None, run: Optional[dict] = None) -> dict:
+    """MTD / YTD (and since-start) return + annualised (simple ×252/d, compounded).
+
+    Baseline matches /dashboard: first portfolio-history equity inside the window.
+    """
+    from engine.reporting.annualize import annualize, trading_days_between
+    out: dict[str, Any] = {}
+    try:
+        hist = client.get_portfolio_history(date(day.year, 1, 1).isoformat(),
+                                            day.isoformat(), "1D")
+        pts = [(datetime.fromtimestamp(int(t), ET).date(), float(e))
+               for t, e in zip(hist.get("timestamp") or [], hist.get("equity") or [])
+               if e is not None and float(e) > 0]
+    except Exception as exc:  # noqa: BLE001
+        log.warning("period_annualized history failed: %s", type(exc).__name__)
+        pts = []
+    for key, start in (("mtd", day.replace(day=1)), ("ytd", date(day.year, 1, 1))):
+        base = next((e for d, e in pts if start <= d <= day), None)
+        ret = (equity_day / base - 1) * 100 if base else None
+        out[key] = {"return_pct": ret, **annualize(ret, trading_days_between(start, day))}
+    perf = perf or {}
+    started = _parse_started((run or {}).get("config") or {}, run or {}) if run else None
+    if started and perf.get("account_return_pct") is not None:
+        out["since_start"] = {"return_pct": perf["account_return_pct"],
+                              **annualize(perf["account_return_pct"],
+                                          trading_days_between(started, day))}
+    return out

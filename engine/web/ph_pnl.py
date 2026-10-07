@@ -253,6 +253,19 @@ def _metric(label: str, value: str, tone: str = "") -> str:
     return f"<div class='metric'><div class='label'>{label}</div><div class='value {tone}'>{value}</div></div>"
 
 
+def _ann_metric(data: dict, plab: str) -> str:
+    """Annualised-return KPI (simple ×252/d) with compounded value in tooltip."""
+    from engine.reporting.annualize import fmt_ann, tooltip
+    a = data.get("annualized") or {}
+    v = a.get("simple_pct")
+    tone = "" if v is None else ("positive" if v >= 0 else "negative")
+    tip = html.escape(tooltip(a))
+    days = f" · {a.get('days', 0)}d" if v is not None else ""
+    return (f"<div class='metric' title='{tip}'><div class='label'>Annualised return "
+            f"({plab}{days}) <span style='cursor:help'>ⓘ</span></div>"
+            f"<div class='value {tone}'>{fmt_ann(a)}</div></div>")
+
+
 def _is_live_view(data: dict, selected_id: str | None) -> bool:
     """True when the dashboard should show the live-only body (not paper)."""
     from engine.reporting.pnl_dashboard import is_live_dashboard_id
@@ -639,7 +652,7 @@ def _render_live(data: dict, selected_id: str | None) -> str:
                 'positive' if data['unrealized_pnl'] >= 0 else 'negative')}
        {_metric('Cash', _money(data['cash']))}
        {_metric('Buying power', _money(data['buying_power']))}
-       {_metric('Connection', 'Live')}
+       {_ann_metric(data, plab)}
        {_metric('Open positions', str(len(data.get('positions') or live.get('positions') or [])))}
       </div>"""
     spy = _live_spy_panel(live)
@@ -697,7 +710,6 @@ def _render_paper(data: dict, selected_id: str | None) -> str:
         for r in data["contributors"][:8]
     ) or "<tr><td colspan='3' class='muted'>No open contributors.</td></tr>"
     advisor_html = _advisor_cards(data)
-    env_label = html.escape(str(data.get("environment") or "paper").title())
     return f"""
       {checklist}
       <div class="dash-head"><div><h1>Portfolio P&amp;L <span class="mode-badge">PAPER</span></h1>
@@ -709,7 +721,7 @@ def _render_paper(data: dict, selected_id: str | None) -> str:
        {_metric(f'{plab} return', f"{data['period_pct']:+.2f}%", pnl_tone)}
        {_metric('Unrealized P&L', _money(data['unrealized_pnl']), 'positive' if data['unrealized_pnl'] >= 0 else 'negative')}
        {_metric('Cash', _money(data['cash']))}{_metric('Buying power', _money(data['buying_power']))}
-       {_metric('Accounts', str(len(data['accounts'])))}{_metric('Connection', env_label)}
+       {_metric('Accounts', str(len(data['accounts'])))}{_ann_metric(data, plab)}
       </div>
       <div class="panel-grid"><section class="panel"><h2>Equity curve</h2><div id="equity-chart" class="chart"></div></section>
        <section class="panel"><h2>Daily trading advisor</h2>{advisor_html}</section></div>
