@@ -1,5 +1,21 @@
 # Change Log
 
+## 2026-10-07 — Annualised return normalised since strategy start
+
+- `/dashboard` headline **Annualised return** KPI now uses the return and NYSE trading
+  days **since the strategy start** (label e.g. "Annualised return (since start · 9d)"),
+  not the selected MTD/YTD window. MTD/YTD period return KPIs unchanged.
+  - Live: start date + start equity from the latest live runner run (`alpatrade.runs`,
+    same baseline as the LIVE email "Since start").
+  - Paper: paper runner run tagged with the account (`config.account_id`), else the
+    account's first portfolio-history equity. "All accounts" falls back to the period.
+  - New `pnl_dashboard.since_start_annualized()`.
+- Simple `r × 252 / d` stays primary; compounded `(1+r)^(252/d)−1` only in the tooltip,
+  noted as indicative (we don't reinvest gains immediately).
+- LIVE email: headline line "Annualised return (since start · Nd)" above the table;
+  MTD/YTD rows kept as secondary ("Annualised by period").
+- Tests in `tests/test_annualize.py`. No live trading / runner changes.
+
 ## 2026-10-07 — Annualised return KPI (dashboard + LIVE email)
 
 - `/dashboard` (Live and Paper): the "Connection" KPI box is replaced by

@@ -108,6 +108,100 @@ def period_annualized(period: str, period_pct, now: datetime | None = None) -> d
     return annualize(period_pct, trading_days_between(start.date(), end_et))
 
 
+def _strategy_run(user_id: str, mode: str, tag_key: str, tag_val: str | None) -> dict:
+    """Most recent non-test runner run for ``mode`` (prefer one tagged with this account)."""
+    import json
+    from sqlalchemy import text
+    from engine.db.pool import DatabasePool
+    with DatabasePool().get_session() as session:
+        rows = session.execute(text("""
+            SELECT run_id, config, started_at
+            FROM alpatrade.runs
+            WHERE user_id = CAST(:uid AS UUID) AND mode = :mode
+              AND COALESCE((config->>'test')::boolean, FALSE) = FALSE
+            ORDER BY started_at DESC LIMIT 20
+        """), {"uid": user_id, "mode": mode}).mappings().all()
+    rows = [dict(r) for r in rows]
+    for r in rows:
+        if isinstance(r.get("config"), str):
+            r["config"] = json.loads(r["config"])
+    tagged = [r for r in rows if tag_val and
+              str((r.get("config") or {}).get(tag_key) or "") == str(tag_val)]
+    if mode == "live":
+        return (tagged or rows or [{}])[0]
+    return (tagged or [{}])[0]  # paper: only trust a run tagged with this account
+
+
+def _first_equity_since(user_id: str, selected: dict, start) -> tuple[Any, float | None]:
+    """(date, equity) of the first positive daily equity on/after ``start``."""
+    from datetime import date as _date
+    end = datetime.now(timezone.utc)
+    acct = str(selected.get("account_id") or "")
+    if is_live_dashboard_id(acct):
+        from engine.brokers.alpaca_live_readonly import LiveReadOnlyClient
+        from engine.live_accounts import get_live_account_credentials
+        creds = get_live_account_credentials(user_id, acct[len(LIVE_ACCOUNT_PREFIX):])
+        client = LiveReadOnlyClient(creds["api_key"], creds["secret_key"],
+                                    expected_account_number=creds["account_number"])
+        raw = client.get_portfolio_history(start.isoformat(), end.date().isoformat(), "1D")
+        ts, eq = raw.get("timestamp") or [], raw.get("equity") or []
+    else:
+        client, _env = _client(user_id, acct)
+        h = _history(client, datetime.combine(start, time.min, tzinfo=timezone.utc), end)
+        ts = [int(datetime.fromisoformat(t).timestamp()) for t in h["timestamps"]]
+        eq = h["equity"]
+    for t, e in zip(ts, eq):
+        if e is not None and float(e) > 0:
+            d = datetime.fromtimestamp(int(t), timezone.utc).date()
+            if d >= start:
+                return d, float(e)
+    return None, None
+
+
+def since_start_annualized(user_id: str, selected: dict, now: datetime | None = None) -> dict:
+    """Annualised return normalised since the strategy start.
+
+    Live: start = the live runner run's start date / start_equity (same baseline as the
+    LIVE email's "Since start"). Paper: the paper runner run tagged with this account,
+    else the account's first portfolio-history equity. Returns ``annualize()`` output
+    plus ``return_pct`` / ``start_date`` / ``basis='since_start'``.
+    """
+    from datetime import date as _date
+    from zoneinfo import ZoneInfo
+    from engine.reporting.annualize import annualize, trading_days_between
+    from engine.reporting.live_perf import _parse_started
+    acct = str(selected.get("account_id") or "")
+    live = is_live_dashboard_id(acct)
+    run: dict = {}
+    try:
+        run = (_strategy_run(user_id, "live", "account_number", acct[len(LIVE_ACCOUNT_PREFIX):])
+               if live else _strategy_run(user_id, "paper", "account_id", acct))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("strategy run lookup failed: %s", type(exc).__name__)
+    cfg = run.get("config") or {}
+    start = _parse_started(cfg, run) if run.get("run_id") else None
+    start_eq = None
+    try:
+        start_eq = float(cfg.get("start_equity")) if cfg.get("start_equity") else None
+    except (TypeError, ValueError):
+        start_eq = None
+    if start_eq is None:
+        try:
+            d0, e0 = _first_equity_since(user_id, selected, start or _date(2015, 1, 1))
+            start, start_eq = start or d0, e0
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("since-start history failed: %s", type(exc).__name__)
+    equity = _number(selected.get("equity"))
+    ret = (equity / start_eq - 1) * 100 if start_eq and equity else None
+    now = now or datetime.now(timezone.utc)
+    end_dt = now.astimezone(ZoneInfo("America/New_York"))
+    end_et = end_dt.date()
+    if end_dt.hour < 16:
+        end_et -= timedelta(days=1)
+    days = trading_days_between(start, end_et) if start else 0
+    return {**annualize(ret, days), "return_pct": ret, "basis": "since_start",
+            "start_date": start.isoformat() if start else None}
+
 def _friendly_error(raw: str) -> str:
     """Translate raw Alpaca API errors into user-facing guidance."""
     if "unauthorized" in raw.lower():
@@ -415,7 +509,10 @@ def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[st
             # The dashboard remains available before migration 19 is applied.
             logger.warning("Daily advisor reports unavailable: %s", type(exc).__name__)
     try:
-        annualized = period_annualized(period, selected.get("period_pct"))
+        annualized = since_start_annualized(user_id, selected)
+        if annualized.get("simple_pct") is None and selected["account_id"] == "all":
+            annualized = {**period_annualized(period, selected.get("period_pct")),
+                          "basis": period}
     except Exception:  # noqa: BLE001
         annualized = {"simple_pct": None, "compound_pct": None, "days": 0}
     return {

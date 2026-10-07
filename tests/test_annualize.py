@@ -32,3 +32,33 @@ def test_dashboard_period_annualized_counts_completed_days():
     assert period_annualized("mtd", 1.0, pre_open)["days"] == 4
     assert period_annualized("mtd", 1.0, post_close)["days"] == 5
     assert period_annualized("mtd", 1.0, datetime(2026, 10, 1, 5, tzinfo=timezone.utc))["simple_pct"] is None
+
+
+def test_since_start_annualized_uses_run_start(monkeypatch):
+    from datetime import datetime, timezone
+    from engine.reporting import pnl_dashboard as pd
+    monkeypatch.setattr(pd, "_strategy_run", lambda *a, **k: {
+        "run_id": "r1", "config": {"started": "2026-09-24", "start_equity": 1000.0}})
+    now = datetime(2026, 10, 6, 21, 0, tzinfo=timezone.utc)  # after close ET
+    a = pd.since_start_annualized("u", {"account_id": "live:123", "equity": 1031.0}, now)
+    assert a["basis"] == "since_start" and a["start_date"] == "2026-09-24"
+    assert a["days"] == 9
+    assert abs(a["return_pct"] - 3.1) < 1e-9
+    assert abs(a["simple_pct"] - 3.1 * 252 / 9) < 1e-9
+
+
+def test_ann_metric_label_since_start():
+    from engine.web.ph_pnl import _ann_metric
+    h = _ann_metric({"annualized": {"simple_pct": 86.8, "compound_pct": 134.0, "days": 9,
+                                    "basis": "since_start", "start_date": "2026-09-24"}}, "MTD")
+    assert "since start · 9d" in h and "reinvest" in h
+
+
+def test_email_headline_since_start():
+    import importlib.util, pathlib
+    spec = importlib.util.spec_from_file_location(
+        "dlr", pathlib.Path(__file__).parents[1] / "scripts" / "daily_live_report.py")
+    m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+    h = m._ann_block({"annualized": {"since_start": {"return_pct": 3.1, "simple_pct": 86.8,
+                                                     "compound_pct": 134.0, "days": 9}}})
+    assert "Annualised return (since start · 9d)" in h

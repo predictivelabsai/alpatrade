@@ -103,5 +103,7 @@ def tooltip(a: dict) -> str:
         return "Not enough trading days in the period"
     c = a.get("compound_pct")
     cs = "—" if c is None else f"{c:+.2f}%"
+    since = f" since {a['start_date']}" if a.get("start_date") else ""
     return (f"Simple: return × 252 / days = {a['simple_pct']:+.2f}% "
-            f"({a['days']} trading days); compounded (1+r)^(252/d)−1 = {cs}")
+            f"({a['days']} trading days{since}); compounded (1+r)^(252/d)−1 = {cs} "
+            "(indicative only: we don't reinvest gains immediately)")

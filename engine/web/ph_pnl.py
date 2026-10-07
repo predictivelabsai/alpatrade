@@ -261,8 +261,9 @@ def _ann_metric(data: dict, plab: str) -> str:
     tone = "" if v is None else ("positive" if v >= 0 else "negative")
     tip = html.escape(tooltip(a))
     days = f" · {a.get('days', 0)}d" if v is not None else ""
+    basis = "since start" if a.get("basis") == "since_start" else plab
     return (f"<div class='metric' title='{tip}'><div class='label'>Annualised return "
-            f"({plab}{days}) <span style='cursor:help'>ⓘ</span></div>"
+            f"({basis}{days}) <span style='cursor:help'>ⓘ</span></div>"
             f"<div class='value {tone}'>{fmt_ann(a)}</div></div>")
 
 
