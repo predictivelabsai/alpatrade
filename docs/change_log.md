@@ -1,5 +1,37 @@
 # Change Log
 
+## 2026-10-09 — v0.28.0: strategy Leaderboard + user strategies (moved from FastSkills)
+
+- **`/leaderboard` (public)** — linked from the landing nav (desktop + a mobile-visible link),
+  the home hero, the footer and the app sidebar (Trade → Leaderboard / My strategies).
+  Lists every *public* strategy ranked by annualised return, showing only: strategy name,
+  user name, description, **annualised return** (simple `return × 252 / trading days` via
+  `engine/reporting/annualize.py`; compounded `(1+r)^(252/d)−1` as an indicative hover / tap
+  note, since gains aren't reinvested immediately), **period running** (start date, days) and
+  **alpha vs SPY** (strategy return − SPY return over the same period).
+- **Figures are computed live inside AlpaTrade** from the owner's live runner run
+  (`alpatrade.runs`, `mode='live'`, same `user_id`, linked by `live_strategy_slug`): start
+  date / start equity / start SPY from `config`, and the latest session-close snapshot in
+  `results.daily` — the same baseline as `/dashboard` and the LIVE email. No snapshot file or
+  refresh job. Strategies without a live run (e.g. clones) show "—"; nothing is invented.
+- **User strategies** (`alpatrade.user_strategies`, `sql/42_user_strategies.sql`, additive):
+  users can own several; each is private (default) or public, with an owner-only
+  public/private toggle, edit and delete on `/strategies`. Strategy page `/strategies/{id}`
+  (public or own), raw skill at `/strategies/{id}/skill.md`, `/leaderboard.json`.
+- **Actions:** Copy for ChatGPT / Copy for Claude copy the single-markdown strategy skill
+  (rules prompt + numeric Parameters block) and open the assistant; **Clone into AlpaTrade**
+  is a real in-app clone into the signed-in user's strategies (private, no live link);
+  owners get "Backtest in AlpaTrade chat" (paper-only prompt built from the params).
+- **Seed:** Julian Kaljuvee's live Mag-7 BTD strategy (public), skill ported from FastSkills
+  `seed/trading/mag7-btd-live.md` and re-verified against `strategy_configs`
+  `buy_the_dip_mag7_minhold_live` v2 (dip 3% vs 20-day high, TP 8%, SL 1.5%, min/max hold
+  3 days, pos_frac 0.142857, cash only, extended-hours exits on). `python -m engine.leaderboard.seed`.
+- **Mobile:** cards below 760px (checked at 375 / 414px, no horizontal overflow), 44px tap
+  targets, tap-to-show tooltips on touch screens, compounded figure as secondary text.
+- Tests: `tests/test_leaderboard.py` (added to the CI unit-test list).
+- Deploy notes: migration 42 and the seed were applied to prod before deploy. No changes to
+  live trading, the runner, `strategy_configs`, sizing or schedules.
+
 ## 2026-10-07 — Annualised return normalised since strategy start
 
 - `/dashboard` headline **Annualised return** KPI now uses the return and NYSE trading

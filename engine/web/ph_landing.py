@@ -91,6 +91,12 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 .lp-nav-link { font-size: .85rem; color: var(--ink-muted); }
 .lp-nav-link:hover, .lp-nav-link.active { color: var(--ink); }
 .lp-nav-cta { display: flex; align-items: center; gap: .55rem; }
+.lp-nav-lb { display: none; font-size: .82rem; font-weight: 500; color: var(--ink-muted);
+  padding: .5rem .35rem; min-height: 44px; align-items: center; }
+.lp-nav-lb:hover, .lp-nav-lb.active { color: var(--accent); }
+.lp-lb-link { display: inline-flex; align-items: center; gap: .2rem; margin-top: 1.1rem; font-size: .9rem;
+  font-weight: 500; color: var(--accent); }
+.lp-lb-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 /* buttons */
 .lp-btn { display: inline-flex; align-items: center; gap: .5rem; padding: .6rem 1.15rem;
@@ -227,6 +233,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 
 @media (max-width: 960px) {
   .lp-nav-links { display: none; }
+  .lp-nav-lb { display: inline-flex; }
   .lp-grid.c5 { grid-template-columns: repeat(2, 1fr); }
   .lp-grid.c3 { grid-template-columns: 1fr; }
   .lp-stats-inner { grid-template-columns: repeat(2, 1fr); }
@@ -235,6 +242,8 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 @media (max-width: 560px) {
   .lp-grid.c5 { grid-template-columns: 1fr; }
   .lp-nav-cta .lp-btn.ghost { display: none; }
+  .lp-nav-inner { padding: 0 1rem; }
+  .lp-nav-cta { gap: .35rem; }
   .dev-agent-grid, .dev-summary { grid-template-columns: 1fr; }
   .dev-group-head { align-items: flex-start; flex-direction: column; gap: .25rem; }
 }
@@ -299,10 +308,13 @@ def _nav(active="home"):
         Div(
             _brand(),
             Div(link("Platform", "/platform", "platform"),
+                link("Leaderboard", "/leaderboard", "leaderboard"),
                 link("Pricing", "/pricing", "pricing"),
                 link("Developers", "/developers", "developers"),
                 cls="lp-nav-links"),
-            Div(_btn("Sign in", "/signin", "ghost", sm=True),
+            Div(A("Leaderboard", href="/leaderboard",
+                  cls="lp-nav-lb" + (" active" if active == "leaderboard" else "")),
+                _btn("Sign in", "/signin", "ghost", sm=True),
                 _btn("Start", "/register", "primary", sm=True, arrow=True),
                 cls="lp-nav-cta"),
             cls="lp-nav-inner",
@@ -339,6 +351,7 @@ def _footer():
                       style="font-size:.85rem;margin-top:.75rem;max-width:22rem")),
                 Div(
                     A("Platform", href="/platform"),
+                    A("Leaderboard", href="/leaderboard"),
                     A("Pricing", href="/pricing"),
                     A("Developers", href="/developers"),
                     A("Sign in", href="/signin"),
@@ -377,6 +390,8 @@ def _hero():
                 _btn("Sign in", "/signin", "ghost"),
                 _btn("Continue with Google", "/login", "google", google=True),
                 cls="lp-cta-row"),
+            A(Span("◆ "), Span("See live strategies on the Leaderboard"), Span(" →"),
+              href="/leaderboard", cls="lp-lb-link"),
             Div(
                 Div(Span("$ ", cls="dim"),
                     Span("alpatrade backtest paper btd-7dp-05sl-1tp-1d-3m", cls="cmd"),

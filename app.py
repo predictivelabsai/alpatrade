@@ -8,6 +8,7 @@ and renders its pages through that shell:
   - :mod:`engine.web.ph_auth`     — auth + profile ( ``/signin``, ``/register``, ``/profile`` … )
   - :mod:`engine.web.ph_chat`     — the 3-pane chat product ( ``/app``, ``/app/chat``, ``/news`` )
   - :mod:`engine.web.ph_guide`    — user guide / download ( ``/guide``, ``/download`` )
+  - :mod:`engine.web.ph_leaderboard` — strategy Leaderboard + user strategies ( ``/leaderboard`` )
 
 Voice routes come from :func:`engine.voice.register_voice_routes`.
 
@@ -71,6 +72,7 @@ from engine.web import ph_reports  # noqa: E402
 from engine.web import ph_advisor  # noqa: E402
 from engine.web import ph_logging  # noqa: E402
 from engine.web import ph_news_scheduler  # noqa: E402
+from engine.web import ph_leaderboard  # noqa: E402
 
 ph_landing.register(app, rt)
 ph_auth.register(app, rt)
@@ -95,6 +97,7 @@ ph_monitoring.register(app, rt)
 ph_data_health.register(app, rt)
 ph_logging.register(app, rt)
 ph_news_scheduler.register(app, rt)
+ph_leaderboard.register(app, rt)  # public /leaderboard + /strategies
 ph_reports.register(app, rt)  # public /r/{id} — last, unlisted
 
 # --- verticals: per-asset-class surfaces (Phase 1b) ---------------------------

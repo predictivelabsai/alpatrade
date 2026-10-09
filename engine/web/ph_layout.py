@@ -89,6 +89,8 @@ _ICONS = {
     "paper": '<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="3"/>',
     "news": '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="13" y2="16"/>',
     "advisor": '<polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/>',
+    "leaderboard": '<path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/>',
+    "strategies": '<path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h7"/><polyline points="15 16 17 18 21 14"/>',
     # Monitoring
     "agent-pipeline": '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
     "data-health": '<polyline points="3 12 7 12 10 5 14 19 17 12 21 12"/><circle cx="3" cy="12" r="1"/><circle cx="21" cy="12" r="1"/>',
