@@ -10,6 +10,10 @@ from datetime import date, timedelta
 from typing import Optional
 
 TRADING_DAYS_PER_YEAR = 252
+# Don't annualise short records: compounding e.g. 15 days gives absurd figures. 63 NYSE
+# sessions ~ 90 calendar days; below that the annualised values are None and
+# ``short_period`` is True (rendered "n/a (<90d)").
+MIN_ANNUALISE_TRADING_DAYS = 63
 
 
 def _easter(y: int) -> date:
@@ -78,10 +82,16 @@ def trading_days_between(start: date, end: date) -> int:
     return n
 
 
-def annualize(return_pct: Optional[float], trading_days: int) -> dict:
-    """Return {'simple_pct','compound_pct','days'}; values None when d < 1."""
-    out = {"simple_pct": None, "compound_pct": None, "days": int(trading_days or 0)}
+def annualize(return_pct: Optional[float], trading_days: int,
+              min_days: int = MIN_ANNUALISE_TRADING_DAYS) -> dict:
+    """Return {'simple_pct','compound_pct','days','short_period'}; values None when
+    d < ``min_days`` (default 63 sessions ~ 90 calendar days)."""
+    out = {"simple_pct": None, "compound_pct": None, "days": int(trading_days or 0),
+           "short_period": False}
     if return_pct is None or not trading_days or trading_days < 1:
+        return out
+    if trading_days < max(1, int(min_days or 1)):
+        out["short_period"] = True
         return out
     r = float(return_pct) / 100.0
     out["simple_pct"] = r * TRADING_DAYS_PER_YEAR / trading_days * 100
@@ -95,11 +105,17 @@ def annualize(return_pct: Optional[float], trading_days: int) -> dict:
 
 def fmt_ann(a: dict) -> str:
     v = a.get("simple_pct")
-    return "—" if v is None else f"{v:+.2f}%"
+    if v is None:
+        return "n/a (<90d)" if a.get("short_period") else "—"
+    return f"{v:+.2f}%"
 
 
 def tooltip(a: dict) -> str:
     if a.get("simple_pct") is None:
+        if a.get("short_period"):
+            return (f"Not annualised: only {a.get('days')} trading days (needs "
+                    f"{MIN_ANNUALISE_TRADING_DAYS}, ~90 calendar days); compounding a short period "
+                    "gives misleading figures")
         return "Not enough trading days in the period"
     c = a.get("compound_pct")
     cs = "—" if c is None else f"{c:+.2f}%"

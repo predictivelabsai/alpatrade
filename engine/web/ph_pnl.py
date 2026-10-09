@@ -253,6 +253,13 @@ def _metric(label: str, value: str, tone: str = "") -> str:
     return f"<div class='metric'><div class='label'>{label}</div><div class='value {tone}'>{value}</div></div>"
 
 
+def _deposits_metric(data: dict, plab: str) -> str:
+    """Net deposits in the period (excluded from P&L); flags when activities were unreadable."""
+    if data.get("cash_flows_ok") is False:
+        return _metric(f"{plab} net deposits", "unavailable — P&amp;L may include transfers", "negative")
+    return _metric(f"{plab} net deposits", _money(data.get("net_deposits") or 0.0))
+
+
 def _ann_metric(data: dict, plab: str) -> str:
     """Annualised-return KPI (simple ×252/d) with compounded value in tooltip."""
     from engine.reporting.annualize import fmt_ann, tooltip
@@ -652,6 +659,7 @@ def _render_live(data: dict, selected_id: str | None) -> str:
        {_metric('Unrealized P&L', _money(data['unrealized_pnl']),
                 'positive' if data['unrealized_pnl'] >= 0 else 'negative')}
        {_metric('Cash', _money(data['cash']))}
+       {_deposits_metric(data, plab)}
        {_metric('Buying power', _money(data['buying_power']))}
        {_ann_metric(data, plab)}
        {_metric('Open positions', str(len(data.get('positions') or live.get('positions') or [])))}
@@ -721,7 +729,7 @@ def _render_paper(data: dict, selected_id: str | None) -> str:
        {_metric(f'{plab} P&L', _money(data['period_pnl']), pnl_tone)}
        {_metric(f'{plab} return', f"{data['period_pct']:+.2f}%", pnl_tone)}
        {_metric('Unrealized P&L', _money(data['unrealized_pnl']), 'positive' if data['unrealized_pnl'] >= 0 else 'negative')}
-       {_metric('Cash', _money(data['cash']))}{_metric('Buying power', _money(data['buying_power']))}
+       {_metric('Cash', _money(data['cash']))}{_deposits_metric(data, plab)}{_metric('Buying power', _money(data['buying_power']))}
        {_metric('Accounts', str(len(data['accounts'])))}{_ann_metric(data, plab)}
       </div>
       <div class="panel-grid"><section class="panel"><h2>Equity curve</h2><div id="equity-chart" class="chart"></div></section>

@@ -303,7 +303,12 @@ def load_view(user_id: str) -> dict:
         return out
     had_bnbx = any(str(p.get("symbol") or "").upper() == "BNBX"
                    for p in (snap.get("positions") or []))
-    out.update(summary=summarize_account(snap["account"]),
+    from datetime import datetime as _dt, timedelta as _td
+    from zoneinfo import ZoneInfo as _Z
+    from engine.reporting.cash_flows import adjust_day, fetch_flows, net_flows
+    _today = _dt.now(_Z("America/New_York")).date()
+    flows = fetch_flows(client, _today.replace(month=1, day=1) - _td(days=400))
+    out.update(summary=adjust_day(summarize_account(snap["account"]), flows, _today),
                positions=_filter_zombie_positions(snap["positions"]), orders=snap["orders"],
                had_bnbx=had_bnbx)
     # Performance vs SPY + equity curves (best-effort; never blocks the page).
@@ -327,7 +332,11 @@ def load_view(user_id: str) -> dict:
                 runner_open.append({"symbol": t.get("symbol"), "upl": upl})
         equity = (out.get("summary") or {}).get("equity")
         today = datetime.now(ZoneInfo("America/New_York")).date()
-        out["perf"] = performance_since_start(equity, run, day=today, runner_open=runner_open)
+        from engine.reporting.live_perf import _parse_started
+        started = _parse_started(run.get("config") or {}, run) if run.get("run_id") else None
+        dep = net_flows(flows or [], started, today) if started else 0.0
+        out["perf"] = performance_since_start(equity, run, day=today, runner_open=runner_open,
+                                              net_deposits=dep)
         out["curves"] = equity_curves(client, run, end=today) or {}
         out["run_id"] = run.get("run_id")
     except Exception as exc:  # noqa: BLE001

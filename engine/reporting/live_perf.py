@@ -62,8 +62,13 @@ def performance_since_start(
     day: date | None = None,
     spy: float | None = None,
     runner_open: list[dict] | None = None,
+    net_deposits: float = 0.0,
 ) -> dict:
-    """Account / SPY / strategy summary since the live runner started."""
+    """Account / SPY / strategy summary since the live runner started.
+
+    ``net_deposits`` = deposits - withdrawals booked after the start; excluded from the
+    account P&L/return (engine/reporting/cash_flows.py)."""
+    from engine.reporting.cash_flows import adjusted_pnl
     cfg = (run or {}).get("config") or {}
     if not (run or {}).get("run_id"):
         return {}
@@ -72,7 +77,7 @@ def performance_since_start(
     if spy is None:
         spy = spy_close(day, run)
     equity = _fn(equity)
-    acct_ret = (equity / start_eq - 1) * 100 if equity is not None and start_eq else None
+    acct_pnl, acct_ret = adjusted_pnl(equity, start_eq, net_deposits)
     spy_ret = (spy / start_spy - 1) * 100 if spy and start_spy else None
     latest = ((run or {}).get("results") or {}).get("latest") or {}
     upl = sum(_f(r.get("upl")) for r in (runner_open or []))
@@ -82,7 +87,8 @@ def performance_since_start(
         "start_equity": start_eq,
         "equity": equity,
         "account_return_pct": acct_ret,
-        "account_pnl": (equity - start_eq) if equity is not None and start_eq else None,
+        "account_pnl": acct_pnl,
+        "net_deposits": net_deposits,
         "spy_start": start_spy,
         "spy": spy,
         "spy_return_pct": spy_ret,
@@ -414,11 +420,17 @@ __all__ = [
 
 
 def period_annualized(client, day: date, equity_day: float,
-                      perf: Optional[dict] = None, run: Optional[dict] = None) -> dict:
+                      perf: Optional[dict] = None, run: Optional[dict] = None,
+                      flows: Optional[list] = None) -> dict:
     """MTD / YTD (and since-start) return + annualised (simple ×252/d, compounded).
 
     Baseline matches /dashboard: first portfolio-history equity inside the window.
+    ``flows`` = cash_flows.flow_rows(); deposits/withdrawals after the baseline are
+    excluded from the return (fetched from the client when None).
     """
+    from engine.reporting.cash_flows import adjusted_pnl, fetch_flows, net_flows
+    if flows is None:
+        flows = fetch_flows(client, date(day.year, 1, 1) - timedelta(days=1)) or []
     from engine.reporting.annualize import annualize, trading_days_between
     out: dict[str, Any] = {}
     try:
@@ -431,9 +443,12 @@ def period_annualized(client, day: date, equity_day: float,
         log.warning("period_annualized history failed: %s", type(exc).__name__)
         pts = []
     for key, start in (("mtd", day.replace(day=1)), ("ytd", date(day.year, 1, 1))):
-        base = next((e for d, e in pts if start <= d <= day), None)
-        ret = (equity_day / base - 1) * 100 if base else None
-        out[key] = {"return_pct": ret, **annualize(ret, trading_days_between(start, day))}
+        first = next(((d, e) for d, e in pts if start <= d <= day), None)
+        base = first[1] if first else None
+        dep = net_flows(flows, first[0], day) if first else 0.0
+        pnl, ret = adjusted_pnl(equity_day, base, dep)
+        out[key] = {"return_pct": ret, "pnl": pnl, "net_deposits": dep,
+                    **annualize(ret, trading_days_between(start, day))}
     perf = perf or {}
     started = _parse_started((run or {}).get("config") or {}, run or {}) if run else None
     if started and perf.get("account_return_pct") is not None:

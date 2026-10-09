@@ -448,8 +448,15 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
     else:
         equity_day = equity
     last_equity = last_equity or equity_day
-    day_pnl = equity_day - last_equity
-    day_pct = (equity_day / last_equity - 1) * 100 if last_equity else 0.0
+    # Deposits / withdrawals are not P&L (engine/reporting/cash_flows.py).
+    from engine.reporting.cash_flows import adjusted_pnl, fetch_flows, net_flows
+    flows = fetch_flows(client, date(day.year, 1, 1) - timedelta(days=400))
+    if flows is None:
+        warnings.append("Deposit/withdrawal activities unavailable: P&L may include cash transfers.")
+    prev_day = prev["date"] if prev else day - timedelta(days=1)
+    day_deposits = net_flows(flows or [], prev_day, day)
+    day_pnl, day_pct = adjusted_pnl(equity_day, last_equity, day_deposits)
+    day_pnl, day_pct = day_pnl or 0.0, day_pct or 0.0
 
     # Fills in the window, aggregated per order, labelled runner vs other.
     iso = lambda d: d.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")  # noqa: E731
@@ -519,11 +526,14 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
     latest = (run.get("results") or {}).get("latest") or {}
     if run.get("run_id"):
         spy = spy_close(day, run)
-        acct_ret = (equity_day / start_eq - 1) * 100 if start_eq else None
+        from engine.reporting.live_perf import _parse_started
+        started_d = _parse_started(cfg, run)
+        since_dep = net_flows(flows or [], started_d, day) if started_d else 0.0
+        acct_pnl, acct_ret = adjusted_pnl(equity_day, start_eq, since_dep)
         spy_ret = (spy / start_spy - 1) * 100 if spy and start_spy else None
         perf = {"started": cfg.get("started") or run.get("started_at"),
                 "start_equity": start_eq, "equity": equity_day, "account_return_pct": acct_ret,
-                "account_pnl": (equity_day - start_eq) if start_eq else None,
+                "account_pnl": acct_pnl, "net_deposits": since_dep,
                 "spy_start": start_spy, "spy": spy, "spy_return_pct": spy_ret,
                 "excess_pct": (acct_ret - spy_ret) if acct_ret is not None and spy_ret is not None else None,
                 "strategy_realized": _fn(latest.get("realized_pnl")),
@@ -541,7 +551,7 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
 
     try:
         from engine.reporting.live_perf import period_annualized
-        annualized = period_annualized(client, day, equity_day, perf, run)
+        annualized = period_annualized(client, day, equity_day, perf, run, flows=flows or [])
     except Exception:  # noqa: BLE001
         annualized = {}
 
@@ -554,7 +564,8 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
         **target, "day": day.isoformat(), "session_close": sess["close"],
         "generated_at": now, "backdated": backdated, "window": (win_start, win_end),
         "equity": equity_day, "equity_now": equity, "last_equity": last_equity,
-        "day_pnl": day_pnl, "day_pct": day_pct, "cash": _f(acct.get("cash")),
+        "day_pnl": day_pnl, "day_pct": day_pct, "day_deposits": day_deposits,
+        "cash": _f(acct.get("cash")),
         "buying_power": _f(acct.get("buying_power")),
         "long_market_value": _f(acct.get("long_market_value")),
         "positions": positions, "ignored_positions": ignored_positions, "open_orders": open_orders, "fills": orders,
@@ -851,6 +862,7 @@ def render(d: dict) -> str:
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Equity (session close)</td><td><b>{_money(d['equity'])}</b></td></tr>
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Equity now</td><td>{_money(d['equity_now'])}</td></tr>
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Cash</td><td>{_money(d['cash'])}</td></tr>
+    {"" if not d.get('day_deposits') else f"<tr><td style='padding:2px 14px 2px 0;color:#415046'>Net deposits today (not P&amp;L)</td><td>{_money(d['day_deposits'], True)}</td></tr>"}
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Buying power</td><td>{_money(d['buying_power'])}</td></tr>
     <tr><td style="padding:2px 14px 2px 0;color:#415046">Open unrealised P&amp;L</td><td style="color:{_col(upl)}">{_money(upl, True)}</td></tr>
   </table>

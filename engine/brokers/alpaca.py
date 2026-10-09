@@ -124,6 +124,18 @@ class AlpacaAPI:
             logger.debug(f"get_cash_flows({day}) unavailable: {e}")
             return 0.0
 
+    def get_cash_flow_activities(self, after: str, until: Optional[str] = None) -> list:
+        """CSD / CSW / JNLC activities after a date (raw REST; raises on error)."""
+        import requests
+        params = {"activity_types": "CSD,CSW,JNLC", "after": after, "direction": "asc", "page_size": 100}
+        if until:
+            params["until"] = until
+        resp = requests.get(f"{self.base_url}/v2/account/activities",
+                            headers={"APCA-API-KEY-ID": self.api_key, "APCA-API-SECRET-KEY": self.secret_key},
+                            params=params, timeout=15)
+        resp.raise_for_status()
+        return resp.json() or []
+
     @property
     def base_url(self):
         return "https://paper-api.alpaca.markets" if self.paper else "https://api.alpaca.markets"

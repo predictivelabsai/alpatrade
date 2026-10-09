@@ -11,6 +11,7 @@ from alpaca.trading.requests import GetPortfolioHistoryRequest
 from agents.report_agent import ReportAgent
 from engine.auth import get_alpaca_keys, get_user_accounts
 from engine.brokers.alpaca import AlpacaAPI
+from engine.reporting.cash_flows import adjusted_pnl, fetch_flows, net_flows
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +159,25 @@ def _first_equity_since(user_id: str, selected: dict, start) -> tuple[Any, float
     return None, None
 
 
+def _deposits_since(user_id: str, selected: dict, start) -> float:
+    """Net deposits booked after ``start`` (date) for the selected account; 0.0 if unknown."""
+    acct = str(selected.get("account_id") or "")
+    try:
+        if is_live_dashboard_id(acct):
+            from engine.brokers.alpaca_live_readonly import LiveReadOnlyClient
+            from engine.live_accounts import get_live_account_credentials
+            creds = get_live_account_credentials(user_id, acct[len(LIVE_ACCOUNT_PREFIX):])
+            client = LiveReadOnlyClient(creds["api_key"], creds["secret_key"],
+                                        expected_account_number=creds["account_number"])
+        else:
+            client, _env = _client(user_id, acct)
+        return net_flows(fetch_flows(client, start - timedelta(days=1)) or [], start,
+                         datetime.now(timezone.utc).date())
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("since-start cash flows failed: %s", type(exc).__name__)
+        return 0.0
+
+
 def since_start_annualized(user_id: str, selected: dict, now: datetime | None = None) -> dict:
     """Annualised return normalised since the strategy start.
 
@@ -192,7 +212,8 @@ def since_start_annualized(user_id: str, selected: dict, now: datetime | None = 
         except Exception as exc:  # noqa: BLE001
             logger.warning("since-start history failed: %s", type(exc).__name__)
     equity = _number(selected.get("equity"))
-    ret = (equity / start_eq - 1) * 100 if start_eq and equity else None
+    dep = _deposits_since(user_id, selected, start) if start and start_eq else 0.0
+    ret = adjusted_pnl(equity, start_eq, dep)[1] if start_eq and equity else None
     now = now or datetime.now(timezone.utc)
     end_dt = now.astimezone(ZoneInfo("America/New_York"))
     end_et = end_dt.date()
@@ -268,6 +289,26 @@ def _history(client: AlpacaAPI, start: datetime, end: datetime) -> dict[str, lis
     }
 
 
+def _period_deposits(client: Any, history: dict, start: datetime, end: datetime) -> tuple[float, bool]:
+    """Net deposits booked after the baseline point's ET date through ``end`` (P&L excludes them)."""
+    from zoneinfo import ZoneInfo
+    et = ZoneInfo("America/New_York")
+    stamps = history.get("timestamps") or []
+    try:
+        base_day = datetime.fromisoformat(stamps[0]).astimezone(et).date() if stamps else None
+    except ValueError:
+        base_day = None
+    if base_day is not None and len(stamps) == 1 and base_day >= end.astimezone(et).date():
+        base_day = None  # no real history: baseline is last_equity (prior close) -> today's flows
+    since = (base_day or start.astimezone(et).date()) - timedelta(days=1)
+    rows = fetch_flows(client, since)
+    if rows is None:
+        return 0.0, False
+    through = end.astimezone(et).date()
+    after = base_day if base_day is not None else through - timedelta(days=1)
+    return net_flows(rows, after, through), True
+
+
 def _one_account(user_id: str, account: dict, period: str) -> dict[str, Any]:
     start, end = period_bounds(period)
     client, environment = _client(user_id, account["account_id"])
@@ -295,7 +336,8 @@ def _one_account(user_id: str, account: dict, period: str) -> dict[str, Any]:
     )
     equity = _number(live.get("equity"))
     baseline = history["equity"][0] if history["equity"] else _number(live.get("last_equity"))
-    period_pnl = equity - baseline
+    deposits, flows_ok = _period_deposits(client, history, start, end)
+    period_pnl, period_pct = adjusted_pnl(equity, baseline, deposits)
     return {
         "account_id": account["account_id"],
         "account_name": account["account_name"],
@@ -304,8 +346,9 @@ def _one_account(user_id: str, account: dict, period: str) -> dict[str, Any]:
         "portfolio_value": _number(live.get("portfolio_value")),
         "cash": _number(live.get("cash")),
         "buying_power": _number(live.get("buying_power")),
-        "period_pnl": period_pnl,
-        "period_pct": period_pnl / baseline * 100 if baseline else 0,
+        "period_pnl": period_pnl or 0.0,
+        "period_pct": period_pct or 0.0,
+        "net_deposits": deposits, "cash_flows_ok": flows_ok,
         "unrealized_pnl": sum(row["pnl"] for row in contributors),
         "history": history,
         "contributors": contributors,
@@ -375,7 +418,8 @@ def _one_live_account(user_id: str, account: dict, period: str) -> dict[str, Any
     )
     equity = _number(live.get("equity"))
     baseline = history["equity"][0] if history["equity"] else _number(live.get("last_equity"))
-    period_pnl = equity - baseline
+    deposits, flows_ok = _period_deposits(client, history, start, end)
+    period_pnl, period_pct = adjusted_pnl(equity, baseline, deposits)
     return {
         "account_id": account["account_id"],
         "account_name": account["account_name"],
@@ -384,8 +428,9 @@ def _one_live_account(user_id: str, account: dict, period: str) -> dict[str, Any
         "portfolio_value": equity,
         "cash": _number(live.get("cash")),
         "buying_power": _number(live.get("buying_power")),
-        "period_pnl": period_pnl,
-        "period_pct": period_pnl / baseline * 100 if baseline else 0.0,
+        "period_pnl": period_pnl or 0.0,
+        "period_pct": period_pct or 0.0,
+        "net_deposits": deposits, "cash_flows_ok": flows_ok,
         "unrealized_pnl": sum(row["pnl"] for row in contributors),
         "history": history,
         "contributors": contributors,
@@ -403,7 +448,8 @@ def _aggregate(accounts: list[dict[str, Any]], period: str) -> dict[str, Any]:
     equity_series = [by_time[stamp] for stamp in timestamps]
     equity = sum(a["equity"] for a in accounts)
     period_pnl = sum(a["period_pnl"] for a in accounts)
-    baseline = equity - period_pnl
+    deposits = sum(a.get("net_deposits") or 0.0 for a in accounts)
+    baseline = equity - period_pnl - deposits
     contributors: dict[str, dict[str, Any]] = {}
     for account in accounts:
         for row in account["contributors"]:
@@ -422,7 +468,9 @@ def _aggregate(accounts: list[dict[str, Any]], period: str) -> dict[str, Any]:
         "cash": sum(a["cash"] for a in accounts),
         "buying_power": sum(a["buying_power"] for a in accounts),
         "period_pnl": period_pnl,
-        "period_pct": period_pnl / baseline * 100 if baseline else 0,
+        "period_pct": period_pnl / (baseline + max(0.0, deposits)) * 100 if baseline else 0,
+        "net_deposits": deposits,
+        "cash_flows_ok": all(a.get("cash_flows_ok", True) for a in accounts),
         "unrealized_pnl": sum(a["unrealized_pnl"] for a in accounts),
         "history": {"timestamps": timestamps, "equity": equity_series, "pnl": [], "pnl_pct": []},
         "contributors": sorted(contributors.values(), key=lambda row: row["pnl"], reverse=True),

@@ -6,10 +6,15 @@ start equity and start SPY in ``config`` and the latest daily **session-close** 
 ``results.daily`` (account equity + SPY close, written by the runner's post-close pass).
 These are the same numbers as ``/dashboard`` and the daily LIVE email:
 
-* return          = equity / start_equity − 1   (account return since the live start)
+* return          = time-weighted return since the live start: daily session-close equity
+                    chained, each day net of that day's external cash flows (deposits /
+                    withdrawals, Alpaca CSD/CSW/JNLC via the owner's read-only live link), so a
+                    deposit is never counted as performance (engine/reporting/cash_flows.py).
+                    Without flow data it falls back to equity / start_equity − 1.
 * SPY return      = SPY / start_SPY − 1          (same period)
 * alpha           = return − SPY return
-* annualised      = return × 252 / trading days  (simple; ``engine.reporting.annualize``)
+* annualised      = return × 252 / trading days  (simple; ``engine.reporting.annualize``);
+                    None ("n/a (<90d)") below 63 trading days (~90 calendar days)
 * compounded      = (1+r)^(252/d) − 1             (indicative only — gains aren't reinvested
                                                    immediately)
 * trading days    = NYSE sessions from the start date to the snapshot date, inclusive
@@ -63,8 +68,23 @@ EMPTY: dict[str, Any] = {
 }
 
 
-def metrics_from_run(run: Optional[dict], today: Optional[date] = None) -> dict:
-    """Pure: leaderboard metrics from one live ``alpatrade.runs`` row (config + results)."""
+def twr_pct(start: date, start_eq: float, points: list, flows: Optional[list]) -> tuple[float, float]:
+    """(time-weighted return %, net deposits) from ascending [(day, equity)] session closes.
+    Each segment's return = (E_k − flows in (prev_day, k]) / E_prev − 1 (flow at end of day)."""
+    from engine.reporting.cash_flows import net_flows
+    growth, prev_eq, prev_day, dep = 1.0, float(start_eq), start, 0.0
+    for d, e in points:
+        f = net_flows(flows or [], prev_day, d)
+        if prev_eq > 0:
+            growth *= (float(e) - f) / prev_eq
+        prev_eq, prev_day, dep = float(e), d, dep + f
+    return (growth - 1) * 100, round(dep, 2)
+
+
+def metrics_from_run(run: Optional[dict], today: Optional[date] = None,
+                     flows: Optional[list] = None) -> dict:
+    """Pure: leaderboard metrics from one live ``alpatrade.runs`` row (config + results).
+    ``flows`` = cash_flows.flow_rows() for the run's account (None = unknown -> simple return)."""
     out = dict(EMPTY)
     if not run:
         return out
@@ -91,18 +111,53 @@ def metrics_from_run(run: Optional[dict], today: Optional[date] = None) -> dict:
             continue
         if not (start and start_eq and start_spy):
             break
-        ret = (equity / start_eq - 1) * 100
+        pts = sorted((_day(k), _num((daily.get(k) or {}).get("equity"))) for k in daily
+                     if _day(k) and start <= _day(k) <= d and _num((daily.get(k) or {}).get("equity")))
+        if flows is not None:
+            ret, dep = twr_pct(start, start_eq, pts, flows)
+        else:
+            ret, dep = (equity / start_eq - 1) * 100, None
         spy_ret = (spy / start_spy - 1) * 100
         days = trading_days_between(start, d)
         ann = annualize(ret, days)
         out.update(
-            has_data=ann["simple_pct"] is not None, as_of=d.isoformat(), trading_days=days,
+            has_data=True, as_of=d.isoformat(), trading_days=days,
+            net_deposits=dep, cash_flows_ok=flows is not None,
+            annualised_short=ann.get("short_period", False),
             return_pct=ret, spy_return_pct=spy_ret, alpha_pct=ret - spy_ret,
             annualised_pct=ann["simple_pct"], annualised_compound_pct=ann["compound_pct"],
             equity=equity,
         )
         break
     return out
+
+
+def _owner_flows(user_id: str, run: Optional[dict]) -> Optional[list]:
+    """Cash-flow rows of the run's account via the OWNER's read-only live link (GET only).
+    None when unavailable (figures then fall back to the simple equity ratio)."""
+    if not run:
+        return None
+    cfg = run.get("config") or {}
+    if isinstance(cfg, str):
+        cfg = json.loads(cfg)
+    acct = cfg.get("account_number")
+    start = _day(cfg.get("started")) or _day(run.get("started_at"))
+    if not acct or not start:
+        return None
+    try:
+        from datetime import timedelta
+        from engine.brokers.alpaca_live_readonly import LiveReadOnlyClient
+        from engine.live_accounts import get_live_account_credentials
+        from engine.reporting.cash_flows import fetch_flows
+        creds = get_live_account_credentials(user_id, str(acct))
+        if not creds:
+            return None
+        client = LiveReadOnlyClient(creds["api_key"], creds["secret_key"],
+                                    expected_account_number=creds["account_number"])
+        return fetch_flows(client, start - timedelta(days=1))
+    except Exception as exc:  # noqa: BLE001
+        log.warning("leaderboard cash flows unavailable: %s", type(exc).__name__)
+        return None
 
 
 def _live_run(user_id: str, slug: str) -> Optional[dict]:
@@ -161,7 +216,8 @@ def strategy_metrics(strategy: dict, today: Optional[date] = None) -> dict:
         if hit and now - hit[0] < _CACHE_TTL_S and today is None:
             return dict(hit[1])
     try:
-        m = metrics_from_run(_live_run(str(uid), slug), today)
+        run = _live_run(str(uid), slug)
+        m = metrics_from_run(run, today, _owner_flows(str(uid), run))
     except Exception as exc:  # noqa: BLE001 — DB down: show "—", never fake numbers
         log.warning("leaderboard live metrics failed: %s", type(exc).__name__)
         return dict(EMPTY)
@@ -193,6 +249,10 @@ def annualised_tip(m: dict) -> str:
                 f"from {fmt_day(m['start_date'])} to {fmt_day(m['as_of'])} (daily bars, cash only, "
                 f"slippage included). Hypothetical — never traded live.")
     if m.get("annualised_pct") is None:
+        if m.get("annualised_short"):
+            return (f"Not annualised: only {m.get('trading_days')} trading days since "
+                    f"{fmt_day(m.get('start_date'))} (needs 63, ~90 calendar days). Return since "
+                    f"start {pct(m.get('return_pct'))}, time-weighted, deposits excluded.")
         return "No live track record available for this strategy yet."
     return (f"Simple: return × 252 / trading days = {pct(m['return_pct'])} × 252 / "
             f"{m['trading_days']} = {pct(m['annualised_pct'])}. Compounded (1+r)^(252/d)−1 = "
@@ -221,4 +281,6 @@ def rank_key(m: dict):
     without figures, then backtests (by annualised return) — backtests never outrank live."""
     v = m.get("annualised_pct")
     bt = 1 if m.get("is_backtest") else 0
+    if v is None and not bt and m.get("has_data") and m.get("return_pct") is not None:
+        v = m["return_pct"]  # short live record: rank by its (non-annualised) return
     return (bt, 0, -v) if v is not None else (bt, 1, 0.0)

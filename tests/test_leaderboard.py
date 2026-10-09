@@ -33,9 +33,9 @@ def test_metrics_from_live_run_snapshot():
     assert m["return_pct"] == pytest.approx((2809.13 / 2725.59 - 1) * 100)
     assert m["spy_return_pct"] == pytest.approx((774.30 / 767.29 - 1) * 100)
     assert m["alpha_pct"] == pytest.approx(m["return_pct"] - m["spy_return_pct"])
-    assert m["annualised_pct"] == pytest.approx(m["return_pct"] * 252 / 11)
-    r = m["return_pct"] / 100
-    assert m["annualised_compound_pct"] == pytest.approx(((1 + r) ** (252 / 11) - 1) * 100)
+    # 11 sessions < 63 (~90 calendar days): not annualised
+    assert m["annualised_pct"] is None and m["annualised_compound_pct"] is None
+    assert m["annualised_short"] is True
 
 
 def test_metrics_never_invent_numbers():
@@ -106,11 +106,11 @@ def test_leaderboard_html_has_fields_actions_and_mobile_hooks():
                                                    dict(perf.EMPTY))], None)
     assert "Mag-7 &lt;BTD&gt;" in html and "<BTD>" not in html.split("<script")[0]
     assert "Julian Kaljuvee" in html and "Buys dips" in html
-    assert perf.pct(m["annualised_pct"]) in html and perf.pct(m["alpha_pct"]) in html
+    assert "n/a (&lt;90d)" in html and perf.pct(m["alpha_pct"]) in html
     assert "Since 24 Sep 2026" in html and "15 days running" in html
     assert "Copy for ChatGPT" in html and "Copy for Claude" in html
     assert "action='/strategies/7/clone'" in html and "Clone into AlpaTrade" in html
-    assert "id='lb-md-7'" in html and "data-tip=" in html and "lb-sub m" in html
+    assert "id='lb-md-7'" in html and "data-tip=" in html
     assert "session close 8 Oct 2026" in html
     assert html.count("—") >= 3  # strategy without live data shows dashes
     # mobile: cards under 760px, 44px tap targets, tap-tooltip toast
