@@ -1,0 +1,65 @@
+{
+  "trader": "Dan Shapiro",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Guest explicitly describes swing trading rules for US stocks (initial move + 5-day base + breakout above) that can be approximated on daily bars.",
+  "template": "breakout",
+  "method_name": "Swing breakout after consolidation",
+  "style": "swing trading",
+  "timeframe": "multi-day holds",
+  "universe": {
+    "description": "US stocks showing initial moves and consolidations"
+  },
+  "setup": [
+    {
+      "rule": "stock puts in an initial move, bases out for at least 5 days",
+      "quote": "I look for a stock that puts in an initial move, bases out for at least 5 days, and once it gets above that initial move, I buy the stock.",
+      "timestamp": "[00:24:22]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "buy when price gets above the initial move high after 5-day base",
+      "quote": "once it gets above that initial move, I buy the stock",
+      "timestamp": "[00:24:22]"
+    }
+  ],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [
+    {
+      "rule": "only in uptrending market with defined ranges",
+      "quote": "when there's a uptrending market, I don't even want to day trade... I make my money as a swing trader when there's a trending market, there's defined ranges",
+      "timestamp": "[00:45:47]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "no numeric values for momentum_min_pct, consolidation_max_range_pct, trail_ma or stops",
+      "assumption": "use 5 days as consolidation_days and default other params to null"
+    },
+    {
+      "issue": "mentions supply zones and 60-min pivots but no exact definition",
+      "assumption": "treat as discretionary overlay not codable on daily bars"
+    }
+  ],
+  "params": {
+    "momentum_lookback_days": null,
+    "momentum_min_pct": null,
+    "consolidation_days": 5,
+    "consolidation_max_range_pct": null,
+    "trail_ma": null,
+    "partial_after_days": null,
+    "partial_frac": null,
+    "risk_per_trade_pct": null,
+    "max_position_pct": null,
+    "max_positions": null
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "32",
+    "page_url": "https://chatwithtraders.com/episode/032-dan-shapiro-how-to-handle-a-run-of-losses-grind-through-slumps-while-keeping-your-emotions-intact",
+    "youtube_url": "https://www.youtube.com/watch?v=yOOrqholDMY"
+  }
+}

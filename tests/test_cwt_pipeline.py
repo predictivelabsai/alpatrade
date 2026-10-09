@@ -206,3 +206,50 @@ def test_rule_params_clamp_and_percent_fix():
     g = {"template": "dip", "members": [{"spec": {"params": {"dip": 5, "target": 8, "pos_pct": 10}}}]}
     q = cwt.group_params(g)
     assert q.dip == 0.05 and q.target == 0.08 and q.pos_pct == 0.10
+
+
+def test_spec_params_zero_means_default_and_windows_are_feasible():
+    # LLM zeros ("not stated") used to clamp to the lower bound (5% range, 2-day 10% partial)
+    p = cwt.spec_params({"params": {"momentum_lookback_days": 20, "momentum_min_pct": 0,
+                                    "consolidation_days": 20, "consolidation_max_range_pct": 0,
+                                    "partial_after_days": 0, "partial_frac": 0,
+                                    "max_position_pct": 0, "max_positions": 0}})
+    assert p.mom_min == 0.30 and p.cons_max_range == 0.15
+    assert p.partial_days == 4 and p.partial_frac == 0.33 and p.max_pos_pct == 0.20
+    assert p.max_positions == 10
+    # momentum must be measured over >= 20 sessions before the consolidation
+    assert p.mom_days >= p.cons_days + 20
+    # fractions given for percent fields
+    q = cwt.spec_params({"params": {"momentum_min_pct": 0.05, "consolidation_max_range_pct": 0.1,
+                                    "partial_frac": 33}})
+    assert q.mom_min == 0.10 and q.cons_max_range == 0.10 and q.partial_frac == 0.33
+
+
+def test_group_params_zero_size_fields_use_defaults():
+    g = {"template": "dip", "members": [{"spec": {"params": {"dip": 0.03, "pos_pct": 0,
+                                                            "max_positions": 0, "trend_ma": 0}}}]}
+    q = cwt.group_params(g)
+    assert q.pos_pct == 0.10 and q.max_positions == 10 and q.trend_ma == 0  # 0 = no trend filter kept
+    rs = cwt.group_params({"template": "relative_strength",
+                           "members": [{"spec": {"params": {"rebalance_days": 1, "top_n": 10}}}]})
+    assert rs.rebalance_days == 5 and rs.hold_buffer == 2.0
+
+
+def test_rotation_hysteresis_cuts_churn():
+    from engine.backtest import templates as T
+    spy = _bars(n=500, seed=99)
+    bars = {s: _bars(n=500, seed=i) for i, s in enumerate("ABCDEFGHIJ")}
+    base = {"template": "relative_strength", "lookback": 20, "top_n": 3, "rebalance_days": 5,
+            "trend_ma": 0, "market_filter": False}
+    tight = T.run(bars, spy, "2020-03-01", "2021-10-01", T.RuleParams.from_dict({**base, "hold_buffer": 1.0}))
+    loose = T.run(bars, spy, "2020-03-01", "2021-10-01", T.RuleParams.from_dict(base))
+    assert 0 < loose["trades"] < tight["trades"]
+    assert sum(t["pnl"] for t in loose["trips"]) == pytest.approx(loose["equity"].iloc[-1] - 100_000, rel=1e-6)
+
+
+def test_classification_override_stan_gluzman_intraday():
+    ep = {"episode_number": "211", "slug": "211-stan-gluzman-one-bias-one-objective-make-money"}
+    if not (cwt.DATA / ep["slug"] / "spec.json").exists():
+        pytest.skip("episode artefacts not present")
+    s = cwt.load_spec(ep)
+    assert s["category"] == "intraday_only" and not s["testable"] and s["_override"]

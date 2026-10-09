@@ -1,0 +1,82 @@
+{
+  "trader": "John Walsh",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Concrete long-side rules for US stocks using 52-week highs plus filters on daily bars with Donchian exits.",
+  "template": "breakout",
+  "method_name": "52-week high breakout trend",
+  "style": "trend following position trading",
+  "timeframe": "daily",
+  "universe": {
+    "description": "US stocks scanned on finviz.com"
+  },
+  "setup": [
+    {
+      "rule": "52-week high with decent volume and EPS increase",
+      "quote": "I long 52 week highs, I short 52 week lows with a few added parameters, nothing major like, they've got to have a decent volume and an increase in earnings per share",
+      "timestamp": "[00:26:59]"
+    },
+    {
+      "rule": "smooth chart higher on right than left over 1-2 years",
+      "quote": "I'm looking for smooth charts. I look over a year or two years daily chart, and I really just want to see a smooth-ish line where it's higher in the right hand side than it is on the left hand side",
+      "timestamp": "[00:29:55]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "buy at next day market open after scan confirmation",
+      "quote": "the following day, at the market open to for a UK time, I just open the trade with the trade size at the stop",
+      "timestamp": "[00:33:10]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Donchian channel low (20-40 days)",
+      "quote": "I use Donchin channels. And I follow certain Donchin channel time frames. ... I found 20, the 20 days pretty good. I've looked at 40",
+      "timestamp": "[00:36:58]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Donchian channel exit on close",
+      "quote": "every day when the market closes, I look if the stop needs to be raised ... I literally get stopped out on every trade",
+      "timestamp": "[00:36:58]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "risk 2-4% per trade, max 8 positions",
+      "quote": "I risk between 2% and 4% per trade. ... I like maybe eight positions at the max",
+      "timestamp": "[00:32:19]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "short side mentioned but engine is long-only",
+      "assumption": "use long-side rules only"
+    },
+    {
+      "issue": "exact Donchian period and momentum min pct not numeric",
+      "assumption": "use 20-day Donchian and 0 for min pct"
+    }
+  ],
+  "params": {
+    "momentum_lookback_days": 260,
+    "momentum_min_pct": 0,
+    "consolidation_days": 0,
+    "consolidation_max_range_pct": 0,
+    "trail_ma": 0,
+    "partial_after_days": 0,
+    "partial_frac": 0,
+    "risk_per_trade_pct": 3,
+    "max_position_pct": 0,
+    "max_positions": 8
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "74",
+    "page_url": "https://chatwithtraders.com/episode/074-john-walsh-pocketing-100k-from-a-trading-comp-and-making-simplicity-a-priority-w-the-black-cabbie-trader",
+    "youtube_url": ""
+  }
+}

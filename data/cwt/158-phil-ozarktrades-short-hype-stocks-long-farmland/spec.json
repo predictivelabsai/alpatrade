@@ -1,0 +1,73 @@
+{
+  "trader": "Phil, @OzarkTrades",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "short-only",
+  "template": "none",
+  "method_name": "Short parabolic hype moves",
+  "style": "short selling low-float hype stocks",
+  "timeframe": "swing to multi-week",
+  "universe": {
+    "description": "low float small-cap stocks with parabolic moves on hype/news"
+  },
+  "setup": [
+    {
+      "rule": "Identify multi-day or multi-week parabolic move on low-float stock driven by hype or weak news",
+      "quote": "there's just so much hype and so much hype behind them that they're just bubble so that to me would be a golden setup",
+      "timestamp": "[00:22:58]"
+    },
+    {
+      "rule": "Look for failed bounce or breakdown after heavy volume drop",
+      "quote": "usually what I do again and I'm taking paper cut losses on the upside I'm starting with a starter size ... if it goes down I'm gonna add if something goes up or breaks through support I'm getting out",
+      "timestamp": "[00:27:07]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Starter short on failed bounce or breakdown, add on further downside",
+      "quote": "I would rather short look for a breakdown look for a failed bounce short that and I want to keep adding when I'm in the money",
+      "timestamp": "[00:28:08]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Cut immediately on break of resistance on volume",
+      "quote": "if it breaks if I'm short and something breaks through resistance and extend definitely if it breaks through resistance on volume I'm just gonna cut that loss",
+      "timestamp": "[00:31:17]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Hold multi-week runners into backside move; scale out on further downside",
+      "quote": "something that's a multi-week runner I'm gonna hold that overnight sometimes for weeks on it",
+      "timestamp": "[00:44:55]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Starter size then add aggressively only when in profit on golden setups; size up on highest conviction parabolic moves",
+      "quote": "on the short side or for me finding that one thing is a parabolic setup ... why would you not want to put as much money as you can behind that trade",
+      "timestamp": "[00:36:32]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Avoid earnings season; reduce activity when small caps slow",
+      "quote": "when you have you know in the midst of earnings season you just don't see small cap runners like you do ... usually just kind of chill out a little bit more",
+      "timestamp": "[00:03:08]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "No concrete daily-bar rules or long-side method provided",
+      "assumption": "short-only discretionary trading"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "158",
+    "page_url": "https://chatwithtraders.com/episode/158-phil-ozarktrades-short-hype-stocks-long-farmland",
+    "youtube_url": "https://www.youtube.com/watch?v=8OHO2qmsQOU"
+  }
+}

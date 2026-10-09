@@ -1,0 +1,32 @@
+{
+  "trader": "Dan McDermitt",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Method relies on discretionary multi-timeframe price action analysis, dynamic correlations, and higher-low/higher-high pivots without fixed quantifiable rules.",
+  "template": "none",
+  "method_name": "Multi-timeframe price action trading",
+  "style": "price action with time frame correlations",
+  "timeframe": "multi (daily/weekly swings + hourly/5min entries)",
+  "universe": {
+    "description": "US stocks (large-cap and listed), also crypto/commodities"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Mentions EMA12/26 and RSI for dips but no concrete rules or thresholds given",
+      "assumption": "Not sufficient for daily_testable classification"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "267",
+    "page_url": "https://chatwithtraders.com/episode/267-dan-mcdermitt-an-edge-with-correlations-across-time-frames",
+    "youtube_url": "https://www.youtube.com/watch?v=GYLCzvz_LL8"
+  }
+}

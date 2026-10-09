@@ -1,0 +1,50 @@
+{
+  "trader": "Timothy Sykes",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Method is short-only on penny stock pumps/dumps with no concrete long-side rules provided.",
+  "template": "none",
+  "method_name": "Shorting penny stock pumps",
+  "style": "short-selling pump-and-dumps",
+  "timeframe": "intraday to 1-3 days",
+  "universe": {
+    "description": "penny stocks under $5 on NASDAQ/OTC"
+  },
+  "setup": [
+    {
+      "rule": "Identify pump-and-dump scams via SEC filings showing promoters/insiders with cheap shares and hype (mailers/tweets/press releases)",
+      "quote": "when I say scam or pump, it's a question of why do all of these insiders or promoters have shares... And then they're sending out mailers or tweets... trying to get the stock price higher.",
+      "timestamp": "[00:13:16]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Short after manipulation peaks when signs of collapse appear",
+      "quote": "now I predominantly just short sell or bet against the scams and I try and be there the day of when it crashes 50-75%",
+      "timestamp": "[00:18:04]"
+    }
+  ],
+  "stop": [],
+  "exits": [
+    {
+      "rule": "Take 10-30% profit and move on; cut losses quickly",
+      "quote": "I try and take the meat of the move I try and make my 10 20 sometimes 30% and then I move on",
+      "timestamp": "[00:19:22]"
+    }
+  ],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Mentions occasional long buys on non-scam momentum like Ebola thermometer stock but states predominant short-selling focus",
+      "assumption": "Overall method treated as short-only per guidelines"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "3",
+    "page_url": "https://chatwithtraders.com/episode/003-timothy-sykes-inside-the-world-of-penny-stocks-and-how-to-profit-from-market-inefficiencies",
+    "youtube_url": ""
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "trader": "Paul Singh",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Trader describes a basket of 10-15 evolving setups adapted to market/sector conditions plus heavy emphasis on preparation, risk/trade management and psychology rather than any single concrete long-side rule set.",
+  "template": "none",
+  "method_name": "Adaptive multi-setup swing trading",
+  "style": "swing trading with day trading overlay",
+  "timeframe": "multi-day to multi-month swings plus intraday",
+  "universe": {
+    "description": "US stocks only"
+  },
+  "setup": [
+    {
+      "rule": "Perform weekly market and sector analysis to identify money flow and build watchlist of 50-150 stocks",
+      "quote": "every week I do a sector analysis to see where the money is is Flowing we talked about money flow I'm really focusing on that and from there I'm building an overall watch list",
+      "timestamp": "[00:32:27]"
+    },
+    {
+      "rule": "Narrow daily to 5-15 stocks to stalk for setups",
+      "quote": "every evening or in the morning I'm trying to narrow it down to five or you know five to 15 stocks somewhere in there uh that I'll be watching during the day to see if they set up",
+      "timestamp": "[00:33:30]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Pre-plan entry range for each watched stock",
+      "quote": "with every one of these stocks uh I have a plan written out where I have the the entry range I have the stop range and I have my target range",
+      "timestamp": "[00:34:02]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Place stops considering natural volatility, support levels and where others place stops to avoid stop-gunning; sometimes wait for remount after stop gunning",
+      "quote": "thinking about where everybody else is placing their stops and making sure I'm not placing it right at that level",
+      "timestamp": "[00:37:11]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Pre-plan target range; avoid micromanaging once in trade (set it and forget it)",
+      "quote": "you have this plan you've done the hard work already and we were talking about this you know the hard work is in the preparation so you've done the hard work you know what you should be doing here uh so you set the trade you have it laid out and then really just forget about it",
+      "timestamp": "[00:30:25]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Pre-calculate position size from planned risk amount and stop distance",
+      "quote": "I only want to risk $1,000 so if I have a $10 stop I can only take this many shares so that's all laid out already for me",
+      "timestamp": "[00:34:35]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Bias direction (long/short) from overall market analysis; prefer stocks leading the market",
+      "quote": "70 or 80% of a stocks move is the market uh so I want to be in stocks that are generally unless it's earnings based or something like that I I want to be in stocks that are in line and leading the market",
+      "timestamp": "[00:32:27]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "No single fixed setup or numeric parameters given; setups evolve over time",
+      "assumption": "method is discretionary and cannot be coded as daily-testable strategy"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "58",
+    "page_url": "https://chatwithtraders.com/episode/058-paul-singh-planning-and-preparation-failing-to-plan-is-planning-to-fail",
+    "youtube_url": "https://www.youtube.com/watch?v=A0Q5z3TGHJw"
+  }
+}

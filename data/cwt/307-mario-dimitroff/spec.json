@@ -1,0 +1,68 @@
+{
+  "trader": "Mario Dimitroff",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Scalping edge is pre-market only on 1-5min or tick action with news/volume/order-book checks and does not survive daily-bar approximation.",
+  "template": "none",
+  "method_name": "Pre-market news scalping",
+  "style": "scalping",
+  "timeframe": "pre-market",
+  "universe": {
+    "description": "US stocks with pre-market volume and news"
+  },
+  "setup": [
+    {
+      "rule": "Scan stocks moving on news/volume/short float",
+      "quote": "click on every stock and basically check why the stock is up see if there is some sort of news about that stock see if there was a volume premarket check if there is any short float",
+      "timestamp": "[00:01:02]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Trade with trend on news or mean-revert to close",
+      "quote": "I have setups that I I take the news and I trade with the trend and I have setups that I just take the news and I mean revert to the to the mean",
+      "timestamp": "[00:49:31]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Cut loss immediately when wrong",
+      "quote": "when I'm wrong, I just cut my loss. I mean, I I don't think about the trade anymore",
+      "timestamp": "[00:57:48]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Mean-revert to flat/close or small target on trend",
+      "quote": "if I short something at 5% up, I'm looking to cover it at flat",
+      "timestamp": "[00:53:39]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Take what liquidity allows, small winners add up",
+      "quote": "trades add up, even if it's a really small trade",
+      "timestamp": "[01:01:30]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Only pre-market when Americans sleeping",
+      "quote": "I'm a successful pre-market trader mostly because most of the Americans are sleeping at that time",
+      "timestamp": "[00:37:04]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Mentions occasional shorting and after-hours holds",
+      "assumption": "Main method remains pre-market scalping; short-only not applicable"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "307",
+    "page_url": "https://chatwithtraders.com/episode/307-mario-dimitroff",
+    "youtube_url": "https://www.youtube.com/watch?v=KGPoAR8Epg0"
+  }
+}

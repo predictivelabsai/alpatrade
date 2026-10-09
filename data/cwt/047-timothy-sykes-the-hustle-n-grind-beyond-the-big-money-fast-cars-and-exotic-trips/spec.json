@@ -1,0 +1,32 @@
+{
+  "trader": "Timothy Sykes",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Method is short-only on penny stocks with no concrete long-side daily-bar rules provided.",
+  "template": "none",
+  "method_name": "Penny stock short scalping",
+  "style": "short bias scalping",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "penny stocks"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Mentions buying earnings winners but provides no rules or examples",
+      "assumption": "Primarily short-focused per transcript"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "47",
+    "page_url": "https://chatwithtraders.com/episode/047-timothy-sykes-the-hustle-n-grind-beyond-the-big-money-fast-cars-and-exotic-trips",
+    "youtube_url": "https://www.youtube.com/watch?v=E1Pbld_xZBU"
+  }
+}

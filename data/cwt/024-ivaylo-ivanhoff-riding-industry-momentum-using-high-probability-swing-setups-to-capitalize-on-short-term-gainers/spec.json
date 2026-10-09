@@ -1,0 +1,82 @@
+{
+  "trader": "Ivaylo Ivanhoff",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Concrete long-side swing rules for US stocks using daily bars: industry momentum, 5/20 MA, consolidation then 7-9.2% breakout to new 20-day high, hold 3-10 days.",
+  "template": "breakout",
+  "method_name": "Momentum breakout swing",
+  "style": "swing trading on strength",
+  "timeframe": "daily",
+  "universe": {
+    "description": "US equities, prioritize recent IPOs and stocks in industries showing momentum (e.g. biotech, semiconductors, cybersecurity)"
+  },
+  "setup": [
+    {
+      "rule": "5-day MA above 20-day MA with consolidation or slight pullback",
+      "quote": "I'm looking for for the five day moving average daily trading above the 20 day moving average and i'm looking for something i call someone just looking for a people clavo guests to be taken out",
+      "timestamp": "[00:16:40]"
+    },
+    {
+      "rule": "stock belongs to industry with momentum and/or recent IPO",
+      "quote": "the first you know my perspective the best way to figure out which industry Cir is just a few screeners... and of course I'll give priority to recent IPOs",
+      "timestamp": "[00:14:30]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "breakout of at least 7-9.2% to new 20-day high",
+      "quote": "looking for a certain size seven more 49.2% breakout to new 20 TH I you know in order to enter",
+      "timestamp": "[00:17:14]"
+    }
+  ],
+  "stop": [],
+  "exits": [
+    {
+      "rule": "hold 3-10 trading days then reallocate on better opportunity",
+      "quote": "I buy own strengths and i said im strength... hold anywhere between three to 10 trading days",
+      "timestamp": "[00:08:41]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "risk 0.25% to 2% of capital per trade depending on setup and market environment",
+      "quote": "Series anywhere between 25 basis points in 200 basis points capital border trade depending on the on the set up in the market environment",
+      "timestamp": "[00:08:02]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "only trade when market environment supports the setup; step aside in corrections if needed",
+      "quote": "there is no trading abroad for not changing set up so you really have to take into account the right market environment",
+      "timestamp": "[00:06:51]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "exact stop-loss rule not stated",
+      "assumption": "none coded"
+    },
+    {
+      "issue": "partial profit rule not detailed for swing trades",
+      "assumption": "none coded"
+    }
+  ],
+  "params": {
+    "momentum_lookback_days": 20,
+    "momentum_min_pct": 0.07,
+    "consolidation_days": 5,
+    "consolidation_max_range_pct": 0,
+    "trail_ma": 20,
+    "partial_after_days": 0,
+    "partial_frac": 0,
+    "risk_per_trade_pct": 1,
+    "max_position_pct": 0,
+    "max_positions": 0
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "24",
+    "page_url": "https://chatwithtraders.com/episode/024-ivaylo-ivanhoff-riding-industry-momentum-using-high-probability-swing-setups-to-capitalize-on-short-term-gainers",
+    "youtube_url": "https://www.youtube.com/watch?v=pIw84hDLZWw"
+  }
+}

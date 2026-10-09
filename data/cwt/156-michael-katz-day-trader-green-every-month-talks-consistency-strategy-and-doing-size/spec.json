@@ -1,0 +1,62 @@
+{
+  "trader": "Michael Katz",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Edge relies on order flow, tape reading, dark pool interaction, hotkeys and intraday patterns like descending triangles that cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "Momentum scalping and pattern day trading",
+  "style": "discretionary with written rules per setup",
+  "timeframe": "minutes to a few days",
+  "universe": {
+    "description": "US equities: low-cap trash names, AMD-like $5-20 high-volume stocks, blue chips with catalysts"
+  },
+  "setup": [
+    {
+      "rule": "Descending triangle after 100-500% run-up in low-cap name: lower high then dip forming triangle",
+      "quote": "descending triangle in a low cap trash name right so when the low cap stock goes up you know a few hundred percent and finally starts to stall out and puts a lower high and showing that style on the back side I'm looking for a certain pattern and that would be a descending triangle",
+      "timestamp": "[00:28:18]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Three entry points: inside triangle, breakout, or retest of breakout level",
+      "quote": "I have three ways I'm going to enter that setup one is within the triangle the other one is when it breaks and then the third one is if if it comes back to retest a breakout level",
+      "timestamp": "[00:28:51]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Stop above the high that invalidates the pattern",
+      "quote": "when I get in here I'm gonna risk X dollars and then my stop goes above that high",
+      "timestamp": "[00:29:23]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Scale out at different prices; swing only if green and working by end of day",
+      "quote": "by the end of the day if it's green and and it's working then I'm going to keep that one",
+      "timestamp": "[00:35:43]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Scale in/out; risk fixed dollar amount per trade; throttle size based on performance and rule adherence",
+      "quote": "I'll scale back I'll risk maybe half or a quarter of what I risk I'm on average and I'll do less when I'm not thinking clearly",
+      "timestamp": "[00:41:40]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "15 setups mentioned but only one example given; heavy use of order flow/tape not fully detailed",
+      "assumption": "Main method remains intraday discretionary pattern trading"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "156",
+    "page_url": "https://chatwithtraders.com/episode/156-michael-katz-day-trader-green-every-month-talks-consistency-strategy-and-doing-size",
+    "youtube_url": "https://www.youtube.com/watch?v=zTLBb9KqDaE"
+  }
+}

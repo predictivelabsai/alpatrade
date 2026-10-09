@@ -1,0 +1,67 @@
+{
+  "trader": "Craig Scott",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Hybrid of fundamentals, momentum, sentiment and instinct with no chart use or concrete quantifiable rules that can be coded.",
+  "template": "none",
+  "method_name": "Fundamental event-driven conviction trading",
+  "style": "discretionary fundamental momentum",
+  "timeframe": "intraday to multi-month",
+  "universe": {
+    "description": "US stocks and options on companies understood by guest"
+  },
+  "setup": [
+    {
+      "rule": "Look for transitory negative events causing overreaction",
+      "quote": "First things are things I deem transitory events. ... the Ebola scare. When the Ebola scare came out, airlines got clobbered. ... I went in and I bought American Airlines",
+      "timestamp": "[00:37:03]"
+    },
+    {
+      "rule": "Negative sentiment and momentum on understandable companies",
+      "quote": "I love negative sentiment on a stock. ... sentiment momentum",
+      "timestamp": "[00:30:47]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Buy after big initial move down if fundamentals do not support zero",
+      "quote": "the stock was getting crushed. The debt load was enormous. ... I just didn't see how this thing was getting to zero ... I went in and I bought",
+      "timestamp": "[00:32:22]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Pre-define exit parameters before entry based on conviction",
+      "quote": "I always have my parameters set up before I enter it",
+      "timestamp": "[00:36:32]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Take profits at pre-set targets, possibly partial and free-roll remainder",
+      "quote": "if these options get to $2, I'm out. ... I'll take off the majority of a position, say 80% and I'll hold 20%",
+      "timestamp": "[00:55:48]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Scale size with conviction and timeline; stocks for uncertain timeline, options for short-term",
+      "quote": "the timing the level of intensity that I enter the trade is based on my own conviction ... Length of time and risk of capital",
+      "timestamp": "[00:41:15]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "No numeric thresholds or lookbacks given for any rule",
+      "assumption": "none"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "91",
+    "page_url": "https://chatwithtraders.com/episode/091-craig-scott-trading-fundamentals-sentiment-and-events-and-why-conviction-matters",
+    "youtube_url": "https://www.youtube.com/watch?v=yrBQiBtxA-E"
+  }
+}

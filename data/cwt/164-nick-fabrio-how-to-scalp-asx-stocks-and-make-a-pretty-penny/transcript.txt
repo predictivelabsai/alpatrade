@@ -1,0 +1,3037 @@
+# 164: Nick Fabrio – How to Scalp ASX Stocks and Make a Pretty Penny
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT8465237241.mp3
+
+[00:00:00] What's up, traders, investors and punters, welcome to Chat with Traders podcast.
+[00:00:17] I'm Aaron Firefield and joining me for this episode is Nick Fabrio.
+[00:00:22] Nick is an active day trader of ASX listed stocks with a short bias.
+[00:00:28] He's 28 years old, he's been trading for around about three years and has already surpassed
+[00:00:34] a million dollars in trading profits.
+[00:00:37] The dude is a gun.
+[00:00:38] Nick is currently living in Texas, but while he was back in Sydney recently, we were able
+[00:00:43] to catch up and do this podcast and we filmed it.
+[00:00:48] So again, if you'd prefer to watch a video of this episode instead of listening to the
+[00:00:53] audio only, head over to the Chat with Traders YouTube channel and while you're there, please
+[00:00:59] subscribe.
+[00:01:00] We chat about many things in this episode in detail.
+[00:01:04] I'm not going to run through them all right now, just continue listening and I think
+[00:01:08] you'll really dig this episode and I'm sure you'll learn something too.
+[00:01:13] Here is my buddy Nick Fabrio for episode 164.
+[00:01:21] How'd you go at poker?
+[00:01:22] A bit better than I went trading this week, so yeah, I think I might even just give up
+[00:01:27] on my trading career and switch to professional poker player.
+[00:01:31] Have you played a bit of poker, like is it something you do half seriously?
+[00:01:36] Not really, like I usually just have a few beers and play with mates.
+[00:01:40] I know how to play.
+[00:01:41] I wouldn't say like particularly good, but yeah, it's not at the hard roller table.
+[00:01:46] No, not at the hard roller table.
+[00:01:48] Cool man.
+[00:01:50] So before we get into any of the trading stuff, let's chat a bit about what you were doing beforehand,
+[00:01:56] leading up to that because I know some of the things you were doing were, I think, very
+[00:02:00] interesting and it says a lot about your character.
+[00:02:02] I don't recall if it was you were running the yoga shop before.
+[00:02:07] Yeah, so I ran, I guess to rewind, so out of high school, I actually wanted to be
+[00:02:13] a doctor.
+[00:02:14] Right.
+[00:02:15] What sort of doctor?
+[00:02:16] I hadn't really decided.
+[00:02:17] I just wanted to do medicine.
+[00:02:18] There's something that interested me and I got like the marks that I needed to in like
+[00:02:23] this one aspect, but then the like university entrance thing I didn't get in, like with
+[00:02:29] the, I think it's called a UMAT or something.
+[00:02:31] I just missed out on getting the marks there.
+[00:02:34] So I went to university in some like, I guess, separate course.
+[00:02:39] I think it was like diagnostic radiography or something like that.
+[00:02:42] And then realized I had no clue like what physics was.
+[00:02:45] So I dropped out of that within like four weeks and then I actually started working at
+[00:02:52] the casino at Star City.
+[00:02:54] Oh, that's right.
+[00:02:55] Yeah.
+[00:02:56] And then I figured out that waking up at 2 a.m. driving into the casino to work for
+[00:03:03] eight hours wasn't my thing either.
+[00:03:04] So was that your shift?
+[00:03:06] Was it?
+[00:03:07] Yeah.
+[00:03:08] Yeah.
+[00:03:09] So 4 a.m. to midday was my shift.
+[00:03:10] 4 a.m. to midday.
+[00:03:11] That's a rough shift.
+[00:03:12] Yeah.
+[00:03:13] I'd have to wake up at like 2 a.m.
+[00:03:14] and I'd get home like having micro-sleeps behind the wheel almost and then sleep.
+[00:03:19] And yeah, it was just really bad, like especially as a 19, 18 year old, like you have no social
+[00:03:24] life.
+[00:03:25] So yeah.
+[00:03:26] Gave that away.
+[00:03:27] And then I was selling cars for a bit.
+[00:03:30] And then I got a job at like a, I guess what you'd call a boutique stock
+[00:03:33] broken firm.
+[00:03:36] Did that for a little while.
+[00:03:37] And then once I quit there, I started a business with one of my mates.
+[00:03:42] It was like a, we just started our own frozen yogurt shop.
+[00:03:46] So we thought that might be the next big thing that turned out to be a fad.
+[00:03:50] Yeah.
+[00:03:51] Just going back to the, dealing at the roulette table.
+[00:03:54] Yeah.
+[00:03:55] What was that like?
+[00:03:56] Like was it bit of an eye opener?
+[00:03:57] I imagine like those people who work behind the, at the tables in the
+[00:04:01] casinos, you know, they must see some shit.
+[00:04:03] Yeah.
+[00:04:04] I mean, it's kind of depressing because no one's winning, right?
+[00:04:07] So you're like sweeping away everyone's chips and they just like hate you.
+[00:04:11] So yeah, it's, it wasn't like the greatest atmosphere plus, you know, there's like no
+[00:04:16] clocks.
+[00:04:17] You don't really know what's going on.
+[00:04:18] The only good thing about it was like, you worked for one hour and then you got like
+[00:04:21] 15 minutes of break and that was free food in the like back of house area.
+[00:04:27] So that was one of the perks, but once the food gets old.
+[00:04:32] Yeah.
+[00:04:33] Yeah.
+[00:04:34] It's good for about a week.
+[00:04:35] Yeah.
+[00:04:36] Cool.
+[00:04:37] And so after that, you went to selling cars.
+[00:04:39] Selling cars.
+[00:04:40] Yeah.
+[00:04:41] Were you a car salesman or were you doing something else?
+[00:04:43] Yeah, I was a car salesman.
+[00:04:44] So I kind of had a, I've always had an interest in cars.
+[00:04:49] I used to go with my dad to like Bathurst and go to all those races and stuff.
+[00:04:54] So I guess selling cars like made sense to me.
+[00:04:57] I was pretty good at it.
+[00:04:58] Yeah.
+[00:04:59] I was pretty good at it.
+[00:05:00] Like it's selling stuff.
+[00:05:01] Okay.
+[00:05:02] What sort of cars were you selling?
+[00:05:04] I was selling a Kia, Chrysler Jeep and Dodge.
+[00:05:07] All right.
+[00:05:08] I guess back in those days selling Kia's wasn't the easiest sell.
+[00:05:11] I think they got a bit of a better reputation now though.
+[00:05:14] Yeah.
+[00:05:15] And how long did you do that for?
+[00:05:16] I think it was about a year maybe.
+[00:05:19] Okay.
+[00:05:20] Yeah.
+[00:05:21] And then she went from there and you did the frozen yogurt venture.
+[00:05:23] Yeah.
+[00:05:24] A little bit down the track.
+[00:05:26] So I did the frozen yogurt.
+[00:05:27] I think I was like 23 at the time and we did that for 15 months or so.
+[00:05:32] Yeah.
+[00:05:33] Well, tell us a bit about that.
+[00:05:34] Like how did that come about?
+[00:05:35] I mean it's pretty ballsy to just decide that you and your mate are going to get some cash
+[00:05:40] together and open an actual shop like that has some real overheads and some real expenses
+[00:05:46] that you've got to cover.
+[00:05:47] Yeah.
+[00:05:48] You know, it's a pretty significant risk.
+[00:05:50] Yeah.
+[00:05:51] Yeah.
+[00:05:52] I guess we're a little bit naive like thinking, you know, it's retail, like everyone can
+[00:05:57] do it and we probably, we didn't really understand like how horrible retail as an industry is
+[00:06:03] in Australia.
+[00:06:05] Like there's plenty of competition plus we're dealing in something that's like so niche given
+[00:06:09] that it's dessert.
+[00:06:11] You don't have dessert every single day, do you know what I mean?
+[00:06:15] So you're dealing like trying to get people in like is difficult because yeah, even if
+[00:06:21] you go out for dinner or something like you're not always going to have dessert afterwards,
+[00:06:25] it's pretty optional.
+[00:06:26] Yeah.
+[00:06:27] And it's a little bit seasonal too.
+[00:06:28] Like I imagine some of the ice cream shops down on the Corso here are probably doing
+[00:06:33] it tough during the winter.
+[00:06:34] Yeah.
+[00:06:35] And like we'll face with other challenges as well like the, so we did it in
+[00:06:41] Wollongong just down the South Coast and they were redoing the whole like main
+[00:06:48] strip of Wollongong.
+[00:06:49] So there was a lot of like road works and basically they tore up like the road
+[00:06:54] in front of our shop.
+[00:06:55] So access was difficult.
+[00:06:57] Yeah.
+[00:06:58] It just made a bad situation worse.
+[00:07:00] Do you get compensated in any way for that or it's just tough luck?
+[00:07:03] No pitch is like, oh, it's for the future.
+[00:07:06] You're going to benefit in the long run.
+[00:07:08] But yeah, we didn't hang around to.
+[00:07:10] What were you doing in the business?
+[00:07:12] Like were you, you know, serving customers doing a lot?
+[00:07:15] Yeah.
+[00:07:16] So me and my mate, we worked, we split the shift into, so we'd work.
+[00:07:20] The shop would be open for 12 hours every single day.
+[00:07:23] So we do six, six hours each Monday through Sunday.
+[00:07:28] And yeah, it was just everything.
+[00:07:30] Preparing the yogurt, cutting up the toppings and even on the
+[00:07:35] business side of things like figuring out that stuff.
+[00:07:38] So it was like, I don't regret doing it.
+[00:07:41] It was pretty rewarding.
+[00:07:42] Like you learn quickly.
+[00:07:43] We won like, I think, I can't remember.
+[00:07:46] I think it was business of the year or something in Wollongong.
+[00:07:49] Oh, right.
+[00:07:50] That's pretty cool.
+[00:07:51] Yeah.
+[00:07:52] Yeah.
+[00:07:53] So it was a good thing, right?
+[00:07:54] Like we had to figure out everything because it wasn't like we took
+[00:07:55] on a franchise.
+[00:07:56] We just started our own brand and just kind of learned something.
+[00:07:59] Yeah.
+[00:08:00] Yeah.
+[00:08:01] Yeah.
+[00:08:02] And why frozen yogurt?
+[00:08:03] Well, it was at the time, like, I think that was really taking off.
+[00:08:07] Okay.
+[00:08:08] And we thought we're actually like, well, you weren't travelling
+[00:08:10] over to the U.S. to see if we could like think of any concepts
+[00:08:15] over there that we could bring to Australia.
+[00:08:17] Yeah.
+[00:08:18] But then we like kind of got sidetracked like going out and
+[00:08:20] partying instead of actually like doing any research.
+[00:08:23] So we kind of, we already had the yogurt idea to begin with
+[00:08:27] and then we're like, okay, we'll just do that.
+[00:08:29] Yeah.
+[00:08:30] Because we didn't see anything else.
+[00:08:32] Yeah.
+[00:08:33] Okay.
+[00:08:34] Now it's funny how like sort of there are certain foods and
+[00:08:36] sometimes certain desserts which just become like the end
+[00:08:39] thing for 12 months.
+[00:08:41] Yeah.
+[00:08:42] It was definitely a fad.
+[00:08:43] Like I think our shop is still in operation down there.
+[00:08:48] And it's the only one there.
+[00:08:50] So I think at one point there are about four frozen
+[00:08:52] yogurt shops in Wollongong.
+[00:08:54] And ours was the only one that made it through.
+[00:08:57] So what we did well was we made sure like we were off,
+[00:09:02] we weren't like contracted to like a Westfield or a GPT
+[00:09:06] group type thing.
+[00:09:08] So we were just outside the kind of shopping precinct.
+[00:09:11] So that meant that our rent was substantially less.
+[00:09:14] And that's obviously the biggest overhead.
+[00:09:17] So the rent wasn't burdensome and that's kind of
+[00:09:21] what it gave us the ability to have that longevity,
+[00:09:24] I suppose.
+[00:09:25] And did you have to lock in a lease for a certain amount of
+[00:09:27] time?
+[00:09:28] Like usually commercial leases usually run for a couple
+[00:09:31] years, don't they?
+[00:09:32] Yeah.
+[00:09:33] I think we had a three year lease and maybe the last
+[00:09:35] year was an option.
+[00:09:37] Okay.
+[00:09:38] So we structured that pretty well, I thought,
+[00:09:40] which was good.
+[00:09:41] And we negotiated pretty hard for like favorable
+[00:09:43] terms for us.
+[00:09:44] So.
+[00:09:45] Yeah.
+[00:09:46] That's pretty cool.
+[00:09:47] I mean it's a big thing to take on.
+[00:09:48] Like I always sort of have a bit of a respect for
+[00:09:50] anyone who does that.
+[00:09:51] Because it's not like just starting an online
+[00:09:53] business where it's like your biggest cost is
+[00:09:56] web hosting and domain name and a few other bits
+[00:09:59] and pieces.
+[00:10:00] If it goes wrong, there's not like huge
+[00:10:01] ramifications.
+[00:10:02] But yeah, in that environment, it can get
+[00:10:04] pretty nasty.
+[00:10:05] As we're seeing with like retail food group and
+[00:10:08] some of those franchises.
+[00:10:10] Yeah.
+[00:10:11] That it just going belly up and it leaves
+[00:10:13] people in some serious strife.
+[00:10:16] So yeah, we're lucky.
+[00:10:17] Like we just worked hard, paid off the debt
+[00:10:20] and then sold the business once we saw
+[00:10:22] like more entrants coming in.
+[00:10:23] So we're just like, okay, we need to pull
+[00:10:25] the shoots.
+[00:10:26] Yeah.
+[00:10:27] So why did you sell the business?
+[00:10:28] Because you fear of competition?
+[00:10:29] Fear of competition.
+[00:10:30] And also we're just getting over it.
+[00:10:32] Like we're literally working seven days a
+[00:10:34] week, like no breaks.
+[00:10:36] I think in one year I probably had like
+[00:10:39] five days off or something.
+[00:10:41] And I was studying university full time.
+[00:10:43] Oh shit.
+[00:10:44] Okay.
+[00:10:45] Did you have any stuff?
+[00:10:46] No.
+[00:10:47] Okay.
+[00:10:48] So we're effectively working for free.
+[00:10:50] Like we're working just to pay off the debt.
+[00:10:52] And yeah, we just, we got out.
+[00:10:53] I think I had like negative 500 bucks to
+[00:10:55] my name at the end of it.
+[00:10:56] Okay.
+[00:10:57] So.
+[00:10:58] Well, I guess, you know, all in all, that's
+[00:11:00] at least you weren't under, right?
+[00:11:02] Yeah, exactly.
+[00:11:03] You paid off your debts and all that.
+[00:11:04] And so what about the sale of the
+[00:11:06] business?
+[00:11:07] Like was that a win for you?
+[00:11:09] Or was that just...
+[00:11:10] So that basically just paid down like
+[00:11:12] the last remainder of the debt.
+[00:11:15] Okay.
+[00:11:16] And then so we, we actually, we got a
+[00:11:19] broker to try and sell the business.
+[00:11:22] And then I'm like, oh, this guy is like
+[00:11:25] not doing anything.
+[00:11:26] He's just like waiting for someone to
+[00:11:27] walk in and buy it.
+[00:11:29] And we had, we paid like this listing
+[00:11:31] fee and then it was going to be like
+[00:11:33] a 10% commission or something.
+[00:11:35] And then I'm like, I'll screw this.
+[00:11:36] So I put, I advertised it on Gumtree
+[00:11:38] myself and I sold it.
+[00:11:40] Like with my mate, I sold it to
+[00:11:43] this guy and then we just left.
+[00:11:46] And then the broker's like hassling
+[00:11:48] us because in the contract it was
+[00:11:50] saying, you know, no matter how you
+[00:11:52] sell the business, you still owe me
+[00:11:54] like a commission.
+[00:11:55] And I was like, that just rub me
+[00:11:56] right, rub me like up the wrong way
+[00:11:59] like completely.
+[00:12:00] So you didn't get paid?
+[00:12:02] I negotiated it down like, I'm
+[00:12:05] like, oh, the listing fee we paid.
+[00:12:08] That's part of your commission.
+[00:12:09] And then we'll just top you up to
+[00:12:10] 10% or whatever it was.
+[00:12:12] Okay.
+[00:12:13] At that point, we were just like,
+[00:12:14] oh, like we're just happy to have
+[00:12:15] this behind us.
+[00:12:16] It's almost like hush money.
+[00:12:17] Just shh.
+[00:12:18] Yeah.
+[00:12:19] No, I know the feeling.
+[00:12:20] And then so what happened from
+[00:12:21] there?
+[00:12:22] So you sold up the frozen
+[00:12:24] yogurt business.
+[00:12:25] What was kind of the next step
+[00:12:27] after then?
+[00:12:28] So then I got a job working at
+[00:12:30] a company called Wholesale
+[00:12:31] Investor.
+[00:12:32] So that was basically you'd get
+[00:12:35] sort of pre-IPO, pre-IPO deals
+[00:12:39] I guess present the company would
+[00:12:41] do like a bunch of high net worth
+[00:12:42] or sophisticated investors.
+[00:12:44] So I was just doing business
+[00:12:45] development work for them.
+[00:12:46] So that's what you were doing?
+[00:12:47] Yep.
+[00:12:48] Okay.
+[00:12:49] So you were on the phones just
+[00:12:50] ringing up?
+[00:12:51] It was probably more email based
+[00:12:52] and meetings than like phone
+[00:12:54] work.
+[00:12:55] Okay.
+[00:12:56] Yeah.
+[00:12:57] It wasn't like overly like
+[00:12:58] high pressure sales type
+[00:12:59] thing.
+[00:13:00] Yeah.
+[00:13:01] So I did that for a bit and
+[00:13:02] then at that point in time,
+[00:13:03] I was like getting ready to go
+[00:13:04] overseas to do a year of
+[00:13:05] exchange.
+[00:13:06] So that's kind of when the
+[00:13:08] trading thing came about.
+[00:13:10] Obviously someone you've had on
+[00:13:12] the podcast before, Bryce, we
+[00:13:15] worked together like probably
+[00:13:18] closer 10 years ago now.
+[00:13:20] And he sort of approached me.
+[00:13:22] He's like, oh, you know,
+[00:13:23] you'd probably be pretty good at
+[00:13:24] this.
+[00:13:25] Like if you want to give it a
+[00:13:26] go, like let me know and I can
+[00:13:27] help you.
+[00:13:28] And I was kind of like arming
+[00:13:29] and arming about it because I
+[00:13:31] wanted to save money so that
+[00:13:32] I could go overseas and I
+[00:13:34] didn't know if I'd like be
+[00:13:36] risking that if I pride and
+[00:13:38] failed.
+[00:13:39] But then eventually I'm just
+[00:13:40] like, I guess I've got that
+[00:13:42] gambling, not gambling, but
+[00:13:44] like that instinct of just
+[00:13:46] giving something a shot and
+[00:13:47] seeing if it works.
+[00:13:48] So I just bit the bullet and
+[00:13:49] then got into trading.
+[00:13:51] Where were you and Bryce
+[00:13:52] working together?
+[00:13:53] At the boutique stock
+[00:13:54] broken firm.
+[00:13:55] Okay.
+[00:13:56] Yeah.
+[00:13:57] I thought so.
+[00:13:58] All right.
+[00:13:59] Okay.
+[00:14:00] I don't realize it would have
+[00:14:01] been that long ago.
+[00:14:02] Yeah.
+[00:14:03] I think it would have been
+[00:14:04] like 2010, 2011 around there.
+[00:14:05] Okay.
+[00:14:06] Yeah.
+[00:14:07] Any good IPOs?
+[00:14:08] The broken firm?
+[00:14:09] Yeah.
+[00:14:10] No.
+[00:14:11] No.
+[00:14:12] What were they all just
+[00:14:13] pretty small?
+[00:14:14] It was like, yeah, they'd
+[00:14:15] do like a few corporate deals
+[00:14:16] but it was mainly like
+[00:14:17] placements and stuff.
+[00:14:18] Okay.
+[00:14:19] As opposed to IPOs and it
+[00:14:20] was like, yeah, it was super
+[00:14:21] small firm.
+[00:14:22] It was not like, yeah,
+[00:14:23] they wouldn't be doing many
+[00:14:24] IPOs.
+[00:14:25] Okay.
+[00:14:26] So, yeah, so Bryce
+[00:14:27] sort of turned you
+[00:14:28] on to this trading thing.
+[00:14:29] Had you done any trading
+[00:14:30] in the past?
+[00:14:31] I'd like punted around
+[00:14:32] when I was like in, I
+[00:14:34] think in high school,
+[00:14:36] possibly like when I was 18,
+[00:14:38] I think I bought like
+[00:14:39] some gloss to cold shares
+[00:14:40] or something.
+[00:14:41] Like I had no idea
+[00:14:42] what I was doing.
+[00:14:43] I bought them
+[00:14:44] and then they got to take
+[00:14:45] over off.
+[00:14:46] So I was like,
+[00:14:47] oh, this is pretty easy.
+[00:14:48] Famous last words.
+[00:14:49] Yeah.
+[00:14:50] And then I put like
+[00:14:51] the profits from that
+[00:14:52] into something else
+[00:14:53] and that basically went to
+[00:14:54] zero.
+[00:14:55] So got a reality
+[00:14:56] check pretty quick.
+[00:14:57] Nice.
+[00:14:58] Yeah.
+[00:14:59] Okay.
+[00:15:00] So how did you,
+[00:15:01] so when you started
+[00:15:02] getting into trading,
+[00:15:03] like you sort of had this
+[00:15:04] idea that, you know,
+[00:15:05] like how did you go about that?
+[00:15:06] Sort of how did you go
+[00:15:07] in those first few months?
+[00:15:08] Like what was sort of your
+[00:15:10] your introduction to it?
+[00:15:12] Yeah.
+[00:15:13] My approach was like,
+[00:15:14] I was just trying to be
+[00:15:15] a sponge,
+[00:15:16] like learn as much as I could
+[00:15:17] off price and,
+[00:15:18] you know,
+[00:15:19] other people in the chat room
+[00:15:20] that I'm in
+[00:15:21] and just try and absorb.
+[00:15:22] And basically I got
+[00:15:23] obsessed with it.
+[00:15:24] Like it was
+[00:15:25] every waking hour.
+[00:15:27] I'm like,
+[00:15:28] you know,
+[00:15:29] replaying stuff on spark or
+[00:15:31] yeah,
+[00:15:32] just obsessing about it.
+[00:15:34] Like couldn't wait for Monday.
+[00:15:35] Like I hated weekends.
+[00:15:37] Okay.
+[00:15:38] And did you have a job
+[00:15:39] at the time?
+[00:15:40] Or was it?
+[00:15:41] Yeah, I did.
+[00:15:42] So the first like
+[00:15:43] three months,
+[00:15:44] I was basically
+[00:15:45] trading from work
+[00:15:46] unbeknownst to my boss.
+[00:15:48] Okay.
+[00:15:49] And what was your job
+[00:15:50] at that time?
+[00:15:51] That was with wholesale
+[00:15:52] investor.
+[00:15:53] Yeah.
+[00:15:54] So there was a fair bit
+[00:15:55] of downtime.
+[00:15:56] Like it wasn't like
+[00:15:57] you had to be constantly
+[00:15:58] on the phones.
+[00:15:59] So that kind of
+[00:16:00] gave me the opportunity
+[00:16:01] to spend a bit of time
+[00:16:02] doing that.
+[00:16:03] I even come into work
+[00:16:04] at like 6 a.m.
+[00:16:05] to do some of the business
+[00:16:06] development work
+[00:16:07] for like an hour or two
+[00:16:08] so that I could
+[00:16:09] prep in the morning
+[00:16:10] and then
+[00:16:12] and then trade the
+[00:16:13] open pretty much.
+[00:16:14] And then I'd
+[00:16:15] just go from there.
+[00:16:16] Okay.
+[00:16:17] And then so you kept that up
+[00:16:18] for about three months
+[00:16:19] and then you
+[00:16:20] get away the job.
+[00:16:21] Yeah.
+[00:16:22] Well,
+[00:16:23] I was going to give away the job anyway
+[00:16:24] because I was going overseas.
+[00:16:25] So yeah,
+[00:16:26] I quit
+[00:16:27] and then I basically
+[00:16:28] became full time.
+[00:16:29] Like that was my job
+[00:16:30] from that point.
+[00:16:31] So what was your experience
+[00:16:32] first three months?
+[00:16:33] Like were you profitable?
+[00:16:34] Were you up over
+[00:16:35] at the end of that
+[00:16:36] those first initial three months?
+[00:16:37] Yeah.
+[00:16:38] Yeah.
+[00:16:39] So I think the first month
+[00:16:40] like
+[00:16:41] I might have lost about
+[00:16:42] like 300 bucks or something.
+[00:16:43] And then
+[00:16:44] the next month
+[00:16:45] I think I made like 800
+[00:16:46] and then
+[00:16:48] so I started with 10 grand
+[00:16:49] and then once
+[00:16:50] I made like that
+[00:16:51] 800 bucks
+[00:16:52] I was like,
+[00:16:53] okay,
+[00:16:54] I've done this for two months now.
+[00:16:55] I'm like more or less break even
+[00:16:56] I'm going to add another 10 grand
+[00:16:57] just so that I could do
+[00:16:58] a little bit more
+[00:16:59] and then it basically
+[00:17:00] kicked from there.
+[00:17:01] So I think the next month
+[00:17:02] I did like five grand.
+[00:17:04] I think I did 16
+[00:17:05] and then 36
+[00:17:06] and then 65
+[00:17:07] so it ramped up
+[00:17:08] like pretty quickly.
+[00:17:09] Yeah, did it over.
+[00:17:10] Yeah.
+[00:17:12] Yeah,
+[00:17:13] not many people can say that.
+[00:17:16] How much,
+[00:17:17] like how big were you trading
+[00:17:18] in those first three months?
+[00:17:19] Like how much were you
+[00:17:20] you risking on a trade?
+[00:17:22] So when I first started
+[00:17:23] I would like
+[00:17:24] I've made a post about this
+[00:17:26] on Twitter about like
+[00:17:27] you know, leverage and risk.
+[00:17:28] So the way I look at things
+[00:17:29] is always like
+[00:17:31] you know, what's the tick value of
+[00:17:33] of this trade.
+[00:17:34] So I'd size according to that.
+[00:17:36] So I'd be like, okay,
+[00:17:37] I'd try make things fairly binary.
+[00:17:39] It'd be like,
+[00:17:40] okay, I'm
+[00:17:41] very confident in this setup
+[00:17:43] working or I'm
+[00:17:44] confident but not as confident
+[00:17:46] in this.
+[00:17:47] So then I would just adjust
+[00:17:48] accordingly.
+[00:17:49] So I might
+[00:17:50] in a highly confident trade
+[00:17:51] I would be risking like
+[00:17:53] $50 a tick
+[00:17:54] on something I was less
+[00:17:55] confident about.
+[00:17:56] It might be like 25
+[00:17:57] and then I just
+[00:17:58] focused on building that up
+[00:18:00] from there.
+[00:18:01] If that makes sense.
+[00:18:02] Okay, so if it's
+[00:18:03] if you're saying $50 a tick
+[00:18:04] let's say you got a $10 stock.
+[00:18:06] Okay, that's other things.
+[00:18:07] So I was only trading stocks
+[00:18:08] between like 30 cents and $3.
+[00:18:10] Oh really?
+[00:18:11] Yeah.
+[00:18:12] For obvious reasons like
+[00:18:13] because you know,
+[00:18:14] on a $10 stock
+[00:18:15] you might get like 50 tick
+[00:18:17] move in a day, for example.
+[00:18:18] And if you're starting with
+[00:18:20] 10 grand and it's
+[00:18:21] $50 a tick
+[00:18:22] like you can go broke pretty
+[00:18:23] quick like
+[00:18:24] if it goes wrong.
+[00:18:26] Okay.
+[00:18:27] So if you're trying to
+[00:18:28] $3 stock, let's say.
+[00:18:29] Yeah.
+[00:18:30] What's a tick?
+[00:18:31] What's the smallest
+[00:18:32] that can move?
+[00:18:33] It's half a cent, isn't it?
+[00:18:35] No, it's
+[00:18:36] there you go to full
+[00:18:37] cents over two bucks.
+[00:18:38] Is it?
+[00:18:39] Yeah.
+[00:18:40] And then it's half cents
+[00:18:41] below two bucks down to
+[00:18:42] 10 cents.
+[00:18:43] And then it's like
+[00:18:44] 0.1%
+[00:18:45] So how many ticks
+[00:18:46] would you risk on a trade?
+[00:18:48] Ideally like zero to one.
+[00:18:50] So a lot of what I was
+[00:18:51] doing initially was
+[00:18:52] I was just purely
+[00:18:53] doing match trades.
+[00:18:54] So I'd be leaning on
+[00:18:56] like surplus bid or something.
+[00:18:58] So jumping
+[00:18:59] in front
+[00:19:00] and then
+[00:19:01] basically if I
+[00:19:02] saw
+[00:19:03] selling action
+[00:19:04] like someone hitting the bid
+[00:19:05] and I would just get out
+[00:19:06] and I'd be basically out
+[00:19:07] for brokerage
+[00:19:08] or worst-case scenario
+[00:19:10] if it got like wiped
+[00:19:12] in one go and it went
+[00:19:13] offered then I'd
+[00:19:14] pretty much just hit out
+[00:19:15] straight away.
+[00:19:16] So can you just explain
+[00:19:17] that a little more
+[00:19:18] like what do you mean by
+[00:19:19] you're doing match trades?
+[00:19:20] So if there's a
+[00:19:21] catalyst like news
+[00:19:22] for example
+[00:19:23] and you see
+[00:19:24] a bunch of buyers
+[00:19:25] coming in
+[00:19:26] and you can lean on
+[00:19:28] like some liquidity
+[00:19:30] in the bid
+[00:19:31] so it might be like
+[00:19:32] say 50,000 shares
+[00:19:34] surplus bid once it matches
+[00:19:36] then I would look to
+[00:19:38] jump in front so I'd
+[00:19:39] put my order higher
+[00:19:40] than the indicative
+[00:19:41] match price
+[00:19:42] and then it would match
+[00:19:43] so I'd get my fill
+[00:19:44] at the match price
+[00:19:45] and there'd still be a bid there.
+[00:19:47] So then that allows me
+[00:19:49] it's basically getting
+[00:19:50] a free look
+[00:19:51] at the
+[00:19:52] next couple of seconds
+[00:19:53] of action.
+[00:19:54] So then you might see like
+[00:19:56] more bidders come in
+[00:19:57] at a higher price
+[00:19:58] say it matches
+[00:20:00] at $2.50 for example
+[00:20:02] and I bought
+[00:20:03] a surplus bid
+[00:20:04] then someone might jump up
+[00:20:06] to $2.55 for a bid
+[00:20:07] and then I'd just sell
+[00:20:08] into them
+[00:20:09] or something along those lines
+[00:20:11] but then if I saw like
+[00:20:12] sellers coming in the
+[00:20:13] book
+[00:20:14] and volume being done
+[00:20:15] on the bid then I'd
+[00:20:16] just hit out straight away
+[00:20:17] kind of thing.
+[00:20:18] Okay, so you're
+[00:20:19] just very scalpy to begin
+[00:20:21] with.
+[00:20:22] Very scalpy, yeah.
+[00:20:23] And would you trade
+[00:20:24] the rest of the session
+[00:20:25] or were you
+[00:20:26] I wouldn't always trade
+[00:20:27] the rest of the session
+[00:20:28] but I'd always watch
+[00:20:29] like I'd say to people
+[00:20:31] like I feel like
+[00:20:32] the market's like a story
+[00:20:33] if you're not
+[00:20:34] watching or being observant
+[00:20:36] like observant the whole time
+[00:20:38] it's like you're missing
+[00:20:39] like couple chapters of the
+[00:20:40] book so
+[00:20:41] if you're trading
+[00:20:42] just the open
+[00:20:43] and then you come back
+[00:20:44] the next day
+[00:20:45] like so much stuff has
+[00:20:46] happened between
+[00:20:47] when you left
+[00:20:48] and now like you just
+[00:20:49] kind of lose this
+[00:20:50] valuable information
+[00:20:51] like yesterday
+[00:20:52] there had been a
+[00:20:53] a constant buyer
+[00:20:54] at this level
+[00:20:55] or there was a constant seller
+[00:20:56] and if you don't know that
+[00:20:57] like
+[00:20:58] you find yourself in
+[00:20:59] in trouble because
+[00:21:00] you know you don't have
+[00:21:01] the full story.
+[00:21:02] Yeah, yeah.
+[00:21:03] Okay and doing those
+[00:21:05] sort of trades
+[00:21:06] I imagine you'd only be able
+[00:21:07] to take like a couple
+[00:21:08] trades a day
+[00:21:09] like if you're
+[00:21:10] sort of
+[00:21:11] if your trade
+[00:21:12] is trading
+[00:21:13] the open
+[00:21:14] yeah
+[00:21:15] you'd probably only be able
+[00:21:16] to get it
+[00:21:17] like
+[00:21:18] Yeah like
+[00:21:19] in the first probably
+[00:21:20] three months
+[00:21:21] you'd be only doing like
+[00:21:22] three or four trades a day
+[00:21:23] maybe five
+[00:21:24] but then
+[00:21:25] you know
+[00:21:26] I basically just focus purely
+[00:21:27] on like this one type of setup
+[00:21:29] and I think that's important
+[00:21:30] for like
+[00:21:31] new traders out there
+[00:21:32] to just hone in
+[00:21:34] on one thing that you can do
+[00:21:35] and do it well
+[00:21:36] and then that buys you time
+[00:21:37] to figure out
+[00:21:39] you know other
+[00:21:40] setups that you can do
+[00:21:41] so
+[00:21:42] I just did that
+[00:21:43] that gave me time
+[00:21:44] I made money doing it
+[00:21:45] but then it's like
+[00:21:46] okay the edges
+[00:21:47] going away there
+[00:21:48] so
+[00:21:49] you start looking at
+[00:21:50] stuff and
+[00:21:51] for me that ended up being
+[00:21:52] like short selling
+[00:21:53] a fair bit
+[00:21:54] Is that what you found
+[00:21:55] that the edge did start
+[00:21:56] to fade away
+[00:21:57] Yeah it was
+[00:21:58] it wasn't as good
+[00:21:59] like after a little while
+[00:22:01] so
+[00:22:02] I now almost like
+[00:22:03] don't even
+[00:22:04] do those trades
+[00:22:05] Okay
+[00:22:06] Yeah
+[00:22:07] When you said surplus bid
+[00:22:08] Yeah
+[00:22:09] What do you mean by that
+[00:22:10] do you just mean that
+[00:22:11] the bids in the book
+[00:22:12] are thicker than the
+[00:22:13] offers or
+[00:22:14] So when
+[00:22:15] when the market matches
+[00:22:17] it's like a
+[00:22:18] I don't know
+[00:22:19] the full
+[00:22:20] way it works
+[00:22:21] per se
+[00:22:22] but it's basically
+[00:22:23] just balancing
+[00:22:24] the supply
+[00:22:25] at a particular price
+[00:22:27] and then there will always be like
+[00:22:29] a surplus bid
+[00:22:30] or it'll be surplus offered
+[00:22:32] when it matches
+[00:22:33] So
+[00:22:34] there'll be
+[00:22:35] still some volume left
+[00:22:36] that hasn't been done
+[00:22:37] so it's basically
+[00:22:38] just getting
+[00:22:39] on the advantage
+[00:22:40] side of that
+[00:22:41] by
+[00:22:42] you know
+[00:22:43] Q jumping effectively
+[00:22:44] So do you recall
+[00:22:45] any kind of
+[00:22:46] breakthrough moments
+[00:22:47] during your
+[00:22:48] let's just say
+[00:22:49] first 12 months
+[00:22:50] of trading?
+[00:22:51] Not really
+[00:22:53] I think
+[00:22:55] it was more
+[00:22:56] just that feeling
+[00:22:57] of like
+[00:22:58] I drew down the account
+[00:22:59] a little bit
+[00:23:00] I think like from 10 grand
+[00:23:01] I ended up down at like
+[00:23:02] $8,700
+[00:23:03] or something like that
+[00:23:04] and then once
+[00:23:05] I clawed it back
+[00:23:06] to even
+[00:23:07] I'm kind of like
+[00:23:08] oh
+[00:23:09] I can probably do this
+[00:23:11] and
+[00:23:12] It's a bit of a confidence boost
+[00:23:13] Bit of a confidence boost
+[00:23:14] like yeah
+[00:23:15] I haven't just whittled
+[00:23:16] this away
+[00:23:17] failed
+[00:23:18] and then that kind of
+[00:23:19] just gave me the confidence
+[00:23:20] but I was pretty fearless
+[00:23:21] to begin with
+[00:23:22] I think
+[00:23:23] I've always been relatively
+[00:23:24] comfortable with like
+[00:23:25] putting on risk
+[00:23:26] whether it be
+[00:23:27] playing poker
+[00:23:28] or sports betting
+[00:23:29] or something like that
+[00:23:30] so I wasn't particularly
+[00:23:31] fearful of losing money
+[00:23:32] so that helped a lot
+[00:23:33] and I think that's
+[00:23:34] a lot of people
+[00:23:35] don't necessarily
+[00:23:36] have that
+[00:23:37] ability to be comfortable
+[00:23:38] with
+[00:23:39] having risk on
+[00:23:40] Yeah
+[00:23:41] Do you think there's a way
+[00:23:42] that people can
+[00:23:43] become more comfortable
+[00:23:44] with the idea
+[00:23:45] of losing money?
+[00:23:46] Like cause it's an effort
+[00:23:47] to lose money
+[00:23:48] Yeah
+[00:23:49] I think you need to
+[00:23:50] lose money
+[00:23:51] to figure it out
+[00:23:52] Right
+[00:23:53] Yeah I mean that interview
+[00:23:54] I did with Rambo
+[00:23:55] recently
+[00:23:56] that was one of the big things
+[00:23:57] that he
+[00:23:58] really sort of
+[00:23:59] sort of tried to
+[00:24:00] drive home was
+[00:24:01] you know
+[00:24:02] Detaching from the money
+[00:24:03] Yeah but it's like
+[00:24:04] easy enough to
+[00:24:05] win
+[00:24:06] the hardest part
+[00:24:07] about trading is
+[00:24:08] learning to lose
+[00:24:09] Learning to lose
+[00:24:10] sounds crazy but
+[00:24:11] you know
+[00:24:12] listening back over
+[00:24:13] that interview
+[00:24:14] and some of the things
+[00:24:15] you know that's
+[00:24:16] dead on
+[00:24:17] Makes a lot of sense yeah
+[00:24:18] Yeah
+[00:24:19] Okay
+[00:24:20] So how long have you
+[00:24:21] been trading for now?
+[00:24:22] Just under three years
+[00:24:23] Under three years
+[00:24:24] Yeah
+[00:24:25] The beginning of August
+[00:24:27] will be three years for me
+[00:24:28] Okay
+[00:24:29] And you've had
+[00:24:30] no breaks
+[00:24:31] during that time
+[00:24:32] you've just sort of
+[00:24:33] been at the market
+[00:24:34] every day
+[00:24:35] No I wouldn't say that
+[00:24:36] so in 2016
+[00:24:37] when I was on exchange
+[00:24:38] my
+[00:24:39] attention to the market
+[00:24:41] I guess was a little bit
+[00:24:42] patchy
+[00:24:43] cause I was kind of
+[00:24:44] an experienced as well
+[00:24:46] and just trading
+[00:24:47] when I could
+[00:24:48] so I guess like
+[00:24:49] once I got over there
+[00:24:50] I didn't really have
+[00:24:51] any friends obviously
+[00:24:52] so I was like
+[00:24:53] purely focused on trading
+[00:24:55] but then as I like
+[00:24:56] formed a friendship group
+[00:24:58] then they invite you out
+[00:24:59] like oh let's do this
+[00:25:00] or you know
+[00:25:01] go on a holiday
+[00:25:02] or something like that
+[00:25:03] then my attention to the
+[00:25:05] the market kind of
+[00:25:06] slipped a bit
+[00:25:07] and my performance
+[00:25:08] suffered as a result
+[00:25:09] so if you look at
+[00:25:10] my equity curve
+[00:25:11] it kind of
+[00:25:12] it kicks
+[00:25:13] at the beginning
+[00:25:14] and then when I go overseas
+[00:25:15] it's sort of
+[00:25:16] it's still going up
+[00:25:17] but at a
+[00:25:18] less steep
+[00:25:19] or rapid
+[00:25:20] rapid rate
+[00:25:21] but then once I got back
+[00:25:22] to Australia
+[00:25:23] in January
+[00:25:24] last year
+[00:25:25] then I was like
+[00:25:26] I treated it
+[00:25:27] like a job
+[00:25:28] okay so
+[00:25:29] yeah
+[00:25:30] so
+[00:25:31] what is your
+[00:25:32] your style of trading
+[00:25:33] let's just sort of
+[00:25:34] go over
+[00:25:35] just a bit of an overview
+[00:25:36] I guess
+[00:25:37] how would you describe
+[00:25:38] your style of trading
+[00:25:39] I'd say I'm like a scalper
+[00:25:41] and just trading basically
+[00:25:43] off catalysts
+[00:25:44] so whether it be news
+[00:25:46] or
+[00:25:47] you know
+[00:25:48] macro moves
+[00:25:49] like that kind of stuff
+[00:25:50] I've a bias towards
+[00:25:52] being short
+[00:25:53] I just feel like
+[00:25:54] a little bit more comfortable
+[00:25:55] for some reason
+[00:25:56] I think one of the reasons
+[00:25:57] I like it is because
+[00:25:58] usually
+[00:25:59] stocks sell off quicker
+[00:26:01] than they
+[00:26:02] then they go up
+[00:26:03] so as a scalper
+[00:26:04] it makes it
+[00:26:05] I guess easier
+[00:26:06] because you can
+[00:26:07] make money quicker
+[00:26:08] I guess
+[00:26:09] and you don't have to have
+[00:26:10] like a lengthy exposure to the market
+[00:26:12] you can be done in like
+[00:26:13] five or ten minutes
+[00:26:14] but that's obviously something
+[00:26:15] that I'm trying to evolve from
+[00:26:16] because
+[00:26:17] I'm missing out on like
+[00:26:18] way bigger trades
+[00:26:19] just because I'm too scalpy
+[00:26:21] yeah you're leaving a lot
+[00:26:22] on the table
+[00:26:23] exactly
+[00:26:24] yeah so when you say
+[00:26:25] scout
+[00:26:26] you know mostly a scalper
+[00:26:27] yeah at this point
+[00:26:29] what would you say is your
+[00:26:31] average kind of hold time
+[00:26:33] probably
+[00:26:35] ten to twenty minutes
+[00:26:37] okay
+[00:26:38] yeah
+[00:26:39] like sometimes I could be out
+[00:26:40] in a minute or two
+[00:26:42] and then yeah sometimes
+[00:26:43] I'm in for a bit longer
+[00:26:44] but yeah
+[00:26:45] I want to get to that point
+[00:26:46] like especially in the morning
+[00:26:47] where I'm holding stuff
+[00:26:49] for at least an hour
+[00:26:50] if it's working in my favour
+[00:26:51] okay
+[00:26:52] that's one of the things
+[00:26:53] I've found in the mornings
+[00:26:54] is that
+[00:26:55] it's very easy to give
+[00:26:57] some of your profits back
+[00:26:58] yeah
+[00:26:59] all your profits back
+[00:27:01] because the market will move
+[00:27:02] so quickly in one direction
+[00:27:03] and then snap right back
+[00:27:04] yeah
+[00:27:05] you know all of a sudden
+[00:27:06] you've gone from having
+[00:27:07] a reasonably good profit
+[00:27:08] to now back to break even
+[00:27:10] or a slightly
+[00:27:11] negative trade
+[00:27:12] yeah
+[00:27:13] so
+[00:27:14] you know
+[00:27:15] do you think that's
+[00:27:16] one of these things
+[00:27:17] you can sort of get around
+[00:27:18] yeah
+[00:27:19] I think you've just got to
+[00:27:20] like
+[00:27:21] continue to work on it
+[00:27:22] like I think the key is
+[00:27:23] knowing
+[00:27:24] when to hold
+[00:27:25] and when not to hold
+[00:27:26] and I think that's
+[00:27:27] one thing that I'm
+[00:27:28] struggling with at the moment
+[00:27:29] like
+[00:27:30] I'm
+[00:27:31] trying to hold stuff
+[00:27:32] but I'm not necessarily
+[00:27:33] holding stuff
+[00:27:34] that I should be holding
+[00:27:35] like or I'm being
+[00:27:36] I'm being
+[00:27:37] I'm being scalpy
+[00:27:38] when I should hold
+[00:27:39] and I'm holding
+[00:27:40] when I should be scalpy
+[00:27:41] so I think it's
+[00:27:42] yeah
+[00:27:43] a big skill is
+[00:27:44] being able to identify
+[00:27:45] you know
+[00:27:46] when it's right to hold
+[00:27:47] and when it's
+[00:27:48] not
+[00:27:49] yeah
+[00:27:50] so I think I need to work on
+[00:27:51] you know structuring
+[00:27:52] things so
+[00:27:53] you know
+[00:27:54] I can figure out
+[00:27:55] you know
+[00:27:56] okay this is a trade
+[00:27:57] where I need to be holding
+[00:27:58] like an
+[00:27:59] or to get out
+[00:28:00] I need to have a reason
+[00:28:01] to sell
+[00:28:02] or a reason to cover
+[00:28:03] like not just doing it
+[00:28:04] because
+[00:28:05] I don't have
+[00:28:06] my P and L kind of thing
+[00:28:07] yeah
+[00:28:08] yeah
+[00:28:09] so let's
+[00:28:10] let's start at the beginning
+[00:28:11] of the day
+[00:28:12] like how do you
+[00:28:13] prepare for the
+[00:28:14] the upcoming session
+[00:28:15] basically I come in
+[00:28:16] I have a bunch of
+[00:28:17] watch lists
+[00:28:18] sorry
+[00:28:19] I have a bunch of
+[00:28:20] watch lists
+[00:28:21] and then
+[00:28:22] I basically
+[00:28:23] I've got an
+[00:28:24] Evernote
+[00:28:25] sheet
+[00:28:26] and I'll
+[00:28:27] just go in
+[00:28:28] and populate
+[00:28:29] I guess what the
+[00:28:30] macro themes are
+[00:28:31] so was the
+[00:28:32] US up last night
+[00:28:33] what's
+[00:28:34] so then that gives me
+[00:28:35] an idea
+[00:28:36] or a picture of
+[00:28:37] what stocks
+[00:28:38] I'm going to be looking
+[00:28:39] to trade that day
+[00:28:41] and then I go through
+[00:28:42] like I'll have
+[00:28:43] a list in each
+[00:28:44] of the
+[00:28:45] group open so
+[00:28:46] five groups
+[00:28:47] and I'll
+[00:28:48] have the list from yesterday
+[00:28:49] and then I'll filter
+[00:28:50] through those stocks
+[00:28:51] and see
+[00:28:52] by looking at the market depth
+[00:28:53] odd do I think that
+[00:28:54] this stock is
+[00:28:55] going to move again today
+[00:28:57] and then I keep it on the
+[00:28:58] list if
+[00:28:59] I think it will
+[00:29:00] and then I delete the ones
+[00:29:01] that I think are probably
+[00:29:02] out of play
+[00:29:03] this news filters through
+[00:29:04] in the morning
+[00:29:05] about 8.30
+[00:29:06] then I start adding
+[00:29:07] stocks back on to that list
+[00:29:09] that I think might move on
+[00:29:10] news
+[00:29:11] okay yeah
+[00:29:12] so how many stocks
+[00:29:13] would kind of be
+[00:29:14] in your
+[00:29:15] your watch list by this
+[00:29:16] by the time the market opens
+[00:29:18] 40 probably
+[00:29:19] that many
+[00:29:20] yeah okay
+[00:29:21] and how do you
+[00:29:22] monitoring those stocks
+[00:29:23] on the open
+[00:29:24] like you just
+[00:29:25] you just have a
+[00:29:26] watch list with
+[00:29:28] kind of
+[00:29:29] you know
+[00:29:30] how much each one's
+[00:29:31] moved or do you have
+[00:29:32] 40 different charts
+[00:29:33] across your screen
+[00:29:34] yeah 40 different
+[00:29:35] things
+[00:29:36] so I'll just line them up on
+[00:29:37] Spark
+[00:29:38] for each group open
+[00:29:39] so I'll have
+[00:29:40] I've got like four screens
+[00:29:41] of Spark open
+[00:29:42] I'll have
+[00:29:43] two stocks
+[00:29:44] on each screen
+[00:29:45] in each
+[00:29:46] group thing
+[00:29:47] and then
+[00:29:48] I'll basically just click
+[00:29:49] through them as the next
+[00:29:50] open phase starts
+[00:29:51] so I might get on a
+[00:29:52] positioning group one
+[00:29:53] and
+[00:29:54] and then
+[00:29:56] and then I'll
+[00:29:57] yeah just
+[00:29:59] kind of keep that up
+[00:30:00] in the background
+[00:30:01] and then I'll have
+[00:30:02] another position
+[00:30:03] like group three
+[00:30:04] or something
+[00:30:05] and then I kind of
+[00:30:06] just like
+[00:30:07] juggle them
+[00:30:08] going forward
+[00:30:09] just in case
+[00:30:10] anyone's not
+[00:30:11] familiar with
+[00:30:12] the way that
+[00:30:13] ASX works
+[00:30:14] or you know
+[00:30:15] for any US listeners
+[00:30:16] or
+[00:30:17] whatever
+[00:30:18] just explain the
+[00:30:19] groups in the
+[00:30:20] different opening
+[00:30:21] times
+[00:30:22] yeah so
+[00:30:23] there's five
+[00:30:24] groups that are
+[00:30:25] just divided into
+[00:30:26] alphabetical
+[00:30:27] orders
+[00:30:28] so like group one
+[00:30:29] is stocks
+[00:30:30] with tickers
+[00:30:31] that start with like
+[00:30:32] C through to
+[00:30:33] F
+[00:30:34] and then it's G
+[00:30:35] through to
+[00:30:36] I can't remember now
+[00:30:38] but yeah
+[00:30:39] so it basically
+[00:30:40] will then
+[00:30:41] they'll open like
+[00:30:42] two minutes apart
+[00:30:43] and it can open
+[00:30:44] a 30 second window
+[00:30:45] so it's
+[00:30:46] the first group
+[00:30:47] will open at
+[00:30:48] 10 o'clock
+[00:30:49] in zero seconds
+[00:30:50] plus or minus
+[00:30:51] 15 seconds
+[00:30:52] so it could open at
+[00:30:53] 9.59
+[00:30:54] and 45 seconds
+[00:30:55] or
+[00:30:56] 10
+[00:30:57] on the dot
+[00:30:58] and 15 seconds
+[00:30:59] yeah
+[00:31:00] do you know why they do that
+[00:31:02] no clue
+[00:31:03] I think it's just the way
+[00:31:04] the way they
+[00:31:05] have always done it
+[00:31:06] so
+[00:31:07] I think it's a good thing
+[00:31:08] that
+[00:31:09] it's not just
+[00:31:10] 10 o'clock on the dot
+[00:31:11] and then everything goes crazy
+[00:31:12] away you go
+[00:31:13] yeah
+[00:31:14] does that
+[00:31:15] sometimes give you
+[00:31:16] a bit of an advantage
+[00:31:17] in itself
+[00:31:18] like let's say
+[00:31:19] I think there's a bit of
+[00:31:20] an edge
+[00:31:21] because you can do
+[00:31:22] more stuff right
+[00:31:23] you can look at
+[00:31:24] more things because
+[00:31:25] you've got time
+[00:31:26] you don't have to
+[00:31:27] I guess prioritize
+[00:31:28] as much
+[00:31:29] into like one
+[00:31:30] or two trades
+[00:31:31] because you can
+[00:31:32] do something in group one
+[00:31:33] and you still have
+[00:31:34] like a bit of
+[00:31:35] like five minutes until
+[00:31:36] you know
+[00:31:37] group four is opening
+[00:31:38] or like eight minutes
+[00:31:39] until
+[00:31:40] the last group
+[00:31:41] opens
+[00:31:42] does it also
+[00:31:43] potentially give you
+[00:31:44] a bit of an insight
+[00:31:45] let's say
+[00:31:48] let's say
+[00:31:49] a stock opens
+[00:31:50] in group two
+[00:31:51] that's an oil stock
+[00:31:52] and there's my
+[00:31:53] in group five
+[00:31:54] and you get an indication
+[00:31:55] yeah sometimes
+[00:31:56] I look at that
+[00:31:57] a read-through is to
+[00:31:58] what the market's thinking
+[00:32:00] so if it
+[00:32:01] you know
+[00:32:02] an oil stock in group one
+[00:32:03] opens and it's down five percent
+[00:32:04] but the one
+[00:32:05] in group five
+[00:32:06] looks like it's only going to
+[00:32:07] match down one percent
+[00:32:08] you can either be like
+[00:32:09] oh well maybe this one's
+[00:32:10] off too much
+[00:32:11] or that one
+[00:32:12] needs to sell
+[00:32:13] so yeah
+[00:32:14] you can play around with that
+[00:32:15] do you do those
+[00:32:16] sort of things
+[00:32:17] or
+[00:32:18] have you got enough to focus on
+[00:32:19] I think there's enough to
+[00:32:20] focus on where
+[00:32:21] there's better
+[00:32:22] probabilities
+[00:32:23] but if there's nothing doing
+[00:32:24] then I might look at
+[00:32:25] something like that
+[00:32:26] yeah
+[00:32:27] so what are some of the things
+[00:32:28] which are looking at
+[00:32:29] as kind of a catalyst
+[00:32:30] to decide
+[00:32:31] what's going to go on your list
+[00:32:32] I know you briefly mentioned it
+[00:32:33] before
+[00:32:34] but can we go into that a little
+[00:32:35] more like
+[00:32:36] what's a
+[00:32:37] like why would a stock
+[00:32:38] go on your watch list
+[00:32:40] like maybe just an example
+[00:32:42] of sort of one that's been
+[00:32:44] it's on your list
+[00:32:45] because of a news
+[00:32:46] catalyst of some sort
+[00:32:47] like
+[00:32:48] yeah so I mean news
+[00:32:50] by far is the
+[00:32:51] the best
+[00:32:52] is there any sort of
+[00:32:53] news like a
+[00:32:54] particular earnings
+[00:32:56] announcements are usually
+[00:32:57] pretty good or like
+[00:32:58] contract wins or
+[00:33:00] yeah that sort of stuff
+[00:33:02] really
+[00:33:03] okay what about like
+[00:33:04] the broker upgrades
+[00:33:05] and downgrades
+[00:33:06] it's not so much news is it
+[00:33:07] yeah I mean
+[00:33:08] they're good like
+[00:33:10] you know the stock
+[00:33:11] will usually been play
+[00:33:12] but I wouldn't say it's as like
+[00:33:14] like they can be powerful
+[00:33:15] but then sometimes
+[00:33:16] they don't work like
+[00:33:17] it's a bit of a hit and miss
+[00:33:18] type so yeah I'm not
+[00:33:19] I wouldn't say I'm like
+[00:33:20] constantly trading
+[00:33:21] broker calls but it just
+[00:33:22] is another string to
+[00:33:23] to your bow
+[00:33:25] you know when there's not much
+[00:33:27] when there's not much news
+[00:33:28] then you know hopefully
+[00:33:29] there might be a broker call
+[00:33:30] so there's something
+[00:33:31] you can do
+[00:33:32] okay and one of the things
+[00:33:33] I've noticed is
+[00:33:35] it seems like
+[00:33:36] you're quite knowledgeable
+[00:33:37] about
+[00:33:38] certainly not every business
+[00:33:39] on the ASX
+[00:33:40] but there's a lot of
+[00:33:41] businesses which you
+[00:33:42] seem to know
+[00:33:43] quite a bit about
+[00:33:44] why I get that impression
+[00:33:45] anyway like
+[00:33:46] you know who the
+[00:33:47] management is
+[00:33:48] what they've done in the past
+[00:33:49] who's holding this
+[00:33:50] you know when they sold
+[00:33:51] their shares etc
+[00:33:52] do you spend a lot of time
+[00:33:53] researching that sort of thing
+[00:33:54] or is it just kind of
+[00:33:55] I think it's just being
+[00:33:56] around at like
+[00:33:57] nine hours a day
+[00:33:58] like from 7 a.m. to
+[00:34:00] 4 10
+[00:34:02] you know you
+[00:34:03] just kind of pick up on things
+[00:34:05] and I guess I'm kind of
+[00:34:06] like a pretty cynical person
+[00:34:08] so like I'm always looking
+[00:34:10] for the negative in something
+[00:34:14] yeah typical short seller
+[00:34:16] because of that
+[00:34:18] I believe you actually got into
+[00:34:20] some
+[00:34:21] I'm not gonna say legal
+[00:34:22] strife but you had some sort of
+[00:34:24] you received a letter or some
+[00:34:26] sort of
+[00:34:28] notice to
+[00:34:29] sort of stop
+[00:34:30] a cease and desist yeah
+[00:34:31] okay can you
+[00:34:32] can you share that story
+[00:34:33] because I don't actually
+[00:34:34] know much about it
+[00:34:35] I've heard you like mentioned
+[00:34:36] bits and pieces
+[00:34:37] and but yeah
+[00:34:38] what happened
+[00:34:39] yeah so basically
+[00:34:40] there was this stock
+[00:34:41] called get swift
+[00:34:44] a fair few of the
+[00:34:45] Australian like traders
+[00:34:46] or investors have probably
+[00:34:47] heard of it
+[00:34:48] but basically I was just
+[00:34:50] kind of surprised how quick this
+[00:34:52] thing went up
+[00:34:53] and then one night
+[00:34:54] I was just bored
+[00:34:55] so I
+[00:34:56] went on my computer
+[00:34:57] and like started doing
+[00:34:58] a bit of research
+[00:34:59] and then I just whipped up
+[00:35:00] like in two hours
+[00:35:01] like a four page
+[00:35:02] summary of
+[00:35:04] what I thought of the business
+[00:35:06] and then I just posted
+[00:35:07] on Twitter like this is kind
+[00:35:08] of just when I'd started
+[00:35:09] using Twitter
+[00:35:10] I think it was back
+[00:35:11] in like October
+[00:35:12] last year
+[00:35:13] and then yeah a couple people
+[00:35:15] read it and then I'm like
+[00:35:16] okay
+[00:35:17] people seem to
+[00:35:18] be interested in the thing
+[00:35:20] so I was like okay
+[00:35:21] that's pretty cool
+[00:35:22] and then like two weeks later
+[00:35:23] I get this email
+[00:35:24] with a cease and desist letter
+[00:35:26] from their lawyers
+[00:35:27] saying that I've breached
+[00:35:28] like all this ASIC stuff
+[00:35:30] and you know
+[00:35:32] we're reporting you to ASIC
+[00:35:33] like what you're doing is
+[00:35:35] blah blah blah
+[00:35:36] like I can't remember exactly
+[00:35:37] what was in the letter now
+[00:35:38] so I'm just like oh crap
+[00:35:39] like what's this about
+[00:35:40] like I'm just a day trader
+[00:35:42] at home in my underpants
+[00:35:44] and you're coming up to me
+[00:35:45] like for all this stuff
+[00:35:47] so what did you think
+[00:35:48] of the company like what was
+[00:35:49] in this four page report
+[00:35:50] that you put out
+[00:35:51] I mean I don't know
+[00:35:52] if you can go into the details
+[00:35:53] of it or yeah
+[00:35:54] I think it's still on
+[00:35:55] it might still be on my Twitter somewhere
+[00:35:57] but yeah I was basically
+[00:35:59] just going through
+[00:36:00] because their
+[00:36:02] the way they structured
+[00:36:03] like their performance
+[00:36:04] rights and stuff
+[00:36:05] was based around
+[00:36:06] you know numbers of deliveries
+[00:36:07] so they're
+[00:36:09] they're like an app
+[00:36:11] I think they call themselves
+[00:36:12] like the Uber of delivery
+[00:36:14] or like logistics
+[00:36:16] or something like that
+[00:36:17] so they would
+[00:36:19] sign up businesses
+[00:36:21] and then give them
+[00:36:22] this software
+[00:36:23] and they would get paid
+[00:36:24] like what they said was
+[00:36:25] 30 cents
+[00:36:26] for every delivery that
+[00:36:28] was done using their platform
+[00:36:31] and they incentive
+[00:36:32] or their performance rights
+[00:36:34] were based on
+[00:36:35] how many deliveries they were doing
+[00:36:37] and I didn't think that
+[00:36:38] that was right
+[00:36:39] because
+[00:36:40] you know if you're a shareholder
+[00:36:41] like do you really care
+[00:36:42] how many deliveries
+[00:36:43] like you want to see
+[00:36:44] I think it made more sense
+[00:36:45] to see revenue-based
+[00:36:47] performance rights being granted
+[00:36:49] not deliveries
+[00:36:50] because you know if you put someone on a trial
+[00:36:52] and
+[00:36:53] they're doing deliveries on the trial
+[00:36:55] and they're not paying for them
+[00:36:56] all that's a little bit deceptive
+[00:36:58] and basically a lot of their announcements were
+[00:37:00] like
+[00:37:02] pure spin
+[00:37:03] like they just
+[00:37:04] I didn't think they were being
+[00:37:05] particularly truthful about
+[00:37:06] like some of the contracts
+[00:37:07] and they're embellishing
+[00:37:11] a fair bit I thought
+[00:37:12] like they're like
+[00:37:13] this contract is going to be worth
+[00:37:15] you know
+[00:37:16] 1.15 billion dollars in revenue
+[00:37:18] or whatever
+[00:37:19] and like since then
+[00:37:20] I haven't heard a single thing
+[00:37:21] about any of
+[00:37:22] like any of this stuff
+[00:37:23] the only announcements they've been coming out recently
+[00:37:25] is the fact there's like
+[00:37:26] three class actions pending on them
+[00:37:28] oh really
+[00:37:29] so was this a newly listed stock at the time
+[00:37:31] I think it listed in December 2016
+[00:37:33] so it had been on
+[00:37:35] when I like wrote the thing
+[00:37:36] I think it had been on for like nine months
+[00:37:38] okay right
+[00:37:39] and it's still
+[00:37:40] obviously tradeable today
+[00:37:42] ah yeah
+[00:37:43] it went up to like
+[00:37:44] 450 or something from a 20 cent IPO
+[00:37:47] oh wow
+[00:37:48] and then
+[00:37:49] yeah it's now like 35 cents or something
+[00:37:52] okay
+[00:37:53] so
+[00:37:54] so were you short it
+[00:37:55] I was shorted intraday
+[00:37:57] but
+[00:37:58] yeah I'd never held like an overnight position
+[00:38:00] short in it
+[00:38:01] just because like that's one of my rules
+[00:38:02] I don't hold overnight
+[00:38:03] but
+[00:38:04] yeah really like
+[00:38:05] rub me up the wrong way
+[00:38:07] like them trying to
+[00:38:08] go legal on me so
+[00:38:10] I then just went to the AFR
+[00:38:12] and then gave them all
+[00:38:13] because I was going to write another report
+[00:38:14] like I was in the process of writing
+[00:38:16] like a more in depth than
+[00:38:17] I guess a little bit more of a professional report
+[00:38:19] on what I thought
+[00:38:20] because I'd done a
+[00:38:21] done more research
+[00:38:22] mm-hmm
+[00:38:23] and then they
+[00:38:24] sent me this
+[00:38:25] I'm like alright well
+[00:38:26] I shouldn't push the envelope
+[00:38:27] I'm not going to say anything
+[00:38:28] else publicly
+[00:38:29] so then I just went to the AFR
+[00:38:30] and said here's all the information
+[00:38:32] and then the AFR basically just
+[00:38:34] went to town
+[00:38:35] did they really
+[00:38:36] yeah
+[00:38:37] what they do
+[00:38:38] writing articles and
+[00:38:39] then that started doing some of their own research
+[00:38:41] and
+[00:38:42] yeah
+[00:38:43] and the whole thing blew up
+[00:38:44] okay
+[00:38:45] so what were they threatening like in this email
+[00:38:48] uh
+[00:38:49] they were saying like
+[00:38:50] they were calling it like stock price manipulation
+[00:38:53] or something
+[00:38:54] and
+[00:38:55] yeah I was in breach of like
+[00:38:57] corporations act
+[00:38:58] like a bunch of these things
+[00:39:00] and we've reported the thing to ASIC blah blah blah
+[00:39:02] like it was pretty much just a shakedown
+[00:39:04] and I just went to see a lawyer
+[00:39:06] and I showed them like everything
+[00:39:08] that I'd written
+[00:39:09] on the internet about the
+[00:39:10] the company
+[00:39:11] and they were like
+[00:39:12] I don't think you really have anything to worry about
+[00:39:14] but don't go like poking the hornet's nest
+[00:39:16] just don't post anything else
+[00:39:18] yeah
+[00:39:19] so I'm like okay fine
+[00:39:20] did you ever hear
+[00:39:21] did you ever hear anything from ASIC
+[00:39:23] no
+[00:39:24] it was probably a bluff
+[00:39:25] yeah
+[00:39:26] yeah
+[00:39:27] okay
+[00:39:28] there must have been a bit of a red flag in itself
+[00:39:30] that
+[00:39:31] you know a company was coming on to you
+[00:39:32] that strong after
+[00:39:33] like you said
+[00:39:34] a day trader at home
+[00:39:35] exactly like if I wrote a four page
+[00:39:39] research piece on Telstra
+[00:39:41] I'm not getting any
+[00:39:42] cease and desist letters from them
+[00:39:44] they're like well
+[00:39:45] yeah
+[00:39:46] the proof is in the pudding
+[00:39:47] not that Telstra's a great stock but yeah
+[00:39:48] no absolutely not
+[00:39:49] the point is they're legit you know
+[00:39:51] did you trade Telstra
+[00:39:53] a couple weeks back after their
+[00:39:56] investors meeting
+[00:39:58] you know when they had that
+[00:39:59] yeah I did but not successfully
+[00:40:00] okay
+[00:40:01] yeah
+[00:40:02] how come you weren't successful in that
+[00:40:04] like
+[00:40:05] I think with that because it's like
+[00:40:07] it doesn't have
+[00:40:08] huge moves
+[00:40:09] and the books like so thick
+[00:40:10] so I get like a bigger position on
+[00:40:12] where I might be like 500
+[00:40:14] or a thousand dollars a tick
+[00:40:16] so then like it
+[00:40:18] I'm kind of like super reactive and
+[00:40:20] a little bit uptight about it
+[00:40:22] just because there's like
+[00:40:24] there might be
+[00:40:25] you know five million dollars on the bid
+[00:40:27] or something and that will just get
+[00:40:28] instantly wiped
+[00:40:29] like it's no issue kind of thing
+[00:40:31] so that means your
+[00:40:33] your risk is a little bit higher
+[00:40:34] because it can go against you like
+[00:40:36] because then you've got to cross the
+[00:40:38] the spread to get out
+[00:40:40] again so it's yes
+[00:40:42] another thing that I need to work on
+[00:40:43] but I prefer usually like a little bit
+[00:40:45] less liquid
+[00:40:47] less liquid stocks
+[00:40:48] yeah
+[00:40:49] yeah because I traded it that day as well
+[00:40:52] and
+[00:40:53] also not successfully
+[00:40:55] yeah
+[00:40:56] and I just feel like a bit of an idiot afterwards
+[00:40:58] I was like I felt really naive
+[00:41:00] actually trying to
+[00:41:01] trade a stock like that just because it
+[00:41:03] attracts a very different sort of
+[00:41:05] participant
+[00:41:06] yeah
+[00:41:07] and
+[00:41:08] I don't know it just was
+[00:41:10] something I should have stayed out of
+[00:41:11] yeah but
+[00:41:12] yeah it's not like one of my favourite
+[00:41:14] stocks to trade
+[00:41:16] but yeah again it's something that I need
+[00:41:18] to get better at because there's a lot
+[00:41:20] of liquidity there and if you
+[00:41:22] can get comfortable trading it on these
+[00:41:24] catalysts or these news events
+[00:41:26] it can be pretty profitable so
+[00:41:28] do you find that there's always
+[00:41:30] opportunities each day
+[00:41:32] as in like there's always
+[00:41:34] a catalyst or there's always a stock
+[00:41:36] in play
+[00:41:37] yeah there's always something if there's
+[00:41:38] nothing it just means you haven't looked
+[00:41:40] hard enough
+[00:41:41] or you're too hungover or something like that
+[00:41:44] okay
+[00:41:45] and where do you
+[00:41:46] where do you get most of your information
+[00:41:48] from in the morning like were you doing
+[00:41:50] sort of your research and prep like
+[00:41:52] are there any sites that you frequently
+[00:41:54] visit or
+[00:41:55] yeah so I've just got like first of all
+[00:41:57] like I was saying those ETFs and stuff
+[00:41:59] but I'm into
+[00:42:01] like in my iris
+[00:42:03] so I just bring that up each morning
+[00:42:05] that helps me populate the list and then
+[00:42:07] I'll look at other stuff like investing.com
+[00:42:09] is a decent one so you can get
+[00:42:11] live commodity prices on there
+[00:42:13] FinViz
+[00:42:15] to see like what sectors
+[00:42:17] moved in the US
+[00:42:19] they've got like a market map thing as well
+[00:42:21] also the
+[00:42:23] iron ore futures in
+[00:42:25] the Dalian commodity exchange
+[00:42:27] so there's a link
+[00:42:29] there that I look at but that's pretty much it
+[00:42:31] and also AFR
+[00:42:32] so I'll just peruse the AFR
+[00:42:34] and see what people are talking about
+[00:42:36] because that can be pretty good
+[00:42:38] yeah when you're looking at these ETFs
+[00:42:40] what are you actually looking at
+[00:42:42] are you just looking to see
+[00:42:44] if the oil ETFs up 3%
+[00:42:46] yeah it's more just like the magnitude
+[00:42:48] of the move like
+[00:42:50] if copper ETFs up 5%
+[00:42:52] then I'll be looking at
+[00:42:54] copper stocks to see if they follow here
+[00:42:56] or the lithium ETF
+[00:42:58] gets smashed or something
+[00:43:00] and then you might look to short lithium stocks
+[00:43:02] so that's kind of just
+[00:43:04] one way of getting trade ideas
+[00:43:06] yeah would that be enough
+[00:43:08] for you to actually get involved in some
+[00:43:10] copper stocks like just the fact that
+[00:43:12] the copper ETF might be up 5%
+[00:43:14] how do you then decide which
+[00:43:16] copper stocks you might actually
+[00:43:18] so I'll have them on my watch list
+[00:43:20] and then I'll watch
+[00:43:22] just before the market opens
+[00:43:24] I'll see buyers rushing in
+[00:43:26] or it looks like this thing wants to go
+[00:43:28] just by focusing on the market depth
+[00:43:31] then I'll make a decision based on that
+[00:43:34] okay and you're obviously also taking into consideration
+[00:43:37] if like how up or down
+[00:43:39] when a stock might be
+[00:43:41] during the matches
+[00:43:43] yeah exactly so like if
+[00:43:45] say the copper ETFs up 5%
+[00:43:47] but like osminals or
+[00:43:49] or something is up 10%
+[00:43:51] well then I'm probably not going to buy that
+[00:43:53] I think it's probably
+[00:43:55] gapping too much
+[00:43:57] to get involved
+[00:43:59] yeah okay
+[00:44:01] now just sort of talking about
+[00:44:03] some of the setups
+[00:44:05] and strategies that you trade today
+[00:44:07] I noticed that
+[00:44:09] most days you post something
+[00:44:11] on your Twitter just a quick review of
+[00:44:13] the day like a trade
+[00:44:15] and report
+[00:44:17] you often grade your setups
+[00:44:19] I'm interested to just hear a bit more about
+[00:44:21] how you
+[00:44:23] how why you do that
+[00:44:25] how that actually influences how you trade
+[00:44:27] each of those setups
+[00:44:29] yeah can you just share a little bit of insight to
+[00:44:31] how you actually do the grading
+[00:44:33] that's kind of based on around like
+[00:44:35] I guess Mike Bellafiore's
+[00:44:37] like trade review thing and then
+[00:44:39] Austin Mitcham started doing
+[00:44:41] doing that so then I'm like oh yeah maybe
+[00:44:43] I should consider
+[00:44:45] trying to grade or rank
+[00:44:47] what I'm doing in terms of like
+[00:44:49] something where I've got a huge edge
+[00:44:51] in doing or have I taken that trade
+[00:44:53] sort of for no real reason
+[00:44:55] so I think it's just important to
+[00:44:57] internalize
+[00:44:59] what you're doing right and then also what you're doing wrong
+[00:45:01] and that's kind of what the whole idea
+[00:45:03] of grading the setups is about
+[00:45:05] if you let's say you have
+[00:45:07] a setup which is grade
+[00:45:09] A in your books
+[00:45:11] and then you have one which is a C
+[00:45:13] how are you going to trade each of those differently
+[00:45:15] I wouldn't say I'm particularly
+[00:45:17] thinking or at least I haven't
+[00:45:19] in the past been thinking about
+[00:45:21] like you know is this
+[00:45:23] an A plus setup like
+[00:45:25] in the moment this is more like a reflective
+[00:45:27] thing where I'm grading it
+[00:45:29] so yeah but now what
+[00:45:31] I'm trying to do is you know start
+[00:45:33] to think okay like in the moment this is
+[00:45:35] an A plus setup and then
+[00:45:37] you want to be at your biggest size
+[00:45:39] and you probably want to hold
+[00:45:41] for longer if it's A plus
+[00:45:43] okay let's speak about your sizing
+[00:45:45] we'll come back to this
+[00:45:47] bit more about some
+[00:45:49] of your setups and your particular plays
+[00:45:51] but how
+[00:45:53] are you sizing into your trades
+[00:45:55] like you're still thinking
+[00:45:57] about the tick value
+[00:45:59] which you spoke about
+[00:46:01] you know earlier on or
+[00:46:03] so I saw as probably more
+[00:46:05] around
+[00:46:07] well partially around like what the tick value
+[00:46:09] would be but also the liquidity
+[00:46:11] around me so like
+[00:46:13] I don't want to be in something where
+[00:46:15] it's going to move the price
+[00:46:17] three cents or something
+[00:46:19] before I can get out
+[00:46:21] because I'm like way too big for the liquidity
+[00:46:23] around me that kind of just ends in
+[00:46:25] disaster a lot of the time so
+[00:46:27] yeah I'm sizing based on
+[00:46:29] how much protection I have in the book
+[00:46:31] so if I'm like shorting something
+[00:46:33] and I've got like 50,000 units
+[00:46:35] you know I want to see
+[00:46:37] you know 70 or 80,000
+[00:46:39] like other
+[00:46:41] so that I've got protection if the trade looks like
+[00:46:43] it's going to go against me
+[00:46:45] so that's kind of what I'm
+[00:46:47] looking for mostly
+[00:46:49] so it's kind of governed by
+[00:46:51] like you said what's available
+[00:46:53] how much liquidity there is what's in the book
+[00:46:55] do you find in
+[00:46:57] the Australian market that there's much
+[00:46:59] that kind of the liquidity
+[00:47:01] disappears
+[00:47:03] I don't want to say spoofing but do you find that there's much
+[00:47:05] of that like sort of the
+[00:47:07] liquidity that appears to be there but when you actually
+[00:47:09] come to trade it
+[00:47:11] you know it's not really there
+[00:47:13] yeah there's a fair bit of that I think that's a lot of
+[00:47:15] like algos will have
+[00:47:17] you know spoofed orders in there
+[00:47:19] and then you see as it moves
+[00:47:21] like it might move down and then they'll
+[00:47:23] on the buy side they'll like move
+[00:47:25] back and but that usually like
+[00:47:27] is an indication to me that there's
+[00:47:29] like a seller in this thing and they're propping
+[00:47:31] the book so that people think
+[00:47:33] oh I've got plenty of protection here I can buy
+[00:47:35] this kind of thing and then they step back
+[00:47:37] so it's a good if I see that
+[00:47:39] and I'm sure it's like something that's
+[00:47:41] going through my mind or I should probably
+[00:47:43] hold this because there's obviously a
+[00:47:45] motivated seller in here
+[00:47:47] because they're propping the bid
+[00:47:49] side of the book so does that
+[00:47:51] always seem genuine so
+[00:47:53] so what you're just saying is if you're short
+[00:47:55] there's a big bid let's say
+[00:47:57] $5 and then suddenly
+[00:47:59] as the price moves to that $5
+[00:48:01] thing that
+[00:48:03] that $5 level
+[00:48:05] it might move back to like for
+[00:48:07] $4.95 or $4.90
+[00:48:09] or something yeah
+[00:48:11] okay and so you'll
+[00:48:13] if you see that sort of action that'll
+[00:48:15] you'll tend to hold that position for a bit
+[00:48:17] longer I want to hold it until I can see
+[00:48:19] actual real buyers stepping up
+[00:48:21] and then I'll look to cover okay
+[00:48:23] so okay so let's go back to
+[00:48:25] your
+[00:48:27] kind of some of your setups or
+[00:48:29] your particular plays which you like to get involved
+[00:48:31] in and obviously I don't expect you to share
+[00:48:33] all of them or your best ones but
+[00:48:35] can you just give us an example of maybe a
+[00:48:37] recent trade which maybe
+[00:48:39] checked all the boxes for you
+[00:48:41] so that was that Cobb trade Cobb
+[00:48:43] blue holdings which was
+[00:48:45] I think last
+[00:48:47] the Wednesday before last
+[00:48:49] which
+[00:48:51] was truly an A plus setup
+[00:48:53] for me so it was a short
+[00:48:55] like major news catalyst there
+[00:48:57] pre-feasibility study
+[00:48:59] or something was being released
+[00:49:01] and it's relatively a liquid so
+[00:49:03] you know that
+[00:49:05] you know if anyone wants to sell
+[00:49:07] they're going to have to do it over a number of days
+[00:49:09] it's not just
+[00:49:11] you know because there's no liquidity
+[00:49:13] they can't get it out fast so they just have to
+[00:49:15] keep selling keep selling keep selling so
+[00:49:17] I thought there was huge potential for a big
+[00:49:19] move so yeah that one
+[00:49:21] checked all the boxes and I got
+[00:49:23] pretty decent size in it as well I think
+[00:49:25] I was like about two thirds
+[00:49:27] of the match volume
+[00:49:29] and then yeah
+[00:49:31] I covered way too
+[00:49:33] soon so I'm still using myself
+[00:49:35] for that so that was just an intraday
+[00:49:37] trade again yeah I was out
+[00:49:39] in like 20 or 30 minutes so like I say
+[00:49:41] all this stuff like this is one to hold they're going to
+[00:49:43] be selling for days and then there I am taking
+[00:49:45] profit in 20 minutes like it strives me mad
+[00:49:49] was that something that you traded again
+[00:49:51] the next day like did that stay
+[00:49:53] a stock and play for a few days yeah I traded
+[00:49:55] the next day as well again
+[00:49:57] not well all right
+[00:49:59] I still I still made money but yeah
+[00:50:01] I again like there was no reason
+[00:50:03] for me to to take profit other
+[00:50:05] than like
+[00:50:07] yeah just I guess trading my P&L
+[00:50:09] how much was this stock like
+[00:50:11] was it denomination wise or
+[00:50:13] like was it a couple cents or
+[00:50:15] no it was I think it opened
+[00:50:17] at 90 or sorry
+[00:50:19] 88 cents okay yeah
+[00:50:21] and then I think it closed the first day at like
+[00:50:23] 70 cents or something
+[00:50:25] I think I covered most of my position at like
+[00:50:27] 78 cents right I made
+[00:50:29] like 10 cents or whatever on the
+[00:50:31] okay on the thing
+[00:50:33] how do you
+[00:50:35] control I guess this is maybe a bit of a
+[00:50:37] psychology question how do you
+[00:50:39] control
+[00:50:41] your mindset in those types
+[00:50:43] of scenarios when you're like
+[00:50:45] you know like this you had
+[00:50:47] a lot of size on a really good
+[00:50:49] trade went in your favor
+[00:50:51] you're now looking back on it you go I took
+[00:50:53] too early
+[00:50:55] how do you
+[00:50:57] how do you not
+[00:50:59] sort of become
+[00:51:01] too caught up in that
+[00:51:03] because you can I feel as though you can do that
+[00:51:05] all the time what what do you mean sorry
+[00:51:07] like
+[00:51:09] in hindsight I guess
+[00:51:11] I'm talking about hindsight right like
+[00:51:13] you often see a trade you got out
+[00:51:15] and it kept running you're like
+[00:51:17] I should have held that yeah I should
+[00:51:19] have done this or
+[00:51:21] that sort of thing like how do you
+[00:51:23] how do you stop yourself
+[00:51:25] from falling into that trap
+[00:51:27] of like being too critical
+[00:51:29] of yourself or yeah I guess I think I
+[00:51:31] just do fall into that trap like
+[00:51:33] it's but that's one of the great
+[00:51:35] things about trading right is you're never
+[00:51:37] gonna you know trade something
+[00:51:39] perfectly there'll always be room for improvement
+[00:51:41] and then for someone like who's
+[00:51:43] I probably describe myself as
+[00:51:45] a bit of a perfectionist I
+[00:51:47] keep to me motivated to come back
+[00:51:49] the next day and try perfect it
+[00:51:51] then so
+[00:51:53] I guess it just keeps it interesting if you
+[00:51:55] keep making mistakes
+[00:51:57] yeah I guess that's the good thing about
+[00:51:59] day trading is there's always so much happening
+[00:52:01] and you can always there's always a new day
+[00:52:03] yeah yeah
+[00:52:05] is there been any other trades recently
+[00:52:07] which maybe checked all the boxes again
+[00:52:09] which you know was a
+[00:52:11] a good set up you would take
+[00:52:13] any any day of the week yeah there's probably
+[00:52:15] that ISD trade which
+[00:52:17] I think the ASX made a mistake they
+[00:52:19] released
+[00:52:21] some price sensitive news as
+[00:52:23] non-sensitive and I just
+[00:52:25] saw it straight away and bought
+[00:52:27] and then the thing went from like I
+[00:52:29] think I bought it at 70 and a half I kept adding
+[00:52:31] to about 75 cents
+[00:52:33] and then it went up to
+[00:52:35] like 83 cents
+[00:52:37] whatever and I held that one
+[00:52:39] pretty well
+[00:52:41] so yeah I guess the catalyst there is
+[00:52:43] news and I've just got
+[00:52:45] speed of execution
+[00:52:47] saw the news quickly
+[00:52:49] shoot first
+[00:52:51] ask questions later mentality
+[00:52:53] what was the news on that
+[00:52:55] it was just they reaffirmed
+[00:52:57] their full year guidance
+[00:52:59] and it had been a stock that had
+[00:53:01] been constantly downgrading downgrading downgrading
+[00:53:03] so
+[00:53:05] my like
+[00:53:07] quick thesis in my head was
+[00:53:09] the downgrades have stopped now
+[00:53:11] so that can only be a positive thing
+[00:53:13] so I was
+[00:53:15] tilted like my bias
+[00:53:17] was to the upside so I just bought
+[00:53:19] okay so you said I think you said you
+[00:53:21] bought it 70 cents initially
+[00:53:23] 70 and a half and I added
+[00:53:25] so I had an average price of around
+[00:53:27] 72 73 cents
+[00:53:29] around that okay so how did you
+[00:53:31] add going up to was it 75
+[00:53:33] cents when you stopped adding
+[00:53:35] lifting offers
+[00:53:37] like what
+[00:53:39] the entire offer
+[00:53:41] wasn't like super liquid there was a
+[00:53:43] so I remember there was a drip
+[00:53:45] seller at 70 and a half when the news hit
+[00:53:47] so you could have got like a decent
+[00:53:49] amount of liquidity on that iceberg
+[00:53:51] seller and then he
+[00:53:53] lifted and then once he lifted
+[00:53:55] I was like oh okay so
+[00:53:57] there was like maybe
+[00:53:59] 50,000 shares between
+[00:54:01] 70 and a half and 75
+[00:54:03] cents so I just kept adding
+[00:54:05] and I went to sell some
+[00:54:07] at 74 I sold like
+[00:54:09] I tried to sell maybe like one
+[00:54:11] fifth of my position there
+[00:54:13] or something and I'm like crap what are you
+[00:54:15] doing like this dumb so I canceled the order
+[00:54:17] some other seller came in and I bought
+[00:54:19] it again and then I added
+[00:54:21] 75 I think from memory and what are
+[00:54:23] you doing when you're
+[00:54:25] when you're
+[00:54:27] in a position like that are you just doing
+[00:54:29] market orders yeah but I'm doing it all
+[00:54:31] manually so I'll just have like a
+[00:54:33] bunch of buy tickets up and I'm
+[00:54:35] adjusting the
+[00:54:37] price with it so but I'm not
+[00:54:39] like I'm not sweet I wasn't
+[00:54:41] sweeping the order book I was just
+[00:54:43] taking them as the bidder stepped up
+[00:54:45] like in front so
+[00:54:47] and what if that trade hadn't
+[00:54:49] worked out like what was your
+[00:54:51] exit plan in that sort of situation
+[00:54:53] there was a fair bit of liquidity there
+[00:54:55] okay but I would at that point like
+[00:54:57] once I saw how quickly the buyers
+[00:54:59] stepped up like I just knew I was right
+[00:55:01] it wasn't gonna go down so
+[00:55:03] how do you think about an exit plan
+[00:55:05] strategies or sorry not your strategies
+[00:55:07] but in when you're trading
+[00:55:09] how do you think about do
+[00:55:11] you use stops no
+[00:55:13] it's all like manual mental stops
+[00:55:15] yeah but that's probably something I also
+[00:55:17] need to start developing like
+[00:55:19] thinking bigger picture maybe
+[00:55:21] preparing a little bit more before taking a
+[00:55:23] trade because at the moment I'm just doing
+[00:55:25] stuff like off the cuff like I see
+[00:55:27] it and then I do it and I don't really
+[00:55:29] put that much thought into
+[00:55:31] where my exit is gonna be
+[00:55:33] um yeah because I
+[00:55:35] guess a lot of like what I do is pretty
+[00:55:37] feel-based and I think I need to step
+[00:55:39] away from
+[00:55:41] being so like feel-based
+[00:55:43] and more
+[00:55:45] I guess structured in terms of
+[00:55:47] like having a plan
+[00:55:49] for what I'm doing okay
+[00:55:51] so do you have a rough
+[00:55:53] idea on where you're gonna stop out on a trade
+[00:55:55] if it moves against you or is it again
+[00:55:57] sort of dependent on what you see in the
+[00:55:59] I'll usually just stop out a trade
+[00:56:01] once if it goes against me I'm just
+[00:56:03] out there's pretty much
+[00:56:05] where I that's
+[00:56:07] how I manage risk like if I put
+[00:56:09] on a trade and it doesn't move
+[00:56:11] for me straight away I'm pretty much out
+[00:56:13] yeah okay okay
+[00:56:15] so if it was to just continue
+[00:56:17] sideways but sort of not
+[00:56:19] really come too much back
+[00:56:21] you're gonna just get rid of it
+[00:56:23] I mean if it's moving sideways and I think like
+[00:56:25] there's still potential for it to work
+[00:56:27] then I might hold it
+[00:56:29] right if it goes the opposite direction
+[00:56:31] to the way I want it to then I'm
+[00:56:33] just I'm straight out done with it
+[00:56:35] and then like I can always reassess
+[00:56:37] in a couple minutes or later
+[00:56:39] if I still think the trade
+[00:56:41] could work but I'd rather just
+[00:56:43] get out scratch it and then
+[00:56:45] start it start again
+[00:56:47] and how about taking positions off are you
+[00:56:49] normally sort of all out
+[00:56:51] at one price yeah that's
+[00:56:53] yeah I'm very much like
+[00:56:55] I'm in the entire position like
+[00:56:57] in one go and I'm out in one go as well
+[00:56:59] which is something
+[00:57:01] I should probably start you know trying to scale
+[00:57:03] out of stuff but the problem is like
+[00:57:05] I'm a bit of an adrenaline junkie so
+[00:57:07] once the position's not as big
+[00:57:09] as what it was then I like lose interest
+[00:57:11] I'm like oh this is boring yeah yeah
+[00:57:13] right so then I'm just like oh we'll just
+[00:57:15] get rid of this do you find that you get
+[00:57:17] that still and your trading is a bit of
+[00:57:19] a bit of a kick when you are
+[00:57:21] you know when you do have a bit of size on
+[00:57:23] yeah yeah definitely
+[00:57:25] yeah still feel it yeah
+[00:57:27] do you think that's a good thing like does that
+[00:57:29] make you perform better you think
+[00:57:31] more alert or I'm definitely
+[00:57:33] more alert but I wouldn't say it makes me perform
+[00:57:35] better I probably need to calm
+[00:57:37] down a little bit and identify
+[00:57:39] like if I am you know
+[00:57:41] feeling like a kid on Christmas
+[00:57:43] that's probably an a plus
+[00:57:45] trade and I should just like relax and
+[00:57:47] hold so
+[00:57:49] how much of your money is
+[00:57:51] made in the first 30 minutes of the day
+[00:57:53] probably 70 or 80 percent
+[00:57:55] that much really
+[00:57:57] yeah like you get your odd
+[00:57:59] good midday trade but
+[00:58:01] I'd say a lot of the
+[00:58:05] yeah my best days like I'm making
+[00:58:07] most of the money in the first yeah half
+[00:58:09] an hour to an hour right and what
+[00:58:11] about during the close like that last
+[00:58:13] kind of I don't I don't usually take
+[00:58:15] that many trades then
+[00:58:17] because like I'm just
+[00:58:19] a bit tired by then because if I'm trading
+[00:58:21] in the states like it's close to midnight
+[00:58:23] what's after midnight so
+[00:58:25] don't do anything stupid
+[00:58:29] even though you make most of your money during
+[00:58:31] the open that you're still sticking around
+[00:58:33] for the rest of the day I'm watching 100 percent
+[00:58:35] are you still trading
+[00:58:37] during the
+[00:58:39] after 11 o'clock
+[00:58:41] I'll still be trading smaller
+[00:58:43] I might be smaller
+[00:58:47] then I'm looking more at
+[00:58:49] I mean reverting stuff like
+[00:58:51] you know fading stuff that I think is up too much
+[00:58:53] or like buying a dip or something like that
+[00:58:55] which are just like
+[00:58:57] you know you're
+[00:58:59] smaller like kind of income trades I guess
+[00:59:01] you describe them as like wallet
+[00:59:03] patterns yeah yeah
+[00:59:05] yeah I like that
+[00:59:07] now
+[00:59:09] I can't remember what it was
+[00:59:11] it was a few months ago
+[00:59:13] you crossed a million dollars in trading
+[00:59:15] profits when was that
+[00:59:17] I think it was
+[00:59:19] at the beginning or middle of May
+[00:59:21] okay
+[00:59:23] and how long had you been trading at that point
+[00:59:25] must have been what two and a half years
+[00:59:27] two and a half years yeah
+[00:59:29] what was that what did that feel like
+[00:59:31] when you crossed that million
+[00:59:33] dollar mark
+[00:59:35] I guess it's just an arbitrary number
+[00:59:37] like
+[00:59:39] I mean I'm
+[00:59:41] I kind of like I don't really care that much
+[00:59:43] about the money I don't spend my money
+[00:59:45] on anything other than like
+[00:59:47] you know having a good time with mates
+[00:59:49] or something like that so I don't need
+[00:59:51] a million dollars so I'm just like
+[00:59:53] okay that's cool
+[00:59:55] I gotta have financial freedom
+[00:59:57] but it's not like I
+[00:59:59] wasn't like oh yeah
+[01:00:01] I was like oh that's pretty cool
+[01:00:03] I imagine there must have been a point
+[01:00:05] where you kind of gathered that it was
+[01:00:07] only going to be a matter of time until you did
+[01:00:09] yeah I think that's also another thing
+[01:00:11] like it was just
+[01:00:13] yeah a matter of time because
+[01:00:15] I've been
+[01:00:17] profitable since I started
+[01:00:19] pretty much so it's just like
+[01:00:21] a matter of like when not if
+[01:00:23] what do you think that is
+[01:00:25] what do you think that you were able to
+[01:00:27] make money so quickly
+[01:00:29] uh
+[01:00:31] Bryce's mentorship for sure
+[01:00:33] um I think like
+[01:00:35] if I went out and did it myself
+[01:00:37] I would have figured it out but
+[01:00:39] just being able to cut down that learning
+[01:00:41] curve was like massive
+[01:00:43] and I guess like having him
+[01:00:45] there to like bounce stuff off
+[01:00:47] it gives you like a certain degree of
+[01:00:49] confidence
+[01:00:51] so that was easily
+[01:00:53] the reason that I was as
+[01:00:55] profitable as what I was so quickly
+[01:00:57] yeah do you think there were other
+[01:00:59] factors to it as well I mean
+[01:01:01] I don't certainly don't want to play down
+[01:01:03] play what Bryce you know had done for you
+[01:01:05] yeah but I just know in having
+[01:01:07] conversations with Bryce he sort of said
+[01:01:09] things like you know
+[01:01:11] Nick's just a freak like
+[01:01:13] if there was
+[01:01:15] if he had have tried to train up someone else
+[01:01:17] you know he'd probably have like 10 people
+[01:01:19] or so who wouldn't be able to do what
+[01:01:21] yeah I mean I'm sure I have some sort of like
+[01:01:23] skill in what
+[01:01:25] I'm doing like it's just something it's a game
+[01:01:27] that suits my personality and
+[01:01:29] I mean that's probably half the reason that he
+[01:01:31] was like
+[01:01:33] I guess I wouldn't say it was pressuring
+[01:01:35] me to start trading but it was like oh dude
+[01:01:37] you should really give this a go I think
+[01:01:39] you'd be good at it so like he obviously saw
+[01:01:41] something in me that
+[01:01:43] he thought I would be good at it
+[01:01:45] and I know he's probably he might have been
+[01:01:47] surprised that I was I picked it up so
+[01:01:49] quickly yeah
+[01:01:51] what are some of the things which you think
+[01:01:53] you do do well like what would you say
+[01:01:55] some of your strengths as a trader
+[01:01:57] the risk management probably like just
+[01:01:59] cutting loses quickly
+[01:02:01] I think that's something that
+[01:02:03] I guess like you're saying in that
+[01:02:05] Rambo interview like
+[01:02:07] learning to lose like I've always just
+[01:02:09] been able to take losses and it not
+[01:02:11] like affect me too much
+[01:02:13] so I think like a lot of people comment
+[01:02:15] like when I post my things they're like oh like
+[01:02:17] he loses are always so small it's just
+[01:02:19] because like if I start to see
+[01:02:21] red on a trade just out
+[01:02:23] like there's no ifs or buts about it
+[01:02:25] really there's no point fighting it
+[01:02:27] it's like I might be
+[01:02:29] you know fading a stock
+[01:02:31] like say if something's like too far
+[01:02:33] from VWAP or whatever and I'll
+[01:02:35] start shorting it and then
+[01:02:37] like it keeps going against me like I'm not
+[01:02:39] trying I'm not holding stuff on the front
+[01:02:41] side of a move like I'll just get out and
+[01:02:43] then try it again in like 10 minutes if it
+[01:02:45] goes further
+[01:02:47] so just cutting losses and like knowing
+[01:02:49] when to give up the fight I guess
+[01:02:51] what do you mean by the front side of the move
+[01:02:53] so basically
+[01:02:55] there hasn't really been like any
+[01:02:57] evidence to suggest that it's going to go down
+[01:02:59] like sometimes I'm just too early
+[01:03:01] on the trade like to fade
+[01:03:03] whether it be something that's
+[01:03:05] like tanking and then I'm like
+[01:03:07] trying to buy for a reversal to VWAP
+[01:03:09] or something just being
+[01:03:11] in too early instead of
+[01:03:13] entering like once there's been
+[01:03:15] like an obvious signal that the flow
+[01:03:17] is about to um is about to turn
+[01:03:19] yeah do you find
+[01:03:21] that you're often getting in
+[01:03:23] before the moves
+[01:03:25] kind of happen or what do you mean
+[01:03:27] sorry so let's say you have
+[01:03:29] a level which you've identified
+[01:03:31] is kind of like a key level which you think
+[01:03:33] is going to trade and continue to move past
+[01:03:35] yeah do you
+[01:03:37] often buy or sell
+[01:03:39] enter an anticipation
+[01:03:41] of that level trading
+[01:03:43] or do you sort of
+[01:03:45] jump it when everyone else is jumping in
+[01:03:47] probably when
+[01:03:49] everyone else is jumping in like I'm
+[01:03:51] not I wouldn't say I'm like a huge
+[01:03:53] like charting guy
+[01:03:55] I'm probably more like
+[01:03:57] watching the tape and order flow
+[01:03:59] is sort of what I do
+[01:04:01] more so than like worry about levels
+[01:04:03] as much okay
+[01:04:05] you even get like levels though
+[01:04:07] that you'll you'll see in the
+[01:04:09] in the order book like at a certain price
+[01:04:11] you'll just see that it's just someone keeps
+[01:04:13] buying at that price yeah
+[01:04:15] are there certain patterns which you look
+[01:04:17] for in the order flow
+[01:04:19] um
+[01:04:21] yeah I mean so like you're saying
+[01:04:23] if you see there's a buyer at this
+[01:04:25] particular level or whatever and
+[01:04:27] you know you feel like it's
+[01:04:29] starting to get a bit heavy and he's like
+[01:04:31] taking all he can heat
+[01:04:33] then I'll just be watching that level and then
+[01:04:35] if he if the buyer drops
+[01:04:37] it's a good opportunity to short
+[01:04:39] because you know everyone
+[01:04:41] else is going to see that and then
+[01:04:43] people probably rush
+[01:04:45] to sell because no buyer there anymore
+[01:04:47] so yeah I'll look at that stuff
+[01:04:49] now I asked you just before
+[01:04:51] what are some of your kind of
+[01:04:53] strengths as a trader have out on
+[01:04:55] the flip side like what are some of the
+[01:04:57] some of your weaknesses I guess
+[01:04:59] you could say I know you often say in your
+[01:05:01] your trading reports I was stubborn on this trade
+[01:05:03] or that yeah
+[01:05:05] I
+[01:05:07] one of my weaknesses is
+[01:05:09] um
+[01:05:11] I'm just I short stuff too much
+[01:05:13] I'm fighting a losing battle doing that because everyone
+[01:05:15] just wants to buy right like it's just human
+[01:05:17] nature to want to buy not
+[01:05:19] the other way around so I need to get
+[01:05:21] better at instead of
+[01:05:23] you know I might see a positive news catalyst
+[01:05:25] and then instead of buying it when that's
+[01:05:27] the obvious trade I'm like finding areas
+[01:05:29] like oh where can I short this
+[01:05:31] um so I need to just
+[01:05:33] trade with the
+[01:05:35] um with the flow rather than against
+[01:05:37] it um so that's something that I need
+[01:05:39] to improve on other weaknesses
+[01:05:41] like I don't know maybe I'm too self
+[01:05:43] um like too self
+[01:05:45] critical um
+[01:05:47] and maybe I just need to like relax on
+[01:05:49] being so harsh on myself
+[01:05:51] when like I don't get a trade right and just
+[01:05:53] kind of relax a little bit more do you
+[01:05:55] find that it ever throws you off for the rest of the day
+[01:05:57] like if you let's say stuff up a few
+[01:05:59] trades on the open or make some silly
+[01:06:01] moves I mean it annoys
+[01:06:03] me but like not as bad as if like
+[01:06:05] the internet drops out that's like the
+[01:06:07] worst thing yeah like if I have
+[01:06:09] like technical
+[01:06:11] issues like that will throw me off like
+[01:06:13] that I'll just go crazy if like
+[01:06:15] you know an order fails
+[01:06:17] or something like that like that stuff just
+[01:06:19] grinds my gears like big time how's
+[01:06:21] your current setup working for you
+[01:06:23] in where I'm staying with rates or
+[01:06:25] yeah yeah it's it does the job
+[01:06:27] it's alright um like
+[01:06:29] not as comfortable as being
+[01:06:31] like at home like back in Texas
+[01:06:33] but yeah just
+[01:06:35] need a chair and a desk and some screens it's fine
+[01:06:37] yeah um do you
+[01:06:39] see yourself like a loss
+[01:06:41] limit for the day like
+[01:06:43] no nothing like that no
+[01:06:45] it'll be
+[01:06:47] like there's I used to kind of just
+[01:06:49] step away if I was down
+[01:06:51] um but then like
+[01:06:53] I've got a lot better at just grinding back
+[01:06:55] um through the day so
+[01:06:57] I'm just always hunting but then if like
+[01:06:59] if I'm down like for example
+[01:07:01] on Friday I think I was down like 2200
+[01:07:03] bucks or whatever and like
+[01:07:05] just nothing was working in the market was pretty dead
+[01:07:07] I'm just like if I try and
+[01:07:09] you know take any more trades today
+[01:07:11] like this is just gonna get worse I'm
+[01:07:13] just gonna be paying more in brokerage so
+[01:07:15] I'll identify
+[01:07:17] when enough is enough
+[01:07:19] but I won't like there's no like
+[01:07:21] a loss limit that I
+[01:07:23] okay yeah yeah so you don't have a fixed amount
+[01:07:25] it's more just how you're feeling
+[01:07:27] exactly yeah yeah okay
+[01:07:29] you know based on your experience
+[01:07:31] as a trader what are some of the things
+[01:07:33] which you think um
+[01:07:35] maybe more amateur traders
+[01:07:37] could work on or could do
+[01:07:39] to help themselves improve
+[01:07:41] like what's been really key for you
+[01:07:43] and obviously having a mentor was
+[01:07:45] a big help yeah um but
+[01:07:47] you know besides that some
+[01:07:49] things which you know traders can do
+[01:07:51] on their own well what comes
+[01:07:53] to mind
+[01:07:55] it's a tough question
+[01:07:57] um what about like
+[01:07:59] the trader reports have they been beneficial
+[01:08:01] for you I know
+[01:08:03] I've kind of stopped doing them like part out of
+[01:08:05] laziness and um
+[01:08:07] part out of like
+[01:08:09] I'm not sure like how much
+[01:08:11] value I'm getting out of them
+[01:08:13] but yeah I mean that's always
+[01:08:15] a good thing I think yeah like
+[01:08:17] having a mentor is key
+[01:08:19] like if you were starting out today
+[01:08:21] from scratch
+[01:08:23] um like how would you try
+[01:08:25] and get to the position you're in now
+[01:08:27] as quickly as possible I guess
+[01:08:29] I would say like just focus
+[01:08:31] on trying to do one thing and do it well
+[01:08:33] um like that's how I
+[01:08:35] became
+[01:08:37] good right like I would just do this one trade
+[01:08:39] that I knew worked and I had confidence
+[01:08:41] doing it and I would increase my size
+[01:08:43] and then that just buys you
+[01:08:45] the time to start finding
+[01:08:47] like other stuff like over time
+[01:08:49] it's just a game of pattern recognition right
+[01:08:51] so um the more you're sitting in front
+[01:08:53] of the screens the more you're
+[01:08:55] absorbing like information and like living
+[01:08:57] and breathing you'll just
+[01:08:59] pick up these other patterns
+[01:09:01] and um and yeah
+[01:09:03] you just naturally adapt to
+[01:09:05] other stuff I think like
+[01:09:07] for a lot of people as well
+[01:09:09] like I'm not sure that trading's
+[01:09:11] necessarily their passion they're like
+[01:09:13] they like the idea of
+[01:09:15] I'm a day trader I'll trade
+[01:09:17] for an hour and then I'll go to the beach
+[01:09:19] and you know have lots
+[01:09:21] of money and stuff but it's not like
+[01:09:23] I think if you want to be good
+[01:09:25] you've got to trade it like any other
+[01:09:27] nine to five job like it's seriously
+[01:09:29] not here to like play around
+[01:09:31] yeah there's certainly a group of people
+[01:09:33] who sort of see it as
+[01:09:35] a path to freedom right yeah
+[01:09:37] there's a prison
+[01:09:39] yeah yeah you know
+[01:09:41] like you said you're in front of the screens from
+[01:09:43] I don't know what what time do you normally get in front
+[01:09:45] of the screens like 7 a.m.
+[01:09:47] 7 a.m. yeah about
+[01:09:49] then and then the market doesn't open
+[01:09:51] pre opens 9 50 right
+[01:09:53] yeah it opens at 10 o'clock
+[01:09:55] yeah
+[01:09:57] so yeah I'm like just constantly there
+[01:09:59] like I don't even eat lunch don't you
+[01:10:01] know yeah some of the traders
+[01:10:03] at the firm don't either
+[01:10:05] I don't know how they do it I get so hungry
+[01:10:07] yeah I mean I'm always eating my desk
+[01:10:09] but I don't know
+[01:10:11] can't be skipping lunch
+[01:10:13] don't get between a man and his
+[01:10:15] friend
+[01:10:17] what's Gordon Gek I say
+[01:10:19] he's got that quote doesn't he
+[01:10:21] lunches for wimps
+[01:10:23] I don't know I can't remember I think so
+[01:10:25] I've seen that one
+[01:10:27] you know what you're doing tonight
+[01:10:29] what do you think
+[01:10:31] most traders most traders
+[01:10:33] don't succeed
+[01:10:35] I guess you probably outlined some of the reasons
+[01:10:37] part part of the reason like
+[01:10:39] I think a big reason for success is like
+[01:10:41] you just have to be like passionate about it
+[01:10:43] right like
+[01:10:45] when I go and hang out with like Bryce
+[01:10:47] or Austin or whatever like go have a beer
+[01:10:49] like we're just constantly talking about
+[01:10:51] trading we're not talking about like the
+[01:10:53] weather or anything like that we're just like
+[01:10:55] we live and breathe the stuff so
+[01:10:57] and I just don't think like
+[01:10:59] for a lot of people like it's probably not
+[01:11:01] that stimulating or like
+[01:11:03] interesting for them like they're just doing it because
+[01:11:05] like you said they're looking for a path to freedom
+[01:11:07] but I don't think that's the
+[01:11:09] right approach to take like you genuinely
+[01:11:11] have to be like passionate and interested
+[01:11:13] in yeah like in what's going on
+[01:11:15] that's it like you can make a fortune
+[01:11:17] doing pretty much anything
+[01:11:19] you know you're just going to be
+[01:11:21] at the top of
+[01:11:23] whatever that industry or that game
+[01:11:25] or whatever you're playing in like
+[01:11:27] you know the people at the top of anything
+[01:11:29] are making a lot of money so
+[01:11:31] to think that you should only be a trader
+[01:11:33] because you're going to make a lot of money I think is
+[01:11:35] kind of flawed yeah if you look at all
+[01:11:37] the like you know successful
+[01:11:39] business owners around the world
+[01:11:41] like you know you build gates and
+[01:11:43] you know even a lot of musk and stuff like these guys
+[01:11:45] are just living and breathing like
+[01:11:47] what they're doing like they just love it so
+[01:11:49] that bit like I don't think
+[01:11:51] of trading as a job like it's just
+[01:11:53] something I enjoy to do and the
+[01:11:55] positive benefit of it is like I make money
+[01:11:57] doing it yeah I think
+[01:11:59] I can't remember if you've said this
+[01:12:01] to me in the past or
+[01:12:03] I saw you saying it to someone else but
+[01:12:05] you think that it's it's really beneficial
+[01:12:07] to just sort of throw yourself into it yeah
+[01:12:09] 100% beginning I think too many people
+[01:12:11] try and like over plan starting
+[01:12:13] but you just got to like go and do it
+[01:12:15] do you know what I mean there's no point like beating around
+[01:12:17] the bush and like I get
+[01:12:19] a lot of people asking me like what's my strategy
+[01:12:21] and like
+[01:12:23] I mean it's like a fair enough question but I
+[01:12:25] always think like my strategy is to make money
+[01:12:27] like I don't have a strategy
+[01:12:29] like it's just to make money
+[01:12:31] but yeah people just want to be like
+[01:12:35] want to develop
+[01:12:37] like this black box type
+[01:12:39] way about like going
+[01:12:41] and trading like where I can just
+[01:12:43] you know put this trade on and then have a stop
+[01:12:45] loss here and this is how it will work
+[01:12:47] kind of thing and make it like all
+[01:12:49] mathematical but I think you've just got to
+[01:12:51] like go in and immerse yourself and do it
+[01:12:53] you know yeah like I'm not saying like
+[01:12:55] there's obviously plenty of room for that and a lot of people
+[01:12:57] successful doing that I know what you're saying
+[01:12:59] but like for the most part
+[01:13:01] like especially for myself like I'm not that smart
+[01:13:03] so I'll like let
+[01:13:05] the smart people do the
+[01:13:07] stuff and like I'll just
+[01:13:09] do what I'm good at
+[01:13:11] and I said as well like some of the people
+[01:13:13] who hit me up who
+[01:13:15] listened to the podcast and that they'll say
+[01:13:17] paper trading for the past two years and yeah
+[01:13:19] just like man it's
+[01:13:21] that's overkill I also think
+[01:13:23] paper trading is like the worst thing you can do
+[01:13:25] because like
+[01:13:27] you don't it completely
+[01:13:29] changes like once you have risk on
+[01:13:31] you can paper trading
+[01:13:33] allows you to like mask your deficiencies
+[01:13:35] very easily because you can be like
+[01:13:37] down to grand on paper trade
+[01:13:39] and you're like oh well I'll just hold it because there's no ramifications
+[01:13:41] and then you're up and then you think
+[01:13:43] you're a profitable trader but like
+[01:13:45] that's not the case
+[01:13:47] yeah absolutely I would never
+[01:13:49] like recommend like anyone paper trades
+[01:13:51] like just do it like even if it's
+[01:13:53] for a couple of bucks like just have some risk
+[01:13:55] on because you just have to
+[01:13:57] learn how to manage that
+[01:13:59] feeling yeah just get a little bit of skin in the game
+[01:14:01] exactly yeah I mean you don't have to be
+[01:14:03] you know hitting huge size
+[01:14:05] but just put even if it's
+[01:14:07] like you know five dollars a tick or
+[01:14:09] like a dollar a tick exactly
+[01:14:11] you're not going to be like you're probably not going to cover
+[01:14:13] your brokerage but at least you get
+[01:14:15] the feeling for the process of like doing
+[01:14:17] a trade you know even just getting good at
+[01:14:19] order execution like because
+[01:14:21] there's a lot of I'm pretty quick at like
+[01:14:23] executing orders and I know like a lot of
+[01:14:25] other day trades I speak to like pretty good
+[01:14:27] at that but I think that's also an area where people
+[01:14:29] aren't as good so
+[01:14:31] if you're paper trading like you're not learning those skills
+[01:14:33] and yeah you're just better
+[01:14:35] off having some skin in the game yeah
+[01:14:37] how do you deal with that
+[01:14:39] the fast execution
+[01:14:41] like do you set up hotkeys or anything
+[01:14:43] like that do you have any tricks there
+[01:14:45] not really like I just
+[01:14:47] I do have like a shortcut to bring up like buy
+[01:14:49] and sell tickets but then from there it's all
+[01:14:51] like manually typing in the ticker
+[01:14:53] code volume and price
+[01:14:55] but yeah the beginning
+[01:14:57] like just before the open about like
+[01:14:59] nine fifty five I'll bring up like five
+[01:15:01] buy tickets
+[01:15:03] and five sell tickets and then
+[01:15:05] I'll pre-populate the ones I think I'm going to trade
+[01:15:07] and then yeah just
+[01:15:09] adjust from there okay and
+[01:15:11] how many stocks would you be trading
+[01:15:13] on any given day like you said earlier
+[01:15:15] on that you normally have a list of
+[01:15:17] about forty yeah
+[01:15:19] how many of those are you typically actually going to trade
+[01:15:21] probably
+[01:15:23] like eight to
+[01:15:25] ten maybe on average
+[01:15:27] but I genuinely
+[01:15:29] generally find that
+[01:15:31] my best days when I'm trading less
+[01:15:33] names but also
+[01:15:35] like when there's days where there's not as much
+[01:15:37] doing you've kind of got to
+[01:15:39] go out and find
+[01:15:41] more stuff like you might take
+[01:15:43] twelve trades but you might only be making
+[01:15:45] like three or four hundred dollars on
+[01:15:47] each trade and then a couple of them will lose
+[01:15:49] so you just have to trade them to get
+[01:15:51] your like P and L up
+[01:15:53] if not much is happening
+[01:15:55] yeah and those stocks where
+[01:15:57] you know you say on some of your best
+[01:15:59] days you're trading less
+[01:16:01] those stocks
+[01:16:03] that you are trading on the days you're trading less
+[01:16:05] typically sort of in and out of those sort of
+[01:16:07] trying to
+[01:16:09] sometimes but I think it's more
+[01:16:11] just they'll be a huge catalyst
+[01:16:13] in a huge like
+[01:16:15] obvious catalyst in these particular
+[01:16:17] stocks so you can just
+[01:16:19] afford to dedicate
+[01:16:21] your entire like time to watching those
+[01:16:23] like there's no point going out
+[01:16:25] and like wasting time watching
+[01:16:27] something else now I know
+[01:16:29] you get a few questions
+[01:16:31] from people who follow you on Twitter
+[01:16:33] that type of thing are there any questions
+[01:16:35] which pop up time and time
+[01:16:37] again which you get asked frequently
+[01:16:39] besides what's your strategy
+[01:16:41] that one comes up a fair bit
+[01:16:47] like none that like spring
+[01:16:49] to mind really I get a lot of you know
+[01:16:51] the what reading
+[01:16:53] are there any like books or
+[01:16:55] do you have a blog or something like that and I
+[01:16:57] usually will always like point people to read
+[01:16:59] Bella's books like one good trade
+[01:17:01] in the playbook they're awesome
+[01:17:03] and pretty much how
+[01:17:05] I've modeled myself in terms of like
+[01:17:07] developing a list of stocks in play
+[01:17:09] and I guess
+[01:17:11] to really nail down the process of
+[01:17:13] of what I do each morning kind of thing
+[01:17:15] and I just make it very structured
+[01:17:17] do you think there are any questions which
+[01:17:19] I've missed or should have asked you
+[01:17:21] about like are there any topics which
+[01:17:23] you'd like to speak about which
+[01:17:25] you haven't done yet
+[01:17:27] nothing that comes to mind
+[01:17:29] what about what about poker
+[01:17:31] I think when we were speaking
+[01:17:33] like the other week you said that
+[01:17:35] you think trading
+[01:17:37] is a lot like poker in many respects
+[01:17:41] what do you think of the similarities
+[01:17:43] there probably psychology
+[01:17:45] like I personally
+[01:17:47] think that trading is probably
+[01:17:49] 95% psychology
+[01:17:51] and maybe 5% skill
+[01:17:53] and also there's just like
+[01:17:55] other comparisons like I wrote a little
+[01:17:57] like note about it
+[01:17:59] in like on Twitter
+[01:18:01] and posted it about my Cobb trade
+[01:18:03] and like you know thinking through
+[01:18:05] the trade a little bit more in the same way
+[01:18:07] that the best poker players will
+[01:18:09] think through the hand
+[01:18:11] they're not just like they don't care
+[01:18:13] they care what cards they have
+[01:18:15] but they're also thinking you know
+[01:18:17] what cards does that guy have
+[01:18:19] what does he have like what's his
+[01:18:21] you know range like
+[01:18:23] what could he be doing here
+[01:18:25] thinking the same stuff like oh
+[01:18:27] what is he thinking
+[01:18:29] that I'm thinking and like the point
+[01:18:31] is like they just go into a lot of detail
+[01:18:33] and think about like all these
+[01:18:35] different scenarios and I think that's something I need to do
+[01:18:37] better at
+[01:18:39] kind of thinking through the trade a little bit more like
+[01:18:41] being big picture like in that Cobb trade
+[01:18:43] understanding it's in a liquid stock
+[01:18:45] you know they're gonna have to sell this thing
+[01:18:47] for days it was bad news like
+[01:18:49] it's come effectively company breaking
+[01:18:51] news so yeah just thinking
+[01:18:53] bigger picture instead of like
+[01:18:55] you know being a kid in the candy shop
+[01:18:57] and like taking the trade off just because
+[01:18:59] I come up seven grand or whatever so
+[01:19:01] so what are some of the things
+[01:19:03] you're trying to get better at
+[01:19:05] like do you have
+[01:19:07] like do you have specific goals
+[01:19:09] or anything like that
+[01:19:11] yeah I want to like really like nail
+[01:19:13] a plus trade
+[01:19:15] and yeah just basically
+[01:19:17] hold for longer
+[01:19:19] like I made some strides in that department
+[01:19:21] like after I wrote that little thing
+[01:19:23] on Cobb I had like a decent
+[01:19:25] trade in ELD when they had a profit
+[01:19:27] downgrade
+[01:19:29] and
+[01:19:31] like I held for 35 minutes
+[01:19:33] instead of 20 minutes so I was like I
+[01:19:35] pat myself in the back
+[01:19:37] but again like out way too quick
+[01:19:39] I think I shorted at $8.30
+[01:19:41] and covered on average
+[01:19:43] around like $7.90 and the thing
+[01:19:45] went to like $7.05
+[01:19:47] if I just held for like another hour
+[01:19:49] you know what I mean so
+[01:19:51] yeah just like left
+[01:19:53] a ton of profit on the table there
+[01:19:55] well that's that psychology part isn't it
+[01:19:57] exactly yeah so I think
+[01:19:59] I want to set myself like a goal
+[01:20:01] to if I've identified
+[01:20:03] okay this is an A plus trade
+[01:20:05] I want to make it
+[01:20:07] like my goal to hold
+[01:20:09] for at least an hour and then
+[01:20:11] reassess so like hands behind my back
+[01:20:13] the only reason I'm covering this position
+[01:20:15] is if it goes against me
+[01:20:17] early and then yeah
+[01:20:19] just reassess stuff at $11
+[01:20:21] yeah I guess in doing that you kind of sacrifice
+[01:20:23] quite a bit of profit
+[01:20:25] yeah that's also a problem
+[01:20:27] that's the tough bit
+[01:20:29] the other day in I think Sonic healthcare
+[01:20:31] it was up on like a broker upgrade
+[01:20:33] and I was fading it it looked really nice
+[01:20:35] and I held for about an hour
+[01:20:37] and I was up like maybe
+[01:20:39] maybe three to two and a half
+[01:20:41] grand or something on the trade
+[01:20:43] and I'm like okay like I'm just going to hold this
+[01:20:45] and I'm like well how to plan
+[01:20:47] I'll take half off at 26 bucks
+[01:20:49] and then take the rest off at 2575
+[01:20:51] and then
+[01:20:53] just reversed and then
+[01:20:55] losing like a grand on the trade
+[01:20:57] so it was like a pretty decent sized
+[01:20:59] profit swing
+[01:21:01] so that's frustrating but again
+[01:21:03] that comes down to like
+[01:21:05] that's not an A plus trade
+[01:21:07] that's an A plus scalp for me
+[01:21:09] but it's not an A plus trade
+[01:21:11] because again I'm like fighting momentum
+[01:21:13] like it's been upgraded
+[01:21:15] people are trying to buy the thing and I'm fading it
+[01:21:17] it's not something that I should have been holding
+[01:21:19] all day
+[01:21:21] yeah that totally makes sense
+[01:21:23] cool man I'm just trying to think
+[01:21:25] if there's anything else I wanted to ask you about
+[01:21:27] what have I got in my notes here
+[01:21:29] I think we've pretty much covered a lot of ground
+[01:21:31] yeah I think that's it
+[01:21:33] is there anything else you wanted to add
+[01:21:35] I think I'm good
+[01:21:37] no worries man
+[01:21:39] I was going to ask
+[01:21:41] do you plan on starting a blog
+[01:21:43] I know I'd sort of been in the back of your mind
+[01:21:45] yeah I've got like I'm not very good
+[01:21:47] with like tech
+[01:21:49] like websites and stuff
+[01:21:51] I've got like a
+[01:21:53] I don't even know what it's called
+[01:21:55] but the WordPress
+[01:21:57] yeah I think that
+[01:21:59] I've started like tinkering around with it
+[01:22:01] but I haven't
+[01:22:03] I haven't really got
+[01:22:05] very far with it because I just like
+[01:22:07] I'm trading
+[01:22:09] my screens like 10
+[01:22:11] 9 to 10 hours a day
+[01:22:13] and then to like do that in my spare time
+[01:22:15] like it's probably a little bit much
+[01:22:17] so I've kind of thought oh maybe I'll just like
+[01:22:19] any blog posts that I want to
+[01:22:21] I'll just write it in like notepad or whatever
+[01:22:23] and stick it on Twitter
+[01:22:25] like I have been doing
+[01:22:27] because it's just easier for me
+[01:22:29] well if someone does want to follow you on Twitter
+[01:22:31] what is your handle
+[01:22:33] it's Longhorn Capital
+[01:22:35] at Longhorn Capital
+[01:22:37] cool all right Nick we'll appreciate it man
+[01:22:39] thank you very much
+[01:22:43] you've reached the end of this episode of chat with traders
+[01:22:45] but rest assured
+[01:22:47] there are more episodes loaded with
+[01:22:49] real market insight and zero hype
+[01:22:51] on the ways soon
+[01:22:53] so to stay updated with each great new release
+[01:22:55] subscribe to the podcast
+[01:22:57] and iTunes and we'd love it
+[01:22:59] if you'd leave a rating and review
+[01:23:01] we'll catch you next time on chat with traders
+[01:23:07] subscribe to the podcast
+[01:23:09] and we'll see you next time
+[01:23:11] bye
+[01:23:37] you

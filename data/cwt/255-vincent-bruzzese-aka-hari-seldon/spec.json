@@ -1,0 +1,73 @@
+{
+  "trader": "Vincent Bruzzese (aka Hari Seldon)",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Method relies on intraday relative strength/weakness to SPY, algo lines, and real-time breaks that cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "Relative strength day trading",
+  "style": "day trading with relative strength to SPY",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "US stocks, focus on those with relative strength/weakness to SPY regardless of index membership"
+  },
+  "setup": [
+    {
+      "rule": "Scan for stocks with proportional strength or weakness to SPY",
+      "quote": "if you start looking for stocks that have proportional strength or weakness against the market it's sort of like having that wind at your back",
+      "timestamp": "[00:26:41]"
+    },
+    {
+      "rule": "Identify breaks of 200-day MA or descending trend line with relative strength",
+      "quote": "AMD started becoming relatively strong to the market proportionally strong to spy it breaks through its 200-day moving average it breaks through its downward uh descending uh trend line",
+      "timestamp": "[00:38:40]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Enter long on break of resistance layers when stock has relative strength and market above 50 SMA",
+      "quote": "now I have a stop that I can go long using the stock or options and when I use options I use deep in the money options",
+      "timestamp": "[00:39:10]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Mental stops based on chart thesis invalidation, no preset stop losses",
+      "quote": "I use Mental stops but I like to stay um I like to stay flexible in my trades",
+      "timestamp": "[00:48:42]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Exit when chart or thesis is no longer valid, add to winners rather than take quick profits",
+      "quote": "you should get out of the stock when the chart or the thesis that you have is no longer valid",
+      "timestamp": "[00:49:15]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Position size based on comfort with mental stop levels, scale base up 15% every six months",
+      "quote": "every six months I increase my base by 15",
+      "timestamp": "[00:51:53]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Market bullish when closes above 50 SMA; trade only high-probability setups aligned with SPY direction",
+      "quote": "the market closed above the 50 SMA today so I have a market in a bullish uptrend",
+      "timestamp": "[00:39:10]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Mentions options but primary method appears stock-based intraday",
+      "assumption": "Focus remains intraday equity trading with occasional deep ITM options"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "255",
+    "page_url": "https://chatwithtraders.com/episode/255-vincent-bruzzese-aka-hari-seldon",
+    "youtube_url": "https://www.youtube.com/watch?v=xqDk3WSpEhQ"
+  }
+}

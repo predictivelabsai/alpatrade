@@ -1,0 +1,68 @@
+{
+  "trader": "Brian Lee",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "short-only",
+  "template": "none",
+  "method_name": "Short mean-reversion penny stocks",
+  "style": "intraday short mean-reversion",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "penny stocks with dilution and broken charts"
+  },
+  "setup": [
+    {
+      "rule": "trash stocks with dilution and bogus PR",
+      "quote": "I love trading stocks that are trash pretty much with dilution. So most penny stocks in North America... they'll start diluting and in order to give themselves a premium on that, they'll release some kind of bogus PR",
+      "timestamp": "[00:25:57]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "scale into front side then add on confirmation of fade",
+      "quote": "I'll try to scale into the front side of these moves. And then add into it as it starts confirming that's going to start fading and that they're going to start unloading supply. And usually I'll fade that in a mean reversion sort of style.",
+      "timestamp": "[00:27:01]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "initial stop with max daily loss",
+      "quote": "most notably the max loss on the day",
+      "timestamp": "[00:15:36]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "target mean (VWAP/MA) or discretionary trend break",
+      "quote": "my exit would be based on what I consider the mean. So you can pick you can really pick anything as what you want for mean. Some people use VWAP, some people use moving averages",
+      "timestamp": "[00:27:31]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "R risk normalized, starter then add to winner, 2x on A+",
+      "quote": "I have a starter position... if it does confirm... then it will I also have a second secondary signal that says, Okay, now you can go full size. And then I also have another signal that tells me like, Okay, add to this winner.",
+      "timestamp": "[00:46:44]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "avoid hot sector momentum like cannabis",
+      "quote": "I didn't understand how much of a sector move, sector momentum can influence the trades... I just kept fighting those and taking losses",
+      "timestamp": "[00:14:33]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "no long-side rules provided",
+      "assumption": "method is short-only intraday"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "204",
+    "page_url": "https://chatwithtraders.com/episode/204-brian-lee-esports-pro-attains-high-score-playing-the-stock-market",
+    "youtube_url": "https://www.youtube.com/watch?v=9ZxeTUJVUQg"
+  }
+}

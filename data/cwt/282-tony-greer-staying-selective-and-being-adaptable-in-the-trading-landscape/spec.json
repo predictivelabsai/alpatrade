@@ -1,0 +1,73 @@
+{
+  "trader": "Tony Greer",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "No concrete, codable long-side rules for US stocks; relies on discretionary pattern recognition, adaptability, and sentiment awareness.",
+  "template": "none",
+  "method_name": "Bull market pullback pattern recognition",
+  "style": "discretionary swing/position trading with pattern recognition",
+  "timeframe": "days to years",
+  "universe": {
+    "description": "US stocks in bull market trends"
+  },
+  "setup": [
+    {
+      "rule": "Stock in bull market trend pulls back ~50%, consolidates, then shows large magnitude moves breaking the range",
+      "quote": "you'll see a stock that's in a bull market Trend and it'll pull back to a reasonable maybe a 50% pullback and consolidate and consolidate and consolidate and kind of lull people to sleep and then something will a a headline will come out or maybe not a headline but there will be a series of large magnitude moves that I'm very good at monitoring with my proprietary screen setup and that causes me to sit up in my chair",
+      "timestamp": "[00:41:46]"
+    },
+    {
+      "rule": "Buy pullbacks to trendline or moving average support (30/50/100/200-day) in bull market names",
+      "quote": "watching things pull back into trend line support that I can draw or moving average support that gets drawn for me 30 uh 50-day moving average 100 day moving average 200 day moving averages",
+      "timestamp": "[00:42:48]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Enter long on breakout of consolidation/range after pullback in bull trend",
+      "quote": "just broke the range and that's a trade that I can go with",
+      "timestamp": "[00:42:16]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Stop below the moving average or trendline support where trend intensity changes",
+      "quote": "put your stop on the other side of it where the trend is no longer the same intensity",
+      "timestamp": "[00:43:19]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Trail stop up to breakeven quickly; hold while above key MAs, target 3:1 risk-reward",
+      "quote": "if I get it right I have my stop I move my stop loss level up to break even as quickly as I can ... I've got a 3:1 risk reward ratio",
+      "timestamp": "[00:44:51]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Flexible position sizing based on opportunity; keep cash for volatility spikes",
+      "quote": "in my trading account I always keep a certain amount of cash there in case there's a a absurd Spike in volatility",
+      "timestamp": "[00:57:57]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Only trade bull market trends; adapt to regimes and stay selective",
+      "quote": "be a bull market Trader and buy things that are rallying from the bottom left to the Top Hand right corner of your screen",
+      "timestamp": "[00:42:48]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Mentions intraday trading and day trading setups but emphasizes swing/position holds",
+      "assumption": "Main method for US stocks is discretionary multi-day pattern trading"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "282",
+    "page_url": "https://chatwithtraders.com/episode/282-tony-greer-staying-selective-and-being-adaptable-in-the-trading-landscape",
+    "youtube_url": "https://www.youtube.com/watch?v=gK8fS36VRtM"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "trader": "Ernie Chan",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Focus is intraday trading (holds several hours) across Forex/futures/stocks/options with per-instrument models; no concrete long-side daily-bar rules for US stocks given.",
+  "template": "none",
+  "method_name": "Intraday momentum/mean-reversion quant",
+  "style": "quantitative algorithmic",
+  "timeframe": "intraday (several hours)",
+  "universe": {
+    "description": "Forex, futures (separate model per contract), market-neutral stocks, options"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Mentions momentum and mean-reversion but provides zero executable rules or parameters",
+      "assumption": "No testable spec can be extracted"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "52",
+    "page_url": "https://chatwithtraders.com/episode/052-ernie-chan-how-quant-strategies-are-created-scrutinized-and-introduced-to-the-market",
+    "youtube_url": "https://www.youtube.com/watch?v=DW9zQ8Hz6gQ"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "trader": "Mike Bellafiore",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Method is intraday day trading with discretionary playbooks and niches; no concrete long-side rules survive daily-bar approximation.",
+  "template": "none",
+  "method_name": "Intraday discretionary playbook trading",
+  "style": "discretionary day trading",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "US equities across niches like low floats, large caps, high beta"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "No specific setup rules quoted",
+      "assumption": "Focus remains on general intraday development process"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "162",
+    "page_url": "https://chatwithtraders.com/episode/162-mike-bellafiore-the-formula-for-how-to-become-a-7-figure-day-trader",
+    "youtube_url": "https://www.youtube.com/watch?v=92yuV6UQUDU"
+  }
+}

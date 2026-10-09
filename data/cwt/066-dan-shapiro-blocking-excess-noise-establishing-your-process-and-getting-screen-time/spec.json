@@ -1,0 +1,66 @@
+{
+  "trader": "Dan Shapiro",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Method relies on 60-minute candle confirmations of pivots against supply/demand zones inside the trading day and does not survive daily-bar approximation.",
+  "template": "none",
+  "method_name": "60-minute pivot confirmation",
+  "style": "intraday high-beta pivot trading",
+  "timeframe": "60-minute",
+  "universe": {
+    "description": "high beta US stocks including FANG names and volatile names with wide intraday ranges"
+  },
+  "setup": [
+    {
+      "rule": "Identify pivot as directional area on 60-min chart that can shift direction",
+      "quote": "a pivot first of all is a directional an area of a chart okay an area of a chart uh that potentially can shift in Direction",
+      "timestamp": "[00:03:07]"
+    },
+    {
+      "rule": "Pivot must hit supply or demand zone (moving averages, Bollinger bands, linear regression) and next 60-min candle confirms",
+      "quote": "if a stock is a potential pivot and it hits a supply or demand Zone okay ... and the next candle confirms that Supply or Demand on a 60-minute view",
+      "timestamp": "[00:05:45]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Go long when stock violates top of range and builds above pivot on 60-min confirmation",
+      "quote": "when the stock violates the top of the range and builds upon that level I go long",
+      "timestamp": "[00:10:26]"
+    },
+    {
+      "rule": "Go short when stock breaks below range and builds below pivot on 60-min confirmation",
+      "quote": "when the stock breaks below that range and and and starts building below that pivot I go short",
+      "timestamp": "[00:10:26]"
+    }
+  ],
+  "stop": [],
+  "exits": [],
+  "sizing": [
+    {
+      "rule": "Risk maximum 1% of account per trade with fixed dollar risk to determine share size for biggest upside within that risk",
+      "quote": "the maximum Max maximum F fixed risk on every single trade should be 1% right 1% that should be your maximum risk",
+      "timestamp": "[00:39:34]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Compare stock action in last 60-min interval to futures direction; avoid trades where stock moves against futures",
+      "quote": "what has the stock done in relation to the Futures ... if the Futures are exploding and these stocks are taking out lows there's something wrong",
+      "timestamp": "[00:20:48]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Exact stop, target and exit rules not specified beyond room to next supply/demand zone",
+      "assumption": "none"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "66",
+    "page_url": "https://chatwithtraders.com/episode/066-dan-shapiro-blocking-excess-noise-establishing-your-process-and-getting-screen-time",
+    "youtube_url": "https://www.youtube.com/watch?v=E6p-2BMtZVg"
+  }
+}

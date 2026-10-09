@@ -1,0 +1,49 @@
+{
+  "trader": "Ryan Trost",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Edge is defined on intraday patterns (wedge breakouts, momentum breaks, dip-and-rip off open) that require 1-5 min bars and do not survive daily-bar approximation.",
+  "template": "none",
+  "method_name": "Intraday momentum dip-and-rip scalping",
+  "style": "day trading momentum",
+  "timeframe": "intraday (first hour)",
+  "universe": {
+    "description": "high-beta US equities with catalysts or upgrades"
+  },
+  "setup": [
+    {
+      "rule": "gap up on upgrade with tight pre-market range",
+      "quote": "high beta stock that you know it's gapping up on an upgrade and has a really tight pre market range",
+      "timestamp": "[00:51:32]"
+    },
+    {
+      "rule": "sweep pre-market low then rebid and break pre-market high",
+      "quote": "they sweep and take out that pre market low rebid to pre market levels and break above the pre-market high you know the old dip and rip",
+      "timestamp": "[00:52:04]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "long on break above pre-market high after dip-and-rip",
+      "quote": "if this is gonna go parabolic today ... it's probably gonna wedge and break out from the wedge get back up a view app and just rip",
+      "timestamp": "[01:01:56]"
+    }
+  ],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "no explicit stop or target distances given",
+      "assumption": "none"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "196",
+    "page_url": "https://chatwithtraders.com/episode/196-ryan-trost-my-first-year-trading-full-time",
+    "youtube_url": "https://www.youtube.com/watch?v=ahSTzg9pVP4"
+  }
+}

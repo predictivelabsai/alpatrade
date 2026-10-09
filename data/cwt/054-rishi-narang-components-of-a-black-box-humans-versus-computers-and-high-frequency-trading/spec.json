@@ -1,0 +1,32 @@
+{
+  "trader": "Rishi Narang",
+  "category": "macro_commentary",
+  "testable": false,
+  "reason": "Guest discusses quant trading concepts, HFT, black boxes and fund-of-funds allocation at a high level with no concrete long-side rules for US stocks.",
+  "template": "none",
+  "method_name": "Fund of funds quant allocation",
+  "style": "systematic quantitative",
+  "timeframe": "short-term",
+  "universe": {
+    "description": "various quant strategies via FoF"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "no specific trading rules stated",
+      "assumption": "none"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "54",
+    "page_url": "https://chatwithtraders.com/episode/054-rishi-narang-components-of-a-black-box-humans-versus-computers-and-high-frequency-trading",
+    "youtube_url": "https://www.youtube.com/watch?v=D6pjFHe_qhY"
+  }
+}

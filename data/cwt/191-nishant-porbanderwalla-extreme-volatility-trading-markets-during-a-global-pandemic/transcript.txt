@@ -1,0 +1,477 @@
+# 191: Nishant Porbanderwalla – Extreme Volatility—Trading Markets During a Global Pandemic
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT6695453112.mp3
+
+[00:00:00] This is an episode to cover the extreme volatility in markets following the recent outbreak of
+[00:00:21] coronavirus.
+[00:00:22] Joining me is Nashant Pupandawalla, returning for a second time on Chat with Traders and
+[00:00:28] here to discuss how he's been navigating through the turmoil.
+[00:00:32] Nash is a proprietary equities trader at Kirshner Trading Group with well over a decade of experience
+[00:00:38] behind him.
+[00:00:39] Now just a few things I'd like to point out before we get started.
+[00:00:43] Both Nash and I are sensitive to the fact that there are a lot of people who have been adversely
+[00:00:49] impacted by this outbreak and the market downturn.
+[00:00:53] Nash is here purely to share his insights and wisdom, not to gloat about large gains.
+[00:00:59] Also, you'll hear Nash speak about a scenario for how he thinks the market could play out
+[00:01:04] over the coming weeks and months.
+[00:01:06] It's important to remember though, he's an intraday trader who's not married to
+[00:01:11] anyone I dare, he will quickly abandon an opinion when necessary.
+[00:01:15] So, as per usual, nothing you hear in this episode or any episode is to be treated
+[00:01:21] as financial advice, you are entirely responsible for your own trading decisions.
+[00:01:27] And after this episode, it would be well worth your while to go back and listen to 1.70.
+[00:01:32] That's the first time Nash was on Chat with Traders.
+[00:01:35] But right now, here's our latest conversation, recorded immediately after the US close,
+[00:01:41] 18th March 2020.
+[00:01:44] Thanks for listening.
+[00:01:48] How much the focus of just catching up with you now was just to talk about what's going on
+[00:01:52] currently, because it's quite unique.
+[00:01:57] So, one of the things I was going to ask you about this first of all, and we'll get recording now,
+[00:02:03] when the virus first began spreading through China back in January,
+[00:02:08] did you have any foresight to imagine the knock-on effect that's happening right now?
+[00:02:14] No, I think like every other person in the United States, no one took this so seriously.
+[00:02:20] We always thought like, yeah, things happen in China, but they won't happen out here,
+[00:02:24] or this one spread like this.
+[00:02:26] Plus, it's 2020, I mean, really, are we going to die of a virus?
+[00:02:30] Just like the same normal naive thought that I think every other person had out here,
+[00:02:37] I think we, as traders, at the same time, we were just like, oh, great, at least something has come up.
+[00:02:42] There'll be some volatility in the market because of that, and that's it.
+[00:02:46] We were just trading like China names and things like that at that time.
+[00:02:50] Then, I think it came February and suddenly things started being focused on United States a little bit.
+[00:02:57] A few cases, yeah, a few cases there.
+[00:02:59] A sudden panic in the stock market started falling like 250 points,
+[00:03:03] and so that we were like, oh, wow, okay, cool.
+[00:03:05] There's something happening out here, but it's probably an overreaction.
+[00:03:09] One thing we have to understand in this market is that people have been caught with their pants down.
+[00:03:15] When I say that, I mean, everyone was super bullish.
+[00:03:20] Many of these people have not seen what 2008 fell like,
+[00:03:24] so they never like, they only seen the bull market, and then passive investing.
+[00:03:29] People have just said, I don't know what to buy, let us buy spy, let us buy cues.
+[00:03:33] All your 401ks, you're just buying passive investing,
+[00:03:38] and you didn't have to bother about it because there was no risk management required
+[00:03:43] because the market was just going up every day, every day, every day.
+[00:03:46] No one bothered.
+[00:03:47] Your portfolio went from 10% to 50% to 100% up, and no one bothered.
+[00:03:53] Now, people keep questioning me like, hey man, my portfolio is down 30, 35%.
+[00:03:57] What should I do?
+[00:03:59] I said, did you think about it when it was up 35%?
+[00:04:02] No, right?
+[00:04:03] So either you don't do anything right now, or you should have done something then.
+[00:04:08] So that's what I tell people.
+[00:04:09] But again, obviously, I don't think I had the foresight to see something in the United States.
+[00:04:15] Yeah, it's very strange because even when it was beginning to spread through China,
+[00:04:21] the market in the US and even Australia here just was continuing to push on
+[00:04:26] into all-time highs just day after day.
+[00:04:29] So I think the majority of people thought that it was going to be much better contained.
+[00:04:34] And as you said, it's obviously caught a lot of people with their pants down.
+[00:04:37] And I think that's partially the reason.
+[00:04:40] You know, everyone was super bullish up until a few weeks ago.
+[00:04:45] Yeah, and that's what is different than 2008, right?
+[00:04:49] 2008, we kind of saw things progress over maybe three, four, five months.
+[00:04:56] Things went from bad to worse.
+[00:04:59] The world is coming to an end.
+[00:05:02] In this case, the time period is so much shorter, right?
+[00:05:06] I mean, won't be nearly at all-time highs.
+[00:05:08] And I think January, February, pretty much like...
+[00:05:12] I think I just saw 20 trading days ago, we were at all-time highs.
+[00:05:17] 20 trading days ago.
+[00:05:19] So in that much time, we have sold so much trillion dollars worth of stock.
+[00:05:24] And people... I mean, I would say more people are just covering their longs.
+[00:05:28] They're like just getting out right now, saying that we didn't take any risk.
+[00:05:33] People at the Wix is going crazy because people are hedging their long bets
+[00:05:38] instead of selling stock at crazy prices.
+[00:05:42] I think today, I felt...
+[00:05:44] Today is Wednesday, I think it's the 17th or so.
+[00:05:50] It was the first time I think I saw some buying come in a little bit at the end,
+[00:05:54] but there was a lot of panic.
+[00:05:56] And then some stocks have just done so badly, so badly.
+[00:06:00] They are down, I don't know, 2008 levels.
+[00:06:03] REITs, anything that has mortgage in them right now.
+[00:06:08] People don't think that debt is the biggest problem.
+[00:06:12] And I feel like there were stocks like HYDE, IP, what was it?
+[00:06:19] The bonds like TLTs and the TBTs and all the bonds and everything is just melting down.
+[00:06:26] PFF, the preferred ETF, that's like getting killed.
+[00:06:31] I mean, it got killed back in 2008 also, but that made sense because it was a debt crisis.
+[00:06:36] But this is turning into a debt crisis.
+[00:06:38] Just watch it because the way America works
+[00:06:41] and I was telling my friend that we need to change the mentality of this country,
+[00:06:45] of our community is that we got to start saving money for a rainy day.
+[00:06:49] It's like 75% of America lives paycheck to paycheck.
+[00:06:53] Now, they live paycheck to paycheck, but they can always save some part of the paycheck.
+[00:06:57] I'm sure there's a certain amount of people that can surely do that.
+[00:07:01] And now when shit hits the fan like this, everything just goes in disarray.
+[00:07:07] It becomes into a world ending situation.
+[00:07:10] It becomes like into the walking dead, which it won't happen.
+[00:07:14] It'll never go that bad, but the fear is going to be that bad
+[00:07:18] and people will just sell everything and stay in cash.
+[00:07:24] That's what happened in 2008 also.
+[00:07:27] There will be good stuff to buy eventually.
+[00:07:30] There will be, but I still don't think we are at the bottom right now.
+[00:07:34] That's my personal view. I'm a day trader.
+[00:07:37] I'm no mutual fund manager or something that I really know when the bottom is.
+[00:07:44] Personally, I feel like there's one big move left.
+[00:07:47] Maybe once we finish all this, I think the bottom will be about 50% down from the top.
+[00:07:54] For you, what signalled a clear regime shift?
+[00:07:58] Because as we've seen over the past couple of years, there's been a few kind of nasty sell-offs,
+[00:08:04] but they've been reasonably short-lived.
+[00:08:07] This has obviously gone much further and much faster.
+[00:08:12] Was there a point in the past, let's say 20 days,
+[00:08:16] which signalled a clear regime shift to you?
+[00:08:20] I think for me, the first halt in the market, I've traded 16 years in this market.
+[00:08:26] I've traded to 2008.
+[00:08:28] I've traded through flash crashes.
+[00:08:30] I've traded through a lot of stuff, but I've seen futures limit down.
+[00:08:35] That's not a big deal, but I've never seen the market halt.
+[00:08:40] I couldn't believe it when the market halted for the first time,
+[00:08:43] and I was like, you know what, this is different.
+[00:08:45] I mean, a lot of people have to unwind their positions out here
+[00:08:52] If the worst case scenario happens, people are going to be stuck big time in this.
+[00:08:59] There's millions and trillions of passive money that is stuck.
+[00:09:05] Everyone's going to just unload.
+[00:09:07] I was like, you know what, I think my biggest mistake, which I did,
+[00:09:12] was to buy Boeing, I think.
+[00:09:15] I thought Boeing is untouchable.
+[00:09:17] That's what I thought.
+[00:09:18] I kept buying Boeing and kept buying Boeing.
+[00:09:21] I'm like, maybe I should not have bought it.
+[00:09:24] Forget not already getting out of my Boeing position because I'm like, you know what?
+[00:09:30] I mean, if you think about Boeing, this is the way I thought about it.
+[00:09:33] Boeing is pretty much the... Airbus and Boeing are the only people in this world that make planes.
+[00:09:40] End of the day, the world is going to become a bigger place.
+[00:09:43] There's going to be more people in this world.
+[00:09:44] There's going to be more travel.
+[00:09:46] End of the day, people have to buy more planes.
+[00:09:49] It's just normal.
+[00:09:50] That's what's going to happen eventually.
+[00:09:52] But that's not how the stock is being treated right now.
+[00:09:56] And I still have that view.
+[00:09:58] But at the same time, I'm just like, you know what?
+[00:10:00] This is not the time.
+[00:10:01] Maybe there'll be a better price, a better time.
+[00:10:04] I don't want to be early in this market because...
+[00:10:07] I mean, I think in this market now cash is king.
+[00:10:11] I mean, people like Microsoft, people like Apple who have like $150 billion, $200 billion sitting with them,
+[00:10:18] they become like the gods of the market right now.
+[00:10:21] Listen, because worst case, we can get through this.
+[00:10:25] The people who have over-leveraged like...
+[00:10:28] And everyone over-leveraged in this market, right?
+[00:10:30] I mean, because you're in a bull market, everything is great.
+[00:10:35] You know, buybacks, dividend increase.
+[00:10:39] Let's borrow money for cheap and build another hotel like Marriott and all those guys.
+[00:10:47] They just over-leveraged themselves.
+[00:10:49] And that's the problem with America as a whole is that we over-leveraged all our credit cards and this and that.
+[00:10:57] So when shit hits the fan, we always go to an extreme downturn.
+[00:11:03] And this is what happened really quick.
+[00:11:06] But again, we're still in a state of fear right now.
+[00:11:09] So it's still early. I don't know when this is all going to unwind.
+[00:11:12] A big part of performing well in these conditions, I'm sure, comes down to preparedness.
+[00:11:19] What are you doing to prepare prior to the open each day?
+[00:11:24] You know, one thing to do in this environment is to be flexible.
+[00:11:30] I think that's very important.
+[00:11:32] Don't come with pre-notions that you're going to buy the market because you're down 2,500 points.
+[00:11:38] It doesn't mean anything now.
+[00:11:40] You just have to be flexible.
+[00:11:42] Once you see what you see, and if you like it, then go for it.
+[00:11:45] Do not have these preconceived notions that, you know, damn dude, you know, Apple is at 240, 230.
+[00:11:51] Let's go buy it.
+[00:11:52] You never know what's going to happen.
+[00:11:54] You just have to be flexible.
+[00:11:56] And I think, you know, I think experience in this market is everything.
+[00:12:00] You know, I feel like, I mean, in this year, I mean, I'm doing well because I've seen a part of 2008.
+[00:12:07] I've seen a big part of 2008.
+[00:12:08] I've seen flash crashes.
+[00:12:09] I've seen everything.
+[00:12:10] The real, there's easy money and there's stuff money, right?
+[00:12:14] The easy money is arbitrage stuff.
+[00:12:16] You know, when things halted, for example, there's algorithms that trade the open, right?
+[00:12:24] Obviously, when things halted, those algorithms were not working, right?
+[00:12:28] So when something halts and the whole market is halted, all the algorithms are shut off.
+[00:12:34] So what a stock is going to open at versus what it closed at is a big difference.
+[00:12:41] And so I started looking at those things and I'm like, you know what, just before the
+[00:12:44] market, just before the halt happened, UNH, for example, closed at 170.
+[00:12:49] After the halt, it's opening at 155.
+[00:12:52] I'm like, you know what, SPI is not opening down that much as the way UNH is doing it.
+[00:13:00] There's because there was no liquidity in the market at those halts because of algorithms
+[00:13:06] being shut off because algorithms were not programmed for halts.
+[00:13:10] They were programmed for on open, on close, programmed for throughout the day.
+[00:13:16] But when a stock opens after, you know, whatever, half an hour of the open, they don't know what to do.
+[00:13:23] So there's a lot of things like this which come with experience that you start watching.
+[00:13:27] You know, you're like, you know what, this is what I saw.
+[00:13:29] This is what I like.
+[00:13:30] And there's so much craziness in the market by this because of that is people, you know,
+[00:13:35] selling things really quickly, really fast, just panic selling.
+[00:13:38] You can buy, you know, you can buy reversals, you can go momentum.
+[00:13:42] A lot of these stocks have become short-sell restricted.
+[00:13:45] You know, if someone doesn't understand that, basically, if a stock goes down more than 10%,
+[00:13:50] and for two days, it becomes short-sell restricted, which means that you can only buy if there's an uptick.
+[00:13:57] So you can only short if there's an uptick, right?
+[00:14:00] So all these scenarios are coming in and like, you know, SPI itself has become short-sell restricted.
+[00:14:07] That creates a lot of problem because, you know, if you want a short SPI, it has to have an uptick before you can short it.
+[00:14:14] So there's a lot of stuff that's happening in the market.
+[00:14:17] You know, it's just, I think this is where experience comes in hand, you know, because this is once in a lifetime.
+[00:14:24] No, I said that in 2008, it's a once in a lifetime opportunity, but, you know, it's come back again.
+[00:14:29] So I don't want to say that.
+[00:14:31] It's unfortunate in our lives also that, you know, we always make money when things go bad.
+[00:14:36] I mean, the whole world is like, you know, crying about stuff.
+[00:14:40] I never tell my PNL to anyone, you know, because I'm like, you know, it's just a little unethical sometimes to do it.
+[00:14:47] But yeah, this is extraordinary times, you know, you just have to stand up and trade and, you know, put risk on because there's some trades where you just have to put the risk on.
+[00:14:59] You know, you say, listen, but if you're right, you're going to make three, four, five points.
+[00:15:02] If you're wrong, you just have to learn to, you know, manage your risk.
+[00:15:05] I think risk management in this market is probably the biggest thing, you know, you just, you can't be stubborn.
+[00:15:12] You can't say like, this is not possible.
+[00:15:15] You know, Boeing cannot be going to $90.
+[00:15:18] Boeing cannot fall 150 points in a week.
+[00:15:22] It did.
+[00:15:23] It just did, you know, and you just have to agree to it and say, listen to what?
+[00:15:26] Get out.
+[00:15:27] Get out.
+[00:15:28] Use a risk.
+[00:15:29] Get in the game when you think it's the right time, but get out right now.
+[00:15:33] On that subject, there seems to be almost like two mindsets around trading during these conditions.
+[00:15:39] There's one where it's, you know, these conditions are too abnormal.
+[00:15:44] It's time to dial back the risk.
+[00:15:46] And then there's the other mindset, which is this is a very rare opportunity right now.
+[00:15:52] It doesn't come around very often.
+[00:15:54] Increasing risk is actually justified during periods like this.
+[00:15:58] How would you encourage a junior trader to think about, you know, which side they might be leaning towards?
+[00:16:06] I mean, I do have a student.
+[00:16:08] He is a junior trader.
+[00:16:09] He's only been in, you know, in for six months.
+[00:16:11] And I'm like, listen, this is the market where you stand up and, you know, you show me how you have the balls.
+[00:16:17] It doesn't mean you go and be stupid.
+[00:16:20] It means you do a calculated risk, right?
+[00:16:22] If you see something that you like and you think, you know, you can surely make as a good chance you can make money, you go step on it.
+[00:16:30] Don't worry because in this market, right, there's going to be so much opportunities that if you're wrong, you can always come back from it, right?
+[00:16:38] In a dead market, like, you know, two months ago, you know, if I was down 30, 40,000, I'm like, yeah, my day is done.
+[00:16:45] Today, I'm like, listen, if I'm down 20 also, I mean, I was down, I think I was down 60 yesterday and I finished the day up 20.
+[00:16:52] You know, so, you know, it's just like in days like this, I'm not worried about being down because I know there's enough opportunity to come back.
+[00:16:59] When there's not opportunities, that's the day when I'm like, listen, you know, you've got to manage risk even harder.
+[00:17:05] Right now, I'm like, you know what, if the opportunity is there, you've got to take the risk.
+[00:17:10] You might be wrong, but there's other places where you can be right and come back from it.
+[00:17:14] You know, so what my students is doing is like, he's looking at my trades and trying to emulate the same thing.
+[00:17:21] And that's the way to do it, you know, I mean, you know, I mean, stuff because he's seeing the craziness of this market very early in his career.
+[00:17:30] The next time he sees it, he's going to be, you know, even more aggressive and he'll stand up even more.
+[00:17:35] But right now, he's like, oh, you know, this guy is doing it.
+[00:17:37] So I'm just going to like, you know, stand up because he's doing it and he probably knows it's right.
+[00:17:41] But eventually that's how you learn, you know, you just have to, you know, hold someone's hand and walk.
+[00:17:46] And soon they'll start running themselves, you know, end of the day.
+[00:17:49] So I, so yeah, so to answer your question, I would say, yeah, you got to take on risk.
+[00:17:53] It just depends what kind of trader you are.
+[00:17:55] Right. I'm a day trader. I'm in and out of positions quickly.
+[00:17:59] If you're going to sit on positions overnight and things like that, no, you got to be more sensible.
+[00:18:04] You got to be more, you know, maybe take a hedge or things like that.
+[00:18:07] Right now, I mean, I don't clean my slate every day because I mean, either we are up a thousand points or we're down a thousand points.
+[00:18:13] Forget up or down. Maybe two thousand points on the Dow these days.
+[00:18:17] Yeah, I think that's, that's really wise, Nish.
+[00:18:20] How are you more specifically actually managing risk through this?
+[00:18:24] Like, are there any rules that you are enforcing upon yourself?
+[00:18:28] As I said, you know, I mean, not to be stubborn about things, you know, unbelievable situations are happening around you.
+[00:18:35] At the same time, you're like, you just have to say, listen, you know what, you have to cut your losses.
+[00:18:40] That's something which is ingrained in me.
+[00:18:42] You know, I just see red and I just start, I start selling, you know, and just like, I start covering my position or whatever I have to do.
+[00:18:49] I get out, but I might get in again, maybe like 15 minutes later again and, you know, trade the same stock again.
+[00:18:55] But I don't know my mind is conditioned.
+[00:18:58] Yeah, you know, it's just like, it's just repetitive, you know, 16 years of, you know, trading and continuously doing it.
+[00:19:05] You just, it just comes automatically to you now, you know, I just don't have to think about it as much.
+[00:19:10] At the same time, you know, I just, you know, if you're, if you make one wrong move in this market, you can get hit pretty badly.
+[00:19:16] So I'm just starting to, I double take on everything.
+[00:19:19] I'm like, you know what, should I take this amount of size?
+[00:19:22] Yeah, okay, fine. Let's go do it.
+[00:19:24] You know, just have a second thought before I do sometimes, you know, in this market because it's so crazy.
+[00:19:29] Let me tell you one thing also, right? In this market, I haven't seen crazy panic yet.
+[00:19:34] Yes, we've been gapped down. We have sold off all that, but the panic of a flash crash is not been seen out here.
+[00:19:43] The panic of 2008 that I saw hasn't been seen here.
+[00:19:48] And I feel like when that happens, that's going to be the bottom of the market or very close to the bottom of the market.
+[00:19:54] And that's my personal view, because it's still been orderly selling, you know, it hasn't been, it's just been a lot of selling,
+[00:20:02] but still been very orderly, you know, orderly selling.
+[00:20:04] Like, you know, I remember in the flash crash, I bought Home Depot about, you know, 17, 18 points, you know, it fell in about a minute.
+[00:20:14] Today, Home Depot is down 18, 20 points, but it's down over the whole day.
+[00:20:19] So you see the difference, you know, the quickness and like the lack of liquidity that was there in flash crashes is not senior, right?
+[00:20:29] As of right now, it's still, there's a lot of liquidity to get in, get out of positions.
+[00:20:34] But yeah, there's a lot of, I think overnight, you know, there's a lot more happening than it happened back then.
+[00:20:41] So you feel like we haven't seen that real big volume capitulation, which often signals a bottom coming yet?
+[00:20:49] Exactly, exactly. We need to, I mean, this is what I think, oh, this is just me, is that we need to open down, you know,
+[00:20:58] swoosh down and then finish higher for the day and then come back and finish higher for the day, get all the shots out, you know.
+[00:21:05] And when the day that happens, I think there's a pretty good chance that we're down to the close, you know, the bottom of the market, I feel.
+[00:21:12] But it has to happen at the open, you know, where you fall down and you retrace back all those losses and, you know, finish up high.
+[00:21:20] The day that happens, I think we might be at the bottom.
+[00:21:24] When the trading day is underway with so much moving right now, how do you determine where to focus your attention?
+[00:21:31] You know, that's where, you know, colleagues come in handy and, you know, you have your own tickers that you've programmed over a long period of time.
+[00:21:39] Obviously, though, you know, my company has great tools to go and figure and find situations that are unique.
+[00:21:48] And my friends, you know, people who sit left and right of me, you know, we keep talking, we keep saying like, hey, listen, I'm checking out this wood.
+[00:21:54] And they're saying, you know, we're checking out this symbol.
+[00:21:56] So it's great because, you know, this way, you know, we have, you know, three pairs of eyes, you know, watching three different things.
+[00:22:02] And I'm like, listen, call it when you think it's going to turn.
+[00:22:05] And, you know, they'll call it when it's going to turn.
+[00:22:07] I'm going to call it when I see something turn.
+[00:22:09] We just keep saying symbols and, you know, keep talking throughout the day.
+[00:22:13] I mean, this is the hardest I've ever worked in 16 years.
+[00:22:18] Hardest.
+[00:22:19] I have sat on my desk for eight hours for the last, I don't know, 15, 16 days.
+[00:22:26] Lunch has been ordered inside.
+[00:22:28] I drink water so that I could go and pee.
+[00:22:31] It's just been, it's just been crazy.
+[00:22:33] We all working so hard.
+[00:22:34] I mean, I've never waited for the weekend as much as I've waited right now because my wife was telling me the same thing.
+[00:22:39] She's like, you know, I've never heard you say that.
+[00:22:40] Thank God the weekends here.
+[00:22:42] You always said that, oh man, I can't trade on a weekend, you know.
+[00:22:45] So she's also like, what she's like, wait, man, you must be really tired because you're actually wanting a weekend coming.
+[00:22:52] And, you know, I mean, you're all passionate traders out here, you know, so it's like, you know, you just want to trade.
+[00:22:57] And it's just, it's hard to get some sleep at night because you're always thinking.
+[00:23:02] Like, I remember when oil fell at 20% when Saudi did the thing and I saw the futures down about 12, 1300.
+[00:23:10] And I'm like, oh my God, like, you know, what's going to happen in the night?
+[00:23:14] You know, it's going to be limit down.
+[00:23:16] I'm going to halt, you know, the next day and you start thinking and you start to fall asleep.
+[00:23:21] And then suddenly at 1.30 in the morning, you wake up and you're like, you know what, let me just check the futures.
+[00:23:26] I check the futures like, you know, down 1400.
+[00:23:28] And I'm like, okay, fine, go back to sleep.
+[00:23:30] You know, start, you know, still thinking about trading and how you're going to manage the day and things like that.
+[00:23:35] Again, you wake up at 4.30, you like, let me see the futures.
+[00:23:38] And, you know, you again try to go to sleep.
+[00:23:40] And then by 5.30, you again up and I'm like, you know, what makes no sense, man.
+[00:23:43] I just need to go to work and finish this day.
+[00:23:46] And then, you know, you crash off to the day.
+[00:23:49] Just mentally drained.
+[00:23:50] Yeah, mentally drained, physically drained, you know, backs are hurting, you know,
+[00:23:54] I'm getting a risk guard right now because I've typed.
+[00:23:57] I mean, I think in this month, I must have traded at least 15, 20 million shares at least.
+[00:24:03] I haven't paid attention, but I think I'm averaging about two or three million a day at least.
+[00:24:08] One of the things I also wanted to ask you about this while I have you is how has your approach altered
+[00:24:18] from how you were trading earlier in the year?
+[00:24:20] Like what have you done to adapt to this environment?
+[00:24:23] Like the same way you were trading in January, I presume is not the same way you're trading right now.
+[00:24:30] I mean, I'm sure it's probably similar in many ways, but there are probably some adjustments as well.
+[00:24:35] Yeah, for sure.
+[00:24:36] I mean, I mean, I was talking to a friend of mine yesterday and I'm like, you know, the way the stocks are falling.
+[00:24:41] See, I was a reversal trader, right?
+[00:24:42] So I'm looking for things going down and then I'm buying them and they're turning around in this market.
+[00:24:47] It doesn't happen that often now anymore.
+[00:24:50] So we're like, you know, wait, you know, when do we buy things that are going down?
+[00:24:53] This because it's very different when a stock is short sell restricted because, you know, it's just like sell orders come in and they have to get done.
+[00:25:03] And how do you figure out when they are done?
+[00:25:05] Because it's like, you know, I don't know who's selling on the other end, but like, you know, they just come with a big size and they keep coming down, down, down, down, down, down, down, down.
+[00:25:14] You try to figure out how much is left in them.
+[00:25:17] And, you know, so I'm just trying to figure that out more right now.
+[00:25:22] That's where, you know, it's a challenge.
+[00:25:25] And that's how I was down 60,000 the other day because I was trying to buy it like the way I normally buy in January.
+[00:25:32] And I'm like, you know what, things are changed.
+[00:25:34] The way to buy it now is much later.
+[00:25:37] Wait for the ultimate panic, you know, we used to have panic that time in January and you would buy it.
+[00:25:43] And it would turn around usually.
+[00:25:45] But now it's like a different level of panic.
+[00:25:47] And you see the level of panic that was there in January comes much earlier in the day out here.
+[00:25:53] So it's a little different.
+[00:25:54] So trying to adapt to that.
+[00:25:56] I think today was the first day I kind of adapted to that.
+[00:25:59] And I felt like, okay, you know what, I'm seeing things differently.
+[00:26:02] When things are down, you know, 40, 50%, even a 10% move after that can ruin your day, you know.
+[00:26:09] So you just have to be super precise.
+[00:26:11] So I mean, I'm in, I'm out, I'm controlling my risk because I know when I'm right, it's going to be a three or four point move up.
+[00:26:18] So I can't give, you know, more than 40, 50 cents if I'm wrong anytime.
+[00:26:22] So trying to be wrong less obviously helps.
+[00:26:24] But I'm just trying to manage my risk on those because I know the time I'm going to be right.
+[00:26:29] I need to be in the right size.
+[00:26:31] And I need to be, you know, I need to take profits also because these things move 34 points so quickly.
+[00:26:38] And you're like, oh my God, this looks amazing.
+[00:26:40] You know, this can retrace back all 50% and that's down today.
+[00:26:43] No, it's not going to happen the way that used to happen in January where, you know, you would get a good retracement, but slow and steady retracement.
+[00:26:51] Now the retracement is much faster and much short lived, you know.
+[00:26:55] So those things are changed.
+[00:26:57] Just, you know, adding more size to things that, you know, one thing that, you know, it's important and you learn is that once you have a bank roll,
+[00:27:07] we get paid every month.
+[00:27:08] So let's say if I'm up pretty good in a month, right, I don't mind risking more on good situations.
+[00:27:14] You know, I'm like, you know, normally what I would take 20,000 shares, I might take, you know, 70,000 shares, 80,000 shares.
+[00:27:20] I'm like, I'm not scared to lose money.
+[00:27:23] And that only happens when you have a bank roll, you know, whatever you say.
+[00:27:27] Very few traders have that kind of guts and that kind of, you know, I mean, there are few traders that do it.
+[00:27:34] Like, you know, it doesn't matter to them how much they're up or down in the month and they trade the same way.
+[00:27:39] For me, mentally, I know that's what I am.
+[00:27:43] When I have enough money lying, you know, in that month where, you know, I'm like, I don't mind if I'm wrong and if I lose 15,000, 20,000, you know, when I'm up a decent amount.
+[00:27:54] I try and, you know, be more risky, you know, I'll try and push the envelope more.
+[00:28:00] I'll press my bets a little bit more.
+[00:28:02] I'll believe in myself a little bit more.
+[00:28:05] Confidence automatically only comes when you're when you start being right multiple times, you know, and then you start, you know, adding to your positions more and more and you believe in yourself.
+[00:28:14] And obviously the money comes along with it, you know, so you just start.
+[00:28:18] It's like a clockwork, you know, and this works well when you do things right, you know, somehow for me, it's like if I'm positive, it's because I'm doing things right.
+[00:28:28] You know, I try not to have a negative day because I charge my mind changes.
+[00:28:33] So it's just good to know yourself, you know, and I think, you know, 16 years of trading, you start to get to know yourself really well.
+[00:28:41] Yeah, it's a long time.
+[00:28:43] More specifically on this point here, how are you deciding on key points or maybe optimal points on where to enter and exit your trades?
+[00:28:54] It's a tough question to answer without, you know, someone sitting right next to me and me explaining what the thought process was and I went in this trade.
+[00:29:06] You know, because so many other factors in this market that determine, you know, it's Trump tweeting, it's, you know, press conferences.
+[00:29:14] It's the number of viruses that are hitting New York City or is New York City on a lockdown?
+[00:29:20] Now San Francisco is on a lockdown.
+[00:29:22] You know, it's just so much happening that even if a good setup is there, it becomes a bad setup because of what happens on the news at times.
+[00:29:31] So I mean, you just have to, you know, you just have to say this is where I want to be in.
+[00:29:36] If it doesn't work out the way it is, cut your losses and move on.
+[00:29:41] It's just risk management right now.
+[00:29:43] You know, it's just, you know, you will be right because you know the situation that you want to see.
+[00:29:48] It's about, you know, other factors and you just have to be, you know, just be quick.
+[00:29:53] I mean, that's something which we are, you know, I think, you know, we're very quick with our fingers.
+[00:29:58] Like, you know, we kind of sell super quick and we, you know, we get in positions, get our positions.
+[00:30:03] It's just, you know, pretty nimble.
+[00:30:05] It's not like, you know, like, oh, let's buy this, hold it for like 10, 15 minutes and then see what happens.
+[00:30:12] Let's put a stop.
+[00:30:14] I'm not doing all that.
+[00:30:15] I'm just like in, I'm like, do I like it?
+[00:30:17] Okay, fine.
+[00:30:18] It's working in my direction.
+[00:30:19] Move on to the next setup.
+[00:30:20] And the way I do is I just, I just arranged my, my PNL from, from winners to losers.
+[00:30:26] So I'm just managing my losers most of the time.
+[00:30:29] And then I'll keep looking at the top winner and I'll start putting out orders to get out on those winners.
+[00:30:34] You know, so if they hit my orders, great.
+[00:30:36] If it doesn't, I'm still watching everything as much as possible.
+[00:30:39] You're multitasking, man.
+[00:30:41] Yeah.
+[00:30:42] I know that was a bit of a tricky question, but I just wanted to ask it.
+[00:30:45] I was interested to hear how you, you would answer.
+[00:30:47] So very good, man.
+[00:30:50] Last question.
+[00:30:52] I know you've done very well during this downturn.
+[00:30:54] Ultimately, what do you put it down to?
+[00:30:57] What skills and abilities have enabled you to make large gains?
+[00:31:02] One is obviously risk reward.
+[00:31:04] I've always said that second is experience, you know, honestly, experience is a big factor in this.
+[00:31:12] It's about, you know, you've seen situations.
+[00:31:15] You know what to see in those situations.
+[00:31:19] You know how the close is going to behave.
+[00:31:23] It's just, you know, just also knowledge of like, you know, just everything now after 16 years, you just gather knowledge of so many different parts of the market.
+[00:31:32] So I feel like, you know, risk reward experience, I think talking to other traders around me, you know, seeing what they are seeing.
+[00:31:41] What they don't like sometimes, you know, you're on it.
+[00:31:45] So just talk to traders, manage your risk.
+[00:31:48] You know, there's lots of, you know, just don't think about one side of the market.
+[00:31:53] Always think that when someone is buying, someone is selling, you know, someone thinks they're right and someone thinks they're wrong.
+[00:31:59] So, you know, just have that basic mentality in mind.
+[00:32:03] Come in, you know, wake up early, have a clear mind, try to sleep well.
+[00:32:07] At one night I didn't sleep that great because and I drank like five cups of tea after that and then throughout the whole day and I was like, you know, a jittery mess, not great.
+[00:32:16] I did great. I did good that day, but I just like, you know, didn't like the way I was, you know, feeling at all.
+[00:32:23] I don't know, you know, enjoy the enjoy for me.
+[00:32:26] I enjoy this moments also like it's, it's like, you know, once in a lifetime kind of situation.
+[00:32:35] I'm like sitting throughout the day. This is what I love doing.
+[00:32:39] And that's the most important thing I think is that if you love trading and you love being in front of the market, somehow you'll, you know, you'll do it.
+[00:32:47] You know, like my student, you know, he used to work for Microsoft, he quit Microsoft to be a trader because he just loves what and he was telling me that this is the first time in his life that he's actually enjoyed something that he's doing.
+[00:33:01] So it's very important to enjoy it because you will do well if you enjoy something, I feel.
+[00:33:06] Yeah. All right, Nish, well, I know you've got to run very shortly.
+[00:33:09] So I'll let you go.
+[00:33:11] I just want to take this opportunity to have a quick catch up with you and sort of discuss what's been going on as of late.
+[00:33:18] So I really appreciate you taking the time.
+[00:33:20] I know you have a lot going on right now.
+[00:33:22] It's a busy period for you.
+[00:33:23] So yeah, thanks once again.
+[00:33:25] Yeah, other than the market being busy, there's even kids at home and the wife has to take care of both the kids.
+[00:33:31] So it takes a family to really run a trader.
+[00:33:36] It doesn't, it's sort of one man job.
+[00:33:38] It's, you know, it takes everyone.
+[00:33:40] You have a good team around you.
+[00:33:41] Thanks, man.
+[00:33:42] Yeah. All right, Nish.
+[00:33:43] Enjoy your evening.
+[00:33:44] Thanks for the call, Aaron.
+[00:33:45] Yeah, we'll chat soon.
+[00:33:46] Thank you.
+[00:33:47] Thanks, buddy.
+[00:33:49] You've reached the end of this episode of chat with traders, but rest assured, there are more episodes loaded with real market insight and zero hype on the way soon.
+[00:34:00] So to stay updated with each great new release, subscribe to the podcast and iTunes and we'd love it if you'd leave a rating and review.
+[00:34:08] We'll catch you next time on chat with traders.
+[00:34:18] Thank you.
+[00:34:48] Thank you.

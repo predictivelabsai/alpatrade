@@ -1,0 +1,73 @@
+{
+  "trader": "Nicholas Bradburn",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "short-only",
+  "template": "none",
+  "method_name": "Psychological level short scalping",
+  "style": "intraday short scalping at round numbers",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "large cap US stocks and ETFs"
+  },
+  "setup": [
+    {
+      "rule": "short into strength at psychological levels (100,150,200 etc)",
+      "quote": "shorting into psychological levels like roku has offered multiple short opportunities at a hundred",
+      "timestamp": "[00:33:17]"
+    },
+    {
+      "rule": "look for reversals at even numbers after multi-day runs",
+      "quote": "i really like the even number trades like 100 150 200",
+      "timestamp": "[00:35:20]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "enter short on stall or reversal at round number after watching for selling pressure",
+      "quote": "i would just like oh i kind of washed it and it starts sputtering around a hundred",
+      "timestamp": "[00:36:54]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "stop above recent high or pre-market high",
+      "quote": "i put a stop in at 102 that was like the previous day high or the pre-market high",
+      "timestamp": "[00:36:54]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "take profit on reversal or target move down",
+      "quote": "i got out of like i think 121 or 122",
+      "timestamp": "[00:33:48]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "risk 0.5% per trade based on stop distance",
+      "quote": "i cut my risk in half",
+      "timestamp": "[00:29:10]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "monitor SPX QQQ IWM DJI pre-market for direction and leadership",
+      "quote": "i have one screen that is always spx triple q arcade and the dow",
+      "timestamp": "[00:38:58]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "no long-side rules provided",
+      "assumption": "method is short-only"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "239",
+    "page_url": "https://chatwithtraders.com/episode/239-nicholas-bradburn-my-first-year-trading-full-time",
+    "youtube_url": "https://www.youtube.com/watch?v=AONSeknN8S8"
+  }
+}

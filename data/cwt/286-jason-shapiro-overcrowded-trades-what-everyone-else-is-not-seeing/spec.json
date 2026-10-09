@@ -1,0 +1,62 @@
+{
+  "trader": "Jason Shapiro",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Method relies on COT positioning data, sentiment, and discretionary news failure confirmation across futures/FX/commodities rather than concrete long-only daily-bar rules for US stocks.",
+  "template": "none",
+  "method_name": "COT contrarian news failure",
+  "style": "contrarian positioning",
+  "timeframe": "swing to multi-week",
+  "universe": {
+    "description": "Futures, currencies, commodities, occasional stocks via COT reports"
+  },
+  "setup": [
+    {
+      "rule": "Identify overcrowded positioning via COT speculator extremes",
+      "quote": "when I see people are way too long something you know I'm looking to get short when I see that participants are way too short something I'm looking to get long",
+      "timestamp": "[00:03:42]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Enter on news failure day confirming reversal",
+      "quote": "if I'm looking at okay everybody's short here here I'm looking to get long what's going to be my confirmation I do it on what I call a news failure event",
+      "timestamp": "[00:19:46]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Stop if new extreme beyond entry day extreme",
+      "quote": "if it takes out the lows of that day well then I'm stopped out",
+      "timestamp": "[00:21:20]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Exit when COT positioning returns to neutral",
+      "quote": "the positioning data goes back to a neutral reading and that's where I take my profit",
+      "timestamp": "[00:21:51]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Risk fixed 70bp per trade",
+      "quote": "I personally risk 70 basis points on each trade",
+      "timestamp": "[00:30:41]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "No explicit US stock long-only daily rules; trades mixed long/short across asset classes",
+      "assumption": "Primarily discretionary futures/FX method"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "286",
+    "page_url": "https://chatwithtraders.com/episode/286-jason-shapiro-overcrowded-trades-what-everyone-else-is-not-seeing",
+    "youtube_url": "https://www.youtube.com/watch?v=s1T_anYeGUk"
+  }
+}

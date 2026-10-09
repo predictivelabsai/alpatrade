@@ -1,0 +1,73 @@
+{
+  "trader": "David Capablanca",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "short-only",
+  "template": "none",
+  "method_name": "Shorting pump-and-dump scams",
+  "style": "fundamental research + technical fade",
+  "timeframe": "intraday to swing",
+  "universe": {
+    "description": "OTC then NASDAQ/NYSE small-cap frauds and pumps"
+  },
+  "setup": [
+    {
+      "rule": "Identify paid pumps via newsletters/texts; check float 3-20M, borrow <200%",
+      "quote": "I subscribe to them and I gladly put my phone number there",
+      "timestamp": "[00:25:57]"
+    },
+    {
+      "rule": "180-day lockup + midday parabolic spike 50-100%",
+      "quote": "I like to short sometimes uh for example midday parabolic",
+      "timestamp": "[00:56:35]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Short after volume fade or post-lockup extension on strength",
+      "quote": "volume fade is you know looking at Daily candles Etc to determine what my entry is going to be",
+      "timestamp": "[00:28:34]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Exit on borrow spike or squeeze signal",
+      "quote": "if I see for example once last year I remember I shorted a stock ... it went to 400 and I got out",
+      "timestamp": "[00:34:46]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Cover end-of-day or on report release; avoid overnight on low float",
+      "quote": "I'll cover at the end of the day or something like that because I don't want to hold it overnight",
+      "timestamp": "[00:57:37]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Small size on low float; scale only when borrow cheap",
+      "quote": "if it's over 200 fee rate on interactive brokers I'm just uh I'm gonna try my best not to short it",
+      "timestamp": "[00:32:41]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Avoid high institutional ownership names",
+      "quote": "if there's institutional ownership present in a in a NASDAQ ... they won't break down as easily",
+      "timestamp": "[00:14:01]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Some intraday technical rules mentioned but no concrete long-side rules exist",
+      "assumption": "All rules are short-only and discretionary"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "257",
+    "page_url": "https://chatwithtraders.com/episode/257-david-capablanca-crafting-the-art-of-shorting-scams",
+    "youtube_url": "https://www.youtube.com/watch?v=E1VkQl4BzQg"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "trader": "Max, @Madaznfootballr",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Scalping method relies on intraday tape reading, level 2, 3-min charts and micro moves that cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "NASDAQ small-cap scalping",
+  "style": "scalping with tape reading",
+  "timeframe": "intraday (2-3 min avg hold)",
+  "universe": {
+    "description": "small cap NASDAQ listed stocks with high volume, large gaps or intraday moves, low float"
+  },
+  "setup": [
+    {
+      "rule": "scan for top gappers or high volume movers with low float",
+      "quote": "I look at the stocks that were in play from the day before... sort them by large gap percentage... note the float... pick the stocks that have the biggest overnight move or the biggest intraday move and I just look for volume",
+      "timestamp": "[00:46:29]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "use tape reading and level 2 to identify patterns like bid support or iceberg orders",
+      "quote": "the tape is probably the main thing uh that I use to make my trades... try to pick up really quick the patterns that the algos are using",
+      "timestamp": "[00:50:41]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "exit quickly on adverse tape or price action using limit orders and hotkeys",
+      "quote": "sometimes you get into a trade and it might go against you right away and you have to recognize within a second that you got to get out",
+      "timestamp": "[00:39:45]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "take micro moves and exit on quick profit or adverse move; re-enter on pullbacks if trend continues",
+      "quote": "if the stock keeps going up I can always get back in anyways... wait for the next dip the next pullback or the next wash out",
+      "timestamp": "[00:38:10]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "use hotkeys to adjust share size on the fly; play small when learning",
+      "quote": "definitely if you're a new Trader play small... hot Keys... share size you know changing your share share size on the Fly",
+      "timestamp": "[00:20:17]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "trade only above VWAP for longs, below for shorts; avoid low volume lunch period",
+      "quote": "if the stock is above vwap it tends to be bullish... at the open is where I make most of my money... during the lunch hours... walk away",
+      "timestamp": "[00:56:22]"
+    }
+  ],
+  "ambiguities": [],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "124",
+    "page_url": "https://chatwithtraders.com/episode/124-max-madaznfootballr-when-chasing-a-quick-buck-becomes-making-a-quick-buck",
+    "youtube_url": "https://www.youtube.com/watch?v=H9fUDFgdB38"
+  }
+}

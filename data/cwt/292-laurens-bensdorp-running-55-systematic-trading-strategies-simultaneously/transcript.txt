@@ -1,0 +1,472 @@
+# 292 · Laurens Bensdorp - Running 55+ Systematic Trading Strategies Simultaneously
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT3232523796.mp3
+
+[00:00:00] You know, you can maybe create a couple of systems that have a huge compound at any of your growth rates,
+[00:00:06] but there will be times where you're going to pay the price for that with a very large drawdown.
+[00:00:11] If you blend in all those different return streams, and therefore when one part of the
+[00:00:16] strategy is not doing well, but the other part is doing well, you do create a smoother equity
+[00:00:23] curve. But at the same time, you also create something that is more robust because you're
+[00:00:29] not depending only on one specific equity curve, but you've got a lot of different
+[00:00:34] return streams at the same time. So if four or five of my systems are not doing great,
+[00:00:40] I don't really care about it at all, because I've got other stuff that is working at that time.
+[00:00:45] When you have a lot of those different systems, you have a larger trade frequency, of course.
+[00:00:50] The larger the trade frequency is, that is also something that gives you more of an opportunity
+[00:00:56] to climb out of a drawdown faster than if you only have a few systems.
+[00:01:14] We're so glad to have you join us for Episode 292. I'm Tessa, co-host and producer of the show
+[00:01:20] alongside my awesome co-host Ian Cox. I also happen to be a trader, I should say developing
+[00:01:26] trader to be accurate with the goal of trading professionally. And oh man, has this journey
+[00:01:33] been extremely challenging to say the least? And at times you just want to go crazy and
+[00:01:39] self-doubt can sometimes creep up inside your head. For those who have been at this for a
+[00:01:44] relatively decent amount of time, I think you know what I mean. You find yourself grinding and
+[00:01:50] grinding trading day after day and showing up consistently and putting in the work diligently
+[00:01:56] and wondering when is all this going to pay off? Or maybe you feel like you've fallen back
+[00:02:03] instead of forward. Yeah, I have those experiences and thoughts and have to find a way to snap
+[00:02:11] myself out of it and remind myself that this is normal. We're supposed to go through this.
+[00:02:20] If it were easy then everyone should be successful in trading and that would be impossible,
+[00:02:26] almost ridiculous. So in a way I like that it is hard, that trading is hard.
+[00:02:34] All right now let's get to today's episode which I think will be a nice treat for those
+[00:02:38] interested or curious in 100% systematic and automated trading. And I'm not talking about just
+[00:02:45] one trading system. Do you know of any traders running 55 or more trading systems at the same time to
+[00:02:54] give them an edge in bull and bear markets? Well you will today. Ian Cox interviews
+[00:03:00] Lawrence Benzdorp. He's the author of automated stock trading systems. Maybe it's not as
+[00:03:07] mysterious as you think once you understand the concept and approach to Lawrence trading
+[00:03:12] and why he advocates for trading multiple systems. Well I can tell you that I am a total discretionary
+[00:03:20] and manual trader at this point but I just love learning and being aware about what other
+[00:03:27] traders and professional traders are doing and I hope you do too. Well without further ado,
+[00:03:32] ladies and gentlemen we're so pleased to present Lawrence Benzdorp originally from the Netherlands.
+[00:03:42] Lawrence, I'd like to welcome you to chat with traders. Thank you very much, good being here.
+[00:03:48] Yeah yeah so where are you now and kind of where did you grow up? Well I'm currently
+[00:03:54] living in Portugal. I grew up in the Netherlands but I've lived in 12 different countries my whole
+[00:04:01] life so I've been around quite a bit actually. My original background was for a long time I was
+[00:04:08] a scheme instructor and a whitewater rafting instructor so I did in the winter the scheme
+[00:04:13] instructing and in summer I did whitewater rafting instructing and kind of travel around the world
+[00:04:19] with that and I didn't really have a deep interest in any of the other financial stuff at all
+[00:04:28] then at some point I started my own adventure tourism company in Mexico but at the same time
+[00:04:36] my family they had a small boutique venture capital investment firm that was in big trouble
+[00:04:43] and my father he asked me like listen I need somebody to come over here and to help me with
+[00:04:50] this because I'm basically losing money every year and I can't really trust the people
+[00:04:57] that I'm working with so I really need to have somebody who I can trust with that so I went back
+[00:05:04] from Mexico to the Netherlands and that was back in the year 2000 and I immediately kind of had to
+[00:05:13] dive deep into everything that was related to finance so not only venture capital but also
+[00:05:21] stock trading and everything they had a large stock portfolio which was managed by the normal banks
+[00:05:28] basically with a buy and hold approach and this was in in in April 2000 so basically
+[00:05:36] right at the beginning where everything started to fall down and we entered into a
+[00:05:41] a three-year bear market and that part immediately grabbed my attention that I said like okay this
+[00:05:49] is something that really is something that I'm interested into to find out how I would be able
+[00:05:57] to crack the code and actually create profitably for a living and first of all of course to make
+[00:06:05] sure that I could save the venture capital business for my folks so I cleaned that part up
+[00:06:12] and then I kind of moved more to focusing my interest like a hundred percent towards educating
+[00:06:20] myself in getting skills in investing and trading. What were some of the things you learned while
+[00:06:26] looking at your parents portfolio and how did that formulate your early trading and investing
+[00:06:34] philosophy? I think the main thing that I learned is that it's probably not always a wise idea to
+[00:06:41] just rely on a bank and a portfolio manager those people are hired at their bank and they have a
+[00:06:50] specific objective to make sure that they keep their clients on board and as long as they can
+[00:06:56] be a point above the S&P 500 but if the S&P 500 is down 50 percent and they are down only 45
+[00:07:06] percent then they can say well we actually did a good job so what I learned is like okay
+[00:07:12] we cannot rely on this kind of style at all it is basically a business that is very good
+[00:07:20] for them but it's not something that is of the main interest for us so that was the
+[00:07:28] main thing for me that I said okay we cannot rely on people that call themselves
+[00:07:35] so-called experts but do not have any kind of system at all so from that point on I needed
+[00:07:43] to start to educate myself actually because I don't have any financial background at school
+[00:07:50] or anything I didn't go or I didn't study math or anything like that but I've got a good set
+[00:07:55] of brains so I worked very hard to basically get all the skills that I needed and that's
+[00:08:01] eventually led and then we're talking about seven years later more or less until I finally got to
+[00:08:08] the style that I'm trading right now which is completely a systematic style and everything
+[00:08:15] 100 percent on automation only using technical indicators so you started getting into the
+[00:08:21] markets right around the time that this nasty bear market three year bear market or so unfolded in
+[00:08:28] in the year 2000 did you do any trading during that time and if so kind of what did you get into
+[00:08:35] what I did for my folks was I basically needed to convince them to close out all their positions
+[00:08:42] and go flat because I said we have no reason at all to be in a position if we don't know
+[00:08:48] why we're in it and it's losing money every day so that was the first thing that I did I said okay
+[00:08:54] we need to liquidate and being flat and then actually see if we can come up with a strategy
+[00:09:00] that actually has an edge at the same time I started to trade myself as well with my own
+[00:09:07] account with a thirty thousand dollar account and it's interesting when you start with that so
+[00:09:14] that is when you open your brokerage account and I thought it was fairly easy to say like okay I could
+[00:09:19] probably easily make like a hundred percent per year just buying low and selling high and didn't
+[00:09:25] have the skill at all so the first couple of years were very very painful and I lost money
+[00:09:33] every single year but I think I think every trader that eventually becomes successful they
+[00:09:39] kind of need to go through that phase where they lose money because the market really teaches you
+[00:09:46] there how hard it is to actually make money so I didn't have a real strategy I was jumping from
+[00:09:52] one strategy to the other strategy but I was educating me at the same time so I was starting
+[00:10:00] to get at least a little bit of a feel for it the one thing that I was good at I think is
+[00:10:08] risk management I always respected the fact that there is a risk of blowing up so I never blew
+[00:10:16] up completely my account I was close though so you had a more of what death by a thousand cuts
+[00:10:23] instead of one big blow-up during those years exactly yeah it was that's that's perfectly
+[00:10:29] sad yes it was it was basically the first two three years I was losing consistently
+[00:10:35] money had no idea what I was doing and the interesting thing is although one is working
+[00:10:41] very hard you can work 10 12 hours 14 hours a day with trading that is no guarantee at all
+[00:10:48] that you will make money actually but I never I never blew up but I was very close to that
+[00:10:55] what were the early signs and indicators for yourself that catalyzed you to show some interest
+[00:11:01] in a systematized approach and what was the early your early investigation into that I started
+[00:11:09] reading a lot of course and then eventually I came to a document about the turtle traders
+[00:11:16] so the famous group of turtles in the in the 80s that made so much money of course by using a
+[00:11:23] systematized approach and I read everything I could about that group and I eventually then
+[00:11:32] figured out there was some information about the way how they were trading and what what was
+[00:11:39] surprisingly to me is that it was a very simplified approach but it was very clear and easy as far as
+[00:11:47] when to enter when to exit how to size your position and everything and that to me made perfect sense
+[00:11:54] because it immediately showed to me that okay this is where one can have a system but also
+[00:12:02] you can have the statistical feedback is actually what you're doing has an edge is there an edge
+[00:12:08] in the system and that's where the whole back testing part came in so I started to purchase
+[00:12:14] software to back that and hired programmers to code ideas that that I had and that kind of moved
+[00:12:22] me more into the systematic trading for me it was all about the fact that I wanted to see
+[00:12:30] that the idea that I had if it if there was actually a statistical edge that it could make
+[00:12:36] money and probably about seven out of ten ideas that I thought were very good did not have an
+[00:12:42] edge at all but it was the turtles and their rules that basically show to me like okay
+[00:12:49] this is something that suits me perfectly so could you give us an example of some of your early
+[00:12:55] types of early versions of a systematized approach and what did it attempt to accomplish
+[00:13:02] I started with simple transfollowing systems very easy breakout systems and those were systems that
+[00:13:11] generally they had an edge what I didn't know yet at that time how hard it is to actually
+[00:13:19] consistently trade something although it has an edge I mean transfollowing has a clear edge
+[00:13:27] but there are many times when you are in large drawdowns basically so that was something that
+[00:13:34] I found very hard to deal with but I wasn't losing really money at that time again but
+[00:13:41] eventually I also found a lot of research that was based on a style that is very opposite
+[00:13:50] to transfollowing which is mean reversion and that is basically the opposite that you buy the
+[00:13:56] fear and once it reverts to its mean you get out of the position again and that approach
+[00:14:05] especially at that time really made to my personality a lot more sense I was a lot
+[00:14:12] younger than I am right now and a lot less patient I would say and when that happens I think a
+[00:14:19] style like mean reversion when you're only in for a couple of days is something that can
+[00:14:24] resonate a lot more there's a lot more trades of course so that's that's where I started to discover
+[00:14:31] like that is my real style that in back in 2007 when I had worked with with various programs
+[00:14:40] and various software developers I actually came to a suite of four different systems too long
+[00:14:48] and too short all based on mean reversion so you just did a mean reversion strategies early on
+[00:14:56] or did you combine it with trend following did you expand your the number of strategies that you
+[00:15:03] implemented early on or I did I did eventually yes so I started with mean reversion only
+[00:15:09] because I thought okay this is absolutely for me the holy grail but then I started to notice
+[00:15:15] that there were times as well where mean reversion doesn't work and actually trend following would
+[00:15:21] have been doing incredibly well but I needed to learn that lesson first so 2007 2008 and 2009
+[00:15:30] my mean reversion strategies did really really well so that gave me the confidence that
+[00:15:37] systematic trading with the mean reversion style was very good but then came some years where it
+[00:15:44] started to be a lot harder and I also saw that there were just flaws where basically you can have
+[00:15:52] that negative clue that people talk about in in in mean reversion systems where you have a lot of
+[00:15:58] small winners but once in a while you get a lot of big losers then I noticed like okay well if I
+[00:16:06] can combine this and actually have also a trend following approach that trades long and short
+[00:16:15] at the same time then I could offset those bad results of the mean reversion systems but also
+[00:16:23] at the same time many times when the markets were really trending the mean reversion system
+[00:16:30] would do okay but they weren't catching all the trends of course because you were getting
+[00:16:36] out fairly fast and then if you have a trend following system of course that really helps
+[00:16:43] them to completely write that trend when when there is a big trend so what happened in 2008
+[00:16:50] when the market melted down you were running a just a mean reversion system at the time
+[00:16:56] so I ran at that time two mean reversion long system and two mean reversion short system
+[00:17:02] I think for quite a long time I actually thought like okay mean reversion long is working in bear
+[00:17:09] markets as well because I did make money on my long system in that 2008 period which generally
+[00:17:16] led me to kind of a false belief that mean reversion long system will always make
+[00:17:22] money in in bear markets which is not the case but in in in my case I think I was a little bit
+[00:17:28] lucky there in hindsight but I followed my rules and everything of course the short selling systems
+[00:17:35] did phenomenally well during the bear markets but even the long systems there were trends filters in
+[00:17:42] there and when the market really started to drop down those systems were basically flat and then
+[00:17:49] the mean reversion short system they made money so 2008 was was my best year in trading
+[00:17:56] I did have a higher risk tolerance that I have right now so my position sizing
+[00:18:02] at that time was was definitely different than it is right now I mean I had a lot less equity
+[00:18:09] so the dollar swings were a little bit different as well and I think at that time when you're
+[00:18:15] younger you kind of look more to a wealth accumulation and when you start to get older
+[00:18:21] there comes more of a focus to also wealth preservation so you start to look more to the
+[00:18:27] risk as well so given that you did well during the 2008 meltdown what was the catalyst for you
+[00:18:34] to want to expand your the number of systems you have in the strategies to include trend
+[00:18:40] following because you could just keep doing the the mean reversion right when at what point
+[00:18:44] did you decide to add trend following to what was a very successful system up until that point
+[00:18:51] I think the main catalyst was definitely august 2011 so august 2011 there was some
+[00:19:01] news message from the fed that made the markets drop like a stone and at that time all my
+[00:19:10] long mean reversion systems they showed losses that were at least twice as large as what my
+[00:19:18] back test ever showed so that was like a huge wake up call for me that I suddenly saw like my goodness
+[00:19:25] the the back test that I have looked great but I actually can have time where the losses are
+[00:19:31] bigger than what my back test shows so that made me realize like well if I would have had at this
+[00:19:39] time a trend following short system that would have captured that breakout to the downside
+[00:19:47] in the beginning of august 2011 I would have been completely hatched and I would have completely
+[00:19:54] being able to cover that big drawdown that I had during that time and that was a fast drawdown
+[00:20:01] it was like two weeks of continuous pain where I probably learned the most about trading my
+[00:20:12] own systematic system that I saw like okay I need to have different approaches as well
+[00:20:20] because there are just times where long mean reversion only is not working
+[00:20:26] so up until 2011 how often did you need to or feel tempted to tweak your system to try to
+[00:20:33] get it even better I did that quite a bit in the beginning I read about it that you
+[00:20:41] shouldn't do it but I think especially in the beginning one has that tendency of perfectionism
+[00:20:49] so there's always like the tendency like I want to make things better so I did weak things but
+[00:20:58] not that much what I started to realize that every time when when I when I tweak something
+[00:21:05] I kind of was running behind the fact because it was based on a recency bias where for the last
+[00:21:13] let's say six months the system didn't work that well so one would over optimize then
+[00:21:19] one would optimize for the recent six months of data and say okay this and that parameter
+[00:21:25] would have been doing a lot better and the whole back that would have done better
+[00:21:29] so let's move over to that specific rule set then well guess what then suddenly you get a drawdown
+[00:21:37] in that specific rule set that you have so once I started to see that and I saw that my
+[00:21:45] older systems with the previous rules actually were recovering very nice at that time I said like
+[00:21:53] okay um what I read and what I learned from other people was actually true you just need to accept
+[00:22:02] the fact that there will be times where strategy works and other times where strategy doesn't work
+[00:22:09] so instead of tweaking uh and this is incredibly important so instead of tweaking what I did I
+[00:22:16] added more different systems to my suite of systems so this was the start where I started to expand
+[00:22:25] on my suite of systems because I saw that okay there are times where a certain strategy doesn't
+[00:22:33] work that will happen with every single strategy there if you take a trend following approach
+[00:22:40] there are times where a short-term breakout strategy could do very well but other times
+[00:22:46] when a longer-term breakout strategy could do very well now what if you combine those and you say you
+[00:22:53] have one strategy that looks for a short-term breakout another strategy that looks for a
+[00:22:59] medium-term breakout another strategy that looks for a long-term breakout the same for mean reversion
+[00:23:07] you say okay you can have systems that look for a strong pullback systems that look for a
+[00:23:12] tele-pullback and systems that look for a weak pullback so you use different indicators to make
+[00:23:19] sure that you basically create a different return stream and that really helps to kind of
+[00:23:26] smoothen my equity curve because you always have some of the systems that will not work
+[00:23:33] but that is part of the trading process I see so um so how many systems did you end up
+[00:23:41] creating to try to smooth out your equity curve well I currently trade a suite of 55 different
+[00:23:48] systems long short mean reversion trend following some other styles as well mainly on us stocks
+[00:23:55] but also future commodities and everything so it's a large blend of a lot of different
+[00:24:03] things that all trades together basically I'm just curious how do you have the the bandwidth
+[00:24:09] and the time to manage all these 55 systems that's quite a quite a lot yes and it wouldn't be
+[00:24:15] possible to do that without my own software my business partner we built a software basically
+[00:24:24] for that the trades and everything gets executed completely on autopilot so the software runs the
+[00:24:32] back path and it then spits out the orders that you need to buy for the next day and then another
+[00:24:38] part of the software connects to my brokerage platform and buys and sells the instruments
+[00:24:45] that my software tells it to do so it is a hundred percent automated style that I do
+[00:24:53] and and that is absolutely crucial as well if you trade 55 systems I think it's it's possible to
+[00:25:01] manually get up to maybe 10 12 systems or so I know people who do that and you could do that
+[00:25:08] in probably less than 30 minutes a day but I think the other thing that you need to be
+[00:25:12] careful for is the factor of human error like the more strategies you trade the more orders you
+[00:25:22] need to place and if you do that manually so you look at your screen and you say you need to buy
+[00:25:27] stock xyz at $50 and 21 cents sooner or later there will be a fat finger mistake or
+[00:25:37] something like that when you do everything manually and then of course to have everything
+[00:25:41] automated that helps it a lot and then you can say okay now I can really expand the amount of
+[00:25:50] systems that I trades because I don't have a limit anymore as far as what my brain capacity
+[00:25:57] can deal with for order placement and execution so early on you had success with just a mean
+[00:26:04] reversion strategy and then you went a trend following just curious in your quest to eventually
+[00:26:12] arrive at 55 different systems were you solely focused in on getting that equity curve as smooth
+[00:26:21] as possible and getting the drawdowns as smooth as possible so where you were you're thinking
+[00:26:27] such that hey I'm willing to give up upside potential just to have additional lower
+[00:26:33] my risk profile absolutely absolutely that was for me the key to everything you know you can
+[00:26:41] maybe create a couple of systems that have a huge compound at any of your growth rates but there
+[00:26:46] will be times where you're going to pay the price for that with a very large drawdown I would
+[00:26:51] not be very comfortable having a drawdown of 50% losing half of my equity if you have a fund
+[00:26:58] you can continue to trade because your customers pay you a management fee or whatever but if it is
+[00:27:04] your own money it is a lot harder to deal with those drawdowns as well so if you blend in all
+[00:27:12] those different return streams and therefore when one part of the strategy is not doing well
+[00:27:18] but the other part is doing well you do create a smoother equity curve but at the same time
+[00:27:25] you also create something that is more robust because you're not depending only on one specific
+[00:27:33] equity curve but you've got a lot of different return streams at the same time so if four or
+[00:27:40] five of my systems are not doing great I don't really care about it at all because I've got
+[00:27:46] other stuff that is working at that time and when you have a lot of those different systems
+[00:27:51] you have a larger trade frequency of course the larger the trade frequency is that is also
+[00:27:57] something that gives you more of an opportunity to climb out of a drawdown faster than if you
+[00:28:04] only have a few systems so could you give us an example of some of the the different systems
+[00:28:10] that you have and kind of what markets are they in as far as trend following a good example would
+[00:28:17] be a simple NASDAQ 100 system that captures the trends of the NASDAQ 100 stock and you can have
+[00:28:25] very simple rules then that measure a trend you choose them the 10 stocks that are based on
+[00:28:32] a certain rule which could be the highest rate of change it could be that you want to look for
+[00:28:38] the stocks that have the highest dollar volume but they must be trending then you place the
+[00:28:42] stop loss and you have a trailing stop that's it very simple and straightforward now that style
+[00:28:51] if developed in a robust way should create very nice compounded annual growth rates
+[00:28:57] when there are big bull markets like 2023 in the NASDAQ for example but what is a drawback
+[00:29:04] of a strategy like that with trend following there will be time because you have that trailing stop
+[00:29:14] that you need to give back a part of the profit of course so you will have times where you have to
+[00:29:21] deal with large drawdowns now if those drawdowns happen they basically happen on the trend following
+[00:29:29] when you start to give back profits what you then can do if you then simultaneously trade
+[00:29:36] a strategy that would focus on mean reversion shorts meaning that you sell short
+[00:29:43] overbought stock that have a statistical likelihood larger than 50 that they will
+[00:29:52] revert within the next let's say five days or so then you can kind of offset that drawdown
+[00:30:00] that you have with your trend following system and that immediately makes sure that you increase
+[00:30:07] your risk adjusted return in your 55 systems are you looking at other say uncorrelated
+[00:30:14] or less correlated assets like say crude oil or gold or currencies or anything like that
+[00:30:21] I mean I also trade commodities and metals and stuff like that and those instruments they
+[00:30:29] could be non-correlated to the equity market but it is not a guarantee I mean there can be time
+[00:30:38] where everything goes down at the same time that doesn't happen very often but there are
+[00:30:46] time when that could basically happen where both stocks gold and bonds go down but generally what
+[00:30:55] you do you add a lot more diversification diversification in your suite of strategies
+[00:31:03] and that increases the odds of having more robustness in there as well and again having
+[00:31:08] different return streams as well I also trade those instruments both long and short but
+[00:31:16] instruments like commodities I do not do any mean reversion on that for me it's only trend
+[00:31:23] following both long and short and so right now of course I'm long gold long silver etc I mean if
+[00:31:33] you see for example when when we had the covid crash every kind of trend following style would have
+[00:31:39] been short crude oil for example that went negative at that time when it comes to correlations do you
+[00:31:46] look at I'm just curious kind of what kind of timeframes do you look at going back because I
+[00:31:51] notice like when I compare different asset classes say the last three months could look one way and
+[00:31:56] then if you go back six months or a year or two years and each time period can have its own
+[00:32:01] correlations and just kind of curious if you if you look at multiple timeframes or you just stick with
+[00:32:10] one or just a few for the correlations or just for the strategy you mean yeah yeah for the strategy
+[00:32:18] to when you look back at a period of time to see how how these different strategies and assets
+[00:32:24] compared to each other to balance out in your in your 54 strategies how I think I like to have as
+[00:32:32] many different timeframes as possible I think there are times where short term strategies do very well
+[00:32:41] so I have strategies that are day trading and I have strategies where the average trades
+[00:32:47] duration could be more than a year and that is exactly how I like it as well because
+[00:32:53] there are times where you can make money within that more of the noisy market as with the day trading
+[00:33:00] strategies but other times where you've got those longer sustained friends so I try not to be biased
+[00:33:10] at all as far as timeframes so for example my my trend following strategies on my stock portfolio
+[00:33:19] their strategies that have a 25-day look back of when to enter and that could be a dungeon channel
+[00:33:24] or kelter channel or whatever it just needs to measure a trend but I've got other strategies
+[00:33:30] that have a 300-day look back and that's how I completely spread it around on the short side
+[00:33:38] it is a little bit different I tend to focus a little bit more especially with the equity on
+[00:33:44] not too long of a look back because the short side has more of a different objective as well
+[00:33:51] to make sure that it that it helps you when the long side starts to lose money so there is of
+[00:34:00] course a positive bias in the stock markets over the last 100 years or so there's a what is it a
+[00:34:10] 7% compounded annual growth rates but you do have like severe drawdowns 1929 to 1932 close to 90%
+[00:34:22] drawdown and then I don't know how many times the market had a drawdown of around 50% 2008 as a
+[00:34:29] p556% so you want to have those short selling systems as well but they're generally a little bit
+[00:34:36] shorter in duration than the longer term ones so how do you handle kind of risk management for
+[00:34:43] for each one of those of your 55 different systems and do you set the same kind of stop
+[00:34:50] loss levels and an exit points or do you have do vary it it's different for every system
+[00:34:57] for mean reversion I make sure that I have a stop loss it needs to be
+[00:35:03] far away because it is only in there for my risk management so that I know
+[00:35:11] when I get stopped out on my mean reversion system I know that I lose x% of my equity
+[00:35:17] and with 55 systems it's a very small percentage or so but very often you need to give those
+[00:35:23] mean reversion systems some space before they start to revert to its mean because often you kind of catch
+[00:35:30] like a falling knife or so and to expect that it immediately will move up to the to the upside
+[00:35:37] no you need to be in that pain a little bit more before it actually can turn into a profitable
+[00:35:44] strategy but transferring strategies I do have strategies that have a very small stop loss of
+[00:35:50] let's say one average through range I have other strategies that have a stop loss that could be
+[00:35:56] very large of 25% or something again what I try to achieve with that is a lot of diversification
+[00:36:07] among the different market structures that you have there are times where it's been a great
+[00:36:13] idea to jump into a stock but when it's not working boom you get out but what happens often
+[00:36:19] is that it's just whipstowing and then it moves up again now then that strategy would be
+[00:36:26] getting in and out a couple of times now if I have another strategy that has a 25% stop loss
+[00:36:34] then I have a complete difference profile for that specific strategy so again I look a lot
+[00:36:41] to make sure that every strategy is completely different in nature and put that all together
+[00:36:49] so do you equally weight each one of your 55 strategies with the same amount of
+[00:36:55] percentage investment or do you vary them I do yes I do I do not want to have any kind of bias
+[00:37:05] towards what strategy would be best so what would be dangerous for example is if you look at the
+[00:37:11] back test of all the 55 systems and you say I'm going to allocate the most to the strategy
+[00:37:17] that has the best back test that returns that would be very dangerous to do I think every
+[00:37:23] specific strategy that I have has a specific objective so it's all built that they work together
+[00:37:32] now there are people for example that are more geared towards mean reversion or are more geared
+[00:37:40] towards trend following and so it's totally fine as well to say well if your personality
+[00:37:46] is more a trend follower it's totally okay to say trade 75% trend following and 25% mean reversion
+[00:37:54] in my case I say I don't want to make any difference of it because what I've seen
+[00:38:00] what can happen is very easily a reasons the bias can jump in that you start to
+[00:38:07] reallocate things based on recent performance and so I just say I keep everything completely
+[00:38:14] equal and let the thing run in previous interviews I heard you mention about the
+[00:38:23] hidden risk and you said that what you don't see in your strategy is the big risk
+[00:38:30] so how can we find this big risk yeah it's a good question and it's so super important
+[00:38:39] because I think with with all the software power and computer power that there is today
+[00:38:45] it is very easy to come up with a back tested system that shows a phenomenal return
+[00:38:54] and a very low draw now right but if you look at the trade distribution of any strategy that has
+[00:39:04] a phenomenal return you need to ask yourself like okay what haven't I seen in here what actually could
+[00:39:13] happen so a good example of that is for example with the mean reversion strategy let's say you've
+[00:39:20] got a test strategy with a 30% compounded in your growth rate and a 10% maximum drawdown
+[00:39:28] and what you do then you start to look at the trades if you see as your whole trade
+[00:39:33] distribution that the majority of your trades were big fat tails that you make money of that's not
+[00:39:43] supposed to happen with mean reversion you're supposed to make money on a lot of trades and
+[00:39:49] grab a little profit here and there and if you then also see that the losing trades that you
+[00:39:56] don't see the big losing trades in there then you can say well conceptually with mean reversion
+[00:40:04] strategies you will have that risk that you short a stock at ten dollars and the next day it opens
+[00:40:13] at thirty dollars that that risk is there and what we human beings tends to do is we try to filter
+[00:40:24] those bad trades out in our back testing which of course only leads to a false representation
+[00:40:34] of what the strategy really is so if I test the mean reversion system I want to see
+[00:40:43] some bad stuff in there I really want to see that if I don't see it then I get very critical
+[00:40:51] to myself and say like okay something must be off over here because I've been through that
+[00:40:59] in 2011 where where my drawdown was so much larger and I got all those big fat tails moving
+[00:41:05] against me if I see that it just looks too good to be true well it's most likely that the big
+[00:41:11] fat tails have been filtered in as winners and there's no losers that should have been there
+[00:41:18] and then immediately those are big alarm bells then and again it's okay with every strategy to have
+[00:41:27] those big losers as long as you have a lot of different strategies trading at the same time
+[00:41:36] you've also mentioned previously you said that the system you use needs to be your own
+[00:41:42] brainchild could you go into that it's incredibly important because we can buy a system there's
+[00:41:50] system vendors out there but what eventually happens as well is that let's say you have a
+[00:41:58] complete set of rules of a system that has great back test that returns and everything and you
+[00:42:05] really like that but if you haven't developed it from the ground on if it's not your brainchild
+[00:42:13] you don't know the pros and the cons of that strategy and there will be a part in you
+[00:42:20] that immediately once you start to trade it and you see how it behaves you won't feel comfortable
+[00:42:29] with it because you see all kinds of movement that you would not expect so what would happen next
+[00:42:39] is people then start to tweak it and they change the parameter to a set of rules that
+[00:42:47] do better their personality it's incredibly important that that people understand that it
+[00:42:55] is the concept that is a lot more important that the specific parameter if the concept is clear to you
+[00:43:05] then you can create something around that concept but if you use a 100 day Keltner channel or 120
+[00:43:13] day Bollinger band or a 95 day Donchin channel to enter your position there's no magic to any of
+[00:43:22] that but the concept is so I think Richard Dennis said that as well the person who who
+[00:43:30] taught the turtles he said I could publish the rules of my strategy in the in the Wall Street Journal
+[00:43:37] and nobody would follow this and when I first read that said no that can't be true but indeed
+[00:43:43] that is absolutely true because if somebody hasn't developed it it won't suit their preference
+[00:43:52] as far as the style as far as the indicators maybe as far as the position sizing maybe for some people
+[00:44:00] it's not aggressive enough for other people it's it's it's too aggressive so you need to find
+[00:44:06] something that you build up from the ground that you are comfortable with because then
+[00:44:12] you will understand as well why there are times when it loses money and that part is
+[00:44:20] incredibly important when you're winning with your strategy everything is easy
+[00:44:26] we get a big ego then because everything goes incredibly well with trading out this is great
+[00:44:31] but when you're losing when you when you're in a drawdown those are the hardest periods for traders
+[00:44:37] but most of the time we actually spend in a drawdown meaning we're not making a new equity high
+[00:44:44] and at those times so when your strategy is not making money if you know the why
+[00:44:50] then you can deal with that drawdown if you don't know why you're in that drawdown which
+[00:44:56] would happen if you would use like a signal service and you're suddenly in a drawdown
+[00:45:02] and you don't know why you will suspend it immediately but if I get in a drawdown that
+[00:45:09] is larger than my stimulated drawdown I would see that as completely normal I would understand
+[00:45:17] why it is in a drawdown and I would be comfortable with it is it nice no it's not nice but
+[00:45:25] the whole key is that you want to be consistent and not giving up on your strategy because when
+[00:45:32] do people suspend their system at the worst possible time not when they're making equity high
+[00:45:38] they suspend their system when they are in a drawdown that's dollar wise they cannot
+[00:45:46] deal with anymore when a person designs the system and they say well according to this
+[00:45:52] system I expect a drawdown of potentially up to 20 but don't they have to also look at the type
+[00:45:59] of market that they're backtesting in and how markets change over time and so that in the
+[00:46:05] future perhaps we enter a new type of market where the drawdowns could be even greater than
+[00:46:11] what they had backtested and how does one how often have you found that to happen and
+[00:46:19] what does one do in that is there a certain cutoff point where you say well it's now down
+[00:46:25] five percent or ten percent more than my worst drawdown calculation so I got a cut and run
+[00:46:30] I got to have my own stop-loss on ejecting this this system that I developed
+[00:46:36] yeah first of all has to do with position sizing that you size your position in such a way that
+[00:46:41] you can deal with the drawdown secondly you need to expect that your live trading drawdown will be
+[00:46:51] at least double the simulated drawdown third the market will always change you need to expect that
+[00:47:01] they will always be changing and that's why I advocate to trade a lot of different systems
+[00:47:08] I have systems that by themselves if you look at them they're not that great
+[00:47:14] but they could be very great if there comes a certain market event where that system is designed to
+[00:47:23] do very well so I I expect the market to be different I expect market moves that I haven't
+[00:47:30] seen yet and I expect them that a part of my strategies would not do very well but other
+[00:47:37] strategies that could actually do better than what would be expected so it's it's it's the
+[00:47:45] awareness that the future will be different must be there a hundred percent because it will be
+[00:47:52] always and hence this is the reason for you developing 55 different systems right to to
+[00:47:59] just in case we enter in a different kind of market and so with 55 systems you feel
+[00:48:04] very well covered exactly I mean I have a system for example that is designed for a very
+[00:48:14] sharp sell-off in the market while it is still in a bull market so the market is actually still
+[00:48:20] going up and suddenly it sells off three four or five days in a row three or four percent
+[00:48:28] and that is a time where generally your trend following strategies all lose money your mean
+[00:48:35] reverse strategies will also lose money because it keeps going down your mean reverse and short
+[00:48:41] strategies are not in the market anymore because there's no pullback to the upside
+[00:48:47] and your trend following short strategies possibly are not yet triggered because there's no specific
+[00:48:54] downtrend yet and if you then have a strategy that most of the time when you enter it it loses
+[00:49:02] a tiny little bit of money but when you get that big sell-off that's the one strategy
+[00:49:09] that will make big money so if there comes like a 90 87 crash which which for many people
+[00:49:16] they can't include it in their sample size I mean it's a little bit hard to test
+[00:49:20] mean reversion strategies going back to the 80s because commissions were completely different
+[00:49:28] the pricing of stocks was different so what what what we trade now in that style we couldn't
+[00:49:34] have traded at that time the edge was just very different but if you would get like a 90 87 crash
+[00:49:39] or whatever what kind of event it is I want to make sure that I have some strategies in place
+[00:49:45] that are specifically designed to make money and I'm willing them to have that strategy in there
+[00:49:52] in my suite of systems although every year it loses a little bit of money so how much time can
+[00:49:59] the average investor expect to spend in creating a system or enough systems that give a sufficient
+[00:50:06] diversification it depends on a lot of different things on on on what your skill level
+[00:50:13] is I would say if you start with a simple base of one long-term transfollowing system
+[00:50:19] one mean reversing short system one mean reversing long system one transfollowing short system as a
+[00:50:25] head and maybe a transfollowing system on a basket of commodities and those could be futures it
+[00:50:32] can also be some commodity ETFs for example I think you can you can you can keep it then
+[00:50:39] very simple but the exact amount of time then I think it very much depends on the individual
+[00:50:46] some people are very experienced with this and they could do it maybe in in in one or two months
+[00:50:53] or so other people would need a lot more time other people would decide for example to get
+[00:51:01] help and get a mentor to actually develop those strategies and with software and everything
+[00:51:08] because it's a lot of different parts in there and there's a lot of traps as well with the whole
+[00:51:13] system development because it's so inviting to create wonderful backstats that return
+[00:51:22] so that's a trap that one needs to be very very careful for so in your view do you think
+[00:51:28] systematic traders deal with a different kind of trading psychology yes everybody has a
+[00:51:34] complete different psychology there's overlap as far as the fact that I think
+[00:51:41] position sizing is something that often people trade too large of what they really can handle
+[00:51:49] which is which is all good when the markets or when the system is going in your favor
+[00:51:54] but when it's not they kind of suspend it but there's all kinds of other
+[00:51:59] psychological issues that we deal with and that's why you kind of need to find what really
+[00:52:06] suits for you as well and that is different for everybody there's not one style suits all
+[00:52:15] I've worked with with people that decided I want to trade trends following only because I don't
+[00:52:20] like mean reversion totally fine nothing wrong with that other people that say no I like the
+[00:52:27] short-term duration of mean reversion systems also fine both have pros both have cons but that's
+[00:52:35] where you need to find like your style what you are comfortable with and take for example
+[00:52:41] a fund manager who needs to deal with clients who needs to deal with scalability let's say they
+[00:52:49] have a billion under management they can't even trade the same as a private trader with
+[00:52:55] five hundred thousand dollar in his account who can have access to a universal stocks that can
+[00:53:01] offer a significant edge over the institutional investor because they cannot access the low
+[00:53:08] liquidity stocks of course but for everybody it is completely different yet so to wrap
+[00:53:16] things up is there are you working on anything now that that you're looking forward to
+[00:53:22] developing what's up what's next for you I'm always developing new strategies my main
+[00:53:28] focus right now is developing more and more strategies for the unexpected developing
+[00:53:34] strategies to lower the corporate risk as well but mainly that's about it that I focus on and
+[00:53:42] besides that yeah working on my third book which is all about IRA accounts which
+[00:53:48] somewhere in the first quarter of next year will be coming out and meanwhile letting the
+[00:53:55] systems do its thing and enjoying the ride with that fantastic what's the name of your
+[00:54:01] upcoming book I don't know yet oh okay we're not there yet so the title is still a little bit
+[00:54:11] of a secret but it will be it will be known soon yeah great and how can our listeners get in touch
+[00:54:17] with you they can go to trading systems dot com and over there they can see the links of the books
+[00:54:25] over there that I've written as well and my business partner as well you can see the software that I
+[00:54:31] personally use and that is offered for my mentoring students as well and if that is something that
+[00:54:36] people like they could always fill out an application and we can talk and if there's
+[00:54:42] a fit that we could work together and that's basically it yeah fantastic well Lawrence thank you
+[00:54:48] for coming on chat with traders with my pleasure absolutely thank you very much for having me
+[00:54:56] you've reached the end of this episode of chat with traders but rest assured there are more
+[00:55:01] episodes loaded with real market insight and zero hype on the ways soon so to stay updated with
+[00:55:08] each great new release subscribe to the podcast and iTunes and we'd love it if you'd leave a rating
+[00:55:13] and review we'll catch you next time on chat with traders
+[00:55:38] so

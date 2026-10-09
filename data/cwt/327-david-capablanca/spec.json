@@ -1,0 +1,32 @@
+{
+  "trader": "David Capablanca",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "short-only",
+  "template": "none",
+  "method_name": "Short selling pump and dumps",
+  "style": "short selling",
+  "timeframe": "intraday / pre-market",
+  "universe": {
+    "description": "small-cap US stocks, biotechs, pump-and-dumps, low-float tickers"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "no long-side rules provided",
+      "assumption": "method is exclusively short selling"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "327",
+    "page_url": "https://chatwithtraders.com/episode/327-david-capablanca",
+    "youtube_url": "https://www.youtube.com/watch?v=YskGZx_b7tY"
+  }
+}

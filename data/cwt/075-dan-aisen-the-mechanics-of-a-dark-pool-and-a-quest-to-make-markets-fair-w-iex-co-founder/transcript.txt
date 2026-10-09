@@ -1,0 +1,729 @@
+# 075: Dan Aisen – The Mechanics of a Dark Pool, and a Quest to Make Markets “Fair” w/ IEX Co-Founder
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT3006992067.mp3
+
+[00:00:00] What would your trading look like if capital wasn't the constraint?
+[00:00:03] That's the reality for most traders. It's not skill-holding them back, it's size.
+[00:00:07] Trade the pool changes that. Step into the U.S. equity markets with up to $200,000 in buying
+[00:00:13] power without committing your own capital. Full access to stocks and ETFs,
+[00:00:18] longer short, executed with the precision and freedom serious traders expect.
+[00:00:22] Your performance is measured by one standard. Discipline risk management and consistent
+[00:00:26] execution. Meet that standard and you operate at scale. No subscriptions, no ongoing obligations,
+[00:00:32] just a clear path forward. For those ready to trade beyond limitations, this is the next level.
+[00:00:56] Hey traders, what's up? What's going on? Thanks so much for listening in to the
+[00:01:08] Chat with Traders podcast. For this episode, I had the great pleasure of speaking with Dan Azen,
+[00:01:14] one of the co-founders of IEX and one of Forbes 30 under 30 in finance in 2015.
+[00:01:22] Dan got his start at RBC Bank, where he developed their flagship execution algorithm,
+[00:01:28] SOAR. This was also where he met and worked under Brad Katzyama, one of the other co-founders and
+[00:01:34] the CEO of IEX, who was heavily profiled in Michael Lewis' book, Flash Boys. As many of you may
+[00:01:42] already know, IEX is an alternative trading system, an ATS, or more commonly referred to
+[00:01:48] as a dark pool. However, IEX is currently in the midst of filing for exchange status.
+[00:01:55] During our talk, I asked Dan more about their projects he worked on at RBC, how IEX went from
+[00:02:02] nothing more than an idea to an operating trading venue and why they're on a quest to make markets
+[00:02:08] fair. We also discussed the speed bumps which have been implemented at IEX, the mechanics of
+[00:02:14] dark pools and general chat about the broader market structure. Just before we go to the interview,
+[00:02:21] I have a very special announcement that I'm excited to share with you. I recorded a second
+[00:02:26] interview with Peter Brandt, a legendary trader of 45 years who originally appeared on Episode 36.
+[00:02:34] This interview will not be released on the podcast as per normal. This is a special
+[00:02:40] interview for subscribers only. Yes, it's still free of course, so if you'd like to hear this,
+[00:02:46] and I strongly encourage that you do, go to chatwithtraders.com forward slash Peter,
+[00:02:52] where you can download it for free. It's a full length interview which runs for over 80 minutes
+[00:02:58] and it's loaded with a lot of wisdom, as you could imagine and expect from someone who has been
+[00:03:03] a market speculator for such a great amount of time. Again, this will not be released on
+[00:03:08] the podcast like usual, so go to chatwithtraders.com forward slash Peter to download it for free.
+[00:03:15] Okay team, I really enjoyed this conversation, so I hope you will also. Dan does a really great
+[00:03:20] job of explaining some fairly complex topics in a way that's easy to understand. So I'm your host
+[00:03:26] Darren Feifeld and here is my interview with Dan Azen. Yeah, we'll just talk short.
+[00:03:34] Cool. Sounds great. All right. So Dan, welcome to the podcast man. Thank you very much for coming on.
+[00:03:39] Thank you very much for having me. No trouble at all. I'm thrilled to be speaking with you.
+[00:03:44] I think I'm going to learn a lot from you and I'm really interested about what you guys are
+[00:03:49] doing there at IEX. So I mean, first things first, let's start from the very beginning.
+[00:03:55] What was your intro to financial markets? How did you get involved in this? Where did
+[00:04:00] it all kick off for you? Got it. Okay, so I guess it goes back to college. I started off college
+[00:04:08] pre-med. Both my friends are doctors, so no background at all in finance and my family.
+[00:04:13] I didn't really know what a bank was or what the industry did. And then in college,
+[00:04:20] probably my second year or my third year, I had a couple of friends who were
+[00:04:23] leaning towards finance and they got me involved. They kind of taught me about
+[00:04:26] the different roles. And so my first actual experience in finance, I did an internship
+[00:04:31] in school in wealth management, but really my first kind of getting my feet wet was
+[00:04:37] my summer after junior year of college, just kind of like the main year that you do an
+[00:04:41] internship in finance in the US. I got a job at RBC working in equity trading in New York
+[00:04:50] under Brad Katzema. So basically my first job, not knowing anything about the industry at all,
+[00:04:55] happened to be working for this for this guy who I wound up kind of following my whole career
+[00:04:59] so far. So just kind of very, very fortunate, lucky way that worked out. So I worked at RBC
+[00:05:06] in trading, in equities, in New York. And my background in school, after I moved out
+[00:05:13] off of pre-med, I went into, I started studying math and computer science. And they wanted someone
+[00:05:18] with kind of sort of a programming background to help out with some kind of side projects
+[00:05:24] that Brad wanted to do some studies. And so I worked closely with also with Rob Park,
+[00:05:29] who was kind of his technical, his main technical person on that team, who's now the CTO of IAX.
+[00:05:36] And so I would just kind of help Rob out with whatever Brad wanted. So he would have us do
+[00:05:43] studies around trading activity around the open, or he'd have an idea of something that he'd
+[00:05:48] experience as a trader. And he would just want us to study it or build a model around it,
+[00:05:52] just try to kind of help inform what he was doing. And so I spent the whole summer
+[00:05:56] working very closely with both of them. And that was my first intro into the stock market.
+[00:06:02] Right, right. Very cool. So I'm curious to know a little bit more about some of those studies.
+[00:06:06] Like once you sort of performed those studies, what did you do with those? What was Brad,
+[00:06:13] what did Brad have in mind to do with those studies? Were you building algorithms around
+[00:06:16] those? Like, can you share a little bit more about that? Sure. I mean, so I mean, at this point,
+[00:06:22] I didn't know anything about how trading worked. And Rob had a little bit of background in trading
+[00:06:29] through his career to that point. But it was, I mean, it wasn't like a formal part of
+[00:06:35] the mandate of that team, of kind of Brad's team. Brad was in charge of all the manual
+[00:06:40] traders at that time. So he had a team of probably 15 or 20 traders, and they were broken
+[00:06:47] out by sector. And he was kind of the boss. And so, yeah, I mean, this was just one summer.
+[00:06:54] So what were the projects we were working on? Yeah, again, I think it was just kind of like
+[00:06:59] random side projects. He'd have an idea of, you know, maybe he recognized that,
+[00:07:05] that if there was a big imbalance leading into the open, that the stock tended to dislocate
+[00:07:09] on the open and then come back right afterwards. And so he'd try to like have us look at data and see
+[00:07:13] if, you know, we could develop a model for this. But again, it wasn't like a big part of that team.
+[00:07:19] It wasn't like this was like, we were going to put a lot of money behind this and start trading.
+[00:07:22] And it was more just various like analyses that we were doing just to kind of learn
+[00:07:27] more about how the markets were working and test some of his theories, but it never really
+[00:07:31] turned into anything super material. But it was a really great learning experience to kind of
+[00:07:36] see the kind of data that we had available to us.
+[00:07:39] Okay, sure. No, I imagine it definitely would have been. So now that's very cool that you were
+[00:07:43] able to land such a great job like that straight out of university. That's very cool.
+[00:07:47] Yeah. So, I mean, that was actually while I was still in college was then I came back
+[00:07:52] to work for Brad and for Rob full time after I finished college after my last year.
+[00:07:57] So during my last year of college of university, Brad got this promotion to
+[00:08:01] leave the manual trading side and move on to the electronic trading side.
+[00:08:05] And so he had the mandate to basically kind of rebuild that whole platform from scratch.
+[00:08:10] RBC at the time had an existing electronic trading platform.
+[00:08:13] This is all kind of detailed in flashboys a little bit.
+[00:08:15] But Brad took over that team and basically kind of rebuild that platform.
+[00:08:19] And so I was part of that starting team that took what we had and basically just
+[00:08:23] reengineered it all. And that's really what we got into because now,
+[00:08:25] you know, instead of it just being little side projects, it was the main product that
+[00:08:28] that team was responsible for was trading algorithms for buy side trading firms to do
+[00:08:35] their execution. Okay. So let's talk about that a little bit more.
+[00:08:38] I think what you're referring to there is what's what was called Thor.
+[00:08:43] Am I right? Yeah. Okay.
+[00:08:44] Yes. That was that was kind of our flagship product.
+[00:08:47] So when we started off, we had an existing suite of algorithms.
+[00:08:51] They weren't very good. It was our job to rebuild them all and come up with kind of
+[00:08:56] a new platform. And the very first thing that Brad had his focus
+[00:09:01] was he pulled from his previous experience, this this notion that or this experience that he'd had
+[00:09:06] where every time he, you know, saw 50,000 chairs of, you know, Intel stock for sale,
+[00:09:14] and he clicked his button to buy all of those 50,000 chairs, he would never get actually
+[00:09:18] never actually buy 50,000 chairs. He didn't always wind up only getting
+[00:09:21] 25,000 chairs and the rest of those those shares that looked available
+[00:09:26] disappeared. And he kind of I guess this experience had it hadn't always been that way,
+[00:09:31] but maybe in the last two or three years, it had gotten worse and worse.
+[00:09:35] And so he wanted to figure out what was going on there and build a tool
+[00:09:40] so that that wouldn't happen anymore so that you could actually buy what you saw available.
+[00:09:44] And so we didn't really know at the beginning when we started that process,
+[00:09:47] we were just kind of researching trying to figure out what was happening.
+[00:09:50] Are those shares actually available? Who are those sellers saying that they're willing to sell?
+[00:09:56] Based on our understanding of the market, it should have been possible to actually buy from
+[00:10:00] all of the sellers in the market at a given time. But the tools that we had available
+[00:10:06] certainly weren't doing that. And so we started just running these experiments
+[00:10:10] trying to understand what was happening that led to that outcome
+[00:10:14] and see if we could come up with a way to fix it. And so that was like the very first
+[00:10:19] project when I joined was us running these experiments, testing out our theories.
+[00:10:24] Our very first theories right when we started this was that there were high frequency jators,
+[00:10:29] fast traders that were so fast that if NASDAQ had 10,000 shares for sale and that 10,000 shares
+[00:10:36] represented 100 individual orders of 100 shares each, that when we sent an order to NASDAQ to
+[00:10:42] buy 10,000 shares, that there were traders so fast that they could see our first trades as
+[00:10:47] they were happening on the NASDAQ and then react to those trades and cancel their orders that were
+[00:10:53] kind of in the back of the queue all at that single price level. And so we ran experiments where we
+[00:10:57] would try this and we would send all orders to just one exchange at a time and then we'd send
+[00:11:02] orders to two exchanges. And as we were running these experiments, we realized that definitely
+[00:11:06] wasn't the case. If you sent one order to one exchange, you always interacted with all of the
+[00:11:10] shares that exchange had available. So no one was fast enough to get out of the way
+[00:11:14] once our order got there. And that's when we realized that it wasn't traders so fast they could
+[00:11:20] react to our trades on that single market, it was traders reacting to our trades on other markets
+[00:11:25] and then changing their order composition on the markets we hadn't arrived to yet.
+[00:11:29] And that's how kind of thought came about. Right, right. Okay, so building this flagship
+[00:11:36] Thor algorithm, did this get around that problem? Like did it actually solve the issue that
+[00:11:41] you're highlighting here? Yeah, so basically once we had kind of eliminated a few of our early
+[00:11:47] theories and realized that what was happening is it was very fast traders reacting to orders that
+[00:11:52] we had decided to, you know, when we sent orders to multiple markets at the same time,
+[00:11:56] our orders that arrived at the markets that were closest to us, those that trade,
+[00:12:01] the trades that happened from those orders, created a signal that allowed
+[00:12:04] those fast traders on the other side to cancel the orders on other markets.
+[00:12:08] Once we realized that was happening, it was pretty quick to come up with the idea that if we
+[00:12:12] kind of time our order such that they all arrive at all the different markets at roughly the same
+[00:12:16] time, there won't be enough time for anyone to get out of the way to react to earlier trades
+[00:12:22] and get out of the way for later trades. If they're all happening really close together,
+[00:12:25] there will be no chance to react like that. So that was the idea of Thor. Once we built it,
+[00:12:29] so it's kind of, it was a cool experience because we'd run experiment after experiment
+[00:12:33] every single time, you know, you run the experiment and kind of liquidity's disappearing
+[00:12:37] or these quotes are disappearing and we're not able to trade with them. And then it was the very
+[00:12:41] first test, we kind of, one of the programmers coded up this algorithm that would just time it
+[00:12:46] and it was very crude algorithm, wasn't super precise at all. But it was just like the very
+[00:12:51] first time we clicked that and to send out orders to all the markets with doing this timing
+[00:12:55] and it just bought all the shares that were available and we got every single share.
+[00:12:59] It was just kind of crazy because, you know, we've been testing this for a couple months at
+[00:13:02] this point. We never had that experience and we'd run a lot of experiments and none of them had
+[00:13:06] gotten it and you were close to have it just go from not working at all to 100% working.
+[00:13:11] In just one step, it was pretty fun and pretty exciting. But once we had kind of built this
+[00:13:17] test algorithm, it was only, you know, a couple more months to kind of productionize it,
+[00:13:22] get it available to our customers. And that was like the main thing we sold for the next
+[00:13:27] probably year was we built up algorithms around this one concept and it was quite successful.
+[00:13:33] Okay, okay. Interesting. Now, I probably should have asked this a lot earlier, but
+[00:13:38] what actually was RBC and who were these algorithms trading for? Were these algorithms
+[00:13:42] that were executing client orders or was it RBC's money you were trading at a little context around
+[00:13:49] that? Yeah, it's great. That's a great question. So RBC, we were in the role of the broker.
+[00:13:54] So these were, you know, my initial job as an intern was on the manual trading desk,
+[00:14:02] but again trading on behalf of clients and the clients were mutual fund companies, pension funds,
+[00:14:07] hedge funds, large institutional investors. So we were an institutional broker. And then when we moved
+[00:14:12] over to electronic trading, it was still the same client base. So Brad already had all of his
+[00:14:17] existing relationships with hedge funds and mutual funds. It was the same clients he was
+[00:14:21] serving. It was just now building computer programs to do the trading instead of having
+[00:14:26] humans do the trading. Okay, okay. So tell us about what led up to the decision of leaving
+[00:14:34] RBC to go and start IEX? Like how did you, where did that idea come from?
+[00:14:40] Sure. So I was at RBC for probably about two, two and a half years before we came up with
+[00:14:47] the idea for IEX. And, you know, from the very first month, we would talk about startup ideas
+[00:14:54] all the time. You know, Rob and I would go into Brad's office and keep Brad would have some crazy
+[00:14:59] idea for, let's say, an exchange that would list golfers. And you could buy shares in a
+[00:15:09] golfer. And if that golfer was successful, you'd get a portion of their winnings or,
+[00:15:13] you know, an idea for an iPhone app that concert goers would all hold, you know,
+[00:15:20] download this app and hold up their app at the concert and it would be a lecture in the crowd
+[00:15:24] and just kind of crazy off the wall ideas for startups totally unrelated to what we were doing.
+[00:15:29] And we would talk about these all the time. And they would be with kind of varying levels of
+[00:15:33] seriousness. But it was just kind of something we did all the time. And then IEX was just kind
+[00:15:39] of it started off the same as any of the other ones where there's just here's another idea. We've got
+[00:15:45] kind of a great amount of knowledge around how the stock market works. And at RBC, we, you know,
+[00:15:52] we built a good brand and we had good products and, you know, great relationships with our
+[00:15:57] customers and people really trusted us. But we were still somewhat limited in kind of the scope
+[00:16:03] of the solutions we were able to offer because, you know, RBC is just one out of many brokers
+[00:16:08] and most buy side firms trade with a lot of different brokers and they weren't going to just
+[00:16:13] move all of their trading activity to RBC. That wasn't a particularly realistic proposition.
+[00:16:17] So this was just an idea. Maybe we could use this expertise and this knowledge about how the
+[00:16:21] market works to come up with a solution that all brokers could use together to kind of give
+[00:16:26] our end client the same kind of experience that they were getting with us the same kind of
+[00:16:29] trading experience, but on a bigger scale. And so it started off just as another one of these
+[00:16:33] ideas and just got a little more serious and a little more serious until it's got to the
+[00:16:36] point where, you know, we were very serious about it and we decided to jump ship.
+[00:16:41] Okay. So one thing kind of led to another. Okay. So where did you even begin to start? Because
+[00:16:51] from the way I see it, like having the idea that you're going to build a new trading venue
+[00:16:56] from scratch seems like a huge task. What's necessary to make that happen? Like what were
+[00:17:02] the first steps? Where'd you even begin? So when we started off, we were in a very
+[00:17:06] fortunate position because number one, we had great relationships with kind of our end customer,
+[00:17:13] which is the buy side. So we already kind of knew the market extremely well from a customer
+[00:17:18] perspective. And then we also knew kind of how the stock market works very, very well. So we
+[00:17:22] had a great amount of knowledge around that. I'd say the very earliest iterations of what
+[00:17:26] this was going to look like, the main technology that we were kind of known for was
+[00:17:32] routing technology. Thor was an order router. And so we were thinking we'd build this sort of
+[00:17:36] generic order router that would be broker agnostic and the buy side could access this order
+[00:17:41] router through all of their brokers. And then, you know, doing actual matching of orders kind
+[00:17:46] of more of an exchange function that we kind of have on the side is like a little side business
+[00:17:51] that as the main business grew and grew, we'd have more opportunities to have where we'd have
+[00:17:55] a buy and sell at the same time. We can match them with each other and, you know, generate
+[00:17:58] additional revenue that way. So that was kind of how the idea evolved in terms of the logistics and
+[00:18:03] starting a stock exchange or an ATS and hopefully soon to be a stock exchange. It's very, very
+[00:18:11] capital intensive, very, very intensive from a regulatory perspective. So there's a lot that
+[00:18:16] went into it. I guess one other thing we were lucky in is that we had a very big team to start
+[00:18:21] with. So we had nine people in the beginning, most of whom came from RBC, including, you know,
+[00:18:28] four very senior people from RBC who had been in the industry for a very long time and really
+[00:18:32] understood how the markets worked. And it was really our COO, John Schwell. He just, you know,
+[00:18:38] so diligent and so knowledgeable about the regulatory landscape just had us in a good
+[00:18:43] position where we were well aware of all the regulatory hurdles we would have along the
+[00:18:47] way to getting to this point. And it was just, you know, still multiple years of work with
+[00:18:51] a lot of people working on it to, you know, kind of reach all those milestones along the way.
+[00:18:55] Okay. Okay. Yeah. Now, imagine that definitely would have been a big help. I can only imagine
+[00:19:02] how much of the regulation in that sort of thing you've had to deal with. So
+[00:19:07] I mean, let's just be very clear here. So let's talk about what actually is IEX and
+[00:19:14] how does it differ from other exchanges?
+[00:19:17] Sure. So right now, we're not yet in exchange. We're in the exchange application process right
+[00:19:23] now. We're something known as an alternative trading system or ATS. A lot of people would
+[00:19:29] also probably call us a dark pool. The main difference between an ATS and an exchange from
+[00:19:35] a trading perspective or the main difference between a dark pool and exchange is that
+[00:19:40] the exchanges all disseminate quotations, whereas dark pools typically do not disseminate quotations.
+[00:19:46] So a quotation is if you're a buyer and you're sitting in the market,
+[00:19:51] you're bidding for stock or you're a seller sitting in the market offering stock. On an
+[00:19:55] exchange, most of the buyers and sellers will display their orders. So they'll say,
+[00:20:00] out loud, I want to buy a thousand shares of Microsoft at this price,
+[00:20:04] and then the exchange will disseminate that quote out to the world,
+[00:20:07] advertising that this buyer is there with a firm order ready to buy. In a dark pool,
+[00:20:12] typically most, well in a dark pool, kind of by definition, all orders are hidden.
+[00:20:16] So you might have that same buyer. It might even be the same firm willing to buy the
+[00:20:20] same number of shares at the same price in the dark pool, but the dark pool won't advertise
+[00:20:25] the presence of that buyer. And so the trade will only happen in the dark pool if a buyer
+[00:20:28] and seller happen to intersect, not knowing each other was there. So we're kind of in this
+[00:20:34] fuzzy middle ground right now where we're still an ATS, but we're technically not a dark pool because
+[00:20:39] we do disseminate quotes. Our quotes are not protected quotes. There's a lot of regulation
+[00:20:45] in the US around if there's another market out there with a quotation, you can't do a trade
+[00:20:51] at a price that's through that quotation. So for example, if there's a buyer at $10
+[00:20:55] on NASDAQ, New York Stock Exchange can't do a trade at $9.99 unless they also ship an order
+[00:21:00] to NASDAQ at $10. So they can't let a seller come in and trade at $9.99 on NASDAQ unless that
+[00:21:04] they're also sending shares to interact with that buyer on the New York Stock Exchange.
+[00:21:09] In our situation, even if we had a buyer at $10, they could still do it. They could still
+[00:21:13] do a trade at $9.99 because our quotes aren't protected. So we don't contribute
+[00:21:19] to the national market system. Okay, got it. So why do you decide to display
+[00:21:26] your quotes at IEX considering that you're technically a dark pool at this stage whereas
+[00:21:33] other dark pools don't display their quotes? Why do you decide to do that at IEX?
+[00:21:38] So when we started from the very, very early days, we had kind of this end goal of becoming an
+[00:21:46] exchange. And so our path to becoming an exchange, the regulatory hurdle to becoming a dark pool
+[00:21:51] or an alternative trading system is a lot lower than the hurdle to becoming an exchange.
+[00:21:56] So we were going to start as an ETS and then eventually we become an exchange.
+[00:22:01] And the reason for us publishing quotes now, so I guess just to be clear, we don't publish,
+[00:22:08] not every single order that we receive is displayable. So we only publish quotes for
+[00:22:13] orders that are sent to us with a specific instruction that this order should be advertised.
+[00:22:18] 90% of our trading activity is still hidden orders just like any other dark pool,
+[00:22:22] but 10% of our volume is displayed orders. So that's a customer saying,
+[00:22:27] I want you to advertise my order knowing that it's not a protected quotation.
+[00:22:32] So the reason for us kind of so we started off as fully dark and then we started offering
+[00:22:36] this ability for customers to send us displayed orders just like an exchange because it's just
+[00:22:41] part of our transition path. We wanted to be a smooth transition from dark pool to exchange
+[00:22:46] and kind of that we're in this middle ground now where we're kind of halfway there where
+[00:22:49] we're publishing quotes just like an exchange, but we don't have exchange status. We're not
+[00:22:53] protected like an exchange, but it shouldn't make the transition to when we do become an
+[00:22:57] exchange a lot smoother. Okay, so why would a participant decide to display their order
+[00:23:04] if they've got the option to hide it? So I mean that idea there is it's typically
+[00:23:11] a market maker who's displaying quotes in general, but the reason to display an order
+[00:23:16] versus keep it hidden is if you want to buy stock at a price and you display that order,
+[00:23:22] a seller will know you're there so they can know where to find you. You're not just relying on chance
+[00:23:27] for them to interact with you. It's kind of a double-edged sword in that if you want to buy
+[00:23:32] a lot of stock and you display that people are going to know a big buyer just entered the
+[00:23:36] market. And so usually institutional investors aren't going to display their entire intention
+[00:23:42] all out loud, all upfront. But for a market maker who's kind of always in the market,
+[00:23:49] you want other participants in the market to know you're there so that they find you and
+[00:23:53] they interact with you. So it really just depends on what kind of strategy you're running.
+[00:23:56] Okay, yeah, great answer. That makes total sense. So what's your involvement these days as co-founder
+[00:24:04] slash quantitative developer? What are you doing on a day-to-day basis at IX?
+[00:24:10] It's changed a lot since the early days. I would say in the beginning my role was primarily as a
+[00:24:17] developer. I built some of the applications in our system like this monitor router for example.
+[00:24:25] Then I would say probably maybe eight months ago or so it transitioned into more of a data
+[00:24:30] science role. So I do a lot of quantitative analysis now, analyzing customer behavior,
+[00:24:38] analyzing kind of how trading is happening on our market relative to the rest of the stock market.
+[00:24:44] So I do a lot more of that these days, although in the last I would say three months or so as
+[00:24:50] this process of going through getting exchange approval from the SEC has ramped up. I've had
+[00:24:55] more of a role in that as well. So basically kind of understanding what we've been going through
+[00:25:01] this public comment period where companies around the industry and individuals outside the industry
+[00:25:07] have been commenting on our application to become an exchange. And so we've had to kind of manage that
+[00:25:12] process submitting our own comments and responding to those comments. And so I've been involved in
+[00:25:17] that as well. And then finally through this process we've decided to change the trading
+[00:25:25] behavior of our router as kind of a concession we're making. And so since that was an application
+[00:25:30] that I built originally I've had to make a lot of changes to that in anticipation of once we're
+[00:25:35] in exchange that that behavior is going to change. Okay. Now I just want to ask you more I just want
+[00:25:42] to ask you a little bit about some of the terminology. So you've mentioned the smart
+[00:25:46] router or order router a few times. Can you just explain to myself and any of the listeners who
+[00:25:53] don't quite understand what that's actually referring to? What is a smart route order?
+[00:26:00] Sure. So I would say from a trading perspective there's two main applications in our system.
+[00:26:06] And one is the matching engine and the other is the smart order router. The matching engine is the
+[00:26:13] system that takes by orders and sell orders from all of our customers and throws them together.
+[00:26:19] And when there's a by order or sell order that can interact with each other it matches them
+[00:26:23] and it puts up a trade and then it reports that trade. That's the matching engine.
+[00:26:27] The smart order router is responsible for connecting to the rest of the street. So
+[00:26:35] like I was mentioning earlier there's this concept of protected quotes. Every exchange needs to know
+[00:26:41] what's happening on all the other exchanges and they need to know if there are quotes available
+[00:26:47] at better prices at other exchanges so that it knows at what prices it can trade at. And then
+[00:26:52] in addition pretty much every exchange offers a smarter router. A smarter router is a technology
+[00:26:57] that actually will send orders to the other exchanges. So it's the logic that says our
+[00:27:03] customer wants to buy 10,000 shares and it's giving the customers instructing us to
+[00:27:08] route this order out. So we'll match as many of those 10,000 shares as we can on IEX at a
+[00:27:14] valid price. And in addition whatever's left we'll try to buy those shares from
+[00:27:20] the other markets. And so we need this smarter router consumes quotes from all the other markets,
+[00:27:24] knows what's available, takes the balance of that order and breaks it up and sends
+[00:27:29] orders externally to those other markets on behalf of our client.
+[00:27:33] Right. Okay. Cool. Cool. Got it. Okay. So one of the things IEX try to position themselves
+[00:27:40] around or from what I gather is bringing fairness to the market. So I'd like to ask you in what
+[00:27:46] way are markets currently unfair? It's a good question. I think kind of our big concern is just
+[00:27:56] the evolution of the markets over the last five, 10 years is the main thing that we focus on. And
+[00:28:02] if you look at the exchanges 10 years ago, their business was matching buyers and sellers,
+[00:28:09] matching trades. And every time an exchange matches a trade, they get a tiny commission
+[00:28:14] and that's how they make money. And over the last 10 years, it's really shifted where that's no longer
+[00:28:19] their primary source of profits. Nowadays, the exchanges make most of their money from selling
+[00:28:26] kind of tangential technology services. So things like co-location in their data centers
+[00:28:34] or proprietary market data feeds, services like that generate more revenue and more profits
+[00:28:40] for the exchanges than the actual trading itself. And so it's just this strange ecosystem that's
+[00:28:45] evolved where exchanges now have this incentive where if they make those technology services more
+[00:28:50] valuable and they can charge a higher fee for those technology services and they make more money
+[00:28:55] that way. And so their incentive is to make those technology services as valuable as possible
+[00:28:59] so that they can charge the most for them. And how do you make your co-location space more
+[00:29:04] valuable or your proprietary market data feed more valuable? Whoever's buying that has to
+[00:29:10] be able to extract value from it. So they're in a situation where there's really a pretty big conflict
+[00:29:14] of interest where the more money that someone can make using all these technological services,
+[00:29:19] the more profitable the exchange is. And we've just kind of seen this evolution and it definitely
+[00:29:25] kind of rubs us the wrong way. And so I guess in terms of what we're doing at IEX to kind of
+[00:29:33] counter that, part of it is just like philosophy is just we're very transparent about what we're
+[00:29:37] doing, very transparent about how we're making money. It's just from trading. We just tried out
+[00:29:41] Foster kind of fair trading on fair terms. One of the big things that we focused on is this idea of
+[00:29:48] when the market's in transition, when the price of a stock is changing. That's a very,
+[00:29:52] you know, it's kind of a window of time where a very fast trader might recognize that the price
+[00:29:57] is changing and profit off of that knowledge. So for example, if the price of a stock is moving
+[00:30:02] up, while it's in the process of transitioning up, that fast trader knowing that it's moving up
+[00:30:07] might send a buy order at the old price. And if there's an exchange or a dark pool that doesn't
+[00:30:12] know about the change in the price, they might still have sellers that they're willing to
+[00:30:16] match at the old price at the lower price. And that's a profitable opportunity for the
+[00:30:20] fast trader. And so one big thing at IEX is making sure we always have as up to date
+[00:30:26] a view of the market as possible. And even more than that, not only have, you know, as up to date
+[00:30:32] a view of the market as possible, but also make sure that we have a more up to date view of the
+[00:30:36] market than our very fastest customer. And so that's kind of the big thing that we've done here
+[00:30:41] from a trading perspective is that we delay all of our customer orders before they come into
+[00:30:45] our system so that by the time it actually gets into our system and we're willing to match it,
+[00:30:50] we have a more up to date view of the market of what the fair price in the market is
+[00:30:53] than that customer did when they generated that order. So a very fast trader,
+[00:30:57] if they see, hey, the market's moving up, I'm going to send an order to buy
+[00:31:00] at the old low price. By the time that order actually gets to our matching engine,
+[00:31:04] we know that the market's moved up. We won't trade them at the stale price anymore.
+[00:31:09] Okay. So even if there's a very fast trader, let's say the price is $9.99,
+[00:31:16] how do they know that the next tick is going to be $10? How do they know that?
+[00:31:24] So I guess, yeah, a very simple case would be if the market's already moved. So let's say the,
+[00:31:32] let's just use midpoint trading as an example because that's kind of the main trading activity
+[00:31:36] in dark pools for us. Two thirds of our trading happens at the midpoint. So the midpoint is the
+[00:31:41] kind of halfway between the best bid and the best offer, the highest price someone's willing to
+[00:31:45] buy it and the lowest price someone's willing to sell at. So let's say the midpoint was $9.99,
+[00:31:49] like you said. So there are buyers in the market at $9.98 and there are sellers at $10 and that price
+[00:31:56] is changing. So let's say that price is moving from a $9.99 midpoint to let's say a $10 midpoint.
+[00:32:02] So let's say the spread is moving from $9.98 by $10 to $9.99 by $10.01. So that change is
+[00:32:09] happening. Really, the main scenario we're worried about is that change has already happened.
+[00:32:14] So that offer of $10 was on Nasdaq and a buyer went to Nasdaq and bought all of the stock at Nasdaq
+[00:32:21] and then bid for stock at $9.99. So they bought the stock at $10 and then bid for,
+[00:32:26] or someone else bid at $9.99. So the price has already changed. So the price used to be $9.99,
+[00:32:31] the midpoint used to be $9.99 but it's now $10. After the price has changed,
+[00:32:37] Nasdaq's quote just changed. Nasdaq is disseminating that quote to the world. They're
+[00:32:41] saying, hey, someone just bought our offer at $10. Our best offer is now $10.01.
+[00:32:46] It takes time for all the different players in the system, both the other dark pools,
+[00:32:51] the other exchanges, and the other traders. It takes time for everyone to actually get that message.
+[00:32:57] That message has to leave Nasdaq's data center and then get processed by your servers.
+[00:33:02] If your dark pool, wherever your dark pool servers are located, you need to process
+[00:33:06] that information that Nasdaq's quote has changed. So if a very fast trader
+[00:33:10] is able to see, hey, Nasdaq, they have a new quote. Using that new quote, that knowledge of
+[00:33:15] the new quote, I know there's a new buyer in the market at this price. That trader can send
+[00:33:21] an order to a dark pool that might still have orders trading at the old midpoint.
+[00:33:25] And it's basically that discrepancy they're taking advantage of. It's not that they know that
+[00:33:29] the market's about to move. It's that they see that the market's already moved and they use
+[00:33:32] that knowledge knowing that some dark pools are a little bit slower at recognizing that,
+[00:33:38] using that discrepancy of knowledge to execute a trade on the slower dark pool.
+[00:33:42] Understood. Okay. Okay.
+[00:33:45] Ever watch a stock rip and think, I could have nailed that if I had real capital.
+[00:33:50] The truth is, many capable traders never reach their potential, not due to lack of skill,
+[00:33:55] but lack of scale. Trade the pool was built to solve exactly that. A firm designed for
+[00:34:00] serious individuals who want access to the US equity markets with meaningful buying power,
+[00:34:05] up to $200,000 without committing their own capital. Get access to virtually every stock in ETF.
+[00:34:11] Go longer short freely with the flexibility professional traders expect. You're evaluated
+[00:34:16] on one thing, your ability to manage risk and execute with consistency. Meet the standard
+[00:34:22] and you trade at scale. No subscriptions, no ongoing commitments. Whether you're still
+[00:34:27] refining your strategy, a trader with experience who hasn't yet broken through,
+[00:34:31] or a seasoned professional simply looking for more capital, trade the pool is built to meet you
+[00:34:36] where you are and take you that next step further. The markets have evolved, access has evolved,
+[00:34:42] now so has the way traders operate within them. Trade the pool.
+[00:34:48] So the delay that you place on all the orders that come in to IX,
+[00:34:54] what's the length of that delay or the speed bump as you call it?
+[00:34:58] So it's roughly 38 miles of coiled cable and that equates to about 350 microseconds of delay.
+[00:35:09] And the reason we picked that amount of time is we have a sense of where we know where our data
+[00:35:15] center is located. We know where our servers are located. We know where all the other exchanges
+[00:35:18] are located and we use, we know our network connections to the other exchanges. And so
+[00:35:24] the idea that 350 microseconds of delay, we know that when an event happens in the market,
+[00:35:29] wherever it happens where it happens in the New York Stock Exchange or NASDAQ or BATS,
+[00:35:33] whatever exchange it happens on, when their quotes update, it takes us about 320 microseconds at
+[00:35:39] the longest to recognize that those quotes have changed. For the most part, there's also a
+[00:35:44] stock exchange in Chicago that trades some stocks to the Chicago. So that, you know,
+[00:35:49] it's a very tiny part of the market. So excluding them for the rest of the market,
+[00:35:53] it takes us about 320 microseconds to recognize when a quote changes. And so we wanted to give
+[00:36:00] ourselves a buffer a little bit larger than that. So if an event happens in the market,
+[00:36:04] even if someone could instantaneously recognize that event and send us an order,
+[00:36:08] which is impossible, but even if they could do that, we would still have enough time such that
+[00:36:13] by the time their order got into our system, we would already, you know, also recognize that
+[00:36:17] change. Okay. So the delay is actually occurs because of the cable that you have coiled up.
+[00:36:26] It's not actually delayed by a computer program or anything like that. It's actually the coil
+[00:36:31] is it? That's correct. Yes. Okay. Interesting. And just so we can get a head around this and
+[00:36:37] put it into perspective, how long is 350 microseconds? I mean, you often hear comparisons
+[00:36:44] to these like very small time frames compared to kind of the blink of an eye. Is there anything
+[00:36:50] you can compare 350 microseconds to? I think I've heard 1,000th of a blink of an eye.
+[00:36:57] I think a blink of an eye is about 350 milliseconds. So it's a very, very small amount of time.
+[00:37:04] It's hard to get your head around, isn't it? So it's just crazy at how fast these things happen.
+[00:37:10] Yeah. So I mean, part of the idea of putting the speed bump in place
+[00:37:22] is part of the motive for doing that to keep high speed or high frequency traders out of
+[00:37:29] the IEX dark pool? So I guess to that point, I don't like bucketing
+[00:37:37] kind of all automated trading strategies under a single term high frequency trading.
+[00:37:42] There are a lot of different types of trading strategies that use computers and that are very
+[00:37:48] focused on speed. For example, if you're doing a cross board or arbitrage strategy, so the US,
+[00:37:55] you know, for example, if you're trying to arbitrage the price of a Canadian company
+[00:38:00] as it's trading in the US and it's trading in the Canadian markets and you're doing that
+[00:38:04] FX conversion and you're trading in both markets and you're trying to kind of profit any time those
+[00:38:09] markets fall out of line. That would be a strategy that's very dependent on speed,
+[00:38:13] but it's not necessarily trying to take advantage of, say, a structural flaw in how the stock market
+[00:38:19] works where there's an exchange or a dark pool with slower technology such that they have
+[00:38:24] a blind spot when they're willing to match trades at unreasonable prices. So I'd say those are
+[00:38:29] two very, very different types of strategies. And I would say we're trying to kind of pinpoint
+[00:38:35] and with a scalpel cut out the strategies that we consider structural arbitrage or kind of structurally
+[00:38:42] unfair, taking advantage of a flaw in the system and still allow the other speed based strategies
+[00:38:46] that are providing some value to the market like a traditional market making strategy or strategy
+[00:38:51] that, you know, a statistical arbitrage or a cross board or arbitrage or an index arbitrage
+[00:38:56] strategy that's taking related securities and keeping their prices in mind that very much cares
+[00:39:01] about speed as well because, you know, whenever there is an opportunity for one of those types
+[00:39:05] of arbitrage, only one trader can successfully profit off of that trade and bring the market
+[00:39:11] back together. So two traders competing in the same strategy, they're both going to be very
+[00:39:15] concerned with speed. So I wouldn't say that all speed based trading is bad per se.
+[00:39:21] I would say just the situations where someone's taking advantage of a flaw in this
+[00:39:26] dark pools technology that really shouldn't exist, you're not adding any value, you're just
+[00:39:30] taking advantage of their inability to match trades at fair prices. We're trying to prevent any of that
+[00:39:36] type of trading from happening while still allowing the rest. Okay. And do you think that
+[00:39:40] any other exchanges may follow suit and implement a similar kind of tactic as your speed bump?
+[00:39:49] Do you think that's ever likely to happen? It's a very interesting question because
+[00:39:53] you've had as we've gone through this process of filing for an exchange license and, you know,
+[00:40:00] the other exchanges have all commented on our filing. And one of the comments that they've
+[00:40:04] made or that a couple of them have made is that if we're allowed to have a speed bump and that
+[00:40:09] gets approved by the SEC, that they may want to follow suit and introduce speed bumps of their own.
+[00:40:16] So they've said that they might. I think one thing to think about is that,
+[00:40:20] like I said earlier, so much of their profits are now derived from selling these services that are
+[00:40:25] so focused on speed. And so if they ever on a meaningful way try to introduce a speed bump,
+[00:40:32] like the one that we have that reduces the value of pure speed, it would potentially
+[00:40:40] compromise those other revenue lines. And so I think if our model really takes off and we
+[00:40:48] start to capture real market share from the other exchanges, I think they may follow suit at that
+[00:40:52] point. But I don't think they'll proactively sacrifice those those lines of revenue, you know,
+[00:41:00] before that happens. Yeah. Yeah. Okay. Okay. So I'd like to sort of go back to something we
+[00:41:06] talked a little bit about earlier. And that's actually dark pools. So just the the subject
+[00:41:11] of dark pools in general, why would a participant choose to trade in a dark pool instead of
+[00:41:18] just trading on a recognized exchange like, you know, New York Stock Exchange, for example,
+[00:41:22] why would they go to somewhere like IEX? That's a great question. So I'm going to focus my answer
+[00:41:30] on just an institutional investor. Because the way retail trading works is totally different.
+[00:41:37] So institutional investor, say a mutual fund company that's buying a big chunk of stock
+[00:41:42] or selling a big chunk of stock, why would they choose to go to a dark pool or why would
+[00:41:45] they ask their broker? Because they're trading through brokers, why would they ask their broker
+[00:41:49] to go to a dark pool instead of just setting their order to an exchange?
+[00:41:55] So first of all, that decision isn't really typically made by the investor. It's typically
+[00:42:00] made by the broker. That's kind of a low level trading decision. The investor will say,
+[00:42:06] buy me 100,000 shares of Microsoft. But it's the broker who's actually managing that
+[00:42:11] trade and breaking it up and choosing which pools and which exchanges to go to with that trade,
+[00:42:16] deciding when to trade and at what prices. So typically it's the broker making the decision,
+[00:42:20] not the investor. But I mean, we do try to cater to those institutional investors,
+[00:42:27] and we do try to encourage them to come straight to us and ask their brokers to come straight to
+[00:42:30] us. The reason is why someone might want to go to a dark pool and keep in mind that orders
+[00:42:35] on dark pools are typically hidden. If you're trying to buy 100,000 shares of Microsoft
+[00:42:39] in a single go, I want to buy all 100,000 shares of the current price,
+[00:42:43] it's basically impossible to do that on an exchange. To buy a huge amount of stock,
+[00:42:49] much more than is typically quoted in that name, you can't just go to an exchange. If you go to
+[00:42:52] an exchange with that order, with an aggressive order, you're going to immediately rip the
+[00:42:58] stock. You're going to create a big immediate impact. If you go to a dark pool, you have a
+[00:43:02] chance where there might be another institution on the other side of that trade who might happen
+[00:43:07] to find you. You could patiently wait in your dark pool all day, and maybe you'll get,
+[00:43:13] especially if you use a minimum quantity on your order, that's a thing that you can do
+[00:43:16] with a hidden order that you can't do with a displayed order, as you can specify. Say,
+[00:43:20] I want to buy a million shares of stock, but only in chunks of at least 100,000 shares at a time.
+[00:43:26] So I can send that order to a dark pool, and I'll have a chance that another institution
+[00:43:29] will bump into me and I'll get a big trade with no market impact. And the cost there is that
+[00:43:35] the stock might move away from me and I might not get anything done. But that's kind of a big
+[00:43:39] value proposition that we talk about is that a large investor can send a large order to us
+[00:43:45] and have a chance of getting a very large execution without having any market impact at all.
+[00:43:50] Okay. Now, this might be somewhat of a newbie question, but to the prices on a dark pool,
+[00:43:58] and we may have actually already covered this, but to the prices on a dark pool
+[00:44:03] vary from the prices on a natural exchange by much, I think we've probably already covered this, but
+[00:44:11] It's sort of, we sort of covered it, but it's a great question. And basically all dark pools
+[00:44:16] and exchanges are all covered under the main regulation in the US, which is REG NMS,
+[00:44:22] which stands for National Market System. And what that says is that all trades have to happen
+[00:44:27] within the best bid and the best offer across the market. So this is all the exchanges with
+[00:44:32] protected quotes. Whatever the best bid, the highest buy order among those exchanges that's
+[00:44:37] displayed in the lowest sell order, the lowest price of the most aggressive sell order,
+[00:44:42] that creates a range of prices. And all the exchanges have to trade in that range and all
+[00:44:46] the dark pools have to trade in that range. So the price that a stock is trading in a dark pool,
+[00:44:50] just like an exchange, it depends on, is there a buyer and a seller that are both
+[00:44:54] willing to trade at the same price? But in addition to that, that price,
+[00:44:58] where they overlap needs to be within that range as dictated by REG NMS. So it has to be
+[00:45:03] within the MBBO, the National Best Bid and Offer. So yes, they all trade in line with each other.
+[00:45:09] It's not that every single trade happens at the exact same price all the time,
+[00:45:12] you know, over a period of time, it's just within that same range. But in a liquid stock,
+[00:45:16] that range is a penny. Okay. Yeah. So how much volume is traded in dark pools in the US
+[00:45:24] compared to recognized exchanges? Most volume happens on exchanges. I think it's something like
+[00:45:31] 60% of the volume happens on exchanges. And most of that is concentrated. There's three exchange
+[00:45:37] families really. The New York Stock Exchange, NASDAQ, and BATS, and they each, you know,
+[00:45:42] they each have multiple actual exchanges. But between those three families,
+[00:45:48] they each trade about 20% between all of their markets. And then on dark pools,
+[00:45:53] I believe it's something like 15 or 20% of the market trades in dark pools. And most of those
+[00:45:59] dark pools are operated by brokers. So like Goldman Sachs has a dark pool, Mormon Stanley has a dark
+[00:46:05] pool, firms like that. And IEX, you know, I would consider that in that realm as part of that
+[00:46:11] off exchange ATS volume. And then the remaining 20% or so, a lot of that is retail order flow
+[00:46:20] that's executed off exchange directly by retail market makers. So that's kind of a separate ecosystem
+[00:46:27] that is still held within the confines of reg and MS. So that ecosystem trades in there have to happen
+[00:46:33] within the MBBO, just like trades on the exchanges and dark pools. But it's basically
+[00:46:37] kind of completely segregated flow. And in addition to that, there's also
+[00:46:41] upstairs trading. So trades that don't happen on an exchange or in a dark pool, but just,
+[00:46:46] you know, that a broker just matches two orders and reports it to the tape directly.
+[00:46:51] So that's probably the last 5% or so. Okay. So you said something interesting there,
+[00:46:55] which I think may have almost been referring to payment for order flow,
+[00:47:00] which is something we've actually talked about on the podcast in the past with
+[00:47:03] Heyn Bodeck. Now you guys do something a little bit differently. You don't accept,
+[00:47:11] I'm not entirely sure how it works. You don't accept payment from brokers
+[00:47:15] for executing their orders or something along those lines. Can you tell us a little bit about
+[00:47:20] how you're different in that way? Sure. So you've touched on two different topics there.
+[00:47:26] And so I'll start with payment for order flow. Payment for order flow is the term that refers to
+[00:47:31] the typical relationship between a retail broker and a retail market maker. So like I just said,
+[00:47:37] the retail world, you know, using eTrade or Charles Schwab to buy stock for a person at home,
+[00:47:44] that world, basically all of that stock in the US trades completely separately from the
+[00:47:49] rest of the market for the most part. And so in the retail world, eTrade has arrangements with
+[00:47:57] high frequency trading firms where those firms will pay them and eTrade will send that firm
+[00:48:04] all of its order flow or a subset of its order flow. So for example, you go on your eTrade account,
+[00:48:09] you say buy 10 shares of Apple at market. eTrade will take your $7 commission and they will also
+[00:48:16] send those 10 share order to a firm like Knight or Citadel. And that firm will execute your
+[00:48:25] order for you, give you your price. And then eTrade will deliver those shares to you at that
+[00:48:30] price and Citadel or Knight, whoever the market maker, the high frequency trading firm on the other
+[00:48:34] side of that trade, will also give a payment to eTrade. So eTrade is getting paid on both sides
+[00:48:40] and that's called paying forward of flow. That world is pretty separate from what we do.
+[00:48:46] So I don't have a ton of experience or knowledge about it beyond kind of what I just said.
+[00:48:52] The thing that we do that's different from the other exchanges is that we don't offer maker,
+[00:48:57] taker or pricing. And so the pricing model that's kind of evolved as the new norm on exchanges is
+[00:49:04] that they pay market makers. So every time there's a trade, the exchange takes a small commission.
+[00:49:09] And in the past, that commission was kind of a flat commission, both a buyer and seller,
+[00:49:14] whoever was sitting in the market and whoever entered the market would both pay a fee.
+[00:49:19] But the way it's evolved is that nowadays on most of the large exchanges,
+[00:49:24] they pay the person who's sitting in the market a small rebate and they charge a fee
+[00:49:31] to the person removing liquidity. So in a case where New York Stock Exchange has a buyer at $10
+[00:49:37] and then a seller sees that quote and sends an order to sell at $10,
+[00:49:41] the buyer who was already in the market will get a rebate, the seller will pay a fee.
+[00:49:45] And the fee is slightly larger than the rebate and that's how they make their money from
+[00:49:48] trading. Like I said, the profits from trading come down a lot because the fee and the rebate are
+[00:49:54] very close together usually, but they make a lot of money in other ways like selling technology
+[00:49:59] services so they're okay with it. The problem with having this structure,
+[00:50:03] so this structure incentivizes people to make markets, to have out loud quotes on the exchanges.
+[00:50:09] And so there's just been like a huge proliferation of new order types that are all geared around
+[00:50:16] harvesting rebates, getting as many rebates as possible.
+[00:50:20] I guess the problem from a, the main problem that we see from an institutional investor perspective
+[00:50:27] is that this kind of strange fee rebate structure that's evolved, there's different
+[00:50:33] fees and different rebates on all the different markets. So markets have an inverted structure
+[00:50:37] where the market maker actually pays the fee and the remover of liquidity gets the rebate
+[00:50:42] where it's backwards. A broker who's charged with trading an order on behalf of an investor,
+[00:50:48] that broker, the broker is the one who incurs those fees and gets those rebates. They typically don't
+[00:50:54] pass those fees and rebates back to their customer. So it creates this conflict of interest for the
+[00:50:58] broker in this case, where a broker, if they get an order to buy a thousand shares and they
+[00:51:02] see 10 different markets and those markets all have different fees and some will give rebates,
+[00:51:06] that broker is going to try to go to the ones that give rebates because they'll make more
+[00:51:11] money that way. And if it's a small order, that's probably fine. But if it's a large order
+[00:51:15] and they're favoring certain exchanges and trying to avoid other exchanges, they might
+[00:51:22] wind up missing out on liquidity that's available and their customer might get a worse experience.
+[00:51:27] So we just see maker taker, these complex pricing structures, is creating
+[00:51:31] conflicts of interest for brokers that wind up hurting investors. And so we don't want to
+[00:51:35] contribute to that. So we just have a simple flat fee model for trading on IX.
+[00:51:41] Okay, now that sounds really good. So just jumping back to the subject of Darkpools,
+[00:51:48] is there any downside for other market participants by taking trading activity off
+[00:51:57] the exchange and into Darkpools? Is there any sort of negative flow on effect to
+[00:52:03] traders who are participating in your recognized exchanges?
+[00:52:09] That's a really interesting question. I think if you asked any exchange, they would say,
+[00:52:12] yes, there's a huge problem with that. And I think if you asked any Darkpool operator,
+[00:52:16] they'd say, no, it's great. I guess from my perspective, it's basically the same
+[00:52:23] participants in the Darkpools and on the exchanges. For the most part,
+[00:52:27] all the same market makers are in the Darkpools. The same high-frequency traders are
+[00:52:31] in the Darkpools that are on the exchanges. The Darkpools markets are basically in line
+[00:52:36] with the exchanges all the time. I think if you had a huge shift where 97% of trading
+[00:52:42] was happening in the Dark, price discovery would be a little bit tougher. So I think if it went
+[00:52:50] too far in that direction, that would be bad. I think Darkpools provide a service,
+[00:52:55] but for the most part, they're not really used for that service. The service I'm talking about
+[00:52:58] is what I was talking about earlier, where a Darkpool offers an opportunity for a very large
+[00:53:03] trader to put a large order into the market, have a chance of executing, but not have any
+[00:53:08] kind of adverse impact in the stock if they don't execute. I think they're used a little
+[00:53:15] bit for that, but I think for the most part, like I said, most Darkpools are operated by
+[00:53:20] brokers, and brokers use them as a chance to execute trades and internalize trades
+[00:53:26] without having to incur fees on the exchanges. So that kind of goes back to
+[00:53:29] the maker-taker fee model on the exchanges because it's kind of shifted to favor market makers
+[00:53:34] and hurt removers of liquidity, which are typically investors. The brokers who would
+[00:53:40] typically incur those fees, they want to try to avoid those fees so they create this Darkpool
+[00:53:45] and they create this environment in the Darkpool where the same market makers will be in their
+[00:53:48] own Darkpool, but they can do the trading in their own Darkpool and avoid having to pay
+[00:53:52] the fee to the exchange. I think that dynamic doesn't really add any value to the end investor.
+[00:54:00] It's just kind of a broker preferencing their own Darkpool and it just kind of fragments liquidity
+[00:54:07] without adding tremendous value. So I think that's not necessarily super valuable to investors,
+[00:54:16] but having no Darkpools, Darkpools do offer this one good service. So I think having a balance.
+[00:54:23] I think the other great thing about having Darkpools and the path that we took where we
+[00:54:27] start off as a Darkpool and now we're an alternate trading system that has lit in
+[00:54:32] Darktrading and hopefully soon will be an exchange, the barriers to entry to becoming
+[00:54:37] a Darkpool are a lot lower. They're still quite high, but they're a lot lower than the barrier
+[00:54:41] to becoming an exchange. So it offers this pathway. If you have a new model, you can start off
+[00:54:45] as a Darkpool, test out your model, see if it catches on, grow your model, and then eventually
+[00:54:51] move on to becoming an exchange. That's the path that we took. That's the path that Bats took,
+[00:54:55] which is the next newest entry into the exchange world. So I think it offers this avenue for a
+[00:55:02] new competition in the market. So that's good. So I don't think it's... I think too dramatic
+[00:55:08] a shift in either direction would be bad, but having this path to becoming an exchange
+[00:55:12] is definitely a good thing. Okay. Yeah. I think that's a great answer, Will said.
+[00:55:17] So what is your motive and what are the benefits of actually filing for exchange status?
+[00:55:25] The big one is that I think it'll open up new avenues for us to offer the protections that
+[00:55:30] we currently offer to our customers, to other to kind of new types of customers.
+[00:55:37] One example is the retail world. So I was saying most of the retail world
+[00:55:41] is completely segregated through this payment for order flow relationships between a retail broker
+[00:55:47] and a retail market maker. But some retail order flow makes its way to the exchanges.
+[00:55:53] These days, almost none of it makes its way to IEX, but once we're in exchange,
+[00:55:58] some of that order flow might come to us and we can potentially target that segment of the
+[00:56:03] trading world. So basically the same protections that we're offering now, the same kind of products
+[00:56:07] and services that we're offering now, we could probably offer them on a larger scale once we're
+[00:56:11] in exchange, hit more segments of the market. That's number one. Number two is, as an exchange,
+[00:56:18] you're a self-regulatory organization. You just have a much bigger role in kind of the policy
+[00:56:24] making side of this world. So it kind of will give us a seat at the table with the regulators
+[00:56:31] as they're coming up with new rules in that rulemaking process that we don't exactly have
+[00:56:35] now. There's still ways for us to have influence, but I think we'll have a much greater potential
+[00:56:40] for influence as an exchange. I think those are the two big ones. Another thing about being in
+[00:56:46] exchange is you can do listings and IPOs. So right now, pretty much all of our services are
+[00:56:51] targeted at traders, traders and investors. Once we're in exchange, we can come up with ways
+[00:56:56] to help the actual companies whose stock is being traded as well. So it opens that up.
+[00:57:03] Okay. Yeah, that makes sense. So filing for exchange status, have you hit any roadblocks?
+[00:57:10] Has there been any pushback in going about that? Where are you currently at with that?
+[00:57:17] So the process formally started last September. So it's been going on for quite a while.
+[00:57:22] Even before that, we were already talking with the SEC, kind of socializing this idea that we
+[00:57:28] were going to apply to become an exchange and kind of going over our model with them.
+[00:57:33] So it's been going for quite a while. Our exchange application, so the way an exchange
+[00:57:40] filing works is you write your kind of formal set of rules for when you'll be in exchange
+[00:57:48] and you write this formal proposal to become an exchange and you send that to the SEC
+[00:57:51] and then they publish it. They publish everything that you've written and they open it up for
+[00:57:55] public comment. In the past, in the past five, 10 years, every time a company's filed to become an
+[00:58:00] exchange, there's only been a few. There's been very little public comment. In the most part,
+[00:58:05] all of the exchanges these days are very, very similar to one another. And so when a new one
+[00:58:09] pops up, nobody really has much to say about it because it's so similar to everything that
+[00:58:14] already exists. Our model from kind of a pure trading perspective, there's a couple
+[00:58:22] key differences like the speedboat that we talked about earlier. It's not that different,
+[00:58:27] but there are a couple differences. So we're kind of more different than any of the other
+[00:58:31] recent exchange applications. And that's led to a huge number of comments. I think having
+[00:58:37] the Michael Lewis book come out about us created a lot of controversy in kind of our
+[00:58:43] segment of the industry. And so a lot of people have a lot of strong opinions about us
+[00:58:48] already, even before this process started. And this was kind of a great
+[00:58:52] opportunity for those critics to kind of come out and make their feelings heard.
+[00:58:59] So our exchange filing has had by far the most public comments of any exchange filing in history.
+[00:59:05] We're up to almost 500 comments now. The comments are overwhelmingly positive. I think
+[00:59:11] over 90% of those comments have been in favor of our approval. The ones that are positive
+[00:59:17] have mostly come from institutional investors, pension funds, mutual funds, hedge funds, brokers,
+[00:59:27] and then a lot from just kind of the general public. So people who'd read the book and
+[00:59:31] got excited about what we're trying to do. So overwhelmingly, all of the public comments have
+[00:59:37] been positive. But then the other 5%, 10% that are negative have been very, very negative,
+[00:59:42] very, very critical. Those have come primarily from other exchanges, from a couple of
+[00:59:48] high-frequency trading firms, and from a couple of kind of high-frequency trading interest groups,
+[00:59:56] for the most part, which is not surprising at all. Kind of basically our direct competitors and
+[01:00:01] then the people that were kind of trying to limit their ability to run their strategies.
+[01:00:07] So it makes complete sense, the people that have come out critical of us.
+[01:00:11] But yeah, our application has generated a huge amount of controversy, and it's been a very long
+[01:00:15] drawn-out process as the SEC is trying to sort through all of these comments, positive and
+[01:00:20] negative, and come up with kind of their own opinions on whether or not we should be in
+[01:00:24] exchange. Okay. So once I go through all these comments, what's the next step from there,
+[01:00:29] and when do you actually find out if you'll be accepted as an exchange? And if you are
+[01:00:33] rejected for any reason, what's the path forward from there?
+[01:00:39] That's a great question. And I'm not sure I have a great answer for you.
+[01:00:44] They were initially supposed to come up with a decision in December.
+[01:00:49] They asked us for an extension, and we gave them an extension until March last month.
+[01:00:53] And then March, I think it was March 23rd or something, on that date,
+[01:00:59] when they were supposed to come up with the final decision, they asked us for another
+[01:01:01] extension. We said no. They initiated some proceedings. I believe it's proceedings to
+[01:01:10] approve or deny IAX. It's kind of this formal legal process, and that basically
+[01:01:14] extend the process by another three months. So now that the deadline is June, I think it's
+[01:01:20] June 18th now. And that was kind of like the last legal card that they could use to extend
+[01:01:28] the process. So I think at this point, there's not really much precedent for the SEC to
+[01:01:33] further extend our application process. So we expect a decision to come in two months in June.
+[01:01:42] So hopefully we'll be approved if we are denied. I don't know. I guess we'll go back to the
+[01:01:49] drawing board and see what's next. I think we're very hopeful at this point that we'll
+[01:01:53] get approved. We firmly believe that everything we're doing is kind of well within the
+[01:01:58] regulatory constraints of how the market works. We're a free market solution. We're not asking for
+[01:02:03] any special privileges or any special sanctions or anything like that. We designed this model from
+[01:02:11] the very beginning to fit nicely within all the existing rules. The reason they keep delaying
+[01:02:17] it is because there's been just so much controversy around it and so much noise that
+[01:02:23] it's completely reasonable from their perspective that they just need time to consume all of this
+[01:02:28] information that they've been bombarded with. But I think we're pretty confident that we should get
+[01:02:34] approved when the day comes. I think our bigger fear is not that we'll get rejected, but that
+[01:02:39] they'll come up with another reason to delay the approval and then the waiting game continues.
+[01:02:45] Okay, sure. Well, I bet you're hanging out for June. I wish you all the best, man. I really
+[01:02:49] hope that all comes through for you. All right, Dan, well, let's call this a wrap. Is there anything
+[01:02:54] else you wanted to add or do you think we've covered some decent ground for now?
+[01:03:00] I mean, we covered a lot of stuff. Okay, excellent. It's a great question. Thank you.
+[01:03:05] No trouble. No trouble. What service? Where can listeners go to find out more about you and
+[01:03:09] IEX? Our website is IEXtrading.com. It's probably a good place to start. I mean,
+[01:03:19] the book Flash Boys tells our story from the beginning. So I'd say those are probably
+[01:03:25] two good resources if you want to learn more about IEX. Absolutely. And you're also on Twitter
+[01:03:30] as well. What's the IEX Twitter handle? It's just at IEX. Very easy. Awesome. Well,
+[01:03:36] I'll make sure to include all those notes at Chat with Traders. And Dan, I just want to say
+[01:03:41] thank you very much for coming on the podcast. I really do appreciate it. And I think you did
+[01:03:44] an awesome job of making some really complex subjects very understandable. So I appreciate that.
+[01:03:51] Yeah, thank you. This is fun.
+[01:03:55] Thanks for listening right through, guys. I trust you enjoyed this interview with Dan.
+[01:03:59] I certainly learned a lot from speaking with him. He's a great dude. And full show
+[01:04:03] notes for this episode can be found at chatwithtraders.com forward slash 75. Now just to repeat the
+[01:04:10] announcement I shared with you right at the beginning, I've recorded a second interview
+[01:04:14] with Peter Brandt. This will not be released on the podcast like normal though. It's a special
+[01:04:20] subscriber only Chat with Traders episode. So to hear this, go to chatwithtraders.com forward
+[01:04:27] slash Peter, enter your email address, and this will give you full access to the interview,
+[01:04:32] which runs for over 80 minutes. Again, that's chatwithtraders.com forward slash Peter to get
+[01:04:39] this interview for free. All right, that's me for now. I'll catch you on the next episode.
+[01:05:02] And we'd love it if you'd leave a rating and review. We'll catch you next time on Chat with Traders.

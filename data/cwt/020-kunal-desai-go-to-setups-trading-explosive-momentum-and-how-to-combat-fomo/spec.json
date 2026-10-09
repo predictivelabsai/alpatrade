@@ -1,0 +1,38 @@
+{
+  "trader": "Kunal Desai",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "The method is intraday momentum trading of catalyst-driven stocks on 1-5min bars and does not survive daily-bar approximation.",
+  "template": "none",
+  "method_name": "Intraday momentum breakout",
+  "style": "momentum day trading",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "US stocks with momentum or in play (earnings/PR catalysts)"
+  },
+  "setup": [
+    {
+      "rule": "earnings breakouts on good daily chart with surprise catalyst and high relative volume",
+      "quote": "earnings breakouts are really the most powerful thing I have seen in trading you know when you get a stock and you always have to have a good daily chart you know a good daily chart is an absolute necessity because if without a bigger picture pattern they don't work as well to get a really really good daily chart and then you get a stop that has some type of earnings surprise",
+      "timestamp": "[00:27:09]"
+    }
+  ],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "mentions swing trading trending stocks but primary described method is day trading momentum",
+      "assumption": "main method remains intraday_only"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "20",
+    "page_url": "https://chatwithtraders.com/episode/020-kunal-desai-go-to-setups-trading-explosive-momentum-and-how-to-combat-fomo",
+    "youtube_url": "https://www.youtube.com/watch?v=L8tVxv55Zwc"
+  }
+}

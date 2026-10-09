@@ -1,0 +1,61 @@
+{
+  "trader": "Chris Cady",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Method is intraday mean-reversion on equity index futures using 1-min/30-min charts, market profile, and balance detection; no concrete long-side daily-bar rules for US stocks.",
+  "template": "none",
+  "method_name": "Intraday mean reversion profile",
+  "style": "mean reversion with structure/process",
+  "timeframe": "intraday (1-min to 30-min)",
+  "universe": {
+    "description": "equity index futures (S&P, Nasdaq)"
+  },
+  "setup": [
+    {
+      "rule": "Market balanced when 65/33 MA flat on 30-min chart",
+      "quote": "when the lines go flat that's essentially a quick and dirty way to see if the market's balanced",
+      "timestamp": "[00:50:49]"
+    },
+    {
+      "rule": "80% reversion to mean; avoid vertical moves from balance",
+      "quote": "80% of the time the market's reverting so in your toolkit you should have a reversion to the mean program",
+      "timestamp": "[00:51:20]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Buy weakness / sell strength after vertical move when balanced detected",
+      "quote": "you're buying weakness selling strength",
+      "timestamp": "[00:52:22]"
+    }
+  ],
+  "stop": [],
+  "exits": [
+    {
+      "rule": "Exit if vertical move starts from balance (no retracement expected)",
+      "quote": "there is zero chance of a retracement from that balanced position with the beginning of a vertical move",
+      "timestamp": "[00:41:31]"
+    }
+  ],
+  "sizing": [],
+  "market_filter": [
+    {
+      "rule": "Use market profile / time variable profiles to detect balance vs imbalance",
+      "quote": "integrating structure and process",
+      "timestamp": "[00:34:15]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Mentions futures/indexes and crude; no explicit US stock rules",
+      "assumption": "Focus remains intraday futures mean-reversion"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "235",
+    "page_url": "https://chatwithtraders.com/episode/235-chris-cady-a-lifetime-student-of-markets",
+    "youtube_url": "https://www.youtube.com/watch?v=DjHDlf1D9LM"
+  }
+}

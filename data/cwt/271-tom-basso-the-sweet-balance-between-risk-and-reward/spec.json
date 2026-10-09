@@ -1,0 +1,75 @@
+{
+  "trader": "Tom Basso",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Concrete long-side MA timing rules on daily bars for 30 US sector ETFs that can be approximated with trend_ma template.",
+  "template": "trend_ma",
+  "method_name": "Asymmetric MA trend following",
+  "style": "trend following with hedge overlay",
+  "timeframe": "long-term position",
+  "universe": {
+    "description": "30 sector ETFs covering most of the S&P 500"
+  },
+  "setup": [
+    {
+      "rule": "Trade 30 sector ETFs with upward bias via asymmetric MAs",
+      "quote": "when I'm trading my 30 sector ETFs which range across almost all the sectors and the markets the reason I do that is using 21 for the upside and 50 for the downside puts a slant towards the upside",
+      "timestamp": "[00:27:15]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Go long ETFs on 21-day MA upside signal",
+      "quote": "using 21 for the upside and 50 for the downside",
+      "timestamp": "[00:27:15]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Exit long ETFs or initiate hedge on 50-day MA downside cross",
+      "quote": "50-day to initiate a hedge ... I do the same thing the other way with my long ETF",
+      "timestamp": "[00:26:13]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Exit to cash or hedge when 50-day MA signals downtrend",
+      "quote": "50-day to initiate a hedge",
+      "timestamp": "[00:26:13]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Volatility-based position sizing across strategies to balance risk",
+      "quote": "I set my risk uh in volatility control schemes on my position sizing",
+      "timestamp": "[00:42:21]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Hedge with single S&P futures when equity exposure needs protection",
+      "quote": "if I use an S&P futures hedge",
+      "timestamp": "[00:09:55]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Exact MA crossover direction and confirmation not verbatim",
+      "assumption": "Standard MA cross up on 21-day for entry, cross down on 50-day for exit/hedge"
+    }
+  ],
+  "params": {
+    "fast": 21,
+    "slow": 50,
+    "exit_ma": 50,
+    "atr_stop": 0,
+    "pos_pct": 3,
+    "max_positions": 30
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "271",
+    "page_url": "https://chatwithtraders.com/episode/271-tom-basso-the-sweet-balance-between-risk-and-reward",
+    "youtube_url": "https://www.youtube.com/watch?v=g5gNiDO-CSc"
+  }
+}

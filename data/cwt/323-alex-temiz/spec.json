@@ -1,0 +1,68 @@
+{
+  "trader": "Alex Temiz",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "short-only",
+  "template": "none",
+  "method_name": "First red day short selling",
+  "style": "short selling momentum exhaustion on low-float small caps",
+  "timeframe": "intraday to multi-day",
+  "universe": {
+    "description": "low-float small cap momentum stocks"
+  },
+  "setup": [
+    {
+      "rule": "first red day after multi-day runner",
+      "quote": "the first red day that you continue to trade",
+      "timestamp": "[00:45:25]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "wait for stock to go red then attack",
+      "quote": "You cannot anticipate the move. You have to wait for it to go red and then attack it",
+      "timestamp": "[00:48:00]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "max loss auto liquidation at 2 days average P&L",
+      "quote": "Your max loss auto liquidation should be no more than two days worth of your trading",
+      "timestamp": "[00:20:01]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "add to winner on confirmation signals like break VWAP or low of day",
+      "quote": "If the stock then breaks VWAP, I will get to 50% of my size. If the stock then breaks low of the day, I'll get to 75% of my size",
+      "timestamp": "[00:37:35]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "scale in only on proven right signals, max 30% size above VWAP",
+      "quote": "if a stock is above VWAP, the volume weighted average price, I am not allowed to use more than 30% of my max size",
+      "timestamp": "[00:37:04]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "only aggressive on A+ setups once or twice a year",
+      "quote": "perfect opportunities happen once or twice a year",
+      "timestamp": "[00:25:10]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "no long-side rules provided",
+      "assumption": "method is short-only"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "323",
+    "page_url": "https://chatwithtraders.com/episode/323-alex-temiz",
+    "youtube_url": "https://www.youtube.com/watch?v=vP6GK_HsnDM"
+  }
+}

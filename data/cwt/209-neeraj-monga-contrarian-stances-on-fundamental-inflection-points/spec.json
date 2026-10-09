@@ -1,0 +1,27 @@
+{
+  "trader": "Neeraj Monga",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Guest describes fundamental equity research on accounting/governance issues and business inflection points with no mechanical or codable trading rules provided.",
+  "template": "none",
+  "method_name": "Fundamental contrarian research",
+  "style": "fundamental research",
+  "timeframe": "long-term",
+  "universe": {
+    "description": "Large-cap North American stocks (TSX 60 and US large caps)"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "209",
+    "page_url": "https://chatwithtraders.com/episode/209-neeraj-monga-contrarian-stances-on-fundamental-inflection-points",
+    "youtube_url": "https://www.youtube.com/watch?v=Fdall-X0qcA"
+  }
+}

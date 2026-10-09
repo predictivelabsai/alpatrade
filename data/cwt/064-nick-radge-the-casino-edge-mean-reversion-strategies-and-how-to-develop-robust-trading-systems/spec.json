@@ -1,0 +1,50 @@
+{
+  "trader": "Nick Radge",
+  "category": "no_concrete_rules",
+  "testable": false,
+  "reason": "Transcript describes mean-reversion philosophy and high-level characteristics (long-only, EOD, 3-4 day holds, oversold/overstretched entries) but supplies no concrete, codable rules or parameters.",
+  "template": "none",
+  "method_name": "Long-only mean-reversion EOD",
+  "style": "systematic mean-reversion",
+  "timeframe": "daily",
+  "universe": {
+    "description": "S&P 500 constituents (long only)"
+  },
+  "setup": [],
+  "entry": [
+    {
+      "rule": "buy severely oversold or overstretched stocks",
+      "quote": "what I'm looking to do is find points where you have a stock that is severely oversold or overstretched if you like",
+      "timestamp": "[00:14:06]"
+    }
+  ],
+  "stop": [],
+  "exits": [
+    {
+      "rule": "average hold time of 3 to 4 days",
+      "quote": "my strategies even though they're end of day strategies they have an average hold time of 3 to 4 days",
+      "timestamp": "[00:11:01]"
+    }
+  ],
+  "sizing": [],
+  "market_filter": [
+    {
+      "rule": "stand aside when market trending down",
+      "quote": "in the US market I will actually stand aside when the market is trending down",
+      "timestamp": "[00:15:39]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "no numeric thresholds, indicators or exact entry/exit logic provided",
+      "assumption": "none"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "64",
+    "page_url": "https://chatwithtraders.com/episode/064-nick-radge-the-casino-edge-mean-reversion-strategies-and-how-to-develop-robust-trading-systems",
+    "youtube_url": "https://www.youtube.com/watch?v=76ppCyIklvk"
+  }
+}

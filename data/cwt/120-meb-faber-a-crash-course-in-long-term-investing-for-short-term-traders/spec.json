@@ -1,0 +1,32 @@
+{
+  "trader": "Meb Faber",
+  "category": "macro_commentary",
+  "testable": false,
+  "reason": "Guest discusses high-level concepts like trend following, value, momentum and asset allocation without providing concrete, codable rules or parameters for US stock entries/exits.",
+  "template": "none",
+  "method_name": "Trend value allocation",
+  "style": "rules-based quantitative",
+  "timeframe": "long-term",
+  "universe": {
+    "description": "global multi-asset including US stocks"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "mentions trend following and value but no specifics",
+      "assumption": "no testable daily rules intended"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "120",
+    "page_url": "https://chatwithtraders.com/episode/120-meb-faber-a-crash-course-in-long-term-investing-for-short-term-traders",
+    "youtube_url": "https://www.youtube.com/watch?v=XtXbLWA7X68"
+  }
+}

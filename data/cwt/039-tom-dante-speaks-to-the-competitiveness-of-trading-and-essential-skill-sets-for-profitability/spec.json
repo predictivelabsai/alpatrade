@@ -1,0 +1,77 @@
+{
+  "trader": "Tom Dante",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Explicitly discretionary intraday price action trading on futures/bonds/FX with no concrete systematic rules that can be coded.",
+  "template": "none",
+  "method_name": "Discretionary price action day trading",
+  "style": "intraday discretionary",
+  "timeframe": "intraday (60-min and lower)",
+  "universe": {
+    "description": "bond market, futures, FX, stock indexes"
+  },
+  "setup": [
+    {
+      "rule": "Map support/resistance, trend lines, Fib levels on weekly/daily/60-min; look for trapped traders at swing highs/lows or gap auction failures",
+      "quote": "I look at for example basic support and resistance levels in the market like on the higher time frames like weekly and daily. I also look at them on 60-minute charts and I look at the basic structure of the market.",
+      "timestamp": "[00:35:22]"
+    },
+    {
+      "rule": "Fade momentum after gap + failure at key reference point",
+      "quote": "when you get a large gap and the price travels in the direction of the gap... we get an auction failure beyond the big reference point... I will usually look to fade that market momentum back towards a gap close.",
+      "timestamp": "[00:38:31]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Discretionary entry based on multiple angles (sentiment, trapped traders, market probing levels) rather than fixed pattern",
+      "quote": "I am a I'm a discretionary trader. So I don't you're right. I don't trade certain setups systematically because what I'm trying to look for is I'm trying to look for kind of or taking on information from so many different angles",
+      "timestamp": "[00:43:10]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Firm idea of where wrong; avoid moving to breakeven early as it is trading P&L",
+      "quote": "I have an idea of where I'm looking to take profit and I have a you know a firm idea of where I'm wrong on the trade... why are you moving to break even?... trade the market, don't trade your P&L.",
+      "timestamp": "[00:45:17]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Two styles: run on higher timeframe for big moves or play level-to-level intraday; risk-reward evolves during trade",
+      "quote": "I have two types of trades. I have those where I feel that the market is poised from a higher time frame to make a big move... the other type of trade is is where I will literally play from one level to the next intraday.",
+      "timestamp": "[00:46:56]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Trade small to grow account; never vary size by confidence or revenge trade",
+      "quote": "I was just basically trading way too large... I refused to trade my P&L anymore. I had to be very disciplined in order to just understand that I was going to have to bet small and grow",
+      "timestamp": "[00:24:57]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Use professional sentiment and price action at key levels to determine if market will probe or fail",
+      "quote": "if the chart is technically very bearish and the sentiment is very bearish, but the market won't break, you need to be long.",
+      "timestamp": "[00:41:07]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "No specific numbers, patterns or fixed rules given for any setup",
+      "assumption": "Method cannot be approximated on daily bars or coded as testable strategy"
+    },
+    {
+      "issue": "Focus now on bonds/futures not US stocks",
+      "assumption": "Still applies to classification as discretionary intraday"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "39",
+    "page_url": "https://chatwithtraders.com/episode/039-tom-dante-speaks-to-the-competitiveness-of-trading-and-essential-skill-sets-for-profitability",
+    "youtube_url": "https://www.youtube.com/watch?v=DpUAgOr0QTU"
+  }
+}

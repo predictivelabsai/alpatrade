@@ -622,21 +622,36 @@ def spec_params(spec: dict):
         if np_.get(k) is not None:
             q[k] = np_[k]
 
-    def num(k, default, lo, hi, cast=float):
+    def num(k, default, lo, hi, cast=float, frac_to_pct=False):
+        """The LLM writes 0 for 'not stated' (it used to be clamped up to the lower bound,
+        e.g. a 5% consolidation range and a 2-day 10% partial). <= 0 / missing -> default.
+        ``frac_to_pct``: a value in (0, 1] is a fraction (0.1 = 10%) for a percent field."""
         try:
-            return cast(min(max(float(q.get(k, default)), lo), hi))
+            v = float(q.get(k))
         except (TypeError, ValueError):
-            return default
-    mom_days = num("momentum_lookback_days", 63, 20, 252, int)
+            return cast(default)
+        if v != v or v <= 0:
+            return cast(default)
+        if frac_to_pct and v <= 1:
+            v *= 100
+        return cast(min(max(v, lo), hi))
+    cons_days = num("consolidation_days", 15, 5, 60, int)
+    # the momentum window must reach >= 20 sessions back before the consolidation: when it
+    # does not (e.g. 20-day momentum >= 10% AND a 20-day range <= 5%) the two rules contradict
+    # each other and the scan finds nothing (Marsten Parker / Christian Carreon had 0 trades)
+    mom_days = max(num("momentum_lookback_days", 63, 20, 252, int), min(cons_days + 20, 252))
+    pf = q.get("partial_frac")
+    if isinstance(pf, (int, float)) and pf > 1:  # percent given for a fraction
+        q["partial_frac"] = pf / 100
     return BreakoutParams(
-        mom_days=mom_days, mom_min=num("momentum_min_pct", 30, 10, 200) / 100,
-        cons_days=num("consolidation_days", 15, 5, 60, int),
-        cons_max_range=num("consolidation_max_range_pct", 15, 5, 40) / 100,
+        mom_days=mom_days, mom_min=num("momentum_min_pct", 30, 10, 200, frac_to_pct=True) / 100,
+        cons_days=cons_days,
+        cons_max_range=num("consolidation_max_range_pct", 15, 5, 40, frac_to_pct=True) / 100,
         trail_ma=10 if int(q.get("trail_ma") or 20) <= 10 else 20,
         partial_days=num("partial_after_days", 4, 2, 10, int),
         partial_frac=num("partial_frac", 0.33, 0.1, 0.5),
         risk_pct=num("risk_per_trade_pct", 1.0, 0.25, 2.0) / 100,
-        max_pos_pct=num("max_position_pct", 20, 5, 25) / 100,
+        max_pos_pct=num("max_position_pct", 20, 5, 25, frac_to_pct=True) / 100,
         max_positions=num("max_positions", 10, 3, 20, int))
 
 
@@ -888,10 +903,35 @@ TEMPLATE_TEXT = {
                 "SMA, exit on a close below the exit SMA or an ATR stop",
     "gap": "gap continuation: buy at the open on a gap up of at least the set % in an uptrend, "
            "fixed stop below the open, exit after N sessions or on a close below the trail SMA",
-    "relative_strength": "relative-strength rotation: every N sessions hold the strongest names "
-                         "by trailing return (above their trend SMA), equal weight, cash when "
-                         "SPY < SMA200",
+    "relative_strength": "relative-strength rotation: every N sessions (at most weekly) hold the "
+                         "strongest names by trailing return (above their trend SMA), equal "
+                         "weight, a holding is kept while it still ranks in the top 2N "
+                         "(hysteresis against churn), cash when SPY < SMA200",
 }
+
+
+# Hand-reviewed corrections to the LLM classification (episode number -> spec fields).
+# Applied on load, so re-extraction can't silently re-publish a wrong call.
+CLASSIFICATION_OVERRIDES = {
+    "171": {"category": "intraday_only", "testable": False, "template": "none",
+            "reason": "manual review: intraday small-cap gap fader / scalper (tape, level 2, "
+                      "flat by noon, no overnight holds); not testable on daily bars"},
+    "211": {"category": "intraday_only", "testable": False, "template": "none",
+            "reason": "manual review: Stan Gluzman is an intraday scalper (ep. 171/211: tape, "
+                      "level 2, 1-5 min charts, mostly short); the swing breakouts he mentions "
+                      "are a side book, so the breakout backtest misrepresents his method"},
+}
+
+
+def load_spec(ep: dict) -> dict:
+    f = DATA / ep["slug"] / "spec.json"
+    if not f.exists():
+        return {}
+    spec = json.loads(f.read_text(encoding="utf-8"))
+    o = CLASSIFICATION_OVERRIDES.get(str(ep.get("episode_number") or ""))
+    if o and "category" in spec:
+        spec = {**spec, **o, "_override": True}
+    return spec
 
 
 def _slug(t: str) -> str:
@@ -917,10 +957,7 @@ def build_groups() -> dict:
     """One Leaderboard strategy per (trader, template): merges repeat guests' episodes."""
     groups: dict[str, dict] = {}
     for ep in load_catalogue():
-        f = DATA / ep["slug"] / "spec.json"
-        if not f.exists():
-            continue
-        spec = json.loads(f.read_text(encoding="utf-8"))
+        spec = load_spec(ep)
         if not spec.get("testable"):
             continue
         k = group_key(ep, spec)
@@ -944,12 +981,23 @@ def _bars():
     return _BARS_CACHE["bars"], _BARS_CACHE["spy"]
 
 
+NONZERO_KEYS = ("pos_pct", "max_positions", "top_n", "lookback", "rebalance_days", "ref_days",
+                "dip", "gap_min", "fast", "slow", "exit_ma")
+# bump when an engine / parameter-mapping change must invalidate cached group backtests
+ENGINE_REV = {"breakout": 2, "dip": 2, "trend_ma": 2, "gap": 2, "relative_strength": 2}
+
+
 def group_params(g: dict):
     from engine.backtest.templates import RuleParams
     spec = g["members"][0]["spec"]  # most recent episode's numbers
     if g["template"] == "breakout":
         return spec_params(spec)
     raw = {**(spec.get("params") or {}), "template": g["template"]}
+    # 0 is meaningful for trend_ma / target / stop / max_hold / rsi_max / atr_stop ("none"),
+    # but not for these: the LLM's 0 = "not stated" (Rob Hanna had pos_pct 0 -> 2%, 1 position)
+    for k in NONZERO_KEYS:
+        if not raw.get(k) or (isinstance(raw[k], (int, float)) and raw[k] <= 0):
+            raw.pop(k, None)
     for k in ("pos_pct",):
         if raw.get(k) and raw[k] > 1:
             raw[k] = raw[k] / 100
@@ -964,17 +1012,19 @@ def backtest_group(g: dict, force: bool = False) -> dict | None:
     d = STRAT / g["key"]
     d.mkdir(parents=True, exist_ok=True)
     out = d / "backtest.json"
+    p = group_params(g)
+    rev = ENGINE_REV.get(g["template"], 1)
     if out.exists() and not force:
         old = json.loads(out.read_text())
-        if old.get("members_hash") == g["hash"]:
+        if (old.get("members_hash") == g["hash"] and old.get("engine_rev") == rev
+                and old.get("spec_params") == json.loads(json.dumps(p.to_dict(), default=str))):
             return old
     bars, spy = _bars()
     end = str(spy.index[-1].date())
     test_start = str(spy.index[spy.index > TRAIN_END][0].date())
-    p = group_params(g)
     full = (breakout.run(bars, spy, BT_START, end, p) if g["template"] == "breakout"
             else templates.run(bars, spy, BT_START, end, p))
-    res = {"key": g["key"], "template": g["template"], "members_hash": g["hash"],
+    res = {"key": g["key"], "template": g["template"], "members_hash": g["hash"], "engine_rev": rev,
            "universe": f"S&P 500 current members ({len(bars)} with data)",
            "data": "Alpaca SIP daily bars, adjustment=all (splits+dividends)",
            "spec_params": p.to_dict(), "full": _fmt(full),
@@ -1145,21 +1195,45 @@ def publish_group(g: dict, res: dict) -> int | None:
             s.execute(text("UPDATE alpatrade.user_strategies SET seed_key = :new WHERE seed_key = :old "
                            "AND NOT EXISTS (SELECT 1 FROM alpatrade.user_strategies WHERE seed_key = :new)"),
                       {"new": key, "old": f"cwt-{e['slug']}"[:96]})
+        args = {"uid": str(uid), "name": fm["title"][:160], "author": g["trader"][:60],
+                "desc": fm.get("description", "")[:2000], "md": md, "key": key,
+                "url": eps[0]["page_url"], "m": json.dumps(metrics, default=str)}
+        # UPDATE first: INSERT .. ON CONFLICT DO UPDATE consumes a sequence value even when it
+        # only updates, which is what left id gaps (10, 18-27) between published strategies
         sid = s.execute(text("""
-            INSERT INTO alpatrade.user_strategies (user_id, name, author_name, description,
-                skill_md, is_public, seed_key, kind, source, source_url, backtest_metrics)
-            VALUES (CAST(:uid AS UUID), :name, :author, :desc, :md, TRUE, :key, 'backtest',
-                'chatwithtraders.com', :url, CAST(:m AS JSONB))
-            ON CONFLICT (seed_key) DO UPDATE SET name = EXCLUDED.name,
-                author_name = EXCLUDED.author_name, description = EXCLUDED.description,
-                skill_md = EXCLUDED.skill_md, kind = 'backtest', source = EXCLUDED.source,
-                source_url = EXCLUDED.source_url, backtest_metrics = EXCLUDED.backtest_metrics,
-                is_public = TRUE, updated_at = NOW()
-            RETURNING id"""), {"uid": str(uid), "name": fm["title"][:160],
-                               "author": g["trader"][:60], "desc": fm.get("description", "")[:2000],
-                               "md": md, "key": key, "url": eps[0]["page_url"],
-                               "m": json.dumps(metrics, default=str)}).scalar()
+            UPDATE alpatrade.user_strategies SET name = :name, author_name = :author,
+                description = :desc, skill_md = :md, kind = 'backtest', source = 'chatwithtraders.com',
+                source_url = :url, backtest_metrics = CAST(:m AS JSONB), is_public = TRUE,
+                updated_at = NOW()
+            WHERE seed_key = :key RETURNING id"""), args).scalar()
+        if sid is None:
+            sid = s.execute(text("""
+                INSERT INTO alpatrade.user_strategies (user_id, name, author_name, description,
+                    skill_md, is_public, seed_key, kind, source, source_url, backtest_metrics)
+                VALUES (CAST(:uid AS UUID), :name, :author, :desc, :md, TRUE, :key, 'backtest',
+                    'chatwithtraders.com', :url, CAST(:m AS JSONB))
+                RETURNING id"""), args).scalar()
     return int(sid)
+
+
+def unpublish_stale(published_keys: set[str], reasons: dict[str, str]) -> dict:
+    """Hide (is_public = FALSE, never delete) every Chat With Traders backtest row this run did
+    not publish, e.g. a group now below MIN_TRADES or re-classified as not testable."""
+    from sqlalchemy import text
+    out = {}
+    with _db().get_session() as s:
+        rows = s.execute(text("""SELECT id, seed_key FROM alpatrade.user_strategies
+            WHERE kind = 'backtest' AND source = 'chatwithtraders.com' AND is_public
+              AND seed_key LIKE 'cwt-%'""")).fetchall()
+        for sid, key in rows:
+            gk = key[4:]
+            if gk in published_keys:
+                continue
+            s.execute(text("UPDATE alpatrade.user_strategies SET is_public = FALSE, updated_at = NOW() "
+                           "WHERE id = :id"), {"id": sid})
+            out[gk] = {"id": int(sid), "reason": reasons.get(gk, "no longer a testable group")}
+            print(f"unpublish {gk}: id {sid} ({out[gk]['reason']})", flush=True)
+    return out
 
 
 def set_status(rows: list[dict]) -> None:
@@ -1176,7 +1250,7 @@ def bulk_finish(publish: bool = True) -> dict:
     """Group testable specs, backtest each group (resumable), publish, record every episode's
     status in alpatrade.cwt_episodes. Returns counts."""
     groups = build_groups()
-    results, status = {}, {}
+    results, status, reasons = {}, {}, {}
     for k, g in groups.items():
         try:
             res = backtest_group(g)
@@ -1186,9 +1260,11 @@ def bulk_finish(publish: bool = True) -> dict:
                 status[m["ep"]["slug"]] = ("failed", f"backtest error: {type(exc).__name__}", k, None)
             continue
         if res["full"]["trades"] < MIN_TRADES:
+            why = (f"too few trades ({res['full']['trades']}) with the {g['template']} template "
+                   f"(< {MIN_TRADES} in 2016-2026 on the S&P 500; not meaningful)")
+            reasons[k] = why
             for m in g["members"]:
-                status[m["ep"]["slug"]] = ("skipped", f"too few trades ({res['full']['trades']}) "
-                                           f"with the {g['template']} template", k, None)
+                status[m["ep"]["slug"]] = ("skipped", why, k, None)
             continue
         sid = publish_group(g, res) if publish else None
         results[k] = {"id": sid, "res": res, "trader": g["trader"], "n_eps": len(g["members"])}
@@ -1200,8 +1276,11 @@ def bulk_finish(publish: bool = True) -> dict:
     for ep in load_catalogue():
         st = state(ep)
         src = (st.get("transcribe") or {}).get("result")
-        f = DATA / ep["slug"] / "spec.json"
-        spec = json.loads(f.read_text()) if f.exists() else {}
+        spec = load_spec(ep)
+        if spec.get("_override"):
+            reasons.setdefault(group_key(ep, {"template": json.loads(
+                (DATA / ep["slug"] / "spec.json").read_text(encoding="utf-8")).get("template")}),
+                f"{spec['category']}: {spec.get('reason', '')}"[:300])
         if ep["slug"] in status:
             stt, reason, key, sid = status[ep["slug"]]
         elif not (DATA / ep["slug"] / "transcript.txt").exists():
@@ -1214,14 +1293,20 @@ def bulk_finish(publish: bool = True) -> dict:
         rows.append({"slug": ep["slug"], "status": stt, "reason": reason,
                      "category": spec.get("category"), "template": spec.get("template"),
                      "src": src, "key": key, "sid": sid})
+    unpublished = {}
     if publish:
         set_status(rows)
-    summary = {"groups": len(groups), "published": len(results)}
+        unpublished = unpublish_stale(set(results), reasons)
+    summary = {"groups": len(groups), "published": len(results),
+               "testable_episodes": sum(1 for r in rows if r["status"] in ("published", "skipped",
+                                                                         "testable", "failed"))}
     from collections import Counter
     summary["status"] = dict(Counter(r["status"] for r in rows))
     (DATA / "bulk_summary.json").write_text(json.dumps(
-        {"summary": summary, "episodes": rows,
+        {"summary": summary, "episodes": rows, "unpublished": unpublished,
+         "skipped_groups": {k: v for k, v in reasons.items() if k in groups},
          "strategies": {k: {"id": v["id"], "trader": v["trader"], "episodes": v["n_eps"],
+                            "template": v["res"]["template"], "params": v["res"]["spec_params"],
                             "full": v["res"]["full"], "test": v["res"]["test"]}
                         for k, v in results.items()}}, indent=1, default=str))
     print("BULK", summary, flush=True)

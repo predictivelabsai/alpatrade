@@ -1,0 +1,44 @@
+{
+  "trader": "Humbled Trader",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Method centers on intraday gap reversals and open behavior after pre-market gaps on large caps, which cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "Gap reversal day trade",
+  "style": "intraday gap fade/reversal",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "large cap US stocks with earnings or news catalysts"
+  },
+  "setup": [
+    {
+      "rule": "huge gap up on large cap due to positive catalyst",
+      "quote": "my bread bread and butter is set up is whenever there's a huge gap on the on a large cap sock huge gap up or huge gap down I prefer the Gap UPS usually due to earnings or any sort of news Catalyst that's positive for the stock",
+      "timestamp": "[00:40:18]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "buy reversal after 30% retrace of overnight gap back toward pre-market highs",
+      "quote": "I'll see the gapa pre-market and then usually if you look at any huge gap ups there's usually some sort of profit taken at the open or sometimes premium Market um and then I'll identify that and my what I like to do is to to long to buy the reversal after it did the profit taking let's say for example retracing 30 of the overnight Gap then I'll go along and buy the reversal back to the pre-market highs",
+      "timestamp": "[00:40:18]"
+    }
+  ],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "no explicit stop, target, or position sizing rules stated",
+      "assumption": "none"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "261",
+    "page_url": "https://chatwithtraders.com/episode/261-humbled-trader-lamborghini-money-quest-teaches-valuable-lessons",
+    "youtube_url": "https://www.youtube.com/watch?v=yx1EOGZwXd4"
+  }
+}

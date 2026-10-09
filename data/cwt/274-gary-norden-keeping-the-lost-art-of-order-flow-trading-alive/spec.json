@@ -1,0 +1,56 @@
+{
+  "trader": "Gary Norden",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Method is order-flow scalping in futures (seconds to minutes, 3-5 ticks, 50x/day) based on identifying weak retail players via TA weaknesses and immediate post-fill checklist; no daily-bar rules or US stock swing method provided.",
+  "template": "none",
+  "method_name": "Order flow scalping futures",
+  "style": "scalping order flow market making",
+  "timeframe": "seconds to minutes",
+  "universe": {
+    "description": "Futures (NQ, ES); equities possible but more complex"
+  },
+  "setup": [
+    {
+      "rule": "Identify weak retail players using TA",
+      "quote": "most of them use some form of technical analysis right so we can look at that we can look at the weaknesses of those technical of technical analysis",
+      "timestamp": "[00:29:47]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Get filled by desired counterparties then apply checklist",
+      "quote": "as soon as you're filled uh you know I give my there's a checklist I give right so as soon as I filled you can sort of mentally go through the checklist did all these things happen yes great it's a good trade",
+      "timestamp": "[00:30:21]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Exit immediately on bad fill or wrong players",
+      "quote": "if some of them happened and some of them didn't then again as soon as you're fil so I don't have to wait 10 seconds or half a minute 3 minutes as soon as I'm filled I should know with this checklist ... just get out",
+      "timestamp": "[00:30:52]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Take small profits quickly (3-5 ticks)",
+      "quote": "trade for you know three four five ticks and do that 50 times a day",
+      "timestamp": "[00:39:39]"
+    }
+  ],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Checklist details not provided in transcript",
+      "assumption": "none"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "274",
+    "page_url": "https://chatwithtraders.com/episode/274-gary-norden-keeping-the-lost-art-of-order-flow-trading-alive",
+    "youtube_url": "https://www.youtube.com/watch?v=7xRfeYvK_hE"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "trader": "Lukas Frohlich (The Short Bear)",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Short-selling-only method with no long-side rules for US stocks.",
+  "template": "none",
+  "method_name": "Agenda trading short fade",
+  "style": "short bias with quantitative pyramiding",
+  "timeframe": "intraday to 4-day swing",
+  "universe": {
+    "description": "small-cap US stocks with dilution agenda"
+  },
+  "setup": [
+    {
+      "rule": "identify dilution via SEC filings and shelf offerings",
+      "quote": "I got really good at reading SEC filings for small caps",
+      "timestamp": "[00:31:09]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "enter short near high of day expecting fade",
+      "quote": "start in as at a likely level that I had from just my data",
+      "timestamp": "[00:15:35]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "cut after three failed attempts or structure break",
+      "quote": "I usually have a stop at three times",
+      "timestamp": "[00:33:44]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "cover at average low-of-day or structure target",
+      "quote": "driven by the average move I can expect from the open until the low",
+      "timestamp": "[00:35:18]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "pyramid adds on fade to align average with structure",
+      "quote": "I would add to my position and add just enough size so that my average would align with prior structure",
+      "timestamp": "[00:15:35]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "high liquidity and retail-driven volume",
+      "quote": "the liquidity was insane",
+      "timestamp": "[00:14:34]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "mentions mid-cap and big-cap long swings",
+      "assumption": "these are secondary and not the main 2020 method"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "259",
+    "page_url": "https://chatwithtraders.com/episode/259-lukas-frohlich-executing-agenda-trading-strategy-for-stratospheric-returns",
+    "youtube_url": "https://www.youtube.com/watch?v=NoYIKx-_-4Y"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "trader": "Dennis Dick",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Edge is intraday price discovery at the open via OPG orders with fair-value projections and includes short selling, which cannot be approximated on daily bars or long-only engine.",
+  "template": "none",
+  "method_name": "Opening print fair value arbitrage",
+  "style": "intraday liquidity provision at open",
+  "timeframe": "first 5 minutes around open",
+  "universe": {
+    "description": "US equities, focus on mega caps with tight spreads"
+  },
+  "setup": [
+    {
+      "rule": "Project fair value from prior close adjusted by futures/beta",
+      "quote": "projecting where the fair value of the stock is and selling it short if it opens too high or buy it if it opens too low",
+      "timestamp": "[00:43:04]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Use OPG orders to buy below or short above fair value at open",
+      "quote": "I use mostly OPG orders... If it opens at 3070, I'm going to get 3070 short. If it opens at 3060, I'm not going to get filled.",
+      "timestamp": "[00:42:04]"
+    }
+  ],
+  "stop": [],
+  "exits": [
+    {
+      "rule": "Work out positions manually over ~30 min while hedging with SPY for market neutrality",
+      "quote": "I would just go and do exactly what I did hedge it... and then I can slowly manually work out of those positions over the course of the next half an hour",
+      "timestamp": "[00:48:22]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Scale to many positions then hedge net exposure with SPY to stay market neutral",
+      "quote": "if I'm allowing a million dollars worth of stock, I'm gonna sell short a million dollars worth of spy",
+      "timestamp": "[00:44:37]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Trade only around open/close; avoid 10:30-14:30 due to HFT dominance",
+      "quote": "Between 11 and 2, I don't even trade at all. 11am, 2pm, I call it toxic.",
+      "timestamp": "[00:50:13]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Short selling component",
+      "assumption": "Classified intraday_only rather than discretionary/short-only since mixed long/short but core edge is open auction"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "77",
+    "page_url": "https://chatwithtraders.com/episode/077-dennis-dick-how-to-be-a-profitable-short-term-trader-in-a-high-frequency-world",
+    "youtube_url": ""
+  }
+}

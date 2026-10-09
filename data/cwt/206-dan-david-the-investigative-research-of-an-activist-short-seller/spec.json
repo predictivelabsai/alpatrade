@@ -1,0 +1,62 @@
+{
+  "trader": "Dan David",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "short-only",
+  "template": "none",
+  "method_name": "Activist short selling research",
+  "style": "investigative fraud detection",
+  "timeframe": "multi-month",
+  "universe": {
+    "description": "US-listed companies suspected of fraud"
+  },
+  "setup": [
+    {
+      "rule": "Identify companies with suspicious accounting or operations via screeners or tips",
+      "quote": "there's a hundred different ways it can of course you have you know the the outlier screeners that say this company is is way above in margins to their peers",
+      "timestamp": "[00:19:31]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Build short position gradually before report release",
+      "quote": "you often will sort of put on a position over a few days or maybe a few weeks prior to releasing the report",
+      "timestamp": "[00:36:47]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Squeal point based on risk management and hedges",
+      "quote": "you have a squeal point right and you have to manage that risk",
+      "timestamp": "[00:50:17]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Cover when thesis plays out or risk limits hit",
+      "quote": "we're confident in that position",
+      "timestamp": "[00:50:50]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Limit to 5-10% of daily trading volume; never 80% of portfolio",
+      "quote": "you generally don't want to be more than five or ten percent of the trading in a day",
+      "timestamp": "[00:36:47]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "No long-side rules provided",
+      "assumption": "Method is exclusively short"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "206",
+    "page_url": "https://chatwithtraders.com/episode/206-dan-david-the-investigative-research-of-an-activist-short-seller",
+    "youtube_url": "https://www.youtube.com/watch?v=xCWxNt1tajc"
+  }
+}

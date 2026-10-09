@@ -1,0 +1,709 @@
+# 034: Michael Melissinos – Launching a Fund at 26, and Trading Trends in 40 Global Futures Markets
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT6732709175.mp3
+
+[00:00:00] What would your trading look like if capital wasn't the constraint?
+[00:00:03] That's the reality for most traders. It's not skill-holding them back, it's size.
+[00:00:07] Trade the pool changes that. Step into the U.S. equity markets with up to $200,000 in buying
+[00:00:13] power without committing your own capital. Full access to stocks and ETFs,
+[00:00:18] longer short, executed with the precision and freedom serious traders expect.
+[00:00:22] Your performance is measured by one standard. Discipline risk management and consistent
+[00:00:26] execution. Meet that standard and you operate at scale. No subscriptions, no ongoing obligations,
+[00:00:32] just a clear path forward. For those ready to trade beyond limitations, this is the next level.
+[00:00:57] However, they've worked hard to learn the markets and discover what works and what doesn't.
+[00:01:02] But how can you hear about these journeys and get in on the strategies and tactics they use?
+[00:01:07] You can do it by listening to Chat with Traders. Here's your host, Aaron Feifeld.
+[00:01:18] Hey traders, what's up? What's going on? Hope you've been having an awesome week.
+[00:01:23] I've got an interesting guest lined up on the show for us today and he takes a slightly longer
+[00:01:28] term approach compared to many of the guests I've had on in the past but I think it's great to mix
+[00:01:34] things up. He's a young guy, he's doing big things and he's got a great story to tell.
+[00:01:39] So let me give you the thousand foot view of where he's come from and where he's going. So
+[00:01:45] Michael Malacinos started a job on Wall Street about six months before the 08 crash came through.
+[00:01:52] So he was right there in the thick of it. He was actually an analyst on the trading desk at
+[00:01:57] Bear Stearns and then later at JP Morgan after they were brought out. I'm sure you're all
+[00:02:02] familiar with that story. Since then, Michael's left his Wall Street days behind him and now
+[00:02:08] trades a fund on of his own using a systematic tranfoiling approach that operates on 40 global
+[00:02:14] futures markets. While I missed a large chunk of the story there, you'll hear how Michael
+[00:02:19] got to the stage of his career during the interview as well as a few of the lessons that
+[00:02:24] shaped him into the trader he is today including the advice he received from market wizard Ed
+[00:02:29] Saccota. I also like Michael's thoughts around why you should consider playing a game that's
+[00:02:34] larger than money and the emphasis he places on preparation is really great also.
+[00:02:40] Alright guys, you know the drill. I'm your host Aaron Feifeld. This is Chat with Traders
+[00:02:44] and here is this week's guest Michael Melisinos. Hey Michael, what's up man? Welcome to the podcast.
+[00:02:52] Hey, thank you for having me. No trouble at all. Thanks a lot for putting aside some time
+[00:02:57] this morning to come on in and be open for an interview. It's really good to have you on.
+[00:03:02] Yeah, well it's 6.07am here in New Jersey so not a lot of people are up right now. I'm
+[00:03:10] probably the only person up on my block. But yeah.
+[00:03:15] Nice. Is that how you roll every morning? Up nice and early?
+[00:03:19] Yeah, because I was actually dealing with this problem yesterday because I was telling you
+[00:03:26] before off the podcast that we recently bought a beach house with my fiance and I and we're
+[00:03:32] doing a lot of work around the house and we still have a lot of chores and my fiance is
+[00:03:38] type a go-getter. She wants it done. She doesn't want things lingering. She loves to do lists,
+[00:03:45] doing them ASAP and she's got me doing chores all the time and I'm like I need to do work.
+[00:03:55] You know like you know because the day the day rolls on and there's just more and more stuff
+[00:04:00] to do. She gives her more time to think about more stuff to do. I'm like oh my god you know
+[00:04:04] put your bike together doing the fence doing this doing that.
+[00:04:08] Never enough hours in the day.
+[00:04:09] Never enough. So getting up early and you know before she gets up is good. So this is you know
+[00:04:19] we have our sanctuary right now, our time to talk about whatever we want.
+[00:04:25] Good stuff. Well I'm glad you could fit this in so we've definitely got plenty to talk about
+[00:04:30] so let's just get into it and let's get this started by telling us about how you originally
+[00:04:36] got involved in trading and perhaps even further back than that what were you doing before this time?
+[00:04:44] Yes so I graduated from college in 06, started work in early 07 and I started in public accounting
+[00:04:56] so and that's what I majored in college so I wasn't entering the workforce with any kind of
+[00:05:03] trading job or any kind of trading. I don't know experience or background of any kind didn't even
+[00:05:10] intern with any banks or funds or anything like that but I a couple of my uncles or you know
+[00:05:19] went through Wall Street long time still in it as well and just coming from a sports
+[00:05:25] background my entire life I you know I had always interested in just competing at something,
+[00:05:30] getting good at something and after a while in the accounting job that wasn't really fulfilling
+[00:05:37] that urge in me so you know I started reading just you know in public accounting you know you
+[00:05:47] have your busy season I'm sure everyone knows an account and they have a busy season.
+[00:05:51] It starts to die down probably in June you know at least for me it did so from June through the summer
+[00:06:00] and then into the early fall is when I really started to read a lot especially on the commute
+[00:06:06] back and forth from Jersey to New York I was working in New York so I had about an hour commute
+[00:06:12] every day on the train so I would do a lot of reading then and at work during the off
+[00:06:16] months I was reading a lot during the day and just became you know I stumbled across
+[00:06:25] you know a lot of different blogs a lot of different opinions different this different that
+[00:06:30] and and the one that you know stuck with me the most was was this trend following style
+[00:06:38] and and it kind of just made sense to me and I was actually on Michael Covell's podcast of you
+[00:06:46] maybe like a month or so ago and I told him you know when I read his first book the trend
+[00:06:52] following book I think it was his first book that came out in 05 and I read it in 07
+[00:06:58] I said I slammed it shut at a few points in that book I was like dude there's just no way
+[00:07:05] because he makes it sound so easy you know he makes it sound like so simple so this and you
+[00:07:10] know it it pretty it is simple you know at least the concepts are and I think the concepts
+[00:07:18] you know parallel and me and and have a lot in common with what happens in the natural world
+[00:07:25] anyway you know this you know the ideas of of diversification you know spread yourself out
+[00:07:31] don't limit yourself to one type of dude to profit from one one market you know
+[00:07:37] and then you know buy and hold the comparing it to buy and hold case don't limit yourself to profiting
+[00:07:43] to just making money one way be open to going short as well be open to staying out sometimes
+[00:07:52] and then any other ideas of you know when you have a good thing going let it let it keep let it
+[00:07:56] let it roll you know you're sticking with it if it doesn't work you know protect yourself and
+[00:08:01] get the hell out of there so all those things were you know made sense to me just in general and
+[00:08:09] and then I thought I was like oh okay you know now I have something that maybe I can actually
+[00:08:15] try to get good at try to get better at because now I know you know a strategy to
+[00:08:22] to play with you know and you know before that what was I become like a day trader you know
+[00:08:26] that's like the only other strategy I knew of or that or like a fundamental thing and that didn't
+[00:08:33] appeal to me either because I just seemed like a whole you know a whole lot of work with not a
+[00:08:38] whole lot of certainty and and I saw a lot of people going that way for a long time and and losing a
+[00:08:46] lot of money especially in the in the bear markets like a vote of 2001 and I was in high school at
+[00:08:51] the time and then I guess before that when the you know like a year or so before the bubble the
+[00:08:57] Nasdaq bubble was bursting and then you know so I that didn't really spark anything in me
+[00:09:05] but this trend trading thing started to make some sense to me and started to get the juices
+[00:09:12] flowing so to speak so I started running with that and I've actually had some you know light
+[00:09:19] bulbs go off and then I started getting so bored being at the accounting job that I asked my friend
+[00:09:26] who I grew up with who was working at Bear Stearns at the time I said look dude get me in there come
+[00:09:31] on I gotta get off I gotta get off the bench so to speak I gotta get in the game and you know
+[00:09:39] I didn't think I was gonna become a trend follower at Bear Stearns but you know this trend
+[00:09:45] following idea is like oh maybe I can start a fund I was like in the back of my head and then when
+[00:09:50] the opportunity for to work at Bear came along I kind of put the trend following thing on hold
+[00:09:55] I was like okay I'm gonna become like a you know a Wall Street guy and then work on the trading
+[00:10:00] desk one day and then hopefully soon and then all will be good and I won't have to worry about
+[00:10:05] this other thing it'll just be a good pet just something that passed the time this trend
+[00:10:09] following you know thing so yeah I think you know I think when I went to Bear in October of 7
+[00:10:21] I you know I was working a lot so I got up at you know 530 today you know back at that job I was
+[00:10:28] getting up at 430 I was in work at five so I and I was home at like eight every day so I didn't
+[00:10:37] have time to read or do anything relative to any you know you know trend following strategy
+[00:10:46] construction or that to you know one day become a fund manager or anything I was just doing my
+[00:10:55] job because it took it took a lot of hours to do so yeah and then you know I guess I guess
+[00:11:02] throughout the you know six months later after I started working at Bear it collapsed
+[00:11:08] so that was a big eye-opening experience for me and then you know the team I was on went over
+[00:11:15] and started working for JP Morgan just doing the same job at JP Morgan and you know the
+[00:11:21] hours were still insane but the middle of the day wasn't as intense as it was so I started reading
+[00:11:26] again and then I started getting more serious but those two events the Bear collapse and the financial
+[00:11:34] crisis and they really opened my eyes and you know those people talk about aha moments those are two
+[00:11:44] big aha moments that really put me on the path that where I said okay I can't work anymore I need
+[00:11:53] to go and do my own thing because I thought this way you know I was gonna be you know I thought I had
+[00:12:00] it made pretty much going to bear it was a good company and everything and good culture and I thought
+[00:12:08] okay I'm just gonna you know just put my time here and I'm gonna be a big shot you know trader on
+[00:12:13] the desk one day and it all is gonna be good until it goes down I mean the company goes down
+[00:12:21] didn't even I didn't get laid off or anything the company disappeared and that was just like oh my god
+[00:12:29] and then half a Wall Street disappeared you know several months later so those were just
+[00:12:36] you know blessing and disguises for me because now I had the opportunity to actually do what I
+[00:12:44] wanted to do you know in the back and at that point was just in the back of my head
+[00:12:48] but it was really a drive at that point because I saw it's not you know my job and the Wall Street
+[00:12:58] you know vision of being a big shot or you know it being like a good job
+[00:13:03] just wasn't so anymore the whole game was changed you know it now it wasn't a safe
+[00:13:08] thing and now I saw that so I saw a lot of my colleagues lose a ton of money lose their jobs
+[00:13:14] um and all the retirement you know a lot of their retirement money if it was in
+[00:13:18] bear stock or anything like this and I said look this is not gonna be me and at the time I was 23
+[00:13:24] 24 years old so I was still very young and stupid and impressionable I guess and
+[00:13:29] that kind of woke me up and made me grow up pretty fast so during the off months and you know
+[00:13:36] the transition period from bear to JP and then and then even working at JP it was just less
+[00:13:43] intense you know than my first six months at bear you know after everything got everything
+[00:13:50] after everything collapsed and then you know the financial crisis hit uh things just got
+[00:13:55] less intense people were kind of just shaken up and um I don't know I almost say didn't work as hard
+[00:14:02] that's that's not true but just just kind of like dazed like they just got punched and knocked out
+[00:14:10] and then they're like stumbling take to the feet so people were just I don't know
+[00:14:17] I don't know the workload just died so I was just spending a lot of time doing more reading and
+[00:14:23] like okay getting into phase two of taking the path to become a fund manager one day and
+[00:14:32] that's what I was that's what I was doing through you know bears collapsed through
+[00:14:37] January 09 and then then eventually got laid off from JP Morgan you know the team I was on
+[00:14:44] got laid off and then I you know went to phase three you know because I had no job at that point
+[00:14:50] and I was devoting all my time to uh to uh you know getting into the excel getting into like the
+[00:14:56] X's and O's of creating a system not just reading about the theory of it so yeah now that's
+[00:15:03] that's really good thanks for really um fleshing that out for us but being so young just having
+[00:15:10] entered Wall Street you're probably only you know there for six months to a year before
+[00:15:16] things started to unfold and the crash came through did it ever cross your mind that maybe
+[00:15:21] you'd entered the wrong industry and and this wasn't gonna um be yeah yeah eventually
+[00:15:30] but not at first um at first it was just so preoccupied what was what was going on and
+[00:15:35] really think it off and it was only till after I got out of it that I started thinking that
+[00:15:45] and was starting to read you know a lot of entrepreneurial blogs and books and other
+[00:15:52] things that you know we're watching a lot of videos of these up and coming like startup
+[00:15:57] entrepreneurs because at that point it was starting to you know there was no real startup
+[00:16:04] scene then like like there is now like now it's it's like booming right uh Silicon Valley's booming
+[00:16:13] and uh yeah I guess maybe other um other less uh less intense Silicon Valley's out there
+[00:16:22] maybe in Europe and the other parts of the US but it wasn't that big back then
+[00:16:29] but it was starting to you know come out of the you know come out of that bear market
+[00:16:35] into what it is now which is a full but yeah I I was just reading and and getting getting
+[00:16:44] some exposure to other entrepreneurs outside of Wall Street and then and then reading more
+[00:16:50] about the trend following trader types you know reading and and going on their sites you know the
+[00:16:58] funds that were that were around to that are still around but but then also you know getting to
+[00:17:03] Ed's coda site you know checking out his stuff I entered one of one of their um one of Ed's
+[00:17:11] trading tribes in New York and you know just taking the next steps to get
+[00:17:17] you know to get in the game to get good enough to be able to play you know at that point I was
+[00:17:22] still just learning but um uh I was taking the next step from learning from the people that
+[00:17:29] were doing it and and hearing what they had to say because I mean as a you know as an athlete you
+[00:17:37] want to learn from the guys that can actually play you know you're not going to take hitting
+[00:17:43] you know in baseball and I can take hitting lessons from you know a guy who never played the game before
+[00:17:48] right if you take it from a guy who who's done it and done it with success for a long time so
+[00:17:57] that's what I started to sort of get started to get some you know some face time with the
+[00:18:01] with the actual traders and then other entrepreneurs in other in other industries and yeah then
+[00:18:09] then I started to believe that okay I'm starting to see the big shift here
+[00:18:15] Wall Street snack I'd be the place to be for a long time and maybe it was this is a blessing
+[00:18:22] and I probably had that thought you know at some point during the winter of 09 when I was you
+[00:18:28] know trying to look for jobs or something and it's just just in my apartment reading and you
+[00:18:33] know in New York it's pretty gloomy during those months so that was kind of a you know maybe a
+[00:18:39] bright spot in one of the dark dreary winters in of New York ever watch a stock rip and think
+[00:18:47] I could have nailed that if I had real capital the truth is many capable traders never reach
+[00:18:52] their potential not due to lack of skill but lack of scale trade the pool was built to
+[00:18:57] solve exactly that a firm designed for serious individuals who won't access to the US equity
+[00:19:03] markets with meaningful buying power up to $200,000 without committing their own capital
+[00:19:08] get access to virtually every stock in ETF go longer short freely with the flexibility professional
+[00:19:14] traders expect you're evaluated on one thing your ability to manage risk and execute with
+[00:19:20] consistency meet the standard and you trade at scale no subscriptions no ongoing commitments
+[00:19:26] whether you're still refining your strategy a trader with experience who hasn't yet broken
+[00:19:30] through or a seasoned professional simply looking for more capital trade the pool is built to meet
+[00:19:36] you where you are and take you that next step further the markets have evolved access has
+[00:19:41] evolved now so has the way traders operate within them trade the pool
+[00:19:49] you briefly mentioned ed and you're referring to ed succota and I don't want to brush over
+[00:19:55] that because he's a he's a really big name you know he plays the big game so I'm curious to know
+[00:20:02] like how did you actually get in contact with ed what was his tribe his trading tribe
+[00:20:09] actually like and what were some of the things that he actually really helped you with
+[00:20:12] so he you know before you know ed to me is a rare combination of very advanced
+[00:20:27] technically and very advanced psychologically he seems to understand both games pretty well
+[00:20:34] you know from being you know him being an engineer he's an engineer in general they're
+[00:20:40] very advanced you know mathematically science they they they get that that's their strong point
+[00:20:46] and they're not so strong with you know social skills and and understanding you know behavioral
+[00:20:54] dynamics because you know let's I mean let's face it a lot of a lot of engineers like even like
+[00:20:59] accountants too and maybe some other jobs they're just they're good with being they're good
+[00:21:07] with just doing their job and they're not so good talking about you know they're like socially awkward
+[00:21:12] you know or some of them can be so he's not that though he he to me because he shares a lot of
+[00:21:20] his information a lot of his a lot of his knowledge about things you know I that you know I attracted
+[00:21:28] to that quick because I mean and he on some level reminds me of my father because he's a very
+[00:21:34] ed's a very tough man to talk to because he calls you out on your nonsense really fast and
+[00:21:44] you know he you know reading on his site and then and then and then getting to one of his tribes
+[00:21:51] you know reading on the site about the theory about the feelings that that were unwilling to feel
+[00:21:57] you know so the feelings that we don't like kind of run our lives and I was like what the
+[00:22:02] heck does that mean I don't know what that means and you know at that time I first came into him
+[00:22:07] like yeah probably around 24 25 so I was still pretty stupid at the time and I didn't know what
+[00:22:16] that meant and then you started getting to more of his his FAQ on his site which is where people
+[00:22:22] submit you know their stories and write whatever they write into him and he responds and you know
+[00:22:29] half the time he's being a wise ass in his responses and other times he's being pretty helpful in
+[00:22:34] explaining what the tribe is all about what's the whole process you know what what's the whole
+[00:22:40] intention of of it you know how is it aimed to help people out and you know at its core it's
+[00:22:48] really just to help people push through their push through their issues to get to a you know
+[00:22:55] a right livelihood which is basically you know you do what you like to do and you do it you know you
+[00:23:00] serve other people and yeah you maintain your health and you know you get good at what what your craft
+[00:23:08] is and when I started in one of his tribes you know initially it was it was a little weird
+[00:23:17] it was you know a lot of guys you know in our tribe it was a lot of guys in the in the financial
+[00:23:25] space which is not always the case in other tribes some people don't aren't in finance at all and
+[00:23:32] there's a lot of guys talking about and then you know first talking about their feelings and
+[00:23:39] and then you know he has this process called the hot seat where you get into you know some
+[00:23:46] real intense feeling that you have that's that's that you want to change you know you want to change
+[00:23:52] the um figure you want to change from a medicinal response to a proactive response
+[00:24:01] so in the case of trading you know you get people that don't like to lose money right
+[00:24:08] and where they so they they medicated by you know in some cases not having you know not looking at it
+[00:24:16] you know they don't open their statements or they don't take the they don't sell it out you know if
+[00:24:21] they're long a stock or something and it starts to go against them they don't sell it so they don't
+[00:24:27] have to feel the actual loss they could just hope hold on and hope that it returns to a more profitable
+[00:24:34] you know position one day so these are all non proactive responses with dealing with
+[00:24:40] the loss that is true it's you know it's happening whether or not you like it or not it's happening
+[00:24:46] so you can either deal with it uh responsibly proactively or you can medicate it by not feeling
+[00:24:54] it and this is what a lot of people do you know in their lives outside of trading as well um
+[00:25:01] you know same thing when they break up with a boyfriend or a girlfriend what do they
+[00:25:04] what do they do they don't they don't go to the drawing board assessing their behaviors and oh
+[00:25:09] what did i do that really you know made this relationship you know tumble and and end they'll
+[00:25:17] say oh they'll blame they blame other people they they they'll go watch a movie they'll
+[00:25:24] console a friend an enabler who tells them it's gonna be all right it's gonna you know wasn't
+[00:25:29] your fault or or they'll go you know in a worse case they'll go you know do drugs or drink alcohol or
+[00:25:36] you know indulge in someone healthy food or something to make the feeling go away you know and to
+[00:25:44] you know justify people justify themselves and you know what happened it wasn't their fault and
+[00:25:48] all things like that so you know that's what the tribe's all about because it's getting it helps
+[00:25:54] you in a group setting you know ed believes that the group setting is better than trying to do it
+[00:26:00] yourself or you know it may offer a better way to just than going to a um uh a psychologist or
+[00:26:09] psychiatrist or something because you don't get to learn from the doctor doing it in tribe you get
+[00:26:15] to see everyone work and everyone working on their own issues so that that he believes um you know
+[00:26:24] is a better atmosphere to learn from because you get to see other people doing it too people get to
+[00:26:29] learn and set examples for others and uh that you know that that helped me you know eventually
+[00:26:37] you know push through the fear of you know starting my own fund you know I was just I was scared
+[00:26:44] I didn't think I could do it I mean I knew I could do it but I was afraid you know
+[00:26:50] well my parents you know like I'm an old child so I get a lot of questions and I get I get all the
+[00:26:56] attention so I I was just nervous with dealing with that my parents they're you know they're
+[00:27:03] they're um you know slow and steady people that've been at the same type of job forever and
+[00:27:11] this is not something that they're used to you know they're they don't know they don't know what's
+[00:27:15] starting on this this is like you know about that they just think it's risky because it's you know
+[00:27:21] you need to have a job that's that's the way to go so all these feelings that I had come up
+[00:27:26] you know the tribe helped me out and learning the things from ed um more more on this on the
+[00:27:32] psychological portion of the game really helped me um you know pull the trigger eventually pull
+[00:27:38] the trigger and and deal with feelings um um that were previously standing in my way deal
+[00:27:46] with them proactively and and take a take a you know a more go-getter approach to it rather than
+[00:27:52] just sitting back and maybe they'll go away or you know or you know distracting myself somehow
+[00:27:58] but you know and then like a side note to that you know outside of trading all these things
+[00:28:04] helped me in my life as well and um can't say enough about that because my life in general changed
+[00:28:13] um after after um you know first being introduced to ed's uh FAQ site and and then the getting into
+[00:28:23] the tribe as well um you know a lot of people like to you know ed seems to have like a cold
+[00:28:30] following as far as like oh you know he was the guy who you know made it could read market wizards
+[00:28:36] you know a couple hundred thousand a percent over 10 to 15 years whatever it was he gets a lot of
+[00:28:42] attention that way but you know for those traders out there that that you know I think that's really
+[00:28:48] cool or whatever because he makes a lot of money um or he did or something you know that's all
+[00:28:56] great but I'm telling you I think there's more to learn from him on the on the psychological game side
+[00:29:04] because you know I don't know making money is cool but making money and having good relationships
+[00:29:12] and having a stress free life and living a life that is fulfilling is much cooler um a lot of
+[00:29:19] guys out there a lot of money who are just miserable dudes and they have awful lives so
+[00:29:24] to those young guys look it's not all about the money you know and maybe a weird thing you know
+[00:29:30] you know a trader saying that because the job is all about money but um or that's the only thing we
+[00:29:36] make you know we don't create anything else but you can create um a life you'd like and you know
+[00:29:43] work with people that you'd like um and serve them well um by uh you know getting your own
+[00:29:50] issues straightened out um you know rather than just looking for the best system out there and
+[00:29:56] emailing ed and guys like him like oh what's your system or teach me teach me the system so I can
+[00:30:02] go become a big shot you know that's you know maybe when you're young you think that's the way
+[00:30:09] until you get into it and you start trading a system or trading a style and then you learn that oh
+[00:30:15] yeah I don't just need a system I need the whole psychological game too I need the discipline
+[00:30:21] I need all this the clear thinking I need all that is to make any money you know for sure and I mean
+[00:30:28] on that point like that's a that's a really good point you make about how it's not all all about
+[00:30:33] the money but I mean most the guys who kind of um say that have money do you think it's always
+[00:30:41] easier for those who do have you know a big bank to be able to to say things like that um
+[00:30:50] like do you think it's a bit challenging when you when you're younger and you're coming up
+[00:30:54] you don't necessarily have all that money so you've got like a safety zone or you know what I'm
+[00:31:00] saying like it's a lot harder to think that way when you don't necessarily have any money it
+[00:31:06] money does seem very important would you agree with that and yeah and I would say you know because
+[00:31:11] I was in that position too and looking back then it's yeah you're you likely want to make money
+[00:31:18] um when you don't have any too and it's likely at that point a medication for the feeling
+[00:31:26] you don't like being poor and so you think oh I'll just make a lot of money and that feeling
+[00:31:31] I'll go away and and then you find you know a lot of people would come you know I'm not those
+[00:31:38] maybe that that drive to make a lot because you don't have a lot um really helps you you know make
+[00:31:47] a lot one day and become a successful businessman or trader or whatever you know great but
+[00:31:54] it's a very myopic I think view short-term view of of and I say and a non it's not a well-rounded
+[00:32:05] strategy to a make money and then get all the other things you want in life too you know people
+[00:32:13] people tend to fall into that you know in this case like you're medicating that fear or
+[00:32:17] a medicating that feeling of being poor that's why I make money I'll do whatever I have to do to
+[00:32:23] make money that's what you hear about a lot of poor people growing up they make a lot of money
+[00:32:26] one day you know because they're driven they don't want to be poor ever again and it doesn't mean that
+[00:32:32] they're happy people necessarily it may mean that they're good at their job they're good at their
+[00:32:37] their um their craft or whatever but you don't hear about the other things um outside of
+[00:32:45] their job and work success because that's all you know business people care about you know
+[00:32:50] you don't hear about their personal lives they're not going to talk like you don't hear about you
+[00:32:53] know Warren Buffett's personal life really you know or like other successes personal life
+[00:32:59] you know so we don't get to see that side and maybe it's a train wreck maybe it's not
+[00:33:05] you know maybe it's not what what you would want for yourself so you know looking at just one
+[00:33:13] piece of a person's life I don't think is enough information
+[00:33:22] for people to you know to learn from and then incorporate into their own you know structure
+[00:33:30] into their own you know vision of what they want their lives to be if you want to just learn one
+[00:33:34] skill and you know trade all other things for that one skill then fine you know but if you want to
+[00:33:44] have good relationships you want to be fit you want to be healthy you went a little long time
+[00:33:49] and you want to have some money and you want to have a good family and you know friends and
+[00:33:54] all that stuff and have a life of you know abundance and you know a vision a well-rounded
+[00:34:00] vision for what you want then you may need to learn how to make money there but maybe becoming
+[00:34:08] you know a hot shot trader or hot shot this or that works works against a well-rounded
+[00:34:18] view for yourself it may not work like that for another person but maybe for you you know you
+[00:34:23] need to you know take other information to account and and not just go for it all and try to be the
+[00:34:36] just the big shot trader because you may you may be that one day but you also might be
+[00:34:41] you know a jerk you also might have a couple divorces you know you also might you know
+[00:34:48] have a couple of health issues you know and I think Ed would be the first one to
+[00:34:55] admit that you know don't forget he's had two divorces you know and probably a lot of drama
+[00:35:01] during his great trading run that he may not be too proud about you know what I'm saying so
+[00:35:07] you know the money is cool performance is cool great but there's other things that that matter
+[00:35:15] and you know I think Ed can you know going to his site and you know maybe joining one of his tribes
+[00:35:21] you know learning about that process can really help people see or come to that not saying my this
+[00:35:28] view is is correct but it may just open themselves up to oh maybe there's you know there's other
+[00:35:35] ways to think about it that's all not really not trying to push away or assist them on anybody
+[00:35:40] or a way of thinking on anybody but that's what that's what happened to me because I thought it was
+[00:35:45] all about the money I thought it was going to have it have it made and then bear went down
+[00:35:51] and then you know and then half of Wall Street went down so you know there's other things that
+[00:35:57] become important you know I learned that for myself during those during those crashes
+[00:36:06] um yeah I like how you answered that that's you touch a lot of great points there
+[00:36:12] yeah and um I also tell a story about a guy who um I work with that bear and I remember standing
+[00:36:18] next to him uh a day or two after bear you know was bought by JP and this is a guy who's been
+[00:36:28] there for 20 30 years and you know nice guy you know he's a regular guy he just works on Wall
+[00:36:34] Street you know he didn't know anything he didn't have any inside info he didn't you know he just
+[00:36:40] just made a little bit more money than the average guy but he was still really nice and um
+[00:36:45] we were standing on the trading floor and he was looking at all the screens this is when like
+[00:36:50] people were just half the people there who used to be there weren't there and it was a total mess
+[00:36:56] it was like the last day of school you know there's like nothing going on everyone's just
+[00:37:00] kind of talking and not doing anything and he um uh was looking at his screens all the
+[00:37:06] flesh and lights because at that time the markets were still wild you know going you know high
+[00:37:12] vol and everything but at bear and there was no business being done so we were all just kind of
+[00:37:16] watching it and this is after the guy knows that he probably lost a ton of his retirement money
+[00:37:22] and he's like Mike you see all this and he's pointing to his screens all the flesh and lights
+[00:37:28] all the bloombergs and I said yeah all this means nothing um I'm going to awake tonight for one of my
+[00:37:39] daughters or sons classmates who killed themselves because they were getting bullied at school
+[00:37:46] you know these kids are like 10 years old you know eight eight to ten or something something very
+[00:37:52] young and that was another like hammer over the head moment like yeah you're right this is not
+[00:38:03] I don't want I don't want just the money here you know because focusing on that you miss out on
+[00:38:08] on some of the more important issues of um you know in this case kids you know like
+[00:38:15] you know like how important is it if your kid just died really is important I mean you know
+[00:38:21] do you really need to have you know that big trade you need to make that big like no because you have
+[00:38:28] you have other things to worry about and and I feel that really that helped me um one even
+[00:38:36] further pushed to get the hell out of the out of the workforce in this you know wall street but
+[00:38:41] but also helped me to really think about more um what I did pull the trigger
+[00:38:47] what kind of business do I want what kind of life do I want um outside of just trading my
+[00:38:55] trend following system you know the trend following system is just one little piece
+[00:39:00] you know it just helps deliver some profits to my investors that's it you know but you know
+[00:39:07] incorporating some of the other you know more qualitative you know aspects of life you know
+[00:39:12] into my picture my life's like vision picture um you know that that moment with that guy
+[00:39:23] really helped me at least be open to thinking about stuff like that I didn't you know start
+[00:39:28] the money hungry um grip started to loosen a bit um after that conversation
+[00:39:37] yeah yeah well that's that's really Dave thank you for sharing that with us
+[00:39:41] yeah it was pretty gloomy but I mean you know like they're real things yeah well I mean that that
+[00:39:46] helps put things into perspective doesn't it and look at look at the bigger picture now let's
+[00:39:51] turn this discussion more towards your actual trading methodology um so I'd like to ask you
+[00:39:57] could you describe to us how do you actually view the markets and and just share an overview of
+[00:40:03] your particular trading styles if you've already mentioned that's trend following but let's let's
+[00:40:08] get into the nuts and bolts of it so what actually is trend following how do you view the markets and
+[00:40:13] just yeah give us a bit of an overview of your approach sure yeah so the you know basic abc's of
+[00:40:21] it you know if I break it down into you know a diversified systematic long-term trend following
+[00:40:28] I'll break down in each like little sections I feel like going going like that is is easy helps
+[00:40:34] helps people follow along easier than it is just me spewing I'm going left right back for you know
+[00:40:42] that people can't you know can't keep up but anyway so diversify to me I take it from the
+[00:40:50] I'm on the stance that I want to be able to trade any trends
+[00:40:55] out there I want to be able to trade and profit from any moves in the world
+[00:41:02] really doesn't matter I'm not I'm not restricting myself to just stocks
+[00:41:07] which is a traditional product the stocks and bonds in the real estate
+[00:41:10] I want to be able to trade currency trends I want to be able to trade commodities and
+[00:41:15] you know other foreign markets you know foreign stocks foreign foreign interest rates as well
+[00:41:21] because you know evidence shows you look back do some research that you know things
+[00:41:26] outside of stocks and bonds move quite a bit and why would I just want to sit in one spot
+[00:41:33] and just wait for all the movement to come in those those areas why not I branch out a bit
+[00:41:38] and maybe and maybe you know open myself up to to being able to profit from some moves like that
+[00:41:46] and you know what's happened over the past year has been a good example that you know
+[00:41:53] currency trends have been great since last summer and energy as well and then most recently
+[00:42:00] you know metals started to break down again so if you're a traditional buying holder
+[00:42:05] you just don't get those moves you know maybe you can apply your style to that to those other
+[00:42:12] markets and and do okay but you know in the meantime you know there's some pockets of time
+[00:42:19] where you you can't because you're just not you're not open to them so I like to be open to a lot of
+[00:42:26] different things you know to be to make a baseball analogy you mean if you're a hitter you don't just
+[00:42:32] want to be able to hit a fastball down the middle you need to be able to hit other pitches in other
+[00:42:38] locations you know and if you can't you can't play you know because you're you're not good enough
+[00:42:43] you so you need to be open to to hitting different trends and different markets going different ways
+[00:42:51] and that's that's what kind of I feel you know I I like doing that because I don't I don't want to
+[00:43:00] be a stock picker I don't want to be a picker in one area and you know try to trade every little
+[00:43:05] wiggle in one or two markets I want to be in a lot of different things and not really have an
+[00:43:09] extra tease in any I just kind of want to just you know float along when the movement comes in
+[00:43:16] different areas and just and just set my sales with them so I get okay so moving from the
+[00:43:24] diversified to the to the I'll go to the long term first so yeah I mean I don't want to be
+[00:43:31] trading I'm not a day trader I don't really like to look at markets all that much during the day
+[00:43:37] again it's a quality of life I don't want to be sitting in front of a computer all day long
+[00:43:42] I like to do other things I like to get outside I like to you know read and you know do things
+[00:43:49] to my fiance my friends and family that don't require me to be sitting in front of a computer
+[00:43:58] looking at my trading software or the quotes all day long like I wanted a system that I didn't need
+[00:44:07] to do that and so I focus on long term I focus on you know trading trends that you know my
+[00:44:15] my system on average you know it's average holding period is about you know seven eight months long
+[00:44:23] so that's that's my average position that I'm holding so I don't really need to look at it every
+[00:44:28] five minutes I don't need to look at it every 30 seconds so I can I can update it daily
+[00:44:36] check it periodically you know throughout the day if I'm around but not an everyday thing and you
+[00:44:42] know I want to be there for the biggest moves too you know the biggest moves
+[00:44:46] um exist on longer time frames and that's what I like to be I like to hit home runs and
+[00:44:54] I don't like to be a singles hitter where I'm trying to get wiggles every day like like day
+[00:44:59] traders do they try to get a lot of little moves you know during the day or during the week
+[00:45:06] I I forgive that I say you can have those moves I'm not trying to catch those I'm just
+[00:45:12] going to try to be there for for the big sucker that that plays out over x months or years or weeks
+[00:45:20] or something um that's just my style and again there's no right or wrong you know I mean I feel
+[00:45:27] that my style works better for me um but it's not always the case that everybody um and then I
+[00:45:34] guess uh all right so we have the diverse side we have the long term we have the uh the
+[00:45:41] systematic so systematic I just create a method you know a rules you know a set of rules that
+[00:45:49] decide you know which markets to select you know which markets I'm going to look at and
+[00:45:54] then which markets I'm going to trade um then which market uh and then position sizing rules so
+[00:46:01] how big and how small am I going to be in each market that that I observe and then when I'm
+[00:46:08] going to get it in out um you know what kind of methodology I kind of already said that I'm a
+[00:46:13] long-term method guy so um you know in that case my my entries and exits are are fairly loose
+[00:46:21] you know it takes a lot it takes more of a move for me to get in and out than it would for like
+[00:46:27] a short-term guy you know he's more he's more uh tight his his his um his entries and exits are
+[00:46:34] tighter with the movement than I am um you know to make it I guess an example like let's
+[00:46:42] say I use I say I'm like a breakout trader you know I I use a 200 day look back you know so
+[00:46:50] if the market makes a 200 day high you know I'll get in versus a shorter term guy which is
+[00:46:58] it wouldn't work I wouldn't be able to follow a shorter term system that well
+[00:47:02] but just because my psychology psychology doesn't really fit with it but like a short-term guy me go
+[00:47:09] enter market on a 20 day high you know so he's he's getting in that much much quicker I I like
+[00:47:15] to be a little bit longer well let me ask you about the systematic side of things because
+[00:47:21] you started out as an accountant then you became an analyst on the trading desk
+[00:47:27] at what point did you did you learn to start coding or did you code or did you bring in outside
+[00:47:33] help like how did you actually develop your system once you had an idea and some rules that you
+[00:47:39] you thought might be valid and have a edge that's worthwhile trading how did you actually
+[00:47:46] turn this into a functioning system that that is essentially automated these days
+[00:47:52] I old fashioned way started with some pen and paper and then I got into excel
+[00:48:02] and I still do a lot of majority of my systems in excel because I like to see excel allows you to
+[00:48:10] go under the hood and kind of see what's going on versus a software which kind of just pumps out
+[00:48:15] results that you don't really see what's happening so I I called a couple guys to help me
+[00:48:23] who I used to work with who are more advanced with coding and they kind of show me the ropes with
+[00:48:32] you know some like Python software and and C sharp and things like that and you know that's
+[00:48:39] all good as far as like testing goes because you could you can you know be efficient with
+[00:48:46] me running a lot of tests fast you know at the excel it's kind of slower because you got a
+[00:48:53] you know it's just a little more little more detail than not as I don't know I don't not
+[00:49:00] not as advanced as some of the other softwares but anyway I called I called a couple traders
+[00:49:08] who I looked up to who you know Covel wrote about in his books and and then you know they kind of
+[00:49:19] told me like look like we can code but it's not really like a necessary skill to have
+[00:49:23] you need to have some sort of like basic you know you can do everything in basic excel that's kind
+[00:49:29] of why I started in excel so you can start there and you can always stay there if you want you
+[00:49:33] you know you don't have to go to the software route so that's what I did I got into excel just
+[00:49:38] kind of started making it up as I went along to learn it and didn't really have a guy there
+[00:49:46] you know sitting next to me while I while I built it up and I you know I designed like a risk
+[00:49:55] sheet so I had like a portfolio sheet which is where I had all my positions I had had my
+[00:50:01] position size has where I got in where my stop is what the current price is and how much money I have
+[00:50:06] at risk what's my P&L and all those things that tied back into other sheets that I had for each
+[00:50:12] market which each market was just had the data that I had my position sizing sheet like how
+[00:50:20] big of a position am I going to take if I get a signal you know all that so I updated that
+[00:50:27] stuff every day you know had a new you know every day go into the go into the market sheet
+[00:50:34] that I that I had you know and right now I have 40 markets so I have like 40 different
+[00:50:40] sheets for each market and they you know so update the data every day and then I see
+[00:50:48] what what my rules tell me to do you know how do they change to should I take a bigger
+[00:50:54] position today if I get a signal what's the new stop orders what's the new buy stop what's the new
+[00:51:01] sell stop when am I getting in when am I getting out type of thing so those yeah I mean I started
+[00:51:10] I started probably doing that sometime in 2010 2009 2010 and then just kind of made you know
+[00:51:21] changes and advances along the way as I've gotten better at at building these things and
+[00:51:28] and I guess more comfortable with with just how to do it but yeah I mean there's really no
+[00:51:38] no fancy way I mean and you could probably you know hire someone to do something today or help you
+[00:51:44] but I didn't okay so I've just got a question around that you obviously mentioned Excel
+[00:51:50] there quite a bit what sort of data were you actually putting into Excel was it like calculating
+[00:51:57] anything or had you programmed it to to output certain data or was it just you were just using
+[00:52:03] it as a spreadsheeting tool to take to keep track of your your positions and your trades and that
+[00:52:10] type of thing or was there something yeah now now everything is you know coded and linked together
+[00:52:19] so I have like I have a data software that I that inputs into the into the the market sheets every
+[00:52:25] day and then from that from those sheets they spit out the new days buy and sell signals if they are
+[00:52:37] changed like a lot of times since I'm so long-term they're not different at all the new position
+[00:52:42] size so yeah I don't I don't just have a like a summary sheet of like what my positions are
+[00:52:53] so I could see it all one spot that kind of auto populates from from from other sheets and
+[00:52:59] things so it's all it's a whole big linked web of of things but I think yeah you could do you
+[00:53:11] could start with you could start with a simple sheet of you know if you do things by hand if you're
+[00:53:17] if you're a non-systematic trader you just kind of want to make call like you know make trades you
+[00:53:23] know based on your gut or something or do it another way you can have a sheet that that kind of
+[00:53:29] organizes things for you like so you can see what it is you actually have on the books you know
+[00:53:35] what you have that we don't have to remember everything you know and that's kind of what
+[00:53:39] helped me in the beginning because if you want to be a diversified trader and trade a lot of different
+[00:53:45] things you need to organize the stuff because there's no possible way you can memorize and and remember
+[00:53:52] everything about where every stop is and what every position size is and what's you know what's the
+[00:53:58] proper you know risk management and position size to take in every market you can't possibly
+[00:54:05] remember all these things so maybe you can maybe maybe you're smarter than me but anyway I like to
+[00:54:10] keep it organized and I like to keep it in front of me so I don't have to remember it all because
+[00:54:19] I mean I have other things to think about too other than just trading you know of course very
+[00:54:24] important to be to be organized for sure it's a big one yep that's what I feel this has helped
+[00:54:31] me to do organize and and I feel that's what a lot of good a lot of good traders in general do you know
+[00:54:41] especially the systematic guys because they're computer nerds you know they don't want to
+[00:54:46] they don't want to have things in their books that they don't that they're not accounting for
+[00:54:52] or they that they run the risk of not remembering or you know maybe some of the traders of old that
+[00:55:00] you know do it do it like that where they're kind of just more on them off the cuff you know
+[00:55:08] you know they kind of see their their statement and then they make other decisions you know they
+[00:55:14] kind of just on the fly of changing things not really setting to a disciplined a disciplined
+[00:55:23] set of rules that that you know hold them accountable to to do what the rules say
+[00:55:29] and and to organize them and to and to face them every day you know so people don't want to face
+[00:55:35] their statement or their their summary of what they hold the positions are because they don't
+[00:55:41] again go back to the edsakota stuff you know people don't want to feel you know the feeling
+[00:55:46] of being bound by the rules that they set for themselves you know they kind of want to do
+[00:55:51] what they want to do you know sometimes and they don't want to obey the rules like dieting same thing
+[00:55:56] you know people just go off the rails so so those things are you know they want to appeal to everybody
+[00:56:03] but uh i feel that they really helped me to uh again be organized and know what i'm doing you
+[00:56:11] know if i don't have this this setup or something set up that tells me what to do when to do it
+[00:56:20] and how much to how much position to take i feel that um i don't know what i'm doing and i'm gonna
+[00:56:28] freak out because i i don't like not knowing what i'm doing i need to like write things down and i need
+[00:56:34] to be organized and everything so that's why i go with this approach then uh maybe some others
+[00:56:40] yeah i think that's that's a fair point too i mean really it comes down to
+[00:56:44] to what's the right approach for you you know what what fits your personality so that totally
+[00:56:49] makes sense now when people i think when many people hear the word fund or someone runs a runs a
+[00:56:57] hedge fund they they probably just assume big infrastructure an overwhelming amount of technology
+[00:57:04] plenty of computers but i mean you started this working out of your parents home i understand yeah
+[00:57:10] so i mean what's the case now what does your setup look like uh i mean if what would someone see if
+[00:57:17] they walked into your office today well i work um i work out of a i don't know if i don't know if
+[00:57:26] your viewers know what we work is it's startup um that provides a space to entrepreneurs you know
+[00:57:35] solopreneurs you know small businesses and they're in a lot of country a lot of um
+[00:57:41] cities around the us i'm not sure if they have anything outside the us right now but it's like
+[00:57:46] a co-working space isn't it co-working space yep uh for a cheaper amount so i have one of
+[00:57:51] those spaces and uh it's just my computer um you know i have all the security everything so
+[00:57:59] no one can steal my stuff um but that's pretty much it as far as the as far as what you'll see
+[00:58:09] i mean what you won't see but it's there is that i mean i have a third party auditor and taxed
+[00:58:15] the other you know we have for a fund you have to have an audit done every year um
+[00:58:21] and i also have my you know my legal and compliance guys you know on retainer when i need them
+[00:58:28] if i have issues or something that i need to need to do like right now i have a
+[00:58:33] perspective investor from india i don't i didn't know if i can take an investor's money from india
+[00:58:41] yeah i don't know what what rules and tax laws there are i don't know about these things so i
+[00:58:46] you know i consult those guys to help me and then i have my um my administrator that does all my
+[00:58:54] monthly performance reporting and they keep the uh they keep the the financial statements and all
+[00:59:00] those things of the of the business and the fund so um you know and then they send out their
+[00:59:06] the capital statements every month for every investor so they know you know what their
+[00:59:11] accounts worth and how you know how it performed that month and everything so um but those are
+[00:59:18] things that don't require like big buildings you know that i need office spaces that i need to
+[00:59:24] you know pay for and all the stuff i kind of just outsourced that stuff um which a lot of
+[00:59:30] funds do too it's what what we do but um i don't have a uh a team of traders on staff i don't have
+[00:59:40] portfolio managers on staff i i do those things and again the the systematizing of this stuff
+[00:59:47] kind of helps with that at least at least for me now if i get a little bigger and i want um
+[00:59:54] you know i want some more freedom for myself i want i want more um you know i want a guy in the
+[00:59:58] desk 24 hours a day you know those types of things because i you know obviously if it's just me
+[01:00:04] i go to sleep at some point so you know someone's not always there watching it but i always have my
+[01:00:12] stop orders in the market all the time but maybe having someone there would be more of a thing at
+[01:00:17] some point but i don't know um you know i think uh i don't know what else what else i have that's
+[01:00:26] that's really i don't know necessary i mean you can you can surely complicate things and and buy
+[01:00:33] you know 15 monitors and get a whole lot of different systems and softwares and have multiple
+[01:00:41] models and get crazy with that stuff but i feel a lot of that stuff is more of a distraction
+[01:00:47] and it's more of a posturing move to look the part rather than what it takes to really do the part
+[01:00:56] and do it well you don't need all the extra stuff it's kind of just distraction it's kind of just
+[01:01:01] complications uh i started i started out with one computer at my parents house in 2011
+[01:01:10] i now i've upgraded to two computers so that's that's that's the basis of my complication
+[01:01:17] nothing nothing major then no that's that's really interesting to know that you can do it on
+[01:01:22] you know yeah and and and expenses i mean if you want to get out there you want to raise a
+[01:01:27] lot of money and you want to be a you know compete with like the biggest funds in the world yeah
+[01:01:33] you're gonna need more infrastructure you're gonna need compliance teams you're gonna need
+[01:01:38] all these other things that that open the that allow the biggest investors in the world to even
+[01:01:45] touch you this is not like how it was in the 70s or 60s 70s and 80s where you could be
+[01:01:52] some dude in your garage that just has a good track record and you draw interest today forget it
+[01:01:59] that's not gonna happen but you could definitely you know raise money and and and do okay make
+[01:02:04] a life for yourself um you know if you didn't want to go down that route you know with with local
+[01:02:09] people you know local businesses you want to run local money or friends and family things like that
+[01:02:15] you know you don't have to get out there and like pitch yourself to the world if if you don't
+[01:02:21] want that you know if you do you're gonna need sure you're gonna need some uh some capital to
+[01:02:28] to build a big house that allows these people these big investors to enter um because right now for a
+[01:02:36] lot of people like with my own situation I call you know have have conversations you know people
+[01:02:42] reach out to me you know from family offices fund the funds things like that that see my track record
+[01:02:48] and they say oh yeah we like it you know we're thinking about you know can you tell us a little
+[01:02:52] more about your system and your thinking everything tell them about everything what's your aum oh it's
+[01:02:58] it's x oh that's too small we can't really touch that right now oh do you have uh all these other
+[01:03:05] bells and whistles the compliance to this to that no I don't have that right now uh don't
+[01:03:11] don't see it as a need um oh well those are the things we require you know so it's like
+[01:03:17] immediately if you don't have all these extra all this extra infrastructure um
+[01:03:24] the biggest guys are not going to be able to invest with you just that's just the case
+[01:03:28] especially after probably 2008 you know everything's everyone's all freaked out now that everyone's a
+[01:03:33] fraud and everything so yeah all the uh everyone's just kind of picky but that's not the case for
+[01:03:41] you know you're the investor investors that you could probably find um on your own that that you
+[01:03:49] know you know your friends and family extensions of that they don't require that stuff yeah sure
+[01:03:56] no that's really good so we should probably um start winding this down we've been talking for
+[01:04:02] close to an hour now but let me just ask I've got I've got two more questions I'm keen to ask
+[01:04:07] you so so the first one would be um are there any traits from your time playing sports um earlier
+[01:04:14] on in your life that you believe have helped you succeed as a trader any traits that have uh
+[01:04:20] you've essentially carried over and applied to your trading today yeah I'd say uh a couple one
+[01:04:27] off the field and one on the field off the field was the preparation of the you know
+[01:04:35] you prepare to develop confidence that's a that's how at least that's how it worked for me I if I
+[01:04:42] didn't practice and prepare for the game you know I was a pitcher so a baseball pitcher so I
+[01:04:50] I would need to you know work over work on my pitches and protect you know do my arm you know
+[01:04:56] shoulder exercise to keep my arm healthy and and there's my other exercise for my other
+[01:05:02] body to be loose and stretched and strong and everything so I could be explosive and move
+[01:05:08] freely and things like that um so if I didn't do those things you know in between starts
+[01:05:16] I didn't feel confident and I couldn't execute well on the field um so that was huge for me
+[01:05:23] because I I was not a kid that was blessed like with this superman talent where I could just
+[01:05:30] like roll out of bed and just like kind of do do really well I really needed to do my work and like
+[01:05:37] do all do all the little things uh that that I don't know that that helped me you know
+[01:05:45] get on the same playing field as some of like these like superstar athletes or you know these
+[01:05:49] things so um that's what helped me a lot and I became like I got a lot of joy out of it you
+[01:05:57] know I almost enjoyed practice more than the games a lot a lot of the time um because it was just that
+[01:06:06] it's just that like this is what I got to do I and plus I got to like do it while I was like
+[01:06:11] alone it was like my little sanctuary you know I was in my I was in the zone and just preparing
+[01:06:17] for the game and you know visualizing you know kicking ass on the field when when the game
+[01:06:23] time came you know so I I know I'd like to all those things that's probably why I got into this
+[01:06:30] you know why trend following why systematic approach appeals to me because you get to
+[01:06:35] prepare you get to you know you get to do all the little things and like the training is kind of
+[01:06:41] just like pretty easy you know it's it's not a lot of work you know it's the practice time and
+[01:06:47] the preparation time is the work um so I don't I think um also on the field you know when the
+[01:06:56] game time came you know you had the confidence everything um and you're playing you know you
+[01:07:02] get sometimes you get situations that uh you know are you have you have some pressure um you have
+[01:07:11] you know the games on the line you know you have a big spot in the game where you know it's
+[01:07:17] it's a make or break you know in my case like a pitch where it can mean the difference between
+[01:07:21] getting out of the inning or or losing the game or going behind falling behind so
+[01:07:28] it was weird and what I still feel today is that I can deal with pressure very well
+[01:07:36] because I know I've done the work so I if I know I just keep doing the work and I know I do what
+[01:07:43] I'm supposed to do that there really is no pressure the pressure is really just I feel like
+[01:07:50] when I when I feel pressure is when I feel like I'm unprepared and I used to feel that way um
+[01:07:56] sometimes in school when I didn't study for a test as much as I should have or something like that
+[01:08:01] or making a presentation which like doing a project that I didn't do as well on or I didn't
+[01:08:06] prepare as well on that's when I would feel when my heart rate would go up I get that anxiety
+[01:08:12] like those rushes through like I get in like my chest but you know I get those feelings that's like
+[01:08:18] oh my god I don't know what I'm doing like I'm not as good and then my delivery you know like my
+[01:08:23] test taking I'm nervous you know I'm not thinking clearly and smoothly and slowly and same thing
+[01:08:30] on the field like everything the game is moving fast I you know I'm not as I'm not as calm
+[01:08:36] so I can't be I can't execute my move my pitching motion as fluid and as explosive as it needs to be
+[01:08:45] in order to execute the pitch well you know if you're jittery and your hands are you know shaken
+[01:08:52] and you're not as sturdy on your feet and your mind's racing because you're now aware that you
+[01:08:57] didn't prepare so your mind is screwed too so um yeah I think that happens um in trading as well
+[01:09:06] that's when people jump off their systems and jump off their approach they it's it's likely due to a
+[01:09:12] preparation issue maybe or or they they don't really have a style that they're committed to
+[01:09:19] they have kind of a style but they don't have a really rock solid foundation an approach
+[01:09:28] for what they're doing they're kind of just on the whim you know kind of just making it up as
+[01:09:33] they go along and they're winging it like in my test taking I still like you know maybe some of your
+[01:09:40] viewers have the same experience too they just like didn't study or something they they come into
+[01:09:44] tests and they're all anxious and they're I'm just winging it and I'm just you know whatever I think
+[01:09:49] I know it okay but you know they definitely usually don't know it on average they don't know it as
+[01:09:55] well as as if they you know took the time to study for it and prepare for it so yeah absolutely yeah I
+[01:10:04] like I really like how you highlighted the the need for preparation there I think that's that's solid
+[01:10:09] and I mean in that answer you pretty much covered the the second question I was going to ask here
+[01:10:15] which was going to be around what uh a quote I've heard you say in the past is um people know
+[01:10:21] what to do but they they just don't do it and I mean you kind of you kind of covered it there is
+[01:10:25] is a lack of preparation and um yeah yeah and I think um that's I think that's something that the
+[01:10:36] that the best traders do really well they know what their style is they know what they what they
+[01:10:43] what they like about their style what they don't like about the style you know there's
+[01:10:46] some things about trend following I just don't like you know but but I know I can't have it all
+[01:10:51] I can't have everything um it's it's unnatural to have everything and if you want to have everything
+[01:10:59] just just you know go observe the uh the star systems out there in the universe you know they
+[01:11:06] want to have it all for them what happens they collapse into a black hole and they and they die
+[01:11:11] you know so I feel that you're gonna have to give some things up in order to in order to do
+[01:11:18] your style well um you know in trading you know in trend following you know you're giving up you're
+[01:11:24] giving up the need to catch every little wiggle and move out there you're giving up the need to
+[01:11:29] even understand what the markets are doing you forget that with trend following you're
+[01:11:35] kind of just I don't really know why this thing is moving that well um but I'm in it and I'm long
+[01:11:41] I'm in it I'm riding the trend and I gotta keep I gotta stick with this um because that's my system
+[01:11:48] I need to I need to ride trends so I can't afford to not be in this one just because I don't understand
+[01:11:55] it um that's kind of one of the most I don't know maybe one of the bigger one of the
+[01:12:02] bigger issues people have with it is that oh how could you not know what's going on what are you
+[01:12:07] talking about how can you do how can you be long a thing and not understand why it's moving
+[01:12:13] and that's like how do you answer that you know to investor or someone that that has come up with
+[01:12:21] in a career that it's built on understanding things and a lot of trend followers just don't care about
+[01:12:27] that and doesn't mean they can't make money because obviously they've shown there's a history of them
+[01:12:34] doing really well but it's something that someone who doesn't like to feel that won't be they won't be
+[01:12:42] able to be a trend follower then you know sorry you just won't be able to do it because that's
+[01:12:48] you commit that in your in your style as to not understanding so you just need to be um you
+[01:12:54] know okay with with what your style is and what what the quote-unquote good and bad of it is you
+[01:13:03] know what you like and what you don't like and that helps you I think create a style that you can
+[01:13:09] execute like a navy seal every day like you get you could be able to do it and do it well and not
+[01:13:16] and not apologize for yeah I don't understand it either but this is my style to do it and I'm
+[01:13:21] doing it rather regardless I this is I know what I have to do so you know I feel you know getting
+[01:13:30] and being in touch with uh at least the things that you like and don't like you can create a better
+[01:13:35] strategy for yourself that you could be able to execute well and then when you can do that
+[01:13:41] you'll probably do you just stand to do a lot better over the course of your career with
+[01:13:46] Matt treaty yeah no doubt so well Mike we should probably wind this down now but um I mean thank you
+[01:13:53] very much for coming on it's been really great to to you know have you share these lessons and
+[01:14:00] experiences and what you you've you know discovered for yourself in the markets because I think it's
+[01:14:06] going to be interesting for listeners because you're coming at it from a different uh angle than
+[01:14:10] what uh many of the guests which we've had on in the past so it's good to have a bit of variety
+[01:14:16] in the mix so I really appreciate it man sure um do you want to share with listeners where they can go
+[01:14:22] to find out more about you uh sure I mean I have um I have a uh in my firms trading uh
+[01:14:32] site is is melasino's trading I think uh what will you have it in the um in the show notes
+[01:14:38] something because of my uh my name maybe yeah absolutely absolutely so if anyone wants to
+[01:14:44] check out uh michael's site and you know a bunch of other links and any of the resources that we've
+[01:14:50] talked about in this interview um including ed's site I'll link to that also yeah uh so they'll
+[01:14:56] all be at chatwithtraders.com forward slash 34 um everything will be there in the show notes
+[01:15:04] so yep I'll link to your website in there so definitely uh I suggest everyone goes over
+[01:15:10] there checks it out uh are you on twitter also yep um not not very active on it but I'm on it um
+[01:15:20] it's just uh it's m melasino's um again I would put that in the show notes because my I'm sorry my
+[01:15:26] name is Greek and it's it's kind of tough but it's like it spells like melissa uh so it's just m
+[01:15:32] m-e-l-i-s-s-i-n-o-s got it got it yeah no doubt I'll link to that in the show notes also um so
+[01:15:42] yep uh because I know many of the many of the listeners are quite active on twitter so
+[01:15:46] I'm sure they'd like to check you out there but yeah for for for a long-term uh systematic
+[01:15:52] trend follower you know twitter other than maybe posting some uh maybe more uh deeper long
+[01:15:58] long form uh type of content uh you know being on there you know like the stock
+[01:16:06] twits guys like you never see like a long-term trend fall on there because he doesn't really
+[01:16:10] you know he's not doing much he's not doing as much as uh some of those other uh more active
+[01:16:15] guys so um I know twitter's good I know twitter's good for that but yeah uh yeah for me in my style
+[01:16:22] no but yeah I should post I should be posting more uh informational stuff on there though
+[01:16:30] I think you know you know who does does that well is uh is jerry parker he was one of the
+[01:16:34] the turtles uh that covel uh highlighted in his book many times he's been on his podcast a few
+[01:16:40] times he he's good um and he's been around a long time he's probably a billionaire um
+[01:16:46] billionaire trend follower turtle probably the most successful turtle but uh yeah he does
+[01:16:51] that well on on twitter go check him out for sure okay now that's really good again michael thank you
+[01:16:57] very much for doing this uh we'll call it a wrap and let's talk soon you got it
+[01:17:07] you've come to the end of this episode of chat with traders but don't worry more great
+[01:17:11] episodes are on the way to stay updated with each great new episode be sure to subscribe to the
+[01:17:16] podcast in itunes and we'd love it if you leave us a rating and review we'll see you next time
+[01:17:21] on chat with traders

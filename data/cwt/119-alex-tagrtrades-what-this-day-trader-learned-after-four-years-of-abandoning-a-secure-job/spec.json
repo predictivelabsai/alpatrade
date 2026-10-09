@@ -1,0 +1,32 @@
+{
+  "trader": "Alex, @TAGRtrades",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Method is intraday day trading on 1-5 min bars with sector momentum and scaling; no daily-bar rules provided.",
+  "template": "none",
+  "method_name": "Intraday small-cap momentum trading",
+  "style": "day trading momentum scalping",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "small cap US stocks in hot sectors"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "No concrete intraday rules quoted for coding",
+      "assumption": "edge is purely discretionary intraday sector plays"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "119",
+    "page_url": "https://chatwithtraders.com/episode/119-alex-tagrtrades-what-this-day-trader-learned-after-four-years-of-abandoning-a-secure-job",
+    "youtube_url": "https://www.youtube.com/watch?v=K-iSM9aii7I"
+  }
+}

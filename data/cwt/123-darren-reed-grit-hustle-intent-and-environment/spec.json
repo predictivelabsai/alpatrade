@@ -1,0 +1,32 @@
+{
+  "trader": "Darren Reed",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Guest describes discretionary order-flow and market-psychology trading on a tick-by-tick basis with no concrete, codable rules for US stocks on daily bars.",
+  "template": "none",
+  "method_name": "Discretionary order flow trading",
+  "style": "discretionary order flow and psychology",
+  "timeframe": "intraday tick-by-tick",
+  "universe": {
+    "description": "Australian futures prop trading (not US stocks)"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Guest mentions stocks briefly but trading is futures-based order flow",
+      "assumption": "No daily US-stock rules exist"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "123",
+    "page_url": "https://chatwithtraders.com/episode/123-darren-reed-grit-hustle-intent-and-environment",
+    "youtube_url": "https://www.youtube.com/watch?v=eSq95Z0iiNk"
+  }
+}

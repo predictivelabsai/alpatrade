@@ -1,0 +1,44 @@
+{
+  "trader": "Bob Bright",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Method centers on shorting both sides of leveraged ETFs to exploit volatility decay/math edge with no concrete long-only daily-bar rules provided.",
+  "template": "none",
+  "method_name": "Leveraged ETF volatility arbitrage",
+  "style": "mathematical pairs short both sides",
+  "timeframe": "multi-day to perpetual",
+  "universe": {
+    "description": "leveraged ETFs (double/triple) vs non-leveraged"
+  },
+  "setup": [],
+  "entry": [
+    {
+      "rule": "short both long and short leveraged ETF sides",
+      "quote": "you sell the short you can sell the seller long so you're actually selling uh let's just for a good example is say over a period of say three or four months uh it goes up ten percent and down ten percent",
+      "timestamp": "[00:29:17]"
+    }
+  ],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [
+    {
+      "rule": "trade only when sufficient volatility present",
+      "quote": "if you don't have the volatility you better start to get out of the position if you have high volatility you just have to manage it a lot",
+      "timestamp": "[00:37:05]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "no specific entry/exit thresholds or exact instruments named",
+      "assumption": "general leveraged ETF volatility decay play"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "203",
+    "page_url": "https://chatwithtraders.com/episode/203-bob-bright-the-pursuit-of-edge",
+    "youtube_url": "https://www.youtube.com/watch?v=BaKbriULvOk"
+  }
+}

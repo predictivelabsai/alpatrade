@@ -1,0 +1,68 @@
+{
+  "trader": "Patrick Petersson",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Method is pure discretionary intraday scalping driven by intuitive feel for price action and news on 30s-1m charts with 5-minute average holds and no overnight positions.",
+  "template": "none",
+  "method_name": "Intuitive price-action scalping",
+  "style": "discretionary intuitive",
+  "timeframe": "intraday 30s-1m",
+  "universe": {
+    "description": "US stocks and indices (MNQ)"
+  },
+  "setup": [
+    {
+      "rule": "Watch for nervous candles before news/events",
+      "quote": "the best setup is when the candle get nervous when you see that the Candler goes goes a little bit nervous it goes a little bit uh high and up high enough high and up high and up and then the explore boom",
+      "timestamp": "[00:22:01]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Enter on explosive move after nervous candle + news confirmation",
+      "quote": "you see the candle goes a little bit nervous this is a good sign for you and a nervous candle would look how would that look like exactly",
+      "timestamp": "[00:22:33]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Manual break-even stop once profitable; no predefined stops",
+      "quote": "I play stop losses um very okay when I when I trade um then I place my orders my my stop loss is is extremely wide because I don't want trade with stop losses",
+      "timestamp": "[01:00:47]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Exit fast once move is done; average hold 5 minutes",
+      "quote": "my average holding time is mostly five minutes yeah so because I'm I'm the one will go fast and Fast out",
+      "timestamp": "[00:30:31]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "All-in on single stock; full financial power",
+      "quote": "I go always all in all the money what I have I use I use always my full Financial power always",
+      "timestamp": "[00:42:02]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Require live news audio feed; trade only when news available",
+      "quote": "I would say no um because I'm no it's it's a it's a hard question normally I would say uh you don't need the news because when the news are out um the move is done but uh when I have not the news on my site",
+      "timestamp": "[00:25:45]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Mentions both long and short but prefers shorts; also trades MNQ futures",
+      "assumption": "Primary method remains intraday discretionary on US equities"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "260",
+    "page_url": "https://chatwithtraders.com/episode/260-patrick-petersson-breathing-in-breathing-out-intuitive-hits-on-the-markets",
+    "youtube_url": "https://www.youtube.com/watch?v=FlYsJpQKJ7Q"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "trader": "Wayne Himelsein",
+  "category": "options",
+  "testable": false,
+  "reason": "Method is primarily options-based long volatility trading (calls/puts on indices/stocks) with trading around noise, not concrete long-side daily-bar rules for US stocks.",
+  "template": "none",
+  "method_name": "Long volatility options trading",
+  "style": "options volatility with swing overlay",
+  "timeframe": "multi-frequency",
+  "universe": {
+    "description": "Options on US equity indices (e.g. S&P) and stocks"
+  },
+  "setup": [
+    {
+      "rule": "Expect mean expansion / big directional change",
+      "quote": "volatility is mean expansion right so something is going to take off in in a direction",
+      "timestamp": "[00:15:04]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Buy calls for up capture or puts for down capture",
+      "quote": "if you if you're long vol and you want to be and you want to take advantage of the market going up you buy a call",
+      "timestamp": "[00:17:41]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Limited to premium paid",
+      "quote": "all you could lose at the end of the day is your premium",
+      "timestamp": "[00:25:28]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Trade around noise while holding core long vol exposure",
+      "quote": "instead of buying and holding this call for a month i'm gonna do i believe that i can you know the market's going to be a bit down over the next few days let's say as a swing trader i'd say okay it sell it looks a bit toppy here so it's going to pull pull in so i'm going to sell some of the calls i have",
+      "timestamp": "[00:21:21]"
+    }
+  ],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Mentions early equity stat arb but current method is options long vol",
+      "assumption": "Main method per episode focus is options"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "202",
+    "page_url": "https://chatwithtraders.com/episode/202-wayne-himelsein-betting-against-stability",
+    "youtube_url": "https://www.youtube.com/watch?v=HaFm6hG-x9o"
+  }
+}

@@ -1,0 +1,1927 @@
+# 077: Dennis Dick – How to be a Profitable Short-Term Trader in a High Frequency World
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT7880006911.mp3
+
+[00:00:00] What would your trading look like if capital wasn't the constraint?
+[00:00:03] That's the reality for most traders. It's not skill-holding them back, it's size.
+[00:00:07] Trade the pool changes that. Step into the U.S. equity markets with up to $200,000 in buying
+[00:00:13] power without committing your own capital. Full access to stocks and ETFs,
+[00:00:18] longer short, executed with the precision and freedom serious traders expect.
+[00:00:22] Your performance is measured by one standard. Discipline risk management and consistent
+[00:00:26] execution. Meet that standard and you operate at scale. No subscriptions, no ongoing obligations,
+[00:00:32] just a clear path forward. For those ready to trade beyond limitations, this is the next level.
+[00:00:39] Trading in the financial markets involves a risk of loss. Podcast episodes and other
+[00:00:43] content produced by chat with traders are for informational or educational purposes only
+[00:00:48] and do not constitute trading or investment recommendations or advice.
+[00:00:52] How are you doing, guys? You're listening to Episode 77 and I am your host, Aaron Firefield.
+[00:01:08] As per usual, thank you for being here. Now, what you're about to listen to is a really
+[00:01:13] interesting conversation I had with Dennis Dick. For a little context, Dennis first started out
+[00:01:18] meddling with penny stocks before soon joining a well-established prop firm known as Bright Trading.
+[00:01:24] This was in the late 90s. Now, astute listeners may actually pick up on the fact that this was
+[00:01:29] also where Jeff Davis from Episode 70 got his start too. To this day, Dennis remains with
+[00:01:35] the same firm, still as an active short-term equities trader, but also as their market
+[00:01:41] structure analyst. And if his voice sounds somewhat familiar, that's probably because
+[00:01:45] he's the co-host of Benzinga's pre-market prep live morning show.
+[00:01:50] Some of the key talking points that come up over the next 60 minutes here include scalping,
+[00:01:56] is it still a viable strategy, surviving as a short-term trader in a high-frequency world,
+[00:02:02] various order types and the pros and cons of those, and the opportunities that can be
+[00:02:07] found trading the open because this is actually where Dennis makes roughly 50% of his money
+[00:02:12] each day within the first five minutes. All right, traders, I hope you enjoy this
+[00:02:16] episode. Here is my chat with Dennis Dick. I'm just pretty much things that we spoke about
+[00:02:24] the other week, how you came up as a trader, prop trading, how you trade today, particularly
+[00:02:30] around the open and after hours, and also really keen to speak to about some market
+[00:02:35] structure topics as well seen as you're a market structure analyst. So how does that sound?
+[00:02:41] Yeah, sounds perfect. I tend to go on tangents. So I guess if you know if we're going a few
+[00:02:45] tangents there, those make it interesting as well. Yeah, no, that sounds good. That sounds good.
+[00:02:50] So yeah, feel free to do that. I mean, we can hear what you've got to say. So let's just
+[00:02:55] start it off. So the first question I'd like to ask you is how did you get started? Like,
+[00:02:59] what was it about trading that got you interested? I was trading my parents' money in
+[00:03:04] university. So my parents had a stockbroker. And I was taking finance in university. So I
+[00:03:11] started getting interested in the stock market and started playing the penny stocks. I think
+[00:03:14] everybody starts with penny stocks, it seems like. But there was a couple of penny stocks,
+[00:03:20] there were advisories, newsletters, email, newsletters. And it was interesting to me.
+[00:03:26] I'd see these newsletter come in my inbox. And I didn't know at the time, but it was
+[00:03:30] basically just a pump and dump scam. But looking back on 1997, so I'm going back 20 years ago,
+[00:03:38] you'd get these emails and they basically would be just trying to pump a stock. And
+[00:03:43] you'd look at the stock and you'd get the email the night before and you'd see it the next day
+[00:03:47] and it would go up and you're like, holy cow, this newsletter is awesome. They're literally
+[00:03:53] sending me information on a stock and it's going up the next day. But really it's just
+[00:03:57] because they're sending it to thousands and thousands of people and it's actually pumping
+[00:04:01] up the price of the stock, looking at hindsight. But that got me interested just in the markets,
+[00:04:05] just playing the penny stocks and seeing how everything moved. So I was starting to trade
+[00:04:10] my parents' money and I was just trading basically during the internet bubble. So
+[00:04:15] they gave me a little bit of money to play with and just by sheer luck. And just because
+[00:04:20] of the environment we were in, it seemed like everything that I would buy wouldn't make
+[00:04:24] money because it wasn't such a raging bull market. Like I can remember stocks that are
+[00:04:29] probably long gone now but like Excite at Home and these other search engines that were trading
+[00:04:34] publicly and these stocks would go up tenfold in a year. Like the tech bubble of the NASDAQ
+[00:04:41] was really something. So that's kind of how what spurred my interest and I was just trading
+[00:04:46] retail then obviously my parents' money. And then I graduated from university and
+[00:04:51] instead of getting a real job I had a friend who was trading a bright trading in
+[00:04:56] Detroit, Michigan. And I was Canadian so there was going to be a little bit of to do with visas
+[00:05:01] to go across the border in that. But I worked that out and actually went over and met the
+[00:05:06] office manager there who coincidentally, I've been with for a long time now, I now do a radio
+[00:05:12] show with them, Joel Alconin. And I met him and there really wasn't much to it back then.
+[00:05:18] This was 1999, there wasn't any licensing or anything that was necessary. So
+[00:05:23] I went in and just interviewed with him and I saw the trading office. There was like maybe
+[00:05:28] 12 or 13 guys trading in there and I was like, this is fantastic. So you had to have $25,000
+[00:05:36] to trade upright trading. So you put that $25,000 performance that deposited into your account
+[00:05:43] and then that was the money that your losses or your gains would go to. So with that $25,000
+[00:05:53] they would give you access to the firm capital and that could be upwards to $500,000 to a
+[00:05:59] million dollars. So you really got by, if you were on a retail account imagine trying to use $25,000
+[00:06:07] to make a living would be impossible. But that $25,000 now that you have access to the firm's
+[00:06:11] money can make you a lot of money. And obviously that capital, you can employ a lot of different
+[00:06:19] strategies as opposed to buying one or two stocks. You can employ a plethora of strategies when you've
+[00:06:25] finally, when you've got access to half a million bucks. So that's how I got started upright trading
+[00:06:30] in 1999 and it's now 2016, 17 years later and I'm still upright trading. So
+[00:06:36] That's awesome. That's awesome. That's a really cool way to kick this off. So
+[00:06:40] I've got to ask you, were you ever nervous trading your parents' money?
+[00:06:45] Yeah, for sure. Even back when I was retail, but not so much. I think I wasn't nervous because
+[00:06:51] in the beginning it just seemed like everything worked. And like I said, looking back in hindsight,
+[00:06:54] it was just the market environment we were in. The NASDAQ was going straight up,
+[00:06:58] everything was going straight up. So you bought some little tech stock and it just
+[00:07:01] went up. So it seemed like I was very confident going in because I didn't have a lot of losing
+[00:07:08] trades. So but I can remember when I first started upright and I was trading with my parents 20,
+[00:07:12] I actually borrowed the $25,000 from my parents to start upright trading and I can remember being
+[00:07:17] nervous then. So and starting upright and it was kind of completely different. I remember,
+[00:07:23] I remember actually on my second day of trading and you're still, you're trying to get used
+[00:07:27] to the use to the interface. I trade on its Goldman Sachs ready plus platform and that's
+[00:07:32] what we were trading on back then as well. And I remember you're just trying to get used to
+[00:07:37] it and I accidentally, what you could do is if you click in the montage and you click on the offer,
+[00:07:42] your order entry window automatically populates and it would populate with the size of what you
+[00:07:49] clicked on. So I accidentally clicked on a 2,000 share order and I accidentally bought
+[00:07:54] 2,000 shares of Microsoft. I wanted to buy 100 shares of Microsoft. So now I'm thinking,
+[00:07:58] whoa, whoa, whoa, I'm trying to buy 100 shares of a $100 stock. I just bought 2,000 shares.
+[00:08:04] I can remember trembling at the mouse. I was literally shaking at the mouse. I'm a 22 year
+[00:08:09] old kid here. I just, on my second day of trading, I've just thrown $200,000 on Microsoft,
+[00:08:16] which we were in the tech bubble, Microsoft really moved a lot back then. So that was a big position
+[00:08:20] and I quickly got out of it and I think I actually ended up scratching the trade. So
+[00:08:24] no damage on that. But then I had to sit back and like, whoa, sit back and really analyze and
+[00:08:29] make sure you learn how to use the configuration and everything on the platform before you just
+[00:08:34] start clicking randomly. So very dangerous when you're on a proper account. If you're in a retail
+[00:08:39] account, there's like a confirmation window. There's something different happening. So
+[00:08:43] you make an accident. Now you have a confirmation screen. It's like, oh, no, I didn't want to do
+[00:08:46] that. And Goldman Sachs where you put it, you click you own. So it's that quick. So it's a
+[00:08:51] little bit different, but that trade actually didn't end up breaking me. But I can remember
+[00:08:56] my first week I made like a little bit of money just, you know, by luck. And then I remember my
+[00:09:01] second week there and I just was losing on everything. I think I had the office record I
+[00:09:07] lost on 17 consecutive trades. And I'm like, how you know, if you think about it, trading is
+[00:09:13] really kind of like 5050. I mean, if you're buying it could go up or it can go down. How do
+[00:09:18] you statistically lose on 17 trades in a row? You do it something really bad. I'm like, holy
+[00:09:22] cow. I'm really bad at this. So, but it didn't deter me and I stuck with it and slowly started
+[00:09:28] to learn, you know, the different systems and we were kind of playing market maker back then and
+[00:09:32] learning how it goes. And after six months, I started to become profitable. So it was a little
+[00:09:36] bit of a learning curve to it, but I did gain the profitability. I never really lost that much
+[00:09:40] money. The most I ever got down, I think in my trading account was about 3,500 bucks on the
+[00:09:45] 25 grand. So I never really got down that much. And that was because I really followed, you
+[00:09:49] know, break trading's lessons. They're like, trade with 100 shares. You know, you trade with
+[00:09:53] 100 shares, you can last a long time because a good day, you might make 200 bucks, a bad day,
+[00:09:58] you might lose 200 bucks, but it's not like you're going to blow your account out in one day.
+[00:10:03] Okay. So I want to dig into a few things you've said there a little bit more.
+[00:10:07] So just backing up a little bit, what were some of the advantages you saw at the time
+[00:10:12] by joining a prop firm? Like, why did you decide to go into the prop industry instead
+[00:10:17] of continuing to trade as a retail trader? Big advantages back then. The advantages aren't as
+[00:10:23] much as they used to be now because we've had the internet, there's so much advancement with
+[00:10:28] retail brokers that you probably can do a lot of stuff that we do now through a retail broker.
+[00:10:34] The biggest advantage back then was just the speed. So we had T1 connection,
+[00:10:39] which was everything back then. So you're getting the information faster. You can send
+[00:10:44] your orders directly into the system where you literally, like in my sec, like, and obviously
+[00:10:50] in your first six months of trading, you're still learning, but in my first few years of trading,
+[00:10:56] I was basically just trading the news and we were the fastest. So when news would break,
+[00:11:00] like I can remember even, for instance, if there's a Fed decision at 215,
+[00:11:06] they're always at two o'clock now Eastern, but they used to be at 215 back then and they're
+[00:11:10] raising interest rates. So we'd have spreadsheets to go to buy a whole pile of the S&P components
+[00:11:17] and they would sit there for a few seconds. It wasn't like high-frequency trading is now
+[00:11:21] where it's gone in milliseconds. Those opportunities were there for seconds and
+[00:11:25] that was everything and we were fast. So you could literally pick off anybody who's sitting
+[00:11:30] out there with a limit order. They're kind of like a sitting duck and we're just picking
+[00:11:34] those off and basically making the money from because those orders that are sitting out there
+[00:11:39] aren't priced for the new information that, hey, they just lowered interest rates, so everything's
+[00:11:44] going to go higher. So that was the number one advantage was the speed. The second advantage,
+[00:11:49] which I talked briefly about at the beginning of the interview, is the capital. So like I said,
+[00:11:53] if you're trading retail and if you're a two-to-one margin or four-to-one margin intraday,
+[00:11:58] it's hard to make a living with a $25,000 account. If you even say you had a four-to-one margin,
+[00:12:05] that's $100,000. Well, you got to do 10% on your money. You're only going to make $10,000. You're not
+[00:12:10] going to live very well on $10,000. So that's why that access to capital was key too. And obviously,
+[00:12:16] the other big thing is that a retail broker, you have a ticket charge and the ticket charge is that
+[00:12:20] $799 a trade or $1099 a trade or $5 a trade. No ticket charge is that bright. It's just flat
+[00:12:26] out. Well, now it's profit sharing, but back then it was commission based. So we'd pay
+[00:12:32] one cent a share. So if I'm buying something, and it was in fractions back then too, so if I'm
+[00:12:39] buying a stock on the NYSE at $25.25, and I sell it for $25.516, I'm actually going to
+[00:12:46] make $6.25 minus my two cents. I'm pocketing $4.25 minus the little SEC fees in there.
+[00:12:52] I'm clearing $0.04 for sure. So on a minimum tick, which was $0.16 back then, I'm making money.
+[00:12:58] You wouldn't be doing that at a retail broker. The ticket charges would kill you.
+[00:13:02] So that's the difference is that there's no ticket charge at a prop firm.
+[00:13:07] Okay. And I just want to pick up on some of the terminology you said in your response there.
+[00:13:12] Can you just expand on what you mean by picking off?
+[00:13:16] Okay. So this, if you have a limit order that is sitting out there, and this is going back
+[00:13:22] to like, if you want to talk like, it's like adverse selection risk is what it really is.
+[00:13:26] So an adverse selection is just the risk that your order is going to not price in
+[00:13:32] the information fast enough, then another trader might be able to take your order. So for instance,
+[00:13:37] let's just use the example that I cited earlier where you had the Fed decision.
+[00:13:42] So there will be orders sitting on the limit order book at all, at any given time. There's going
+[00:13:48] to be bids and asks on, there's going to be buy orders out there and sell orders out there.
+[00:13:53] So if all of a sudden the S&P futures drop 10 points because of a Fed decision at 215,
+[00:14:01] that's all of a sudden, all of those bid, all those buy orders that are sitting on the limit
+[00:14:05] order book are mispriced because they were out there before that information was there,
+[00:14:10] the before that information of the interest rate rise or the interest rate decision
+[00:14:17] was publicly available. Once that information becomes publicly available,
+[00:14:21] then what you have is, and you'll see this in the high frequency trading world,
+[00:14:25] that they'll come in and obviously take out whatever is down there. So the S&P futures fall
+[00:14:28] 10 points. That means all your S&P components for the most part, like obviously as a whole,
+[00:14:33] are going to drop by that percentage. So it might be easier to say in percentage. Let's just say
+[00:14:37] hypothetically for simplicity purposes, S&P futures drop 1%. The S&P 500 components as a whole
+[00:14:44] have to drop 1% as well. It didn't do that instantaneously though in 1999. It took a few
+[00:14:50] seconds for that to happen. So what we would do is if General Electric was bidding 2550
+[00:14:56] before this information came out, S&P futures all of a sudden fall 1%, there's still a 2550 bid
+[00:15:02] sitting there. I'm going to hit that 2550 bid because it's mispriced now for the new information
+[00:15:08] that was just given to the market. I'm going to probably hit the 2545 bid,
+[00:15:12] probably the 2540 bid as well if it's there. And then watch as other traders come in and
+[00:15:18] the arbitrage comes in and reprices G possibly down to 2525 or 2530 cents lower or maybe
+[00:15:26] approximately 1% lower because its beta is approximately 1% for that interest rate or
+[00:15:33] that movement in the S&P futures. So basically I was just playing the arbitrage of the S&P
+[00:15:39] components versus the actual tradeable futures contract, which is obviously the 500 components
+[00:15:46] combined. And now the difference is why you can't do that now is high frequency traders
+[00:15:52] are repricing that in milliseconds. So that's why speed is so important to high frequency
+[00:15:57] traders because they're trying to beat the other high frequency traders. So really in
+[00:16:01] the evolution of the markets, they're just doing exactly what we were doing manually
+[00:16:05] in 1999 or obviously on the floor before that as well. They were doing the same thing.
+[00:16:10] It was just a lot slower. Now it's been sped up in so quick that all those microseconds
+[00:16:16] matter. Sure, sure. And we'll pick back up on that in a little bit as well. I'm keen to hear more
+[00:16:22] about your views on HFT and that sort of thing. I know you've commented on that regularly. So
+[00:16:29] just continuing with the prop firm, what were some of the things that they taught you as you
+[00:16:35] joined the firm? And some of the things they taught you in terms of like trading methods,
+[00:16:40] did you just continue trading the way you had been trading when you were more a retail guy?
+[00:16:46] Or did they teach you some new ways of trading that you actually put into practice?
+[00:16:51] I think both. I think I learned a lot on the job too and I kind of put my own spin on a lot
+[00:16:55] of things. But bright trading is great and they're still great like that. They do conference calls
+[00:17:00] every morning. We just do them every morning to talk with our traders and discuss what's
+[00:17:05] today's action. What are we seeing today? And they would do regular, you could go out to Las Vegas,
+[00:17:11] regular trading workshops. Now we have them online because it's just simpler, but back then people
+[00:17:16] would actually fly in and you'd learn different strategies and some traders would share strategies,
+[00:17:20] some wouldn't. I've always been one that from my own personal, I would share any strategy
+[00:17:26] that's capital intensive. If it wasn't capital intensive, I wouldn't probably share it. That
+[00:17:30] even goes for the radio show that I do Benzinga. I always share the capital intensive stuff
+[00:17:34] because if I don't want all the action, there's more for everybody, that's fine.
+[00:17:39] But if I'm in some little strategy or some little small cap stock where everybody else
+[00:17:43] is going to matter, then that's a strategy I probably wouldn't share. So I think that's
+[00:17:47] probably the traders at Bright probably follow that mentality a little bit where they might share
+[00:17:52] some of the more capital intensive stuff and overall strategies. But Bright themselves was
+[00:17:56] great. We had Don Bright who passed away a couple years ago, but he had a strategy called
+[00:18:00] the opening OPG strategy, which was the opening only order strategy. That's a strategy that I still
+[00:18:06] employ today. It was basically always, if you just talk back to 1999, it was a strategy that
+[00:18:13] tried to put you on the same side as the specialist, the guy on the floor. They call
+[00:18:19] those guys designated market makers now, but back then there was a specialist that was running
+[00:18:23] each stock. And on the NYSE in 1999, 80% or 90% of your order flow went through that guy.
+[00:18:32] He's trading, but he's also trading his own account as well. So if you can trade on the
+[00:18:36] same side as him, it's a definitive advantage. And what Don Bright had figured out is when a
+[00:18:40] stock is opening too high or too low relative to fair value or where the pricing should be,
+[00:18:46] the specialist would often have to provide liquidity of that. So if a stock was opening too
+[00:18:51] high, for instance, specialist would provide liquidity to that by selling the stock short,
+[00:18:56] the extra shares, or if the stock was opening too low, specialist might have to come in and
+[00:18:59] provide liquidity by buying the shares. Well, if the specialist just buy the guy on the floor
+[00:19:04] who has the order book and all the information, because that wasn't public back then the order
+[00:19:08] book, the specialist held that book on his own, if he's buying the stock, you probably want
+[00:19:13] to be buying the stock. So we traded a lot just trying to figure out which side the
+[00:19:17] specialist was on. That was even through my regular tape reading, I would be trying to
+[00:19:22] figure out, okay, is the specialist long or short here? Because he's probably going to try
+[00:19:26] his best to push the stock higher. Now they have rules that can't just physically come in and
+[00:19:30] start buying the stock up, but they can buy stock from the sales and then naturally let the
+[00:19:34] order flow take it higher. So in the bottom line is there was a big advantage back then
+[00:19:40] to figure out which side the trade the specialist was on and trading along with him.
+[00:19:45] And that's all short-term trading, like our trades were typically in minutes or even seconds.
+[00:19:50] We weren't in trades for hours, we're scalping. Got it, got it, okay. So one of the things you
+[00:19:55] said a little bit earlier was that you were pretty much profitable, like consistently profitable,
+[00:20:00] within about six months, like within your first year of trading. I mean, that's
+[00:20:06] pretty abnormal, especially from my experience talking with traders that
+[00:20:11] they actually become profitable within the first year. How do you think you were able to
+[00:20:15] pick it up so quickly? I know you'd had a little bit of experience on the retail side
+[00:20:20] before coming into the prop firm, but even still it seems as though you picked up trading
+[00:20:25] fairly quickly compared to most. What do you think, why do you think that was?
+[00:20:30] 1999, that's why it was. It was a lot easier back then because the evolution of the markets,
+[00:20:37] you just got to think of what's happened. So it's come from the floor and it is in its infancy
+[00:20:42] in 1999 when I started. It's just getting started at the computers. So we are fast enough where we're
+[00:20:48] sending orders and doing stuff like that. We have so many advantages over even the floor traders
+[00:20:52] back then. Really, when I think about it, great trading and firms like ours were your
+[00:20:57] first high-frequency traders. We really were. We were employing the same strategies that they
+[00:21:01] employ today. They just do them faster. So they did all this stuff on the floor beforehand.
+[00:21:06] So it was just the evolution of taking these strategies from the floor and coming to the
+[00:21:10] computer and we were at the beginning of it. So the reason you know that I was doing so well in 1999
+[00:21:14] was because it was just a lot easier back then. We were quicker. We were the fastest traders.
+[00:21:19] We were picking off the uninformed order flow that wasn't priced for all the correct information
+[00:21:25] and that's exactly what high-frequency traders are doing today. So it's just changed a lot.
+[00:21:32] Coming back, you could ask me this later, but I think a better question for me is probably
+[00:21:35] how am I still profitable today in this environment? Not trading any of the strategies that I used to
+[00:21:41] trade because back then it was kind of like shooting ducks in a barrel, to be honest.
+[00:21:47] I can remember there's traders in the office that wouldn't have a losing day the entire year.
+[00:21:52] That was just simply just the information advantage. Trading on news and being quicker
+[00:21:57] than the next guy. I'm sure a lot of your high-frequency traders, you hear about stuff
+[00:22:00] like this, how virtue or different high-frequency traders don't have any losing days. I get that.
+[00:22:07] They're not cheating. When you're trading and you have a statistical edge and let's say it's
+[00:22:12] like 55% or 53%. If you employ that edge enough times during a day, there's a very,
+[00:22:19] very low probability that you're going to lose money on any given day. So that's why
+[00:22:25] I think I was able to pick it up back then. It was a lot easier back then.
+[00:22:29] Trading is a lot more difficult for human being now because of all that high-frequency competition.
+[00:22:36] At what point did the high-speed traders force you into trading higher time frames?
+[00:22:46] Like you said that your trades would be over and done within a matter of seconds.
+[00:22:53] I know as time went by, you sort of got forced out of that space and began trading minutes to
+[00:22:59] sometimes hours as the years went by. What point did that start to happen and how did you,
+[00:23:04] I guess, notice that? It was after the financial crisis. So we're talking 2008, 2009. I would say
+[00:23:11] in 2010 is when it really started to hit us. So I'm 11 years of basically probably being
+[00:23:18] the fastest. And we had automation too. So like I said, we were those initial high-frequency traders
+[00:23:24] where we're trading automated, we're speed, but then it's moved to co-location and it's just got
+[00:23:29] sped up and taken away from us. And now there's off-exchange trades, all kinds of other stuff
+[00:23:34] where there's definitive advantages over there. But it all really started, I would say,
+[00:23:38] like some people say reg NMS 2006, I think it was, but it was probably, maybe that was
+[00:23:44] the infancy of it. But really where it started, we started to feel a pinch where, okay, we got to
+[00:23:49] start adjusting some strategies. It's 2010. I used to run a manual trading system and I had a second
+[00:23:57] account. And my second account was fully automated. So I could totally, and this was probably 2004.
+[00:24:04] So when I'm fully automated in 2004, I'm way ahead of the curve from where we were today.
+[00:24:09] So I can remember my automated account would make money every day. 2005, 2006, 2007, 2008, it got
+[00:24:16] interesting because the financial crisis, I wasn't running as much automation in the financial crisis
+[00:24:20] because it was a different environment. But in 2005, 2006, those were relatively stable years.
+[00:24:27] I was running different automated like market-making type systems.
+[00:24:32] Those systems would make money every day. And now that's kind of how I understand
+[00:24:36] high-frequency trading so well. Maybe not the minutia of how the speed all works.
+[00:24:41] But I understand the strategies because it's my strategies. They're using our strategies.
+[00:24:47] And not that we created them, but traders like us were using those same strategies,
+[00:24:50] which were taken from the floor originally. It's all market-making strategies there.
+[00:24:55] So in 2006, 2007, and then you're trying to run automation in 2009, 2010,
+[00:25:03] and it's not working as well. In that automated account, I eventually closed,
+[00:25:07] I think probably in 2010, because it wasn't making money anymore.
+[00:25:10] I wasn't fast enough to... My computer systems weren't fast enough to make money with it.
+[00:25:15] But you know what? As a human being, I still had a definitive advantage because I have any
+[00:25:21] automated computer system that's trading on a program that has to be programmed in and figured
+[00:25:28] out where a human being can change their thinking on the fly. The program can't think for itself,
+[00:25:32] it's just going to do what it's made to do. So I think that's why I'm still profitable today,
+[00:25:37] is because I'm always quickly adapting to the new environment. And I would say I actually use
+[00:25:43] a lot less automation than I did 10 years ago. And that's counterintuitive because a lot of people
+[00:25:48] and a lot of traders say, oh, you can't trade unless you're automated now.
+[00:25:52] I would say you're late to the curve. Automation, the party was back in the early mid-2000s
+[00:25:58] for your regular Joe. And now I would say any automated systems that I run are very difficult
+[00:26:04] because I'm competing against the fastest firms in the world. And only one firm can win the race.
+[00:26:09] So there's five, six firms dominating that space. There's a lot of other high-frequency
+[00:26:13] training firms. There's five or six probably dominating it. And I can't compete with those.
+[00:26:18] And they have not even speed. They have relationship trades where they've got payment
+[00:26:23] for order flow. They're buying order flow from retail brokers so they can have the first
+[00:26:28] chance to interact with those orders. There's a lot going on. So I think I went on a pretty
+[00:26:33] good tangent here. But back to your original question, my automated systems weren't working
+[00:26:37] as well. Probably in 2010, 2011, I realized, hey, I've got to do some adjustments here.
+[00:26:42] And then my scalping strategies weren't working anymore because I can't get
+[00:26:46] filled with my bids or offers because there's other traders that are
+[00:26:50] quote-matching me and beating me to the price. So I adjusted. And I went from being
+[00:26:55] mainly a scalper to adjusting my time frame from seconds probably up to minutes.
+[00:27:00] So I'm still not trading an hour. I'm still not trading in days. But I'm probably trading in
+[00:27:04] minutes maybe up to a little bit longer than that. But there's still a lot of advantages for
+[00:27:11] a human trader just not in the scalping world. Okay. So just to summarize what you've said
+[00:27:16] there, essentially you're saying that scalping isn't a viable strategy any longer?
+[00:27:21] Not for a human being. No. And not even most of your automated programs because,
+[00:27:26] like I said, I was running automated scalping strategies for five, six years from probably
+[00:27:32] 2005. And I might begin the dates round, but mid-2000s, up until 2010, 2011, my automated
+[00:27:38] systems weren't making money anymore either. And it's just because
+[00:27:42] market making is all about getting filled on the bid and fill on the offer.
+[00:27:46] And when there's participants, we can jump into some of this,
+[00:27:49] but a lot of your order flow is now going off exchange. And it's funny,
+[00:27:54] everybody talks about the speed race, but really it's about relationships as well.
+[00:27:58] And you have a retail broker that routes orders out to an off exchange market maker.
+[00:28:04] That off exchange market maker has the first chance to interact with those orders.
+[00:28:07] And nobody competing with them. Those orders go through their platform first.
+[00:28:11] So they're going to have the chance to match my quotes. So if I bid a stock at $24.50,
+[00:28:16] well, it might trade at my price again and again and again. And I might not get filled
+[00:28:20] because the order that's trying to interact with my $24.50 bid is being routed off exchange and
+[00:28:25] executed directly by another probably a high frequency off exchange market maker.
+[00:28:31] So it's very, very difficult for a human being and even an automated system to compete with that.
+[00:28:38] So in a market making capacity or scalping capacity, it's nearly impossible to compete
+[00:28:44] with those top tier firms. And just to be clear, when we're talking about scalping here,
+[00:28:49] we're referring to equity markets, right? So futures and that sort of thing is a different
+[00:28:53] story altogether, right? Different markets. And I'm an equities trader.
+[00:28:57] So I'm not even going to comment on, you know, how that's changed. And, you know,
+[00:29:00] I can imagine how it's changed in the futures markets as well. But, you know,
+[00:29:03] I'm always been an equities trader. I've dabbled into the futures markets there.
+[00:29:07] But I never had any luck with them. I've always been an equities trader for 17 years.
+[00:29:11] And you kind of stick with what you know best. So the equities markets, there's a lot of market
+[00:29:15] fragmentation. When I was starting, like I said, 1999, 80 or 90% of your order flow went through,
+[00:29:21] on the New York stocks went through the New York Stock Exchange, went through the guy
+[00:29:24] standing on the floor. Now, you know, there's 15 or 20% only going through that. And there's
+[00:29:29] 11 other venues where, you know, these trades can transact. So when I bid a stock,
+[00:29:33] for instance, and this would be a good example, like a small cap stock, it doesn't
+[00:29:36] apply as much on the real mega caps, but you think about a small cap stock, it's maybe got a
+[00:29:41] market of 2450 to 2475. If I wanted to tighten that market go 2451, there's going to be an automated
+[00:29:48] program that automatically steps ahead of me 2452. I go 2453, they're going to bid 2454
+[00:29:54] instantaneously. So they're trying, you know, to be, you know, it's all Q priority. They
+[00:29:58] want to be at the top of the order Q, or they're just going to match my quote. And then,
+[00:30:02] you know, so a lot of times you'll see 2450, I'll bid, then five other exchanges will bid
+[00:30:07] along with me, I'll cancel, they'll all exchange, they'll all cancel too. They all want to lean
+[00:30:11] on my quote. And that's really what market making is, it's kind of leaning on the quote for protection.
+[00:30:16] So I've been 2450, they've been 2451, somebody comes in, sell to them at 2451, if the going
+[00:30:22] gets tough, S&P features start tanking, they hit me at 2450, lose a penny. So do you follow me on
+[00:30:28] that? And if I'm talking too fast, just slow me down.
+[00:30:31] No, no, it's excellent. It's excellent.
+[00:30:34] But you can just see how everything has evolved and changed where, you know, okay, so that's
+[00:30:38] called the algorithmic penny jumpers. Those are prevalent in the small caps. But then also,
+[00:30:43] you know, to top it all off, a lot of your small caps, this was small caps based in the U.S.
+[00:30:47] is a complete mess. So I bid 2450, let's say nobody else bids ahead of me, I can bid there all
+[00:30:52] day at 2450. Somebody comes in from a retail broker trying to hit me at 2450. So they're
+[00:30:57] trying to trade against my order. Well, that gets routed out to, you know, an off exchange
+[00:31:02] market maker that then actually has the, you know, the luxury of being able to match my quote.
+[00:31:08] So they're going to trade and maybe give them some small sub penny price improvement,
+[00:31:12] just a fraction above me. But they're leaning on my quote for protection as well.
+[00:31:15] So really in the small caps base, and even in the big caps, for the most part,
+[00:31:20] the quote now is just been, you know, being used to lean on by everybody else,
+[00:31:25] everybody that's gotten, you know, an advantage over you by speed or by relationships.
+[00:31:30] So really by me sitting out there with my 2450 bed trying to make a market, you know, taking the
+[00:31:36] rest of my 2450 bed, I'm the first guy there. I'm the guy taking the risk, but I'm not getting
+[00:31:41] the reward of getting the execution. The only time I get filled is when the thing blows through
+[00:31:45] and he has 2440 offer in my face. So you know what I do? I say, no, I'm not going to bid my
+[00:31:50] 2450, not going to give my quote to lean on here because, you know, they're using it against me.
+[00:31:55] So I'm not going to bid at all. So what I've done in my trading strategies, and this is the
+[00:31:59] number one thing I've done to survive in this world. And, you know, this is, you know,
+[00:32:02] goes beyond a lot of shares even. But what I do is instead of, you know, providing liquidity,
+[00:32:08] and that's why when you sit out there with your passive limit order, what you're really
+[00:32:11] doing is providing liquidity. Instead, I take liquidity. So, you know, when the, when
+[00:32:15] the spread tightens, if I was trading some small cap, I would lift the offer or hit
+[00:32:19] the bed, or maybe I'll go midpoint because sometimes I get a fill. But for the most part,
+[00:32:22] especially when I'm trading the mega caps, I never sit my orders out there because they're
+[00:32:26] going to use those against you. I want to just hit the bed or lift the offer. And that's why I
+[00:32:31] now focus on the mega caps because most of those have one cent spreads. So I consider that
+[00:32:36] like your high frequency trading toll, basically, because they monopolize scalping, they monopolize
+[00:32:41] the spread. They've brought it back, you know, from, it's kind of went full circle when I
+[00:32:46] think about it. You know, on the floor they used to have, you know, the monopoly on the
+[00:32:49] spread, then, you know, went to the E traders that kind of took it away from them. Now it's
+[00:32:53] kind of went all full circle. It went off exchange. It's doing some different things,
+[00:32:56] but they monopolize the spread again. So basically, when I'm talking spread, I'm talking
+[00:33:01] the difference between the bid and the ask just in case we have some newer listeners
+[00:33:04] there. But, you know, that used to be my payday. That's how I got paid was making
+[00:33:08] the spread. Now, you know, I can't because I can't compete with those systems. So
+[00:33:13] they're forcing me to pay the spread. So if they're going to force me to pay the
+[00:33:17] spread, well, I'm going to trade the stocks with the tightest spread. So I don't have
+[00:33:20] to pay very much. And that's, you know, like your bank America's, like your
+[00:33:23] Johnson and Johnson's, like your general electrics, like your Proctor and Gambels,
+[00:33:27] those kind of stocks have a penny spread. And I can get in and out of them with
+[00:33:30] relative ease with some size. Okay. So I want to pick up on some things
+[00:33:34] you're saying there. What sort of orders are you actually using in your trading
+[00:33:38] today? Like what type of orders are you using?
+[00:33:41] Okay. So I would say marketable limit orders, but I'm not. So the difference between
+[00:33:47] a market order and a marketable limit order is it's your price is set. So for
+[00:33:52] instance, let's say I'm trading general electric, I want to buy GE is 29 or I'll
+[00:33:57] just bring it up here right now, give you the current quote. So it closed at
+[00:34:00] 3023. Let's say it's 3023 to 3024. So if I'm going to go in GE, am I going
+[00:34:06] to join the bid at 3023 and try to save the penny? I could do that. But what'll
+[00:34:11] happen is I probably won't be filled until it's 3022 to 3023. So until the quote
+[00:34:16] actually rolls through my bid. That means, you know, that the bid has now become
+[00:34:20] the offer. So I'm paying the spread anyways. So why not just lift the offer and
+[00:34:26] make sure I get the trade. I always say, don't miss a trade to save a penny.
+[00:34:30] And that's really what you're doing. Now, the likelihood you're probably
+[00:34:33] going to get filled, you're probably going to get filled. But what if you
+[00:34:35] don't? What if your bid was low of the day? Now, you know, that's a huge
+[00:34:38] opportunity cost. So the opportunity cost is too great in this environment for
+[00:34:43] me to miss a trade to try to save a penny. So if I want to get in that,
+[00:34:46] it's 3023 to 3024. I'm going to use a limit order of 3024. I'm going to
+[00:34:52] send a buy order with a limit price of 3024. Maybe if I'm really aggressive
+[00:34:56] and I really want to be able to send a buy order with a limit price of 3025.
+[00:35:00] And, you know, I'm probably still going to get the 3024 because if the
+[00:35:04] best offer is there, they've got to route me there anyways. So it depends
+[00:35:07] how aggressive I want to be. But I'm basically using that price. The
+[00:35:10] reason I don't send a flat out market order is because we're in a high
+[00:35:13] frequency trading world where quotes can change very quickly. And that's
+[00:35:16] like a writing a blank check. So if I just send a market order to buy
+[00:35:19] GE, maybe I can fill the 3030. And maybe something happens in that
+[00:35:23] time frame that from when I click the button to, you know, my order
+[00:35:26] actually gets to the exchange, you know, that I don't want to
+[00:35:28] happen. Maybe I don't want to own that at 3030. So that's why I
+[00:35:31] never use market orders. I didn't use market orders back in 1999.
+[00:35:34] I don't use them today. Break trading's taught me it's like writing
+[00:35:37] a blank check. I always want to put a price on my order. So
+[00:35:40] that's what I'm using as a marketable limit order. So instead
+[00:35:42] of joining the bed with a passive limit order, a marketable limit
+[00:35:46] order is an order that's the marketable order is any order
+[00:35:50] that's actually trying to lift the offer. So if the offer
+[00:35:53] price is 3024, and I send a buy price at 3024, that is
+[00:35:57] a marketable limit order. I'm trying to lift the offer.
+[00:36:01] Okay, so I'm not quite sure that I understand the difference
+[00:36:04] between a marketable limit order and a normal standard limit
+[00:36:07] order.
+[00:36:09] A normal standard. Well, and it is just a limit order. It's
+[00:36:12] just a type of limit order. So a normal limit order. Yeah. So
+[00:36:16] a 3023, if I, if the, I'll just give you another example.
+[00:36:20] So same thing, 3023 to 3024 is a Merck and General Electric.
+[00:36:23] If I put a limit order to buy it at 3023, that is a standing
+[00:36:27] limit order. That's a normal limit order. Both are limit
+[00:36:29] orders. But because I'm not going to get executed
+[00:36:32] immediately, that is why it's not marketable. So I'm just
+[00:36:35] going to sit and join the bed because the bid is 3023.
+[00:36:39] You know, if I'm on whatever exchange I am, I'm going to
+[00:36:41] be behind price time priority. So there's 10,000 shares
+[00:36:44] been a 3023 on a behind behind those 10,000 shares.
+[00:36:47] So that's why, you know, I'm actually putting myself
+[00:36:51] kind of to the back of the order queue. And like I said,
+[00:36:53] a high frequency trading world, they basically monopolize
+[00:36:56] the top of the order queue. So my order is always going
+[00:36:59] to be at the back of the queue anyways. So basically
+[00:37:02] the difference between the limit and the marketable limit
+[00:37:05] is when I'm setting a marketable order, it's for
+[00:37:07] immediate execution. I'm trying to actually take the
+[00:37:10] offer. It's offered to 3024. I'm trying to grab the
+[00:37:13] 3024 offer, lift it. Okay. You follow me?
+[00:37:16] Yeah, yeah. Both are limit orders now.
+[00:37:18] Right. So as a marketable limit order, is that
+[00:37:20] something that's available through most retail trading
+[00:37:24] platforms? It's just a regular limit order. So you would
+[00:37:26] just say, you know, I'm calling it a marketable order
+[00:37:28] because that's what's actually called when you try to
+[00:37:30] lift it. But you can just say for simplicity purposes,
+[00:37:33] it's a limit order. I'm putting a limit on my price.
+[00:37:36] So, you know, it's called, you know, technical
+[00:37:38] definition because the offer is 3024 and I'm
+[00:37:40] putting a bid at 3024. I'm trying to lift the offer.
+[00:37:43] That's why it's called a marketable order.
+[00:37:45] That's just technical jargon though. It's just a
+[00:37:48] regular limit order where I'm trying to lift the offer.
+[00:37:50] Makes sense. Makes sense. Okay. So one of the
+[00:37:53] things I want to dig into a little bit more and
+[00:37:56] ask you about is what is it about trading the open
+[00:38:00] that really appeals to you? Like, where do you see
+[00:38:02] your edge coming from during the first few minutes
+[00:38:04] of the session? Why do you like trading the open?
+[00:38:07] I love the open and I will tell you that I probably
+[00:38:11] make at least 50% of my money in the first
+[00:38:15] five minutes of the day. Why is that? The open
+[00:38:18] is the price discovery phase of the markets.
+[00:38:21] I love price discovery and you know why else?
+[00:38:24] Because your high frequency traders hate price
+[00:38:26] discovery because they, you know, besides the ones
+[00:38:29] that are actually trying to move the prices,
+[00:38:30] your passive market making high frequency trading
+[00:38:33] systems are hands off at the open because there's
+[00:38:35] a lot of risk. And imagine you being a high
+[00:38:37] frequency trader and you have, your profit margin
+[00:38:41] is fractions of a cent, like a half a cent.
+[00:38:44] All of a sudden you, you know, buy a stock
+[00:38:46] like Microsoft and it falls 20 cents on you.
+[00:38:49] Well, you're in big trouble. If your average, you know,
+[00:38:51] profit margin is only half a cent, you can't be taking risk on
+[00:38:54] that, you know, where the stock moves 20, 30 cents
+[00:38:57] in the opening bar. In the opening bar, meaning the first
+[00:39:00] minute or, you know, depending on what, you know, chart
+[00:39:02] you're using, but you can't be taking on that risk.
+[00:39:04] So the high frequency traders are kind of hands off.
+[00:39:06] I always want to be trading, you know, when they're not
+[00:39:08] around because they're competition. There's not
+[00:39:10] that much competition at the open, you know, there's,
+[00:39:13] and there's a lot of price dislocations as well
+[00:39:16] because you have institutions that are coming in,
+[00:39:18] there's orders, you know, that have been sent from the
+[00:39:19] night before, even from little retail traders, they all
+[00:39:22] pull them together. And the other thing about the open
+[00:39:25] that I like, especially on the New York Stock Exchange
+[00:39:27] stocks, is that's the one time a day where the
+[00:39:30] designated market maker, the specialist that I was
+[00:39:32] talking about before, and they call them
+[00:39:34] designated market makers now, that's where they
+[00:39:36] actually are putting together that opening print.
+[00:39:38] They have some automated help with that, but there
+[00:39:40] is actually still a human element of involvement
+[00:39:43] with that opening print. So a lot, what I talked
+[00:39:45] about in Don Brighton is back, you know, in 1999,
+[00:39:48] still applies. You can try to get on the same side
+[00:39:50] as maybe that guy on the floor, and there might be
+[00:39:53] an advantage to doing that. But basically, the open,
+[00:39:56] there's going to be the biggest chance. And if you
+[00:39:57] look at any chart, intraday chart, a lot of times
+[00:40:00] that opening bar, you see the biggest for the
+[00:40:02] most volatility. That's what I like, you know,
+[00:40:04] that's where the most action is, and that's
+[00:40:06] where the most chance of, you know, making a
+[00:40:09] decent profit. Like, if I've trained GE during
+[00:40:11] the middle of the day from like noon, the
+[00:40:13] thing moves to, you know, if the S&P futures
+[00:40:15] aren't bouncing around, if they're just staying
+[00:40:16] still, GE is trading on a one cent range.
+[00:40:19] Well, as a scalper, that's great, but if you're
+[00:40:21] not a scalper, that's not very good. You can't
+[00:40:23] kind of make money on a one cent range.
+[00:40:25] I was saying earlier, you know, the high frequency
+[00:40:27] traders are making that one cent, you're paying
+[00:40:29] that one cent. So if it's only moving a penny,
+[00:40:31] you know, back and forth between 3023 and 3024,
+[00:40:34] there's no money for me to be made.
+[00:40:36] But at the open, there's a lot of movement,
+[00:40:38] even on a stock like GE. There might be a 10,
+[00:40:40] 15, 20 cent run. And you know, and then it
+[00:40:42] goes into different types of trading.
+[00:40:45] Like I prepare for the open three hours
+[00:40:47] before it actually opens. So my trading
+[00:40:49] date doesn't start at 9.30. My trading
+[00:40:51] date starts at 6.30 in the morning. And my
+[00:40:53] trading day actually starts the night
+[00:40:55] before. So if I look even for my notes
+[00:40:58] here, my notes for tomorrow. So I've been
+[00:41:00] watching the after hours action to
+[00:41:02] know what to trade tomorrow because
+[00:41:04] I'm watching what the news is, what stocks
+[00:41:06] are moving. So I'm gathering a lot of
+[00:41:08] information. I'm trying to inform
+[00:41:10] myself. I want to be an informed
+[00:41:12] trader on that open. And you know, once I
+[00:41:14] have that information, I can, you know,
+[00:41:16] try to put a projection on where I feel
+[00:41:18] that stock should open, where fair value,
+[00:41:21] where I've deemed the fair value of that
+[00:41:23] stock. And if the stock opens way above
+[00:41:25] the fair value, I'll short it. If it
+[00:41:27] opens way below the fair value, I'll
+[00:41:29] buy it. And I'll do that on a number
+[00:41:30] of stocks. You know, sometimes I send
+[00:41:32] 50, 200 orders there at the open.
+[00:41:35] So, you know, I use a little bit of
+[00:41:36] automation to help me do that because
+[00:41:38] it's tedious to do it manually, but
+[00:41:39] some of my best ones are manual.
+[00:41:41] And, you know, I'm sending all these
+[00:41:42] orders in there trying to, you know, get
+[00:41:44] these opening print. And the opening,
+[00:41:46] I use mostly OPG orders. And what an
+[00:41:48] OPG order is, it's an opening order
+[00:41:52] that says to give me the opening
+[00:41:53] print or immediately cancel the
+[00:41:55] order. So then I'm not sitting out
+[00:41:56] there like a sitting dock. You know, if
+[00:41:58] I have, you know, a limit order out
+[00:41:59] there and I forget it out there,
+[00:42:01] market tanks, I'm going to get picked
+[00:42:02] off and lose some money. So the OPG
+[00:42:04] order is nice. It just gives you the
+[00:42:06] opening print or it automatically
+[00:42:07] cancels that. So GE, hypothetical
+[00:42:09] example, GE is trading at 3023, close
+[00:42:12] at 3023. SP futures are opening up
+[00:42:15] 1% tomorrow. GE's beta is
+[00:42:17] approximately one. So it moves
+[00:42:19] approximately with the market. So if
+[00:42:22] that's the case, 30 cents would be
+[00:42:23] about 1% move. So I would say maybe
+[00:42:26] the fair value of General Electric
+[00:42:27] is $30.53. I might put in order to
+[00:42:30] buy GE below that fair value, say I'm
+[00:42:32] going to buy 3040. I want to put in
+[00:42:34] order to sell short GE maybe at
+[00:42:36] 3065, both OPG orders. If it opens
+[00:42:39] at 3070, I'm going to get 3070 short. If
+[00:42:41] it opens at 3060, I'm not going to get
+[00:42:44] filled. The order is going to
+[00:42:44] automatically cancel. So it all just
+[00:42:46] depends on, you know, how I price those
+[00:42:48] opening orders. But, you know, if a stock
+[00:42:50] opens too high or too low, a lot of
+[00:42:51] times it will draw back into where that
+[00:42:54] fair value is. That's a simplistic
+[00:42:56] example. Now there's a whole bunch of
+[00:42:57] stuff that complicates that. You know,
+[00:42:58] where trades get crowded and other
+[00:43:00] fun things can happen. But that's the
+[00:43:02] basic strategy around the OPEN, is
+[00:43:04] projecting where the fair value of
+[00:43:06] the stock is and selling it short if
+[00:43:08] it opens too high or buy it if it opens
+[00:43:10] too low. Okay. And did I hear you
+[00:43:12] correctly when you said you might place
+[00:43:14] between 50 to 200 orders, like 200
+[00:43:17] trades on the OPEN? Orders. So not
+[00:43:20] necessarily getting filled on those. I'm
+[00:43:22] placing orders where, you know, they're
+[00:43:24] going to either, they're going to fill
+[00:43:25] or they're going to cancel. So when I'm
+[00:43:26] placing an order, a lot of stocks
+[00:43:28] will open right around, you know, where
+[00:43:29] their fair value is. I'm not going to
+[00:43:30] get filled on those orders. But I
+[00:43:32] would say, you know, back, you know,
+[00:43:34] you know, going a few years ago, I
+[00:43:36] probably easily placed 300 to 400 orders
+[00:43:39] prior to the OPEN, opening only orders
+[00:43:41] and maybe get filled on 20 stocks,
+[00:43:43] 20, 30 stocks. And then I would trade
+[00:43:45] out of those positions, all on the
+[00:43:46] opening print. First minute, I got
+[00:43:47] 25 positions. Okay, let's go. You know,
+[00:43:49] let's, you know, and sometimes, you
+[00:43:51] know, something funny happens, like on
+[00:43:52] option expiration, I could fill in like
+[00:43:54] 75 orders. So now I've got like 75
+[00:43:57] positions. Okay, now this is fun.
+[00:43:59] You know, when I get filled on that
+[00:44:00] many positions, I don't even care
+[00:44:02] about the individual positions. All I
+[00:44:04] care about is my net market
+[00:44:06] exposure. So what I would then look is,
+[00:44:09] okay, I'm allowing a million dollars
+[00:44:11] worth of stock. I need to hedge
+[00:44:13] myself here because I'm trying to
+[00:44:14] extract the alpha from the
+[00:44:16] misprice opening. If the S&P futures
+[00:44:18] tank on me and I'm allowing a million
+[00:44:19] dollars worth of stock, the alpha's
+[00:44:21] gone. So what I want to do is sell
+[00:44:23] short an equivalent amount of spy
+[00:44:25] to the beta of my portfolio. So, you
+[00:44:27] know, a lot of, there's a lot of
+[00:44:28] figure that goes on in this, but,
+[00:44:30] you know, a lot of math behind it
+[00:44:31] all. But basically, you know,
+[00:44:32] simplicity, from a simplistic, you
+[00:44:34] know, if I give you simplicity
+[00:44:35] here, if I'm allowing a million
+[00:44:37] dollars worth of stock, I'm gonna sell
+[00:44:38] short a million dollars worth of spy.
+[00:44:40] And then I'm hedged. Now I'm market
+[00:44:41] neutral. Now I can let, you know, my
+[00:44:44] arbitrage portfolio because I
+[00:44:46] probably, you know, bought a whole
+[00:44:47] bunch of stocks that open too low
+[00:44:49] relative to where the futures were.
+[00:44:50] Now I can let the natural arbitrage
+[00:44:52] bring it in and slowly work out of
+[00:44:54] those positions. But, you know, if
+[00:44:56] I'm allowing one or two or three
+[00:44:57] positions, I'll just trade out them,
+[00:44:58] not even hedge it. But if I get
+[00:45:00] long 20, 30, 40 different positions,
+[00:45:02] or I'm too unbalanced, like, if I'm
+[00:45:05] long 20 stocks and short 20 stocks,
+[00:45:07] that's a natural hedging itself.
+[00:45:08] But if I'm long 20 stocks and short
+[00:45:10] none, that's where I've got a lot of
+[00:45:12] market exposure. And I like to trade
+[00:45:14] market neutral, where I'm always
+[00:45:16] eliminating the market risk. Because
+[00:45:18] market, you know, tanks here in the
+[00:45:19] next two seconds, I'm not positioned
+[00:45:21] for that. So that's the whole key
+[00:45:23] with almost all of my strategies
+[00:45:24] is trading market neutral. And that
+[00:45:26] sounds crazy to a lot of people
+[00:45:27] because they think the market's got
+[00:45:28] to move to make money. But I'm
+[00:45:30] trying to extract that inefficiency
+[00:45:33] of where a stock is open too high or
+[00:45:35] too low. So that's the alpha that
+[00:45:37] I'm extracting from the market, is
+[00:45:39] that inefficiency of the opening
+[00:45:41] print. And the opening print is
+[00:45:42] often inefficient. I mean, one
+[00:45:44] institution that says, hey, I want
+[00:45:46] to buy this stock, and they put
+[00:45:47] in a buy order to buy 500,000 shares,
+[00:45:50] might press the stock up way too
+[00:45:52] high. Or one institution might, you
+[00:45:53] know, say, I want to sell 500,000
+[00:45:55] shares in the open. That might push
+[00:45:56] the stock way too low. I'll provide
+[00:45:58] liquidity to those orders. And then,
+[00:46:00] you know, and that's the alpha
+[00:46:01] that I'm extracting is, you know, I'm
+[00:46:03] providing a service related to that
+[00:46:04] institutional order by providing
+[00:46:06] liquidity to it so that, you know,
+[00:46:08] their order isn't going to, you know,
+[00:46:09] it's going to be less price impact
+[00:46:11] with their order. And there's, I'm
+[00:46:12] not the only trader doing this, is
+[00:46:13] all, you know, all the other
+[00:46:14] prop firms are doing this too.
+[00:46:16] So, you know, as a whole, those
+[00:46:18] stock, you know, isn't going to
+[00:46:19] open nearly as low as it would
+[00:46:20] without those liquidity providers.
+[00:46:23] Ever watch a stock rip and think,
+[00:46:26] I could have nailed that if I had
+[00:46:27] real capital. The truth is, many
+[00:46:29] capable traders never reach their
+[00:46:31] potential, not due to lack of
+[00:46:33] skill, but lack of scale.
+[00:46:35] Trade the pool was built to solve
+[00:46:36] exactly that. A firm designed for
+[00:46:38] serious individuals who want access
+[00:46:40] to the U.S. equity markets with
+[00:46:42] meaningful buying power, up to
+[00:46:44] $200,000 without committing
+[00:46:46] their own capital. Get access to
+[00:46:48] virtually every stock in ETF.
+[00:46:50] Go longer short freely with the
+[00:46:51] flexibility professional traders
+[00:46:53] expect. You're evaluated on one
+[00:46:55] thing, your ability to manage risk
+[00:46:57] and execute with consistency. Meet
+[00:46:59] the standard and you trade at
+[00:47:01] scale. No subscriptions, no
+[00:47:03] ongoing commitments. Whether
+[00:47:05] you're still refining your strategy,
+[00:47:06] a trader with experience who hasn't
+[00:47:08] yet broken through or a seasoned
+[00:47:10] professional simply looking for
+[00:47:12] more capital, trade the pool is
+[00:47:14] built to meet you where you are
+[00:47:16] and take you that next step
+[00:47:18] further. The markets have
+[00:47:19] evolved, access has evolved, now
+[00:47:22] so has the way traders operate
+[00:47:23] within them. Trade the pool.
+[00:47:27] So, you said that you use some
+[00:47:29] sort of automation to enter
+[00:47:31] those orders, enter into those
+[00:47:33] positions sometimes. If you're
+[00:47:37] filled on what could be up to
+[00:47:39] maybe 70 different trades, do you
+[00:47:41] also use some automation to help
+[00:47:43] you exit those positions or is
+[00:47:45] that all done by hand? We have
+[00:47:47] proprietary software that will do
+[00:47:50] that. I don't. I've always been
+[00:47:51] a fan of, and I don't use
+[00:47:54] that as much automation like I said
+[00:47:55] as nearly as I used to. So you
+[00:47:56] go back 2005, 2006, I used a lot
+[00:47:59] of automation. I kind of, you know,
+[00:48:00] pick and choose my spots now more
+[00:48:02] from a manual perspective. So
+[00:48:03] where I was sending, you know,
+[00:48:04] hundreds and hundreds of orders
+[00:48:05] before, a lot of times I might
+[00:48:07] only be sending 30 or 40 or 50
+[00:48:08] orders before, and I can easily
+[00:48:10] place those manually. So your
+[00:48:12] original question though, I'm
+[00:48:13] running on the tangent, I forgot
+[00:48:14] your original question there.
+[00:48:16] Do you use any automation to
+[00:48:18] exit out of, if you get filled
+[00:48:20] on say 70 positions or something
+[00:48:22] like that? No, I would just go
+[00:48:23] and do exactly what I did
+[00:48:25] hedge it. If you have the
+[00:48:26] automated software, and I'm sure
+[00:48:27] you know if there's high
+[00:48:27] frequency traders running these
+[00:48:28] similar strategies, they might
+[00:48:30] just automate out, maybe they
+[00:48:31] don't hedge it. You know, maybe
+[00:48:33] they can just easily quickly
+[00:48:34] trade out of those positions
+[00:48:35] because they can sense have
+[00:48:36] any orders, the computer
+[00:48:38] systems can do that. But, you
+[00:48:39] know, I don't like doing that.
+[00:48:41] I like to work out of them
+[00:48:42] because I always feel like I
+[00:48:43] can work the trade better.
+[00:48:44] You know, like I figure in, I
+[00:48:46] used to figure, you know, like
+[00:48:47] I mean, you know, I mean
+[00:48:49] hundreds and thousands of
+[00:48:50] trades. Like, I mean, you
+[00:48:51] know, and you know, sometimes,
+[00:48:52] you know, some days I would
+[00:48:53] make a thousand trades. So, you
+[00:48:55] know, I've got a lot of
+[00:48:56] trading experience. So, I feel
+[00:48:57] like I can, you know, work out
+[00:48:59] of those trades better just
+[00:49:00] because of my own 17 years of
+[00:49:02] experience. So, that's why I do
+[00:49:04] the hedging technique where I
+[00:49:05] kind of automate in to get
+[00:49:07] those, you know, if I need to,
+[00:49:08] you know, get a lot of orders
+[00:49:09] out there, I will use some
+[00:49:10] automation to do it. And then
+[00:49:11] I would hedge myself by just,
+[00:49:13] you know, selling shorter,
+[00:49:15] buying the spy, whatever
+[00:49:16] equivalent to get myself
+[00:49:17] dollar neutral. And then I
+[00:49:18] can slowly manually work out of
+[00:49:20] those positions over the
+[00:49:21] course of the next half an
+[00:49:22] hour. So, I don't have to
+[00:49:24] be out immediately. The hedge
+[00:49:26] allows me not to have to
+[00:49:27] automate out.
+[00:49:28] Right, right. And is that where
+[00:49:30] the remaining 50% of your
+[00:49:32] money might come in from
+[00:49:34] during the rest of the day
+[00:49:35] while exiting out of those
+[00:49:36] positions? You said that a
+[00:49:38] lot of... Somewhat, yeah. And
+[00:49:39] if I talked about my trading
+[00:49:41] day, so obviously, you know, I
+[00:49:42] said my trading day starts
+[00:49:43] very early, and I'll trade
+[00:49:44] pre-market too. So, I think
+[00:49:45] something's mispriced
+[00:49:46] pre-market, I'll buy it.
+[00:49:47] You know, if I think
+[00:49:48] something's mispriced, you
+[00:49:49] know, I'll short it too. It
+[00:49:51] depends, you know, if I, if
+[00:49:52] it's not where my fair values
+[00:49:53] calculated out, I'm not
+[00:49:54] scared to trade in the
+[00:49:55] pre-market or after hours,
+[00:49:56] you know, if I think
+[00:49:57] something's mispriced. But I
+[00:49:59] would say, like I said, the
+[00:50:00] majority of my money is
+[00:50:01] probably made in the first
+[00:50:01] five to 10 minutes. You know,
+[00:50:03] not majority, but 50% at
+[00:50:04] least. And then, you know,
+[00:50:05] maybe some throughout the
+[00:50:06] day. But I'll tell you, at
+[00:50:08] least in the U.S. markets, I
+[00:50:09] know, you know, it's, you
+[00:50:11] know, the world markets
+[00:50:12] are all different. Between
+[00:50:13] 11 and 2, I don't even
+[00:50:14] trade at all. 11pm, 2pm, I
+[00:50:16] call it toxic. Those are
+[00:50:17] your toxic hours, where all
+[00:50:19] you got is high-frequency
+[00:50:20] traders trading with other
+[00:50:21] high-frequency traders.
+[00:50:22] And for the most part, all
+[00:50:23] the inefficiencies that, you
+[00:50:25] know, I'm interested in
+[00:50:26] don't exist. They've been, you
+[00:50:27] know, the high-frequency
+[00:50:28] traders are all over any
+[00:50:30] inefficiencies that's
+[00:50:30] happening in those hours. So
+[00:50:31] between 11 and 2, or even
+[00:50:33] I would say even I've
+[00:50:34] extended that. Between
+[00:50:35] 10.30 and 2.30, 10.30am,
+[00:50:37] 2.30pm, I usually take
+[00:50:39] all extended lunch. I'll
+[00:50:40] go do some other stuff.
+[00:50:41] You know, maybe, you know,
+[00:50:42] go out with a friend or,
+[00:50:44] you know, or do an
+[00:50:45] interview or something.
+[00:50:46] You know, I'm going to
+[00:50:46] do something different. So
+[00:50:48] 11, you know, from
+[00:50:49] 11 to 2, middle of the
+[00:50:50] trading day, there's just
+[00:50:52] not enough inefficiencies
+[00:50:53] for me to extract to be
+[00:50:56] bothered with. So that's
+[00:50:57] kind of my time off in the
+[00:50:58] middle of the day.
+[00:50:59] Okay, so you come back in
+[00:51:01] at the close? Do you take
+[00:51:02] your positions?
+[00:51:02] Yeah, it's 2.30, 2.33pm,
+[00:51:05] come back in, get ready for
+[00:51:06] the close. New information
+[00:51:08] is happening. You know, I've
+[00:51:09] got, you know, there's a
+[00:51:10] 2.00pm you have a
+[00:51:11] free market closing
+[00:51:12] imbalances that start
+[00:51:13] coming out. And that's,
+[00:51:14] you know, a whole
+[00:51:15] another topic we could
+[00:51:15] talk about is the
+[00:51:16] imbalance information. And
+[00:51:17] this information, you know,
+[00:51:19] is now, if you're a
+[00:51:20] retail trader, it's
+[00:51:21] amazing, you know, the
+[00:51:22] information that's out
+[00:51:22] there. You can
+[00:51:23] subscribe to this
+[00:51:24] different information out
+[00:51:25] there. Most retail traders
+[00:51:26] don't know it exists, but
+[00:51:27] it's actually all, you know,
+[00:51:29] everything that was
+[00:51:29] available to us in 1999
+[00:51:31] as a prop firm is pretty
+[00:51:32] much available to the
+[00:51:33] retail guy today. You
+[00:51:34] just got nowhere to
+[00:51:34] look for it. But, you know,
+[00:51:36] there's a closing
+[00:51:36] imbalances, which are
+[00:51:38] institutional orders
+[00:51:39] that are getting logged
+[00:51:40] in, and they're showing
+[00:51:41] you, you know, like
+[00:51:42] today, for instance, was
+[00:51:43] a great day for closing
+[00:51:45] imbalances. It was
+[00:51:46] the end of the month,
+[00:51:46] and that's often a big
+[00:51:48] day for the close. So the
+[00:51:49] best days for the close
+[00:51:51] and for the open, for
+[00:51:52] that matter, are end of
+[00:51:53] month, end of the quarter,
+[00:51:54] on any rebalancing day,
+[00:51:56] where, you know, index is
+[00:51:57] rebalancing, and on the
+[00:51:58] third Friday, the options
+[00:52:00] expiration. Those are
+[00:52:00] the big days for the
+[00:52:01] openings and the closing.
+[00:52:02] Those are the best days.
+[00:52:04] And today, this was
+[00:52:05] one of the best
+[00:52:05] closes I've seen in a
+[00:52:06] long time, where you
+[00:52:07] actually had a lot of
+[00:52:09] stocks trading with
+[00:52:11] some serious buy imbalances
+[00:52:13] and sell imbalances. One
+[00:52:14] of the imbalances, so
+[00:52:16] you have institutions
+[00:52:17] that are sending orders
+[00:52:18] that say they're
+[00:52:19] limit on close orders
+[00:52:21] that say buy me,
+[00:52:22] GE, or market on
+[00:52:23] close orders even,
+[00:52:25] where buy me 100,000 shares
+[00:52:26] of GE at the closing price.
+[00:52:28] And then you have another
+[00:52:28] institution that says
+[00:52:29] sell me 100,000 shares
+[00:52:31] of GE at the closing price.
+[00:52:32] That would net out.
+[00:52:33] But if you had an
+[00:52:34] institution that said
+[00:52:35] buy 100,000 shares of GE
+[00:52:37] at the closing price,
+[00:52:38] and another that said
+[00:52:39] sell 50,000 shares
+[00:52:40] at the closing price,
+[00:52:41] there would be a net
+[00:52:42] buy imbalance of 50,000
+[00:52:44] shares. That information
+[00:52:46] is publicly available
+[00:52:47] and gets, you know,
+[00:52:48] publicly advertised to
+[00:52:49] everyone at 345,
+[00:52:50] but there's services that
+[00:52:51] actually offer that information
+[00:52:53] ahead of time as well
+[00:52:54] as early as 2 o'clock
+[00:52:55] that information starts
+[00:52:56] coming out.
+[00:52:57] So, if you know
+[00:52:58] there's a lot of buyers
+[00:52:58] on the close,
+[00:52:59] it could potentially
+[00:53:00] push the price
+[00:53:01] of the stock higher.
+[00:53:02] If you know
+[00:53:02] there's a lot of sellers
+[00:53:03] on the close,
+[00:53:04] it could potentially push
+[00:53:05] the price of the stock lower.
+[00:53:07] Why is that?
+[00:53:07] Because traders
+[00:53:08] are going to buy ahead
+[00:53:08] of it or sell ahead of it.
+[00:53:10] So, if you know
+[00:53:11] there's a huge buy imbalance
+[00:53:12] and for instance,
+[00:53:13] today is a great example.
+[00:53:14] I don't always work
+[00:53:15] like this,
+[00:53:15] but it worked well today.
+[00:53:17] In Berkshire Hathaway,
+[00:53:19] which is BRK.B,
+[00:53:21] there was a,
+[00:53:21] like a 700,000 share
+[00:53:23] selling balance at the close.
+[00:53:25] And if you bring up
+[00:53:26] the chart of that,
+[00:53:27] it actually shows
+[00:53:28] going from 142.50
+[00:53:29] in the last minute,
+[00:53:31] that thing falls two points
+[00:53:33] in the last minute.
+[00:53:34] That is just pure order flow
+[00:53:36] base.
+[00:53:36] There's no,
+[00:53:37] you know,
+[00:53:37] people,
+[00:53:38] and you'll have news
+[00:53:39] media calling up and saying,
+[00:53:40] what happened in Berkshire
+[00:53:42] Hathaway?
+[00:53:42] You know,
+[00:53:42] there was,
+[00:53:43] we saw it fall,
+[00:53:43] you know,
+[00:53:44] the Warren Buffett gets sick.
+[00:53:45] What happened there?
+[00:53:46] But it was nothing to do
+[00:53:48] with anything fundamental
+[00:53:49] with the company.
+[00:53:49] It was all to do with order flow.
+[00:53:51] And there was just a huge seller.
+[00:53:53] There's a huge
+[00:53:53] bunch of institutional sellers
+[00:53:55] at the close
+[00:53:56] and that drove the price
+[00:53:58] down two points.
+[00:53:58] So that was a huge move
+[00:53:59] for Berkshire Hathaway.
+[00:54:00] That's a nice arbitrage
+[00:54:02] opportunity
+[00:54:02] because S&P futures
+[00:54:03] didn't tank that much,
+[00:54:04] but Berkshire did.
+[00:54:05] So if you see after hours,
+[00:54:06] it's already started
+[00:54:07] to bounce back.
+[00:54:08] But that is,
+[00:54:10] you know,
+[00:54:10] the advantage of,
+[00:54:11] you know,
+[00:54:11] having that order flow
+[00:54:12] information
+[00:54:13] is that you see
+[00:54:14] those closing imbalances
+[00:54:15] and,
+[00:54:16] you know,
+[00:54:16] you can actually,
+[00:54:17] you know,
+[00:54:17] trade on that information.
+[00:54:18] It's publicly available.
+[00:54:20] So there's huge sellers
+[00:54:20] going to be on the closing print.
+[00:54:21] It could drive down the closing print.
+[00:54:24] Back in the day,
+[00:54:24] that was, you know,
+[00:54:25] a slam dunk.
+[00:54:26] Now it's not that easy.
+[00:54:27] I would say 90% of the time,
+[00:54:29] those orders will pair off
+[00:54:30] or, you know,
+[00:54:31] they just,
+[00:54:31] and pair off,
+[00:54:32] I mean,
+[00:54:32] that another institution
+[00:54:33] would come in
+[00:54:34] and say buy the 700,000 shares.
+[00:54:36] Or, you know,
+[00:54:37] that it just won't move
+[00:54:38] the stock that much.
+[00:54:39] Just so happens
+[00:54:40] at the end of the month,
+[00:54:40] sometimes the liquidity isn't there
+[00:54:42] and it really was able
+[00:54:43] to drive that price down.
+[00:54:44] If I look at Microsoft,
+[00:54:45] for instance,
+[00:54:46] same thing
+[00:54:46] when going the opposite way.
+[00:54:48] If you look at
+[00:54:48] Microsoft,
+[00:54:49] huge green candle
+[00:54:50] end of the day,
+[00:54:50] gapped up 50 cents
+[00:54:52] on the closing print.
+[00:54:52] This is Microsoft,
+[00:54:53] one of the biggest companies
+[00:54:54] in the world.
+[00:54:56] It gapped up 1%
+[00:54:57] on the closing print
+[00:54:58] because of a huge
+[00:54:58] buy imbalance.
+[00:55:00] That is a tradable event.
+[00:55:01] That is something
+[00:55:02] that I'm,
+[00:55:02] you know,
+[00:55:03] all about.
+[00:55:04] Extracting the alpha
+[00:55:05] from that event.
+[00:55:06] And, you know,
+[00:55:06] it's just an efficiency.
+[00:55:08] There, you know,
+[00:55:08] should it trade up
+[00:55:09] 50 cents at the close?
+[00:55:10] No, it shouldn't.
+[00:55:11] It's just trading up
+[00:55:12] because there was
+[00:55:12] a huge buyer
+[00:55:13] at the close,
+[00:55:14] pushing the price out.
+[00:55:15] So what I would do
+[00:55:16] is probably sell
+[00:55:16] that stock short
+[00:55:17] and then try to cover it
+[00:55:18] the next day.
+[00:55:20] Okay, so I guess we should
+[00:55:21] probably point out
+[00:55:22] that we're recording
+[00:55:22] this interview
+[00:55:24] the evening,
+[00:55:25] obviously after the close
+[00:55:26] on the 31st of May,
+[00:55:27] 2016,
+[00:55:28] if anyone wants to
+[00:55:29] look that up on the chart.
+[00:55:30] And I also want to ask you,
+[00:55:32] where can,
+[00:55:33] you know,
+[00:55:33] everyday trader
+[00:55:34] get access
+[00:55:35] to this information
+[00:55:36] that you're talking about?
+[00:55:37] Like,
+[00:55:37] what are some of the services
+[00:55:39] that are available?
+[00:55:40] I believe some
+[00:55:41] of your retail brokers
+[00:55:42] offer it.
+[00:55:42] And I think interactive
+[00:55:43] brokers has.
+[00:55:44] And like,
+[00:55:44] I'm on a prop firm.
+[00:55:45] So, you know,
+[00:55:46] I'm getting this
+[00:55:47] information through my
+[00:55:48] proprietary direct feed.
+[00:55:50] So I'm not trading retail.
+[00:55:51] So I can't speak exactly
+[00:55:52] for each retail trader.
+[00:55:53] But I know like,
+[00:55:54] Mr. Top Step,
+[00:55:55] he'll probably like
+[00:55:55] the shout out there
+[00:55:56] if he's going to listen to it.
+[00:55:57] But, you know,
+[00:55:58] he's got an early feed.
+[00:55:59] Great, you know,
+[00:56:00] Danny Riley there.
+[00:56:01] Great guy,
+[00:56:01] Mr. Top Step.
+[00:56:02] He offers it.
+[00:56:03] Rosenblatt securities
+[00:56:04] offers another one.
+[00:56:05] So, you know,
+[00:56:06] there's another one,
+[00:56:07] you know,
+[00:56:07] a place we can get
+[00:56:08] that information.
+[00:56:08] It's not expensive.
+[00:56:10] I mean,
+[00:56:10] and that's the one thing
+[00:56:11] about me.
+[00:56:12] And, you know,
+[00:56:12] I think it keeps me
+[00:56:13] profitable too,
+[00:56:14] is you'll have a trader
+[00:56:14] and they're not,
+[00:56:15] they're scared to spend money.
+[00:56:16] You got to spend money
+[00:56:17] to make money.
+[00:56:18] And I probably drop
+[00:56:19] $1,000 a month
+[00:56:21] in information.
+[00:56:22] And you've got it.
+[00:56:23] You can't be scared.
+[00:56:24] You can't be say,
+[00:56:24] whoa, I got to,
+[00:56:25] you know,
+[00:56:26] make $12,000 a year
+[00:56:27] to break even.
+[00:56:27] We can't be scared
+[00:56:28] about that.
+[00:56:28] You need that information
+[00:56:29] to make money.
+[00:56:30] And I just think,
+[00:56:31] you know,
+[00:56:31] if you're paying
+[00:56:32] a hundred bucks a month
+[00:56:32] for an early imbalance feed
+[00:56:34] and you get one trade
+[00:56:35] off that,
+[00:56:35] it pays for itself.
+[00:56:37] So, you know,
+[00:56:37] I've got,
+[00:56:38] you know,
+[00:56:38] the,
+[00:56:39] I've got,
+[00:56:39] you know,
+[00:56:39] different,
+[00:56:40] you know,
+[00:56:41] some of this stuff
+[00:56:41] comes to me
+[00:56:42] through the platform itself,
+[00:56:43] through the Goldman Sachs platform.
+[00:56:44] But, you know,
+[00:56:45] I've also,
+[00:56:45] you know,
+[00:56:46] got different scanners
+[00:56:47] and filtering systems
+[00:56:48] that are looking for opportunities.
+[00:56:49] I'm running a Neovest scanner.
+[00:56:51] I'm running MadScan.
+[00:56:52] I'm running my own proprietary
+[00:56:54] scanners that I've built myself.
+[00:56:55] Like,
+[00:56:56] and I'm not a programmer
+[00:56:56] but I've had built for me
+[00:56:58] by other programmers.
+[00:56:59] So,
+[00:56:59] I'm scanning the market
+[00:57:00] looking for information
+[00:57:02] and opportunities to trade.
+[00:57:03] So, I'm not just sitting here.
+[00:57:05] You know,
+[00:57:05] I make money
+[00:57:06] off of information.
+[00:57:07] I would say,
+[00:57:07] you know,
+[00:57:08] if I'm really analyzing myself,
+[00:57:10] I'm more of,
+[00:57:10] like,
+[00:57:11] making money on
+[00:57:12] almost all my strategies,
+[00:57:13] I would say from information arbitrage.
+[00:57:15] Like,
+[00:57:15] looking,
+[00:57:16] you know,
+[00:57:16] at the information
+[00:57:18] and then extracting,
+[00:57:18] you know,
+[00:57:19] alpha from that information.
+[00:57:21] All publicly available information.
+[00:57:24] Yeah, yeah, right.
+[00:57:25] So, just,
+[00:57:26] just a couple last questions
+[00:57:28] before we,
+[00:57:29] before we close this out.
+[00:57:31] Seeing as you're a market structure guy
+[00:57:32] and the term high-frequency trading
+[00:57:34] has been sort of flying
+[00:57:35] around this interview a little bit.
+[00:57:37] One of the things you said to me
+[00:57:38] before we hit the record button
+[00:57:39] was that
+[00:57:40] a lot of people try to blanket
+[00:57:42] HFT as either good or bad.
+[00:57:45] But you sort of
+[00:57:48] have the opinion
+[00:57:48] that that's not really the case,
+[00:57:50] that there's, you know,
+[00:57:51] some HFT,
+[00:57:52] which is positive,
+[00:57:54] a positive impact for the market,
+[00:57:56] and then there's some which is
+[00:57:57] perhaps predatory.
+[00:57:59] Could you just tell us a little bit
+[00:58:00] about where you stand on the,
+[00:58:03] the sort of the controversial HFT debate?
+[00:58:06] Yeah, that's exactly it.
+[00:58:07] You've got to look at the strategy.
+[00:58:08] So,
+[00:58:09] there's going to be,
+[00:58:10] and just like in the pit in the bad day,
+[00:58:11] there's always, you know,
+[00:58:13] bad traders,
+[00:58:14] but the pit,
+[00:58:15] the nice thing about the pit,
+[00:58:16] if you go back in the 90s,
+[00:58:18] the pit would self-police itself.
+[00:58:19] There was somebody, you know,
+[00:58:21] doing some, you know,
+[00:58:22] like trying to fool you,
+[00:58:24] or doing some different stuff.
+[00:58:26] The pit isn't going to allow that.
+[00:58:27] The traders can see,
+[00:58:28] you know, who's doing this.
+[00:58:29] They're not going to trade with that guy anymore.
+[00:58:31] They're going to take him out back
+[00:58:32] and beat him up.
+[00:58:32] You know, it's,
+[00:58:34] it's a lot different,
+[00:58:34] where now you have so much anonym,
+[00:58:36] you know, everything's anonymous.
+[00:58:37] You don't know these players,
+[00:58:39] you just see their orders out there.
+[00:58:40] But, you know, a lot of,
+[00:58:41] you know, different strategies there
+[00:58:42] that are trying to,
+[00:58:44] you know,
+[00:58:44] trick other traders and,
+[00:58:46] you know,
+[00:58:46] and so that's why you've got to look
+[00:58:47] and really break up,
+[00:58:48] you know,
+[00:58:48] what is,
+[00:58:49] you know,
+[00:58:50] the strategy
+[00:58:50] and is that,
+[00:58:51] you know,
+[00:58:51] good or bad for the market?
+[00:58:52] So, I wouldn't say,
+[00:58:53] you can't say,
+[00:58:53] oh,
+[00:58:54] high frequency traders,
+[00:58:54] good for the market,
+[00:58:55] high frequency traders,
+[00:58:56] bad for the market.
+[00:58:57] You got to say,
+[00:58:57] what's the strategy
+[00:58:58] and is that good for the market
+[00:58:59] or bad for the market?
+[00:59:00] And, you know,
+[00:59:01] a lot of the high frequency trading
+[00:59:02] market-making,
+[00:59:03] you know,
+[00:59:03] it's definitely beneficial to the market.
+[00:59:05] You know,
+[00:59:05] these one cent,
+[00:59:06] you know,
+[00:59:06] spreads and stuff,
+[00:59:07] you know,
+[00:59:07] you can argue,
+[00:59:08] you know,
+[00:59:08] and this gets a little bit,
+[00:59:09] you know,
+[00:59:09] going maybe beyond some of the listeners,
+[00:59:11] but I've argued in the past
+[00:59:13] that maybe we're too reliant
+[00:59:14] on high frequency trading liquidity,
+[00:59:16] where now I would say
+[00:59:17] the majority of your liquidity,
+[00:59:19] so your bids and offers
+[00:59:21] that are out there in the book
+[00:59:22] that will absorb,
+[00:59:23] you know,
+[00:59:23] a sudden,
+[00:59:24] you know,
+[00:59:24] price impact
+[00:59:25] or,
+[00:59:25] you know,
+[00:59:25] event
+[00:59:26] or high frequency traders.
+[00:59:28] So,
+[00:59:29] where before,
+[00:59:29] if you look at the Florida,
+[00:59:30] a lot of different types of traders
+[00:59:32] providing liquidity
+[00:59:33] to the market.
+[00:59:33] Even, you know,
+[00:59:34] me myself,
+[00:59:34] I said I used to be a high
+[00:59:36] liquidity provider.
+[00:59:37] I'm not anymore.
+[00:59:37] I'm a liquidity taker.
+[00:59:39] So,
+[00:59:39] now you're probably very reliant
+[00:59:41] on high frequency traders
+[00:59:42] for liquidity
+[00:59:42] and that's one concern for me
+[00:59:44] is there's
+[00:59:44] no affirmative obligations
+[00:59:46] so they can just cancel quotes
+[00:59:47] and get left with a vacuum.
+[00:59:48] It's often what you see
+[00:59:49] during these flash crash events,
+[00:59:51] simply just not enough liquidity
+[00:59:52] in the book
+[00:59:53] to absorb the excess supply
+[00:59:55] that's coming into the market.
+[00:59:57] So, you know,
+[00:59:58] that's,
+[00:59:58] you know,
+[00:59:59] but you know,
+[00:59:59] if you're going back
+[01:00:00] to your original question,
+[01:00:01] is high frequency trading
+[01:00:02] good or bad for the market,
+[01:00:03] a lot of it's beneficial.
+[01:00:04] The market making aspect
+[01:00:06] is for sure.
+[01:00:07] The stuff where,
+[01:00:08] you know,
+[01:00:08] you get into
+[01:00:10] is the more predatory
+[01:00:12] market making
+[01:00:13] that I don't like,
+[01:00:13] which I talked about
+[01:00:14] the penny jumping earlier
+[01:00:15] or the off exchange stuff
+[01:00:17] where you have
+[01:00:17] an off exchange market maker
+[01:00:19] leaning on somebody else's
+[01:00:20] quote for protection.
+[01:00:21] I think that just discourages
+[01:00:22] the original liquidity
+[01:00:23] in the first place.
+[01:00:24] I think that's something where,
+[01:00:26] you know,
+[01:00:26] it's probably not as helpful as,
+[01:00:28] you know,
+[01:00:30] if that market maker
+[01:00:31] was actually quoting
+[01:00:32] in the lit market.
+[01:00:32] So basically when I'm talking
+[01:00:34] off exchange market making
+[01:00:35] is they don't actually have to
+[01:00:37] provide any bids or offers.
+[01:00:38] They can simply
+[01:00:40] match the bids and offers
+[01:00:41] that are out there.
+[01:00:42] So they're not taking on
+[01:00:43] nearly as much risk.
+[01:00:44] And that's where,
+[01:00:44] you know,
+[01:00:45] I do have a little bit of an
+[01:00:46] issue with that type
+[01:00:46] of market making as well.
+[01:00:48] So I'm not sure that
+[01:00:49] that benefits as much as if
+[01:00:50] those participants were quoting
+[01:00:52] in the lit market,
+[01:00:54] the public exchange.
+[01:00:56] But, you know,
+[01:00:57] you look into other things
+[01:00:57] like layering
+[01:00:58] and layering
+[01:00:59] is a strategy
+[01:01:00] where you put
+[01:01:00] fake orders out there.
+[01:01:01] Maybe some size borders
+[01:01:02] trying to, you know,
+[01:01:03] say,
+[01:01:04] okay, well,
+[01:01:04] you see some size
+[01:01:05] then, you know,
+[01:01:06] other systems
+[01:01:07] might actually
+[01:01:08] sell the stock
+[01:01:08] thinking, you know,
+[01:01:09] there's some big sellers
+[01:01:10] in the market
+[01:01:11] where to sell the stock.
+[01:01:12] And, you know,
+[01:01:12] there was a fake order.
+[01:01:13] So, you know,
+[01:01:14] you've heard a lot
+[01:01:14] about layering in the past
+[01:01:15] and something like that
+[01:01:16] can be automated
+[01:01:17] very easily
+[01:01:18] and probably, you know,
+[01:01:19] very harmful to the market
+[01:01:20] because it's trying
+[01:01:21] to trick other traders
+[01:01:22] into, you know,
+[01:01:23] buying or selling
+[01:01:24] off of information
+[01:01:25] that isn't real.
+[01:01:26] So, you know,
+[01:01:27] that's another example
+[01:01:28] of maybe a strategy
+[01:01:30] that's probably
+[01:01:31] not beneficial for the market.
+[01:01:32] So, but like I said,
+[01:01:33] a lot of the strategies
+[01:01:34] in themselves,
+[01:01:35] the arbitrage is there.
+[01:01:36] It makes the market
+[01:01:37] more efficient.
+[01:01:38] So, you know,
+[01:01:39] for the most part,
+[01:01:39] your high-frequency trader
+[01:01:40] is employing arbitrage.
+[01:01:42] It just simply
+[01:01:42] makes the price
+[01:01:43] more efficient
+[01:01:44] and gets to
+[01:01:44] where it is
+[01:01:45] faster.
+[01:01:46] So, that's probably beneficial.
+[01:01:48] A lot of the market
+[01:01:48] making is beneficial
+[01:01:49] besides some of the
+[01:01:50] off-exchange market
+[01:01:51] making
+[01:01:51] or some of this algorithmic
+[01:01:52] penny jumping
+[01:01:53] in the small caps.
+[01:01:54] But for the most part,
+[01:01:56] a lot of the
+[01:01:56] high-frequency trading,
+[01:01:57] you know, strategies,
+[01:01:58] there's probably a lot
+[01:01:59] of really good firms
+[01:02:00] out there.
+[01:02:00] Doing a lot of good,
+[01:02:02] but they need to crack down
+[01:02:03] on the stuff
+[01:02:03] that's more predatory.
+[01:02:05] Okay.
+[01:02:06] Okay.
+[01:02:06] Awesome answer, Dennis.
+[01:02:07] Thank you very much.
+[01:02:10] One last question.
+[01:02:11] Is there any advice
+[01:02:12] you'd like to leave
+[01:02:13] with anyone listening
+[01:02:15] who might still be
+[01:02:15] learning the ropes today?
+[01:02:17] Yeah.
+[01:02:17] And obviously,
+[01:02:18] you know,
+[01:02:18] I've traded
+[01:02:19] for a lot of years
+[01:02:20] and I, you know,
+[01:02:20] I helped educate the traders
+[01:02:22] up,
+[01:02:22] re-trading the new ones.
+[01:02:23] So, it's those adjustments
+[01:02:25] that you need to make.
+[01:02:26] So, you know,
+[01:02:27] for, you know,
+[01:02:27] if you're trading
+[01:02:28] on a high-frequency
+[01:02:28] trading world,
+[01:02:29] which we are,
+[01:02:30] we can't control the environment
+[01:02:31] that we trade in,
+[01:02:32] so we have to adjust to it.
+[01:02:33] The adjustments
+[01:02:34] that I've made
+[01:02:35] to stay profitable,
+[01:02:36] and I think, you know,
+[01:02:37] whenever I see
+[01:02:38] other traders
+[01:02:38] that are struggling
+[01:02:39] when they start
+[01:02:40] to employ some of these
+[01:02:41] adjustments,
+[01:02:42] actually,
+[01:02:42] a lot of these traders
+[01:02:43] actually start
+[01:02:43] to turn it around.
+[01:02:44] So, number one thing
+[01:02:45] which I've talked about
+[01:02:46] before is
+[01:02:47] I'm a liquidity taker.
+[01:02:48] I don't provide liquidity.
+[01:02:50] I don't sit my bids
+[01:02:51] out there,
+[01:02:51] hoping that the price
+[01:02:52] comes to me,
+[01:02:53] because it often
+[01:02:55] will come to your price.
+[01:02:56] You'll miss your fill
+[01:02:57] and it'll quickly
+[01:02:58] go the other way,
+[01:02:59] especially in a small cap stock.
+[01:03:01] It's very dangerous
+[01:03:02] to just have sitting limiters
+[01:03:03] out there.
+[01:03:04] I say when you have a sitting limit,
+[01:03:06] you're a sitting duck.
+[01:03:07] You're a sitting duck
+[01:03:07] to get picked off
+[01:03:09] by a more informed trader.
+[01:03:10] So, I take liquidity
+[01:03:12] as opposed to providing liquidity.
+[01:03:14] On that same note,
+[01:03:15] scalping is no longer
+[01:03:16] a viable strategy.
+[01:03:17] If you're jumping in,
+[01:03:18] trying to make a penny
+[01:03:19] or two on a trade,
+[01:03:20] you're going to just
+[01:03:22] commission yourself
+[01:03:22] to death for one thing.
+[01:03:24] The second thing
+[01:03:24] you're going to do
+[01:03:25] is you're just not
+[01:03:25] going to be able to compete
+[01:03:27] with those high-frequency
+[01:03:28] traders
+[01:03:28] that are co-locator
+[01:03:29] that have a speed advantage
+[01:03:30] for your relationship advantage
+[01:03:32] and you're not going to be
+[01:03:33] able to be profitable
+[01:03:35] with that strategy.
+[01:03:35] So, scalping,
+[01:03:36] no longer a viable strategy,
+[01:03:38] not even for some of your automation.
+[01:03:39] So, you can say,
+[01:03:40] I'll get automated on scalp.
+[01:03:42] Like I said,
+[01:03:42] I ran this automated scalping system
+[01:03:44] for a lot of years
+[01:03:45] and it's not profitable
+[01:03:46] anymore either.
+[01:03:46] So, I say scalping,
+[01:03:48] leave it up
+[01:03:48] to the high-frequency traders.
+[01:03:50] So, lengthen your time horizon.
+[01:03:51] Don't think about your trade
+[01:03:52] in seconds
+[01:03:53] or milliseconds.
+[01:03:54] Think about it
+[01:03:55] and minutes are okay.
+[01:03:56] Hours are even better.
+[01:03:57] If you're trading
+[01:03:58] in swing trading environment,
+[01:03:59] days to weeks,
+[01:04:00] there's nobody.
+[01:04:01] There's no competition in there.
+[01:04:03] So, because that's going on,
+[01:04:04] looking at trends
+[01:04:05] and looking at a lot of different things.
+[01:04:07] We didn't even touch
+[01:04:07] on the technical analysis,
+[01:04:09] but that's something
+[01:04:10] I employ on my swing trades as well.
+[01:04:12] And there's a lot to that.
+[01:04:13] So, reading a chart
+[01:04:14] from an intraday perspective
+[01:04:16] and understanding
+[01:04:16] different levels
+[01:04:18] where stocks tend to have
+[01:04:20] support of resistance
+[01:04:21] or where they're trending,
+[01:04:22] that's all viable still.
+[01:04:24] Just not having
+[01:04:25] that short time frame.
+[01:04:26] That's what will kill you.
+[01:04:27] Another thing is,
+[01:04:29] don't show your hand.
+[01:04:30] So, if you're sitting there
+[01:04:31] in the way you're trading
+[01:04:32] and you're putting your bid out there
+[01:04:33] and then you're canceling
+[01:04:34] and you're putting another bid out
+[01:04:35] and you're canceling,
+[01:04:36] there's be high frequency trading systems,
+[01:04:38] predatory ones
+[01:04:39] that are going to log that.
+[01:04:40] And they're going to say,
+[01:04:40] hey, we got a fresh one.
+[01:04:41] This guy really wants
+[01:04:42] to buy the stock right now.
+[01:04:43] And they might try to buy it ahead of you
+[01:04:45] and make you pay the most price.
+[01:04:46] So, that's why
+[01:04:47] I'm a big fan of just lifting the offer
+[01:04:49] or hitting the bid as quickly as you can.
+[01:04:50] If you're putting a lot of
+[01:04:52] passive luminors
+[01:04:52] and trying to work the order,
+[01:04:54] they might figure out
+[01:04:55] what you're doing.
+[01:04:56] And that's going to be used
+[01:04:57] to your disadvantage.
+[01:04:59] And then the other thing is,
+[01:05:00] just remember that,
+[01:05:01] obviously, you have a big advantage
+[01:05:03] as a human being is that
+[01:05:04] you can change your thinking on a dime.
+[01:05:06] Any automated computer system there
+[01:05:08] has to be programmed in
+[01:05:10] and they can't adjust
+[01:05:11] on the fly like that.
+[01:05:12] So, that's the biggest advantage
+[01:05:14] of being a human
+[01:05:15] is that you can quickly adjust
+[01:05:17] your thinking
+[01:05:17] or your strategy
+[01:05:19] for the current environment.
+[01:05:20] And strategies change
+[01:05:21] and different types of trades
+[01:05:23] work in different types
+[01:05:24] of trading environments.
+[01:05:25] So, you have to understand
+[01:05:26] the environment that you're in.
+[01:05:27] When you have a five-year bull run,
+[01:05:29] the shorts are going to be tougher.
+[01:05:31] When you're in a market
+[01:05:32] that's for the last year
+[01:05:33] just kind of oscillating,
+[01:05:34] well, range bound trading
+[01:05:36] is going to work better now.
+[01:05:37] So, that's an advantage
+[01:05:38] and even looking at different time frames.
+[01:05:40] Maybe the last day or two,
+[01:05:42] we're trending down.
+[01:05:43] Well, I can adjust my strategies
+[01:05:45] on the fly
+[01:05:46] where somebody running
+[01:05:47] an automated system
+[01:05:48] can't adjust as easily.
+[01:05:50] Great, great.
+[01:05:51] Awesome advice there, Dennis.
+[01:05:52] And where can listeners go
+[01:05:54] to find out more about you?
+[01:05:56] Yeah, so, I do a radio show
+[01:05:58] every morning for Benzinga.
+[01:05:59] It's called Benzinga's
+[01:06:01] pre-market prep show.
+[01:06:03] And you can just Google
+[01:06:03] pre-market prep
+[01:06:04] and you'll find us.
+[01:06:05] We're on every morning
+[01:06:06] from 8 a.m. Eastern
+[01:06:07] until 9.30 Eastern.
+[01:06:09] I'm on from 8.05 to 8.55
+[01:06:12] and then I have to go
+[01:06:12] prepare for my open.
+[01:06:13] So, I always get off
+[01:06:14] 35 minutes before the open.
+[01:06:15] So, I can get all these opening
+[01:06:16] all orders out there
+[01:06:18] because one thing I've learned is
+[01:06:20] when you're doing a radio show
+[01:06:21] and you're trading,
+[01:06:22] that doesn't work very well.
+[01:06:24] So, trying to trade
+[01:06:25] and do a live radio show,
+[01:06:26] don't do that.
+[01:06:27] So, Aaron, when you're
+[01:06:28] interviewing traders
+[01:06:29] are doing a live radio show
+[01:06:30] and you're trying to trade
+[01:06:31] at the same time,
+[01:06:32] that's a recipe for disaster
+[01:06:33] because trading takes
+[01:06:34] full concentration.
+[01:06:35] So, yeah.
+[01:06:36] So, from 8.05 to 8.55,
+[01:06:38] I don't do a lot of trading.
+[01:06:39] I do the Benzinga radio show
+[01:06:40] and I'm on there
+[01:06:41] with Joel Alconan
+[01:06:42] who was my mentor
+[01:06:43] who I started with back in 1999.
+[01:06:45] And we've got the Benzinga news team
+[01:06:47] who is great.
+[01:06:48] Benzinga is great.
+[01:06:49] Jason Raznik behind it.
+[01:06:51] And we've got quite a few listeners.
+[01:06:52] So, we've got a lot of
+[01:06:53] we've got an active chat room there
+[01:06:55] where you could come in and chat with us.
+[01:06:56] He asks us questions.
+[01:06:58] And, you know, we talk all this stuff.
+[01:07:00] You know, we talk about,
+[01:07:01] we basically go through,
+[01:07:02] we know what's moving here today,
+[01:07:03] what we see.
+[01:07:04] I try to identify the sectors
+[01:07:05] that I think are going to be strong,
+[01:07:07] sectors that are going to be weak.
+[01:07:08] We're all trying to prepare
+[01:07:10] our traders for the market open.
+[01:07:11] So, I'm giving you that information
+[01:07:13] that I'm using in my own trading
+[01:07:15] and trying to, you know,
+[01:07:16] help you guys out
+[01:07:17] with your trading as well.
+[01:07:18] Again, sharing all the
+[01:07:19] capital intensive stuff
+[01:07:20] because, like I said,
+[01:07:21] you know, if it's something really small,
+[01:07:23] I'm not going to, you know, just,
+[01:07:24] you know, hand that out
+[01:07:25] because then, you know, I might,
+[01:07:26] I'm just, you know,
+[01:07:27] taking money from my own pot.
+[01:07:28] But, you know, if something's capital intensive
+[01:07:30] where, you know, there's, you know,
+[01:07:31] millions of dollars, you know,
+[01:07:34] that's a huge trade
+[01:07:36] where there's millions of dollars
+[01:07:37] available and I'm not going to take it all,
+[01:07:38] I can share that stuff.
+[01:07:40] You know, and I don't mind
+[01:07:40] trying to help traders.
+[01:07:41] I've been in it for, you know,
+[01:07:42] 17 years here now.
+[01:07:44] So, I like to help traders
+[01:07:45] and I like to see traders turn around
+[01:07:47] and succeed.
+[01:07:48] Absolutely.
+[01:07:48] So, what's the,
+[01:07:49] where's the best place to find that out?
+[01:07:50] Are we best to just Google it
+[01:07:51] or is there a URL you want to give out?
+[01:07:53] Yeah, I wish they got a better URL.
+[01:07:55] I haven't, so it's, if I just gave
+[01:07:57] the URL on the pre-market prep show,
+[01:07:59] it's pre-market,
+[01:08:00] P-R-E-M-A-R-K-E-T dot benzinga.com
+[01:08:06] and then, so you can go there
+[01:08:07] or just Google pre-market
+[01:08:10] benzinga, pre-market prep,
+[01:08:12] pre-market Dennis Dick, if you want.
+[01:08:14] You'll find us.
+[01:08:14] Cool, cool.
+[01:08:15] Well, I'll put a link to that.
+[01:08:16] Probably find us really quickly.
+[01:08:17] Yeah, I'll put a link to that
+[01:08:18] in the show notes anyway.
+[01:08:19] So, that's easy for listeners to find
+[01:08:21] and you're also on Twitter as well.
+[01:08:23] Do you want to give out your handle?
+[01:08:24] Yeah, triple D-Trader.
+[01:08:25] So, T-R-I-P-L-E, the letter D-Trader,
+[01:08:29] T-R-A-D-E-R.
+[01:08:31] So, triple D-Trader and yeah, I tweet
+[01:08:33] and I was tweeting a lot
+[01:08:34] about the imbalances here today.
+[01:08:35] I wanted to tweet a little bit
+[01:08:36] at the open, a little bit at the close.
+[01:08:38] I don't tweet that much during the day.
+[01:08:39] I probably tweet, you know,
+[01:08:40] three or four times a day.
+[01:08:41] I'm not a huge tweeter,
+[01:08:42] but I try to like,
+[01:08:43] when I tweet something,
+[01:08:44] I try to make it relevant
+[01:08:46] or, you know, something important.
+[01:08:47] So, like, I'll tweet like,
+[01:08:48] when he has some P-Editions
+[01:08:49] or lesions or something come on,
+[01:08:51] something that's going to be
+[01:08:51] potentially market moving,
+[01:08:52] I try to tweet it out.
+[01:08:54] Sure, sure.
+[01:08:54] Okay. No, it sounds good.
+[01:08:56] All right, Dennis,
+[01:08:56] well, thank you very much
+[01:08:58] for coming on the podcast, man.
+[01:08:59] I really appreciate it
+[01:09:00] and you've given us a lot to think about.
+[01:09:02] So, yeah, let's definitely stay in touch.
+[01:09:05] Okay, thanks, Aaron.
+[01:09:08] You've reached the end
+[01:09:09] of this episode of Chat with Traders,
+[01:09:11] but rest assured,
+[01:09:12] there are more episodes
+[01:09:13] loaded with real market insight
+[01:09:15] and zero hype on the way soon.
+[01:09:18] So, to stay updated
+[01:09:19] with each great new release,
+[01:09:21] subscribe to the podcast and iTunes,
+[01:09:23] and we'd love it
+[01:09:24] if you'd leave a rating and review.
+[01:09:26] We'll catch you next time
+[01:09:27] on Chat with Traders.

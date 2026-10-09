@@ -1,0 +1,68 @@
+{
+  "trader": "Nick Fabrio",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Scalping ASX stocks intraday (10-20 min holds, catalyst/news driven, short bias) with no overnight positions and no long-side daily-bar rules.",
+  "template": "none",
+  "method_name": "Intraday catalyst scalping",
+  "style": "scalper short bias catalyst",
+  "timeframe": "intraday 1-5min",
+  "universe": {
+    "description": "ASX listed stocks 30c-$3"
+  },
+  "setup": [
+    {
+      "rule": "news or macro catalyst watchlist",
+      "quote": "I'd say I'm like a scalper and just trading basically off catalysts so whether it be news or macro moves",
+      "timestamp": "[00:25:43]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "match surplus bid or order flow tape read",
+      "quote": "I'd be leaning on like surplus bid or something. So jumping in front",
+      "timestamp": "[00:18:53]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "immediate exit on adverse tape or red P&L",
+      "quote": "if I start to see red on a trade just out",
+      "timestamp": "[01:02:21]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "take profit or reassess after 10-60 min",
+      "quote": "probably ten to twenty minutes",
+      "timestamp": "[00:26:35]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "tick value + book liquidity protection",
+      "quote": "I'd size according to that... how much protection I have in the book",
+      "timestamp": "[00:17:28]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "US overnight + commodity ETFs for themes",
+      "quote": "was the US up last night... copper ETFs up 5%",
+      "timestamp": "[00:28:32]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "transcript covers only ASX not US stocks",
+      "assumption": "apply intraday_only classification regardless"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "164",
+    "page_url": "https://chatwithtraders.com/episode/164-nick-fabrio-how-to-scalp-asx-stocks-and-make-a-pretty-penny",
+    "youtube_url": ""
+  }
+}

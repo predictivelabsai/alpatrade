@@ -1,0 +1,691 @@
+# 043: Jon Boorman – Buying Stocks in Uptrends, Managing Risk, and Tips for Long Term Survival
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT1091393109.mp3
+
+[00:00:00] What would your trading look like if capital wasn't the constraint?
+[00:00:03] That's the reality for most traders. It's not skill-holding them back. It's size.
+[00:00:07] Trade the pool changes that. Step into the US equity markets with up to $200,000 in buying
+[00:00:13] power without committing your own capital. Full access to stocks and ETFs, longer short,
+[00:00:19] executed with the precision and freedom serious traders expect. Your performance
+[00:00:23] is measured by one standard. Discipline risk management and consistent execution.
+[00:00:27] Meet that standard and you operate at scale. No subscriptions, no ongoing obligations.
+[00:00:32] Just a clear path forward. For those ready to trade beyond limitations, this is the next level.
+[00:00:40] The biggest secret of the best traders in the world is that they're just like everyone else.
+[00:00:44] However, they've worked hard to learn the markets and discover what works and what doesn't.
+[00:00:49] But how can you hear about these journeys and get in on the strategies and tactics they use?
+[00:00:54] You can do it by listening to Chat with Traders. Here's your host, Aaron Fifield.
+[00:01:05] What's up, everybody? Thanks so much for tuning in and welcome to yet another episode
+[00:01:10] of the Chat with Traders podcast. This week, we're at episode 43 and my guest is John Borman.
+[00:01:16] John has been immersed in the world of trading for over 30 years now
+[00:01:19] and has spent the majority of his time in the institutional space.
+[00:01:23] He's been on the buy side, the sell side, run a trading desk, been an assistant to a portfolio
+[00:01:29] manager and has also been a prop trader. But nowadays, John trades independently and does
+[00:01:35] also manage assets for others. His approach to trading is probably best described as a long
+[00:01:40] only trend following strategy, which we discuss extensively during this episode.
+[00:01:45] Some of the topics we head on include why the simplicity of trend following can be both a gift
+[00:01:50] and a curse, why John trades the long side only and how this affects him in a full-fledged bear
+[00:01:56] market, plus a few pointers on position sizing. And John also shares his best tips for long-term
+[00:02:03] survival. I mean, John really was an awesome guest and did share a lot of great wisdom
+[00:02:08] throughout this episode. So I feel like you're, you're really going to enjoy our discussion.
+[00:02:12] But just before we get into it, I've got something really exciting to share with you.
+[00:02:18] And that's a new giveaway, which is kicked off just this week. Here's what I'm giving away.
+[00:02:23] A free 90 minute one-on-one mentoring session with one of the chat with traders coaches.
+[00:02:28] And there will be three winners seen as there are three coaches
+[00:02:32] who will introduce you to the other week. They are Chris Sase,
+[00:02:36] Zach Hurwitz and Brad Jelenick. Each really great traders who take this business very
+[00:02:40] seriously. And they've also previously featured on the podcast too.
+[00:02:45] This giveaway is your opportunity to leverage their many years of real market experience
+[00:02:50] with a one-on-one conversation purely focused on how you can become a better trader.
+[00:02:55] So if you'd like to seize this opportunity and enter for a chance to win,
+[00:02:59] just go to chatwithtraders.com forward slash win. That's WIN and enter your email address.
+[00:03:06] And the cool part about this is once you enter, you'll instantly receive a unique URL.
+[00:03:12] Share this URL as much as possible, because for every person who enters after clicking your unique
+[00:03:18] URL, you'll receive an additional nine entries. And of course, that'll dramatically boost your
+[00:03:24] chances of winning. So just in case you missed it, go to chatwithtraders.com forward slash win.
+[00:03:30] That's WIN to enter now. The giveaway will close on the 7th of November, this year of course,
+[00:03:38] being 2015, just for your mind who's listening at a later date.
+[00:03:42] All right guys, let's get into it. I'm your host Aaron Firefield and here is this week's guest,
+[00:03:46] John Borman. Hey John, welcome to the podcast. How are you?
+[00:03:52] Very good. Thank you. Thanks for having me.
+[00:03:55] No, thank you so much for agreeing to an interview. I mean, it's awesome to be
+[00:03:58] speaking with you. And I already know this is going to be a great discussion. So we're going to
+[00:04:04] discuss your many years on the institutional side of trading. And then the meat of this episode
+[00:04:09] will be focused on your views and beliefs around trend following, which I'm really
+[00:04:14] looking forward to hearing your insight on this. So to get this underway, I'd like to start
+[00:04:19] at day one right at the very beginning. So John, share with us how you first got
+[00:04:24] involved in markets. And I know you were quite young at the time. So how did this journey of yours
+[00:04:29] kick off? Well, I guess it's 30 years ago now. So this is like in the mid 80s as a teenager.
+[00:04:40] And it was the combination of when I was at college, there was this assignment where you
+[00:04:48] was a diploma in business studies. And there was this assignment where you had to
+[00:04:53] manage your portfolio for six months. And it kind of fired me with a love for it,
+[00:05:00] because I did quite well at it. And you also have to remember that this was in the UK.
+[00:05:07] And at the time, under Mrs Thatcher's conservative government, there was a real
+[00:05:13] big push of share ownership. Lots of nationalized industries were being privatized. So I think
+[00:05:21] British Gas, British Telecom, all these new issues where the public bought into them,
+[00:05:29] everyone got their 100 shares at a pound each and then got to sell them 40% higher on the first
+[00:05:37] day or something ridiculous like that. So it's probably not a good thing, because it makes
+[00:05:42] you think that it's easy. And that was definitely a good market in the mid 80s up until 87. So
+[00:05:51] that was kind of my first experience of things trading for myself. And having done well in that
+[00:05:59] thing at college, I wanted to then open up an account of my own with a broker, which I did.
+[00:06:05] And obviously, I was still ridiculously young and naive and made all the mistakes that novice
+[00:06:14] traders do. And actually, I kept trading until I got my first job when I finished college.
+[00:06:26] I started working at Schroders, which is a big asset manager in the UK in the back office.
+[00:06:33] And that was in 87. And I continued to, on the side, trade for myself. And of course, I was
+[00:06:41] right in the thick of it trading in and through the crash. And that pretty much wiped me out.
+[00:06:50] And got almost scared of it, I guess, and kind of then backed off and didn't trade
+[00:06:58] probably for another couple of years after that and just got on with doing my job there, which
+[00:07:06] initially, as I said, was in the back office. But then I later moved up to become
+[00:07:14] in the asset management arm, I became an assistant to a portfolio manager. And
+[00:07:21] that then really introduced me more to that institutional side with them of how they
+[00:07:27] deal with things. Okay, excellent. Now, one of the things you mentioned right at the very
+[00:07:32] beginning there, which picked my interest was you said that you made a lot of mistakes early on.
+[00:07:37] So would you mind sharing maybe just a couple of those mistakes?
+[00:07:41] Well, it's, I mean, they really all stem from just not having a plan, really. I mean, you're
+[00:07:49] just kind of flying by the seat of your pants, just not really truly having a methodology,
+[00:07:57] having researched it. And what that probably all stems from is just
+[00:08:02] being to, well, not being patient enough to be able to actually study this and truly
+[00:08:10] learn. And then instead, you end up learning by making mistakes, the hardest way of all,
+[00:08:15] by losing money. So it would be, I'm sure I used to buy into the whole
+[00:08:24] by low sell high mentality, trying to time the market, just so much of what I don't do now.
+[00:08:36] You know, so I actually often find that on social media now when I'm talking about
+[00:08:43] things to not do, sometimes it's me talking to myself, you know, it's almost like
+[00:08:50] you're reinforcing your process, reminding yourself at the same time as others,
+[00:08:55] that, you know, that I've discovered the hard way what works for me.
+[00:09:00] Absolutely. Okay. So now just going back to your career in the early days there.
+[00:09:06] So how did you first get your foot in the door at the, in the back, your job at the back office there?
+[00:09:13] Like, how did you get into that job? I mean, was it was it fairly easy for you to pick that up?
+[00:09:18] Or tell us a little bit about that? I mean, it's a very different era. And as I said,
+[00:09:23] that that was a time of great expansion and growth within that industry. So
+[00:09:29] there were a lot of, there are a lot of people hiring. I mean, I put out
+[00:09:35] applications to a lot of people. I think I sent out like 50 different
+[00:09:41] letters to people and I probably got like three replies and two of them offered an interview and
+[00:09:48] I had both those interviews on the same day. And this one offered me the job on the spot.
+[00:09:53] Now, looking back, it's very low paid job and it's, and it's in the back office.
+[00:10:00] But you know what? It meant you're in. And you, you, it then took me a while to
+[00:10:07] realize where I exactly where I was in within that organization. And I'm seeing all these trades
+[00:10:15] coming through, which I'm then helping to, to settle and to, you know, do the admin for those.
+[00:10:23] And then I suddenly realized, well, I want to be on the other side of this transaction.
+[00:10:27] I want to be the one either trading this or deciding the allocation. And, and so I've
+[00:10:35] looked into that. So I guess it made me realize I had an opportunity within that
+[00:10:42] organization. If I wanted to take it and I was quite ambitious at the time. And so I,
+[00:10:49] I would look at these other jobs internally and they would require these other qualifications
+[00:10:53] that I didn't have or, or rather skills that you needed, which now in this day and age will seem
+[00:11:01] ridiculously basic, but it was even just having knowledge of spreadsheets and, and things like
+[00:11:08] that. And I think in those days, it was like Lotus 123 and things like that. So I had to just go away
+[00:11:16] and teach myself those things. And, and when I got, went to night school and got something in
+[00:11:24] economics and taught myself these other computer skills and things like that, so that I could
+[00:11:31] then apply for one of these jobs and meet their minimum criteria, which I did. And, and I mean,
+[00:11:40] that was a big, big break for me because then you read, I really got to see that side of the
+[00:11:49] business. I mean, I was talking to, you'd occasionally talk to clients, you'd be preparing
+[00:11:55] client presentations, the performance reports, doing portfolio allocations.
+[00:12:02] And it was that side of it that I enjoyed the most. And I think I
+[00:12:08] showed a particular aptitude for the trading side. And eventually they moved me up to the
+[00:12:16] trading desk where I was then handling all the far East business for that asset management arm.
+[00:12:24] And I'm 22 years old at this time. So that was quite a responsibility and quite an achievement
+[00:12:32] for me. So I was, you know, you're handling some pretty decent sized orders,
+[00:12:39] putting, sometimes we'd put them out to be executed overnight. But I also started to
+[00:12:46] trade some of them during the day with market makers during London hours, where we would,
+[00:12:55] you know, I'd get them to make a price. And then that was my way of handling some of the business
+[00:13:00] there using my discretion to decide that we might be better off trying to deal this here
+[00:13:05] rather than leave it in the market overnight. Okay, excellent. So later in your career,
+[00:13:13] I'm not sure how much further along this was, but I understand that you helped to actually set up
+[00:13:18] a trading desk in London there for the firm you were working for at the time.
+[00:13:23] Yeah, that was the next thing after, I mean, I'd been at Schroders for eight years.
+[00:13:31] And then I, there was a position at what was then Kemper, which later became Zurich and
+[00:13:40] Scudder. And then I think it was bought out by Deutsche. It went through lots of name changes.
+[00:13:45] But that was in 95. And I was hired to set up a trading desk in London to transfer all
+[00:13:56] their international trading from Chicago to London. And so then that was
+[00:14:02] everything but US markets for them, and all the FX as well. So again, that was kind of broader
+[00:14:18] experience because it was the real nuts and bolts of all the other admin and compliance
+[00:14:24] elements that go behind a trading desk as well. So I really had to get to grips with that
+[00:14:31] side of it. And I did that for another four years. So that was my entire
+[00:14:40] buy side thing there, the institutional side, seeing how those kind of PMs
+[00:14:49] allocate things, how they trade. And because sometimes they had their own ideas about trading,
+[00:14:54] there are others who were very happy to just hand it to the desk and say,
+[00:15:02] here, look, this is what I need. Go ahead and execute it where you think it can be done best,
+[00:15:08] or they would give you that discretion. But there were others who would have a fixed price in mind,
+[00:15:17] oh, I only want to buy it with this limit, things like that, which I didn't think
+[00:15:25] worked particularly well for them. In fact, it would be a source of great frustration to me.
+[00:15:32] Do you want to buy this thing or not? And limit orders, limit performance,
+[00:15:39] that they'd have these orders where it's just slipping away from you every single day,
+[00:15:45] and then weeks and weeks later, you've barely executed 10% of this order and the stock's gone up
+[00:15:53] five or 10%, which was ridiculous. But you'd have other PMs who
+[00:16:00] they just knew they want to buy this thing, get me in, okay, done. And they don't mind if you're
+[00:16:05] then the one initially being aggressive so that we get positioned and then let other people worry
+[00:16:13] about where it's going from there. And that was, in some ways, that kind of shaped how I looked at
+[00:16:21] things later on, because I actually saw the benefit of the once you, now I would now characterize that
+[00:16:28] as when you get your signal, just take it, just instantly acting on it, not seeing something,
+[00:16:36] thinking, oh, that looks great, I really want that, but I'll wait for a pullback.
+[00:16:41] And then the pullback never comes. So in working for many different portfolio managers, you get to
+[00:16:52] see what not to do as much as you do to learn some good things as well. And I've been fortunate that
+[00:17:00] I have worked for and with a lot of very good managers, so I definitely learned some good
+[00:17:07] lessons from them. Just so we're clear on that. So what your kind of role there was that
+[00:17:13] the portfolio manager has the idea of what stock they want to buy, and sometimes what price,
+[00:17:19] and then it was your job to actually execute that order and get them into the market. Is that
+[00:17:23] right? Yeah, it's different at different firms. Sometimes they would have a committee that would
+[00:17:32] decide roughly where they wanted their commission business to go to. And then the desk over the
+[00:17:39] course of the year had to try to meet those targets that roughly we want 10% of our business to go to
+[00:17:49] Kleinwatt, and we want 12 to go to Lehman, and we want eight to go to Morgan Stanley.
+[00:17:55] And you just have to roughly try to then give it to those people as and when it made sense.
+[00:18:04] But very often, especially when we're dealing in live markets in Europe rather than putting
+[00:18:11] out business overnight for Asia, you're dealing with live bids and offers and natural business
+[00:18:22] trying to go where it should go, where the natural supply is. So we would then say to them that
+[00:18:32] sometimes these figures are going to be different because I know you would really love to reward
+[00:18:40] your buddy with this order because that's where the research came from. But sometimes it wasn't
+[00:18:45] always that simple because they might not be the ax in the name. It might be that there's
+[00:18:53] someone else who was working a pretty decent order in that name that day and that's where that
+[00:18:58] on this particular day, this is where that order should go. So that was really your,
+[00:19:04] our role was kind of making sure we get best execution, but also in the long run trying to
+[00:19:13] fulfill their needs of what their research budgets and things were.
+[00:19:18] Okay. And when did your experience as like an actual prop trader come in? Was that a little
+[00:19:23] bit later or was this kind of around the same time? Yeah, that was a little later that in then
+[00:19:30] after I'd finished at Kemper in 99, I then went to the sell side and worked for
+[00:19:39] Lehman. And I was initially as a sales trader. So I'm sales trading pan European equities
+[00:19:48] to hedge funds and institutions which themselves were mostly in the US. So my clients would be
+[00:19:56] people like Templeton or like Lone Pine hedge fund, people like that or Chilton. And I did that for
+[00:20:07] that was probably for three or four years. And throughout that dot com bear market,
+[00:20:19] which has made it pretty difficult. But then one of the parts of my job there was at the time
+[00:20:28] there was it was a new thing called Alpha Capture where the the Marshall Waste was the client who
+[00:20:38] developed this internal platform where they would monitor the ideas of brokers. It would be a way
+[00:20:48] for them to assess the signal, if you like, the effectiveness of the ideas that they were
+[00:20:58] getting from their from the broker community. And the the better you did in that, the more
+[00:21:07] you got rewarded for it in order flow commissions. And I with a couple of other
+[00:21:16] salesmen on the team as well, we did very well at that. And so that's what introduced me to
+[00:21:24] that whole concept. It's and I actually expand on that in my blog is why I've called my blog
+[00:21:30] Alpha Capture. It was something that was a that was quite a big break for me at the time getting
+[00:21:35] that being able to work with that client and see what they do. And it was just something that
+[00:21:44] I prospered at. And so it then became, well, if you're going to do that, you should do that with
+[00:21:52] you should do that with our money. So then it was invited to join the prop desk there.
+[00:21:59] And I had a fairly privileged mandate at the time as a generalist, so that rather than being
+[00:22:07] tied to any one sector or market, I was able to trade long, short equity futures and
+[00:22:20] and pan European equities. And I mean, it wasn't a huge book, but it was it was good enough. And
+[00:22:29] it was a it was a great setup. That to me at the time that was like, wow, this is my
+[00:22:35] perfect job. Now it's like I'm I'm managing money. And I'll get paid on my results. You
+[00:22:44] know, you can't ask for for more than that. But and the only problem was at the time the firm was
+[00:22:51] going through a lot of restructuring in that area. And I had like three different bosses
+[00:22:56] in the in the in an 18 month period. And they didn't really know where to place me or how to
+[00:23:06] characterize what it is I did, because most of the other people in that in that place were more
+[00:23:11] fundamental based. And I was really technical, I might have what might have been some fundamental
+[00:23:19] factors to something, but I never quantified the trade in that way. And so eventually when the
+[00:23:27] desk moved off the off the floor into a separate area. So it almost became like a
+[00:23:34] you know, an in house kind of kind of fund like that was the trend at the time because then
+[00:23:39] they had to move off the floor and separate these things because the regulations were
+[00:23:44] coming in making them do that because prior to that would be sitting right behind the
+[00:23:48] market makers, which now would be unthinkable, that you could be privy to the kind of information
+[00:23:55] that is going on on the floor. So I was I was let go from there in 04. And that really is the
+[00:24:09] there's then a one to two year period, which really forms everything that's that's
+[00:24:17] followed. That was really the the formation of a lot of my ideas and how I now look at markets
+[00:24:27] really came about in that period. Okay, and I'd like to ask you about that period because I'm
+[00:24:32] interested to know why you chose not to seek out another job doing something similar with another
+[00:24:39] firm. And instead you transitioned more to trading independently. I mean, what was your reasoning
+[00:24:44] for this? Well, I mean, honestly, I did try to get initially I did try to get another
+[00:24:53] position. And it was actually quite a difficult market at the time.
+[00:25:03] I was trying to then I was mainly trying to talk to hedge funds about getting a position
+[00:25:09] within a hedge fund, because I always felt at the time on my resume, that's like the one
+[00:25:14] thing I hadn't had I'd been by side sell side, run a desk, assistant to a PM and and a prop
+[00:25:23] trader. And it was like it would now be good to continue that money management side and
+[00:25:30] go to a hedge fund. But I had several interviews at different places, but there was just nothing
+[00:25:36] coming through for me. And after about six months or so, we just talking with with my wife
+[00:25:47] and family, we just decided that we were going to move to the US, give it a couple of years.
+[00:25:55] If it doesn't work, we can always move back. But we'd always met my wife's American. So we had
+[00:26:01] links back here and would travel over to the US a lot. And we'd always considered that we'd end up
+[00:26:08] living and retiring there eventually. And so with this opportunity, we just thought, well,
+[00:26:14] why not now? Let's let's just go for it now and see if we can make a go of it there. And
+[00:26:24] you know, give it a couple of years. We're still here. I've been here 10 years now.
+[00:26:28] And so when I first got here, that was really, I mean, that's when I did a lot of
+[00:26:36] reading and researching of what it is I really believe about markets and some of the the book
+[00:26:46] that really helped me with that was reading Van Thaap trade your way to financial freedom,
+[00:26:55] which is an awful, awful title for that book, because I always think that gives the wrong
+[00:27:00] impression about what it is. It's not some get rich quick thing. But it actually really went
+[00:27:06] through systematically goes through makes you break down. What is it you really believe about
+[00:27:15] markets and why and just strip everything down to to the bare bones and finding out
+[00:27:24] what timeframe is your best suited to what trading methodology. I mean, that's what it did to me.
+[00:27:31] And it really also emphasised the importance of position sizing and it broke down the
+[00:27:40] individual components of a system made you realise how and why things work the way they do.
+[00:27:47] And so so that was a pivotal thing because I then started researching some of these other
+[00:27:55] methods and trend following was one of the ones that leapt out. I mean, I always felt within his
+[00:28:02] book it kind of lent towards trend following anyway, I think about being one of the most
+[00:28:08] consistently long term successful methods out there. And so I read, I mean, I read that I
+[00:28:17] read Covell's trend following, and I read all the market wizard books and kind of getting a
+[00:28:25] consensus of what is it these successful people do? What, you know, what are the key, key things?
+[00:28:34] Most of them, it was always about it was about the importance of position sizing. It was the
+[00:28:40] risk management. It was the cutting losses. And so all of those things resonated with me and it was
+[00:28:50] how I then started to concentrate a lot more on trend following. And I started to look into
+[00:28:56] developing different systems and finding something that could work for me.
+[00:29:03] Ever watch a stock rip and think I could have nailed that if I had real capital?
+[00:29:08] The truth is many capable traders never reach their potential, not due to lack of skill,
+[00:29:13] but lack of scale. Trade the pool was built to solve exactly that. A firm designed for serious
+[00:29:18] individuals who want access to the US equity markets with meaningful buying power up to $200,000
+[00:29:25] without committing their own capital. Get access to virtually every stock in ETF.
+[00:29:29] Go longer short freely with the flexibility professional traders expect. You're evaluated
+[00:29:34] on one thing, your ability to manage risk and execute with consistency. Meet the standard
+[00:29:40] and you trade at scale. No subscriptions, no ongoing commitments. Whether you're still
+[00:29:45] refining your strategy, a trader with experience who hasn't yet broken through
+[00:29:49] or a seasoned professional simply looking for more capital, trade the pool is built to
+[00:29:54] meet you where you are and take you that next step further. The markets have evolved,
+[00:29:59] access has evolved. Now, so has the way traders operate within them. Trade the pool.
+[00:30:07] Okay, so did you find that your institutional knowledge and all the knowledge you gained over
+[00:30:13] the years up until this point, was that enough to kind of support you? I mean,
+[00:30:18] it kind of sounds like you had to reinvent yourself. Is that a fair statement?
+[00:30:23] Yeah, well, I did and actually looking back, I mean, I don't want to get too,
+[00:30:31] you know, we could go a little deep here, but looking back, it made me realise years later that
+[00:30:40] losing my job back then in 04 from Lehman, actually, it probably really did affect me
+[00:30:46] a lot more than I realised at the time. And I, you know, I took it pretty heavily and
+[00:30:56] it really just made me examine everything that I had done. And I had been,
+[00:31:05] I'd lost a little bit of money for them towards the end anyway. I mean,
+[00:31:11] as I said with the changes, I think it was going to be inevitable anyway,
+[00:31:15] that you know, I probably would have been let go because I didn't fit into that structure anymore,
+[00:31:23] but I had been losing and I'd been taking it quite hard. I'm one of these people that,
+[00:31:30] if you lose money, it's I can't just say, oh, yeah, well, it doesn't matter,
+[00:31:34] it's other people's money. No, to me, it matters more. I'm actually very conscientious about that.
+[00:31:40] And so, you know, I took it very seriously, the position that I was in there. And so I really
+[00:31:47] wanted to examine what it was I was doing and try to get my ideas straight. And I had already
+[00:31:56] started that process before I was let go. So it then just made me continue it.
+[00:32:01] And it was, yeah, we were in a position that I had that option to be able to do that.
+[00:32:09] And we were relatively comfortable that we, you know, I had the time to then develop things.
+[00:32:19] I mean, that's one of the great things about that. It gives you
+[00:32:24] time, gives you options. But the real thing is I just started taking everything off the
+[00:32:32] chart one by one. Things that I would use like divergences, stochastics. I mean, now I never use them.
+[00:32:40] And these are all things that I used to use all the time and have them up on my trading. And
+[00:32:45] then I'd kind of examine, well, why is it I really do that? Why did I first start using that?
+[00:32:51] Has it been of any use to me? Why do I use, why do I use 20 day? Why not 21? Why not 22?
+[00:32:59] Why not 19? You know, really start to break down
+[00:33:03] everything that you use and why you think it's useful to you. And after a while, you realize that
+[00:33:12] there's not necessarily anything empirical, if you like, about these individual things. And it
+[00:33:21] makes you realize not to take them, treat them religiously as, you know, when you realize that
+[00:33:30] it isn't the be all and end all, well, then all of a sudden you take all of them less seriously.
+[00:33:34] And it should really be that if you find they have use, it's that they have used collectively
+[00:33:41] rather than this one thing says that, therefore I'm going to do this.
+[00:33:46] I mean, more than anything, now I use price. And that's what came about
+[00:33:51] from that whole exercise. I would take one by one, I took every indicator off my chart
+[00:33:58] until I was left with nothing but price. And then that was like the bell ringing,
+[00:34:06] like, well, there you go. That is actually all you need. What do you really need to
+[00:34:12] determine the trend and where this thing is going? If you had nothing else but price,
+[00:34:18] if you could only have one thing, one thing, it has to be price.
+[00:34:23] I'm really keen to actually dig into some of those comments you just made there a little bit
+[00:34:28] deeper shortly. But just before we do, just take us through those those few years after you
+[00:34:36] kind of, you know, like we kind of mentioned, you had to almost reinvent yourself and you
+[00:34:42] started reading up on different material and that sort of thing.
+[00:34:46] What were the next few years like? I mean, did you struggle to find your feet and start making
+[00:34:52] money or did you pick this up pretty quickly? Yeah, it was, well, I started experimenting with
+[00:35:03] different systems and that I would put money behind different systems. So I started trading
+[00:35:10] for myself, but it was mostly futures actually. I kind of use some of the basic
+[00:35:18] trend following models that you see people talk about where they might just use,
+[00:35:25] you know, it might just be like a new 50 day high and exit on a 25 day low or something like that.
+[00:35:33] Some of the basic things you use to model portfolios and you can add other things to that.
+[00:35:41] You can add trend filters to it that it doesn't just have to have, in that example,
+[00:35:49] made a made a new 50 day high. It could also be that it's done that, but also the 50 day is above
+[00:35:55] the 100 and things like that. So you kind of, so I experimented with lots of different
+[00:36:00] models like that with different filters and different criteria. And that really is about
+[00:36:06] finding your time frame that works best for you as well as a kind of diversified portfolio,
+[00:36:19] just how many different contracts you're going to look at. And I think I probably had about
+[00:36:25] 20 to 25 different markets at the time. And it was, I mean, I had successes and then I had other
+[00:36:37] times where when the pullbacks came, they were perhaps a little deeper and
+[00:36:44] harsher than I would have liked. And then that made me re-examine just how much I'm
+[00:36:50] risking in position size. You get used to people talking about 1% or even more.
+[00:36:58] I realized for me, that was even too much. If I really wanted this to be super comfortable,
+[00:37:07] it would even have to be less than that. It's one of those things, it's gauging,
+[00:37:13] am I checking the futures at night in the middle of the night? Are you having to get up and
+[00:37:18] worry about it? You get your risk down to the sleeping point where you don't have to worry
+[00:37:24] about it so much. Is there something else that you're getting out of it? Some other kind of
+[00:37:33] excitement or something from trading? Those are normally kind of warning signs. I mean,
+[00:37:39] there's a difference about being passionate about what you do and enjoying it. But
+[00:37:43] if you really want some kind of excitement or ego gratification, the market is not a good place
+[00:37:51] to find it. I mean, you'll get crushed eventually. You need to have those kind of outlets outside
+[00:37:58] of trading. What happened is it got to the point where I realized I wasn't going to be in a
+[00:38:10] position to make enough in terms of, say, making a living from it. I believe for most people,
+[00:38:20] that probably is the case. They actually need way, way more than they have. I mean, I started
+[00:38:27] to calculate that for that to be really comfortable for me and for, you know, to not need any other
+[00:38:37] source of income and to be totally, you'd need all these other things paid off. You'd need your
+[00:38:44] house paid off. You need your kids college paid for and all those kind of things. And then you'd
+[00:38:50] still need, to me, at least a million dollar trading account. Now, how many people can do that?
+[00:38:57] Have those things paid off and have a million to trade? Well, I couldn't. I certainly wasn't
+[00:39:05] at that stage. But it made me realize, well, fine. I've kind of built the groundwork here. I've
+[00:39:14] done all the groundwork here and I've built a fantastic platform on which to expand. But
+[00:39:19] and until I'm ready to build on this or to make it actually a client business, in the meantime,
+[00:39:26] I need to go back to getting some other qualifications and having another source
+[00:39:37] of income in the meantime. So then I went back to working on the sell side with I had a local
+[00:39:44] friend here ran his own brokerage business, which was fortunate. So I then worked for him for
+[00:39:51] years. So that was from 2008 to 2012. And so I got all my qualifications again for that. So I had to
+[00:39:59] get my seven, my 63. I got my CMT. I got an 86 and 87. I became a research analyst. I started
+[00:40:09] writing technical analysis research and went back to a lot of my hedge fund contacts in the UK
+[00:40:18] and started doing some of that alpha capture stuff again. And towards the end of that is when
+[00:40:27] I started to use social media or rather follow people on social media because I couldn't use it
+[00:40:34] as I was on the sell side. And I actually grew very frustrated that I see all these people out there
+[00:40:41] with this platform, if you like, for their for their views and for their ideas. And I got very
+[00:40:48] frustrated that I had no voice. And I'd been in this industry all this time. But now the the
+[00:40:57] movers and shakers, if you like, the people that were making a name for themselves and doing well
+[00:41:02] were all the ones who were able to tap into that community. And I wasn't. And it got to
+[00:41:08] the point where I thought, I'm just going to have to do this. I'm in my 40s. If I don't do it now,
+[00:41:15] when am I going to do it? And having to just take a leap of faith and like, let's, you know,
+[00:41:20] what is it you're waiting for? Just just do it. I mean, it's it sounds, I'm saying it like it
+[00:41:26] was easy. Now I'm saying that because of what I've done since and how it's turned out some
+[00:41:32] kind of hindsight bias. But at the time it was a big decision for me. It was a giant leap of faith.
+[00:41:40] And like most times when I've had to do that, it ended up being absolutely the right thing to do.
+[00:41:48] And so that kind of brings us almost up to date because that's at the end of 2012 I quit my last
+[00:41:56] job. And in January 2013, I just started blogging with no with no audience with no
+[00:42:04] idea of how it would turn out. And I just started talking about my approach and what I think what
+[00:42:11] I believe and and it resonated with a lot of people. Wow. Okay. What a brilliant answer,
+[00:42:19] John. That was really good. So let's let's switch gears now and get into more about your
+[00:42:26] particular approach. So if you could take just a few minutes to give us an overview of your
+[00:42:32] actual trading approach and some of the things you're looking for. And then we'll zoom into it a
+[00:42:36] little bit further. Okay, well, well, let me let me start by then clarifying what the different
+[00:42:50] areas I have now because I had I have two businesses. I have broadsword capital, which is
+[00:42:57] an RIA that manages the long only trend following strategy through separately managed accounts.
+[00:43:04] And I have Alpha Capture, which is really a publishing company, which sells subscriptions
+[00:43:12] to trading signals on the, well, on my blog, johnbaughman.com, but also on the Benzinga
+[00:43:20] market fire site. And both are really they're using a long only trend following
+[00:43:29] and on US stocks is what I do. And I mean, I say to people, I really boil it down so that I buy
+[00:43:37] stocks in uptrends and manage risk. And this is all kind of this is all part of
+[00:43:44] the kind of if you like my conclusion and summary of all the things we talked about
+[00:43:49] previously of the van Thap things of finding what you really truly believe about the market.
+[00:43:59] And so I will say to people, you know, what do we know? What do we know about markets? We know
+[00:44:04] they're not efficient. We know we can't predict them. We know you can just buy and hold and you'll
+[00:44:11] get your annual average return of 7%. But we can't tolerate the 50% drawdowns or more that we need
+[00:44:19] to withstand to achieve that. So my solution is I'm going to have a simple rules based methodology
+[00:44:33] designed to capture existing uptrends, but it avoids the worst of any severe downtrend
+[00:44:40] and how do you do that? Well, you incorporate strict discipline, risk management, you exit trends when
+[00:44:52] they're invalidated. You preserve capital so that you're in a position of strength
+[00:44:59] when better conditions then return. So that's what I do. And that's how I summarize it. I buy
+[00:45:05] stocks in uptrends and manage risk. And I mean, there's a and just one word on a quick word on
+[00:45:16] trend following. I know there are people that always have this argument about trend following
+[00:45:21] doesn't work on stocks. And it really gets down to how you define trend following. And some
+[00:45:30] people if you're really strict about the definition of trend following always has to be that it's
+[00:45:37] diversified, it's that it's long and short. Well, yeah, we're going to lose those
+[00:45:45] facets of it that that's not you're not going to have the diverse diversification from
+[00:45:55] different asset classes. It's all one asset class, it's stocks. So yeah, they're all highly
+[00:46:00] correlated. Long short, I don't short stocks, I I'm long only. So you lose that side of it.
+[00:46:08] But to me, it's much more important that it's it's about the
+[00:46:14] it's about the key principles of trend following to me are really about the risk management,
+[00:46:21] that that's what's crucial to its viability. You're going to have more losing trades than
+[00:46:25] winning ones, but your average win will be far larger than your average loss.
+[00:46:30] So you're still going to be profitable overall. It's about that that's the whole running
+[00:46:34] winners cutting losers things. So. And so what I look for
+[00:46:42] simple stuff, they're really simple screens, all time highs, 52 week highs,
+[00:46:46] they could be 50 day highs, they can be, they just need to be new highs and whatever
+[00:46:51] timeframe best suits you, you might be able to trade across multiple time frames.
+[00:46:58] And not everyone can do that. Sometimes it's better to just have one and stick to it.
+[00:47:04] I will use daily charts. I might use weekly. If I get a signal on the daily that also
+[00:47:09] coincides with the weekly, even better, you know, the more things that you can pull together,
+[00:47:15] the stronger the signal will be. And I might hold for weeks to months.
+[00:47:22] I sometimes incorporate a fundamental element into my stock selection.
+[00:47:29] You know, it might be some kind of theme behind something, but the entry and exit triggers
+[00:47:38] will always be objective. They will always be price based.
+[00:47:44] And I have to do that. I mean, I run, it's a highly concentrated portfolio. So in a strong
+[00:47:51] trending market, I might only have, because of the way I position size, I might only have
+[00:47:57] 12 to 15 holdings at any one time. But that's pretty much, that's pretty much how I go about it.
+[00:48:06] Okay. So in there, you said that there may be like a fundamental theme
+[00:48:11] underlying your decision to buy into a trend. Are you able to share an example of what this may be?
+[00:48:20] Well, it might be like, for example, the IBD list. The William O'Neill
+[00:48:31] Investors Business Daily list of stocks that they have. You know, those are all stocks that have
+[00:48:39] strong fundamentals, strong growth. And it's, well, it's, use a simple example, it would be,
+[00:48:49] you know, if I've got two stocks that made a new all-time high today, and there's one that
+[00:48:56] that I've never heard of, I don't even know what it does, and it might be fairly small in a liquid,
+[00:49:01] or there'll be something like Ulta or Nike, or something like that on, and it just happens to
+[00:49:12] be an IBD stock. Well, I already know, without having to do much more work, if it's on that
+[00:49:20] list, I already know that means it has really strong fundamentals. So I kind of like the fact that
+[00:49:27] there's potentially that other kicker to it, if you like, that other fuel, what that might be,
+[00:49:34] what's fueling, help fueling its advance. But at the end of the day, I'm only ever going to use
+[00:49:42] price to determine my risk, my position size. That's going to determine my entry. It's going to
+[00:49:49] determine my exit. I never make it that the fundamental element is the driver, the actual reason
+[00:50:00] for the trade, because then if that's your entry rationale, well, that has to be part of your
+[00:50:06] exit rationale. And the danger of that is then you suddenly have something going against you,
+[00:50:13] and you're down 10 or 20%, and you're telling yourself, oh, but it's really good value,
+[00:50:19] but it's nothing's changed about the business. It's still the same great company.
+[00:50:26] I don't trade companies. I trade stocks. I'm not trading their balance sheet.
+[00:50:35] So yeah, it's good to know that that's sound, and it's good, and it's a good business.
+[00:50:41] But at the end of the day, no matter how good it is, if the trend invalidates by price alone,
+[00:50:47] then I'm out. And I might take a look at it again to see if it comes back on my screen,
+[00:50:53] and I'll happily get in again. But I'm always going to be ruthless about managing risk. And
+[00:51:01] I'll always take what price says about something than what an analyst or a balance sheet says about
+[00:51:08] something. Okay, now, if you had to break it down to basics, what would you say are the advantages
+[00:51:14] of trend following? And I mean, what does this approach really resonate with you? I guess what
+[00:51:20] I'm trying to say is, why do you think it's a good fit for you? And what are the advantages
+[00:51:24] that you see in trend following versus other approaches?
+[00:51:30] Well, it is absolutely that it suits me. And I think that's one of the
+[00:51:38] most important things that something suits your style and your personality. And I know
+[00:51:46] sometimes people have problem reconciling that and saying, well, come on, how do you
+[00:51:52] how does something suit your personality? I wrote a blog post about this with my experience in this
+[00:52:02] area from having read Jason Williams' book, The Mental Edge in Trading, which does a fantastic
+[00:52:12] job about talking about the importance of your psychological profile and how it might affect
+[00:52:21] your trading. And by going through that exercise, and we can I'll send you a link to it so that
+[00:52:29] people you can have it at the bottom of this thing and people can go there and check it out because
+[00:52:33] it really is very insightful that it showed me that I was I discovered what I was suited to,
+[00:52:45] you know, it had taken me long enough. But eventually, you slowly start weeding out
+[00:52:50] all the things that don't work for you and you're left with only what does. And had I have just looked
+[00:52:57] at this blueprint of my psychological profile and my personality years ago, I probably could have
+[00:53:03] found out then, yes, you are you are suited to rules based methodologies.
+[00:53:10] You know, and you have good discipline, you have low anxiety, low vulnerability, so you're
+[00:53:22] going to be able to withstand it. That's kind of the thing it went through. So I already know I'm
+[00:53:27] doing something that's that I'm suited to, which I think is very important. I mean,
+[00:53:33] the pros and cons are trend following. Sometimes they're one and the same.
+[00:53:42] Because it's simple. It's good because it's simple, but that's also one of the cons.
+[00:53:47] You know, people will say if it's so simple, why doesn't everyone do it? Well, because simple
+[00:53:52] isn't easy. The things that make it work are the hardest things to do. It's every every trade
+[00:54:05] feels wrong. You're buying something when it's overbought. You're exiting when it's oversold.
+[00:54:14] You've got to ignore noise. You're going to have losing streaks.
+[00:54:20] You've got to maintain discipline, not just to take your exits, but to keep taking the
+[00:54:26] entries to take that next trade. That's why position sizing is so important,
+[00:54:32] because that's what's going to keep you in the game. You'll have low trading costs.
+[00:54:36] You should trade less often. You're using end of day signals, which means you have a lot
+[00:54:44] less screen time. You don't need to be sitting there during the day watching every tick.
+[00:54:52] But that also is then difficult because it requires you to do nothing for long periods,
+[00:54:57] and there are some people that really struggle with that. They have to be tinkering. They have
+[00:55:03] to be doing something, and they feel compelled to act. It's one of these things where
+[00:55:12] the beauty of it is its simplicity, but it's precisely because of that that it makes it
+[00:55:20] so hard for many people to implement and to execute it.
+[00:55:25] Yeah. I'm glad you brought that up, actually. Almost like the cons of
+[00:55:29] Train Fine or what about it that makes it hard for some traders to stick with.
+[00:55:34] So, yeah, I appreciate that. Thank you. Now, it's something I'd like to ask about.
+[00:55:39] You've touched on it already, but I'd like to go a little deeper.
+[00:55:44] And I'm fairly certain this is your personal preference and not necessarily the school of
+[00:55:49] thought for trend following, but why do you choose to trade long only?
+[00:55:55] Well, the short answer is because I've never found a way to make money from shorting stocks
+[00:56:02] consistently. And I don't think I'm alone in that. I mean, I've asked other people,
+[00:56:10] well-known managers, when I was trying to get my thoughts together on these kind of subjects,
+[00:56:18] and I'd kind of struggled to do it, and I called a couple of people up and said,
+[00:56:24] hey, look, I'm really struggling with this, and I just can't seem to consistently find a
+[00:56:29] way how to do it. And they effectively said, yeah, I haven't either. And this is someone who's been
+[00:56:35] managing money for 25, 30 years. Well, thank you. It's like, if they've told me that,
+[00:56:45] then why the hell am I going to bother trying to find a way to make it work
+[00:56:49] with the resources that they had at their disposal and their experience, and they've
+[00:56:54] never found a way to do it? I mean, the price action is just, it's different in downtrends
+[00:57:02] compared to uptrends. Because we look at charts, you think people get used to thinking that
+[00:57:10] following something in a downtrend is just the same as following in an uptrend, but it's not.
+[00:57:17] They move very, very differently. You have short covering rips, you know, markets rise
+[00:57:27] more, they rise slowly, they fall very quickly. And I'm sure people have seen that, we see that
+[00:57:34] recently in the market action we've been having now. So it's the same with
+[00:57:41] stocks that they're vulnerable to. If it's a company that's in trouble, it might be,
+[00:57:49] they'll suddenly announce they're seeking strategic alternatives, and the thing just
+[00:57:55] rips like 10, 20, 30%, or suddenly they become a takeover target. You can't backtest properly,
+[00:58:06] I don't think, shorting stocks because you can't take into account what the borrow restrictions are,
+[00:58:14] what the real costs were. You know, I've noticed recently in this action in the last few weeks
+[00:58:24] when I've seen something on my trading platform and something's fallen heavily,
+[00:58:29] and suddenly the little red indicator comes up alongside it that there's kind of limited,
+[00:58:38] there's restrictions on that stock and there's limited borrow and things like this. Well,
+[00:58:43] you never see any of that when you backtest these things. It's very easy to look at the chart and
+[00:58:48] say, oh, look at this, it broke support here, that would have been your signal to get short,
+[00:58:54] and then you work out how much you would have made. You just don't know that you would
+[00:58:58] have been able to do that because of the restrictions that might have been on the time,
+[00:59:04] but there's no way to get any of that historic data. It's also limited expectancy. The most
+[00:59:12] stock can decline is 100%, the amount it can rise is infinite. Well, I'd rather have that
+[00:59:20] expectancy working for me than against me. I'd rather, the other way round.
+[00:59:26] So, I think it requires very specific knowledge of a company, the real reason why you're doing it.
+[00:59:42] It's a declining industry. It has some kind of obsolete product. It has some other fundamental
+[00:59:50] trend going against it. Most of the most successful guys who do short, they obviously do it well and
+[01:00:00] they've made money out of it and people like Jim Chainos and people like that,
+[01:00:04] but I guess that's what I'm saying, leave it to those kind of guys. It's what they do. It's
+[01:00:10] a specialist thing. I think it's way too difficult for people who are used to trading the long side in
+[01:00:20] a bull market and they suddenly then think, oh, well, now it's a bear. Now I'll just start trading
+[01:00:26] the short side as if it's just, I'll just do the opposite of everything I did before.
+[01:00:32] It just doesn't work that way. Okay, that's a really interesting answer and perspective. So,
+[01:00:38] do you feel that way about regardless of what timeframe you're trading, whether you're trading
+[01:00:44] maybe intraday or short-term swing trades or whether you're in long-term trend following,
+[01:00:52] do you feel that the same way about short trades on all those timeframes?
+[01:00:57] Well, for stocks, on a very short timeframe, it might be possible for people to do that more
+[01:01:09] easily day trading, where you then don't have that overnight exposure and you don't run into those
+[01:01:18] other problems. But you're still going to run into, I mean, it depends how much you're trying to trade,
+[01:01:27] obviously, but you still run into the potential restrictions that are there. And you still,
+[01:01:35] I'm still not sure how you would be able to back test it. I just think there are more,
+[01:01:43] there's more trouble than it's worth there. And for me, it just means when we go through
+[01:01:48] those periods where we're mostly in a downtrend, it just means I have fewer and fewer
+[01:01:55] positions until you're left with virtually nothing. And if we end up being in a fully
+[01:01:59] fledged bear market, well, I'm going to be mostly in cash, sitting it out, waiting until
+[01:02:06] I get opportunities on the long side again. And that to me, I'd much rather just deal with
+[01:02:12] it that way. It's just, you know, it's really what works for me. And people have to find
+[01:02:18] what works for them. And I'm sure there are people that do make money shorting stocks.
+[01:02:24] But I think it's a really hard thing to do consistently.
+[01:02:30] Okay, no, that's really cool to get your insight. And I mean, it's quite a
+[01:02:35] unique perspective I feel from what a lot of traders are taught, especially when kind of getting
+[01:02:43] into trading. Yeah, because I mean, a lot of what you hear is just like, you know,
+[01:02:48] just do the opposite of when you go along. But you're saying it's quite different. So I mean,
+[01:02:52] it's really good to get your take on that. So when we are in a, when the market is in an
+[01:02:59] overall bear market, how are you treating that? Are you staying out all together or are you still
+[01:03:06] looking for individual long trades on, you know, individual stocks?
+[01:03:11] Well, I mean, I will look for them, but it's unlikely that they'll be there. I mean,
+[01:03:16] it may well then be that you get opportunities coming up on shorter timeframes, you know,
+[01:03:22] depending how long the downtrend that's preceded it. If we went into something,
+[01:03:31] like imagine if we went into a bear market that, God forbid, went on like a year or 18 months,
+[01:03:39] something like that. Well, the way you're going to come out of that kind of trend,
+[01:03:44] you're probably going to have some kind of huge basing pattern over many months,
+[01:03:49] some kind of saucer basing pattern, and then suddenly you'll start getting
+[01:03:56] multi month, 50 day highs, even 52 week highs, all of a sudden, because things have been
+[01:04:07] range bound for so long. And then you'll be taking those. So it's not that you need to
+[01:04:11] wait for all time highs again before you get back in, but you'll then suddenly find you're
+[01:04:17] getting some opportunities. And it may well be it's a false move and
+[01:04:24] you get stopped out of anything new that you took. And here we go to a new low again. But you just
+[01:04:30] kind of dipped your toe in with two or three positions. And as long as you're doing it in a
+[01:04:36] way where you're position sizing, where in the way I do, if you're only risking half a percent
+[01:04:41] each time you're doing something, well, you can still tolerate getting a few wrong
+[01:04:48] until a true trend emerges again. Now you mentioned 0.5% of capital risk per trade.
+[01:05:00] Do you always have this fixed position size? Or do you reduce to an even smaller size during
+[01:05:06] times when you're underperforming or going into a drawdown type of scenario?
+[01:05:14] That's a good question because there are elements of this which I am looking into,
+[01:05:23] and I'm adaptable on it in potentially being even stricter than I currently am,
+[01:05:32] or introducing something where it's more ATR based. But for the moment, for how I'm looking at
+[01:05:40] things right now, it's pretty much, it's always half a percent. And position sizing to me,
+[01:05:49] it's just one of the most important facets to any system. It's just the,
+[01:05:56] it's the biggest variable in any system that you control. That's one of the things,
+[01:06:04] that's a Van Thaap thing. Beyond that book that I mentioned, he has since come up with a new
+[01:06:13] another book, The Definitive Guide to Position Sizing. That is just the Bible on position
+[01:06:19] sizing. And it's, I mean, it's a huge book. It's an immense read. But
+[01:06:26] it's just got everything that matters on the subject, I think. That was one of the things
+[01:06:32] about breaking down the components of a system. And I believe it's only exits that determine
+[01:06:41] whether something is a win or a loss until you've actually got out of something.
+[01:06:47] It's only once you've got out that it then goes in the books as a win or a loss.
+[01:06:53] The position size determines by how much. Entry just determines frequency, how often you're
+[01:07:01] going to trade. So I kind of look at it that you can't control how price moves. So you can't
+[01:07:12] control whether that trade is going to be a winner or a loser. But you can control how much it will
+[01:07:18] impact you. And that's through your position size. And so that's what makes it so important.
+[01:07:25] All right. Well, let me ask you this. So what if someone has a small account and it may not be
+[01:07:32] feasible for them to just risk 0.5% of their capital, or maybe even 1%. You know, once
+[01:07:40] you factor in brokerage and that type of thing, are there any pointers you could give to someone
+[01:07:45] in this situation who perhaps needs to risk more than 0.5% of their account? They might just be
+[01:07:51] trading, you know, five grand or something along those lines. Yeah, that's, I mean, that's,
+[01:08:00] that's going to be tough. The reason why that becomes more troublesome though is that when you
+[01:08:07] have an account that small, it then becomes more about the trading costs that very often,
+[01:08:15] all of a sudden, those costs become a much higher percentage of what it is you're trying to do,
+[01:08:23] especially if you're trying to do it on a tiny, tiny amount. That, I mean, the answer really
+[01:08:34] is that if you then want to reduce those things, you have wider stops, which then result in a
+[01:08:42] smaller amount of capital per trade. If you're suddenly, yeah, if you suddenly your stop is like,
+[01:08:53] I don't know, 20% away, so it will mean it's over a longer time frame. You might be using
+[01:08:57] a weekly close. You might even be using, talking to someone the other day who uses a monthly close
+[01:09:03] on how they take positions. You see, the irony is with small accounts, you should actually
+[01:09:13] move to even longer time frames with wider stops so that you have smaller positions.
+[01:09:20] But actually most people, they go the other way because they then think that they have to build
+[01:09:24] up their capital and they end up trading shorter time frames and trading more frequently.
+[01:09:31] And I actually think it should be the other way around. Okay, that's a great point you bring up.
+[01:09:36] Now, just still on the trend following approach, I mean, I understand it's likely that, you know,
+[01:09:44] you'll have a losing year from time to time, or if not a losing year, an extended period of time
+[01:09:50] before you continue to make new equity highs. So if that's the case, I mean, how do you deal
+[01:09:57] with this? And how do you control yourself from continuing to trade the strategy without changing it?
+[01:10:05] Yeah, it's, this really is one of the most difficult aspects and it's going to come down
+[01:10:12] again to being suited to it and the, you know, the personality thing. It's about sticking
+[01:10:20] to the system. You've got to keep taking the signals, keep position sizing correctly.
+[01:10:25] And I know that it's so easy to say and people will say, well, I know I'm supposed to do that,
+[01:10:32] but how do I do it? No one tells me how to do it. And I got to be honest, I'm just not sure you can
+[01:10:41] teach that. I think you have to learn it by experiencing it. It's like telling someone who
+[01:10:47] says they want to lose weight, well, eat less and exercise more. They know that,
+[01:10:53] you know, that you think they don't know that. They know that, but for some reason,
+[01:10:57] they don't want to do it and they'll look for a different way to do it. And it's a similar thing
+[01:11:04] with trading. It's, you know, there's the rule, just stick to the rule, but there's something
+[01:11:10] else making them not do it. And unfortunately, they've got to find out what that is. They've
+[01:11:16] got to find out what it is about themselves. If they can't follow their rules, only they can know why.
+[01:11:26] You know, they have to find out the answers in them. They have to find out what it is. If they
+[01:11:31] truly believe in what they're doing, they won't hesitate to stick to the system. And I've got
+[01:11:37] to a point where I believe in what I'm doing and I know it's right in the long run for me.
+[01:11:45] So I, you know, I don't look at these individual trades as, I think in terms of a thousand trades.
+[01:11:55] This is just, this is just one of those trades. And it almost doesn't matter that
+[01:12:01] it's, whether it's a win or a loss, it's just one of the thousand. You just keep taking them
+[01:12:07] and keep treating them all in the exact same way. Because if you know and believe that you're
+[01:12:13] trading in a positive expectancy system, then you have to keep doing that in order to get the
+[01:12:19] final result that you'll get, you'll get. So this is why it's so important that as much as possible,
+[01:12:26] you try to develop rules of your own that suit you, rather than follow someone else blindly.
+[01:12:34] Because as soon as it gets tough, if you're following someone else, you'll abandon it
+[01:12:40] as soon as the system suddenly doesn't match your personality, but it's still easy for them to implement.
+[01:12:49] You know, you can't change your feelings, but you can change how you respond to them.
+[01:12:58] And that's what people have to be able to answer for themselves.
+[01:13:03] Very well said. Another great answer there, John. Now, are there any resources just off the top
+[01:13:10] of your head that you could recommend to any other traders who are keen to learn more about
+[01:13:15] trend following? Sure. Well, the obvious one, trendfollowing.com is Michael Carvelle's site,
+[01:13:25] and his book is always a great place to start on the overall subject of trend following.
+[01:13:32] I mentioned the couple of Van Thart books, Trade Your Way to Financial Freedom,
+[01:13:37] The Definitive Guide to Position Sizing. Andreas Kleenow has written two fantastic books
+[01:13:46] in the last, I think the first one was a couple of years ago, and he just wrote another one
+[01:13:51] earlier this year. Following the trend, which is mostly about futures-based
+[01:13:59] system and kind of how CTAs manage money, and then this year he wrote Stocks on the Move,
+[01:14:06] which really, although I know he is one of these people that doesn't like to call it
+[01:14:15] trend following on stocks, and we've spoken about this and joked about this, but to me,
+[01:14:21] that is what he's doing in that book. It is trend following on stocks, but he just
+[01:14:25] doesn't like to call it that. He might call it more like momentum or something.
+[01:14:30] And yeah, and if someone wants to find out more about the whole personality side,
+[01:14:38] the mental edge in trading, Jason Williams I think is a fantastic, insightful book.
+[01:14:46] I'm on my blog, JohnBorman.com. You can read everything I've ever written in the last
+[01:14:53] couple of years. Everything stayed up there. I've always tried to stay as transparent as
+[01:14:58] possible on everything I do. And I'm also on the Market Fire platform and Stock Twits and Twitter
+[01:15:08] at Jay Borman. Awesome, awesome. Well, I'll make sure to include all those resources you just
+[01:15:14] mentioned there in the show notes of this interview at chatwithtraders.com forward slash 43. So
+[01:15:21] thanks very much for sharing those bunch of really good resources there. So anyone who wants
+[01:15:27] to learn more about trend following, definitely check those out, chatwithtraders.com forward slash 43.
+[01:15:33] Now, John, just to take us out, would you like to leave listeners with any tips for
+[01:15:38] long-term survival? And if you like, feel free to repeat and reinforce anything you've already
+[01:15:44] mentioned. Sure. I think you, it's about having a plan and you really have to,
+[01:15:56] and one that suits you, which we've talked about several times already, but in trading terms,
+[01:16:02] it's about being clear about your objectives. I think it can be dangerous when people try to
+[01:16:12] target returns. You know, they'll say, well, okay, I want to make X per year, divide that by how
+[01:16:18] many days, so I need to make this amount of dollars per day. I think if you, when you
+[01:16:23] have objectives and goals, you need to make them process oriented, not outcome oriented.
+[01:16:30] You know, stick to the process and the outcome will follow. It's, it's about
+[01:16:36] having small incremental steps that you bring about big change. Excellent. All right, John,
+[01:16:43] good stuff there. Thank you very much for sharing this. Before we say goodbye, John,
+[01:16:48] can you just share once again with listeners where they can go to find out more about you
+[01:16:51] and connect with you. So maybe your website and your Twitter handle.
+[01:16:56] Yeah. My website, AlphaCapture, is johnbaughman.com and I'm on stocktwits and Twitter at Jay Baughman.
+[01:17:05] Always happy to connect and help people and answer any questions.
+[01:17:10] Awesome. All right. Really good stuff. And I'm, I'm pleased we were able to make this happen
+[01:17:14] and thank you very much for, for giving up the time to do this. Thanks again, John.
+[01:17:19] Enjoy your day and let's stay in touch.
+[01:17:21] You're welcome. Thanks for having me.
+[01:17:25] What's up guys? It's just me again. Thanks a lot for listening to that episode.
+[01:17:29] I hope you really enjoyed it. As much as I enjoyed speaking with John,
+[01:17:33] he was a really interesting guy. And I mean, I'm sure we could have kept going for much longer
+[01:17:37] than we did. But the funny thing is, we actually recorded that interview. It was 12am,
+[01:17:43] Saturday night for me, middle of the day for him, of course, being on the other side of
+[01:17:47] the world. So if I was a little bit slow in parts, don't judge me too harshly, that's my excuse for it.
+[01:17:55] So just a real quick reminder about the giveaway that's kicked off this week
+[01:18:00] and we'll be running through till the 7th of November this year being 2015.
+[01:18:06] So the giveaway is your chance to win a free 90 minute one-on-one mentoring session
+[01:18:12] with one of the chat with traders coaches. And there's going to be three winners
+[01:18:16] seen as there will be three coaches. So just real quick,
+[01:18:19] those coaches are Chris Sase, Zach Hurwitz and Brad Jelenick. Each awesome traders who have
+[01:18:26] previously featured on the podcast and past episodes. Really insightful guys and I can promise
+[01:18:33] you'll learn a lot from them. So if you'd like to enter into this, just go to chatwithtraders.com
+[01:18:40] that's W-I-N and enter your email address. Once you do this, you'll receive a unique URL.
+[01:18:47] Take that URL and share it as much as possible because for everyone who clicks it and then enters
+[01:18:53] into the giveaway, you're going to receive another nine entries. So it's an easy way to rapidly put
+[01:18:59] the odds in your favor and boost your chances of winning. So just in case you missed it,
+[01:19:03] that's chatwithtraders.com forward slash win W-I-N. So go there, enter now and best of luck to you.
+[01:19:11] And if we don't speak in the meantime, let's catch up next week.
+[01:19:19] You've come to the end of this episode of chat with traders. But don't worry,
+[01:19:23] more great episodes are on the way. To stay updated with each great new episode,
+[01:19:27] be sure to subscribe to the podcast in iTunes and we'd love it if you leave us a rating and
+[01:19:32] review. We'll see you next time on chat with traders.

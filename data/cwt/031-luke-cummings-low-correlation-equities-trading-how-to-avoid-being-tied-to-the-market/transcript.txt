@@ -1,0 +1,691 @@
+# 031: Luke Cummings – Low-Correlation Equities Trading; How to Avoid Being Tied to the Market
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT3383385752.mp3
+
+[00:00:00] What would your trading look like if capital wasn't the constraint?
+[00:00:03] That's the reality for most traders. It's not skill-holding them back. It's size.
+[00:00:07] Trade the pool changes that. Step into the U.S. equity markets with up to $200,000 in buying
+[00:00:13] power without committing your own capital. Full access to stocks and ETFs, longer short,
+[00:00:19] executed with the precision and freedom serious traders expect. Your performance
+[00:00:23] is measured by one standard, disciplined risk management and consistent execution.
+[00:00:27] Meet that standard and you operate at scale. No subscriptions, no ongoing obligations,
+[00:00:32] just a clear path forward. For those ready to trade beyond limitations, this is the next level.
+[00:00:57] However, they've worked hard to learn the markets and discover what works and what doesn't.
+[00:01:02] But how can you hear about these journeys and get in on the strategies and tactics they use?
+[00:01:07] You can do it by listening to Chat with Traders. Here's your host, Aaron Feifeld.
+[00:01:20] Hey there, what's up, team? Welcome back to another episode of the Chat with Traders podcast
+[00:01:24] and you're listening to episode number 31. Now this week, I spoke with Luke Cummings.
+[00:01:30] He's an Australian equities trader with 14 plus years of experience on his side.
+[00:01:36] After making a last-minute decision that journalism wasn't going to be a good fit for him,
+[00:01:41] Luke went into a finance degree which led him to becoming a stockbroker,
+[00:01:45] which then led him to becoming a trader. Nowadays, Luke remains an active trader of course
+[00:01:51] and also operates a hedge fund based in Sydney. As well as this, he also runs a model portfolio
+[00:01:57] service and trading blog, which goes by the name of the long and short of it.
+[00:02:02] And we keep things fresh in this interview by discussing trading methods
+[00:02:06] and strategies that haven't really been spoken about in previous episodes.
+[00:02:11] Additionally, Luke shares some of the common traps that often catch
+[00:02:14] entry-level traders and how you may be able to avoid the avoidable with some insight.
+[00:02:20] For all the links and resources mentioned in this interview, all you need to do is go to
+[00:02:25] chatwithtraders.com forward slash 31 and you'll be able to see all the show notes there.
+[00:02:30] All right guys, we'll hope you enjoy this interview. I'm Aaron Firefield,
+[00:02:33] your host of Chat with Traders and here is this week's guest, Luke Cummings.
+[00:02:40] Hey Luke, what's going on man? How's your day been?
+[00:02:42] I am very well. Thank you. Day's going well. Looking forward to chatting.
+[00:02:47] No doubt that's good to hear man. Thanks a lot for making the time to come on the show.
+[00:02:51] It's really good to have you here and there's, I mean there's a number of things I'm keen to
+[00:02:56] speak with you about today. Of course we all want to know about your development as a trader,
+[00:03:02] sort of from day one to where you are right now. And I'm also interested to get into
+[00:03:07] some details about a strategy which you regularly trade, which is a takeover strategy.
+[00:03:13] It's something we haven't really discussed on the podcast in the past and it'll be
+[00:03:17] good to hear more about this, but let's kick it off with your introduction to the markets.
+[00:03:24] So where did this journey as a trader begin for you?
+[00:03:28] Sure. Look to be honest, I guess I kind of stumbled into trading somewhat. I had no
+[00:03:35] real exposure to the share market in my younger years. I grew up in country in New South Wales,
+[00:03:41] which is the state of Australia for American listeners and moved to Sydney when I finished
+[00:03:47] school, started starting at night, working in the daytime. And one of the first jobs I had just
+[00:03:53] happened to be working for an international fund manager, obviously buying and selling shares and
+[00:03:59] currencies and whatnot as part of their portfolio management. It was very much an
+[00:04:04] administrative based role. So my job was to help settle trades and move cash and reconcile
+[00:04:10] positions and so on and so forth. So no direct exposure to the market as such, but I was certainly
+[00:04:16] aware of some of the things that were happening in the office at the time. My next step after that
+[00:04:21] was I took a job actually at an online broker E-Trade here in Australia. I don't think I was quite
+[00:04:28] 18 or maybe I just turned 18 at that stage. So I finished school reasonably young and I was
+[00:04:34] just working in their customer service division at E-Trade, which was very interesting. It
+[00:04:39] was April 2000. I actually started there about a week before the NASDAQ tech crash happened,
+[00:04:48] which was quite eye-opening at the time, but really was there with no preconceived ideas about
+[00:04:53] the market. I had read some books and had some exposure at university to the market. Anyone
+[00:05:00] who's got a finance degree, I guess one of the first things you get taught is that the market
+[00:05:04] is efficient, at least relatively efficient. And at that stage, I really had no reason to
+[00:05:11] think otherwise or to believe otherwise. Of course, having exposure to people who are trading online
+[00:05:18] and they're calling in and they're asking questions about the website and their positions
+[00:05:21] and different things, I guess since there are motions through that period of the tech crash
+[00:05:28] was very interesting because they sort of say you can tell a lot about a person when
+[00:05:33] they're under pressure, when money's involved and that was certainly an eye-opening experience.
+[00:05:38] But a colleague who I worked with there took a job at a broken firm probably about three years
+[00:05:44] after we'd been working there. I got in pretty well with him socially. I wouldn't have said he was a
+[00:05:49] great friend of mine, but we'd always gotten along well and an opportunity came up to go
+[00:05:56] and work at the firm that he was working at. Part of the pretense under which we allured
+[00:06:01] there was all of these client accounts that they had that were dormant and needed servicing
+[00:06:06] that weren't being serviced at the time seemed like a really good opportunity.
+[00:06:10] And I guess the reality was when we got there that the number of clients or prospects that
+[00:06:16] existed were less than we'd been led to believe. And we sort of figured out that if we're going
+[00:06:23] to rely only on broken commissions for our livelihood that we probably wouldn't be doing
+[00:06:29] too well. So we also had a bit of time on our hands because we weren't as busy as we had
+[00:06:33] been led to believe. So we just started looking at the market and doing a little bit of trading
+[00:06:39] ourselves. Obviously, we have exposure to clients who are doing something similar.
+[00:06:45] And to be quite honest, one of my business partners who's still my business,
+[00:06:49] or sorry, the colleague that I was talking about who's now one of my business partners
+[00:06:53] just stumbled across this thing one day and so they said, look, I think there's an angle here.
+[00:06:58] And I was like, sounds great in theory, but I've been to university and I've
+[00:07:03] studied finance. I know that the market's efficient and something that simple
+[00:07:06] surely isn't going to work or at least not consistently, there must be something we're
+[00:07:10] missing. And I wouldn't say we paper traded in the way that people
+[00:07:15] I guess think about paper trading now, but we watched a couple of these situations evolve and
+[00:07:20] we're like, well, it looks like there's an angle here. And I guess we just sort of
+[00:07:24] started to systemically exploit that and to look for those types of situations.
+[00:07:29] And it was actually a really profitable little niche that we'd found. And I guess really that was
+[00:07:35] the start of the process for me. I took that job without having any intention of being a trader.
+[00:07:41] It just sort of evolved that way. And that was I think 2003 or 2004. And in one form or another,
+[00:07:49] we've been out of that a sense. Okay, that's excellent. So I'm keen to sort of break that journey down
+[00:07:54] a little bit, a little bit more and touch on some of the points you mentioned. So
+[00:08:00] just before I do that, though, what was it about trading that actually appealed to you or
+[00:08:04] maybe not even trading, but just the markets in general? Because I mean, when you're young,
+[00:08:08] you have the opportunity to go pretty much any direction you like in terms of your career.
+[00:08:13] What was it about the markets and trading that really got your attention?
+[00:08:17] Yeah, it's a good question. I actually intended to be a journalist initially,
+[00:08:21] and that was very much my plan right up until the time I finished school. I was going to study
+[00:08:25] journalism. And at the last moment, for whatever reason, I just decided that I didn't think I
+[00:08:30] wanted to be a journalist. And I really was just looking for a job to be perfectly honest. I knew
+[00:08:35] that I wouldn't have the luxury of going to university full time without working. And it
+[00:08:40] just so happened that one of the first roles that I stumbled across was the job administrative
+[00:08:45] job with the fund manager that I mentioned earlier. I think once I got a little bit more
+[00:08:50] exposure to the markets, though, I mean, I just think it's a fascinating thing. And I'm not sure
+[00:08:56] necessarily that I thought about it in those terms at the time. But you have this thing that
+[00:09:01] every single day, there's something different as in there's no set pattern to how things
+[00:09:07] evolve throughout the course of the day. You can be having a quiet day right now.
+[00:09:11] It's quarter past two in the afternoon here in Sydney. Something might be about to happen in
+[00:09:17] five minutes time that I couldn't foresee or wasn't expecting that could be one of the best
+[00:09:22] opportunities that we have of the year. I think I was really drawn to the fact also that
+[00:09:29] you can make money that isn't directly correlated to your effort in the sense that
+[00:09:35] in my school holidays, when I was still at school, I was doing some manual work like
+[00:09:39] landscape gardening. My job was really to do the hard yakker, I guess, of the digging and the
+[00:09:45] moving and the lifting and whatnot. And you come home at the end of every day and you're exhausted
+[00:09:50] and you've earned whatever $15, $20 an hour, but you can only earn more money by working more
+[00:09:56] and it's hard work. And then you have trading, which of course you need to put effort into that
+[00:10:03] and as times evolve with developed systems and whatever else. But the idea that a little bit of
+[00:10:10] effort can make you a little bit of money or can make you a lot of money and that you don't
+[00:10:14] necessarily know in advance which it's going to be was certainly appealing to me. I think
+[00:10:19] all traders probably at some level are driven by a desire to have a better life or a better
+[00:10:27] lifestyle to have money. I think somewhere along the way the money becomes less important
+[00:10:33] actually probably once you start to consistently make it. But I think definitely for me,
+[00:10:39] I didn't grow up in a wealthy household. No one in my house talked about stocks.
+[00:10:44] I'm not even sure that I knew anyone who was trading or investing in stocks, at least not
+[00:10:48] directly. So I think the idea that you could build a better life for yourself and that it wasn't
+[00:10:56] through manual labor as such was probably, at least at the time, what appealed to me.
+[00:11:01] I really like that answer and I think a lot of people listening, including myself, can really
+[00:11:06] relate to that. So you mentioned there that you were at university and was it an economics degree?
+[00:11:16] It was a finance degree which I guess had an economics component, a finance component,
+[00:11:21] accounting component sold so forth. So you mentioned that they sort of taught
+[00:11:26] that the markets were efficient. But when you sort of started trading with your partner,
+[00:11:31] like you mentioned there, you were sort of saying that the markets weren't efficient.
+[00:11:37] What do you mean by efficient and inefficient sort of markets?
+[00:11:41] Sure. So I guess if you sort of think about university and finance or economics, I mean,
+[00:11:46] we have this concept of the efficient market hypothesis and really in a nutshell what that
+[00:11:52] tells you is that in its most purest form, everything that should impact the price of a
+[00:11:58] security, so whether it be a stock or otherwise, at any point in time is priced into that security.
+[00:12:04] So the idea is that by knowing information about the P multiple or the company's earnings or by
+[00:12:12] looking at a chart or whatever, that there shouldn't be any discernible ongoing advantage by knowing
+[00:12:17] that information because it's already in the price. Now in its purest form, they teach at
+[00:12:23] university that it includes all known information and all unknown information and that's I think
+[00:12:30] called pure form efficient. And then they have this concept of semi-form efficient which is that
+[00:12:35] all public information is in the price, but information inside information I guess
+[00:12:42] is not in the price at that point in time. And I think sort of logically that makes
+[00:12:47] sense. Certainly if you've had no reason up until that point to think otherwise,
+[00:12:53] at a fundamental level to me at least, it sort of made sense. It's like, well, okay, if everyone
+[00:12:57] knows that the current earnings are this or that this company's released a new product or
+[00:13:03] the economy is doing this or whatever else, it makes sense that these things are priced
+[00:13:08] efficiently. Now I think as things evolve and as you learn, you realize that
+[00:13:13] that's an efficiency at a point in time. It's probably the argument that
+[00:13:20] that is making, that concept is making. And of course, prices can move
+[00:13:25] as new things develop. So maybe an existing product is more successful than the company
+[00:13:30] and the market had anticipated. Maybe it's less successful. Maybe there's a currency impact for
+[00:13:35] one of its earnings, earnings of one of its divisions. But I actually realized,
+[00:13:41] very early on in my partner and I realized that even that couldn't account for what we were seeing
+[00:13:46] because every day stocks are moving really with no discernible reason for them to move. So
+[00:13:57] you can make an argument that maybe information is evolving or that someone who has an incentive
+[00:14:03] to buy a seller security hasn't learnt something new that maybe they were previously not aware
+[00:14:07] of. But I think that in a lot of stocks, if they're liquid enough, that it's probably not enough to
+[00:14:14] account for the reason that you see some of these securities move in the range that they move
+[00:14:19] on a daily basis. And I think that combined with the fact that we've sort of found this
+[00:14:26] little niche that we're exploiting quite profitably, it was really telling us that,
+[00:14:31] well, the market's not efficient at all, at least certainly in some respect. So I think that
+[00:14:38] there are some instruments probably where you can make an argument that the market
+[00:14:42] is reasonably efficient because there are so many people looking at them
+[00:14:46] and information about what drives prices is very readily available. But there's a bunch of stocks
+[00:14:51] and I'm sure other instruments as well and stocks I guess is some area of expertise
+[00:14:57] that people just aren't looking at or paying attention to or there are angles that they
+[00:15:01] haven't thought of. And one thing for us I guess is that I've listened to some of your previous
+[00:15:08] podcasts on the site and I'm slowly working through the rest of them. But Tim Sykes was saying that
+[00:15:16] you were talking to him about his edge and why he chooses small caps or penny stocks.
+[00:15:21] And he sort of used the example of if you're going to play basketball, do you want to play
+[00:15:25] against Michael Jordan or I'm not sure it's politically correct, but do you want to play
+[00:15:30] against the midget? And it's a funny analogy because I kind of agree with him in that I think
+[00:15:37] there are areas of the market that are harder to compete in. I mean if someone like Goldman Sachs
+[00:15:42] is trying all of their resources at an area that I'm trying to compete with them in, I think
+[00:15:46] that's very difficult. I think where we try to play a lot of the time is in areas that Goldman
+[00:15:52] Sachs probably isn't paying attention to because it's too small in terms of what it can add to
+[00:15:59] their bottom line or it's an area that these guys go to the same universities and colleges that
+[00:16:05] I went to that teach you that certain things are efficient or can't exist or aren't possible.
+[00:16:10] And I think that that leads to them ignoring a lot of areas of the market that can actually be
+[00:16:14] exploited. And I suspect that of all the people you're interviewing who are trading for a living,
+[00:16:19] I mean they all at some level believe that the market and probably have proof that the
+[00:16:23] market's not efficient because if the market was efficient you can't make your living
+[00:16:28] trading like they do and like I do. So that was a real eye-opener for me I guess is that
+[00:16:36] one of your other interviews, someone mentioned stages of development and money's,
+[00:16:41] you're making money but you can't figure out why. And then you're not making money,
+[00:16:44] you can't figure out why which is maybe worse. And then you're not making money,
+[00:16:50] you know why and then you're making money and you know why. And I think that's a thing,
+[00:16:53] like if you're making money and you really want to make a career out of trading,
+[00:16:56] I think you really need to be able to put your finger on pretty quickly, at least at the point
+[00:17:01] where you're going to scale up in terms of the time and financial resources that you commit to it.
+[00:17:06] You've got to understand why it is that you're making money and where that advantage is coming
+[00:17:11] from because randomness can account for a lot in the markets and in life. You do a trade that
+[00:17:17] makes money doesn't necessarily mean it was a good trade. You do a trade that loses money,
+[00:17:20] it doesn't necessarily mean it was a bad trade. I think people confuse the end result of what
+[00:17:24] they did with the intent that they had or the reason for them taking the trade in the first
+[00:17:30] place. And I think that was important to us early on was to try and figure out, hey,
+[00:17:36] are we just lucky here or have we actually found an inefficiency in the market? And
+[00:17:42] sitting where I sit now and for some time, I definitely believe that the market
+[00:17:46] isn't efficient, at least in some areas. Okay. Yeah, that's a really great answer.
+[00:17:51] And thanks for really expanding on that, too. So all in all, would you say your
+[00:17:57] degree from university and your experience as a stockbroker, did you find that this had any
+[00:18:03] benefit to you when it actually came to trading your own money?
+[00:18:08] Look, definitely, maybe not for the reason that I would expect, though, that listeners
+[00:18:13] would expect. I mean, the university component, I think was really great. One for exposing me to
+[00:18:21] things in terms of terminology and concepts and whatnot that I just wouldn't have had exposure to
+[00:18:26] otherwise. But once you get past that initial fundamental knowledge base, I think it's really
+[00:18:33] great looking at it in hindsight to know or understand what everybody else in the market,
+[00:18:40] at least to a finance professionals who are working as portfolio managers or prop traders or
+[00:18:44] whatever they're doing at all these firms. I think it's great to understand what they're
+[00:18:48] taught and why their belief systems are, what they are. So from a university perspective,
+[00:18:56] I think that was really great. From a broken perspective, I mean, I think outside looking
+[00:19:02] in, you think about a customer service role at an online broker, it actually sounds like a
+[00:19:06] pretty terrible job. But I have to be honest, the two business partners that I have,
+[00:19:13] we all came through E-Trade at similar times. We didn't necessarily work together. But
+[00:19:19] we all had that grounding or that base coming through E-Trade. And the cool thing about that was
+[00:19:24] that you're not getting paid very much, but you're going to work every single day and you're learning
+[00:19:29] about the market. So you're learning about how the market actually physically operates and some
+[00:19:34] of the rules and regulations that govern it and some of the idiosyncrasies of the market
+[00:19:40] in terms of the market itself. But then you also have the benefit of seeing human emotion
+[00:19:45] in operation more or less in real time because you're talking to these people over the phone who
+[00:19:50] are having problems or have questions about whatever. But you can't help but figure out
+[00:19:56] I guess what their emotional headspace is and you get some exposure to the types of trades
+[00:20:00] and things that they're doing. So I actually can't imagine being in the position that we're in right
+[00:20:06] now had we not had that education in online broken because it's basically like getting paid for three
+[00:20:13] or four years to do an apprenticeship or an internship where you get to learn everything
+[00:20:18] about the market. And I think the alternative to that would have been trying to learn all of that
+[00:20:24] stuff at night or on weekends or before work or in addition to having other jobs,
+[00:20:29] I think would have been really difficult. Moving on to when I became an actual broker and was
+[00:20:34] giving advice to people and looking after accounts. Also very interesting I think the way
+[00:20:40] people react to making profits, the way people react to making losses, the amount of opportunities
+[00:20:45] you would call people with and say hey look here's a really great trade, here's a downside,
+[00:20:49] here's why I think you should do it and there are reasons for not doing it or whatever I think
+[00:20:56] is very interesting. So if I had my time again I think the path that all three of us took
+[00:21:02] to get to where we are now was really perfect. And the other cool thing was that in the year
+[00:21:08] 2000 online trading hadn't existed in this country for very long. I mean it hadn't existed
+[00:21:14] in any country for very long. A lot of the customers at E-Trade were still using dial-up
+[00:21:19] internet and couldn't talk on the phone at the same time they're using their internet and it was
+[00:21:22] sort of just a crazy time and it was kind of nice because it's not like coming into an industry
+[00:21:28] where there are people with 30 or 40 years worth of experience that you don't have. At most
+[00:21:33] there's probably people with a couple of extra years experience trading online than what
+[00:21:38] I had at that time so I think timing was beneficial in that regard. Yeah right that's really interesting.
+[00:21:46] You kind of mentioned a little bit earlier you talked about once you did start trading you and
+[00:21:51] the partner you were trading with came across sort of a niche or a little area type of trade
+[00:21:59] or strategy that you could exploit and you were making you know decent money from this
+[00:22:04] strategy you discovered. Can you talk to us a little bit about maybe how you discovered that
+[00:22:10] strategy and are you still running with that strategy today? Yeah sure look this credit for
+[00:22:18] finding the strategy definitely goes to my partner at the time. He you know I've actually never
+[00:22:26] really discussed it with him in detail I presume he just sort of stumbled across it by accident.
+[00:22:30] We sort of found a way to to exploit a loophole around you know capital raising
+[00:22:38] in typically smaller cap stocks so you know to get access to discounted securities
+[00:22:45] you know that some of these these companies were offering of course depending on the company
+[00:22:49] sometimes you know discount frankly is big enough to want to give them money other times
+[00:22:56] you know the opportunities are attractive so sadly the loophole we're exploiting no longer exists
+[00:23:01] that the rules were changed such that the way we're obtaining access to them at the time
+[00:23:07] no longer exists which is a shame but we basically went through the process of doing
+[00:23:12] this ourselves and because we were somewhat capital constrained at the time
+[00:23:18] you know there were really two forms of leverage for us one was to share those
+[00:23:21] opportunities with our clients which we you know certainly endeavored to do as much as we
+[00:23:25] possibly could and had a lot of clients who made a lot of money from that at the time
+[00:23:30] and the second way was you know for us to get our hands on more capital ourselves
+[00:23:36] I mentioned to you when we were out we're chatting earlier that the way that we did that at the
+[00:23:41] time which I definitely do not advocate to anyone under any circumstances is we actually use credit
+[00:23:46] cards because we're young guys like I was only you know probably 20 or 21 at that stage
+[00:23:51] and you know I didn't have any money I've probably still had a little bit of you know
+[00:23:55] consumer debt from university and buying a car and all these things that you sort of do so
+[00:24:01] we sometimes are making you know five 10 15 percent a month from some of these trades pretty
+[00:24:06] consistently so even if you're having to pay a bank you know 15 16 percent a year in interest
+[00:24:13] which sort of sounds crazy saying it now but you know it was a smart thing for us to do
+[00:24:19] and you know we'll probably get to this later on in terms of how our trading strategy
+[00:24:24] has evolved through time but you know one thing that or a couple of things about that was one we
+[00:24:30] needed to be pretty damn sure that we could make money consistently given that we're using someone
+[00:24:35] else's money but it also made us I think very mindful of risk and you know sometimes that
+[00:24:42] it's just better to take the fat easy part of profit out of a trade without a lot of risk rather than
+[00:24:50] you know really going for the entire amount of profit that might be in the trade so I think
+[00:24:56] if you use a baseball analogy you know sometimes a base hit or a double is is better than the
+[00:25:00] whole run if you could get that base hit or the double you know more frequently than you
+[00:25:05] would get the whole run so that was what we did but I actually think and I don't have proof of
+[00:25:10] this but I think the strategy we're running an extent to which we scaled it amongst our clients and
+[00:25:15] it sort of became a reasonably well-known strategy certainly at least within a niche in the Australian
+[00:25:20] market probably was what at least partially contributed to the subsequent rule change
+[00:25:26] about that so it was a cool little thing and you know one thing we don't really know now is
+[00:25:31] whether or not maybe we should have kept a little quieter and we'd still be trading it now
+[00:25:34] because it just wouldn't have become such a prominent thing but you know onwards and
+[00:25:39] upwards no regrets but it was a cool thing if we hadn't found that I don't think you know that
+[00:25:44] we'd be doing what we're doing today and and we wouldn't be talking about this so
+[00:25:48] that was pretty cool and I guess the interesting thing is that sort of a long way to answer your
+[00:25:52] question but you know you sort of think about how people become traders and the preparation
+[00:25:58] they do and you know maybe they go to a core so I've listened to your own interview about
+[00:26:03] you know starting out with Gan and going to a seminar and learning about that and some
+[00:26:07] people you know read books and learn about fundamentals and you know you've spoken to
+[00:26:11] people on this podcast who you know are crazy into like you know programming and backtesting and
+[00:26:17] you know different things it sort of seemed a bit surreal that we kind of just stumbled across
+[00:26:23] this thing that you know no one was really talking about and it wasn't particularly sophisticated and
+[00:26:28] was just really easy to exploit it for profit at the time you know that that was sort of weird
+[00:26:35] even things like having a trading plan and things I mean all those things come after but
+[00:26:38] all of the things that you think that you know you should do and that you need to know
+[00:26:42] in advance to start making money in the market you know we weren't doing any of those things and
+[00:26:48] some of our friends and colleagues who were working at other firms and things like you know
+[00:26:52] big name financial firms sort of knew what we're doing they're like you guys are crazy
+[00:26:56] like what are you wasting your time on like all these small ridiculous trades for like
+[00:27:01] you know what's the point and you know I felt and I think you know probably a business partner at the
+[00:27:07] time you know probably felt a little bit of an inferiority complex where it's like yeah we're
+[00:27:12] not really serious as in you know no one's taking it serious this is kind of a small strategy that
+[00:27:17] you know it's a bit of a niche and it was almost embarrassing to talk to people about it
+[00:27:22] but it just became such a big thing and we made so much money from it and it's funny now
+[00:27:28] looking back on that and some of the people who at the time were like
+[00:27:32] you guys don't know what you're doing you're just lucky and you know loophole's gonna close
+[00:27:36] and that'll be it you guys will have to get you know other jobs and things
+[00:27:40] you know some of those people now are like okay what else have you guys got like you know
+[00:27:43] tell me some other strategies what should I be buying or whatever and
+[00:27:48] you know I think that's been an interesting process to go through
+[00:27:53] you know I wish I could say that we set out with intent to become professional traders
+[00:27:57] and did all these cool things and that you know we're super smart and great at math and all these
+[00:28:00] things but it just for us at least hasn't really worked out that way and I think if I look back
+[00:28:06] you know the fact that we weren't doing what everyone else was doing and that you couldn't
+[00:28:09] just turn up somewhere and learn what we were trading in a course or read it in a book
+[00:28:14] it's actually probably what made it work in some ways because we just kind of found
+[00:28:18] something that no one else was looking at at the time right okay so right at the start of
+[00:28:23] that you mentioned you were sort of purchasing discount securities what do you mean by discount
+[00:28:30] just so we understand before we move on sure so looking in a purest example which is you know
+[00:28:36] not the strategies you were using at the time but you know in Australia Westpac Bank owns
+[00:28:45] a fund manager called BT or partially owns a fund manager called BT
+[00:28:49] American listeners can can look it up online briefly if they want to but
+[00:28:55] we did an offer recently where they sold down part of their holding Westpac sold down part
+[00:29:02] of their holding in BT and the reason they did that was because in Australia they're talking
+[00:29:08] about changing some rules around the level of capital that banks have to hold and
+[00:29:12] you know the penalty from the capital perspective of them continuing to hold BT
+[00:29:17] I guess in the bank's view you know was greater than the benefit of continuing to have the sharehold
+[00:29:22] shareholding in BT that they did so very basic level Westpac says anyone who's an existing
+[00:29:28] BT shareholder or who is an existing Westpac shareholder will have the ability to buy
+[00:29:35] BT shares at a fixed price of $8.20 now this is for existing shareholders only
+[00:29:41] so if you don't hold shares in BT or you don't hold shares in Westpac and you
+[00:29:49] you know that announcement is made then there's no way for you to participate
+[00:29:54] many years ago if you didn't already own those shares sometimes they would say anyone who's a
+[00:30:00] shareholder in a week or two's time or three weeks time whatever it's going to be will be
+[00:30:07] entitled to participate in that offer so in the case of BT you know which is sort of
+[00:30:15] underway at the moment you know BT announced or Westpac announced they were doing that sale
+[00:30:20] that sale when the share price was $8.20 about you know two two and a half weeks ago
+[00:30:27] of course we've had a lot of market volatility in that time but you know the last week or so
+[00:30:30] that the markets rallied pretty hard you know BT shares as of yesterday were almost at $10 today
+[00:30:36] there you know I think about $9.50 or something it's quite a big price gap there right so you
+[00:30:42] know if you have the ability to buy BT shares at $8.20 and they're currently trading at $9.50
+[00:30:48] it doesn't really matter you know what you think the outlook is for BT you don't need to want to
+[00:30:53] own BT for any great period of time you know you're basically being offered something that's
+[00:30:58] worth $9.50 today for $8.20 as long as you think that between now when you buy BT
+[00:31:06] and you know when you're able to sell them when your new shares are allocated that's sort of a no
+[00:31:10] brainer transaction right like it's like me saying you know give me $8 and I'll give you $10
+[00:31:15] it's like well what's the catch that seems a bit too good to be true but it exists and the thing
+[00:31:21] is now there's there's no exploitable angle because you know the window is closed by the time
+[00:31:27] that's announced but previously that window wasn't closed and that was something that you know we
+[00:31:31] took advantage of as much as we could when the rules existed in that format so what we're basically
+[00:31:36] trying to do is figure out you know how do we buy $10 for $8 or how do we buy $5 for $4 or whatever
+[00:31:43] the case may be okay sure yeah that that makes perfect sense ever watch a stock rip and think
+[00:31:50] I could have nailed that if I had real capital the truth is many capable traders never reached
+[00:31:55] their potential not due to lack of skill but lack of scale trade the pool was built to solve
+[00:32:00] exactly that a firm designed for serious individuals who want access to the us equity markets with meaningful
+[00:32:07] buying power up to $200,000 without committing their own capital get access to virtually every
+[00:32:13] stock in etf go longer short freely with the flexibility professional traders expect
+[00:32:18] you're evaluated on one thing your ability to manage risk and execute with consistency
+[00:32:23] meet the standard and you trade at scale no subscriptions no ongoing commitments
+[00:32:29] whether you're still refining your strategy a trader with experience who hasn't yet broken through
+[00:32:34] or a seasoned professional simply looking for more capital trade the pool is built to meet
+[00:32:39] you where you are and take you that next step further the markets have evolved access has
+[00:32:44] evolved now so has the way traders operate within them trade the pool let's first
+[00:32:52] forward to current times now and talk about how you're trading these days so give us an overview
+[00:32:58] of your approach to the markets that you apply you know in current times today
+[00:33:04] sure so I think at a fundamental level the premise hasn't changed for us in that
+[00:33:11] we're not trading the same strategy that we were back then but one great thing about that strategy
+[00:33:16] was that the reward on offer was outsized relative to the risk that we were taking so
+[00:33:23] I think you're always taught and you know we talked about my university degree earlier
+[00:33:27] the idea is that to get more reward in theory you have to take on more risk and I think you know
+[00:33:32] fundamentally that's that's pretty well accepted what we're really looking for are situations
+[00:33:39] where we think that the reward on offer exceeds the level of risk involved in us taking that
+[00:33:44] transaction and that maybe sounds a little strange or a little crazy but you know the the idea
+[00:33:50] is the same as the same as you know that loophole we found before there are other things in the
+[00:33:56] market that you know where that exists I think and we really have a couple of different components to
+[00:34:02] our business now so the original business partner or colleague at the time that I mentioned you know
+[00:34:08] they started working with you know more than 10 years ago is still one of my business partners
+[00:34:12] today we actually I have a second business partner as well who who joined you know along the way
+[00:34:20] and the two of them primarily are focused on really short-term stuff so non-client facing stuff
+[00:34:29] typically day trading we try and be you know pretty flat at the end of every day
+[00:34:34] and it's time intensive you know every day at least while the market's open sitting
+[00:34:39] glued to their screens you know looking for opportunities and trading so
+[00:34:44] there's that element of our business and I'm not you know really actively involved
+[00:34:47] in that these days just because it's so time intensive and in order to do some other things
+[00:34:54] you know within the business it's difficult to do that if you're glued to a screen all day so
+[00:34:58] that's one part of what we're doing the second part is you know we have a managed fund or a hedge
+[00:35:03] fund which trades you know longer term type strategy so you know day trading isn't really
+[00:35:09] appropriate for that vehicle so you know our takeover strategy which you mentioned earlier
+[00:35:16] fits within the fund plus some other you know kind of longer term scalable type strategies
+[00:35:23] and I guess the more recent you know development there is the blog that we've started to share some
+[00:35:30] of you know our ideas you know some of our more simple ideas in the takeover space that
+[00:35:36] you know retail investors are capable of implementing themselves without it having
+[00:35:40] to be through our fund or you know needing any special help to do but the one thing that
+[00:35:44] drives all of those those areas or all those business divisions is this idea of risk awards so
+[00:35:52] you know what we're really trying to do in the first instance is make sure that we really
+[00:35:55] strongly understand the downside in each situation and you know I guess upside is secondary
+[00:36:02] to that I think one mistake that a lot of people make when it comes to trading
+[00:36:06] is they're really thinking about you know what's my potential reward here how much money can I
+[00:36:10] make and their position sizes are really dictated by you know what they're imagining their profits are
+[00:36:15] going to be if things go in their favor we're the complete opposite of that we're really trying
+[00:36:20] to figure out okay we're happy to risk X amount per trade you know for a stock standard what I'll
+[00:36:26] call opportunity and that you know really dictates our position size and I guess we'll cover the
+[00:36:32] takeover thing in a little bit more detail shortly but some of the opportunities in that space
+[00:36:37] you know much more sorry much you know more interesting from a risk reward perspective than
+[00:36:43] your standard opportunity so we have some discretion to you know vary our position size
+[00:36:49] accordingly in that situation I think if you're pigeonholing what we're doing it's I call it
+[00:36:55] rules-based discretionary trading so we have a fairly fixed framework around what we're looking
+[00:37:00] for in all situations and you know lots of alerts and triggers and things that
+[00:37:05] alert us to opportunities but all of it has human intervention so it's always someone looking at
+[00:37:09] that saying is that opportunity as good as it appears to be yes it is let's take it or
+[00:37:14] alternatively no it's not for x y and z reason and therefore we're not taking it and look you know
+[00:37:20] probably the best example I can give of a trade where I think that the you know reward is
+[00:37:25] outside relative to the risk it's one we did recently for for our fund and throughout newsletter
+[00:37:30] through our blog and that was in a stock called Panos Australia P&A was the ASX code and history
+[00:37:37] of Panos very briefly was that they had a copper mine or several copper mines major shareholder
+[00:37:44] was a Chinese company had made a couple of approaches to Panos previously about taking
+[00:37:49] them over at higher prices than where the takeover subsequently happened at the time Panos
+[00:37:56] board said no we're not interested you know the prices are high enough you know we really
+[00:38:01] went through that period of six months or so of commodity price corrections and the major shareholder
+[00:38:08] Chinese shareholder comes back and says you know we're making another takeover offer
+[00:38:13] takeover offers can vary quite considerably in terms of how they're structured but the cool
+[00:38:18] thing about this most recent offer for Panos was that the price at which the takeover was being
+[00:38:23] made was guaranteed so it's basically called an unconditional takeover and I think $1.71 from memory
+[00:38:30] was the takeover price we trade so many of these I can't remember exactly but let's call it $1.71
+[00:38:35] for argument sake as soon as that takeover is announced Panos is trading at $1.72 so you can
+[00:38:42] basically buy Panos as much as you like more or less for a number of days at $1.72 or they're
+[00:38:49] about knowing fine well that no matter what happens so you know if there's no improved bid
+[00:38:56] even if the market you know tanks during that time you're going to be able to sell that stock
+[00:39:00] at $1.71 so that's really your hard stop loss that you know you've got in place at least for
+[00:39:05] the period that the bid exists but it wasn't a crazy thought to think that you know Panos
+[00:39:10] might get an improved bid maybe not a competing bid from a different shareholder a different
+[00:39:15] company given you know the reasonable shareholding that the Chinese company already had but
+[00:39:21] you know the bid that they pitched most recently was about 20 or 30 percent below
+[00:39:27] where the bid had been pitched previously so it wasn't ridiculous to think that you know the bid
+[00:39:33] could be improved by 10 or 15 percent above its current level you know in order to get board
+[00:39:39] acceptance and get shareholder acceptance so you know the way that looks is that if the takeover
+[00:39:44] price is $1.71 then it gets a 10% bump and then the new price becomes $1.88 if you look at that
+[00:39:50] what you were risking in that situation you're really only risking that 1 cent per share
+[00:39:56] because you know you can get that $1.71 yet you have the potential to you know get $1.85 or $1.88
+[00:40:02] or more potentially $2 so for us I love that trade because I know exactly at the outset
+[00:40:10] what my downside is I've got that locked in I can position size accordingly and if the trade
+[00:40:15] works out then you know the multiple of reward relative to risk that you get is very very great
+[00:40:23] you know the headwind percentage it might only be a 10% return on the capital invested but
+[00:40:27] if you look at your return on risk you know if you get a bump in the share price or in the
+[00:40:32] offer price it's you know almost unheard of so that's not to say that Panos was definitely
+[00:40:38] going to get that better offer it's very possible that the Chinese company just says look that's our
+[00:40:42] best and final offer too bad and you know we lose a cent to share but at the outset that's a nice trade
+[00:40:47] for us to take and as it turned out they got a bump of almost 10% I think $1.85 ended up
+[00:40:53] being the price that it was taken out on so you know we made eight or nine percent headline
+[00:40:58] return on the trade but had a very big position size because we had that you know downside
+[00:41:03] built in and you know we really got about 14 or 15 times you know what we risked as a return on the
+[00:41:09] trade so that in a nutshell is probably the best example I can give you of you know what our
+[00:41:15] holy grail trade looks like okay yeah that's that's really interesting so I mean you obviously sort
+[00:41:22] of talked a lot about an example there of sort of the takeover strategy but if we could just sort
+[00:41:28] of take it back to step one what's the general objective of this type of strategy so let's
+[00:41:35] focus in on your actual takeover strategy what's the general objective of this?
+[00:41:43] Look so I mean the general objective really is which applies across our whole business is to try
+[00:41:50] and take lowish risk trades with good payoffs the great thing about the takeover strategy
+[00:41:55] specifically from our perspective but also you know from our investors perspective is that
+[00:42:01] takeovers have generally pretty low correlation to the market so once the stock is under takeover
+[00:42:08] depending on you know the level of conditions attached to whether the offer is likely to proceed
+[00:42:13] more often than not it's no longer trading in line with the broader market so you don't
+[00:42:18] need to worry about having a position that you know you wake up tomorrow morning and the
+[00:42:23] Dow is down 5% you know your takeover positions just aren't going to get sold off or if they do
+[00:42:29] they shouldn't be and it corrects itself pretty quickly so it's a really low volatility
+[00:42:35] strategy for us in terms of it has a lower market beta and that's part of the reason
+[00:42:40] that we actually decided to put it in a fund and that you know we've rolled it out through
+[00:42:43] the blog because you know I think there are a lot of people out there certainly in Australia this
+[00:42:48] is evident um you know maybe less so in the US but I I presume it's you know a similar issue
+[00:42:54] lots of investors who you know have had share market risk previously or have it now and they
+[00:42:59] really don't want the volatility that goes without the share market's great in terms of you know
+[00:43:03] being a trader or being an investor holding managed funds whatever when it's going up
+[00:43:08] but people don't want those massive drawdowns that you know you get in the GFC in an
+[00:43:12] extreme example even the hit that our market took and that you know I guess a lot of global
+[00:43:16] markets took last week when we had the the dual issues of China's market falling over and you know
+[00:43:21] also these these issues in Greece I think you know people don't like that as much as in advance they
+[00:43:28] may think that you know their risk profile is that they're happy to you know take some risk in
+[00:43:33] in order to get the upside I don't really think that you know fundamentally that's the case
+[00:43:39] but you know at the moment these people don't really have the choice to not be in the share
+[00:43:42] market because the returns on your deposits in bank accounts are so low at the moment
+[00:43:49] that especially if you're a retiree or you're getting towards retirement and you know you need
+[00:43:55] that income to leave it's just not on offer so you know what we do or aim to do with the takeover
+[00:44:02] strategies show people how to get share market like returns with much lower volatility or downside
+[00:44:09] risk than what that would usually entail so you know we definitely have strategies that we can
+[00:44:14] make more money with but the returns are more volatile you're going to you know experience
+[00:44:18] larger drawdowns and probably more frequent drawdowns the cool thing about the takeover strategies
+[00:44:24] you don't really tend to get those drawdowns or big drawdowns because you're not linked to the
+[00:44:29] market as such that there are other factors at play and if you're pretty good at figuring
+[00:44:34] out what those factors are and only taking those trades where you're comfortable with the
+[00:44:38] risks are minimal you should have pretty low market data using this strategy okay right so
+[00:44:46] how do you find out if a company is about to be taken over and how do you sort of know whether
+[00:44:53] how true that is like is it possible that it could be a false rumor yeah well the great
+[00:44:59] thing about the strategy at least as we run it is that it doesn't require knowing in advance so
+[00:45:05] our strategy actually is that we wait until the takeover has been announced and it's formal
+[00:45:10] and then we buy the shares and that might seem counterintuitive because you know what you think
+[00:45:15] about is you want to buy a share today that gets a takeover bid tomorrow at 40 above its
+[00:45:19] current price and you make money the thing about that is it's very hard to predict so of
+[00:45:25] course there are rumors I mean if it's a genuine rumor and you really know the information then
+[00:45:30] you know you have it illegally at that point and so that you know kind of rules out that option
+[00:45:35] if it's a rumor you know you're undoubtedly not the only person who knows that rumor and who knows
+[00:45:41] how true it is and you know if you're just buying stocks purely because they're perhaps going to
+[00:45:48] be subject to takeovers you don't get that smoothness of return or that lack of volatility
+[00:45:53] that I was talking about earlier and then there are definitely funds out there who buy stocks that
+[00:45:57] they think could become subject to takeover what we're really interested in is buying stocks that
+[00:46:03] are already undertake over that may get an improved bid and or a counter bid from another party so
+[00:46:10] if you think about it like an option I guess you know anyone who kind of has basic knowledge
+[00:46:16] of options knows that there are various factors that go into pricing an option you know one is
+[00:46:23] volatility of the underlying security obviously the time that you know until expiry of that option
+[00:46:30] interest rates play a factor and so on but you know we're taught that time value has or the time
+[00:46:37] has value in an option and the great thing about these takeovers is that you're buying this option
+[00:46:43] it's a synthetic option over future upside in the share price because of an improved or competing
+[00:46:50] offer but you're not really paying for that in the way that you would normally pay for an option so if
+[00:46:55] you find like a listed option you know over a security you they're pretty efficiently priced right
+[00:47:02] there are market makers in that market and everyone knows the black souls formula and
+[00:47:06] there's not too much variation in terms of it it's hard to buy cheap options but that's one way
+[00:47:11] that we can buy options synthetic all options very cheaply over takeover situation I think
+[00:47:17] if you know we're really boiling down why the strategy works that's it because we're getting
+[00:47:22] the ability to participate in an upside quite cheaply which isn't to say that you always get
+[00:47:26] a better offer or that you get a competing offer you definitely don't but you get enough of them
+[00:47:31] and you know in some instances the offers or the subsequent offers are so good that you only
+[00:47:37] need two or three great trades like that a bunch of you know okay trades and you know you make
+[00:47:44] more than enough money every year from that strategy so you know at a fundamental level
+[00:47:50] that's that's what we're doing so we're not trying to anticipate who's going to be taken over we just
+[00:47:55] wait for the announcement that someone is being taken over make sure that we think it's a credible
+[00:47:59] target a credible bidder that the downside you know is known and limited and then you know
+[00:48:04] position accordingly in the hope that something else is going to happen right okay and with this
+[00:48:10] particular strategy what's sort of the timeframe we're looking at from when we get into a position
+[00:48:16] and when we exit completely what's sort of what's the sort of holding time of one of these trades
+[00:48:23] generally speaking sure look I'd say probably you know minimum a month and you know six months
+[00:48:32] you know six to nine months would sort of be the maximum time period typically
+[00:48:36] and I'd say about three to four months on average so if a bid is made today for a company
+[00:48:41] and there are no further developments meaning that you know there's no improved bid there's
+[00:48:46] no competing bid usually they take about three months to come to a natural conclusion
+[00:48:52] if the share price improves in the interim you know we may look to exit the position
+[00:48:57] early if we think that the risk reward is no longer in our favor or that you know the
+[00:49:01] additional benefit by waiting those extra months is is now not sufficient if you start to get competing
+[00:49:07] bids or improved bids coming in you know as part of the the trade you know usually would get bumped
+[00:49:14] out to you know six months maybe maybe nine but the good news is typically that the longer the
+[00:49:19] trades going for the more money you're making along the way as in the you know a trade that
+[00:49:24] you have opened six months from today doesn't have the same bid level that it had when you
+[00:49:29] took the trade this chances are being one two three four improvements in the bid along the way
+[00:49:34] right okay no that's really good so what I might do is um but obviously before the interview you
+[00:49:40] sent me through a pdf document which um had sort of bit of an overview of the strategy we've just
+[00:49:46] sort of discussed here the takeover strategy and it had a few um case study examples in there as
+[00:49:51] well so I might put a link to that in the show notes so if anyone wants to find out more about
+[00:49:57] this just go to chatwithtraders.com and you'll find it in the show notes below the interview
+[00:50:04] but let's keep this moving so I'm keen to ask you just a kind of some general advice so
+[00:50:12] from your experience what are some of the common mistakes you see new traders making
+[00:50:16] when they come to the market look I think there's a few things um you know I think
+[00:50:23] a lot of people maybe think that it's easier than it is depending on what experience they've had up
+[00:50:30] until that point in time so you're at a barbecue and um you know your buddy tells you about some
+[00:50:35] stock that he bought three weeks ago and it's up 25 or 30 percent um you know or uh
+[00:50:45] you know someone else who's in your family who you know has been day trading I guess this
+[00:50:49] is a big thing around 2000 who's you know making three grand a day and they've quit their job or
+[00:50:54] or whatever um and I think you're looking at those people going wow this is you know pretty easy maybe
+[00:51:01] you've you know bought a stock or two yourself same thing you're making money um and then all of a
+[00:51:07] sudden you're not and and usually that's because you know people are making money without necessarily
+[00:51:12] knowing why they're making money I mean luck is definitely a factor right place right time
+[00:51:17] obviously to markets going up you know generally and and going up strongly then
+[00:51:22] rising tide lifts or boats and it's sort of easy to uh to make money um somewhere along the way
+[00:51:28] inevitably that reverses um I think you know some people if they're trading a specific stock
+[00:51:34] you know maybe they paid 50 cents for it and you know sort of get as high as 70 and you know
+[00:51:38] now it's back to 35 so it must be great buying now because it's been to 70 before you know I
+[00:51:44] should buy more I should hang on to my existing position you know whatever um and then they lose money
+[00:51:51] so I think you know that's sort of one thing is that and I think in life generally it's easy to
+[00:51:55] look around at other people and assume they're having more success than you are but you know
+[00:51:58] they've got something that you don't and um you know I think it's as they say this about gamblers
+[00:52:04] right you you always hear about gamblers winnings but you never hear about their other
+[00:52:08] you know the times that they lose um I sort of feel like not necessarily intentionally but family
+[00:52:12] and friends um you know maybe and even brokers who don't have your best interests at heart are
+[00:52:17] telling you about all the times that you know you missed out um on making money because you're
+[00:52:22] not trading shares um so I think that's an element of it um you know not necessarily
+[00:52:28] having a plan around you know downside like how much money am I willing to lose on this
+[00:52:33] position or on you know a series of trades before I revisit what I'm doing um you know
+[00:52:39] where's my stop loss on this trade like where am I wrong and where am I getting out of it
+[00:52:45] you know what flows on from that is you know getting stopped out of a position because you
+[00:52:49] know you're supposed to and you've had the discipline to be stopped out and then you
+[00:52:52] watch the share rebound strongly to you know higher than where it was trading before so
+[00:52:56] and you think oh well if I didn't have that stop loss I'd be making so much money now so
+[00:53:00] you know maybe I shouldn't have stop losses in future or maybe I should not pay attention to
+[00:53:04] my stop losses and and then it all becomes a bit wishy washy because it's like well okay I've
+[00:53:08] got this stop but you know how do I decide whether I'm executing it or not is that just
+[00:53:12] something I decide at the time based on how I feel and my you know intuition or um so look you know
+[00:53:19] there's that I think um so on one hand I think that's people underestimating how difficult it is
+[00:53:25] to consistently make money but I think the flip side of that is that um you know you look at the
+[00:53:31] market and you think about the people who are participants in that market so I'll use Goldman
+[00:53:35] Sachs as the gold star example in terms of you know at least their profitability and their resources and
+[00:53:39] whatnot um you know all the way down to just smaller um I guess day traders or swing traders who
+[00:53:45] are individuals who do that for a living um I think you can assume that that can be really
+[00:53:50] difficult and you can go to um you know a lot of these courses you go to um that I've had
+[00:53:56] exposure to in the early years by you know going along and watching them I've had exposure
+[00:54:00] in my later years by being one of the presenters or speakers at these um at these events and
+[00:54:07] you know some of the things that these people talk about um when you you know pay for these
+[00:54:11] seminars it just sounds so complex and so difficult and um you know you can walk away
+[00:54:17] thinking that if you can remember those you know 300 different chart patterns that
+[00:54:22] you know you're definitely going to make money or if you can you know master the
+[00:54:26] 50 fundamental analysis ratios that you know you read in the book that you're going to be able to
+[00:54:31] make money or um and you know that if you can't do those things that then that means you can't be
+[00:54:37] successful um I think that's a big mistake for beginners as well I think you know either assuming
+[00:54:43] you can do what everyone else is doing um and it just works out is I think a mistake and but
+[00:54:48] also assuming that it's impossible to do what the very best are doing um is a mistake um and I think
+[00:54:54] you know probably fear um and greed you know drive both of those things as they do you know in the
+[00:55:00] markets generally um I think you know if I was giving a new person advice I mean obviously you
+[00:55:06] have to learn somehow right so you learn by reading you learn by going to seminars um sometimes
+[00:55:12] you learn by doing and maybe losing a little bit of money but I think it's all part of the journey
+[00:55:17] to try and understand uh I listened to you know the interview that you did where um you talk about
+[00:55:22] Gann and how much time you spent kind of studying that in the early days and you're reading the books
+[00:55:26] and you've been to seminars or whatever and then somewhere along the way you just kind of figured
+[00:55:30] out that you know maybe it wasn't all that you thought it was or maybe it wasn't for you um
+[00:55:36] and the good news is by the sounds of things it didn't really cost you much in terms of dollars
+[00:55:40] maybe a bit of time to to get to that point um and I think that you need to learn and have
+[00:55:45] some exposure to all of those things but I think you just need to understand that
+[00:55:51] nothing is as great as it seems from the outside looking in as in there is no perfect thing in
+[00:55:55] the markets that is always going to make you money um that you know you can master and then
+[00:56:01] that's it it just doesn't work like that and unfortunately I think that you know in our
+[00:56:06] industry there are some people who are holding themselves out as experts who are anything but
+[00:56:11] their experts are presenting courses and you know providing education and um you know really know
+[00:56:16] the ins and outs of the 300 chart patterns and systems that um you know they referred to earlier
+[00:56:21] who either haven't really traded a share you know a day in their life or they have but not
+[00:56:26] particularly successful successfully and they figured out that you know it's better for them
+[00:56:30] to be educators and I have no problem with that if it's on a disclosed basis that you know you're
+[00:56:35] not holding yourself out to be something that you're not um but I think that's a big trap for
+[00:56:40] new people is that you know you you want to grab someone to hold on to them as the person you
+[00:56:44] need to be like um and it's definitely important to have you know role models and mentors and and
+[00:56:49] whatever else I would just say that you know attaching yourself to probably to the right people
+[00:56:54] is important but you know kind of just being a little bit skeptical about everything I'd like
+[00:56:59] to think I'm an optimist in life generally but I feel in the market you have to just be a little
+[00:57:04] bit skeptical and a little bit neurotic because sometimes things that look too good to be true
+[00:57:08] you know actually are too good to be true and sometimes um you know things that look too good
+[00:57:13] to be true actually are real and can be exploited but at the start it's hard to figure that out and
+[00:57:18] you sort of don't want it to cost you too much money you know real money to kind of get to that
+[00:57:23] point and figure it out so um I think you know thinking that you can just turn up and do a
+[00:57:27] course or two and become a great trader is a pipe dream but you know alternatively you don't
+[00:57:32] have to be a mathematical genius or you know the smartest person um in the room to be able
+[00:57:37] to make money from the markets because there's lots of different ways you just have to
+[00:57:41] you know get to the point where you understand how you're going to make money and what's going
+[00:57:44] to stop you from making money yeah absolutely I mean that's such a good answer Luke um really
+[00:57:50] really good points you hit on there um let's just do one more question and then um we should
+[00:57:55] probably we should probably wrap this up so I'm interested to know this is this is a little
+[00:58:00] bit different um besides your blog of course um along in the short of it are there any blogs
+[00:58:06] resources that you yourself frequently visit or use to stay in tune with the market um yeah look
+[00:58:13] there definitely are lots of I guess different resources um it's probably one thing about you
+[00:58:18] know my job that I think people from the outside wouldn't appreciate is how much time you just
+[00:58:23] have to spend reading things and learning about things um most of which ends up just to be
+[00:58:29] perfectly honest being completely you know useless or non-usable at least at the time
+[00:58:34] but you can only uncover things by going looking for them and sometimes you'll
+[00:58:38] you know maybe pick something up today that you can't use but in six months or 12 months
+[00:58:42] you'll be able to use them so I mean look in Australia definitely Australian financial review
+[00:58:47] I read every day the business section of all of our major newspapers so the Australian
+[00:58:52] Sydney Morning Herald um I read the um New York Times All Street Journal
+[00:58:57] Financial Times um Bloomberg CNBC um I get a bunch of kind of emails daily that summarise some
+[00:59:06] financial news and whatnot um and then just ad hoc things that you know maybe I'll come across
+[00:59:13] depending on what sort of trades we're working on at the time but um I think being you know well
+[00:59:17] read in terms of um regular content but you know also some of those great classic
+[00:59:22] trading books I mean I know you interviewed Jack Schweiger a couple of weeks ago um you know I think
+[00:59:28] if I think about my favourite trading books market wizards and new market wizards
+[00:59:33] would be you know amongst the top five undoubtedly just for the insight you get to
+[00:59:39] other people who are doing things that I mean for me really helps solidify that there are
+[00:59:43] million different ways you can do things different personality types different strategies
+[00:59:47] and they all work um so you know I think understanding other people's journeys where
+[00:59:52] they went wrong what strategies they've you know used successfully which I guess
+[00:59:56] is part of what you're aiming to achieve with this podcast right you're giving people exposure
+[01:00:00] to different traders who have different strategies and systems who can talk about what works and
+[01:00:04] what doesn't and maybe you learn that way rather than having to learn for yourself which um
+[01:00:09] takes more time and can be more costly all right that's that's a really great um
+[01:00:14] another great answer there Luke so thanks a lot for doing this and um I mean I've certainly
+[01:00:20] picked up a few things from this discussion and I'm sure anyone listening has also um but
+[01:00:25] before you go do you want to share with listeners um where they can go to find out more about you
+[01:00:30] and your trading methods yeah sure so um look definitely um you know people can visit our
+[01:00:37] blog which we just recently established um such as www.longlandshortofit.com.au
+[01:00:44] I'll get you to put that in the show notes perhaps so people can easily find it
+[01:00:49] also we have a managed or hedge fund that I mentioned earlier so that's just www.789assetmanagement.com.au
+[01:00:57] just getting back to the blog actually we'll set up a promo code so that anyone who's um
+[01:01:02] who's listening today who thinks that you know maybe they'd like to trade the takeover strategy
+[01:01:07] have a bit more information sent to them um you know we'll do a discount there 20% off our
+[01:01:13] usual subscription so that anyone who's interested can can take advantage of that um it's actually
+[01:01:18] a 14-day free trial anyway for people to have a look around before they commit any money um and
+[01:01:23] then anyone who uses the promo code can get an ongoing discount on this subscription
+[01:01:27] good one so what would the what's the promo code uh it's a good question actually uh we
+[01:01:32] it's um we'll put that in the show notes if that's okay we've got one set up I just
+[01:01:36] don't have the details of it uh at hand okay sure yeah well of course um the promo code
+[01:01:41] will be in the show notes uh all the links will be also in the show notes and are you on Twitter or
+[01:01:47] anything like that yeah I am so um on Twitter personally I'm just at Luke Cummings 81 um and
+[01:01:55] our blog we're uh we're set up at long short of it um as well so anyone can can reach out to me
+[01:02:01] that way um obviously get in contact via either of those websites um uh if they'd like to do so
+[01:02:07] that's really good all right well thanks a lot for doing this Luke and um until next time take care
+[01:02:13] and we'll talk soon thanks Aaron I appreciate it really good to chat to you
+[01:02:21] you've come to the end of this episode of chat with traders but don't worry more great episodes
+[01:02:25] are on the way to stay updated with each great new episode be sure to subscribe to the podcast
+[01:02:30] in iTunes and we'd love it if you leave us a rating and review we'll see you next time
+[01:02:35] on chat with traders

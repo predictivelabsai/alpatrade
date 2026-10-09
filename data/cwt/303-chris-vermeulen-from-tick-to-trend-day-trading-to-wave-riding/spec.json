@@ -1,0 +1,32 @@
+{
+  "trader": "Chris Vermeulen",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "No concrete, codable rules for entries, exits, indicators, lookbacks, or parameters are provided; described at high level using price action, momentum, cycles, Fibonacci, and multi-asset sentiment.",
+  "template": "none",
+  "method_name": "Wave riding position trading",
+  "style": "position trading with asset rotation",
+  "timeframe": "weeks to months",
+  "universe": {
+    "description": "major ETFs (SPY, QQQ, TLT), bonds, currencies, cash"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "mentions 5-12 trades/year and following price/momentum/cycles but provides no specific rules or numbers",
+      "assumption": "strategy is discretionary despite claims of repeatability"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "303",
+    "page_url": "https://chatwithtraders.com/episode/303-chris-vermeulen-from-tick-to-trend-day-trading-to-wave-riding",
+    "youtube_url": "https://www.youtube.com/watch?v=Rmuqqd5bjW8"
+  }
+}

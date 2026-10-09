@@ -1,0 +1,62 @@
+{
+  "trader": "Dave Mabe",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "The core strategy is an intraday gapping breakout day trade held all day with entries and stops based on post-open range narrowing that cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "Intraday gapping breakout",
+  "style": "systematic day trading",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "US stocks gapping up"
+  },
+  "setup": [
+    {
+      "rule": "gapping stocks looking for narrowing range after the open",
+      "quote": "they're basically trading gapping stocks and looking for a narrowing range after the open after they've they're gapping up looking, you know, they would get in on a break out of the range and use a stop on the other side of the tightening range and then they would just hold all day.",
+      "timestamp": "[00:11:31]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "break out of the range",
+      "quote": "get in on a break out of the range",
+      "timestamp": "[00:11:31]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "stop on the other side of the tightening range",
+      "quote": "use a stop on the other side of the tightening range",
+      "timestamp": "[00:11:31]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "hold all day",
+      "quote": "they would just hold all day",
+      "timestamp": "[00:11:31]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "risk a certain dollar amount per trade",
+      "quote": "I was going to risk a certain dollar amount per trade",
+      "timestamp": "[00:13:36]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "majority of profits from shorting mentioned but concrete rules describe long gapping-up breakouts",
+      "assumption": "main testable method is the described long gap breakout"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "318",
+    "page_url": "https://chatwithtraders.com/episode/318-dave-mabe",
+    "youtube_url": "https://www.youtube.com/watch?v=Z11E6Rl5OdY"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "trader": "Nico, @InefficientMrkt",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "short-only",
+  "template": "none",
+  "method_name": "Intraday short scalping micro-caps",
+  "style": "intraday short-side scalping",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "low-float micro-cap US stocks"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "no concrete long-side rules provided",
+      "assumption": "short-only method"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "182",
+    "page_url": "https://chatwithtraders.com/episode/182-nico-inefficientmrkt-an-eight-year-overnight-success-story-three-years-later",
+    "youtube_url": ""
+  }
+}

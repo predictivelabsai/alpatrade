@@ -1,0 +1,72 @@
+{
+  "trader": "Alex, @TAGRtrades",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "The method relies on intraday 3-minute chart breakouts, flag/pennant patterns, order flow and scaling in low-float stocks under $10, which cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "Intraday breakout scalping",
+  "style": "long-biased scalper with some shorting",
+  "timeframe": "intraday (3-min entries)",
+  "universe": {
+    "description": "US stocks under $10, low float, trading at least 2.5x average daily volume"
+  },
+  "setup": [
+    {
+      "rule": "Scan for stocks under $10 with volume >=2.5x avg; watch daily/1h for support/resistance then 3-min flag or pennant after breakout and consolidation",
+      "quote": "I like to look for stocks under $10 ... stocks that are trading at at least two and a half times their daily average. ... flag patterns or pennant patterns, which are just simple like a like a breakout and then a consolidation.",
+      "timestamp": "[00:44:10]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Wait for breakout then consolidation on 3-min; enter on next push with full size one bullet",
+      "quote": "After something breaks out, I'm never the first one in into a breakout. ... looking for a breakout, consolidation pattern, and then that next push.",
+      "timestamp": "[00:49:49]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Tight stops; exit immediately on failure or wrong order error via market order",
+      "quote": "if a trade's not working, I'm not going to let it get to that that max ... just market half out.",
+      "timestamp": "[00:34:51]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Scale out immediately on breakout for profit; reduce to 1/5 size at final target like 200-day MA; cut if not moving right away",
+      "quote": "as soon as I put on a trade and I get a breakout, I'm instantly selling some shares. ... typically I'm at like a fifth of my size when I hit my final target.",
+      "timestamp": "[00:54:27]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Full size one bullet per trade; risk aversion keeps potential losses tight via entries/exits rather than fixed %",
+      "quote": "I'm much better just going full size, one bullet into my trades. ... I truly don't say um I'm going to risk 2% on this trade",
+      "timestamp": "[00:53:25]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Only trade when risk-on; sit out slow days or when too many friends/family chasing; use VWAP for bull/bear control",
+      "quote": "when risk is not on, you really just got to be patient and go for the A's ... If it's over, theoretically it means that that bulls are in control.",
+      "timestamp": "[00:18:21]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Exact average volume period in Finviz scan not specified",
+      "assumption": "default 20-day as common"
+    },
+    {
+      "issue": "ABC setups referenced but not defined in this episode",
+      "assumption": "carried over from prior conversation"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "157",
+    "page_url": "https://chatwithtraders.com/episode/157-alex-tagrtrades-what-this-day-trader-learned-after-returning-1400-in-one-year",
+    "youtube_url": "https://www.youtube.com/watch?v=ukCJ5J9N4vw"
+  }
+}

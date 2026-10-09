@@ -1,0 +1,50 @@
+{
+  "trader": "Michael Samuels",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Event-driven trading around M&A, activism and news catalysts using research and discretionary judgment, not mechanical daily-bar rules.",
+  "template": "none",
+  "method_name": "Pre-merger event speculation",
+  "style": "event-driven long/short",
+  "timeframe": "multi-day to months",
+  "universe": {
+    "description": "US stocks >= $500M market cap"
+  },
+  "setup": [
+    {
+      "rule": "Identify pending or rumored M&A or activist situations via news and research",
+      "quote": "I would coin pre-merger arbitrage... putting the puzzle pieces together of what a deal might look like",
+      "timestamp": "[00:33:18]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Buy when price is sufficiently below announced or expected deal price with high probability of completion",
+      "quote": "every time the stock would get below 41, I would buy it... if a deal was consummated at 42, I think I couldn't lose money",
+      "timestamp": "[00:37:29]"
+    }
+  ],
+  "stop": [],
+  "exits": [
+    {
+      "rule": "Exit on deal completion, break, or change in thesis",
+      "quote": "the deal ended up happening at around 43.50",
+      "timestamp": "[00:38:00]"
+    }
+  ],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "No explicit position sizing, stop loss or exit rules given",
+      "assumption": "Purely discretionary judgment on each situation"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "165",
+    "page_url": "https://chatwithtraders.com/episode/165-michael-samuels-speculating-on-mergers-and-a-case-of-excessive-due-diligence",
+    "youtube_url": "https://www.youtube.com/watch?v=WR5WS2EdfTk"
+  }
+}

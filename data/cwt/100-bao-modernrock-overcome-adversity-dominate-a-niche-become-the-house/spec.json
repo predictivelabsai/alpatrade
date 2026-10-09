@@ -1,0 +1,32 @@
+{
+  "trader": "Bao, @Modern_Rock",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Method is day trading OTC penny stocks with edge inside the day and no concrete daily-bar rules provided.",
+  "template": "none",
+  "method_name": "OTC penny stock niche mastery",
+  "style": "intraday scalping in illiquid names",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "OTC bulletin board penny stocks"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Mentions 85% certainty patterns but provides no details",
+      "assumption": "No testable rules exist in transcript"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "100",
+    "page_url": "https://chatwithtraders.com/episode/100-bao-modernrock-overcome-adversity-dominate-a-niche-become-the-house",
+    "youtube_url": "https://www.youtube.com/watch?v=PfFEka73KHM"
+  }
+}

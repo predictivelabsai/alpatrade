@@ -1,0 +1,62 @@
+{
+  "trader": "Gabriel Bullo",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "The strategy relies on 1-minute chart patterns and intraday breakouts immediately after market open on gapping stocks, which cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "Intraday consolidation breakout",
+  "style": "price action day trading",
+  "timeframe": "1-minute",
+  "universe": {
+    "description": "mid/big cap US stocks gapping and moving 10-20% daily"
+  },
+  "setup": [
+    {
+      "rule": "stock creates range in first 3-4 candles after open",
+      "quote": "I'm looking at the first business of opening of the market like three to four candles consider dating in a Range so once it breaks out and started buying",
+      "timestamp": "[00:16:12]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "breakout of range highs or retest",
+      "quote": "if it breaks out to the highs I will start buying then it goes to back and retest I will buy again and if it breaks out again I will buy again",
+      "timestamp": "[00:20:21]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "under the lows",
+      "quote": "my stop also be under the lows",
+      "timestamp": "[00:20:52]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "1:1 RR or system close at end of day",
+      "quote": "The TP is only one is to one and just ten to five at 10 to 15 minutes I'm done trading",
+      "timestamp": "[00:20:52]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "risk 1% per trade",
+      "quote": "raised only one percent per trade",
+      "timestamp": "[00:12:32]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "also mentions swing trading and shorting on personal account",
+      "assumption": "main contest method described is intraday long/short breakout"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "264",
+    "page_url": "https://chatwithtraders.com/episode/264-gabriel-bullo-contest-winner-one-traders-unwavering-dedication",
+    "youtube_url": "https://www.youtube.com/watch?v=16A_tIJTJzQ"
+  }
+}

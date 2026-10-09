@@ -1,0 +1,98 @@
+{
+  "trader": "George, @RollyTrader",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Momentum/swing long setups on daily bars using VCP breakouts, pocket pivots and MA pullbacks with explicit risk rules.",
+  "template": "breakout",
+  "method_name": "Momentum VCP breakout swing",
+  "style": "momentum swing",
+  "timeframe": "daily",
+  "universe": {
+    "description": "Australian equities primary; also US stocks"
+  },
+  "setup": [
+    {
+      "rule": "Volatility contraction pattern (VCP) breakout",
+      "quote": "I have the volatility contraction pattern which is from Mark Manini. ... that's effectively a breakout trade.",
+      "timestamp": "[00:33:56]"
+    },
+    {
+      "rule": "Pocket pivot entry",
+      "quote": "I use a pocket pivot which comes from Gil Morales ... the stock needs to come from below the 10day moving average to close above it on that volume.",
+      "timestamp": "[00:37:03]"
+    },
+    {
+      "rule": "Pullback buy on uptrend",
+      "quote": "a pullback buy method where the stock is already trending. ... buying off the first pullback to the moving average when it's obeyed on the uptick.",
+      "timestamp": "[00:34:26]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Buy above pivot after contraction; no chase >4%",
+      "quote": "I'll just set my alert above that little pivot point. And when that goes through there, I'm buying. ... if it goes 4% past there, that's it's off the table.",
+      "timestamp": "[00:42:50]"
+    },
+    {
+      "rule": "Wait for higher close on pullback",
+      "quote": "I'm waiting for the next day for the close or for the intraday to be above that previous day's high.",
+      "timestamp": "[00:46:31]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Initial stop below base; move to breakeven at +10%",
+      "quote": "Ideally, I want to move my stop to break even as soon as possible. So, if I'm up 10% in a trade, I'll just try to reduce my risk immediately.",
+      "timestamp": "[00:54:26]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Partial sell at +20% gain; trail 20-day EMA",
+      "quote": "if I'm risking 1 in and which might be 5% and all of a sudden I make 20% I'll definitely be selling partial into that ... to get out, I'll use a moving average. ... holding the 20-day",
+      "timestamp": "[00:52:21]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Initial position <=8%, max 20% concentrated; risk ~1% per trade",
+      "quote": "I don't like to trade more than 8% in a position. ... I will go up to 20% into one stock. ... if you're taking a 10% position size, your risk with a 10% stop is 1% of your total capital.",
+      "timestamp": "[00:47:32]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Follow leadership; go to cash on distribution in leaders",
+      "quote": "my system works very much on following leadership. ... If the market comes under distribution ... I went back to cash.",
+      "timestamp": "[00:31:50]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Exact momentum_lookback_days, consolidation_days, consolidation_max_range_pct not stated numerically",
+      "assumption": "VCP implies multi-week contraction with tightening ranges per Minervini description"
+    },
+    {
+      "issue": "partial_after_days and partial_frac not exact",
+      "assumption": "partial sell after ~20% gain, fraction unspecified"
+    }
+  ],
+  "params": {
+    "momentum_lookback_days": 0,
+    "momentum_min_pct": 0,
+    "consolidation_days": 0,
+    "consolidation_max_range_pct": 0,
+    "trail_ma": 20,
+    "partial_after_days": 0,
+    "partial_frac": 0,
+    "risk_per_trade_pct": 1,
+    "max_position_pct": 8,
+    "max_positions": 0
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "110",
+    "page_url": "https://chatwithtraders.com/episode/110-george-rollytrader-learning-to-trade-momentum-setups-and-becoming-a-venture-capitalist",
+    "youtube_url": "https://www.youtube.com/watch?v=xn0-isz8vQA"
+  }
+}

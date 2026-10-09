@@ -1,0 +1,84 @@
+{
+  "trader": "Mark Ritchie II",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Concrete long-side swing rules for US equities using daily price/volume, uptrends and consolidations that can be approximated on daily bars.",
+  "template": "breakout",
+  "method_name": "Minervini-style momentum breakout",
+  "style": "discretionary swing trading",
+  "timeframe": "swing (days to weeks)",
+  "universe": {
+    "description": "US equities screened daily for earnings/sales growth and relative strength"
+  },
+  "setup": [
+    {
+      "rule": "Long-term uptrend on weekly chart or 200-day MA",
+      "quote": "I want something in a long-term uptrend and then I'm looking at defining that based upon the weekly chart and or maybe something like the 200 day moving average",
+      "timestamp": "[00:35:01]"
+    },
+    {
+      "rule": "Tight consolidation or pivot point after uptrend",
+      "quote": "I'm looking for really the best way again to in very short form is a tight consolidation or pivot point where I can know in relatively short order if I'm right or wrong",
+      "timestamp": "[00:35:31]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Technical confirmation of breakout from consolidation in uptrend",
+      "quote": "the actual timing and execution of Trades it's always going to be because of the technicals or I'm looking for technical confirmation",
+      "timestamp": "[00:35:01]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Max individual stop 8-10%, long-term average under 5%",
+      "quote": "I don't take individual price stops or stop risk on a percentage basis of more than eight eight% 8 to 10 being the Max and usually I want to be mid single digits my long-term average is under 5%",
+      "timestamp": "[00:41:11]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Partial profits at multiple of risk when stalling; trail on strength",
+      "quote": "if I'm already at a multiple of my risk and the stock has run and now it starts to stall well that's usually where I'm thinking I can take partial profits",
+      "timestamp": "[00:37:35]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Risk per trade mid-single digits percent of capital",
+      "quote": "my long-term average is under 5%",
+      "timestamp": "[00:41:11]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Raise cash on signs of poor relative strength in growth areas ahead of bear markets",
+      "quote": "aggressive long longside Trader at times but have not been caught in any of these major bare markets and declines we've had over the last 15 16 years it's because the stocks give you a lead on all that stuff",
+      "timestamp": "[00:20:55]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Exact momentum_lookback_days, consolidation_days, trail_ma, partial_frac, max_positions not numerically specified",
+      "assumption": "Use 200-day MA for trend, 20-day MA trail, 2-5 positions typical for swing"
+    }
+  ],
+  "params": {
+    "momentum_lookback_days": 200,
+    "momentum_min_pct": 0,
+    "consolidation_days": 0,
+    "consolidation_max_range_pct": 0,
+    "trail_ma": 20,
+    "partial_after_days": 0,
+    "partial_frac": 0.5,
+    "risk_per_trade_pct": 5,
+    "max_position_pct": 20,
+    "max_positions": 5
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "290",
+    "page_url": "https://chatwithtraders.com/episode/290-mark-ritchie-ii-price-action-swing-trading-equities-from-the-long-side",
+    "youtube_url": "https://www.youtube.com/watch?v=MtI1PThXoaU"
+  }
+}

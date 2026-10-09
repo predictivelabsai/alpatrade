@@ -1,0 +1,73 @@
+{
+  "trader": "Garrett Drinon",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Guest describes systematic rules and hybrid algos for swing/earnings breakouts but provides no concrete, codable parameters or exact exit conditions (e.g., 'when a b and c happens I cut half'); heavy emphasis on discretionary environment/theme assessment and unicorns that cannot be backtested.",
+  "template": "none",
+  "method_name": "Hybrid earnings momentum swing",
+  "style": "systematic swing with discretionary overlay",
+  "timeframe": "daily setups with intraday execution",
+  "universe": {
+    "description": "US growth stocks, leaders in strong sectors, earnings reporters"
+  },
+  "setup": [
+    {
+      "rule": "double beat and raise full year guide Up breakout 52 week highs in a growth stock",
+      "quote": "you have your classic double beat and raise full year guide Up breakout 52 week highs in a growth stock right",
+      "timestamp": "[00:27:12]"
+    },
+    {
+      "rule": "find the leaders... strongest stocks in the market and the strongest sectors",
+      "quote": "I would just find the leaders I would try to identify the strongest stocks in the market and the strongest sectors in the market and then either look for pullbacks to buy them or look for breakouts",
+      "timestamp": "[00:09:33]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "stock going higher on at least 5x average daily volume, preferably earlier in the day",
+      "quote": "it's got to be doing a lot of volume at least five times its average daily volume and it's got to be trading higher and then we just have a Time component to it so we have like certain areas that we want to be executing you know preferably earlier in the day",
+      "timestamp": "[00:31:26]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "rules-based exits when a b and c happens cut half, when D happens cut full",
+      "quote": "when a b and c happens I cut half and when D happens I cut the full thing no matter what I don't care on to the next",
+      "timestamp": "[00:00:01]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "better rules for getting out... many fish in the sea",
+      "quote": "I need to have better rules for getting out right because there's many fish in the sea",
+      "timestamp": "[00:00:01]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "algo sizes big on A+ acting right, small or none otherwise; environment checks upgrade/downgrade risk",
+      "quote": "the Alo will will either enter the trade and it'll enter the trade big size or it'll enter small size or it'll not enter at all",
+      "timestamp": "[00:30:24]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "leaders leading and breakouts working = momentum market; adjust A+ criteria to current environment/theme",
+      "quote": "if the leaders are leading and breakouts are working like to me that's a momentum Market... every earning season is different and so what we like to do is first try to get a feel for what is the theme right now",
+      "timestamp": "[00:54:57]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "exact definitions of a/b/c/D exit triggers and precise volume/time thresholds never stated",
+      "assumption": "none"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "277",
+    "page_url": "https://chatwithtraders.com/episode/277-garrett-drinon-musician-turned-trader-trains-algos-to-find-unicorns",
+    "youtube_url": "https://www.youtube.com/watch?v=bkrEV_hjdqQ"
+  }
+}

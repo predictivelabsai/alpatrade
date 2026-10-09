@@ -1,0 +1,38 @@
+{
+  "trader": "Victor Haghani",
+  "category": "no_concrete_rules",
+  "testable": false,
+  "reason": "Guest discusses optimal bet sizing via coin experiment and advocates passive long-only index/ETF investing without any concrete, codable rules for US stock selection, timing or signals.",
+  "template": "none",
+  "method_name": "Passive index investing",
+  "style": "passive long-only beta exposure",
+  "timeframe": "long-term",
+  "universe": {
+    "description": "broad global equities via ETFs and index funds"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [
+    {
+      "rule": "bet fraction of bankroll (Kelly ~20% heuristic for 60/40 edge)",
+      "quote": "the Kelly optimal bet is 20%",
+      "timestamp": "[00:20:40]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "mentions beta as clearest biased coin but provides no implementation rules",
+      "assumption": "no testable daily strategy exists in transcript"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "129",
+    "page_url": "https://chatwithtraders.com/episode/129-victor-haghani-optimal-bet-sizing-lessons-from-a-biased-coin-flip-experiment",
+    "youtube_url": "https://www.youtube.com/watch?v=5NC12DhaFV8"
+  }
+}

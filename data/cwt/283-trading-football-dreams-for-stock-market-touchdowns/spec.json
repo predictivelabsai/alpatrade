@@ -1,0 +1,73 @@
+{
+  "trader": "Michael",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "short-only",
+  "template": "none",
+  "method_name": "Short parabolic small caps",
+  "style": "short bias day trading",
+  "timeframe": "intraday with rare overnight",
+  "universe": {
+    "description": "volatile small cap NASDAQ stocks"
+  },
+  "setup": [
+    {
+      "rule": "short into resistance on third bounce or front side short after 300% extension",
+      "quote": "my go-to play is called the shorten to resistance... I'm looking for a stock that is spiking into previous day high... once it gets close enough to that $2.50 I would like for it to have a hard crack then I would short the bounce",
+      "timestamp": "[00:17:13]"
+    },
+    {
+      "rule": "front side short on 300% extension",
+      "quote": "the other short setup that I'm looking for is called the front side short I like a stock to be extended either on the first Green Day or a multi-day runner extended at least 300%",
+      "timestamp": "[00:19:18]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "short after hard crack on bounce into resistance or into strength on extension",
+      "quote": "I would short the bounce on that hard crack risking that $2.50 level",
+      "timestamp": "[00:17:43]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "risk previous high or resistance level",
+      "quote": "risking that $2.50 level",
+      "timestamp": "[00:17:43]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "cover on fade or at VWAP rejection",
+      "quote": "if it can bounce to vwap I will re short it looking for it to reject off of vwap and fade back down",
+      "timestamp": "[00:32:31]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "consistent daily risk with broker max loss",
+      "quote": "having a consistent risk at a day a max daily loss at the broker level",
+      "timestamp": "[00:33:33]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "only trade when setup matches strict criteria, avoid gappers under 300%",
+      "quote": "if my setup does not present itself I am not to initiate a trade",
+      "timestamp": "[00:29:22]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "no long side rules provided",
+      "assumption": "short-only so not testable"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "283",
+    "page_url": "https://chatwithtraders.com/episode/283-trading-football-dreams-for-stock-market-touchdowns",
+    "youtube_url": "https://www.youtube.com/watch?v=rcIC_VjprQ0"
+  }
+}

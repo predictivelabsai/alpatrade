@@ -1,0 +1,32 @@
+{
+  "trader": "Doug Cifu",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Virtu is an electronic market-making firm that provides intraday liquidity via bids/offers across thousands of instruments with no directional bias or multi-day holding rules.",
+  "template": "none",
+  "method_name": "Electronic market making",
+  "style": "market making",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "12,000 instruments across equities, futures, FX in 235 markets"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "no long-side swing rules provided",
+      "assumption": "method is pure intraday market making"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "122",
+    "page_url": "https://chatwithtraders.com/episode/122-doug-cifu-virtu-hitting-singles-all-day-long-on-a-global-scale",
+    "youtube_url": "https://www.youtube.com/watch?v=LsAyeB1J0ec"
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "trader": "Jack Kellogg",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Primarily discretionary trading of OTC/penny stock breakouts, overextensions and panic dips using tape/level-2 with no concrete numeric rules; heavy shorting component.",
+  "template": "none",
+  "method_name": "Penny stock breakout and dip trading",
+  "style": "discretionary momentum on low-float scams",
+  "timeframe": "intraday to multi-day",
+  "universe": {
+    "description": "OTC and low-priced NASDAQ penny stocks with high volume and clean price action"
+  },
+  "setup": [
+    {
+      "rule": "high volume and clean daily candles (full body, no wicks)",
+      "quote": "the number one thing for me is volume ... my number two indicator is I'm looking at technical levels ... nice full body candle",
+      "timestamp": "[00:29:28]"
+    },
+    {
+      "rule": "buy breakouts after spike and pullback on scams",
+      "quote": "buying breakouts in a strong Market SO waiting for a stock to spike waiting for it to pull back and then waiting to buy a breakout. I like doing it on scams",
+      "timestamp": "[00:27:21]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "breakout entry on high volume",
+      "quote": "waiting to buy a breakout",
+      "timestamp": "[00:27:21]"
+    }
+  ],
+  "stop": [],
+  "exits": [
+    {
+      "rule": "scale size with P/L; exit on loss of momentum or liquidity issues",
+      "quote": "if I'm making money I'm using more size if I'm losing I'm using smaller size",
+      "timestamp": "[00:28:25]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "max ~$150k position; smaller on illiquid names",
+      "quote": "I really don't want to size in more than like a hundred fifty thousand dollars into it",
+      "timestamp": "[00:36:42]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "prefer strong speculative market; avoid bear markets for OTC",
+      "quote": "if stocks like apple and Tesla ... aren't even going to hold ... these BS penny stocks have zero chance",
+      "timestamp": "[00:24:40]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "mentions daily candles but relies on intraday tape/level-2 for execution",
+      "assumption": "edge is primarily intraday"
+    },
+    {
+      "issue": "shorting described but engine is long-only",
+      "assumption": "counts as discretionary"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "249",
+    "page_url": "https://chatwithtraders.com/episode/249-jack-kellogg-valet-driver-turns-20k-into-11mil-over-6-years-after-wipe-out",
+    "youtube_url": "https://www.youtube.com/watch?v=cj4X2fgAuHk"
+  }
+}

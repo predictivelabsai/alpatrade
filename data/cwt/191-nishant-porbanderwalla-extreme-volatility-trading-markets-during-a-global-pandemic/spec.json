@@ -1,0 +1,68 @@
+{
+  "trader": "Nishant Porbanderwalla",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Guest explicitly describes himself as an intraday/day trader who is in and out of positions quickly with no overnight holds or daily-bar rules stated.",
+  "template": "none",
+  "method_name": "Intraday reversal and momentum",
+  "style": "intraday reversal/momentum scalping",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "US equities, focus on volatile names and ETFs"
+  },
+  "setup": [
+    {
+      "rule": "Look for panic selling or short-sell restricted stocks after halts or gaps",
+      "quote": "You can buy reversals, you can go momentum. A lot of these stocks have become short-sell restricted.",
+      "timestamp": "[00:13:38]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Enter on reversal after extreme down move once selling exhausts",
+      "quote": "I'm a reversal trader, right? So I'm looking for things going down and then I'm buying them and they're turning around",
+      "timestamp": "[00:24:42]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Cut losses immediately on any sign of continuation; no stubborn holding",
+      "quote": "I just see red and I just start selling... Get out. Use a risk.",
+      "timestamp": "[00:18:42]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Take quick profits on 3-4 point moves; scale out winners fast",
+      "quote": "I need to take profits also because these things move 3-4 points so quickly.",
+      "timestamp": "[00:26:31]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Increase size when profitable in the month; risk more on high-conviction setups",
+      "quote": "once you have a bank roll... I don't mind risking more on good situations... normally what I would take 20,000 shares, I might take 70,000 shares",
+      "timestamp": "[00:27:07]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Be flexible; abandon preconceptions; only trade when seeing clear opportunity in volatility",
+      "quote": "you just have to be flexible. Once you see what you see, and if you like it, then go for it. Do not have these preconceived notions",
+      "timestamp": "[00:11:40]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "No specific numerical entry/exit criteria or indicators given",
+      "assumption": "Purely discretionary intraday based on experience and order flow/panic observation"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "191",
+    "page_url": "https://chatwithtraders.com/episode/191-nishant-porbanderwalla-extreme-volatility-trading-markets-during-a-global-pandemic",
+    "youtube_url": ""
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "trader": "Michael Katz",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Method relies on intraday order flow, volume profile, bids/offers, and real-time price action reactions that cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "Intraday price action scalping",
+  "style": "price action with order flow",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "US equities, focus on IPOs"
+  },
+  "setup": [
+    {
+      "rule": "Draw reference points on chart for supply/demand",
+      "quote": "I like to draw reference points either in my mind or on the chart",
+      "timestamp": "[00:14:04]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Short on failure to hold open and lower highs",
+      "quote": "when it opened it went 88 and then quickly went to 87... that was my cue to start trading on the short side",
+      "timestamp": "[00:14:37]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Exit if price reclaims reference high",
+      "quote": "if I'm wrong and this thing starts to make highs gets above 88... I'm done",
+      "timestamp": "[00:14:37]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Partial covers at whole dollar levels and volume profile support",
+      "quote": "they were at whole dollar figures so 83 was a cover there",
+      "timestamp": "[00:26:45]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Starter position then add to winner, risk X dollars per trade",
+      "quote": "I'll put on a starter... as price confirms then I can get bigger",
+      "timestamp": "[00:17:15]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "High volume confirms fuel for move",
+      "quote": "the more volume that it trades the more it I equate volume with fuel",
+      "timestamp": "[00:25:41]"
+    }
+  ],
+  "ambiguities": [],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "173",
+    "page_url": "https://chatwithtraders.com/episode/173-michael-katz-riding-price-action-a-complete-breakdown-of-the-lyft-ipo",
+    "youtube_url": "https://www.youtube.com/watch?v=osuvozRlw8Y"
+  }
+}

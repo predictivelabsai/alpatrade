@@ -1,0 +1,788 @@
+# 018: John Welsh – Giving Weight to Fundamentals & News, Plus the Advantage of Focusing on a Single Sector
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT9032205509.mp3
+
+[00:00:00] The biggest secret of the best traders in the world is that they're just like everyone else.
+[00:00:05] However, they've worked hard to learn the markets and discover what works and what doesn't.
+[00:00:10] But how can you hear about these journeys and get in on the strategies and tactics they use?
+[00:00:15] You can do it by listening to Chat with Traders.
+[00:00:18] Here's your host, Aaron Feifeld.
+[00:00:21] Hey, what's up guys? Welcome back to another episode of Chat with Traders.
+[00:00:33] This is episode 18.
+[00:00:35] This week's guest is a little different to many of the guests I've had on in the past.
+[00:00:40] Instead of giving very little weight to fundamentals and news releases,
+[00:00:44] these two things actually form the foundation for his trading approach.
+[00:00:48] In fact, he almost disregards chats altogether,
+[00:00:51] and he relates the reason for this to his background in accounting and finance.
+[00:00:56] John Welsh has been a full-time trader for over 10 years,
+[00:00:59] and he's racked up millions of dollars in profits along the way.
+[00:01:03] His trading consists of both intraday and swing trading,
+[00:01:07] and he concentrates mainly on biotech stocks,
+[00:01:10] making roughly 90% of his trades within this sector.
+[00:01:13] But now that I've given you the thousand-foot view on John's trading journey,
+[00:01:17] here he is to fill in the blanks and give us a lot more depth around his approach.
+[00:01:23] Hey John, how you going?
+[00:01:25] Not too bad. How's your weekend going?
+[00:01:28] It's good, man. It's early Monday morning here,
+[00:01:31] and yeah, no, it looks like a busy week ahead.
+[00:01:34] How's your weekend been?
+[00:01:36] Excellent. Did a nice little race today, half-marathon, my best time ever.
+[00:01:40] Things are going well. I can't wait for trading though tomorrow.
+[00:01:44] Very cool.
+[00:01:46] I'm keen to have you on the show, and I'm excited to have you here.
+[00:01:51] Thanks a lot for coming on.
+[00:01:53] Thanks for the invite.
+[00:01:55] Yeah, no problem.
+[00:01:57] Let's just get this underway and tell us a little bit about how you started trading.
+[00:02:02] How did you get into it? What was your background?
+[00:02:04] Just give us a bit of an introduction.
+[00:02:06] Sure.
+[00:02:08] I didn't really like stocks until the market exploded during my college years
+[00:02:13] in the late 1998-99 period.
+[00:02:18] I was one of the dot-com bubble.
+[00:02:21] It took off and you couldn't lose any money
+[00:02:24] and anything when stock splits were going up.
+[00:02:27] I took a lot of risk of investing my MBA checks in the market
+[00:02:32] while I was going to school.
+[00:02:35] I instantly got hooked because I was making money all the time.
+[00:02:40] Ever since then, I've just been feet first into the market
+[00:02:44] and I've been trading full-time now for almost nine years.
+[00:02:48] Good stuff. When you first started getting into trading,
+[00:02:51] where were you learning from? How did you know what you were doing?
+[00:02:55] Well, I'm old school and I'm like 40.
+[00:02:59] There was no Twitter. There was no Facebook.
+[00:03:04] There was Yahoo Messageboards, which I still use today.
+[00:03:09] I had to learn through my own experience
+[00:03:12] and my accounting and finance background.
+[00:03:15] I learned a lot about companies, what moves stocks,
+[00:03:19] what people pay for in news and pay up in speculation,
+[00:03:25] and also my own experience.
+[00:03:27] I don't have any trading tools or level 2 or charts
+[00:03:32] or anything like that. I just do it all from what I see on the screen.
+[00:03:37] Okay, great.
+[00:03:39] When you were studying and trying to learn and find your feet in the markets,
+[00:03:44] did you have a regular routine where you would spend
+[00:03:49] a certain amount of hours a day focusing on trading?
+[00:03:53] Did you have some sort of schedule around that?
+[00:03:56] When I was trading part-time and working full-time,
+[00:04:00] it was really hard. That's what a lot of people in today's markets are trying to do.
+[00:04:05] You have a lot of young traders coming on board
+[00:04:09] trying to make the quick buck by working full-time
+[00:04:13] and it doesn't really work that way.
+[00:04:16] Basically, for me, when I was trading part-time,
+[00:04:23] I traded a lot in the morning and did research at night,
+[00:04:27] but for the past 10 years,
+[00:04:29] I have the same process that I do every day as a full-time trader.
+[00:04:34] That is, I wake up at 7 o'clock,
+[00:04:37] I kick up my news wire that I use,
+[00:04:40] which is currently tradethenews.com,
+[00:04:43] and I look for news that are moving stocks
+[00:04:46] that has the potential to move during the day
+[00:04:49] or for swing trades, anything that I think that's important.
+[00:04:53] I have the same pattern from 7 to 8 a.m. to end the pre-market
+[00:04:58] and during regular trading hours,
+[00:05:00] and I never trade in after hours.
+[00:05:02] Basically, every day I work from 7 to 4.30.
+[00:05:05] Good stuff.
+[00:05:07] Let's just talk a little bit more about when you were getting into the market.
+[00:05:12] What were some of the main things that you struggled with early on, would you say?
+[00:05:18] Man, I didn't really struggle
+[00:05:22] because in 1999 and 98 is when the markets were going up huge
+[00:05:29] and I didn't know anything about short-selling at the time,
+[00:05:33] so my best stock was AOL
+[00:05:37] and I had a lot of success in the beginning
+[00:05:42] and that's what hooked me,
+[00:05:44] and even when the market corrected
+[00:05:46] when I learned about short-selling in the following 2000-2001,
+[00:05:51] I had to go the other way.
+[00:05:53] You can just say my timing was right,
+[00:05:55] but I have a lot of tendencies that I think are bad
+[00:06:01] that I've learned within myself that I corrected
+[00:06:06] and it probably affects a lot of traders such as over-trading
+[00:06:11] and trying to make up after a big loss.
+[00:06:15] Okay, cool.
+[00:06:17] How do you avoid that type of thing from over-trading?
+[00:06:20] Do you have some rules you've set for yourself
+[00:06:24] or how do you go about trying to avoid over-trading?
+[00:06:27] The two main factors that I see with myself
+[00:06:32] that probably affects a lot of traders is, of course, the over-trading
+[00:06:37] and I have 10 rules that I developed over almost 10 years ago
+[00:06:42] since I started trading part-time that I have taped on my computer
+[00:06:46] and roll my desk and whenever I get new furniture
+[00:06:49] or a new desk or new monitor,
+[00:06:53] I tape it right up there to remind me
+[00:06:55] that each day is independent of each other
+[00:06:58] and I learned that through my own experiences,
+[00:07:03] my own shortcomings because, truthfully,
+[00:07:06] all traders are fucking gamblers.
+[00:07:08] That's what we really are
+[00:07:10] and that's my shortcoming that if I ever was addicted
+[00:07:14] to anything, it would be gambling.
+[00:07:16] So in order to rein that in,
+[00:07:19] what I developed is rules that I follow every day
+[00:07:23] because when I didn't have them,
+[00:07:26] where my shortcomings was is when I did a trade
+[00:07:30] for an unexpected loss,
+[00:07:32] I would then follow it up with a bigger forced loss
+[00:07:36] trying to make back the money
+[00:07:38] and that's typical of what a gambler does
+[00:07:40] for my observation and that's what I am
+[00:07:43] so I try to take those feelings out of trading
+[00:07:46] by following my citizens' techniques and rules.
+[00:07:49] Okay, yeah, and I saw those rules on your site
+[00:07:52] and I noticed that number four was bolded
+[00:07:55] as though it really is quite important to you
+[00:07:58] and that was the more stubborn you are,
+[00:08:00] the more you will lose.
+[00:08:01] So would you like to elaborate
+[00:08:03] on why this one is especially important to you?
+[00:08:05] Because I learned that one the hard way
+[00:08:08] and I love talking about, again,
+[00:08:12] my shortcomings because what I've learned
+[00:08:15] from losing is a system that I can turn
+[00:08:19] into consistent profitable trades
+[00:08:22] and what that one was is that I used to trade
+[00:08:26] biotech stocks into events
+[00:08:29] and this was before I became a full-time trader
+[00:08:33] and if a stock is trending down
+[00:08:37] and there is an event coming,
+[00:08:39] especially with biotechs,
+[00:08:41] technically the stock is going to do bad
+[00:08:44] because someone may know something
+[00:08:46] and it doesn't matter how much homework you do,
+[00:08:49] the market is always right.
+[00:08:51] So what I've learned in rule number four
+[00:08:55] is don't be stubborn and listen to the market
+[00:08:58] is when something goes wrong for me,
+[00:09:00] I immediately sell it
+[00:09:02] and of course if you hold overnight
+[00:09:04] and there's bad news and something happens,
+[00:09:06] I still immediately sell a stock
+[00:09:09] and people don't understand that
+[00:09:11] and they try to break even on the stock.
+[00:09:14] Well, I save a lot of money by taking my losses quickly,
+[00:09:17] whether I'm wrong on the day
+[00:09:19] or whether it's capping down on news,
+[00:09:22] you got to listen to the market and get out
+[00:09:25] and that's what good traders do,
+[00:09:27] they save money by taking their losses quickly.
+[00:09:30] Yeah, I think those are some really great points
+[00:09:32] you touched on there, so yeah, really cool.
+[00:09:36] Now Dose, how would you define your sort of trading style?
+[00:09:40] So just tell us a little bit about how you're actually trading
+[00:09:42] sort of right now in today's markets.
+[00:09:45] You know, it's interesting because it depends,
+[00:09:49] in today's markets I'm more of a long short trader
+[00:09:53] and I need to explain why that is
+[00:09:56] because, you know, for I would say
+[00:09:59] the past five years I've been mainly known as a short seller
+[00:10:03] and I'm pretty keen on, you know, spotting stocks
+[00:10:07] that look like potential red flags or frauds
+[00:10:11] and accounting and especially biotech
+[00:10:14] and I haven't noticed this stuff
+[00:10:16] but the thing is what I've noticed
+[00:10:18] and if you take last year,
+[00:10:20] I attended a conference that I spoke at
+[00:10:23] and it was mainly the speakers were short sellers
+[00:10:27] and there was about, you know,
+[00:10:29] 78 speakers that were short sellers
+[00:10:31] I just found it very strange to me that
+[00:10:34] all these people are migrating over to the style
+[00:10:37] that I used to primarily be known for.
+[00:10:40] So what I've been doing in the past two years
+[00:10:43] is learning a strategy that's completely different
+[00:10:46] from what I'm known for.
+[00:10:48] People don't understand why
+[00:10:50] because everybody's making the big dollar short selling.
+[00:10:53] I still do that, but guess what?
+[00:10:56] I think a lot of changes are coming
+[00:10:58] to the short selling industry that people do not expect
+[00:11:02] and when it occurs, their business could go poof
+[00:11:05] because they did not learn how to do both sides of the trade.
+[00:11:09] So I do long and short
+[00:11:12] and still I'm slanted 60% short
+[00:11:15] but I have no problem going long in today's market environment
+[00:11:18] when we're hitting market highs almost every day.
+[00:11:21] Okay, cool.
+[00:11:23] So you're predominantly day trading, is that right?
+[00:11:25] I day trade and I also swing trade
+[00:11:28] mostly swing trade long positions
+[00:11:31] and I would only short short
+[00:11:35] swing trade short positions when I'm up for the day
+[00:11:38] and I carry some over for a couple of days
+[00:11:41] because I don't like to swing trade short as much as I do longs.
+[00:11:45] Okay, and is that swing trade
+[00:11:47] and is that something that's come through
+[00:11:49] from when you were sort of learning trading
+[00:11:52] when you were still a part-time trader?
+[00:11:55] Is that something that's come through from there?
+[00:11:58] I wish, but no.
+[00:12:00] Because 2008, 2009 and 2010
+[00:12:05] I was so short biased and cleaned up on the market.
+[00:12:08] It was like taking candy from the baby
+[00:12:11] and I refined my skills
+[00:12:14] and I became so biased to shorting
+[00:12:18] that I would say between 2010 and 2012
+[00:12:26] I was still looking for shorts
+[00:12:29] and then I said, wait a second,
+[00:12:30] we're in the middle of a turnaround here
+[00:12:32] I need to learn new techniques to go long
+[00:12:35] and to go long on companies that I'm skeptical of
+[00:12:39] and I've really picked up my game
+[00:12:41] the last few years by doing that.
+[00:12:44] Okay, cool.
+[00:12:45] So when you are taking a swing position
+[00:12:47] how long would you say you typically hold that for?
+[00:12:50] Could be as high
+[00:12:52] I usually never hold for more than three to six months
+[00:12:56] I like to keep it for a couple of weeks if I could
+[00:13:00] I mean I've held
+[00:13:02] I've never held a stock for longer than a year
+[00:13:06] so I'd definitely say it's short-term oriented.
+[00:13:09] When you're in those positions
+[00:13:11] how do you sort of manage those
+[00:13:13] like what's your sort of trigger to get out of those
+[00:13:15] based on the news and fundamentals
+[00:13:17] or are you just sort of trailing stops?
+[00:13:19] How do you manage those trades?
+[00:13:21] I always enter with a max loss of mind
+[00:13:26] and my position size is always reflecting on it
+[00:13:30] so I'll talk about a trade this year
+[00:13:34] that I got killed on
+[00:13:36] and it was my worst trade of the year
+[00:13:39] was a KBIO
+[00:13:41] which is a biotech
+[00:13:43] but it would be a great rebound play for January
+[00:13:47] January 2015 because in 2014
+[00:13:50] it was the worst performing biotechs
+[00:13:53] and it got halted for data
+[00:13:55] which was supposed to come out later in the month
+[00:13:58] and I took a nice five-digit loss on the trade
+[00:14:01] and I ended up selling it for like 80 cents or something
+[00:14:04] and it went down to 40 cents
+[00:14:07] so something like that
+[00:14:10] I can't manage my lost expectations
+[00:14:13] but I can sell it quickly to save money
+[00:14:16] so when something goes wrong
+[00:14:18] and I don't like what's going on with the company
+[00:14:20] I immediately sell it
+[00:14:22] Okay, good point
+[00:14:24] so you do factor in quite a lot the news
+[00:14:27] and the fundamentals into your trades
+[00:14:29] that's something you take on board
+[00:14:31] That is my entire training style
+[00:14:33] is news and fundamentals
+[00:14:35] because that's how I learned how to trade
+[00:14:39] and people laugh and say
+[00:14:41] well, why don't you learn technicals
+[00:14:43] I just do not like charts
+[00:14:46] it's not for me
+[00:14:48] I definitely think with an accounting and finance background
+[00:14:51] that's much stronger than looking at lines
+[00:14:53] or picture-fucking-pictures on a wall
+[00:14:56] that's going to triangles, I don't know
+[00:14:59] but I also don't use level 2
+[00:15:02] so I am a pure tape reader
+[00:15:08] Okay, that's really cool
+[00:15:10] so you don't even use technicals
+[00:15:12] for timing your entries or anything like that
+[00:15:15] If anything, I pull up a 5-day chart
+[00:15:19] if I had to use a chart, it's a 5-day chart
+[00:15:22] because 90% of my trades are less than 5 days
+[00:15:28] so anything I pull up a 5-day chart
+[00:15:30] but mostly I keep points in my mind
+[00:15:34] and memorize when stocks hit certain levels
+[00:15:37] say, for example, for my big short that I'm doing in May
+[00:15:43] which is a CRMD, which is a biotech
+[00:15:47] I know that the high for the year is 1040
+[00:15:50] without even looking at the chart
+[00:15:52] I mean, I have a keen mind for memorization
+[00:15:55] and I train my mind for certain things to look for
+[00:15:58] and filter out the noise
+[00:16:00] so if I'm shorting the stock for next month
+[00:16:03] and it broke over that level
+[00:16:05] I would instantly be out of it
+[00:16:07] so that's how I try to control my thinking
+[00:16:12] Okay, and where are you pulling that level from?
+[00:16:14] Is that a certain resistance level?
+[00:16:18] That's just a 52-week high of where it hit in April
+[00:16:23] I believe the shares closed at 860-ish on Friday
+[00:16:29] and that level, I don't need to look at a chart
+[00:16:32] I know from watching it
+[00:16:34] and this is one of the stocks that I heavily watched
+[00:16:37] for last month that 1040 is a 52-week high
+[00:16:41] in fact, I should probably check it
+[00:16:43] but I'm pretty sure that is
+[00:16:45] So you've mentioned biotechs a few times throughout the interview
+[00:16:49] is that a sector that you really like to specialize in
+[00:16:53] and is that the way you like to trade
+[00:16:56] by specializing in certain sectors
+[00:16:58] and then ignoring the rest that are out there?
+[00:17:02] Yeah, I love to concentrate on the biotech sector
+[00:17:07] probably about 80-90% of my trades
+[00:17:11] because it's pretty simple
+[00:17:13] biotechs can be valued at whatever they want to be valued
+[00:17:18] because they're trading at potential future dollar amounts
+[00:17:23] of income that may never come from FDA sponsored trials
+[00:17:28] so there's so much room for wiggle room
+[00:17:31] and plus there's so many shady garbage CEOs in the business
+[00:17:36] that it's just too easy to short these things and pick them off
+[00:17:39] and it's also what I've learned in the past few years
+[00:17:43] it's a good way to go along biotechs that you think
+[00:17:47] that are shady and corrupt
+[00:17:50] because they want to pump their stock price up
+[00:17:52] so it's been a great learning experience with biotech
+[00:17:55] and I love focusing on them
+[00:17:57] because I love beta and volatility
+[00:18:00] but I also like to manage my risk
+[00:18:03] so that's why I seem to be repeating it
+[00:18:07] but whenever a stock goes against me
+[00:18:09] especially in a day trade
+[00:18:11] more importantly if the news isn't what I think it should be
+[00:18:14] I sell immediately because I can always buy it back
+[00:18:17] people need to understand
+[00:18:19] you do not need to break even on the trade
+[00:18:21] you could sell for a loss.
+[00:18:23] Okay, and so if you've relied on the news so heavily
+[00:18:27] is there certain news topics that
+[00:18:31] like how do you determine what news is going to impact the market
+[00:18:35] and what's just sort of not going to impact the market
+[00:18:38] I guess you could say?
+[00:18:40] It's hard to determine that
+[00:18:42] but mainly what I do is
+[00:18:46] usually my new service fits out the headline
+[00:18:49] I immediately go to the press release
+[00:18:52] and I'll start digging through the details of what they're saying
+[00:18:56] because a lot of times the headline looks a lot better
+[00:19:00] than what the detail is
+[00:19:03] and if I think I have something in the detail that the market doesn't know
+[00:19:08] I'll take a big position size and let the market know what it is
+[00:19:13] I have a large Twitter following
+[00:19:16] so if I find something that I think that the market doesn't know
+[00:19:21] I put it out there
+[00:19:24] so yes I react to news basically as quick as I possibly can
+[00:19:29] and do research on it
+[00:19:31] Okay, and are there certain sources that are probably more reliable than others?
+[00:19:36] Um, I love the
+[00:19:40] I love the Yahoo message boards
+[00:19:42] I know I seem like a broken record but I'm old school
+[00:19:45] and I still think they have a lot of value
+[00:19:49] Twitter is a good source for information
+[00:19:54] I don't particularly like to interact with many people on Twitter
+[00:19:59] because it could distract you
+[00:20:01] but for quality people and followers
+[00:20:05] I mean you can get good information from Twitter
+[00:20:08] instant information from Twitter
+[00:20:10] that analyze news just as fast as me
+[00:20:13] and it's free too if you follow the right people
+[00:20:17] Yeah awesome, great tips there
+[00:20:20] so let's move this along a little bit
+[00:20:22] and let's start talking a little bit about the mental aspect of trading
+[00:20:25] because we were talking a little bit off air
+[00:20:27] and this was one of the topics we were going to bring up
+[00:20:29] because I think you've got a lot of good tips to share on it
+[00:20:32] so what's the best way you find to keep your emotions in check
+[00:20:36] during the trading day
+[00:20:38] and even outside of ours too
+[00:20:40] let's talk about that a little bit
+[00:20:42] Well the thing is
+[00:20:44] being at it for as long as I have been
+[00:20:48] I would definitely say that what I've learned
+[00:20:52] is never to overact to a gain or loss
+[00:20:56] and people don't really understand that
+[00:20:59] but you know if you have a gain
+[00:21:01] you can't be jumping up and down
+[00:21:03] you only fucking boo yah
+[00:21:05] you know something exploded
+[00:21:07] you know take a look at me it doesn't work
+[00:21:10] and that's what everybody does in today's environment
+[00:21:12] that's definitely not my style
+[00:21:14] what I like to do is point out
+[00:21:16] and yell about my losses
+[00:21:18] because from those losses
+[00:21:20] I then get to quietly start accumulating my gains
+[00:21:24] so I mean so mentally
+[00:21:28] I do not react to a loss
+[00:21:31] or gain in any way shape or form
+[00:21:34] I completely strip it out
+[00:21:36] stock symbols I don't fall in love with any stock
+[00:21:39] simply put if something's going against me
+[00:21:41] I sell it
+[00:21:42] and if something is winning
+[00:21:44] I move my stock to entry and I let it go
+[00:21:47] that's it
+[00:21:48] I mean it sounds easy
+[00:21:50] but you would be surprised
+[00:21:52] how many people cannot follow those two steps
+[00:21:55] yah that's really cool
+[00:21:57] so this is something else I wanted to ask you about
+[00:22:00] also and that's like
+[00:22:02] when trading how do you keep a healthy balance
+[00:22:05] between being confident
+[00:22:07] without being over cocky
+[00:22:09] well that's the thing
+[00:22:11] and this ties in directly
+[00:22:14] to the mental aspect of trading
+[00:22:17] which never gets enough attention in my eyes
+[00:22:20] which to me the mental aspect of trading
+[00:22:23] is 90% of trading
+[00:22:25] and let me explain
+[00:22:27] like I know a lot of successful traders out there
+[00:22:31] a lot of traders that have made millions of dollars
+[00:22:34] in the stock market
+[00:22:36] but let me tell you
+[00:22:37] they do not make a trade
+[00:22:39] unless they check in with my opinion burst
+[00:22:42] and that may seem like a bold statement
+[00:22:45] but people need to understand
+[00:22:48] that no one knows anything
+[00:22:51] and people in general are insecure
+[00:22:54] and they always want a confirmation
+[00:22:57] and support from groups
+[00:23:00] and that's how the mental aspect of these stocks
+[00:23:04] of stock trading works
+[00:23:06] is when
+[00:23:07] and that's why my style works
+[00:23:09] is it's contra to the market
+[00:23:11] so people always try to travel in packs
+[00:23:14] they're insecure
+[00:23:16] they need confirmation from other traders
+[00:23:18] but that's not the style that I do
+[00:23:21] I know that I know
+[00:23:23] I like to trade against that type of style
+[00:23:26] that emotion
+[00:23:28] okay very good very good so
+[00:23:31] this is something we were also talking about
+[00:23:34] a little bit off air
+[00:23:35] some traders talking about other traders
+[00:23:37] so I think you've got some
+[00:23:39] some sort of thoughts to share on that statement there
+[00:23:43] I do
+[00:23:44] and what I think is
+[00:23:47] I left the corporate world ten years ago
+[00:23:49] and I don't regret it for one second
+[00:23:53] I hated everything about the corporate world
+[00:23:56] and what I've noticed is
+[00:23:58] especially after the past few years
+[00:24:01] is that you know
+[00:24:03] I use Twitter not a lot
+[00:24:05] but you know I've used it for the past five years
+[00:24:08] and what I noticed is that
+[00:24:10] Twitter traders love to talk about
+[00:24:13] what everybody else is doing
+[00:24:15] whether they're in a position
+[00:24:17] whether they're out of position
+[00:24:19] how much money they're making
+[00:24:21] what they're saying
+[00:24:22] it's like a
+[00:24:23] it's literally like working at a corporation
+[00:24:26] and hearing the chitter chatter
+[00:24:28] about your coworkers
+[00:24:29] I mean I think it's completely bullshit
+[00:24:32] because if you're concentrating on somebody else
+[00:24:34] and what they're doing
+[00:24:35] you're never going to make any money
+[00:24:37] why does one person's
+[00:24:39] why don't one other person's
+[00:24:41] profit and loss statement
+[00:24:43] makes effect on yours
+[00:24:44] it makes no sense to me
+[00:24:46] and why someone would hate
+[00:24:48] on somebody else
+[00:24:49] and troll on somebody else
+[00:24:50] when they make a trade
+[00:24:51] or say something
+[00:24:52] who cares
+[00:24:54] I mean I know this is a business
+[00:24:56] and people sell things on Twitter
+[00:24:59] but the bickering
+[00:25:01] I can't take it
+[00:25:02] like I had to cut
+[00:25:03] a lot of traders out of my life
+[00:25:05] because all they do is talk about all the traders
+[00:25:07] I mean I think it's lame
+[00:25:10] Yeah no doubt, no doubt
+[00:25:12] so moving along
+[00:25:14] what do you believe is the main reason
+[00:25:16] why such a large majority of traders
+[00:25:18] never succeed in this game
+[00:25:20] because it all goes back
+[00:25:23] to the mental aspect
+[00:25:25] people do not understand
+[00:25:28] that people's flaws
+[00:25:31] in life about being insecure
+[00:25:34] or about not being humble
+[00:25:37] and you know needing confirmation
+[00:25:40] from other people
+[00:25:42] and needing support
+[00:25:43] people do not understand
+[00:25:45] that applies to trading
+[00:25:47] and all because the group
+[00:25:49] is thinking wrong way
+[00:25:51] that doesn't mean the group is right
+[00:25:53] so mentally what happens is
+[00:25:56] is that when
+[00:25:58] say a group trade goes wrong
+[00:26:00] and someone loses money
+[00:26:01] especially a new trader
+[00:26:03] they always try to
+[00:26:05] then chase the money back
+[00:26:07] and make the money back
+[00:26:08] it doesn't work that way
+[00:26:10] so that's why a lot of traders fail
+[00:26:13] because they're getting confirmation from other people
+[00:26:15] they're not doing the research themselves
+[00:26:17] and the wholeness themselves
+[00:26:19] I mean the most profitable product on Twitter
+[00:26:22] is alert services
+[00:26:24] and that tells you everything you need to know
+[00:26:26] about where trading is going
+[00:26:28] for the next few years
+[00:26:30] it's been like this for 2-3 years now
+[00:26:32] where people just want to know
+[00:26:34] what to buy, no questions asked
+[00:26:36] and those people are truthfully not making any money
+[00:26:39] there's only a few people that are making money
+[00:26:42] even in today's market
+[00:26:43] because they're over trading
+[00:26:45] they're not doing the research themselves
+[00:26:47] and you know if you want to learn how to fish
+[00:26:50] I mean somebody needs to teach you how to fish
+[00:26:53] so let's do that
+[00:26:54] you need to do research
+[00:26:56] and homework on why somebody is buying
+[00:26:58] and not just do it
+[00:26:59] and follow someone blindly
+[00:27:01] because they made a good call 2 months ago
+[00:27:04] so that's why I think a majority of people fail
+[00:27:07] because they're too busy
+[00:27:08] and that group think
+[00:27:09] and the mental aspect of trading
+[00:27:11] yeah I think those are some really good points
+[00:27:13] you brought up there
+[00:27:14] so yeah thanks for sharing those
+[00:27:16] now let's just sort of start to wrap this interview up
+[00:27:19] so we'll just sort of go to the closing bill
+[00:27:21] just a few questions that I asked to
+[00:27:23] a majority of the guests
+[00:27:25] is there any recommended reading
+[00:27:27] that you would suggest to someone
+[00:27:28] perhaps something around the topic of psychology
+[00:27:34] I haven't read many trading books myself
+[00:27:41] I don't know of any good books out there currently
+[00:27:45] there probably is some good stuff
+[00:27:47] on trading psychology now
+[00:27:48] but I'm not up to date on the reading of it
+[00:27:50] I try on my Twitter to put out as many articles as I can
+[00:27:54] about trading psychology
+[00:27:56] because you know I love the world of finance
+[00:28:00] so I'm always trying to do something free
+[00:28:03] and give back to the world of finance
+[00:28:05] so that's what I try to cover
+[00:28:07] but I guarantee you now it is
+[00:28:08] there's probably some good books out there
+[00:28:10] but I don't know of any
+[00:28:11] yeah that's cool
+[00:28:12] so you've learnt most of it
+[00:28:14] from just sort of being in the trenches right
+[00:28:16] that's correct
+[00:28:18] good stuff
+[00:28:19] when it all comes down to it
+[00:28:21] what would you say motivates you to trade
+[00:28:23] after sort of 10 years in the game
+[00:28:25] is it the money that you can make from trading
+[00:28:27] is it the lifestyle it provides
+[00:28:29] is it the freedom
+[00:28:30] like what would you put it down to
+[00:28:32] well the money is nice
+[00:28:33] I mean the money is great
+[00:28:35] and you know obviously we all want to make money
+[00:28:37] that's why we're in the business
+[00:28:39] we're in this business
+[00:28:41] but I mean you cannot put a price tag
+[00:28:44] on your freedom from the corporation
+[00:28:47] and a cubicle
+[00:28:48] and having to work for other people
+[00:28:51] that you do not like
+[00:28:53] and you know other coworkers
+[00:28:56] that you do not respect
+[00:28:58] the independence is just such a massive key
+[00:29:01] I mean that's all everyone
+[00:29:03] who always reaches out to me
+[00:29:05] for a trading advisor
+[00:29:07] like they want to be independent
+[00:29:09] they want to be free from a corporation
+[00:29:11] I mean trading is awesome
+[00:29:14] I mean there's days where
+[00:29:16] you know especially after top losses
+[00:29:18] where you know trading sucks
+[00:29:20] and but I don't
+[00:29:22] let myself get too down on those days
+[00:29:24] I try once again to keep
+[00:29:26] the steady emotion
+[00:29:28] I love getting up
+[00:29:30] it's weird like
+[00:29:32] my family
+[00:29:34] friends and
+[00:29:36] you know my son's
+[00:29:38] friends in the neighborhood they don't know
+[00:29:40] what I do for work
+[00:29:42] they don't know that I'm a stock trader
+[00:29:44] I think I'm homeless
+[00:29:46] because I never talk about
+[00:29:48] what I do
+[00:29:50] because when it comes for trading
+[00:29:52] that's just something that I like to do
+[00:29:54] I even use a phony name
+[00:29:56] as a trader
+[00:29:58] because back then I never really wanted to brag about
+[00:30:00] how much money I made
+[00:30:02] so I just
+[00:30:04] it's something if you're independent
+[00:30:06] and you're tired of the corporate world
+[00:30:08] and you do the research
+[00:30:10] and tools I recommend that trading is for you
+[00:30:12] I mean everybody wants to do it
+[00:30:14] but no one wants to put in the correct time
+[00:30:16] or a lot of people don't want to put in the correct time
+[00:30:18] should do that
+[00:30:20] Yeah so important so important
+[00:30:22] so in there you talked about
+[00:30:24] days that just really suck
+[00:30:26] so say you have a really bad day one day
+[00:30:28] how do you treat the next day
+[00:30:30] do you just come back to it with a treat it as a fresh slate
+[00:30:32] or do you
+[00:30:34] is there ever a point where you decide
+[00:30:36] not to trade for a day?
+[00:30:38] Yup when
+[00:30:40] what I learned is due to my
+[00:30:42] degenerate gambler
+[00:30:44] tendencies
+[00:30:46] is that when I have a bad trade
+[00:30:48] like say like a five figure loss
+[00:30:50] in the morning
+[00:30:52] I set off my computer
+[00:30:54] and I don't trade anymore
+[00:30:56] because the reason why is what I try to do
+[00:30:58] is make trades
+[00:31:00] or I used to do the old wealth
+[00:31:02] five to ten years ago
+[00:31:04] when it was first starting out full time with this game
+[00:31:06] I would try to make that money back as quickly
+[00:31:08] as possible
+[00:31:10] and stats
+[00:31:12] show me because I keep a personal journal
+[00:31:14] of all my trades
+[00:31:16] and I analyze them
+[00:31:18] and what that showed me is that
+[00:31:20] whenever I tried to make my money back quickly
+[00:31:22] I would lose it
+[00:31:24] I lose more so
+[00:31:26] the most profitable thing that I can do
+[00:31:28] when I have a losing trade
+[00:31:30] especially the unexpected one is turn up the computer
+[00:31:32] and I honor that
+[00:31:34] I turn it off and then I come back the next day
+[00:31:36] when I lose money my wife can't tell
+[00:31:38] whether I make or lose money
+[00:31:40] because one when I'm making money
+[00:31:42] I sure as hell don't want to tell her
+[00:31:44] because she's going to be spending it
+[00:31:46] and when I'm losing money
+[00:31:48] I don't want to bring my family down
+[00:31:50] I like to keep my business separate
+[00:31:52] the family because I trade in the same house
+[00:31:54] I don't like the mood to overcome the house
+[00:31:56] that's great that's excellent
+[00:31:58] so just one other thing that you touched on there
+[00:32:00] and that was documenting your trades
+[00:32:02] how do you actually journal those
+[00:32:04] is it sort of a written notebook
+[00:32:06] or do you keep like a
+[00:32:08] how do you go about that is there a file on your computer
+[00:32:10] how do you journal your trades
+[00:32:12] I journal
+[00:32:14] even to this day
+[00:32:16] I journal my
+[00:32:18] I have an Excel spreadsheet
+[00:32:20] and basically all it is
+[00:32:22] I put down the day
+[00:32:24] when I make the trade
+[00:32:26] how much shares that I trade
+[00:32:28] that's percentage to my balance
+[00:32:30] and whether it's short or long
+[00:32:32] it's gain or loss
+[00:32:34] and I do this every day
+[00:32:36] either during the day
+[00:32:38] or end the day I fell to spreadsheet
+[00:32:40] regardless of whether I win or lose
+[00:32:42] I put in the correct amounts
+[00:32:44] and I keep it as my personal
+[00:32:46] like second pair of eyes
+[00:32:48] because being a trader
+[00:32:50] you know it's really a lonely business
+[00:32:52] like I do have
+[00:32:54] trader friends
+[00:32:56] but you know no one
+[00:32:58] when you're in a bad streak
+[00:33:00] you know no one really likes to talk about it
+[00:33:02] like I like to talk about a lot
+[00:33:04] but I know
+[00:33:06] I've lost friends over the last few
+[00:33:08] years that just completely
+[00:33:10] dropped out probably because they were losing so much money
+[00:33:12] some trader friends
+[00:33:14] so I use that Excel spreadsheet
+[00:33:16] as
+[00:33:18] like my accountability
+[00:33:20] like if I'm doing things stupid
+[00:33:22] I want to see that Excel spreadsheet
+[00:33:24] I want to look at it
+[00:33:26] I want to see it every day
+[00:33:28] when I do something wrong
+[00:33:30] and guess what when I'm doing something right
+[00:33:32] I want to see it
+[00:33:34] I want to press harder
+[00:33:36] and I want to go bigger in size
+[00:33:38] and I want to make money
+[00:33:40] and that spreadsheet
+[00:33:42] I mean it's sad to say
+[00:33:44] but I need it and I keep it
+[00:33:46] and I've been doing it for so long
+[00:33:48] it's just second nature for me
+[00:33:50] so that's like my second pair of eyes
+[00:33:52] that's really good I mean if you find something that works
+[00:33:54] you just keep doing it right
+[00:33:56] I mean I love to ditch it
+[00:33:58] but I'm afraid what would happen if I did
+[00:34:00] I think it's more important
+[00:34:02] to be making money
+[00:34:04] so if it's helping with that
+[00:34:06] stick with it I say
+[00:34:08] so this has been awesome John
+[00:34:10] thanks so much for coming on
+[00:34:12] I really appreciate you taking the time on a Sunday evening
+[00:34:14] before we go
+[00:34:16] do you want to share with listeners where they can find out more about you and connect
+[00:34:18] yeah just you can go on twitter
+[00:34:20] at John Wall's trades
+[00:34:22] that's it
+[00:34:24] if you want I give some trade ideas
+[00:34:26] and some commentary
+[00:34:28] I try to do what I can
+[00:34:30] and give back for free whatever
+[00:34:32] I can for finance
+[00:34:34] and
+[00:34:36] you can see me there
+[00:34:38] and I'll try to tweet quality stuff
+[00:34:40] whenever I can
+[00:34:42] that link will be in the show note
+[00:34:44] to John's twitter page
+[00:34:46] go along follow him
+[00:34:48] and yeah thanks a lot John
+[00:34:50] let's keep in touch and we'll speak soon
+[00:34:52] have a good weekend
+[00:34:54] or in your case have a good week
+[00:34:56] no problem man talk soon
+[00:34:58] take it easy bye bye
+[00:35:22] you

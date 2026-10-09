@@ -1,0 +1,62 @@
+{
+  "trader": "James Chen",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Core method exploits ADR cross-market pricing discrepancies with 50% discretionary judgment on multiple live factors (S&P, commodities, volume) and overnight timing risk; no concrete long-only daily-bar rules extractable.",
+  "template": "none",
+  "method_name": "ADR premium-discount overnight trade",
+  "style": "cross-market relative value",
+  "timeframe": "overnight to next-day",
+  "universe": {
+    "description": "dual-listed ADRs (e.g. BHP, PLS) trading in Australia + US/Europe"
+  },
+  "setup": [
+    {
+      "rule": "US ADR trades at discount/premium to Australia primary",
+      "quote": "if Australia is up 10% versus the US, I might not try to fade it... if the US is up 10% on low volume versus Australia, there is a... massive discrepancies",
+      "timestamp": "[00:21:18]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Buy US side at 1-5% discount after checking S&P, copper, iron ore, Rio London; widen band on mixed signals",
+      "quote": "I'll most likely be buying it... BHP should be up 0 to 2% tomorrow. So I won't buy if it's flat, but I'll buy at maybe a 1 or maybe even 2% discount",
+      "timestamp": "[00:22:54]"
+    }
+  ],
+  "stop": [],
+  "exits": [
+    {
+      "rule": "Sell ASAP next day in Australia (convert or DMA)",
+      "quote": "often I found it's best if I just try to sell it ASAP the next day. Sell it in Australia",
+      "timestamp": "[00:25:29]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Scale exponentially larger on A+ setups; often 50-70% of foreign volume",
+      "quote": "when you have an A+ trade, you should do exponentially more size... in the PLS example, I think I was like 60, 70% of the volume",
+      "timestamp": "[00:37:03]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Check S&P move, sector peers, no negative news before committing size",
+      "quote": "checked everywhere, checked Bloomberg, Reuters, Twitter... No news. And meanwhile, the ES was still rallying",
+      "timestamp": "[00:30:44]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "No explicit numeric thresholds or daily-bar signals given",
+      "assumption": "Method cannot be approximated on daily US bars"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "231",
+    "page_url": "https://chatwithtraders.com/episode/231-james-chen-obscure-edges-outsized-alpha",
+    "youtube_url": "https://www.youtube.com/watch?v=MgkV58s_Y2I"
+  }
+}

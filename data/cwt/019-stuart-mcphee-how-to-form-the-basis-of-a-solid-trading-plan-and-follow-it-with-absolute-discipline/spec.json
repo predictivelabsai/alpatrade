@@ -1,0 +1,44 @@
+{
+  "trader": "Stuart McPhee",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "No concrete long-side entry, stop, exit or sizing rules for US stocks are provided; only general emphasis on plans, support/resistance, trend and weekly medium-term equity approach.",
+  "template": "none",
+  "method_name": "Weekly medium-term equity plan",
+  "style": "medium-term trend following with support/resistance",
+  "timeframe": "weekly",
+  "universe": {
+    "description": "Equities in self-managed super fund (ASX initially, NASDAQ referenced)"
+  },
+  "setup": [
+    {
+      "rule": "Key support and resistance levels plus pure trend",
+      "quote": "I'm a huge follower of just simple key levels so support and resistance levels... and the other thing is just pure Trend",
+      "timestamp": "[00:12:28]"
+    }
+  ],
+  "entry": [],
+  "stop": [
+    {
+      "rule": "Very wide stops",
+      "quote": "stops are very wide",
+      "timestamp": "[00:09:52]"
+    }
+  ],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Equity rules described only at high level with no numbers or exact conditions",
+      "assumption": "Method remains discretionary and not codable on daily bars"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "19",
+    "page_url": "https://chatwithtraders.com/episode/019-stuart-mcphee-how-to-form-the-basis-of-a-solid-trading-plan-and-follow-it-with-absolute-discipline",
+    "youtube_url": "https://www.youtube.com/watch?v=c2NjhULgpKg"
+  }
+}

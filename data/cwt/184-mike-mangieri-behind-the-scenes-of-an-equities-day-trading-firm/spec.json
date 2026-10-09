@@ -1,0 +1,27 @@
+{
+  "trader": "Mike Mangieri",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Guest describes operations of an equities day-trading prop firm with no concrete long-side rules on daily bars; all activity is intraday scalping/day trading.",
+  "template": "none",
+  "method_name": "Intraday equities day trading",
+  "style": "prop firm oversight of day traders",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "US equities"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "184",
+    "page_url": "https://chatwithtraders.com/episode/184-mike-mangieri-behind-the-scenes-of-an-equities-day-trading-firm",
+    "youtube_url": "https://www.youtube.com/watch?v=909MnLG2pus"
+  }
+}

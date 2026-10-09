@@ -1,0 +1,88 @@
+{
+  "trader": "Nick Radge",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Concrete long-only US equity trend-following rules using weekly breakouts, ROC confirmation, regime filter and percentage trailing stops that can be approximated on daily bars.",
+  "template": "breakout",
+  "method_name": "Absolute trend following breakout",
+  "style": "systematic trend following",
+  "timeframe": "weekly signals on daily bars",
+  "universe": {
+    "description": "S&P 500 or Russell 1000 constituents"
+  },
+  "setup": [
+    {
+      "rule": "20-week high breakout",
+      "quote": "you've just got to close above the highest high of the past 20 weeks",
+      "timestamp": "[00:19:27]"
+    },
+    {
+      "rule": "ROC over 20 weeks > 30%",
+      "quote": "rate of change over those 20 weeks is above a certain level ... above 30",
+      "timestamp": "[00:21:04]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "buy on 20-week breakout with ROC>30% when regime filter true",
+      "quote": "20 week breakout if the rate of change is above 30 then bang we've got a buy signal",
+      "timestamp": "[00:22:08]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "20% trailing stop from recent high, ratchet to 10% when regime turns down",
+      "quote": "trailing stop somewhere in the vicinity ... 20% behind the position ... ratchet that up to 10 percent",
+      "timestamp": "[00:29:37]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "exit next open if close below trailing stop",
+      "quote": "has to close below that ... execute the exit on the open the next day",
+      "timestamp": "[00:17:59]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "5% fixed equity per position, max 20 positions",
+      "quote": "allocate 5% of our capital to each one of those positions ... 20 positions",
+      "timestamp": "[00:30:09]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "only buy when S&P 500 above its 200-day MA",
+      "quote": "only gonna take buy signals if the S&P 500 is above its 200 day moving average",
+      "timestamp": "[00:28:02]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "system described as weekly but engine is daily",
+      "assumption": "approximate 20-week high and Friday close logic on daily bars"
+    },
+    {
+      "issue": "exact trail stop calculation not fully specified",
+      "assumption": "standard ATR-independent percentage trailing stop from highest close"
+    }
+  ],
+  "params": {
+    "momentum_lookback_days": 140,
+    "momentum_min_pct": 30,
+    "consolidation_days": 0,
+    "consolidation_max_range_pct": 0,
+    "trail_ma": 0,
+    "partial_after_days": 0,
+    "partial_frac": 0,
+    "risk_per_trade_pct": 0.6,
+    "max_position_pct": 5,
+    "max_positions": 20
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "178",
+    "page_url": "https://chatwithtraders.com/episode/178-nick-radge-the-blueprint-create-a-simple-trend-following-system",
+    "youtube_url": "https://www.youtube.com/watch?v=EUUd2kq1Mh4"
+  }
+}

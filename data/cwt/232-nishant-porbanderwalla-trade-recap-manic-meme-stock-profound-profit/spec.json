@@ -1,0 +1,83 @@
+{
+  "trader": "Nishant Porbanderwalla",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "The method relies on intraday order flow, pre-market imbalances, LRP halts and rapid scalping that cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "Intraday imbalance halt scalping",
+  "style": "Day trading meme stocks via imbalances and halts",
+  "timeframe": "Intraday (pre-market to post-halt)",
+  "universe": {
+    "description": "High-volume meme/SPAC stocks with news catalysts (e.g. DWAC)"
+  },
+  "setup": [
+    {
+      "rule": "Identify large pre-market buy imbalance at 9:25 ET",
+      "quote": "there was a million share imbalance",
+      "timestamp": "[00:03:12]"
+    },
+    {
+      "rule": "Stock gapping up strongly from prior close with momentum",
+      "quote": "the stock has capped up to 70 77",
+      "timestamp": "[00:06:53]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Buy into pre-market imbalance or at LRP before halt expecting continuation",
+      "quote": "i'm gonna buy so at about 9 25 eastern time ... i start buying",
+      "timestamp": "[00:07:56]"
+    },
+    {
+      "rule": "Add at LRP during halt window if buying pressure visible",
+      "quote": "as soon as i hit the lrps ... i'm just gonna go with the trend so i bought",
+      "timestamp": "[00:13:39]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Tight mental stop or delta order 2-3 points against if wrong on gap",
+      "quote": "if this goes against me two or three points i'm out",
+      "timestamp": "[00:26:44]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Take profits into strength or at open print after gap",
+      "quote": "i was taking profits as it was going up also i had some orders to sell on open",
+      "timestamp": "[00:08:58]"
+    },
+    {
+      "rule": "Exit long after large gap up halt re-open",
+      "quote": "i'm actually thinking of okay i'm going to short the print",
+      "timestamp": "[00:18:20]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Limit size to 4-6k shares on imbalance trades; take what fills at LRP",
+      "quote": "i didn't want to be more than four or five thousand shares",
+      "timestamp": "[00:24:37]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Trade only when pre-market activity and imbalances are extreme (meme/SPAC frenzy)",
+      "quote": "waking up at like 5 30 or 5 in the morning was a given now because there was so much activity happening pre-market",
+      "timestamp": "[00:10:02]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "No explicit rules given for exact imbalance size threshold or LRP % move",
+      "assumption": "Assumes large visible imbalances (>1M shares) and 5%+ LRP moves on volatile names"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "232",
+    "page_url": "https://chatwithtraders.com/episode/232-nishant-porbanderwalla-trade-recap-manic-meme-stock-profound-profit",
+    "youtube_url": "https://www.youtube.com/watch?v=EqKwJwlfIyM"
+  }
+}

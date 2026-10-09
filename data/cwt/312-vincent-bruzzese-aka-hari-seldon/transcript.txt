@@ -1,0 +1,811 @@
+# 312 · Vincent Bruzzese - Battling Irrational Markets - and the Battle Within
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT1271293436.mp3
+
+[00:00:00] I think this market right now is like the love child of I am Sam and Gilbert Gray.
+[00:00:08] It's the stupidest fucking market I've ever seen in my life.
+[00:00:13] It literally is.
+[00:00:15] They say the market can be irrational longer than you can be solvent.
+[00:00:18] This is beyond irrational.
+[00:00:19] This is just fucking stupidity.
+[00:00:22] If you just eliminate all the stupid shit from your trading that has no real justification.
+[00:00:28] I'm talking out of the money calls and puts, I'm talking counter-trend trading.
+[00:00:32] Every time you short something, that is up on the day.
+[00:00:35] Every time you go long something, that is down on the day because you feel like it's already
+[00:00:39] dropped too much.
+[00:00:40] It's certain to bounce.
+[00:00:41] Every time you did all of that shit, you went against the market.
+[00:00:46] That would probably cover about 70% of your losses, all that stupid shit.
+[00:00:50] And if what you're left with are defensible trades, I took this trade because on the
+[00:00:57] daily chart, it's not extended.
+[00:00:59] It's above all of its SMAs.
+[00:01:01] It's above its technical indicators.
+[00:01:03] It's strong, relatively strong against the market.
+[00:01:07] It's got all these things ticked off and that becomes the bulk of your trading.
+[00:01:12] Then you'll start seeing a dramatic shift.
+[00:01:17] Markets, speculation and risk.
+[00:01:19] This is the Chat with Traders podcast.
+[00:01:27] Welcome back to Chat with Traders.
+[00:01:29] This is episode 312.
+[00:01:31] It's Ian Cox here and today's episode is a special follow-up with a guest many of you
+[00:01:36] will remember from episode 255 a few years ago.
+[00:01:40] Back then I had a chance to sit down with Vincent Brzezi, known by many as Harry Seldin
+[00:01:46] from the real day trading community.
+[00:01:49] He's been known to be one of the most transparent traders out there posting his trades live.
+[00:01:55] His returns over the past several years, multiple years north of 60% and even 80% speak for themselves.
+[00:02:04] Vincent is a former statistics professor, a long time poker player and someone who
+[00:02:09] spent years in the Hollywood film industry analyzing audience behavior and forecasting
+[00:02:14] human reactions, all before becoming a full-time trader.
+[00:02:19] This time, though, Tessa is taking the lead on the interview because this conversation
+[00:02:23] comes at a moment when many traders are struggling with discipline, second-guessing their reads
+[00:02:29] and trying to navigate a market that often seems disconnected from both fundamentals
+[00:02:34] and traditional technical cues.
+[00:02:37] Vincent has a way of stripping away the noise, calling out the psychological traps
+[00:02:41] traders fall into and offering his perspective on a market that often behaves in ways that feel
+[00:02:48] irrational, even to seasoned professionals.
+[00:02:52] You'll hear his unfiltered take on narrative-driven markets, the mental patterns that wreck traders,
+[00:02:58] the practical edges that still work, and what it really means to treat trading like a business
+[00:03:04] rather than gambling. As always with Vincent, there's honesty, humor, and a lot of insight
+[00:03:10] packed in. So with that, here's Tessa's conversation with Vincent Brzezi.
+[00:03:16] Hi, Vincent.
+[00:03:18] How's it going?
+[00:03:20] Good. How are you?
+[00:03:22] Going well. Enjoying this market drop?
+[00:03:25] You are?
+[00:03:26] Oh, yeah.
+[00:03:27] I'm not.
+[00:03:29] Hey, just a quick note. This conversation was recorded on November 6th.
+[00:03:33] You'll hear Vincent reference what the market was doing that day or around that day.
+[00:03:37] Are you shorting?
+[00:03:41] Oh, I've been shorting Tessa all day and had some spy puts on.
+[00:03:49] Yeah, I think we're going to test the 50SMA on spy here soon enough.
+[00:03:56] Yeah, I'm trading the cues and I just really messed up today. It's something I haven't done in
+[00:04:02] a long time. I didn't put a stop in, and the one time I don't put my stop in, this is what happens.
+[00:04:10] I don't know why I did that. I think it's complacency, and I thought, oh, I'm just trading
+[00:04:16] a very, very small position, but still, even though it's small, it really hurts. It's more
+[00:04:23] like I'm mad at myself not like of the amount lost or anything like that. It's more about
+[00:04:30] just the emotional energy I spent on being mad.
+[00:04:37] I think the only time I've ever used stops if I'm going to go out for a cigarette.
+[00:04:42] I generally don't use them.
+[00:04:43] I know. I remember that. In the last interview you did with Ian on the podcast, you used mental
+[00:04:50] stops. I'm still amazed by that because you would really have to monitor your glue to the
+[00:04:57] screen, right? Yeah. I have my four monitors here, and then I've got some other monitors there,
+[00:05:05] and I have TC2000. I have Option Stalker. I have Thinker Swim, and then I have the
+[00:05:11] one option chat room always going over here. I generally will monitor to them and use mental
+[00:05:20] stops. It depends if I'm scalping. Like today I was scalping Tesla on and off throughout the day
+[00:05:26] and had mental stops on that. But I'm doing a longer-term trade. I went long Apple. I'm not
+[00:05:33] going to have a mental stop. If it breaks down a major support level, fine, but other than that,
+[00:05:38] I'm holding it. Well, obviously you know what you're doing because very few people can do mental
+[00:05:43] stops. I don't trust myself to do it. I'm just not at that level yet. I trade options,
+[00:05:53] but I also now trade futures. The one I was doing was just on futures. But I feel like
+[00:05:59] if you're just trading options, I can see why you don't have stops. Like me, when I trade options,
+[00:06:05] I don't use stops because if I have a spread or if I have a long call or something like that,
+[00:06:12] there's a built-in stop in a way already. There is. There's a max loss there,
+[00:06:18] but options can drain you, obviously. You buy an option for, say, $5 or spread for $2.50.
+[00:06:27] And now it's down to $1.90, but it's still close to where you got in. So you're holding it.
+[00:06:32] And then the next time you look, it's got 40 cents left in it. And you think, well, what's the
+[00:06:35] point of closing it now? It's only got 40 cents left in the thing. I think I once put
+[00:06:42] out a thing to people and said, every time you looked and saw that it only had 10 cents, 20 cents,
+[00:06:49] 40 cents, whatever, and keep track of it in a journal. And at the end of the month,
+[00:06:55] just add it up the total loss you had because you didn't close those 10-cent options, 40-cent
+[00:07:01] options. And add in the times that those actually came back and rebounded and look
+[00:07:06] at what your net is at the end of the month. And most of the time, people found that if you
+[00:07:12] just close them, even when they're at 30, 40 cents, took the loss. It adds up.
+[00:07:18] Yeah. A little bit of savings. It'll be a little bit counts, I guess. But
+[00:07:24] it's, I guess we'll talk about in the interview. It's a very different market
+[00:07:28] than the last time we spoke, certainly. We're already kind of interviewing.
+[00:07:32] Oh, we are. It's nothing totally formal the way I do it. But, well, I can be a little formal.
+[00:07:40] Vincent, welcome back to Chat with Traders.
+[00:07:43] Thanks. Glad to be back.
+[00:07:44] Yeah. It's been about two and a half to three years now since you were last on the show.
+[00:07:51] And I remember in early, well, when you were on in early 2023, you said that that market was
+[00:07:58] like one of the most difficult markets to trade. Well, what do you think about
+[00:08:05] this market in 2025 now that we're almost at the end of the year too?
+[00:08:10] Well, let's take a look. So, I mean, I do remember then 2023, 2024 was a strange market to trade.
+[00:08:19] It was very volatile, a lot of ups and downs with it. I think I did about 82% return in that
+[00:08:26] year. And every, by the way, all for the listeners to know, all my trades are always posted
+[00:08:32] live. I post the entry and the exit, the position side, you can check it out and time in sales.
+[00:08:37] Any broker has time in sales. So, if I say I'm going along a thousand shares or 20 contracts
+[00:08:42] or whatever, you could just see that I went longer than where I exited. So, you can look
+[00:08:47] up my stats. But I did around 82, 83% return that year. About similar to the next year,
+[00:08:55] 2024. This year, I'm down to around 63%. I'm kind of averaging out to the end of December.
+[00:09:01] It would be around 63% right now. So, a little bit off the last two years because it is a very
+[00:09:06] different market. But to me, one, you have to treat trading like a business. And I think that's
+[00:09:15] something a lot of traders, they focus very much on the wins or losses on that day. And a lot of
+[00:09:23] people, look, let's face it, a lot of traders are degenerate gamblers. And so, what they're
+[00:09:28] looking at is their individual P&L day in and out. What you have to look at is your monthly. You have
+[00:09:35] to look at this is how much I set out to make every month. And you don't want that to range too much.
+[00:09:43] So, if you say, I need to make $10,000 a month, you want that to be within $8,000 to $12,000.
+[00:09:49] You want a standard deviation of two grand. You want a business plan to go with that.
+[00:09:53] That's what people should be looking at is, am I going to be consistently profitable
+[00:09:57] one step to month? Now, in this market right now, here comes the contradiction or the problem
+[00:10:05] to me. And we tell traders you focus on price action. Fundamentals are for long-term investors.
+[00:10:13] Fundamentals are for people that are putting together their portfolio. And if your trading
+[00:10:19] can't beat that return, stop fucking trading. Just go be an investor. If you can't beat the
+[00:10:25] average return of the S&P every year, there's no point in spending all the time on energy trading.
+[00:10:30] What's the average return again for the S&P? What's that?
+[00:10:34] What is the average return for the S&P? On average, it's coming around between 12,
+[00:10:38] and certainly in the bull markets, 12 and 20%. So, if we, if we can't beat,
+[00:10:44] if you're saying if we, if we as traders cannot beat that, then don't even trade.
+[00:10:50] Right. If you put $10,000 into spy in January 1st, if you can't beat what your portfolio
+[00:10:57] total is going to be on December 31st of that year, there was no point in doing it, right?
+[00:11:02] Because sure, everyone can just put their money into spy, or you could just put it in the mag seven
+[00:11:08] or any other combination, you know, a couple risky stocks.
+[00:11:12] Trading is meant to beat that return, and then you got to do it consistently.
+[00:11:16] The problem with this year is this is probably the most hated rally in the history of stock market
+[00:11:22] rallies. The market continues to go up with excuses of, oh, they're going to cut rates,
+[00:11:30] or inflation isn't that bad, the economy is doing well. Evaluations have gotten so stretched that
+[00:11:39] people no longer believe the rally. So what happens is you become skeptical of these huge moves up in
+[00:11:48] spy or in the market. And what that results in is you take profit really quick, right? Let's say
+[00:11:56] you're long Apple or Tesla and you're up a dollar a share. You grab that dollar share and you
+[00:12:03] run out because you constantly think this isn't going to last. This is going to run out.
+[00:12:08] My luck's done. And traders in general do not come from a rich mentality.
+[00:12:16] Rich mentalities are things are going to work out. Why? Because things always fucking work out for
+[00:12:20] them. Why wouldn't they work out? They, you know, things are good today. They're going to be good
+[00:12:25] tomorrow and they're going to be good a week from now. People who aren't rich, people who aren't
+[00:12:29] born rich certainly, they're always waiting for the other shoe to drop. Always. Something
+[00:12:34] is going to go wrong in their life. If you want good shit happens, they know some bad shit's
+[00:12:40] right around the corner and everything's going to get screwed up again. So they bring that mentality
+[00:12:46] to trading. The moment you get a dollar profit, they run away with the money because they are
+[00:12:52] just so certain it's going to reverse on them. Now when this market hits and you're looking
+[00:12:58] at these constant, like it's just nonstop up ever since, you know, the big liberation day,
+[00:13:06] it's been a nonstop ride and nobody believes it. Talk of AI bubbles, talk of valuation stretch,
+[00:13:14] however the feds aren't going to cut, makes it very hard to hold on and let those winners run.
+[00:13:22] Do you believe it?
+[00:13:25] I think this market right now is like the love child of I am Sam and Gilbert Gray.
+[00:13:33] It's the stupidest fucking market I've ever seen in my life. It literally is.
+[00:13:40] They say the market can be irrational longer than you can be solvent. This is beyond irrational.
+[00:13:44] This is just fucking stupidity. Do you think it's temporary or is this a new normal?
+[00:13:50] It's temporary. It is absolutely temporary. They're going to be a correction at some point
+[00:13:56] when calling cops is not a very profitable business model. But there will be a correction
+[00:14:04] simply because put aside rate cuts, put aside all the other tariffs and all the other shit,
+[00:14:11] valuations are just out of control. The stocks are too expensive. And people have to remember
+[00:14:18] most of the liquidity in the market aren't from me and you and traders. They're from institutions.
+[00:14:26] They're from 401ks. They're from portfolios. And in order for that liquidity to keep up,
+[00:14:32] you need JP Morgan and Goldman Sachs to continue pouring money into the market. They need to be
+[00:14:38] able to look at friggin, what do you call it, NVIDIA. And they need to be able to look at half
+[00:14:47] these stocks and go, that's a good price for me to buy it right now. And it's not. Sure,
+[00:14:53] their Google might still be a decent deal and maybe Amazon, but by and large the valuations
+[00:15:00] on these things are disconnected from reality. It doesn't make any sense at all.
+[00:15:06] So no, I don't believe it. But I do believe that a bull market can run and run and run
+[00:15:14] until there is a catalyst, until something causes the bubble to burst.
+[00:15:21] What will that be? It could be NVIDIA bad earnings, which I doubt would happen.
+[00:15:27] But it could be anything. It could be an escalation. It could be inflation hitting
+[00:15:33] harder. It could be the Fed saying, no rate cuts. It could be any one of these things that can cause
+[00:15:40] and spark a sell-off. When you said that the market is irrational, when you say irrational,
+[00:15:46] are you talking more about the structure or the sentiment or something more psychological?
+[00:15:53] I'm talking about markets are always not based on what you see today. It's based on what the
+[00:16:02] market believes a year from now or two years from now is going to be the reality.
+[00:16:07] They're not buying Amazon for what it's valued today. They're buying it for what they think it can go
+[00:16:14] forward peak and all that. And that's where you can get these bits of irrationality. Where
+[00:16:22] story and narratives become more about our bigger part of the valuation
+[00:16:30] than the actual fundamentals. That's what happened in the big.com bubble, where it was all narrative.
+[00:16:37] There were companies with almost no revenue, no profit, and it was all about what it could do.
+[00:16:44] Going forward, look at PLTR. PLTR is a $500 billion company right now on terms of valuation
+[00:16:54] that has what? A billion in revenue? Maybe $500 million in profit? I mean, if you just look at the
+[00:17:03] books, that's based on clearly not what it is now. It's based on what it will be. Look at Tesla.
+[00:17:10] Tesla couldn't sell a car for its fucking life right now. It's dropping everywhere, but
+[00:17:17] people are buying Tesla based on robots. People are buying Tesla based on robo-taxi.
+[00:17:22] They're optimistic. Yes. And so when that optimism, when narrative becomes
+[00:17:31] too much of the story, that's where you get bubbles, right? Because eventually,
+[00:17:36] some of those narratives pop. Some of those narratives aren't reality. And when a big
+[00:17:40] enough narrative pops, it causes a domino effect that, well, if Tesla's narrative wasn't true,
+[00:17:47] then all these others probably certainly aren't. Because we all believe this one
+[00:17:51] was a short thing. And when one pops, then they all, and that's where you get that whole task
+[00:17:56] gating effect down, it would take a lot to do that. I don't think that we're going to see
+[00:18:02] a AI bubble popping anytime soon, but I do think a market correction certainly is something.
+[00:18:09] If this market is driven by narratives right now, do we need to be better at the timing?
+[00:18:14] Relying on price action and not relying on what we feel and what we think will happen.
+[00:18:20] I mean, look, there are a lot of great, even if your people are afraid of playing the market,
+[00:18:25] there are a lot of great passive ways. For example, Pete, do you remember Pete Stolzers who,
+[00:18:32] from one option, and I got all the props about him. I've been a member there for,
+[00:18:38] but now, six years. I don't own the company. I don't work for the company. I've just been
+[00:18:42] a member. I help them run the chat room there. It's one, you spell out one, option.com.
+[00:18:48] And he's been advocating for just selling puts. Just selling puts, doing some bullish put
+[00:18:56] spreads on stocks you might want to own and collecting premium because you've got some
+[00:19:00] high premium right now. And so, if you look at something like Tesla, for example,
+[00:19:07] you can go in on Tesla and sell the 400, you can sell the 405 puts for a dollar
+[00:19:15] right now that expire tomorrow. Are you okay owning Tesla 404 if it crashed down?
+[00:19:20] Yeah, probably. It's not a bad price for it, I guess. It would have to drop $40 for you to get
+[00:19:27] assigned. Okay, again, that's probably not going to happen tomorrow. So, you could collect the
+[00:19:34] dollar in premium off of selling 405 puts that expire tomorrow. That's not a bad way to safely
+[00:19:43] play this market is to sell puts in stocks that you don't mind owning. If you sell a put, the rule is
+[00:19:54] the premium is great, but you cannot be unhappy with being assigned. You have to also want to
+[00:20:01] own that stock. There's a little bit of fundamentals with it. I feel like, I mean, I never do that
+[00:20:06] because I'm more of a trader, a day trader or swing trader and I can try that, but I just feel like
+[00:20:14] that becomes more like a longer term. Yeah, and it doesn't really appeal to me, but that's something
+[00:20:21] to consider in this high volatility environment. It's not a bad way to just put some passive
+[00:20:26] income in there. Particularly, I recommend in this market right now, if anyone also has their
+[00:20:34] long-term stock portfolio, that they keep a lot of traders have a separate account. They have an
+[00:20:41] account that they just keep some stocks in and that's their long-term account. If you're going to add
+[00:20:46] stocks in any type of long-term fashion in this market, I would recommend certainly
+[00:20:53] don't buy the stock outright. Just sell the puts to sell the premium and just keep doing it
+[00:20:57] until you get assigned and then you'll own that stock. It's a much better way than just
+[00:21:01] outright buying the stock right now. If you're like, oh, I want to add Tesla to my long-term,
+[00:21:06] don't buy Tesla, just sell the 430 puts for four bucks. Yeah, and then if you get it, great.
+[00:21:11] You got it, you would have bought it anyway, and now you get it at a better price and you
+[00:21:14] collected the premium. It's just not a bad way to do that. Assuming the trader has a lot of
+[00:21:24] stock. I mean, it's not for everyone. It's funny. My son, who is 20, he's a junior in Berkeley,
+[00:21:33] and this summer, he came home from the summer, I'm in LA, and he wanted to get a part-time job
+[00:21:40] just to have spending money or whatever. I suggested to him that he should do trading
+[00:21:47] instead. He had an account, it's about, I don't know, $5,000, $6,000 in his account.
+[00:21:54] Small account. Every time he got money or whatever, he just put it in any button or video,
+[00:21:58] and he bought different stocks, and he built up the $5,000, $6,000 college student.
+[00:22:04] He traded it over the summer, and I posted every one of his trades in the chatroom.
+[00:22:09] He had 13 straight successful trades, and he made around $3,000 off of his $6,000,
+[00:22:17] consuming a 50% return over the summer. He turned his summer job into 21 or two hours a day
+[00:22:25] trading. I didn't tell him what to trade. He texted me and said,
+[00:22:28] hey, I'm going to go along Google, do I see any red flags? You are, as an example,
+[00:22:34] but he did a 50% return. To me, it was a great validation of even with a small account,
+[00:22:42] you can manage to, because $3,000, that's pretty much what he would have gotten
+[00:22:48] making, being a barista at Starbucks over the summer.
+[00:22:50] What was he, was it options or credit spreads, debit spreads?
+[00:22:55] A couple of debit spreads or straight call in the money calls or in the money puts.
+[00:23:01] He'd buy one or two contracts at a time. If he wanted to go to Long Apple,
+[00:23:06] he'd buy a Delta 0.7.8 call on Delta, maybe one or two contracts, because they're like $800 each.
+[00:23:16] He had 13 straight winning trades. He used some of the scanners here, an option stalker,
+[00:23:22] and he used some of the charting on TC2000 and did great. Of course,
+[00:23:28] he woke up at 11 AM every damn day, but fine.
+[00:23:31] So just recently, he started trading, you're saying, as a part-time kind of thing?
+[00:23:36] Yeah, he never traded before. I mean, I taught him how to trade, leading up to it, but he's never
+[00:23:42] acted. Well, it helps to have you teaching him. He's lucky.
+[00:23:47] Well, he lost though, it just owned his ass. So he changed him lost.
+[00:23:51] So he hasn't lost. So that's, I mean, every trader at some point will go through that and
+[00:23:58] so he hasn't gone through that though yet. No, but he is also a degenerate gambler
+[00:24:03] and he's on the Berkeley poker team and he's really good at poker, but he's had some pretty
+[00:24:09] bad gambling losses, I'd say, but no, he hasn't lost trading stocks yet. But most,
+[00:24:15] you're right, most traders, I mean, look, when I started, I think I told you last time,
+[00:24:19] when I was started, I lost six-figure account twice. I got my ASP, yeah.
+[00:24:25] And you crawled back out of that?
+[00:24:29] Yes, I did. And traders hate to hear that if you want, look, in this economy right now,
+[00:24:39] it's a very appealing prospect to be a trader because there's very, not much job security,
+[00:24:45] people are getting laid off. Trading gives you the financial independence and a skill set
+[00:24:50] that allows you to make money, be your own boss, all the things that people want, right? So it's a
+[00:24:57] very attractive idea. What's not attractive is the idea that it takes two years minimum
+[00:25:08] to master this shit. And I'm talking two years where you're not spending two years losing,
+[00:25:14] you're spending two years paper trading and trading one share and getting your ass kicked.
+[00:25:19] And I mean, if you can imagine any type of job that gives you this job security, the freedom,
+[00:25:28] all of that that trading does, that doesn't require you to put in either years of schooling
+[00:25:34] or years of sitting at a desk, working, grinding your way up through the bureaucracy
+[00:25:39] to get to where you want, any job takes time, effort, dedication to get what you want out of
+[00:25:46] it. Trading is no different. The problem is that because the rules are so fucking easy,
+[00:25:52] go in, get an account, buy, sell, done, everyone thinks they can just go in and do it. It's kind
+[00:25:58] of like playing poker or playing chess. It takes a minute to learn and then you go in and lose
+[00:26:03] because most of it isn't just about the rules. It's about the mindset. It's about the patterns,
+[00:26:08] all of that shit. So yeah, it's a great job if only traders would realize
+[00:26:15] they need to actually put in the time to learn it. Exactly. Given your statistical background,
+[00:26:24] you have a statistical background in human behavior model, you model human behavior in the past.
+[00:26:31] Yes. Did that impact your trading at all? Did that give you an edge? Did that help you?
+[00:26:39] It kind of hurt in the beginning because I was an arrogant motherfucker and thought,
+[00:26:43] I can do this. I can read the patterns. For me, ever since I was a kid, it was always being about
+[00:26:50] obsessed with predicting human behavior and then the stock market is the ultimate representation
+[00:26:56] for that, which is why I hate when shit is so irrational because predicting irrationality is
+[00:27:01] irrational. So in the beginning, it was, oh, I should be able to predict this and I fell into
+[00:27:09] that trap in the beginning that price action is one thing, but I could rationalize why a stock would
+[00:27:19] go up or down. Like, oh, I'm going to go long Netflix right now because I just found out
+[00:27:27] how many people, a million people were laid off. Well, they're home. They don't have money.
+[00:27:34] They can't afford really to go out to the movies or any other entertainment. So they're going to,
+[00:27:39] Netflix subscriptions are going to go up because of that. As if institutions haven't thought of that
+[00:27:46] shit. As if that's not already priced in, I would sit there when I'm in the beginning thinking,
+[00:27:53] I was smarter than all of them. They have hundreds of millions of dollars in their
+[00:27:57] research departments, but no, no, I knew something that they didn't think of. They're going to
+[00:28:03] call up, no, no, oh wait, Vinny from LA has an idea. But they fucking knew that, right? You very
+[00:28:10] rarely will come up with something, a rationalization that they haven't thought of already. That's what
+[00:28:15] the idea of being priced in is. And that's why price action is so important because all that
+[00:28:22] matters is what are institutions doing. Yes, retail traders have a bigger impact on the market
+[00:28:27] today than they did five, 10 years ago. But institutions still move the market and you want
+[00:28:34] to be on the side of the institution. So when I finally figured out, right, and when I started
+[00:28:41] learning and when I hooked up with Pete and sort of seeing what he was doing with real
+[00:28:48] relative strength, and then I found the real day trading on Reddit. Because I realized, okay,
+[00:28:55] I got it. I've now been consistently profitable for whatever it was when I started it over two
+[00:29:01] year, year and a half straight. And everyone else out there is losing all their money. And all these
+[00:29:08] other subs and all the other YouTube channels, they're all trying to sell people the shit that
+[00:29:15] doesn't work. So if you're all right, I don't need their money. I want to take money from
+[00:29:20] people who have money. Most people who are trading or who are trying to learn how to trade or paying
+[00:29:27] money for a stupid three bar method, how to scalp low floaters. Those are the people that
+[00:29:34] need money the most. I don't want to take their money. I want to take the rich fuckers money
+[00:29:39] who has way too much money and is sitting around playing on the market. So that's why I
+[00:29:46] started the sub real day trading to help maybe teach people, look, you're doing it wrong.
+[00:29:52] This is how you should be doing it. Stop the fucking scalping. Stop the out of the money calls
+[00:29:57] and the out of the money puts. Go buy a fucking scratch off ticket or go to Vegas,
+[00:30:00] you'll have more fun. Don't do that shit. This is how you should trade if you want to consistently
+[00:30:07] make money. So what really turned your trading around from losing to becoming profitable? Was
+[00:30:14] it more the strategy or more the mindsets or just the time in the market experience? What really
+[00:30:23] I said about a 90% mindset that it was realizing when gambling was gambling.
+[00:30:30] And a lot of times it was simply saying, I'm gambling, not trying to justify
+[00:30:36] a trade that's clearly a gamble. Just admit it. You're gambling here. This is a gamble.
+[00:30:41] If you just eliminate all the stupid shit from your trading that has no real justification,
+[00:30:49] I'm talking out of the money calls and puts. I'm talking counter trend trading. Every
+[00:30:53] time you short something that is up on the day, every time you go long something that is down
+[00:30:58] on the day because you feel like it's already dropped too much. It's certain to bounce.
+[00:31:03] Every time you did all of that shit, you went against the market.
+[00:31:10] That would probably cover about 70% of your losses, all that stupid shit. And if what you're
+[00:31:16] left with are defensible trades, I took this trade because on the daily chart, it's not extended.
+[00:31:24] It's above all of its SMAs. It's above its technical indicators. It's strong, relatively
+[00:31:30] strong against the market. When I say market, I'll speak of spy. Spy is the proxy for the
+[00:31:38] market. It's strong relative to spy. It's got all these things ticked off. And that becomes the bulk
+[00:31:45] of your trading. Then you'll start seeing a dramatic shift. If you start going into things
+[00:31:53] without confirmation, too many people try to front run shit, going along before it's confirmed
+[00:31:59] because everyone's afraid of missing the move. Yeah, you're going to miss the fucking move.
+[00:32:04] A lot of it. What you're looking for is the sprap. The institution gets the move. Sorry,
+[00:32:09] they do. JP Morgan will get 90% of that move. But guess what? That 10% of the move you can make
+[00:32:15] a damn good living off of. So if you see something break through the SMA and you're like,
+[00:32:21] oh, now I want to go long, make sure it closes above the SMA. In fact, if you want to be real
+[00:32:25] conservative, make sure it opens above it the next day, then go long. Did you miss a lot
+[00:32:30] of that move? Sure. But you also miss around 90% of the time you're going to get your ass kicked.
+[00:32:36] So if it's 90% for you of the mindset, how, I mean, how did you overcome it? I mean,
+[00:32:43] how long did it take? And because I'm going through that right now and there are days when
+[00:32:49] I'm like, oh yeah, I'm doing much better. And then like today, like I told you earlier,
+[00:32:54] I just completely didn't follow my rules. Everyone's rules might be different,
+[00:32:58] but I knew better not to not have a stop for me. And I did it anyway. And I don't know,
+[00:33:05] like, why am I doing this? It's like, why? I know it's wrong. So it's such a challenge for me
+[00:33:12] sometimes. How did you overcome that part? You know, sometimes as I said earlier,
+[00:33:16] arrogance hurts and sometimes it helps. In the beginning it hurt, right? Because I went in
+[00:33:20] thinking I knew everything and I could do it. But where it helped was when you look around and
+[00:33:26] see whatever you try to do something, anything, the first thing you got to ask yourself is,
+[00:33:31] is it actually possible, right? Is it possible to be consistently profitable trading or is it just
+[00:33:37] a scam? And so when I looked around and set out and found out and looked in certain traders
+[00:33:44] and found not only, yes, they're saying it's possible, but I was able to confirm
+[00:33:50] that it's possible. I saw the trades. I saw that, you know, I was able to go back and look
+[00:33:55] over a year at their trades. That's why I post everything so people could see
+[00:33:59] that it is possible, that what I'm doing is provable and you can do it.
+[00:34:03] Once I found out that, yes, this can be done, then the arrogance helped because if it can be done,
+[00:34:11] no one's going to tell me I can't do it. There's obviously a way to do it. So
+[00:34:16] for me, that was the first step was realizing, like, if you wanted to play poker for a living,
+[00:34:22] the first thing you would do is say, are there people that can actually play poker for a living?
+[00:34:27] Or is it, if it's just pure gambling, there would be no way, right? No one is lucky enough
+[00:34:32] if it's pure gambling to be consistently profitable to make a living off of something,
+[00:34:37] right? There's just no way statistically to do it. But obviously there are poker players who do
+[00:34:42] make a living. So it's possible. If I were to say become a, want to become a professional
+[00:34:47] poker player, I would take that same mindset. I would be like, they're doing something right.
+[00:34:52] I'm not. What are they doing that I'm not doing? And a lot of the times it's adding to winners.
+[00:35:00] A lot of the times it's, if you look at the imbalance between their winners and their
+[00:35:03] losers, their winners are much bigger than their losers are, right? There's not a fear.
+[00:35:08] There's, we have the wrong type of fear because when our trades go against us,
+[00:35:14] we suddenly become super fucking hopeful. They're going to turn around.
+[00:35:19] But when our trades work, we suddenly become super fucking pessimistic that they're going to
+[00:35:25] reverse on us. If we actually became, if flip that and became hopeful when we're right
+[00:35:33] and pessimistic when we're wrong, that mind shift alone could change your entire trading game.
+[00:35:42] Because if you think about it, when you make a trade and it's working, you are right.
+[00:35:48] You're, you're, you're looked at and looked at it. You said, this is going to go up.
+[00:35:52] I'm taking a call or buying the stock. And it actually starts going up.
+[00:35:58] You were correct in your assessment. So why is it then that most traders become most afraid?
+[00:36:05] You were actually just proven right. And now you're most afraid
+[00:36:09] that it's going to turn against you. That's part of the key issue that traders have,
+[00:36:15] as well as, oh shit, I was wrong, but yet believing, oh, it's going to come back.
+[00:36:21] It's going to reverse. I'm holding it. Flip that. Just flip it around.
+[00:36:27] Yeah. So did journaling, did you journal to kind of help you see these things?
+[00:36:31] Yeah, I did. I used, I still do. I used trader's think as a journal. I mean,
+[00:36:37] there are plenty of journals out there. I just, I, I like it. It's uncomfortable with it.
+[00:36:41] I came away, I came up with the walk away analysis. I developed the walk away analysis,
+[00:36:47] which is the idea that if you take a look at all your trades and you say, okay,
+[00:36:54] what would happen if I held this five minutes longer, one hour longer, held it to the end
+[00:36:59] of the day, held it for two days, right? And you just entered in half or the system
+[00:37:04] will enter in what the price was five minutes after you closed it an hour after
+[00:37:07] you closed it, you could set any intervals you want. Chances are you will see that on most of your
+[00:37:14] winners, if you held them longer, right? And most of the, a lot of people come out to
+[00:37:19] my help my winners, like an hour and a half on average longer, my profit would have gone up 30,
+[00:37:24] 40%. And doing the walk away analysis is one thing that helps people with that mindset because
+[00:37:32] it shows them that ride those, if you ride those winners longer and just hold them sometimes even
+[00:37:39] for an hour, an hour and a half longer instead of jumping out the moment you hit a profit,
+[00:37:44] that alone will, will boost your, your PNL. So for the listeners, can you remind us of your,
+[00:37:54] like your bread and butter trading strategy, trading approach?
+[00:38:00] Yeah, it is. And one, the market comes first, right? So everything revolves around the market.
+[00:38:11] 75% of all stocks, whether they're in the index or not, will go with SPI. If SPI is up, 75%
+[00:38:18] of stocks in general will be up and 75% will be down if it's down, right? So you're looking
+[00:38:24] for days that aren't what we call in the, in the chatroom, low probability trading environments,
+[00:38:29] LPTE, we're looking for days that are trend days that have actual direction in the market. So the
+[00:38:35] market comes first. Then second is, is a stock relatively strong or relatively weak to the
+[00:38:44] market? In other words, if you look today at Google, right, now Google's still up 29 cents,
+[00:38:51] but the market is down almost 1% today. That's like an anchor around Google's legs,
+[00:38:58] pulling it down. It wants, Google wants to drop because the indexes are dropping.
+[00:39:04] But it's still green. In order for that to happen, and that's relative strength, that means
+[00:39:10] it's relatively strong to the market. In order for that to happen, institutions have to be
+[00:39:14] in their support in Google. They have to, retail traders can't give that type of volume.
+[00:39:19] So institutions are buying that stock even though they're selling the index and selling other stocks.
+[00:39:29] I want to be on the side of the institutions. So now I've now identified, okay, Google, Apple,
+[00:39:34] two stocks that if I wanted to go long today are relatively strong. So the next thing I would do
+[00:39:40] is look at the daily chart. That's the third step. I now look at the daily chart and see,
+[00:39:45] okay, Google's in is above all the SMAs. It's not overextended from the EMA-15. It's already had earnings,
+[00:39:53] gapped up on earnings, and has not yet gone back into that gap. It's held the gap,
+[00:39:59] and it's near its all-time high at 291.90 something. I like stocks that are by their
+[00:40:06] all-time high. Why? Because there's no bag holders above that number. There's nobody who,
+[00:40:12] once it hits, if it gets to 292, is going to be like, I'm selling because I've been holding this damn
+[00:40:17] thing for two years at this price, and I'm finally breaking even. Almost anyone who bought Google is
+[00:40:24] in profit right now. So unless there's a reason to take profit, Google will just continue to go up.
+[00:40:30] And so now I've identified a good daily chart, relative strength. The only thing I don't have
+[00:40:37] in my favor is the market. And this is where this market is different than the last time we spoke.
+[00:40:42] Because normally I would say, you need to wait and make sure that the market isn't going to continue
+[00:40:50] this downward trend. But what we've seen now for almost nine months straight is this market, I mean,
+[00:40:58] nuclear fucking war could be seen as bullish for this market right now. So this market,
+[00:41:03] nine times out of 10, is going to bounce back, is going to continue up.
+[00:41:09] I would be willing now to take along, or Apple or Google, where two years ago I'd say, I'd recommend,
+[00:41:14] wait, make sure that today's bull drop in the market doesn't continue. But now I'm looking
+[00:41:21] at the SMA 50 on spy as my line. And that line right now, for anyone listening, is at
+[00:41:29] 664.73 on spy. Spy needs to break that line for me to no longer want to take bullish links.
+[00:41:39] So that's kind of your mental stop? Yeah, that would be, I don't use hard stops unless
+[00:41:45] I'm going to go out and smoke a cigarette, I'm scalping something. So I use mental stops.
+[00:41:51] Do you trade one stock at a time or do you trade as a portfolio? Do you have like a group
+[00:41:56] of stocks? I have a group. I mean, I'm long gold right now. I am long Apple, long Oscar.
+[00:42:04] I am short Tesla. Again, I shorted it. I have a time spread on TTD. I have leap puts on spy
+[00:42:15] at the moment. And I have the one side of a call debit spread on Meta for a bounce back tomorrow.
+[00:42:22] So I have one, two, three, four, five, six, seven positions on. Okay, so you manage it like a portfolio.
+[00:42:32] That's a lot to manage. So I can see why like, when you trade like portfolio style,
+[00:42:39] and they're, I don't know if they're diversified enough, but like, I can see why some people can
+[00:42:45] be more comfortable like not having stops, you know, and because it's, there's a bunch of
+[00:42:50] different stocks in there. Is it, are you using straight out shares or are you using options on
+[00:42:58] all of them? Both. Well, you know, I have shares on Oscar, for example, but options on Apple.
+[00:43:07] I'll go both, you know, I had short 1000 shares on Tesla today. So I'll go back and forth on it.
+[00:43:14] And also in from 2023 to 2024, I was posting just insane sizes, you know, 10,000 shares of Tesla or
+[00:43:26] and what people obviously told me, you know, hey, yeah, it's great learning, but it's not very
+[00:43:32] relatable if you're taking 500 calls on Amazon, deep in the money calls. I get it. Okay. So
+[00:43:40] now I'm kind of running two different, I'm running an account where I'm saying, okay,
+[00:43:46] short 1000 shares on Tesla or I took 25 contracts on Apple, large enough that you can go in time
+[00:43:53] sales and still confirm my trade and see that it's there. But the larger trade, like if I do that,
+[00:43:59] sometimes I'll be like, okay, and I'm also going to do 250 contracts on Apple. I'm just doing
+[00:44:05] a separate account, not posting that one, but it's just a matter of proportion. So if I'm posting,
+[00:44:10] I did 25 calls, there are times I'll also do 250 calls, but I'm posting 25 that is confirmable
+[00:44:17] when you could see it. What's the average duration of, you know, your portfolio? Oh,
+[00:44:23] about a day. A day? Oh, okay. So, so you are a day trader? Yeah, yeah. I mean, tomorrow,
+[00:44:30] if you ask me tomorrow, all these positions will be different. Oh, so then how do you do,
+[00:44:35] how do you prepare for this? Is this all in the pre-market or are you doing this end of day for
+[00:44:39] the next day? Like how do you, what's your process? I wake up at 620 in the morning, 10
+[00:44:45] minutes before the market starts, drag myself out of the bed, quickly grab a cigarette, drink
+[00:44:51] coffee, run to my monitors here before the bell rings, look up at the charts and
+[00:45:00] start the day. That's how I prep now. And then I answer any messages and texts they get off of X
+[00:45:09] or in the chat room. Yeah, I mean, it used to be I would wake up way early and do all the pre-market
+[00:45:17] prep and see what was up pre-market and down pre-market and, you know what, it just,
+[00:45:24] it didn't help. But again, that's when I was in the, whenever I taught, when I was a professor,
+[00:45:31] when I was in the movie industry and I had to give presentations. And sometimes, for example, my
+[00:45:37] staff would make this like long power back then when we use PowerPoint presentations or whatever.
+[00:45:42] And I, even in like CinemaCon in Las Vegas, I would get up in a room and there'd be
+[00:45:47] 2,000, 3,000 people in there and I'd stand up on stage and give it. I always insisted
+[00:45:52] I'm not seeing the presentation beforehand. Not a word of it. I wanted to read it fresh
+[00:45:57] off the cuff as I was presenting it. I was never someone who did well with prepping anything.
+[00:46:05] So the fact that I basically sit in this chair a minute before the opening bell is probably
+[00:46:12] not something that people should look at and go, oh, I should do that. Just my style was to
+[00:46:19] never prep and I never, ever prep for anything. Yeah. So you just wait to see what the market does
+[00:46:26] and then you react. You don't have a trading plan going in. I mean, not like a structured one.
+[00:46:35] No. I'll look at, I'll quickly, the moment it opens, I'll look at Option Stalker over here
+[00:46:42] and I'll see what is relatively weak, relatively strong. I'll look at TC 1000 over here,
+[00:46:46] take a look at the charts and spy and I'll look at my positions. I should say, look at my overnight
+[00:46:52] positions first. Should I close any or not close any? And I'm more likely to close a short in-profit
+[00:47:01] faster than I will close along because of the way this market is right now.
+[00:47:07] And then I will start searching to see if there's anything that's really popping out at me
+[00:47:14] in terms of this is a good trade. I'll also check to see, for example, if I have too many longs,
+[00:47:22] I might look to see is there a good short I should put on? If I have too many shorts,
+[00:47:26] it might go, all right, I need to balance this and maybe put on or something that's
+[00:47:29] well, a decent long. So I'll do that to check. I love scalping Tesla, for example. I scalped
+[00:47:38] it three, four times today. It's an easy stock to scalp. And it's an easy stock, for example,
+[00:47:47] I fucked up when I short Tesla a week ago. It was around eight, nine days ago. And I
+[00:47:54] shorted at 436, 437. And I held that short all the way up to Tesla being at 470,
+[00:48:03] 1,000 shares of it. Because I knew the great thing about Tesla is that frigging stock
+[00:48:11] is going to stay in a range. Like right now, Tesla has gone between 400 and 470 since September.
+[00:48:25] You just have to wait that damn stock out. It's going to come back, right? So that's one I like
+[00:48:33] to scalp because I like stocks that I can hold on to. If it's not going in my direction, granted,
+[00:48:40] I prefer holding it long, any stock long, but you can hold on to a Tesla.
+[00:48:48] Yeah, it has a personality. I mean, every stock sounds like, yeah, it's very helpful to know the
+[00:48:53] personality of the stocks that you trade often. Yeah, like Oscar personality is an asshole. It's
+[00:48:59] a pain in the ass stock. Which stock is that? OSCR. So it's almost a pain in the ass stock. The
+[00:49:04] stock will be up $1.50 in the morning and down 40 cents before you close, every damn time.
+[00:49:12] So that's stocks a pain in the ass, but I do like the stock fundamentally.
+[00:49:16] Why not just trade? I used to want to do that, like look for relative strength to the spy
+[00:49:26] and drill down on stocks and scan. I just feel like it's so much work. And so I ended up just trading
+[00:49:35] either spy or QQQ. I just think it's simpler, but I don't know. What are your thoughts on that?
+[00:49:43] You can make a lot more money trading the stocks. And the simple reason for that is let's say I
+[00:49:51] go long a stock that is relatively strong, right? Let's say I go long. Let's say here on spy. Spies
+[00:50:00] at, you know, earlier today, spies at 673. And at the same point in time, Google is at 286.
+[00:50:12] Spies then drops down to 671-ish, 671-670. Because Google has relative strength, it drops down to 285.
+[00:50:29] So the buffer I got there, if I just went long spy at 673, I'd be down $3 a share
+[00:50:39] on that ETF. Going long Google at 286, because it's relatively strong, when spy dropped,
+[00:50:47] Google did not drop proportionally as much as spy did. So I'm only down $1 a share on Google,
+[00:50:55] and percentage-wise, I'm down less than I would be on spy. So it gives you that buffer now,
+[00:51:02] spy had gone up. Google would have gone up proportionally more than spy would have gone up.
+[00:51:09] So again, I'm making more on Google. I totally get that, yeah. And that's a beauty of
+[00:51:16] relative strength analysis, right? Yeah. And I'm not predicting, you know, spy is obviously
+[00:51:26] very new sensitive. It can move very quickly. So having that buffer, having the idea that
+[00:51:35] something is separately driving the stock is certainly gives you an advantage, because with
+[00:51:42] spy and like spy futures, you're just kind of predicting the direction on spy, which is always
+[00:51:49] a challenge. Now, do you use AI at all as part of your trading process in your analysis or
+[00:51:57] anything like that? No, not really. I mean, I will, if I'll use chat GPT every now and then,
+[00:52:07] I mean, look, I have trade exchange up, right? Which is just a new service. It gives you
+[00:52:15] all the news coming. But I will, if I see a big move on a stock, you know, let's say
+[00:52:22] Google jumps up $6, $7, whatever. And I'm looking at trade exchange and I see no news on that thing.
+[00:52:29] I can maybe search Twitter, X and just type and go and see if anything's there.
+[00:52:34] But I can also just go on chat GPT and say, hey, you know, why the hell is the stock up so much
+[00:52:39] today? Give me your, tell me what you find. I'll just as soon as use that as I'll use
+[00:52:46] searching on Twitter or using trade exchange, but I'll use it for like a new search,
+[00:52:52] but I won't use it for, hey, what should I go long or short? Or what do you think, or pasting in a
+[00:52:59] chart? It's just not there yet. It's not good enough yet. Yeah. I mean, I use it more and more
+[00:53:08] now every morning. How do you find it? I like it, especially I can like give it the, I look
+[00:53:14] at pre-market. So I give it, oh, you know, the, the current prices of key, you know, like Q, the NQ,
+[00:53:22] what is it? NQES, the dollar, the yields, all those key symbols. And it'll help kind of paint a picture
+[00:53:31] like what's going on compared to the day before. And then also what's going on in the news.
+[00:53:36] It's just kind of an overall, I don't like 100% rely on it, but it kind of gives me a picture
+[00:53:41] of what the sentiment might be for the, at least for the next hour or so. So I find it really,
+[00:53:47] really useful. What one do you use? I use, I pay the, the subscription. Or ChatGPT or 4.
+[00:53:56] ChatGPT 5? Or what is it? ChatGP 5, I think it's what I do.
+[00:53:59] Not the free version, because I feel like the free version, it's limited, but
+[00:54:03] and, and I even talk to it. Here's a great tip. I don't know if you use it,
+[00:54:09] do this or not with ChatGPT. I do it certainly because I also have a six-year-old son
+[00:54:15] who loves talking to it. But you can tell it to save things in long-term memory. So anything that
+[00:54:24] you want ChatGPT to remember. Now, it'll remember certain things over conversations, but it tends
+[00:54:31] to quickly forget over time certain things you might tell it. If you say, if you specifically
+[00:54:38] store this into long-term memory, update long-term memory with this, whether it's facts about you
+[00:54:45] or the way you like, you want it to report things on the market, it'll put it into its
+[00:54:51] long-term memory. And you can even say, this is, store this in long-term memory. When I say,
+[00:54:57] when I say trading mode, this is what I want. And you list out all the things it needs to do
+[00:55:04] when the moment you say trading mode. And that way in the morning, you can just open up and go,
+[00:55:08] enter trading mode. And it'll go right into it. So like with my six-year-old, I say,
+[00:55:13] enter kids mode. And it knows, explain things to him as if he's six years old, use examples that
+[00:55:20] a six-year-old would be able to understand, make it fun, make it, these are the things that my son
+[00:55:25] likes, these are the TV shows he likes, these are the stories that he likes, all that stored
+[00:55:30] into its long-term memory. So when I say, enter kids mode, it automatically knows how to speak,
+[00:55:36] what to talk about, and all of that. And when my son asks his questions, it knows how to interact.
+[00:55:42] Almost like a babysitter. You know, take what you can get.
+[00:55:48] But it is, the more you update long-term memory on these things, the better they become.
+[00:55:57] Yeah, I think that's a great idea. So then it can know your, it'll know your kind of your
+[00:56:01] trading style and your, your psychology and maybe even step in for accountability and things like that.
+[00:56:07] Right. Like also you can always, one thing that's definite, every, any dependent, no matter what,
+[00:56:12] whether using rock or whatever, hard, hard code into your long-term memory, stop glazing me.
+[00:56:19] Like. Pleasing me?
+[00:56:20] Okay.
+[00:56:21] Glazing. Like stop with the fantastic question.
+[00:56:24] Oh, yeah, yeah, yeah.
+[00:56:25] You hit right at the heart of the matter.
+[00:56:27] You really know this one. Like stop that fucking bullshit. You do not need
+[00:56:31] to fluffer me. Just be real.
+[00:56:34] Don't do it. Be real. And if you do like hard code that in, because that's just annoying crap that
+[00:56:39] it tries to do to get you more addicted to it. And if you hard code that in, it will,
+[00:56:45] not 100%, but will eliminate some of that shit.
+[00:56:48] Yeah. So is there any kind of trading style or approach that, that is outside of your
+[00:56:55] current, you know, the way you trade that you would love to explore more and,
+[00:57:00] in experiment?
+[00:57:02] I mean, I never, I mean, I, oh, wow. The Tesla board is approved, must pay package. And you
+[00:57:08] could see the response on Tesla actually is not that strong. It continues to
+[00:57:17] actually be down for the day, which means a lot of that was president.
+[00:57:21] I never got into crypto that much. I trade, obviously I trade MSTR and I'll trade coin
+[00:57:28] and all those stuff, but I never traded Bitcoin or Ethereum or any of those directly.
+[00:57:34] I've never played around with that.
+[00:57:39] And to be honest, it's not my area of expertise in my forte. And I have so many people asking
+[00:57:44] questions about it. And I have to say, I can send you to someone I know who knows,
+[00:57:49] but I don't know the fucking answer to that. But if I could go back in time to learn,
+[00:57:56] I probably would learn more about that world and trading in that world.
+[00:58:05] I liked, in one of the reasons I find this market frustrating, I mean, look, I'm up 62%
+[00:58:10] again, back, back frustrating, but frustrating still is I like things that have rules,
+[00:58:17] right? You can predict them. That's what tech, all traders are technical traders.
+[00:58:21] They all go about it different ways, but you're all trying to find levels of support
+[00:58:25] levels of resistance. What are those numbers and how is the stock going to react when it breaks
+[00:58:30] those numbers or not, right? Those are boundaries. What makes this market so difficult is there's
+[00:58:35] constant news, whether it's news coming from the administration or world news or company news,
+[00:58:44] that is just destroying those technical boundaries constantly, right? Where you think you can
+[00:58:51] rely on the strongest technical boundary there is just 200 SMA, and those get blown apart all the time
+[00:58:57] by a contentless, like a news story. Bitcoin and crypto have even less of that, of those boundaries,
+[00:59:08] right? That's what was difficult for me to get past, other than the almost cult-like belief,
+[00:59:17] and it's not that cult-like if it turns out to be correct, that, look, just grab, take
+[00:59:22] buy Bitcoin and it's just going to keep going up, right? There's a finite source, blah, blah, blah.
+[00:59:28] It's hard for me to trade something without looking at it and reading the price action
+[00:59:33] and having some relative certainty with some sort of edge that this shit is going to go
+[00:59:41] in this direction. Maybe AI can help with that. It certainly would be better than me.
+[00:59:49] I'll trade MSTR because it still follows some technicals a bit. It's been certainly
+[00:59:57] bearish, but what I won't do is look at MSTR and go, it's a 238 right now.
+[01:00:05] This thing used to be at 543. Bitcoin's over 100. I'm going to buy it. I see no
+[01:00:17] technical basis whatsoever to buy MSTR right now because what you can do is look at the chart and
+[01:00:25] go, okay, would that argument applied on October 29th when it was at 286? Yes, you would have gotten
+[01:00:34] crushed because it dropped $50 from there. Would have that argument applied back on October 10th
+[01:00:41] when it was at 323? Yeah, you could have said, oh, I'm buying it now. Look, it's dropped $250
+[01:00:46] from its high. It's got to come back up now. Bitcoin's at 115. You would have lost $194 a share
+[01:00:56] at that point. That argument of this thing has dropped so much. It's got to bounce back. I see
+[01:01:04] so many people posting, now's the time to buy MSTR. Good luck. There's nothing more behind that
+[01:01:13] than your gut. Going back to this irrational market, how do traders stay sane in this market
+[01:01:21] and help? What's the best way to approach it? Opiates, hydrocodone, Oxy, those help. Nicotine
+[01:01:37] good, caffeine good. If you can somehow realize and look at it and just play the price action,
+[01:01:53] which is much easier said than done, you're going to be a lot more sane. If you look at it today
+[01:01:58] and you're like, today is down. Today, I am going to day trade short. I'm going to try to be in
+[01:02:05] cash by the end of the day because I know these trends don't seem to continue and it might be up
+[01:02:10] tomorrow. Great. You'll stay sane doing that. If you start going, I'm not going to go long here
+[01:02:19] because this market's going to implode, then you're just going to keep getting frustrated.
+[01:02:25] Every single day, you're going to look at it and go, well, I missed it. I missed it. I missed
+[01:02:29] it. There are people who are looking at this and going, I bought Leap Shorts way back and now
+[01:02:39] they're a hedge. I have them as a hedge. That is another way to deal with it. Have yourself a hedge.
+[01:02:46] Go long, play the market, go in the direction, but if you're that freaking worried about an
+[01:02:51] implosion, keep a hedge there. Buy some spy Leap Puts. That way if it drops, okay, well,
+[01:02:59] we should have Leap Puts are going to print. That's another way, but if you keep looking
+[01:03:05] and waiting for a black swan event, because look, shit doesn't make sense right now.
+[01:03:13] Everyone knows. Anyone who goes to the fucking store knows how much prices are up. I don't give
+[01:03:18] a shit what the CPI says. I know how much it costs right now for a person who goes shopping
+[01:03:25] and get groceries for a week or take an Uber somewhere or get DoorDash. It's astronomically
+[01:03:34] expensive. All that shit is expensive. Housing, rent is expensive. You just compared to five years
+[01:03:42] ago where wages have not gone up proportional to that, which means people are more in debt.
+[01:03:50] So that shit doesn't make sense. Tariffs don't make fucking sense. None of that makes any sense
+[01:03:56] because someone is paying that bill. Either the company is paying that bill because it's a tax on
+[01:04:01] the company or the government, in which case not passing it on to consumers, but then that
+[01:04:07] will show up in their earnings as gross margins drop, or consumers are paying that bill if it's
+[01:04:12] being passed along to them. It's not a political thing. It's a simple economic thing.
+[01:04:22] If there's a 50% tariff on China, then Microsoft is an American company that buys the glass for
+[01:04:32] China for their hardware. They pay $200 million a year for that. They're now a 50% tariff.
+[01:04:41] They're still paying $200 million a year for that, but now they're paying $100 million to the US
+[01:04:45] government as part of that tariff. That comes from Microsoft. It doesn't come from China.
+[01:04:48] It doesn't come from anywhere else. It comes from the company.
+[01:04:53] Now, how are they going to make up that $100 million? They're either going to charge
+[01:04:56] more for that product or they're going to eat it, and their margins will show it.
+[01:05:01] Where is that money? That makes no fucking sense.
+[01:05:08] At the same time, saying the damn economy is going to do 4% growth next to the quarter.
+[01:05:14] Well, if it's going to do fucking 4% growth, why are you cutting rates?
+[01:05:18] You want inflation to go up more? That doesn't make sense. None of it makes sense.
+[01:05:23] PE ratios and companies that make $1 billion in revenue worth a half a trillion dollars.
+[01:05:33] Okay, but I know what the price action is, so I'm going to play it.
+[01:05:39] Nothing makes sense, but you know what makes sense? Trading.
+[01:05:43] Trading makes sense. Yes.
+[01:05:46] No, it's hard. Trading makes sense right now.
+[01:05:48] Yes, it can keep you sane, actually. Ironically, it can keep you sane because it doesn't matter
+[01:05:55] if Tesla right now should be worth $100, $4,000. What matters is right now it's worth $455.50.
+[01:06:04] The board has already announced the pay package agreement. It's still down $6 for the day.
+[01:06:13] It has not gone green. That tells me there's weakness in Tesla. If I were going to trade Tesla
+[01:06:21] right now, I would probably short it. The news is out. The volume is already drying up. Anybody
+[01:06:27] buying it because of the pay package it was clearly priced in, I would short Tesla right now at
+[01:06:34] $455.60. Mark that down $455.60 and we'll see where it is tomorrow.
+[01:06:39] I will. This is recorded. It is $116.20.25. I would short Tesla $455.60 and we'll
+[01:06:48] see where it is in the morning. I know. We're a little over an hour. Do you have
+[01:06:54] a few more minutes or are you? Yeah, of course.
+[01:06:56] Oh, okay. Is there anything that you would love to talk about that I didn't ask?
+[01:07:02] Well, I mean, look, I'm going to be doing a podcast called Tradecraft to try to help people.
+[01:07:09] Tradecraft? Sorry, my dog here is being a little...
+[01:07:13] Oh, my dog too. My dog. I locked him out. Oh, my God. He's the dopiest,
+[01:07:20] like, frigging golden retriever in history. Oh, you have a golden... I have a mix.
+[01:07:25] Yeah. Here you go. Here, I'll show you.
+[01:07:28] Oh, how cute. There he is, Ryder. My son named him after the Paw Patrol Ryder.
+[01:07:38] But yeah, he's not a very smart golden retriever, but it's okay.
+[01:07:42] But he's cute. I mean, it's hard to do this alone. It's why I do things like plug that
+[01:07:52] Pete's thing, because what you want to do as a trader is you want to treat it as a career.
+[01:07:59] You want to realize the time it takes to do it, the difficulty that there is involved in it,
+[01:08:07] and having a community around you certainly helps, having guidance certainly helps,
+[01:08:12] but it's sort of like you have to repair yourself like you're going to college,
+[01:08:17] like you're going to go into class, you're going to learn, and you're not going to just jump in
+[01:08:23] and make money as a lawyer or a doctor without first going through the process of getting there.
+[01:08:29] And there's a good reason for that. And two thinkorswims credit and all the other... I like
+[01:08:35] thinkorswim on this for this more than the other brokers, but they all have some version of paper
+[01:08:41] trading. Paper trading particularly if you're able to get it with live quotes is a fantastic way to
+[01:08:48] train, because it allows you to do the trades, to journal your trades, and yes, there is an emotional
+[01:08:57] element that's missing because it's not real money at stake. But one thing about when I put
+[01:09:06] together, like these are the milestones, be successful, have a win rate of 75%, profit factor,
+[01:09:13] two to one, et cetera, et cetera, before you progress to actual money, go to that, go to
+[01:09:18] one share and so on, is if you're able to do that and you look back at your journals and you go,
+[01:09:26] okay, I've done 500 trades over the last six months, whatever, there helps your mindset
+[01:09:32] to be able to look and say this trade has been successful 80% of the time.
+[01:09:38] Like if I did a bullish put spread where my short strike has at least two levels of hard support
+[01:09:46] above it, right? So bullish put spread out of the money, I'm basically saying I'm going like,
+[01:09:53] if I were to do it on even like Tesla right now, and I went out to November 21st and I
+[01:10:02] sold the 400 and puts and bought the 395 puts for a dollar credit. Okay, so I need Tesla to stay above
+[01:10:20] 400, which gives me two good lines of support. I have the 50 SMA and I have a trend line coming
+[01:10:29] off of the bottom of 9, 15's candle, the gap up candle. So I have these two level
+[01:10:34] support, so in order for that trade to be in jeopardy, I had to break through the 400
+[01:10:39] and break through the 395 level, right? Those type of trades, if it's set up correctly,
+[01:10:45] have around an 87 to 92% win rate. We did it once and we did like over 400, like 370 of them
+[01:10:53] and it was 91.4% successful. Knowing that and putting that trade on, that helps your mindset
+[01:11:02] because you know, okay, even if this Tesla gets in trouble, I know that 91% of the time,
+[01:11:08] this type of trade works out. That type of repetition and doing that really can help
+[01:11:15] when people start to freak out when they see their trade turn against them or when they jump
+[01:11:21] into take profit. Having that evidentiary stuff in front of you, journaling helps with that,
+[01:11:28] doing walk away analysis helps with that, seeing if you hold on to a trade and profit longer helps
+[01:11:34] with that. It's the hardest thing in the world to add to a trade that's in profit. If you go
+[01:11:40] long something and if you're up a dollar and you want to take profit, but the best thing,
+[01:11:45] most times to do is to add to that trade and double your trade, but most people won't do it.
+[01:11:53] Because it's counterintuitive. Right.
+[01:11:58] It's like if you bet me on a baseball game and you're winning in the fourth inning, your team
+[01:12:07] is up five to two and I came to you and I said, would you like to double the bet right now?
+[01:12:12] You'd say yes every time. Every single time, if we bet $100 on a game and you're winning five to two
+[01:12:19] in the fourth inning, I'll give you a chance to double your bet right now, you'd say yes.
+[01:12:24] That's the same thing in trading. You bought Apple at $270, it's now at $272,
+[01:12:33] and you go, all right, you have a chance to double that bet, but now you go, no,
+[01:12:38] because it already went up $2, it's going to reverse. Well, that's because you think-
+[01:12:44] It's scarier. It's scarier.
+[01:12:50] And we remember with startling clarity, every single time those trades have reversed on us
+[01:12:56] and it leaves that scar. Yeah. Yes. I remember in the last interview you mentioned that you don't like
+[01:13:09] people. Do you still not like people? Never like people. I don't mind talking to large groups of
+[01:13:17] people because they're nobody's individual. No, I don't like people. And I don't expect them
+[01:13:24] to like me. I don't give a shit. I have very little use for most. I try to avoid people as much
+[01:13:33] as I can, but people ask them, well, if I don't like, well, I'm full of shit because if I don't
+[01:13:39] like people, why do I give away all my shit for free? I give away my Wiki for free, help people,
+[01:13:45] because I really don't like people who take advantage of other people.
+[01:13:50] Like, if you have someone who's broke and they're trying to make a better life for themselves and
+[01:13:55] their family, look, I don't like you. I probably would not want to sit down with you and have a
+[01:14:01] drink with you, but the person next to you who's trying to scam you out of money,
+[01:14:07] I'd love to fucking curb, stop that person because that person is disgusting, right? The
+[01:14:14] person who's trying to take advantage of people. And so when I look at trading in this world of trading,
+[01:14:20] I see so many people just trying to make a better life for themselves. Just,
+[01:14:26] they're either down in their luck or they're not going anywhere at work. Other than the
+[01:14:30] degenerate fucking gamblers out there, and there are plenty of those, but a lot of people
+[01:14:35] just want to get ahead. They want a little taste of something that everyone else seems to,
+[01:14:42] all these other people seem to be able to get millionaires and billionaires now. Millionaires
+[01:14:46] doesn't mean shit. Well, it means shit to people who aren't millionaires, I guess. But
+[01:14:51] all that, they want some of it and they have every right to want some of that. There's no
+[01:14:56] reason why they shouldn't. And they look at their trading and they go, I can do that. I can
+[01:15:01] become part of that. And what happens is they get preyed upon. Everyone jumps out of the
+[01:15:07] woodwork with their three bar men in this method and I can teach you this. Or I'm going to sit here
+[01:15:13] and give you advice on Reddit with a five page dissertation, even though I've never been fucking
+[01:15:18] profitable in my life. It doesn't matter. I'm still going to tell you. It's like getting
+[01:15:21] your relationship advice from the person divorced 10 times. Like get the fuck away from me.
+[01:15:26] All you're doing is hurting these people. And these people, of course, become disillusioned.
+[01:15:31] They become cynical. And so eventually they blame the market. Everything's rigged against me.
+[01:15:39] Look, it's not. Is it rigged? No. Are there unfair advantages to people who are wealthy?
+[01:15:45] Of course. I can call JPM or I know plenty of people much more. I can call JPM and get exotic
+[01:15:52] options. A person on E-Trade can't fucking do that. They can't get an exotic option.
+[01:15:58] They can't get the types of trades that these other people can. But by and large,
+[01:16:04] no, it's not rigged. No, they're not hunting your stop loss of your five shares. They don't give a
+[01:16:11] shit about your five. You're thinking someone in JPL or Goldman Sachs is sitting there going,
+[01:16:16] oh, look, Bob from Virginia, he's got a stop on there with his 10 shares. Let's go nail that
+[01:16:23] fucker. No, they don't give a shit. They could care less about the retail traders.
+[01:16:30] It's just a matter of these people have been burned so many times that, yeah, I get it.
+[01:16:38] You don't want to say, look, I got burned. So it's easy to blame everything else.
+[01:16:43] I noticed that just from my experience, people who say they don't like people,
+[01:16:47] they actually are the people who really care about people the most.
+[01:16:51] Well, I mean, I don't know if I care. I definitely care that people are assholes
+[01:16:58] and take advantage of other people. I don't want to sit down with them. I don't want to hear about
+[01:17:04] their life problems. I don't want to come on over and hang out. But you tell me that someone
+[01:17:13] is taking advantage of you. Yeah, I'll make it my business to make sure that I have a problem
+[01:17:20] with that person. Part of the reason why you created Real Day Trading, which I think is really
+[01:17:25] awesome, a very awesome community. It is. There are a lot of great mods there
+[01:17:31] that are doing good work because I know I've posted a lot there, but they've taken up a lot
+[01:17:37] of that. Yeah, that's the idea behind it to give people a place where they can actually learn
+[01:17:44] both day trading and swing trading as a business, as something that they can actually do for a living
+[01:17:50] and to avoid not just the scams, but the bad advice. A lot of people who are just well-meaning,
+[01:17:57] but look, dude, you shouldn't be giving people advice if you can't do it yourself.
+[01:18:04] Like, all these people saying, that was a bad advice. You need to be able to be profitable
+[01:18:12] to help other people. It's not a hard concept. Yeah. So have you moved closer to your goal of
+[01:18:21] going to Kansas, living in Kansas and chasing those tornadoes? Yeah, actually. I'm literally
+[01:18:27] waiting for my son to graduate from college from Berkeley because I want to be here during
+[01:18:33] the summers and all that. But when he's done, if I can get myself a nice little compound out there
+[01:18:43] and enjoy watching tornadoes as a center-front porch and then next neighbor is like five fucking
+[01:18:50] miles away. Yeah. I am 100% with that. I'm also good with any apocalyptic event that might be
+[01:18:59] coming our way. I always have the same delusion that everyone else does that I will survive in
+[01:19:03] apocalyptic demand. So great. I'm good with that too. Humanity might need a reset anyway.
+[01:19:10] But yeah, Kansas would be nice. As long as I can have a fiber optic instrument, I'm good.
+[01:19:19] In the meantime, you're chasing the tornadoes of the market.
+[01:19:21] So it is a storm and it is, I mean, there will be a drop and that SMA 50 is really your bell
+[01:19:34] weather, your tell-tale sign for it. So that's why I encourage everyone to really look at
+[01:19:39] everything else's noise unless that breaks. If that does break and breaks with volume
+[01:19:45] and there is a confirmation of that break, certainly the next day continues down,
+[01:19:50] that tells you that there is a correction starting to happen and that's what people
+[01:19:54] should look for. Until then, you're really looking at this back and forth that's going to go up and
+[01:20:01] down. You're talking on a daily timeframe? On a daily timeframe. So I look at the SMA 50,
+[01:20:09] SMA 100, SMA 200 on the daily chart because that is what institutions look at.
+[01:20:16] I like the EMA 15 on the daily chart. Others like the EMA 8, they're all fine. Just however long
+[01:20:23] you want the trend to be. Volume, obviously, and trend lines. Trend lines are your best friend.
+[01:20:32] Sadly, whenever we try teaching fucking trend lines and Algon lines,
+[01:20:39] like 75% of the people can't figure them out. They can't draw them correctly.
+[01:20:45] And then they end up using the wrong trend lines. So it's like, I don't even know what to do there.
+[01:20:50] I did a video on it. I tried explaining it. And then every time someone goes,
+[01:20:55] all right, I got it. And then they show me their trend line. It's like, oh my fucking god.
+[01:21:01] Okay. Very simple, Jack. You got it. I don't know what to tell you.
+[01:21:08] If you can't figure out how to draw a trend line, I don't know how much you want.
+[01:21:11] If you can figure them out, they're very, very useful to use because they are one thing that
+[01:21:20] institutions actually build Algos around. Yeah. Well, it was really nice chatting with you,
+[01:21:26] Vincent. So happy that you wanted to come back on the show. Yeah. Well, for those who want,
+[01:21:35] I know you don't like people, but for those who want to reach out to you, what's the best way
+[01:21:39] to? Three ways, really. I'm on X. You can message me on X. I respond to almost all messages unless
+[01:21:47] they're asking me for some promotion or something under real day trading. I am on Reddit, the real
+[01:21:55] day trading sub. You can go there. Or you can come to the one option chat room, which is Pete's
+[01:22:03] community. And that is O-N-E-Option.com. I think he has a thing where you get two weeks for you,
+[01:22:09] sign up. I'm in there every day from open to the market to end of market answering questions,
+[01:22:15] posting trades, talking to people. Those are the three ways to interact with me.
+[01:22:21] And I try to respond to everyone. The only thing that I would caution is if you could just go,
+[01:22:28] what do you think about a Google? Tell me what you like or don't like about it. Be like,
+[01:22:35] hey, I like that the daily chart on Google looks strong. It's relatively strong. It's above
+[01:22:40] SMAs. But I'm worried about going long right now. What do you think? I will answer that question
+[01:22:45] all day long in detail. But don't be lazy about the fucking shit. Don't be like, hey, Google
+[01:22:49] question mark. So I'm guessing you don't do one-on-one mentorship.
+[01:22:56] I once did that. I gave it away for charity and people bid on that. And I did a one-on-one
+[01:23:04] four hours spread over four weeks tutorial. I don't need the money for that. So why would I do it?
+[01:23:11] That's why I wrote. I mean, look, if someone reads the Wiki that I wrote,
+[01:23:15] like a 300 page trading guide, follows my trades and wants to DM back and forth with me
+[01:23:23] about some questions they have, I'll answer there. I'll talk to them. I mean, no problem. Like,
+[01:23:29] do you want to go on and chat with me on X or Reddit or whatever? Sure. We'll go back and forth.
+[01:23:37] I've had people be like, hey, I can't get over this gambling idea. I keep
+[01:23:43] leaning into like, how can I get through that? And there are people that I've
+[01:23:47] messaged back and forth for like weeks on end, helping them get over that. I don't know if you
+[01:23:54] call it mentoring, but I'm certainly not going to charge. Like that would be why would I charge
+[01:23:58] someone for that? Thanks so much, Vincent, again. Oh, of course. It's been a pleasure. And I'm
+[01:24:04] sure we will talk again soon. You've reached the end of this episode of Chat with Traders.
+[01:24:11] But rest assured, there are more episodes loaded with real market insight and zero hype
+[01:24:17] on the ways soon. So to stay updated with each great new release, subscribe to the podcast
+[01:24:22] and iTunes. And we'd love it if you'd leave a rating and review. We'll catch you next time on Chat with Traders.

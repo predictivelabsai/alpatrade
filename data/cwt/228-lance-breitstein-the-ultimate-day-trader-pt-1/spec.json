@@ -1,0 +1,32 @@
+{
+  "trader": "Lance Breitstein",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Method is discretionary short-term equity day trading focused on intraday capitulation mean-reversion that cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "Intraday capitulation mean-reversion",
+  "style": "discretionary intraday",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "US equities"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "No concrete entry/stop/exit rules provided",
+      "assumption": "Purely conceptual discussion of capitulations"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "228",
+    "page_url": "https://chatwithtraders.com/episode/228-lance-breitstein-the-ultimate-day-trader-pt-1",
+    "youtube_url": "https://www.youtube.com/watch?v=a3wL0OktSrA"
+  }
+}

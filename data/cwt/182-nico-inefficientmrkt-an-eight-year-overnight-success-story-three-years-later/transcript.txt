@@ -1,0 +1,755 @@
+# 182: Nico, @InefficientMrkt – An Eight Year Overnight Success Story: Three Years Later
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT7169587292.mp3
+
+[00:00:00] Welcome, everybody. This is episode 182 of Chat with Traders. Joining me is returning
+[00:00:19] guest Niko, who goes by the handle of at inefficient MRKT on Twitter. Niko is an intraday equities
+[00:00:28] trader and has been for about 12 years now. His area of expertise lies in low-float micro-cap stocks,
+[00:00:35] now exclusively playing the short side of overextended moves. Niko and I spoke almost
+[00:00:42] exactly three years ago on episode 96, which was memorably titled an eight-year overnight success
+[00:00:48] story. Now picking up where we left off, we discuss what has been happening as of late.
+[00:00:53] The most notable development being after many years trading retail,
+[00:00:58] Niko has gone into proprietary trading with 7 points capital. Going one step further,
+[00:01:04] he has also established and heads up the firm's San Diego office. That's the first half of this
+[00:01:11] episode. During the second half, I asked Niko to share how he's evolved as a trader in
+[00:01:17] recent years. More specifically, what has changed, what remains the same, and what's been fine-tuned.
+[00:01:24] As always, links to episodes mentioned during this chat can be found in the show notes at
+[00:01:30] chatwithtraders.com slash 182. And by the way, as it has relevance to this episode,
+[00:01:37] I have a brilliant interview with Mike Mangieri, one of the managing partners of 7
+[00:01:42] points capital, coming soon too. Stay tuned for when it drops. Anyway, Niko's a great dude,
+[00:01:49] and it was really great to catch up with him, hearing about his continued progression. So,
+[00:01:54] I hope you'll enjoy this one. Here we go. Anyway, enough of that. How was your trading day?
+[00:02:03] It was good. It's been nice. The micros have been moving a lot more active lately. So,
+[00:02:09] it's been opportunities have been abound, which is really nice. I almost resigned myself to,
+[00:02:16] I think I need to take a serious look and learn how to trade big caps better or at all,
+[00:02:23] just because it was so dead for a while in the micro world. It was like feast or famine,
+[00:02:26] you know? SES came out of nowhere, was that last Friday, or the Friday before,
+[00:02:34] two Fridays ago, I think. And since then, there's been opportunities every day,
+[00:02:39] which has just been great, really nice. Yeah, I saw a few people talking about that one.
+[00:02:44] What was the story behind SES? I don't even know. I mean, I wasn't even trading that day. I took
+[00:02:52] that day off. I was traveling or I was in, no, I was already in Vegas for traders for a cause.
+[00:03:01] And I wasn't even, I wasn't even trying to trade. Oh, that's right. Yeah, we flew in on Thursday,
+[00:03:07] and then the next day was, we were just hanging out on Friday and just crazy, crazy runner.
+[00:03:15] A few guys from the firm were trading it with hard stops, fortunately. And when it just started
+[00:03:22] squeezing and turned into monster mode, it was just incredibly thin. And I don't know what the
+[00:03:31] state was if it was easy to borrow in all the usual houses across the street, but
+[00:03:38] it sure acted that way with a lot of short stuck. I mean, that thing went to the moon
+[00:03:41] in after hours, it seemed like, I think it went to 927, just wild, wild runner.
+[00:03:49] That's $27? No, $9.27, I think. Okay. And where did it start before things kind of heated up?
+[00:03:59] Let's see. Got my charts in front of me. Pretty low, right?
+[00:04:03] So that was day one. So day one, so the Thursday before it closed at $1.80,
+[00:04:09] and then Friday it opened at $3.37. It closed at $5.25, the regular session,
+[00:04:17] but I think it ripped all the way to $9.27 in after hours, which just shorts were just dead.
+[00:04:26] And then you got the blow off day two candle on Monday, where it opened at $10.15, and it had
+[00:04:34] a high at $26.10. And we were all speculating in Vegas, and we were all together that this is,
+[00:04:41] feast or famine. This is exactly what we were used to famine in the micros for all the opportunities.
+[00:04:48] There's just nothing. Nothing was amounting to much at all. And then right out of left field,
+[00:04:56] none of us were looking for it. We're all just hanging out in Vegas, man. SES came
+[00:05:00] with a vengeance and just sparked the entire micro market again, brought it back to life.
+[00:05:05] Man, that is such a wild move. You never see that sort of thing on ASX stocks.
+[00:05:12] No. Well, you say some pretty crazy things, but nothing to that extent. That's pretty wild.
+[00:05:21] I'm surprised you don't have people taking advantage of shorts that are stuck or cornering
+[00:05:28] a market. I mean, there's only so many ingredients you need to generate or create a tsunami of a move.
+[00:05:36] It's not too complex. I'm kind of surprised you don't... I mean, I'm not familiar with
+[00:05:44] your stock exchange, but I guess I just assumed that there's crazy things happening
+[00:05:50] in markets all over the world. Yeah, I don't know. A stock that goes from like a dollar to
+[00:05:59] or was it $26 something within a couple of days. That's something else.
+[00:06:07] Pretty intense, no doubt. I was also going to ask you, how was your Vegas trip?
+[00:06:12] Oh, it was great. It was great. It was really nice. Got to revisit with
+[00:06:17] cats and guys from the firm from seven points. My entire San Diego team went,
+[00:06:23] and they got to meet cats, meet Mike, and some other traders from the firm who flew in.
+[00:06:31] It was just really nice to hang out. We all have trading on the mind, but it's nice to
+[00:06:39] relax and enjoy each other's company and have a good time in Vegas also.
+[00:06:43] Good stuff, man. How long have you been with the firm now? Because this is something we're
+[00:06:48] going to get into. Sure. How long have you been with seven points now?
+[00:06:54] Officially, I think I started last April, once I finally got past all the licensing and
+[00:07:03] studying and taking the exams and all that stuff. Okay, cool. Let's get into this.
+[00:07:12] Last time we spoke, which was something like three years ago, you were a retail trader.
+[00:07:21] You were just trading your own account. You're trading for yourself from home.
+[00:07:25] Today, you're a proprietary trader and you're with seven points capital.
+[00:07:32] What sparked the move to go from retail to prop?
+[00:07:37] I guess it was a little short story that got me thinking, got me interested, but
+[00:07:43] when I was a retail trader, I never thought I'd ever want to trade someone else's money.
+[00:07:48] Why would I ever want to lose someone else's money other than my own?
+[00:07:52] It didn't make much sense to me, but last October, a year ago, in Vegas, I took my wife
+[00:08:01] and she was getting into trading, so she was really excited to go to all the talks and
+[00:08:05] stuff at Traders for a Cause and meet a bunch of other traders and that kind of thing.
+[00:08:14] Katz and I had been going a little bit back and forth over Twitter, and when we got to meet in
+[00:08:21] Vegas last year, we got a developing friendship going on. He brought a bunch of members from
+[00:08:31] the firm, a bunch of traders, and got to meet them all. Eventually, my wife was like,
+[00:08:37] hey, you notice everyone from seven points was just really nice, like no ego and just a pleasure
+[00:08:45] to be around and just really kind. I was like, yeah, you're right. I wasn't really focused on that,
+[00:08:51] but I think you're right. They just seemed like really good people.
+[00:08:55] So our friendship, Mike Katz and my friendship continued a bit. I guess if you want to rewind
+[00:09:03] a little bit to the point where everyone was talking about this Katz guy on Twitter and I was
+[00:09:09] like, I don't know who this guy is. Who is this person? What's all the buzz about this guy?
+[00:09:16] I had a couple of friends that were like, you don't know who Mike Katz is. Listen to his
+[00:09:19] travel trader. So I listened to it and I went, oh man, this guy sounds really good.
+[00:09:25] So fast forward a little bit. I got to meet him in Vegas and we just had a developing friendship.
+[00:09:30] We got along really well. And the four of us, he brought his wife and I brought mine one night.
+[00:09:37] We had dinner and we were just getting along and he was like,
+[00:09:42] you know, I was like, have you ever been to San Diego? And he said no. And I was like,
+[00:09:46] well, you should come, you know, San Diego's, San Diego's great. And he was like,
+[00:09:49] have you ever been to New York? And I was like, no, never. He was like, well, you should come.
+[00:09:53] And I was like, well, if I'm ever there, I'll, I'll stop by. Well, as luck had it,
+[00:10:01] I was there a few months later and I stopped by the firm to take a visit,
+[00:10:06] pop in for a visit. And as soon as I walked in, I just never seen anything like it before.
+[00:10:14] And I was like a kid in a candy store. I mean, one giant room with all these traders and all these
+[00:10:22] computers and all these monitors and a squawk box. And you could just feel the energy of the traders.
+[00:10:27] I mean, this is unlike anything I've ever experienced as a retail trader. This was like
+[00:10:32] some really exciting next level thing for me. You know, I was starting to get the gears
+[00:10:36] moving in my head and I was like, wow, you know, what's that like? That's got to be
+[00:10:40] an amazing thing to sit in a room with physically, physically in a room with other,
+[00:10:44] other traders and be able to connect with them and be there for them and support them. And
+[00:10:51] they're supporting you. I mean, you can't imagine every trader is having a great day
+[00:10:56] every day when they trade together. You're going to get some guys that aren't having
+[00:10:59] good days and some guys that are. So I was just kind of thinking about it all. And
+[00:11:04] we went to lunch and Mike invited someone who I never met before and his name is Mike Manjiri.
+[00:11:13] Turns out he's the other partner for the firm. And we just had a good lunch and we were just
+[00:11:18] getting to know each other more and conversations just grew and the opportunity arose and
+[00:11:26] it came to a point where I traded. When we did our first call, Aaron, I think he said
+[00:11:33] almost three years ago, I traded alone for many, many, many years. And
+[00:11:40] I think that was a large reason why it took me so long to reach consistent profitability,
+[00:11:52] consistency. And once I started hanging out on Twitter, everything from the last call that
+[00:11:58] we did three years ago, once I started getting social about it, I started connecting
+[00:12:02] with other traders on the internet and all that kind of thing. I was able to compare myself and
+[00:12:06] figure out what are they doing. I can do that. Why not? That kind of thing. And I don't know, man.
+[00:12:16] It was just something that I had to run with it. I had to find out. It was like,
+[00:12:23] this has to be some next level thing. It's one thing to be in a bunch of chat rooms on the
+[00:12:27] internet and you're surrounding yourself connecting with other traders over the
+[00:12:29] internet. But being in a room with other traders, that's a whole other dynamic, man. That's a game
+[00:12:37] changer. That's got to be extremely valuable. And it is. We're experiencing it here in the
+[00:12:45] San Diego office, but it's very different than trading alone in your head. It's incredibly
+[00:12:52] different. It's interesting that this wasn't something that you intentionally went out looking
+[00:12:59] for, you know, a firm that you could join. It was just something that kind of happened
+[00:13:05] somewhat naturally. So I think that was quite interesting.
+[00:13:09] Yeah. And I'll add a little bit to that. You know, Katz is someone who, when the
+[00:13:15] opportunity's there, the thesis is there, the setup's right. He's looking to put some
+[00:13:23] size on a trade. And I've met other traders last year from the firm, Riley, who runs the
+[00:13:31] Toronto office, young kid. And Stan, you've had Stan did a call and interview with you
+[00:13:39] on chat with traders. And I mean, these are guys that, you know, once I got to know,
+[00:13:45] I got to meet them last year and I got to know more about them and how they trade,
+[00:13:50] you know, I started realizing some of the, like the volume that Stan was trading. I mean,
+[00:13:54] that's stuff that I don't know anyone, I'm not sure I know anyone who trades retail that trades
+[00:14:01] that kind of volume. It's just so it was, you know, I was putting myself in a situation where
+[00:14:10] yeah, let's have an office, get some guys in here. We can all benefit from each other being
+[00:14:15] in the same room trading together. And it's also getting closer to traders in the firm that, you
+[00:14:22] know, I've been trading for I think 12 years now. And, you know, I want to, I'm not done growing
+[00:14:30] and learning, I'm not satisfied. And it's being, you know, surrounding yourself with people that
+[00:14:36] are kicking some ass. And, and yeah, so, you know, let me jump in there, Naiko, because that's
+[00:14:42] an interesting point you bring up. You know, you said you've met all the guys from the firm prior to
+[00:14:49] starting and they were all really nice and you clicked really well. But beyond that,
+[00:14:56] and you also sort of made the point that it wasn't something you were intentionally seeking out
+[00:15:01] was to join a firm. When the opportunity started to come about, did you see it as something
+[00:15:08] that could help you grow and sort of push your development as a trader even further?
+[00:15:15] Like, was there anything specific which made it clear to you that there could be an opportunity
+[00:15:21] here for you to level up? I think that might have been the main purpose for me jumping into the
+[00:15:31] the proper world. You know, I was, I was, I was really comfortable trading my retail accounts. I had no,
+[00:15:39] I was doing fine when you're alone and you're, I don't know how to describe it. You hit,
+[00:15:44] you hit certain plateaus and absolutely, you know, you go for making a thousand bucks a day
+[00:15:50] to 2000 bucks a day, 3000 bucks a day, you hit stretches, you make a 4000 bucks a day.
+[00:15:55] That's great. But when you're, you're trying to do that on a daily basis, it becomes increasingly
+[00:16:03] apparent to you when you're trying to size up in, in the right environment, in the right trades
+[00:16:09] that what your limitations are, the market will smack you right in the face and let you know,
+[00:16:16] it's like a giant mirror. And so having those, experiencing those limitations just
+[00:16:23] countless times, you know, and always hungry for that next level, you know, I was like,
+[00:16:29] wow, you know, here's some guys at this firm, they're trading obscene amounts of volume.
+[00:16:35] I mean, highly consistent. I mean, this is some stone cold killers. Like I want to be around,
+[00:16:41] I want to connect with these guys. I want to trade with these guys. I want to see what this
+[00:16:44] is about. So it definitely was a driving force for me to jump in there and give it a shot.
+[00:16:52] Give it a shot. You know, what do I have to lose?
+[00:16:55] Yeah. And when you're around that sort of thing and you see that consistently,
+[00:16:59] you know, day after day, it starts to normalize those kind of numbers. You know what I mean?
+[00:17:06] You kind of accept that as the new normal and it doesn't become,
+[00:17:10] it sort of seems more and reach for you, I guess, in many ways.
+[00:17:15] I think so. But you highlight a great point about trading. I mean,
+[00:17:19] the dollars, they're just digits on a screen. And you start, you start putting more size on and
+[00:17:25] you start adding a zero here and there. And I mean, it just turns into
+[00:17:29] crazy money. And, you know, my wife will make fun of me because we'll go out to dinner
+[00:17:34] and I'll quibble with a waitress because she's charging me for a drink. I'd never order to
+[00:17:38] never drink. You know, I'm like, hey, I didn't pay for this $5 drink. Can you take it off my bill?
+[00:17:44] She'll laugh at me because she's like, you'll quibble over $5. She's like,
+[00:17:48] but I'll watch you lose like, you know, two or three grand on a bad trade
+[00:17:52] and not even blink an eye. It's different. It's different. It's the principle, right?
+[00:17:57] Yeah. I mean, that's the principle, but it's also the point of view. I mean,
+[00:18:03] dollars just in the world are just so different than dollars in the market to me.
+[00:18:07] I think it's that way for a lot of traders too. Yeah. I think so.
+[00:18:11] So once you did start trading with the firm, you know, this is your first time as a prop trader now,
+[00:18:17] what were some of the biggest adjustments? Like what were some of the things you
+[00:18:22] maybe unexpected in some ways? What were the things that you had to get used to?
+[00:18:28] So I can't recall whether I started exclusively using hard stops before I came to seven points or
+[00:18:37] just as I, or once I got to seven points, but using hard stops coupled with having a daily lockout,
+[00:18:45] basically a collar around your neck that had me trading a lot differently than what I was
+[00:18:49] used to as a retail trader, extremely different. I could be sloppy as a retail trader and let
+[00:18:54] risk get away from me and maybe I'd go down more than I wanted to, but then maybe I'd make it
+[00:19:00] all back and a little bit more. You know, you could just, I got rewarded for trading sloppy
+[00:19:05] for so long, not all the time. I'm just saying, you know, everyone has their moments, right? Yeah.
+[00:19:10] But when I got to seven points, you know, it's different. It's very different trading someone
+[00:19:15] else's money, the firm capital. It's not like trading your money, my own money. It's nowhere
+[00:19:22] close to it. I think having a good trading process gets you there. I mean, that's what
+[00:19:27] it's all about is like, if you have a good trading process, you know, when you're
+[00:19:31] trading your own money, you join a firm and once you acclimate to trading firm capital,
+[00:19:40] you know, your process is going to rise above and you're going to, it'll be fine.
+[00:19:46] It'll be no different, but it takes some adjustment. It's definitely a lot different.
+[00:19:51] I definitely underestimated my perception of what I thought I'd be like to trade
+[00:19:58] someone else's money because it's a play on the emotions. It's for some people,
+[00:20:01] maybe they want to take on more risk because it's someone else's money. And for some other people,
+[00:20:05] maybe they want to take on less risk than their own money when they're trading someone
+[00:20:09] else's money because they don't want to lose someone else's money. But I knew I wanted to
+[00:20:13] be responsible and I knew for many, many years that I should probably start using hard stops
+[00:20:20] to keep my risk in check because, you know, as we all know as traders, you can trade
+[00:20:25] sloppy, you know, 50 times and you can get away with it 48 or 49 times. What is that one time that
+[00:20:32] the market won't let you get away with it and you'll just, it's just bad, just disaster, you know?
+[00:20:39] Yeah. I like how you point out that it took some adjusting for you to get comfortable with
+[00:20:46] trading someone else's money because often you hear people make like off the cuff comments
+[00:20:51] about how, oh, they're trading someone else's money, it doesn't matter if they lose. But
+[00:20:55] I think that some people perhaps struggle with that more than they do trading their own money.
+[00:21:02] You know, not everyone, everyone's obviously different. But there are some people who are
+[00:21:08] going to find it easier to trade with their own money and lose their own money as opposed to
+[00:21:11] someone else's. And then some people be completely the opposite. So it's not like it's the same
+[00:21:16] across the board. I was a little in the former camp. For me, I was thinking I wouldn't care
+[00:21:24] to risk someone else's money, but I ended up carrying way more than I thought I would.
+[00:21:27] Well, especially because you've done it for so long as well, like you've been trading
+[00:21:32] at home for what, like 10 years probably, 10, 11 years before you came over to the firm. So
+[00:21:38] that's just something it was really ingrained in you. I mean, when I was busy losing my money
+[00:21:43] as a retail trader, I didn't have anyone looking over my shoulder being like,
+[00:21:48] hey, we're watching what I'm doing. And so, yeah, you don't want to come off like you're a cowboy
+[00:21:55] to the firm or at least I don't. I want to come off like, I want to prove myself, prove my worth,
+[00:22:01] show my responsible, show them I know how to trade and focused on risk and
+[00:22:08] I'm focused on taking losses when I should. I don't want any disasters like I used to
+[00:22:13] do when I was a retail trader and having hard stops is really the simplest solutions of doing that.
+[00:22:20] You don't need to lose $30,000 on something like PTI. I mean, you just, you don't need
+[00:22:27] to be losing money like that. It's just, it's pointless. It's like, why let your risk get so
+[00:22:32] out of control just because you think you're going to be right in the end and you want to
+[00:22:36] see what happens in the trade. It's just a disaster waiting to happen. And that's the
+[00:22:40] issue. It's like, you'll get away with it 48, 49 times out of 50, but I don't know what the
+[00:22:45] status or 99 times out of 100, whatever it is, but it's that one time out of 50 or one time out
+[00:22:49] of 100, that'll just take you to the cleaners and send you down into the pits of despair
+[00:22:56] in your mental state. And then you got to crawl out of that one mental capital wise in
+[00:23:01] addition to whatever you lost, you know, trading capital wise. So I think anyways,
+[00:23:07] long answer to your question. Yeah, having hard stops, big adjustment for me and my
+[00:23:10] style of trading and also the daily lockout, which is a risk, a risk system of, you know,
+[00:23:16] once every trader's different, every trader's, you know, assigned a different amount of buying
+[00:23:21] power from the firm. They've got a different daily lockout number. And once you hit that,
+[00:23:26] once you're down that much net on the day realized and unrealized, you get a pop-up on
+[00:23:32] your platform that just says, eh, you're done. You messed up. Always another day to come back
+[00:23:39] and fight tomorrow. One of the other things I wanted to ask you around this is you'd been
+[00:23:45] so used to trading retail, once you started trading prop, were there any other greater
+[00:23:51] advantages or little tricks which became available to you, which gave you a great edge, a great
+[00:23:57] advantage? You know, those things could be, you know, I know routes are a big thing, like,
+[00:24:03] where you're routing your orders. Maybe there are some options which are available to you now,
+[00:24:09] which weren't when you were retail. I've never, in all the years that I've been trading,
+[00:24:15] when I got to seven points and I'm on the first day and I went and clicked the drop-down
+[00:24:21] of all to see all the choices where I could route my orders. I've never seen so many choices
+[00:24:24] in my life, in my career as a trader. So definitely a lot of options, you know, a lot
+[00:24:29] of edge to be had and where you send your orders in that kind of thing. I'm still learning a lot.
+[00:24:36] I still kind of have a simple mind, you know, coming from retail of when I'm providing,
+[00:24:41] I want to use this route and when I'm taking, I want to use this other route,
+[00:24:44] but there's a lot of advantages to that these traders and me included now have access to
+[00:24:52] inverse routes. And I mean, I'm learning a lot from Stan. You know, Stan's really
+[00:25:00] a really good resource for this kind of stuff. And I think he even touched on it or went into
+[00:25:05] some detail on it in his call with you. But, you know, when I was, for example,
+[00:25:11] when I was a retail trader, I knew of inverse routes, but I never understood
+[00:25:18] why, you know, why would anyone, why would anyone let me take their liquidity
+[00:25:26] and I could collect a rebate? I never understood it. The stuff like that, little questions like
+[00:25:33] that, little things I've noticed over the years and now I'm getting a little bit savvy to it,
+[00:25:39] but I still have a lot to learn. Okay. Are there any other advantages which
+[00:25:44] should just sort of come to the top of your mind? Being with a firm?
+[00:25:48] Yeah, like maybe the commissions as well or... The expenses are a great point. Seven points
+[00:25:54] doesn't charge any commissions. So zero commissions and all the rebates are
+[00:26:01] passed through and fees, ECN fees, etc. are passed through. So if you, you know,
+[00:26:07] you're sitting on the book all the time and you can make money on rebates and
+[00:26:12] it's really nice to not have to pay commissions. And I think that's a formula.
+[00:26:16] By the way, you take someone like Stan who might trade half a million or a million shares
+[00:26:20] in a day on some days, easy. I mean, good luck doing that when you're retail. That doesn't,
+[00:26:27] that's going to get really expensive really quickly. So there's, there's some edge to be had
+[00:26:32] in, in pushing some volume like that, you know, when you're not paying commissions and stuff
+[00:26:37] like that. Yeah, definitely. Yeah. So the next part, I guess, would be talking about how you've
+[00:26:46] set up this office in San Diego, which I think is really awesome. And I'd love to hear a bit more
+[00:26:51] about it. Yeah, just tell me a little bit about what you've set up there, how that sort of came
+[00:26:56] about. Yeah, sure. So we launched on September 3. What led up to that was, you know,
+[00:27:04] cats had a vision of having an office out on the West Coast. And the more we talked about it,
+[00:27:11] the more it just seemed like it could, it could work. And, and we were just both jumped into it.
+[00:27:16] And we, we launched on September 3. I mean, before that we had to find
+[00:27:23] some office space. So I went around the city looking for some office space,
+[00:27:28] the WeWorks and all those other kinds of places. And we settled on a, on a great spot here.
+[00:27:36] We're on, we're in UTC just on the outskirts of La Jolla, right by UC San Diego. And it's a great
+[00:27:43] spot. It's a comfy room. It's intimate. It's not, it's not the biggest, not the biggest room.
+[00:27:49] And we got four desks in here and had opened up, you know, for applications and had
+[00:27:59] tremendous response. I never thought that that many people, I just didn't know that many people
+[00:28:06] were interested or that many people would want to sit in a room together. And I just didn't know.
+[00:28:13] I also didn't have a gauge for how many traders are there actually in San Diego?
+[00:28:18] Or, you know, in Southern California, you know, it's tough out here. We're, we're West Coast. So
+[00:28:23] we're on, we're on California time. So, you know, if you're, if you're planning your trading day,
+[00:28:28] you know, market opens at 630 local time. So you got to be, you got to be up in
+[00:28:33] Adam in the, in the four AMs, you know, 430 or something, you know, at least give yourself
+[00:28:38] a good hour, hour and a half, if not two hours of prep, you know, plan your day,
+[00:28:43] see what you're, you know, you're going to attack all that kind of stuff. But
+[00:28:48] I was delighted. I couldn't believe how tremendous amount more applications than I ever,
+[00:28:54] ever could have dreamed of. So it was really nice. Got to, got to, I did a deep study.
+[00:29:01] Cats made it clear to me. It's, it's my office. He'll support me and guide me as much help as I
+[00:29:06] want. But I get to decide, you know, who's going to sit in a room with me all day.
+[00:29:13] And so having that many applicants, it was just wonderful because really got to all
+[00:29:20] spectrums, you know, all spectrums. I had guys that applying that saying they never placed a
+[00:29:26] trade before to guys applying that were very, very, very, very profitable. But it didn't
+[00:29:34] just come down to profit, profitability, you know, it's also a personality thing. It's got to
+[00:29:38] be the right fit. And I knew that coming into it because, you know, you could pick this most
+[00:29:44] badass superstar trader there is, but if he's got a ton of ego or she's got a ton of ego,
+[00:29:51] you got to ask yourself, is that someone I want to be sitting in a room with all day?
+[00:29:56] Probably not. At least not for me. So there is, there is definitely an interview process and,
+[00:30:02] you know, email back with some questions. So there's you and three others.
+[00:30:07] That's right. Currently. Okay. What was probably most challenging in setting this up? Like,
+[00:30:13] obviously it's something you've not done before. Yeah, what was most difficult about
+[00:30:17] getting it set up? Maybe even not even just the setup, but maybe on a day to day, like,
+[00:30:22] is there anything which has sort of been a little bit challenging about this whole thing?
+[00:30:26] I'm thinking.
+[00:30:30] I mean, don't, don't feel like you've got to make something up. I mean,
+[00:30:33] really, no, I wouldn't make anything up. I don't, it's, it's basically been a breeze.
+[00:30:39] I'll tell you what has been the most challenging was getting the licenses to do this, you know,
+[00:30:45] to run an office and, and all that stuff. The, the series 57 to, to be a licensed trader,
+[00:30:53] no longer retail professional traders that you can trade firm capital. And then I took it one
+[00:30:58] step further with the series 24 license to have my own office and, and so I could run the
+[00:31:05] office, that kind of thing that studying for those licenses. And I mean, that was probably the,
+[00:31:12] the biggest challenge. But, and that's because the firm has already done this before. This
+[00:31:17] isn't the first, you know, satellite office, seven points has, has launched. They've got Greg in,
+[00:31:25] in New Jersey, standing Fort Lauderdale, Riley in Toronto, and we just launched San Diego just
+[00:31:35] early September. So it's not their first rodeo. They had a lot of,
+[00:31:40] they, they done all this stuff before. So any challenges were easily, easily mitigated. They
+[00:31:47] already knew everything to do. Now the traders you have in the room or in the office there with you,
+[00:31:54] what's their kind of experience level like? The three guys, we've got two guys that are
+[00:32:03] kind of similar. One's definitely heavily trading micro in the micros like me.
+[00:32:08] The other one, another one is also, but also trading bigger names, you know,
+[00:32:13] big board names, bigger market names. And then there's another guy who's, who's trading,
+[00:32:20] I'd say almost exclusively large caps only. So you got a, you got a really nice mix,
+[00:32:26] a really nice blend. And, you know, each throughout the day, we're all,
+[00:32:31] you know, sometimes we're, some of us are trading in our heads, like I'll still
+[00:32:36] catch myself where I'm trading. And even though I got three guys right next to me,
+[00:32:42] you know, I'm extremely silent and I'm just really quiet and I'm kind of in my head.
+[00:32:46] And I have to catch myself in those moments to try and pull myself out of my head and
+[00:32:50] realize, Hey, I got like, I got a huge edge over like every other retail trader out there right
+[00:32:56] now. I got it, I got a team of guys right next to me. Like, you know, what are they
+[00:33:00] thinking about what I'm seeing? Or what do they think about this trade? Or,
+[00:33:04] or, you know, do they think a short is a long and am I nuts or, or what?
+[00:33:08] Yeah, it's probably nice that you've got a bit of a mix in there. Like you're not all doing the
+[00:33:12] exact same thing. Like sure, you're all trading equities, but you focus on slightly different
+[00:33:18] areas in that equity market. Definitely. I think that's, that was,
+[00:33:24] you know, it almost seemed like I did it on purpose. I wish I would have, but it just,
+[00:33:27] I went for personalities over, you know, when you put a, you know,
+[00:33:32] four traders in a, in a, in a room together, there's that's, that's a recipe for some
+[00:33:39] conflict I feel like, you know, if depending on the trade. So I was very selective. I wanted
+[00:33:44] to pick, it had to be the right guys. It just had to be the right fit. And I'm, I'm, I couldn't
+[00:33:49] be happier. These guys are, these guys are great. They're doing well and they're a pleasure to
+[00:33:55] be around. And I'm just really enjoying it. And I assume they are too.
+[00:33:59] Nice. Nice. That's really cool, man. I'm happy for you.
+[00:34:03] Thank you. What's, what's it like on a day-to-day there? Like you're there,
+[00:34:08] do you have some sort of processes or routines in place? Like, is there a pre-market meeting?
+[00:34:14] If so, what sort of things do you discuss during them? Is there an after hours,
+[00:34:18] like sort of reflection on the day? Can you talk a little bit about that?
+[00:34:23] Sure. So in the mornings, I'd say our mornings are pretty uniform. We're all, you know,
+[00:34:27] individually, at least going out there and sifting through what's available and seeing what,
+[00:34:33] you know, between all the headlines and between all the gappers and, you know, the different
+[00:34:38] size markets. You know, I think each one of us is basically putting together our own game plan
+[00:34:43] of what we're looking to do on market open. Two of the guys really seem to like trading,
+[00:34:48] you know, in pre-market. So they'll, they'll start pretty early. The guys get in at like
+[00:34:53] 5 a.m. art time, which is 8 a.m. New York time. So these guys are waking up, you know, at like
+[00:34:59] 4 30 in the morning or a little bit earlier to get into the office by 5. I roll in a little
+[00:35:04] late. I'm in at like 5 30 in the morning. Kind of the lazier one, but I got off 30 a.m. is light.
+[00:35:11] Well, yeah, I'd go in earlier. It's just having a family at home. I'm
+[00:35:15] staying up later than, you know, I, I just need to stay up late to do family stuff and do all that
+[00:35:21] stuff. So I roll in like 30 minutes later, but yeah, every morning we're basically putting our
+[00:35:26] plans together and sometimes these plans overlap and we're looking for, you know, to see what we
+[00:35:35] see. Like, what do you think of this PR? You know, I read it. It sounds like,
+[00:35:39] sounds like shit to me. It sounds like a bunch of nothing or, you know, sounds like it might
+[00:35:43] have merit or, you know, as you check out their balance sheet or do you see that,
+[00:35:48] that recent shelf or, you know, 44 filing, you know, we're just looking for, we're just kind of
+[00:35:55] sometimes alone, sometimes hunting together, forming our plans in the morning.
+[00:35:59] And like I said, sometimes those plans overlap. Sometimes they don't. And you asked about like
+[00:36:04] end of day, we're experimenting right now with like a trade review where we're at the end of the
+[00:36:10] day or maybe sometimes during a lull when the market gets slow. We are sharing our trades, you
+[00:36:18] know, someone will go first and we'll just share our chart executions and share our trades of what
+[00:36:23] we were thinking. Just kind of like, you know, put yourself out there and totally de-robe and just
+[00:36:32] open yourself, you know, to honesty, you know, from fresh perspective, maybe from
+[00:36:37] other traders that other guys that were in the same trades you were in or trading the same name
+[00:36:41] you were in, or just a fresh perspective from someone that wasn't even in the trade and had no,
+[00:36:47] had no skin in that name and, and just kind of get some feedback from them on what they
+[00:36:52] thought of your trades. And that can be a very, very lucrative thing to do, but
+[00:37:02] it's tough. It's, you know, it's tough because we, we sometimes we mess up. We do stupid things.
+[00:37:08] So it's putting yourself out there and sharing, you know, the great, the good, the bad and the
+[00:37:12] ugly and just seeing what people think, you know, it's just, I think the key of it all is
+[00:37:20] I'll kind of take it back to the hiring process, even though I was answering a different one
+[00:37:25] of your questions, but I really wanted to hire some guys that were hungry, that were hustlers,
+[00:37:34] that were happy individuals, you know, people I want to be around. And these are guys that are
+[00:37:40] growth-minded that they're consistent already or they're almost consistent, that kind of thing.
+[00:37:48] And let's get this going further. Let's grow together. Let's scale this up. You know what I mean?
+[00:37:56] We're trading the amount of capital that we're trading now is more than any of one of us
+[00:38:02] had access to individually or put together. I mean, it's, it's an opportunity to really
+[00:38:11] push, push yourself as, as an individual and, and push yourself as a team.
+[00:38:18] And, and really take it to the next level and really grow as a trader. And I mean, that's what
+[00:38:22] it's all about for me. That's why I had to just full speed ahead and just let's, let's build a
+[00:38:28] team in San Diego, you know, just like I, I had to, I'll just say one last thing about it, Aaron.
+[00:38:34] And that is like, I, I already had the dream job. Like I was, I was trading from home for
+[00:38:41] years and years and years and years. And to me, that's the best thing in the world. It was for a
+[00:38:48] very long time. Nothing's better. Nothing's better than being a full-time trader trading from home
+[00:38:54] for a living. There's just nothing better is the best thing in the world. And I never thought
+[00:38:59] I would give it up, never in a million years, but I'm not surprised. I gave it up to
+[00:39:05] really put a team together and, you know, a team that wants to grow together, a team of guys that
+[00:39:14] are just, I don't know how else to say it, man, just happy and hungry and hustling,
+[00:39:19] you know, together every day and just really going out there to get it and,
+[00:39:23] and just really wants to, uh, to scale and really, really grow having a growth mindset,
+[00:39:29] that kind of stuff. I mean, you've definitely worked yourself into a really good
+[00:39:33] seat. You're in a really good position now. You've got, you know, plenty of resources around you.
+[00:39:39] You've kind of got everything behind you now to, to really sort of scale this up and,
+[00:39:43] and become, you know, a really big trader and also the people around you as well.
+[00:39:49] Definitely. And, you know, it's, it, it, it is the right formula to, I think, I mean,
+[00:39:56] at least for me coming from retail, from what I was doing as a retail trader,
+[00:40:01] you just take the net of everything as retail and the net of everything now for me as prop
+[00:40:06] and it's just the right formula to really push the pedal and excel, you know, and just really
+[00:40:13] see where you can take it, that kind of thing. I agree. Now, let's, let's talk about,
+[00:40:23] your trading. Let's get more specific about your trading.
+[00:40:26] We did the last podcast in 2016 and I'd love to ask you three questions about your trading
+[00:40:33] since then and how it's evolved. So I'd like to ask you what's changed and what stayed the same
+[00:40:40] and what you've fine-tuned. But, you know, let's, let's address each of those separately. So
+[00:40:45] first of all, what has changed since 2016? If anything, if nothing's changed, then
+[00:40:53] that's fine. But I'd love to just ask you that question. Oh, God, since, yeah, 2016,
+[00:41:00] I hit, you know, I've been able to push, push some size, you know, find, find consistency in using
+[00:41:09] much bigger size than I was using in 2016. I mean, that's the biggest, that's the first thing
+[00:41:13] that comes to mind. Okay. But obviously that comes with more risk. And so I've definitely been
+[00:41:21] taking on more risk since then, since, since 2016. But there's, there's been some setbacks
+[00:41:28] along the way, no doubt about it. You know, like I said, you know, just using hard stops. If I,
+[00:41:34] if I figured out how to just exclusively use hard stops years ago, man, I feel like I could have
+[00:41:40] saved a lot of money. But that's all right. You know, that's, I'm just fortunate for the
+[00:41:45] experience and, and I'm glad to be where I'm at now and using hard stops now.
+[00:41:51] Maybe I should just ask for some clarification around this, because it's come a few times now,
+[00:41:55] these hard stops. So what were you doing in the past? Did you just kind of have
+[00:41:59] an idea in your mind of, I want to stop out of this trade around this level?
+[00:42:04] Mental risk, exactly. No hard stop, just a mental stop and be like,
+[00:42:08] all right, if I, you know, my risk gets to this point, the problem is I'm scaling
+[00:42:12] as it's going against me, I'm getting bigger in the wrong direction.
+[00:42:16] You know, now I'm getting so big, I don't want to take the loss or take part of it.
+[00:42:20] My ego is involved. I'm invested. You know, it's got me and, you know, I'm waiting to see,
+[00:42:26] oh, I feel like if I stop out now, it's going to be at the, at the top
+[00:42:31] or the bottom and, you know, it'll reverse sharply. I don't want to, you know,
+[00:42:35] let's wait and see what happens. All those, all that kind of thinking just
+[00:42:40] kind of lends to the same, the same issue. And hard stops is, is a much, in my mind,
+[00:42:48] it's trading that way now is, is much more responsible. It's, it's much more respectable.
+[00:42:56] Before when I was retail, I could go, I could be down, you know, five or seven grand on the day
+[00:43:02] and then, you know, I might end the day up two grand. My wife comes home from work and she
+[00:43:09] just sees it on my face and she's like, oh, bad day. And I'm like, yeah. She's like, oh,
+[00:43:16] how bad. And I'm like, I mean, I try to like, I made, I made two grand, I made like a couple grand.
+[00:43:23] And she's like, well, why are you so mad? I don't get what, you know, I'm like,
+[00:43:26] because I tried, you know, I went down five or seven grand before, you know, to get there.
+[00:43:30] It's just, it's not sustainable. It's a terrible, terrible, terrible thing.
+[00:43:34] That's not good. That's a, that's a terrible, terrible process in my mind.
+[00:43:38] And that's very dangerous, very, very, very dangerous. So it's been a learning curve for
+[00:43:43] me to adopt hard stops. It takes a different approach.
+[00:43:48] Can I ask you how you think about stop placement? Like, where are you going to place these hard stops?
+[00:43:55] Yeah, that's a great, that's a great question. You know, I'm still trying to figure that answer
+[00:44:00] out myself. I feel like there's times where you pick a spot, you know, you might take a stand and be
+[00:44:06] like, this is it. I think this is the moment I'm going to size in right now. I'm going to get
+[00:44:12] really big right here. This is it right now. And you put your risk on, and I might put a hard stop
+[00:44:18] in there, but I got to put a really tight collar on it because if it reverses, you know, I'm so big,
+[00:44:23] I can't, I can't be trying to see what happens at that point. I got to be
+[00:44:26] taking some risk off the table there. Yeah, for me, it's just been tough to pick
+[00:44:31] hard, you know, spots because a lot of the times you'll get, you'll get lit up where a whole
+[00:44:36] bunch of stops are going off with yours. You know, you picked a stopping spot where
+[00:44:40] it's really popular with everyone else that's on the same side of the trade,
+[00:44:44] and you'll get some explosive moves out of it. I think a big part of, yeah, for me and my trading
+[00:44:49] is like anticipating where I think the average guy is going to stop out, right? Like where,
+[00:44:57] you know, where the guy, you know, the same guy that's in my side of the trade where he's
+[00:45:00] going to stop or this, or the average guy that's on the opposite side of my trade,
+[00:45:04] you know, if I'm short and he's long, where's he going to stop? And I'm just trying to find
+[00:45:07] those spots and really press on them when it's in my favor. And I think I've got,
+[00:45:15] I've got good odds that I can, I can take advantage and put some healthy risk on.
+[00:45:21] When you're using these hard stops, are you placing multiple hard stops at various levels?
+[00:45:28] Yeah, yeah. So yeah, there's certain routes that you're going to route to that
+[00:45:35] you might have some limitations to size. So you got to take that into account.
+[00:45:40] And also it's just once you start trading healthy size, you know, I'm not,
+[00:45:46] I'm not looking to take it all off in one shot. Because if you, you know, if it,
+[00:45:53] if it does, for example, if I'm short and it shoves and blows off and stops me out and does
+[00:45:59] a sharp reverse reversal, now, now I'm, I'm, I'm working in hate. I'm working in haste,
+[00:46:05] trying to get back right in, right back in that trade and put that size back on at lower prices,
+[00:46:10] which is even tougher if SSR is on. Right. Yeah. Yeah. So yeah, it's just,
+[00:46:15] it's, it's trying to pick the right spots, putting your risk in a, in the same spot that
+[00:46:19] everyone else is putting your risk on. You're just turning into a fish like everyone else.
+[00:46:23] You're just, they're going to, it doesn't take a genius to figure out where all the
+[00:46:26] stops are for all the shorts, you know, depending on what the pattern is or what the,
+[00:46:30] what the, the intraday chart looks like on the, on the name that you're trading,
+[00:46:34] especially if you got a whole bunch of houses on the street that have shares easy to borrow,
+[00:46:39] you know, and you know, everyone's bashing it on Twitter and there's a whole bunch of people
+[00:46:42] short. It's, it just takes a lot of common sense. You know, I was just trying to take
+[00:46:47] a bunch of pieces through the puzzle and put it together in a way that, that works for you
+[00:46:51] and gives you an advantage. You said that another thing which has changed since 2016
+[00:46:57] has been your ability to trade with larger size. Were there any tricks in being able to do so?
+[00:47:04] Because I know this is something that a lot of people find difficult to do is,
+[00:47:10] and I think we spoke about this a little bit earlier, is you kind of become comfortable with
+[00:47:15] certain risk or trading certain size, and it can be a little bit challenging to push that comfort
+[00:47:22] zone and begin to trade with, with more risk. So was there anything which you found helpful
+[00:47:29] and being able to get to that point? You know, it's funny. You basically said it,
+[00:47:33] when you get comfortable trading a certain size, I mean, that alone was enough motivation for
+[00:47:39] me to just keep pushing, going from being a consistently losing trader and just losing money
+[00:47:45] for years and years to finally, oh my God, I can make a hundred bucks every day with my eyes closed.
+[00:47:52] Well, if I can make a hundred bucks, I can make 200 bucks. Well, I can make 200 bucks,
+[00:47:56] I can make 400 bucks. And you start just challenging yourself, pressing, you know,
+[00:48:01] pressing yourself. Well, you just, the issue is you can't do too much too fast. You can't go
+[00:48:07] from making 500 bucks a day to deciding you're going to make 5000 bucks a day. It just doesn't,
+[00:48:13] at least for me, it didn't work like, you know, it doesn't work like that. You got to,
+[00:48:16] it's a progressive, it's a progressive growth, you know, process, if you will. If you,
+[00:48:24] I don't know, if you, if you're used, if you're familiar trading a thousand shares a day and
+[00:48:29] you could do it with your eyes closed and you're not, it's no big deal to you.
+[00:48:33] If you just put 10% more size on, if you put, go 1100 shares, you probably won't even notice
+[00:48:39] the difference. I mean, it's not that big a difference. You probably won't even care.
+[00:48:44] So I think having an incremental, you know, pressing the pedal when you're doing well
+[00:48:50] and then having the wisdom to lay off the pedal when you're in a drawdown,
+[00:48:55] or you're not doing so well, I think that's the way to do it. I think that's, I think
+[00:49:01] that's a great way to, to play in the markets and at least for, for me in my trading.
+[00:49:10] Yeah. I think what you just said there is actually really good advice. Well, actually,
+[00:49:16] I don't like using the word advice on this podcast, but a really good suggestion.
+[00:49:22] Yeah. No, no advice here.
+[00:49:25] Incremental steps when you're doing well, when you're not doing well,
+[00:49:30] having the, the ability to actually recognize that and take your foot off the gas,
+[00:49:35] when you start doing well again, then incremental steps, you know.
+[00:49:39] The market, yeah, the markets can be so generous sometimes. And if it's enough to make you feel
+[00:49:43] like a genius, but you just got to realize you're not, you got to, you know, trust in your process,
+[00:49:49] trust that, you know, it's just, you're just, you're just there. You're just,
+[00:49:54] you're just giving, you're just taking what is giving you. But if the, if the success is there,
+[00:49:59] if the results are there, like if you're on a hot streak, well, why not press more?
+[00:50:05] Why not risk more? I mean, as long as it's responsible, you know, that's, that's what I've
+[00:50:10] always, that definitely helped me break out of my limitations since we last spoke in 2016.
+[00:50:17] Who wants to, who wants to go around saying, yeah, I can make 250 bucks a day or I can make 500
+[00:50:22] bucks a day or even a thousand bucks a day with my eyes closed is, I mean, that's good money. I don't
+[00:50:28] want to sound like a, a dick or anything, but it's not your full potential is what you say. Yeah.
+[00:50:34] That's a great way to put it. What, you know, what, a lot of people say, why, you know,
+[00:50:39] what's the purpose of life or all this stuff? My, my, my answer is I really have no idea
+[00:50:45] what, why you're gonna say something really deep. Yeah. Well, I mean, I might get there,
+[00:50:49] but I'll, you know, I'll just briefly try, but it's like, I don't really know, but
+[00:50:54] I want to be, you know, I think you nailed it. Like your big, your best potential,
+[00:50:58] like why settle for anything less than the best you can be. And I think best is a moving target.
+[00:51:05] And I think there's always better, you know, it's, it's virtually impossible to put on a
+[00:51:10] perfect trade, virtually impossible. There's always something you can improve on.
+[00:51:14] And I think it's a lifelong journey. It's a lifelong love. You have to be passionate about it.
+[00:51:21] It's, it's just a, it's a, it's a requirement. If, if you're not passionate,
+[00:51:26] I, you're just never going to, you're going to, the market's just going to run you over
+[00:51:29] and you're not going to be able to pick yourself up after time, time and time again of getting
+[00:51:33] run over. I have really good trading conversations with my wife. I told you she's, or I don't
+[00:51:39] know if I told you, but anyway, she started trading lightly, you know, not like, not like me.
+[00:51:44] She's not a market, total market junkie yet, but she, she understands it. She, she totally gets it.
+[00:51:51] And, you know, I'll tell her, oh man, I had this, this trade and it was just like,
+[00:51:58] I saw it and I was seizing it. I put my size on. It was, it was going and then it started
+[00:52:04] going against me and I took some stops, but I did it and started fighting it and all this stuff. And
+[00:52:11] you know, she'll just, she's like this great, you know, she's like this great thing that always
+[00:52:15] tells me what I need to hear. And sometimes it's frustrating because I already know what I need
+[00:52:19] to hear, but it's just, it's a, it's a, it's a fantastic, you know, thing to have in your life.
+[00:52:26] You know, if your partner, if you will, is fully supportive of your, your passions.
+[00:52:30] And she'll just tell you, you know, like, well, why, why are you so attached to the idea, you know,
+[00:52:36] why be so attached to that trade? You're going to do this the rest of your life. And you go like,
+[00:52:41] let go of the outcome. And I'm like, I know, I know, I know I should know that, you know,
+[00:52:46] it's like, you get these repeated, what's the word, you know, repeated principles, ideas,
+[00:52:54] you know, things that tenants, things that you know for trading that,
+[00:53:01] but it's easy to forget them or some work and sometimes some don't and some other time is,
+[00:53:06] it's, you know, it's just really nice to get the reminders. So shout out to my wife. I love you.
+[00:53:12] So since 2016, what things about your trading have stayed the same?
+[00:53:19] Stayed the same. I still love just turd companies that run to the moon and go really big and go far.
+[00:53:33] That's still a big part of what I'm interested in. I love the micro markets, the micros,
+[00:53:40] just, I don't know, man, I'm just fascinated. You get these explosive moves
+[00:53:45] that you just can't get in these bigger names or you just don't see every day
+[00:53:49] in these bigger markets. I'm still highly attracted to them, even though they're extremely risky and
+[00:53:57] can be very, very dangerous. So you'd say that your nation, the market has remained the same
+[00:54:02] and the types of opportunities which you seek out have also remained the same?
+[00:54:07] I think so. Yeah, definitely. I think so. But the thing is, I've grown a lot in three years and
+[00:54:15] I'm not looking to get involved. I mean, I still get, you know, being a market timer is no easy
+[00:54:24] feat. So, you know, I can easily be early, but I'm much better now. I think being patient,
+[00:54:33] having to discipline to remain patient before I get into the trading, you know, I'm picking my spot.
+[00:54:41] Whereas before, you know, three years ago, I was seeing consistency, which was great. That's
+[00:54:48] outstanding. That showed me there was a light at the end of my long tunnel, but I was often too
+[00:54:55] early and I was off and I had mental risk. And I think, you know, for me in my trading, mental
+[00:55:00] risk is a disease. And I'm that guy that if I'm not using a hard stop and I'm using mental risk,
+[00:55:08] I'll take my stops what I'm supposed to most of the time, maybe even 80 or 90% of the time,
+[00:55:14] but that 20 or 10% of the time I don't, I'm going to just bury myself. I'm going to lose
+[00:55:21] a week or more, two weeks or more of, or maybe even a month's worth of hard work
+[00:55:25] of consistency, you know, daily consistently just grinding it out every day.
+[00:55:31] And I just, I feel like that's old Nico, man. That's like a former life. Like I don't,
+[00:55:38] I don't need to be that way anymore. That's, that's, and I'm certainly not looking
+[00:55:42] to do that with firm capital. I'm not trying to look like a, you know, a fool to my cats
+[00:55:47] in the team at all. One of the things you highlighted there was kind of having a bit
+[00:55:52] more patience and almost timing your entries a little better, which is maybe perhaps one
+[00:55:59] of the things you've fine tuned over the past three years. And this is one of the things
+[00:56:04] which really impresses me about you is when you post like, you know, some of your trades
+[00:56:11] on Twitter, which you plot your entries and exits, you know, how you, how you traded
+[00:56:16] a particular name, is just how well you actually time some of those entries.
+[00:56:22] You seem to get it, you know, you seem to just be getting in at optimal points. How do you,
+[00:56:31] obviously not in all cases, but, you know, when you get it right, you really do.
+[00:56:36] What are some of the ways which you have helped you to better time your entries? Like,
+[00:56:43] is there certain things you're looking for in the tape or, you know, do you have a rule of thumb for,
+[00:56:49] you know, how extended these stocks are? Or what helps you to better time your entries?
+[00:56:56] Sure. So back in 2016, around, around then, like I said, I was seeing consistency, but
+[00:57:02] I'd often be too early. And you start looking over your executions and you start going,
+[00:57:09] man, I really got squeezed pretty good on that one. And oh man, I got squeezed on that one again.
+[00:57:13] And, you know, you start saying that over and over and over again. You start looking at the data
+[00:57:17] and it's, the numbers don't lie. The stats are there. The data doesn't lie. And I found,
+[00:57:24] you know, God, I'm really early a lot of the time. If I would just remain patient,
+[00:57:29] there's a certain point where the chart is just begging you. It's just, it's like,
+[00:57:36] as though it's talking to you and it's like, Niko, right now, like of all the moments, right?
+[00:57:45] You've been staring at this thing all freaking day. You've been watching the tape all day long.
+[00:57:51] You know, you're being patient and you're like, I'm not going to get involved yet.
+[00:57:55] And I'm not saying I do this every day. I, you know, I, I slip up all the time,
+[00:57:59] but my best trades are definitely where I have the discipline to remain
+[00:58:04] patient and not get involved too early. And I'm waiting for that moment.
+[00:58:10] The reason that's such a huge edge is because that's where you can put size on.
+[00:58:16] So if you see the tides changing in the market that you're trading, if you see the shift,
+[00:58:24] the turn, so to speak, and you see, and you're going, wait a minute,
+[00:58:29] all these buyers that have longed all this volume all day long so far,
+[00:58:35] I'm pretty sure they're going to start selling. You know, I know if I was one of them,
+[00:58:40] I'd, I'd pretty sure I take that signal as a sell and I'd be looking for the exits.
+[00:58:45] If I'm not involved to that entire point to get there,
+[00:58:49] now I'm clear headed. That's a huge edge, huge edge. If I'm involved early on,
+[00:58:55] I'm focused on getting bent. I'm focused on, I'm in the red. I'm focused on my size. I'm trying
+[00:59:02] to get small, but I'm too big and it's going against me. I'm focused on losing money. I'm
+[00:59:07] focused on all this stuff. If I can avoid all that and just not get involved and go, you know what,
+[00:59:14] if this sets up, if this turns up into this, if it does that,
+[00:59:21] it will be a mega opportunity. Like the opportunity will show itself if it gets there.
+[00:59:28] You know, who knows? No one's got a crystal ball, but oftentimes you see wild things happening
+[00:59:36] and if you focus on, you know, I want to focus on being a market timer. I want to focus on
+[00:59:44] avoiding being early. I don't want to be involved. I don't want to have skin in that
+[00:59:48] trade. And like I said, I'm not doing this every day. Sometimes I'm, you know, sometimes I am,
+[00:59:53] sometimes I'm not. It's a moving target, but my best trades are when I have the discipline
+[00:59:58] to stay away until the tape in that chart is just begging me and I can't even help myself
+[01:00:06] and I'm just, I just get in there. I just, you know, you're just seizing the opportunity.
+[01:00:11] It's like something, it's like you've seen it so many times. So on a subconscious level that
+[01:00:20] you've seen it so many times on a conscious level that when you get back into that moment
+[01:00:25] and you're not involved, you have a clear head and you're just willing to go full risk on it
+[01:00:30] right there in that moment. I mean, that's because you're not even trying to scale
+[01:00:34] because you think that might be the turn. Those are the best ones. Those are the ones that
+[01:00:41] I'm not even saying they're perfect, but I mean, those, you know, nothing's perfect. You always
+[01:00:45] wish you had more size on when you're right and less size on when you're wrong. But
+[01:00:48] those are the trades that make being a market timer, I think, really challenging.
+[01:00:56] I know some people are going to listen to this and they're going to say, well,
+[01:00:59] how do I know if I'm too early?
+[01:01:01] It's like, it's one of those things you literally cannot even describe.
+[01:01:05] Like I could literally try to describe it for you, but I'm not sure that would have any
+[01:01:10] relevance to like, I mean, we all have different person. Like I won't even bother
+[01:01:17] trying to describe it. It's just all I can say is you will know. Like the chart
+[01:01:24] and the tape will just be screaming at you like now, now, now, now, now. Like it's like that.
+[01:01:33] It's this tiny, tiny, tiny window of time where if you got involved with the amount of size you
+[01:01:40] want to put on at any point before that, you'd be upside down and trying to figure your way out
+[01:01:45] and you'd be fighting the thing and you'd be or you'd be taking a ton of small lot paper cuts
+[01:01:50] on the way up. And before you know it, by the time the real opportunity came, you're already down
+[01:01:55] multiple more hours than you wanted to be. It's that small window of time staying
+[01:02:02] uninvolved. You're not involved. And then it's like, I don't, I just don't know how to describe it.
+[01:02:06] It's just the chart, the tape, it's like you see it in real time. And you're going now, now,
+[01:02:12] now, now, now, now. And a lot of the time in those like influx moments, it's a lot of the
+[01:02:18] time it's like these sharp reversals where a bunch of, a bunch of stops will go off.
+[01:02:23] And that'll help kind of the tsunami move, turn into a bigger tsunami. And if you pick your spots,
+[01:02:31] right? What I like to do when I pick these spots is I'll like to, what I call slip into them where
+[01:02:37] I'll, I'll basically stop my way into them, stop entry and get bigger with more stops
+[01:02:45] as it's going in my favor. And the other advantage to that is is
+[01:02:51] even though it's, you know, bringing my, you know, if I'm shorting it, it's bringing my
+[01:02:57] average down of my position. The great news is, and everyone wants the best average, I get it, but
+[01:03:03] the great news is, is price is going in my favor. So I'm only getting bigger
+[01:03:09] as, as prices going in, you know, the direction I wanted to go. And the fact that there's an influx
+[01:03:18] of stops helping create that, that explosive move just makes it even, even better. Because
+[01:03:26] those are the moves that really scare the longs, make them want to turn into sellers. That's
+[01:03:30] basically it. I totally understand your point in saying it. It's really difficult to describe
+[01:03:36] because I think it's, yeah, that's probably very true. It's, it's probably, you know,
+[01:03:41] one of those things which you've just learned from so many hours in front of the screen,
+[01:03:46] you know, screen time. You just stare at it for endless hours and hours and hours,
+[01:03:50] you know, weeks turn into months turn into years. And you just become, there's a point
+[01:03:55] where, you know, you're going, you know, you're turning blue in the face because you're
+[01:04:00] just staring at the stuff so long. But even if you don't think you're getting it on a conscious
+[01:04:05] level, I think it's still advantageous because I think there's a lot of power to be had by the,
+[01:04:12] you know, that the subconscious mind provides. And a lot of this stuff, it can be
+[01:04:18] pattern recognition. Like you just, you just see it over and over and over and over again.
+[01:04:23] And you go, wait a minute, last time I saw that, we got a really big move, really big move.
+[01:04:29] You know, that's the kind of trade I want. And if you can couple that kind of thinking
+[01:04:32] with a thesis, kind of before you get there to define the opportunity,
+[01:04:38] I, you know, I just think that's a recipe for success, man.
+[01:04:43] I guess the other side of this is being able to time your exits. Again, this is something which
+[01:04:49] I'm often quite impressed by is how will you do time your exits? How do you think about
+[01:04:54] sort of unwinding these trades? I think, you know, the tough part is knowing what trade
+[01:05:00] is a scalp? What am I looking to scalp? And what trade am I looking to put a position on?
+[01:05:06] And, you know, does this have a chance of fading all day? Or is this like something I think I'm
+[01:05:12] going to be able to hold a few hours? It's putting a lot of things together. And, you know,
+[01:05:17] I'm not always getting it right. You know, a lot of the time I'll end up piking something. And
+[01:05:22] at the end of the day, I'll just be like, damn, man, I can't believe that.
+[01:05:27] Like, I might have made 40 cents on the trade, but I could have made $1.40 per share or something. I
+[01:05:33] mean, it's just none of this is an exact science. But, you know, having repeat offenders and
+[01:05:40] understanding the environment of the micro movers, the micro market that we're in,
+[01:05:47] you know, sometimes we're in a micro market where these micro movers, they'll just,
+[01:05:53] they'll run and run and run. And maybe you get a continuation move on day two.
+[01:05:57] And maybe you don't even get a sell, you know, they just get, they run for days and you don't
+[01:06:00] really even get, sure, just get plowed through and run over and steamrolled until day three.
+[01:06:04] And then in other times, you'll have a micro market where, you know, they're,
+[01:06:08] they're pretty weak and, man, they can't even get a good day going. They'll get like a morning
+[01:06:13] gap in the push and then they'll end up fading for the rest of the day. Or maybe they'll
+[01:06:18] make it for a few hours in strength and then they'll end up fading the rest of the day.
+[01:06:22] So I'm trying to be in tune with what, you know, a lot of people that trade, a lot of traders that
+[01:06:28] trade big cap stocks, they're highly, highly, highly in tune with what, you know, if I'm trading
+[01:06:36] Apple, then if I was a big board trader and I'm trading Apple or Google or something,
+[01:06:42] I might be highly in tune with what the NASDAQ index is doing, right? Because it's like
+[01:06:47] birds of a feather flock together, that kind of thing. So normally the index leads,
+[01:06:51] or you get relative strength and weakness from one to the other, that kind of thing.
+[01:06:54] So I'm kind of taking that strategy or that type of thinking, if you will, and trying to apply it to
+[01:07:02] the micro markets. You know, what kind of environment are we in? Are we in an environment
+[01:07:07] where these things are, are able to get, you know, go really strong and big? If so,
+[01:07:12] I'm going to be reluctant to, maybe I'm just going to avoid day one, do my best to avoid and
+[01:07:17] not get involved on day one and just see if I can get it, if there's any opportunities on,
+[01:07:22] on day two, and just see if I can play it that way, or, or if we're in a really weak market
+[01:07:27] for micros, then in something gaps, maybe I'll, I'll, I'll be more inclined to be more aggressive
+[01:07:33] off the open or, or that kind of thing, something like that.
+[01:07:37] As you're kind of hinting to there, and as we spoke about right at the beginning,
+[01:07:41] you said that the micro market, the micro caps, that sector has been heating up a little bit lately.
+[01:07:50] Let's do one last question. We'll close it out here, but
+[01:07:55] for someone who's a newer trader, someone who's less experienced,
+[01:07:59] and who is getting involved in this area of the market, do you have any kind of suggestions
+[01:08:07] or any, any words of caution, things to look out for, what to be aware of with regard to
+[01:08:15] these particular types of plays? I guess what, what you can probably speak to is more to playing
+[01:08:20] the short side, but you know, I know there are traders who also participate in the long side
+[01:08:24] as well, but definitely, definitely. Yeah. What are your thoughts there?
+[01:08:29] Yeah. So I guess going from retail to professional, you know, I'm not, there's no advice, there's no
+[01:08:36] suggestions, none of that, but I can share what I did for me in my trading, you know, I was always
+[01:08:43] highly interested in micros. And before getting consistent, seeing consistency, I think keeping
+[01:08:50] your size small is, is, is a really big, was a really big thing for me, keeping my size small.
+[01:08:57] You know, if you go too big, too quick, if you get on the wrong side of something, especially,
+[01:09:02] you know, if you, a small account, I mean, it could just be detrimental.
+[01:09:05] And it's so easy. It's so, so, so easy on these things to get stuck and they can go
+[01:09:13] so much further than you think. And especially if you're like not using hard stops and you're
+[01:09:18] like a mental risk type of guy or girl trader, it can just take you to the cleaners, man.
+[01:09:23] You know, even if you're small, you get something like Tilray or something or I don't
+[01:09:27] know, like IGC, IGC was, you know, I think that thing went to like 14, 15 or 16 bucks from two,
+[01:09:33] two dollars. I mean, if you had a small account and you only had 2,000 shares at two bucks,
+[01:09:37] you're like, well, it already popped up 50%. I'll just wait for the fade and I'll be right
+[01:09:42] eventually. And you just got mental risk on it. You never eat your mental risk.
+[01:09:46] I mean, when that thing goes to the teens, if you got a small account, you're dead.
+[01:09:50] You know, kiss that account goodbye. So these animals, they tend to do things
+[01:09:57] that are just amazing, amazing, amazing, amazing. So be respectful. Don't think, you know,
+[01:10:06] I never want to press and I still do it, but my goal is I never want to press my
+[01:10:12] vision for a trade onto the market. You know what I mean? Like I want price to show me
+[01:10:17] whether I'm right or wrong. I want price to lead the way. And my goal is to not be
+[01:10:23] attached to the trade. But these, these micros, man, they are, it's a love hate thing.
+[01:10:31] You know, they're, they're the most beautiful thing ever. If you can nail them and you can
+[01:10:36] time them right. But if you can't, gotta be careful, gotta respect the risk, gotta love,
+[01:10:43] protect your capital. That's, that's, that's the number one thing.
+[01:10:46] Good stuff, man. Nice words of wisdom. Nico, you're on Twitter. Can you please
+[01:10:52] share your Twitter handle? Sure. It's a inefficient market. I think it's at,
+[01:10:58] here I'm pulling up right now. So I don't mess this up because I know it's like ones
+[01:11:02] without vowels or something. It's at inefficient MRKT. Okay. I'll repeat that. It's at inefficient
+[01:11:12] MRKT. And folks listening to this episode, I would encourage you to go back and listen to
+[01:11:20] the first podcast I did with Nico. This is of course the second one.
+[01:11:25] The first one you can find at chatwithtraders.com slash nine six. It was episode 96.
+[01:11:33] What, what are we on now? Or what? This would be episode 180 something.
+[01:11:38] Wow, man. You've been busy. Awesome. Well, don't forget it was three years ago.
+[01:11:44] Yeah, true. Yeah. And that the title of that previous episode, I think was, was a good one
+[01:11:52] and very fitting. And it was titled an eight year overnight success story. So that's right.
+[01:12:00] That's right. Yeah. Yeah. I think that sticks in some people's mind. Had a bunch of people
+[01:12:04] tell me they really liked that episode. So I think it resonated with, with many people. So
+[01:12:09] yeah, if you're listening to this, make sure you go back and listen to that episode as well
+[01:12:13] when you get a chance. Nico, I want to say absolute pleasure speaking to you again. I'm,
+[01:12:18] I'm really excited for you. And it's nice to, it's nice to catch up with traders who have had
+[01:12:23] on the podcast in the past and just sort of see how they've, you know, evolved and continue
+[01:12:28] to progress. So, you know, I love what you're doing. And yeah, of course, we'll keep in
+[01:12:34] touch. So yeah, thanks for doing this again. Hey, pleasure is all mine. I'm honored to be on
+[01:12:39] again. Thanks for all that you do for the community, man. You've created a tremendous resource for,
+[01:12:46] I mean, it's just tremendous. And I don't mean to sound like the president.
+[01:12:51] I appreciate it very much. Thank you. And that's a wrap.
+[01:12:57] You've reached the end of this episode of chat with traders, but rest assured,
+[01:13:01] there are more episodes loaded with real market insight and zero hype on the way soon.
+[01:13:08] So to stay updated with each great new release, subscribe to the podcast and iTunes.
+[01:13:13] And we'd love it if you'd leave a rating and review. We'll catch you next time on chat with traders.

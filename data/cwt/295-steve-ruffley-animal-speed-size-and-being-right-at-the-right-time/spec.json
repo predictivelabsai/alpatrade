@@ -1,0 +1,73 @@
+{
+  "trader": "Steve Ruffley",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Edge is purely intraday scalping/day trading (15min-8h) with speed/size on short timeframes and short bias; no daily-bar rules or US stock swing rules given.",
+  "template": "none",
+  "method_name": "Time-based intraday scalping",
+  "style": "price action volatility fade/follow",
+  "timeframe": "1-15min to daily close",
+  "universe": {
+    "description": "multiple instruments including bonds/indices via retail platform"
+  },
+  "setup": [
+    {
+      "rule": "look for volatility spike or breakout from range/narrative shift",
+      "quote": "I'm looking for the market to make a directional shift... something to break out of the trend",
+      "timestamp": "[00:28:31]"
+    },
+    {
+      "rule": "fade or follow based on two entry styles",
+      "quote": "I either follow the market or I fade what I see",
+      "timestamp": "[00:31:37]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "enter on price action to predetermined levels with size",
+      "quote": "I know if a market hits certain extremes based upon my levels",
+      "timestamp": "[01:00:39]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "mental/close-all button; no hard stops while watching",
+      "quote": "I don't put stops in cuz I'm always watching the markets",
+      "timestamp": "[00:51:51]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "take profit quickly on scalp; hold up to 8h on day trade",
+      "quote": "when I'm a scalper, I try and take the profit the first time it is offered to me",
+      "timestamp": "[00:29:03]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "use large size on short holds, smaller on longer holds; scale with account wins",
+      "quote": "the shorter the time I'm in for a trade, the bigger size I'm using",
+      "timestamp": "[00:29:34]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "ignore most news/narrative; watch price reaction only",
+      "quote": "I'm much more concerned about how the market reacts",
+      "timestamp": "[00:40:58]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "no mention of US stocks or daily bars",
+      "assumption": "method is futures/indices intraday only"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "295",
+    "page_url": "https://chatwithtraders.com/episode/295-steve-ruffley-animal-speed-size-and-being-right-at-the-right-time",
+    "youtube_url": "https://www.youtube.com/watch?v=CpWJ2Zn2GvM"
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "trader": "Chase Galbraith",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Story-driven swing on management change, cash backing and acquisition rumor with no concrete codable rules.",
+  "template": "none",
+  "method_name": "Rumor swing sell the news",
+  "style": "fundamental story-driven swing with tape reading",
+  "timeframe": "swing (2 months)",
+  "universe": {
+    "description": "Australian small-cap equities (sub-10 cent stocks)"
+  },
+  "setup": [
+    {
+      "rule": "Follow management with prior successful exit; watch for pivot to hot sector (battery minerals)",
+      "quote": "they refreshed the board and the management team and they appointed a guy by the name of fabian baker who he um sold uh he kept in resources",
+      "timestamp": "[00:02:37]"
+    },
+    {
+      "rule": "Large cash balance provides floor valuation",
+      "quote": "krm had a like a large cash balance i had 30 million dollars of cash sitting on their balance sheets",
+      "timestamp": "[00:06:44]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Accumulate in consolidation range above cash backing using limit orders and taking liquidity",
+      "quote": "i ended up re-buying when it reclaimed that 4.5 so that was my initial entry and then started adding through that four point four five to five range",
+      "timestamp": "[00:08:19]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Exit if breaks below cash backing (4.2-3.9)",
+      "quote": "i was looking to stop out in that 4.2 to 3.9 range",
+      "timestamp": "[00:09:20]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Sell into acquisition news on heavy tape (sell the news)",
+      "quote": "i actually sold half my position on that acquisition date just because that book felt really heavy",
+      "timestamp": "[00:20:20]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Size based on visible liquidity in order book to allow exit",
+      "quote": "the four million units i was pretty much it's all based on what what liquidity was in the book that i could sell",
+      "timestamp": "[00:13:29]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Transcript covers ASX small caps only; no US stock rules given",
+      "assumption": "Method is discretionary and not daily_testable on US stocks"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "227",
+    "page_url": "https://chatwithtraders.com/episode/227-chase-galbraith-trade-recap-swing-the-rumor-sell-the-news",
+    "youtube_url": "https://www.youtube.com/watch?v=lrQJi3V4214"
+  }
+}

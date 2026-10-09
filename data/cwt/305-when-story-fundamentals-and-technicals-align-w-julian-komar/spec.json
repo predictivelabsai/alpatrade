@@ -1,0 +1,84 @@
+{
+  "trader": "Julian Komar",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Concrete long-side daily-bar breakout rules on US momentum/growth stocks with market filter, patterns, and position sizing.",
+  "template": "breakout",
+  "method_name": "Momentum breakout swing",
+  "style": "breakout from flags/tight consolidations after 50-70% move",
+  "timeframe": "daily",
+  "universe": {
+    "description": "US stocks with institutional quality volume (5-100M+ daily dollar volume depending on theme maturity), RS rating >=90"
+  },
+  "setup": [
+    {
+      "rule": "High relative strength and accumulation on volume",
+      "quote": "relative strength so how performs a stock in comparison with the indices ... how is the the accumulation of a stock uh when you watch the volume",
+      "timestamp": "[00:10:33]"
+    },
+    {
+      "rule": "Big prior move then tight consolidation around EMA8/21",
+      "quote": "when when a stock makes a big move like 50 or 70% in a short period of time and then it get gets very tight and starts to consolidate around the exponential moving average 8 or exponential moving average 21",
+      "timestamp": "[00:42:12]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Breakout from flag, cup-handle or tight consolidation on volume",
+      "quote": "90% of my trades are breakouts from uh classical chart patterns",
+      "timestamp": "[00:43:46]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Tight stop implied by pattern; risk 0.5-1.5% per trade",
+      "quote": "instead of risking let's say 0.5 to to 1% of my trading capital I risk a little bit more like you know one to one and a half%",
+      "timestamp": "[00:57:55]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Partial or full exit on breakdown or profit target (unspecified)",
+      "quote": "I have some some rules when to take profits, when to enter a stock",
+      "timestamp": "[00:57:25]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "10-15% per position in good markets, 5-10% sideways, up to 20-25% high-conviction liquid names",
+      "quote": "in good market periods, I invest 10 to 15% in one position ... I can also go up to 20 20% position size. So Tesla as an example or Nvidia, I had last year I had a 25% position in Nvidia",
+      "timestamp": "[00:51:03]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Market trend model on MAs green + new highs + stocks above MA200",
+      "quote": "I'm I'm running my own market trend model ... based on moving averages. And when I see a good trend in the stock market, so when my market trend model switches to green, when I see that there are a lot of stocks reaching new highs and we have a higher number of stocks above the MA200",
+      "timestamp": "[00:41:09]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "No exact values for momentum_lookback_days, consolidation_days, consolidation_max_range_pct, trail_ma, partial_after_days, partial_frac, max_positions",
+      "assumption": "Use standard breakout template defaults where unspecified; focus on quoted 50-70% prior move and EMA8/21 consolidation"
+    }
+  ],
+  "params": {
+    "momentum_lookback_days": 0,
+    "momentum_min_pct": 50,
+    "consolidation_days": 0,
+    "consolidation_max_range_pct": 0,
+    "trail_ma": 20,
+    "partial_after_days": 0,
+    "partial_frac": 0,
+    "risk_per_trade_pct": 1,
+    "max_position_pct": 15,
+    "max_positions": 0
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "305",
+    "page_url": "https://chatwithtraders.com/episode/305-when-story-fundamentals-and-technicals-align-w-julian-komar",
+    "youtube_url": "https://www.youtube.com/watch?v=hWx_d6gAhPQ"
+  }
+}

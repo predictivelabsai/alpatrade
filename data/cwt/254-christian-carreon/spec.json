@@ -1,0 +1,88 @@
+{
+  "trader": "Christian Carreon",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Describes concrete rules-based breakout from consolidation zones around 50-day MA on daily timeframe for swing trades in US stocks.",
+  "template": "breakout",
+  "method_name": "Box breakout trend following",
+  "style": "rules-based trend-following breakout from consolidation",
+  "timeframe": "daily swing (also 5-min day trade)",
+  "universe": {
+    "description": "US stocks mainly technology sector; also E-mini futures"
+  },
+  "setup": [
+    {
+      "rule": "Identify rectangular consolidation zone (box) of 1 month or longer around flat 50-day MA",
+      "quote": "a month-long consolidation, which is one of the requirements for time... 50 MA box, which is a box that's surrounded by the 50-day moving average",
+      "timestamp": "[00:32:21]"
+    },
+    {
+      "rule": "Use TTM squeeze red for 3-4 week contraction confirming box",
+      "quote": "When you have these contractions take place, the TTM squeeze changes colors... Red being the most aggressive contraction... 30 days of a squeeze in price, you have a red squeeze indicator",
+      "timestamp": "[00:33:58]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Enter long on breakout above the box consolidation in direction of rising 50MA",
+      "quote": "it looks to enter at the break of that consolidation period. And it looks to participate in the trend... price will most likely move up out of it and continue higher",
+      "timestamp": "[00:27:08]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Stop below the box low or lower zone (e.g. 3920 in example)",
+      "quote": "it broke below it around 3920... you get short on a break of 3920... understanding of where our stops should be",
+      "timestamp": "[00:32:54]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Exit at next higher zone or target resistance",
+      "quote": "exit at the next zone above it... move from 4,100... to 4,300",
+      "timestamp": "[00:26:37]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Risk ~5% per trade on all-in A+ setups; can size up to all-in when conditions met",
+      "quote": "risk per trade is close to 4%... all-in trades set out to risk about 5% of his account value",
+      "timestamp": "[00:49:08]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Above key zone (e.g. 3900) participate in uptrends only; below stay cash or short",
+      "quote": "if the market gets above 3,900, I want to participate in uptrends. If the market gets below 3,900, I want to participate in downtrends or just stay in cash",
+      "timestamp": "[00:26:04]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Exact momentum_lookback_days, consolidation_max_range_pct, trail_ma not specified numerically",
+      "assumption": "Use 20-30 trading days for month-long box and 50MA as trend filter per quotes"
+    },
+    {
+      "issue": "Short-side rules mentioned but engine is long-only",
+      "assumption": "Focus only on long breakout rules"
+    }
+  ],
+  "params": {
+    "momentum_lookback_days": 20,
+    "momentum_min_pct": 0,
+    "consolidation_days": 20,
+    "consolidation_max_range_pct": 0,
+    "trail_ma": 50,
+    "partial_after_days": 0,
+    "partial_frac": 0,
+    "risk_per_trade_pct": 5,
+    "max_position_pct": 100,
+    "max_positions": 1
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "254",
+    "page_url": "https://chatwithtraders.com/episode/254-christian-carreon",
+    "youtube_url": "https://www.youtube.com/watch?v=5cyJWommOqE"
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "trader": "Ross Haber",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "CAN SLIM growth strategy with concrete rules for earnings, relative strength leaders, new highs, breakouts from bases/consolidation pivots and market direction on daily bars.",
+  "template": "relative_strength",
+  "method_name": "CAN SLIM relative strength breakout",
+  "style": "growth momentum",
+  "timeframe": "swing to position",
+  "universe": {
+    "description": "US stocks, top 200 leaders from ~12000"
+  },
+  "setup": [
+    {
+      "rule": "Current quarterly earnings 25%+ yoy growth, preferably triple digit accelerating",
+      "quote": "you want to see at least 25% growth for the last for the most current three quarters you know and you learn that's a bare minimum um I require triple digit growth preferably um accelerating triple digit growth",
+      "timestamp": "[00:22:06]"
+    },
+    {
+      "rule": "Annual earnings growth ~20%+ for three years",
+      "quote": "on an annual basis you got a little e it's a little easier on the Restriction you're at about 20% for three years obviously more is better triple digit is better",
+      "timestamp": "[00:23:11]"
+    },
+    {
+      "rule": "New product, service or management",
+      "quote": "n um is either a new product new service or New Management",
+      "timestamp": "[00:25:46]"
+    },
+    {
+      "rule": "Relative strength new highs ahead of price",
+      "quote": "relative strength new highs ahead of price understanding exactly what that is and when to use that that works as good today as it did in 1890",
+      "timestamp": "[00:13:12]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Buy at consolidation pivot or early stage base breakout on volume",
+      "quote": "I've sprinkled in some Stan Weinstein right so I've got my early buy points what I call consolidation pivots instead of Base pivots which are much earlier up the right side and if I can combine that with my relative strength new highs or relative strength line leading price",
+      "timestamp": "[00:18:29]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Sell stop 7-8% below buy point",
+      "quote": "that 7 to eight% that you hear all of fin twit talk about as their Max sell stop and a lot of it comes from how to make money in stocks",
+      "timestamp": "[00:46:04]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Scale out on break of 21-day SMA or 10-day; personality based",
+      "quote": "I have a very specific Line in the Sand relative to my performance in the account in that stock and where it that stock is overall in its run versus where I would expect from it",
+      "timestamp": "[00:42:54]"
+    },
+    {
+      "rule": "Use 21 day simple moving average as line in the sand",
+      "quote": "I use the 21 days simple moving average as a line in the sand for me",
+      "timestamp": "[00:42:22]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Scale in progressively, risk management with stops",
+      "quote": "the way that I bought them I'm actually managing risk and have much better control of my risk",
+      "timestamp": "[00:55:58]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Market direction via follow through day on NASDAQ or S&P; watch leaders for breadth and rotation",
+      "quote": "getting the direction of the market right is 50 at least half the ball game",
+      "timestamp": "[00:37:44]"
+    },
+    {
+      "rule": "Follow through day 1.75% up on higher volume days 4-7 after first up day in downtrend",
+      "quote": "the market needs to be up at least 1.75% on more volume than the prior day volume doesn't have to be more than average it doesn't even have to be big it just has to be bigger than the prior day so an ideal follow through day I say happens on days four through seven",
+      "timestamp": "[00:39:49]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Qualitative stock personality, leader action and exact scaling rules",
+      "assumption": "Approximated via relative strength top stocks, 21/50 MA exits and 7-8% stops"
+    }
+  ],
+  "params": {
+    "lookback": 252,
+    "top_n": 200,
+    "rebalance_days": 1,
+    "trend_ma": 50
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "294",
+    "page_url": "https://chatwithtraders.com/episode/294-ross-haber-stock-leaders-and-timeless-strategies-still-effective-today",
+    "youtube_url": "https://www.youtube.com/watch?v=28LOSLtoJdA"
+  }
+}

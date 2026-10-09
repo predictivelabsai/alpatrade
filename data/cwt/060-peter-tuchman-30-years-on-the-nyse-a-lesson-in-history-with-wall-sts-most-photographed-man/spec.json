@@ -1,0 +1,49 @@
+{
+  "trader": "Peter Tuchman",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Method is strict day trading of openings, closings, IPOs and secondaries using floor imbalances and historical probabilities, with max hold 2.5-3 hours; cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "NYSE floor imbalance day trading",
+  "style": "day trading order flow and imbalances",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "US stocks on NYSE floor"
+  },
+  "setup": [
+    {
+      "rule": "Trade opening imbalances and IPOs/secondaries using historical data probabilities",
+      "quote": "I get a quick run on what the markets what the buy and sell imbalances are on the floor the New York Stock Exchange I see where the futures are trading away I make a trade I don't trade pre market at all I let New York open and I make a trade I get involved in I POS falling into certain guidelines that I built that work through his coracle data i buy secondaries that were issued the night before also buy historic data",
+      "timestamp": "[00:33:28]"
+    },
+    {
+      "rule": "Trade closing imbalances at 2pm onward",
+      "quote": "at 2:00 o'clock I'm being given information about projected market and balances for the closing bell which is information that brokers are privy to and I built a I built a business model to trade that information",
+      "timestamp": "[00:34:00]"
+    }
+  ],
+  "entry": [],
+  "stop": [],
+  "exits": [
+    {
+      "rule": "Close all positions by 4pm",
+      "quote": "then I these these are all things that are done through the allah through the new york stock exchange through my handheld computer and through relationships I have with traders upstairs and hedge funds and then at the end of the day I close out my positions at 4 o'clock with closing trades everything I'm long I get out of everything I'm short I cover",
+      "timestamp": "[00:34:31]"
+    }
+  ],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "No specific numerical rules or exact historical data thresholds provided",
+      "assumption": "None; transcript contains no concrete testable parameters"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "60",
+    "page_url": "https://chatwithtraders.com/episode/060-peter-tuchman-30-years-on-the-nyse-a-lesson-in-history-with-wall-sts-most-photographed-man",
+    "youtube_url": "https://www.youtube.com/watch?v=2YOfQSf492c"
+  }
+}

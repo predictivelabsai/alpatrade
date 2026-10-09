@@ -1,0 +1,86 @@
+{
+  "trader": "Stan Gluzman",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Concrete long-side breakout rules for US mid/large-cap stocks on daily bars with explicit scan, entry, stop and trail.",
+  "template": "breakout",
+  "method_name": "Breakout swing long",
+  "style": "swing breakout",
+  "timeframe": "daily with 5-min entry timing",
+  "universe": {
+    "description": "mid caps and large caps, real companies, avoid dilutive small caps"
+  },
+  "setup": [
+    {
+      "rule": "stocks strong for past couple of months up to six months",
+      "quote": "i'll scan for stocks that have been strong strong for past couple of months up to like six months",
+      "timestamp": "[00:27:18]"
+    },
+    {
+      "rule": "tight consolidations for a couple weeks or couple days then break out of tight pattern",
+      "quote": "i'll find you know tight consolidations where a stock you know went up consolidated for a couple weeks or a couple days couple weeks and then starting to break out of a tight pattern",
+      "timestamp": "[00:27:18]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "buy the breakout on daily, time on 5-min or at alert if not extended",
+      "quote": "i'll just buy the breakouts... i'll put it on like a five minute chart and i'll i'll wait for a dip or or i'll just buy the breakout on the daily",
+      "timestamp": "[00:28:50]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "stop below low of the day",
+      "quote": "i'll see where the low of the day is and i'll put the stop below the low of the day",
+      "timestamp": "[00:28:50]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "trail core with 10 or 20 EMA on daily, trim into strength",
+      "quote": "trail it with moving averages... it's either 10 or 20 ema on a daily chart",
+      "timestamp": "[00:35:35]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "risk per trade 1/6 to 1/8 of daily lockout (median green day x2)",
+      "quote": "my risk per trade is a fraction of that number so let's say my risk per trade is like 1 8 or 1 6 of my daily lockout",
+      "timestamp": "[00:15:46]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "exact momentum_lookback_days and consolidation_days not numeric",
+      "assumption": "use 60-120 days momentum, 5-15 days consolidation"
+    },
+    {
+      "issue": "trail_ma value uncertain between 10/20",
+      "assumption": "use 20"
+    },
+    {
+      "issue": "no explicit momentum_min_pct or consolidation_max_range_pct",
+      "assumption": "standard 20% / 10% defaults"
+    }
+  ],
+  "params": {
+    "momentum_lookback_days": 90,
+    "momentum_min_pct": 20,
+    "consolidation_days": 10,
+    "consolidation_max_range_pct": 10,
+    "trail_ma": 20,
+    "partial_after_days": 0,
+    "partial_frac": 0,
+    "risk_per_trade_pct": 0.5,
+    "max_position_pct": 25,
+    "max_positions": 8
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "211",
+    "page_url": "https://chatwithtraders.com/episode/211-stan-gluzman-one-bias-one-objective-make-money",
+    "youtube_url": "https://www.youtube.com/watch?v=fwh8Sdu4Ses"
+  }
+}

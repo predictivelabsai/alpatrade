@@ -1,0 +1,68 @@
+{
+  "trader": "Luke Cummings",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Merger arbitrage relies on qualitative checklists for bid credibility, binding status, major shareholders, and downside risk sizing rather than mechanical daily-bar rules.",
+  "template": "none",
+  "method_name": "Merger arbitrage event-driven",
+  "style": "event-driven long bias",
+  "timeframe": "weeks to months",
+  "universe": {
+    "description": "ASX-listed takeover targets (not US daily-bar testable)"
+  },
+  "setup": [
+    {
+      "rule": "Assess binding vs non-binding, bidder history, funding, major shareholder support",
+      "quote": "first thing we're primarily interested in is you know how credible is the bid in terms of you know things like is it binding or non-binding who's the bidder is it funded",
+      "timestamp": "[00:03:39]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Buy at discount to bid after announcement if risk score supports position size",
+      "quote": "we might have on a one-quarter position size",
+      "timestamp": "[00:49:46]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Exit if deal fails at pre-bid low adjusted for market conditions",
+      "quote": "if the transaction falls over what's the likely lowest level that this stock is going to trade at and usually as a starting point we'd use like the you know the three or six months low prior to the bid",
+      "timestamp": "[00:35:46]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Hold to completion or trim at 10% premium to current bid or when risk score drops",
+      "quote": "usually if we saw a situation where the current share price is 10 above whatever the current best announced bid is in the market usually we'd be taking some uh off the table at that point",
+      "timestamp": "[01:12:31]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Score deal 0-100; full size at 100, min quarter size, risk = (entry - worst-case exit) / portfolio risk pct",
+      "quote": "we're sort of scoring that out of a hundred so we think of of 100 as being a full risk position size",
+      "timestamp": "[00:49:15]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Prefer uncorrelated M&A situations over broad market beta",
+      "quote": "m a you know tends to be uncorrelated um you know uh for the most part to broader markets",
+      "timestamp": "[00:49:15]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Transcript covers Australian ASX deals only; no US stock rules given",
+      "assumption": "Cannot map to daily US equity engine"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "222",
+    "page_url": "https://chatwithtraders.com/episode/222-luke-cummings-mergers-acquisitions-the-ultimate-game-of-poker",
+    "youtube_url": "https://www.youtube.com/watch?v=4JX9UjpZQso"
+  }
+}

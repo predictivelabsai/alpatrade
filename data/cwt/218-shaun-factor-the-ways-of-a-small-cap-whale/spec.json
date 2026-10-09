@@ -1,0 +1,32 @@
+{
+  "trader": "Shaun Factor",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "No concrete, codable long-side rules for daily bars; relies on gut feel, sector themes, liquidity events and placements.",
+  "template": "none",
+  "method_name": "Gut-driven sector liquidity trading",
+  "style": "discretionary small cap",
+  "timeframe": "short-term to multi-month",
+  "universe": {
+    "description": "Australian small and micro caps on ASX"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Transcript covers ASX not US stocks",
+      "assumption": "Rules do not transfer to US daily-bar engine"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "218",
+    "page_url": "https://chatwithtraders.com/episode/218-shaun-factor-the-ways-of-a-small-cap-whale",
+    "youtube_url": "https://www.youtube.com/watch?v=XDoUzIS16QA"
+  }
+}

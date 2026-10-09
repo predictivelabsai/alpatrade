@@ -1,0 +1,32 @@
+{
+  "trader": "Josh Evans",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Main method is discretionary intraday scalping using order flow on ASX stocks with catalysts, which cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "Intraday order flow scalping",
+  "style": "discretionary scalping",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "ASX small to mid-cap stocks with catalysts"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Guest trades ASX not US stocks",
+      "assumption": "Classification still applies as intraday_only"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "187",
+    "page_url": "https://chatwithtraders.com/episode/187-josh-evans-my-first-year-trading-full-time",
+    "youtube_url": "https://www.youtube.com/watch?v=nG1JmFEzpOM"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "trader": "Peter Stolcers",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Method is a discretionary top-down decision process driven by market context (65%), relative strength/weakness pattern recognition, and options/stock choice with no concrete long-only daily-bar rules provided.",
+  "template": "none",
+  "method_name": "Top-down relative strength trading",
+  "style": "discretionary day/swing with options",
+  "timeframe": "intraday and multi-day",
+  "universe": {
+    "description": "US stocks and options with relative strength"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Mentions scanners and quantified setups but provides no specific rules or parameters",
+      "assumption": "Remains discretionary"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "265",
+    "page_url": "https://chatwithtraders.com/episode/265-peter-stolcers-taking-a-top-down-approach-to-day-trading",
+    "youtube_url": "https://www.youtube.com/watch?v=EjmDRU3cN7g"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "trader": "Adam Grimes",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Hybrid discretionary-quant approach centered on momentum/volatility analysis after big moves with no concrete, codable long-side rules for US stocks.",
+  "template": "none",
+  "method_name": "Momentum volatility discretionary",
+  "style": "technical price action with discretionary input",
+  "timeframe": "multiple from intraday to multi-week",
+  "universe": {
+    "description": "all major asset classes including US stocks"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "no explicit stock-specific rules given",
+      "assumption": "method remains discretionary across assets"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "115",
+    "page_url": "https://chatwithtraders.com/episode/115-adam-grimes-what-hand-traders-can-learn-from-system-traders-and-vice-versa",
+    "youtube_url": "https://www.youtube.com/watch?v=dfRPZfkrDKk"
+  }
+}

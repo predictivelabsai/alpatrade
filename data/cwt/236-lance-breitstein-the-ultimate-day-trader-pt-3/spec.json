@@ -1,0 +1,73 @@
+{
+  "trader": "Lance Breitstein",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Edge is strictly intraday (capitulation, right-side-of-V, order-flow, 1-5 min setups) and does not survive daily-bar approximation.",
+  "template": "none",
+  "method_name": "Intraday right-side-of-V trading",
+  "style": "day trading",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "US equities, focus on volatile names with news/earnings/panic"
+  },
+  "setup": [
+    {
+      "rule": "find broken slot machine offering edge",
+      "quote": "you want to find if you go into a casino you don't want to sit down at the roulette table... the reality is is that's what a lot of people do",
+      "timestamp": "[00:18:12]"
+    },
+    {
+      "rule": "wait for right side of V",
+      "quote": "you can buy in two different times the same price and in those different times they will have drastically different expected value",
+      "timestamp": "[00:30:10]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "break of prior bar highs on 2-min chart or moving average after flush",
+      "quote": "what i might use is is things like a break of prior bar highs on my two minute chart",
+      "timestamp": "[00:39:04]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "prior bar lows once on right side of V",
+      "quote": "first of all you now have a stop in that you can use at lowe's as opposed to no stop when you're buying on the way down",
+      "timestamp": "[00:30:41]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "exponential sizing on A+ setups only",
+      "quote": "when you get those pocket aces they are not betting linearly",
+      "timestamp": "[00:49:29]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "exponential bet sizing on best setups",
+      "quote": "on those specific special really exceptional hands you need to bet exponentially",
+      "timestamp": "[00:50:00]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "do not fight trend; need alignment across timeframes",
+      "quote": "i needed to be a buy on the intraday i needed to be a buy on the daily i want everybody on every time frame screaming by",
+      "timestamp": "[00:06:49]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "mentions daily charts in prep but all execution intraday",
+      "assumption": "still intraday_only"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "236",
+    "page_url": "https://chatwithtraders.com/episode/236-lance-breitstein-the-ultimate-day-trader-pt-3",
+    "youtube_url": "https://www.youtube.com/watch?v=S12sK6nC-OQ"
+  }
+}

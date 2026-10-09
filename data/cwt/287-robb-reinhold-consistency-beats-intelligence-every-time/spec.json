@@ -1,0 +1,62 @@
+{
+  "trader": "Robb Reinhold",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Focus is on position management and exits with random/varied entries plus 13-EMA trend filter; no concrete long-only daily entry rules provided.",
+  "template": "none",
+  "method_name": "ATR trailing stop management",
+  "style": "trend following with random selection",
+  "timeframe": "daily",
+  "universe": {
+    "description": "US stocks and ETFs selected randomly"
+  },
+  "setup": [
+    {
+      "rule": "Direction via slope of 13-period EMA",
+      "quote": "Our basis or our decision of long or short was based on the slope of a 13-period estimated moving average.",
+      "timestamp": "[00:19:19]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Random selection (Scrabble, Ouija, etc.)",
+      "quote": "whatever ticker symbol they made, then that was the stock that we picked.",
+      "timestamp": "[00:18:47]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Initial 2x ATR trailing stop, tighten to 1.5x at 2x ATR profit, to 1x at 4x ATR profit",
+      "quote": "we put in the 2x ATR stop... if we did get to a 2x ATR profit, then we'd use a dynamic system and we'd move up to 1.5x ATR... if we got to 4x ATR, we then moved to a 1x ATR stop",
+      "timestamp": "[00:16:11]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Trail stop only; no other exits",
+      "quote": "nothing was done after that.",
+      "timestamp": "[00:17:13]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "1% risk per trade",
+      "quote": "we did 1% risk on every single trade.",
+      "timestamp": "[00:16:41]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Long/short both used; engine is long-only",
+      "assumption": "Treat as discretionary due to random entries and management focus"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "287",
+    "page_url": "https://chatwithtraders.com/episode/287-robb-reinhold-consistency-beats-intelligence-every-time",
+    "youtube_url": "https://www.youtube.com/watch?v=phVGWccsGPk"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "trader": "Adam Grimes",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "No concrete, codable rules for entries, stops, exits or sizing are stated; approach described as blend of discretionary and quantitative tools with swing trading and statistical edges.",
+  "template": "none",
+  "method_name": "Discretionary multi-asset swing",
+  "style": "swing trading trend following and mean reversion",
+  "timeframe": "daily/weekly with 2-week target hold",
+  "universe": {
+    "description": "multi-asset including US stocks currencies futures options"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "mentions looking for strong moves and consolidations on multiple timeframes",
+      "assumption": "general discretionary pattern recognition without specific parameters"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "21",
+    "page_url": "https://chatwithtraders.com/episode/021-adam-grimes-how-to-identify-a-trading-edge-and-a-realistic-breakdown-of-the-path-to-becoming-a-trader",
+    "youtube_url": "https://www.youtube.com/watch?v=Tz_l1OBJRK4"
+  }
+}

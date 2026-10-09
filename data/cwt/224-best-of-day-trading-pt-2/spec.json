@@ -1,0 +1,32 @@
+{
+  "trader": "Compilation (Stan Gluzman et al.)",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "All clips describe intraday trading methods relying on 1-5min charts, order flow, volume exhaustion, dark pools, inefficiencies or short-term catalysts that do not survive daily-bar approximation.",
+  "template": "none",
+  "method_name": "Intraday scalping / day trading",
+  "style": "discretionary intraday",
+  "timeframe": "1-5 min",
+  "universe": {
+    "description": "US equities, low floats, OTC/penny stocks"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Compilation of multiple traders",
+      "assumption": "Focus on dominant day-trading theme across clips"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "224",
+    "page_url": "https://chatwithtraders.com/episode/224-best-of-day-trading-pt-2",
+    "youtube_url": "https://www.youtube.com/watch?v=KGXTzoDNL4E"
+  }
+}

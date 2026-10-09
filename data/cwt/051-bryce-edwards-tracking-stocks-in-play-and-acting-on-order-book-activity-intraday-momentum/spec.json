@@ -1,0 +1,62 @@
+{
+  "trader": "Bryce Edwards",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Method relies on discretionary intraday order book activity, stocks in play with catalysts, and momentum; goes home flat daily with no daily-bar rules.",
+  "template": "none",
+  "method_name": "Intraday order book momentum",
+  "style": "discretionary order book scalping/momentum",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "Australian equities with catalysts like news or broker upgrades"
+  },
+  "setup": [
+    {
+      "rule": "Build stocks in play list using catalysts",
+      "quote": "every morning uh I'm building a list um where I'm basically looking to trade stocks that have a catalyst",
+      "timestamp": "[00:17:13]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Time entry using order book walls and activity",
+      "quote": "often times you can you can play a breakout and predict that wall breaking if you see a lot of activity coming up to the wall",
+      "timestamp": "[00:29:46]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Use bids in order book for exit if trade fails immediately",
+      "quote": "if I if I put a trade on doesn't go in the in my favor straight away then there's a good chance that it's it's probably not a winner",
+      "timestamp": "[00:22:55]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Go home flat every day",
+      "quote": "I try and go home as close to Flat as possible every day",
+      "timestamp": "[00:15:38]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Position size based on visible bids for liquidity",
+      "quote": "the volume or the size of the bids below is going to help me determine um my position size in terms of risk management",
+      "timestamp": "[00:23:27]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Australian market focus and shorting mentioned",
+      "assumption": "Core intraday order book approach is the main method"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "51",
+    "page_url": "https://chatwithtraders.com/episode/051-bryce-edwards-tracking-stocks-in-play-and-acting-on-order-book-activity-intraday-momentum",
+    "youtube_url": "https://www.youtube.com/watch?v=0em_ye4WiVU"
+  }
+}

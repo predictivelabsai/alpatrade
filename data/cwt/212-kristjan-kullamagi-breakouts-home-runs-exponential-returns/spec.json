@@ -1,73 +1,98 @@
 {
   "trader": "Kristjan Kullamägi",
-  "style": "swing trader breakout",
-  "timeframe": "daily with 60min for entry",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Guest describes concrete long-only daily breakout rules on US stocks with momentum, consolidation, trailing stops and partial exits that can be approximated on daily bars.",
+  "template": "breakout",
+  "method_name": "Momentum breakout swing",
+  "style": "swing/position trading",
+  "timeframe": "daily with optional 60min confirmation",
   "universe": {
-    "description": "strongest stocks US equities mid/large caps most liquid",
-    "min_price": 5.0,
-    "min_dollar_volume_20d": 150000000.0
+    "description": "US stocks, strongest 2% by 1-18mo momentum, min $150M avg daily volume (was $20M earlier), mid/large caps preferred for liquidity"
   },
   "setup": [
     {
-      "rule": "big absolute and relative momentum then pullback or sideways consolidation with volatility contraction",
+      "rule": "Stock has prior leg higher (several weeks/months), then sideways/pullback consolidation with contracting volatility/range",
       "quote": "you have a leg higher and then it usually goes sideways or pull backs pulls back and uh many times what happens is the volatility contracts like it gets tighter",
-      "timestamp": "00:18:51"
+      "timestamp": "[00:18:51]"
+    },
+    {
+      "rule": "Relative strength: holds up best during market corrections, builds higher lows",
+      "quote": "the stocks that held up the most that had big moves previously and held up the most",
+      "timestamp": "[00:28:43]"
     }
   ],
   "entry": [
     {
-      "rule": "buy opening range high on daily breakout confirmation",
-      "quote": "i buy the opening range highs and the opening range highs is when the stock takes out uh obviously it has to be a breakout first",
-      "timestamp": "00:35:32"
+      "rule": "Buy breakout of the consolidation range (daily obvious breakout); can use 1/5/60min opening range high for timing",
+      "quote": "our goal is to identify that those stair steps and buy it just as it is about to break out into the next",
+      "timestamp": "[00:19:53]"
+    },
+    {
+      "rule": "Buy aggressively at once on breakout",
+      "quote": "i buy everything at once uh very aggressively",
+      "timestamp": "[00:34:30]"
     }
   ],
   "stop": [
     {
-      "rule": "initial stop low of day then trail 10 or 20 day MA waiting for close",
-      "quote": "initially my stop is always low low sodium day uh and once the moving averages the 10 and the 20 uh the moving averages it depends on the stock the faster moving stops are you stocks i moved uh i used the 10 day and the slow we're moving once i use the 20 day",
-      "timestamp": "00:41:43"
+      "rule": "Initial stop = low of the day (or low of the breakout candle on 1/5/60min)",
+      "quote": "then i use the low sorry day as my stop",
+      "timestamp": "[00:36:02]"
+    },
+    {
+      "rule": "Trail with 10 or 20-day MA after MA catches up; wait for close to exit on violation",
+      "quote": "once the moving averages the 10 and the 20 the moving averages it depends on the stock the faster moving stops are you stocks i moved uh i used the 10 day and the slow we're moving once i use the 20 day",
+      "timestamp": "[00:41:43]"
     }
   ],
   "exits": [
     {
-      "rule": "scale out 20-25% into first burst of strength then trail rest with MA hold as long as possible",
-      "quote": "i always sell some into that first burst uh to lock in a little bit of profits maybe i sell 20 or 25 or it can vary a lot",
-      "timestamp": "00:23:32"
+      "rule": "Partial exit 20-25% into first momentum burst/strength to lock profits",
+      "quote": "i always sell some into that first burst uh to lock in a little bit of profits maybe i sell 20 or 25",
+      "timestamp": "[00:23:32]"
+    },
+    {
+      "rule": "Remainder trailed with 10/20 MA or sell after 3-5 days for shorter swings",
+      "quote": "you can you know hold them for maybe three to five days or and just settle into strength or you can try to hold for bigger moves uh like even try to hold through the next several steps uh and maybe use the moving averages like i do the 10 and 20 day moving averages trailing stops",
+      "timestamp": "[00:19:53]"
     }
   ],
   "sizing": [
     {
-      "rule": "buy everything at once aggressively no scaling in unless new setup",
-      "quote": "i buy everything at once uh very aggressively",
-      "timestamp": "00:34:30"
+      "rule": "No fixed risk % or max positions stated; scales up with account, can reach 15-30 positions in strong markets",
+      "quote": "i end up with a lot of positions because i take some partial profits and some and then i roll that money into new positions new breakouts and i can end up with you know 20 25 and i've had 30 positions sometimes",
+      "timestamp": "[00:50:40]"
     }
   ],
   "market_filter": [
     {
-      "rule": "only uptrending or sideways market after correction prefer stocks with relative strength",
+      "rule": "Only trade in uptrending or sideways markets; best after 5-15% market correction when leaders show relative strength; avoid bear markets",
       "quote": "you obviously need uh uh up trending or sideways market to trade this method",
-      "timestamp": "00:29:44"
+      "timestamp": "[00:29:44]"
     }
   ],
   "ambiguities": [
     {
-      "issue": "exact consolidation range pct or days not specified",
-      "assumption": "use 20-60 days with max 15% range for daily approximation"
+      "issue": "Exact momentum_lookback_days, momentum_min_pct, consolidation_days and consolidation_max_range_pct not numeric",
+      "assumption": "Use 3mo/6mo/12mo lookbacks for momentum scan; consolidation 20-60 days with <10-15% range as typical from stair-step description"
+    },
+    {
+      "issue": "No explicit risk_per_trade_pct or max_position_pct given",
+      "assumption": "Omit or default to standard 1% risk / 10% max pos since not stated"
     }
   ],
-  "daily_bar_params": {
+  "params": {
     "momentum_lookback_days": 90,
-    "momentum_min_pct": 50.0,
+    "momentum_min_pct": 50,
     "consolidation_days": 30,
-    "consolidation_max_range_pct": 15.0,
-    "volume_mult": 1.5,
-    "stop": "low_of_day_then_10_or_20_ma_close",
-    "partial_after_days": 5,
-    "partial_frac": 0.25,
+    "consolidation_max_range_pct": 12,
     "trail_ma": 20,
-    "risk_per_trade_pct": 1.0,
-    "max_position_pct": 20.0,
-    "max_positions": 25
+    "partial_after_days": 3,
+    "partial_frac": 0.25,
+    "risk_per_trade_pct": 1,
+    "max_position_pct": 10,
+    "max_positions": 20
   },
   "_meta": {
     "model": "grok-4.3",

@@ -1,0 +1,62 @@
+{
+  "trader": "Rick Bandazian Jr.",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Main method is fast intraday reaction to event-driven news and merger-arb catalysts with no overnight holds; edge requires real-time headline reaction and pre-event research that cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "Event-driven news scalping",
+  "style": "intraday event-driven",
+  "timeframe": "seconds to minutes",
+  "universe": {
+    "description": "US equities with announced or rumored corporate actions (mergers, antitrust, activist bids)"
+  },
+  "setup": [
+    {
+      "rule": "Maintain deep pre-event knowledge of 30-40 situations including deal terms, approvals needed, incorporation state",
+      "quote": "I keep track of every single one of them and I know, you know, who the buyer is, what the price is, you know, what antitrust approvals are needed",
+      "timestamp": "[00:23:24]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "React instantly to new headline or filing if still within 2-3s window and stock has not yet moved",
+      "quote": "Boom boom boom, I type the ticker in and boom boom boom, I hit the hot key",
+      "timestamp": "[00:00:00]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Hard mental P&L stop; exit immediately if hit",
+      "quote": "there's like a rough P&L thing that I have in my head where if I hit that I just got to get out",
+      "timestamp": "[00:39:32]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Exit once information is on tape for a few minutes or when arbs arrive and price reaches expected level",
+      "quote": "once a couple of minutes goes by on event-driven news that hits the tape, there's nothing to do",
+      "timestamp": "[00:32:49]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Scale to high confidence level; go large when edge is clear and liquidity allows",
+      "quote": "if I get a chance to do to get really big in something, I will",
+      "timestamp": "[00:48:22]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Mentions macro positioning side strategy but states main activity remains event-driven intraday",
+      "assumption": "Focus on primary merger-arb/event-driven method only"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "293",
+    "page_url": "https://chatwithtraders.com/episode/293-rick-bandazian-jr-the-art-of-the-wait-merger-arbitrage-killer-moves",
+    "youtube_url": "https://www.youtube.com/watch?v=HOYS3rdl1C8"
+  }
+}

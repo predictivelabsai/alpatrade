@@ -1,0 +1,50 @@
+{
+  "trader": "Nathan Michaud",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Primarily intraday short-selling and scalping of momentum stocks on 5-20 minute timeframes with no daily-bar rules provided.",
+  "template": "none",
+  "method_name": "Intraday momentum shorting",
+  "style": "day trading momentum",
+  "timeframe": "intraday 5-20min",
+  "universe": {
+    "description": "small cap momentum stocks with abnormal volume and range"
+  },
+  "setup": [
+    {
+      "rule": "stocks that have ran continuously for multiple days but have yet to have a real pullback",
+      "quote": "each night we St we scan for stocks that are overextended meaning stocks that have ran continuously for multiple days but have yet to have a real pullback",
+      "timestamp": "[00:22:24]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "short when first point where it starts to crack after overextended run",
+      "quote": "that first point where it starts to crack that's when everybody starts to take their profits",
+      "timestamp": "[00:22:56]"
+    }
+  ],
+  "stop": [],
+  "exits": [
+    {
+      "rule": "nail and bail don't stay in prey",
+      "quote": "nail and baale don't stay in prey",
+      "timestamp": "[00:51:39]"
+    }
+  ],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "mentions ABCD long setup but primarily short seller and intraday",
+      "assumption": "main method remains intraday_only"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "55",
+    "page_url": "https://chatwithtraders.com/episode/055-nathan-michaud-trading-momo-stocks-and-scaling-up-for-larger-gains-w-investors-underground",
+    "youtube_url": "https://www.youtube.com/watch?v=PO_pIIUUQrU"
+  }
+}

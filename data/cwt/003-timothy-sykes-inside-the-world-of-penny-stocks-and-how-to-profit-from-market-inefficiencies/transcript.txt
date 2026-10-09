@@ -1,0 +1,880 @@
+# 003: Timothy Sykes – Inside the World of Penny Stocks and How to Profit from Market Inefficiencies
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT1325952266.mp3
+
+[00:00:00] The biggest secret of the best traders in the world is that they're just like everyone else.
+[00:00:05] However, they've worked hard to learn the markets and discover what works and what doesn't.
+[00:00:10] But how can you hear about these journeys and get in on the strategies and tactics they use?
+[00:00:15] You can do it by listening to Chat with Traders.
+[00:00:18] Here's your host, Aaron Feifeld.
+[00:00:20] Hey, what's going on, buddying traders?
+[00:00:32] Thanks so much for joining me on the third episode of Chat with Traders,
+[00:00:36] the podcast that brings you in-depth interviews with consistently profitable traders week after week.
+[00:00:42] Now, I'm excited to introduce today's guest who has well and truly found his niche dominating penny stocks.
+[00:00:48] His name is Timothy Sykes and it's no secret that he turned $12,000 into roughly $2 million
+[00:00:54] within the space of just a few years, making him a millionaire by the age of 22.
+[00:01:00] With that in mind, it's safe to say he could teach us all a thing or two about trading.
+[00:01:04] So that's why I brought Tim on the show today to take us inside the world of penny stocks.
+[00:01:09] Throughout this interview, you will learn how many of these stocks move,
+[00:01:12] some of the things to watch out for,
+[00:01:14] and also the key benefits that can come from trading penny stocks.
+[00:01:18] Make sure you listen all the way through because Tim has a really cool offer
+[00:01:22] exclusive to listeners of Chat with Traders.
+[00:01:25] All right, let's get into it.
+[00:01:27] I'm Aaron Feifeld.
+[00:01:28] This is Chat with Traders and here is our guest, Timothy Sykes.
+[00:01:34] Hey, Tim, so great to have you here.
+[00:01:36] I've really been looking forward to this.
+[00:01:37] So thanks for coming on.
+[00:01:39] Thanks for having me.
+[00:01:40] It's great.
+[00:01:41] So let's go back in time to how you got started.
+[00:01:44] You started with a $12,000 account and turned it into a couple million dollars
+[00:01:48] just within a few years, which is my impressive.
+[00:01:52] But before you made a great success,
+[00:01:54] what was it about the stock market that appealed to you?
+[00:01:58] You know, I just, I'm Jewish.
+[00:02:01] I like playing with numbers.
+[00:02:03] I was like raised to believe in financial security.
+[00:02:06] So the stock market was always kind of in my life,
+[00:02:09] not for trading purposes, just to kind of know about how it works.
+[00:02:13] And, you know, I wanted to be a mutual fund manager when I was growing up.
+[00:02:16] I thought that would be a nice way to, you know, grow a portfolio,
+[00:02:20] get paid year in, year out.
+[00:02:22] It was a nice steady job and all you had to do was research stocks.
+[00:02:25] So when I was a teenager, you know, I began researching stocks
+[00:02:29] and I began investing for the first few months.
+[00:02:32] The stocks didn't do anything.
+[00:02:34] So I was like, this, this job sucks.
+[00:02:36] So I got into penny stocks and they really were moving fast.
+[00:02:40] In my account, you know, senior year of high school,
+[00:02:43] I grew from 12,000 into 120,000,
+[00:02:46] which was a lot of money for me back then.
+[00:02:49] So, you know, it was just understanding that you need money in this world.
+[00:02:54] You know, you can be a hippie.
+[00:02:56] You can just say, oh, all you need is love,
+[00:02:58] but money makes your life better.
+[00:03:00] It's good to have financial security.
+[00:03:02] So that's what really got me into this.
+[00:03:05] Absolutely. No, that's great.
+[00:03:06] So you were let loose into the markets.
+[00:03:09] How did you know what you were doing?
+[00:03:11] I mean, I believe your knowledge was pretty limited when you got started.
+[00:03:15] Yeah, I mean, it was all just trial and error.
+[00:03:18] You know, the educational business that I have now is my first thought
+[00:03:22] every morning is to be the mentor to people that I never had,
+[00:03:25] because it was scary.
+[00:03:27] You know, I didn't know the rules.
+[00:03:28] I didn't know what stocks to buy.
+[00:03:30] I didn't know how much to use in a position.
+[00:03:33] I didn't understand anything.
+[00:03:35] So I really just learned trial by fire and growing the account.
+[00:03:39] You know, it sounds nice to turn 12,000 into 120,000 in a year,
+[00:03:43] but I had no idea what I was doing.
+[00:03:46] I had some basic pattern recognition abilities.
+[00:03:49] Like I learned that, okay, this strategy works.
+[00:03:52] Other strategies don't.
+[00:03:54] But I would have like 20% drawdowns or 30% drawdowns
+[00:03:57] and not understand, you know, my parents thought I would lose everything.
+[00:04:00] So I would say number one thing is that you have to start understanding
+[00:04:05] how the market works and if you can get a mentor,
+[00:04:08] somebody who's going to pass down their lessons over time
+[00:04:11] so that you're not totally lost.
+[00:04:13] Absolutely. That's a good call you make.
+[00:04:15] Going back, was there anything you really struggled with
+[00:04:18] that stands out?
+[00:04:20] You know, I mean, I was very fortunate to start right
+[00:04:23] during 1999-2000.
+[00:04:25] So I had an easy market.
+[00:04:27] I struggled with dealing with all the money that I made really,
+[00:04:30] like so quickly. I was like trying to extrapolate it.
+[00:04:33] You know, it's like I was comparing myself to like NBA players.
+[00:04:38] I'm like, okay, this freshman year in college,
+[00:04:40] I made 700 grand in like four months.
+[00:04:42] And I'm like, if I can make 700 grand every four months,
+[00:04:45] then I'm, you know, making 2.1 million a year.
+[00:04:48] Wait a minute, Scottie Pippin makes this and like,
+[00:04:50] I just didn't understand that where I was
+[00:04:54] in the history of the world, you know,
+[00:04:57] in the world's biggest stock market bubble
+[00:04:59] and I had ridden it and I had ridden it well.
+[00:05:02] So I was really kind of screwed up in the head
+[00:05:04] making so much money so quickly.
+[00:05:06] And it's a miracle that I didn't lose it all at first.
+[00:05:09] I mean, it's not a terrible problem to have.
+[00:05:13] It could be much worse.
+[00:05:15] It could be much worse, but it's also like a lot of people,
+[00:05:20] you know, really enjoy success over the long term.
+[00:05:23] They work hard to get it.
+[00:05:25] Like you make an equation in your head.
+[00:05:27] You work hard to get success.
+[00:05:29] I didn't work that hard and I had all the success.
+[00:05:31] So the equation was all messed up in my head.
+[00:05:33] I became a philosophy major.
+[00:05:35] I needed like therapy.
+[00:05:37] Yeah, right.
+[00:05:39] So is that when you sort of,
+[00:05:41] was there ever a point during that time
+[00:05:44] when you knew for sure you were on track
+[00:05:46] for great success in the markets?
+[00:05:48] Like it was a realization like that where it sort of clicked
+[00:05:51] and you knew this is what you were meant to do?
+[00:05:54] Yeah, I mean sometimes like,
+[00:05:56] I mean over time I've really refined this pattern
+[00:05:59] that I specialize in and every time it pops up
+[00:06:02] it's like, oh my God, it's happening again.
+[00:06:04] Like I know it.
+[00:06:06] I know how this is going to play out time and time again.
+[00:06:08] And that's kind of crazy because, you know,
+[00:06:10] the whole world is just basically guessing
+[00:06:13] what the markets are going to do.
+[00:06:15] And they don't know.
+[00:06:17] And I have this pattern that has worked pretty much
+[00:06:19] religiously for 15 years.
+[00:06:21] Even now I teach thousands of people
+[00:06:23] and the pattern still exists.
+[00:06:25] It's still, you know, with these Ebola stocks right now.
+[00:06:27] And just before that you had the body worn police cameras
+[00:06:30] due to the Ferguson, Missouri shooting.
+[00:06:32] So it's really beautiful when
+[00:06:36] what you know happens again and again and again.
+[00:06:39] And it's kind of like, I was meant to do this.
+[00:06:42] Yeah, that's awesome.
+[00:06:44] So let's talk a little bit about your trading methods
+[00:06:47] and your approach.
+[00:06:49] Seen as penny stocks, your weapon of choice.
+[00:06:51] What would you say some of the key benefits
+[00:06:53] and maybe the disadvantages
+[00:06:55] of trading penny stocks
+[00:06:57] versus your more valuable stocks, say,
+[00:06:59] $5 and upwards?
+[00:07:01] Yeah, I mean, first of all,
+[00:07:03] the whole world hates on penny stocks.
+[00:07:05] You know, they're scams.
+[00:07:07] They're evil. They're unethical.
+[00:07:09] So there's so much misinformation out there.
+[00:07:11] Some of them are scams, yes,
+[00:07:13] but you can pretty much spot those.
+[00:07:15] Over the course of my career,
+[00:07:17] there are some good companies that you can buy.
+[00:07:20] But the amount of bad
+[00:07:22] and just misinformation out there is overwhelming.
+[00:07:24] You know, when I first got started teaching
+[00:07:27] in late 2007, Investopedia said
+[00:07:30] that what I did, namely short selling penny stocks,
+[00:07:33] was illegal.
+[00:07:34] So I had people emailing me every day,
+[00:07:36] you're a criminal.
+[00:07:37] I'm like, it's not illegal to short sell penny stocks,
+[00:07:39] but because brokers don't want
+[00:07:41] to deal with penny stock people
+[00:07:43] because there's not a lot of money.
+[00:07:45] Most of the people with penny stocks
+[00:07:47] are investing like a lot of tickets
+[00:07:49] so they blow up.
+[00:07:50] So brokers are just like, no, it's illegal.
+[00:07:52] And they just shove them off, and people come to me
+[00:07:54] and they say, the broker said it's illegal.
+[00:07:56] You're lying.
+[00:07:57] I'm like, I'm not lying.
+[00:07:58] Your broker just sucks.
+[00:07:59] So finding a good broker,
+[00:08:01] finding shares to short when I am short selling
+[00:08:03] these scams and betting against them,
+[00:08:05] that's annoying.
+[00:08:07] But the upside is that it's so easy
+[00:08:09] to spot a scam if you just do some
+[00:08:11] rudimentary research.
+[00:08:13] And the cool thing about this,
+[00:08:15] the companies that are not scams,
+[00:08:16] they only have like one or two products.
+[00:08:18] So when they do search,
+[00:08:20] it's very quick, it's very easy.
+[00:08:22] I actually, I just wrote a blog post
+[00:08:24] about one of my students, his name is Polis B.
+[00:08:26] He invested $700 on last Friday
+[00:08:29] and he sold it overnight on Monday
+[00:08:31] at the company.
+[00:08:32] They make thermometers.
+[00:08:33] All they do is make normal thermometers,
+[00:08:35] but they got an order to supply
+[00:08:37] thermometers for an airport
+[00:08:39] to test for Ebola, which is hot right now.
+[00:08:41] And he bought the stock $680
+[00:08:44] worth at about eight cents a share.
+[00:08:46] And because of the contract,
+[00:08:48] which has already been announced,
+[00:08:49] the stock was already up from two to eight cents.
+[00:08:51] But because of the momentum, because of the hype,
+[00:08:53] because of the fear with Ebola right now,
+[00:08:56] the stock went to 50 cents the next morning
+[00:08:58] and he made seven times his money
+[00:09:00] on, you know, on $700.
+[00:09:02] So he turned 700 into 5,000
+[00:09:04] and most of Wall Street will look down on that.
+[00:09:06] They'll say, ah, penny stocks,
+[00:09:08] that's a few thousand dollars.
+[00:09:09] But I know so many people who would love to turn $700
+[00:09:12] into a $5,000 overnight.
+[00:09:15] So I think there's tremendous potential,
+[00:09:18] but it's about getting the good information out there
+[00:09:20] as opposed to just misinformation.
+[00:09:22] Absolutely. No, that's an incredible win.
+[00:09:24] So I guess just to sort of shorten
+[00:09:27] that one of the key benefits would be
+[00:09:30] that they can move so quickly
+[00:09:32] and that low price they easy to get into
+[00:09:35] for people with smaller accounts.
+[00:09:38] Yeah, and definitely the fact that, you know,
+[00:09:41] there's just not that much information.
+[00:09:43] I can't underestimate that enough
+[00:09:46] because people mock this world that I'm in.
+[00:09:50] No real smart people are really rich people are in here.
+[00:09:53] I'm not that smart
+[00:09:55] and I'm like somehow dominating this little field
+[00:09:57] because it's such low hanging fruit.
+[00:09:59] Hedge funders don't care
+[00:10:01] about making $5,000 in a day.
+[00:10:03] So, you know, I bring up the analogy
+[00:10:06] if you're going to play basketball,
+[00:10:07] who do you want to play basketball against?
+[00:10:09] Do you want to play basketball against the midget
+[00:10:11] or do you want to play basketball against Michael Jordan?
+[00:10:13] And, you know, I'm competing against midgets
+[00:10:15] and I'm like dunking on them again and again
+[00:10:17] and it's so easy.
+[00:10:18] And everyone else is like, oh, let's trade forex.
+[00:10:20] Let's trade all this stuff, be a real man.
+[00:10:22] And you're playing Michael Jordan
+[00:10:24] and you're just losing time and again.
+[00:10:26] So it's about finding easier competition,
+[00:10:28] I think is a big key to my success.
+[00:10:30] Okay. No, I like that. I like that.
+[00:10:32] So just before we move on,
+[00:10:34] what actually defines a penny stock
+[00:10:36] and where are these penny stocks typically listed?
+[00:10:39] Are they on your sort of your major exchanges
+[00:10:41] or are they on, is there something different there?
+[00:10:44] Yeah, I mean, a penny stock
+[00:10:46] is any stock trading under $5 a share.
+[00:10:48] That's the basic definition.
+[00:10:50] Some people say under $1 a share.
+[00:10:52] They're low price speculative companies.
+[00:10:54] They trade on every exchange,
+[00:10:56] New York Stock Exchange, NASDAQ,
+[00:10:58] OTC bulletin boards and pink sheets in the U.S.
+[00:11:01] I like NASDAQ and OTC bulletin boards.
+[00:11:05] It all depends.
+[00:11:07] It's just very low price stocks.
+[00:11:09] It's like, if you go to a race track
+[00:11:11] and you're like betting on like the 49 to one
+[00:11:14] or 50 to one horse, these are long shots.
+[00:11:17] So that's why they're priced so low
+[00:11:19] and I don't actually believe in any of their success.
+[00:11:22] I'm not saying, oh, this is the next Microsoft.
+[00:11:24] That's the mistake that most newbies make
+[00:11:27] with penny stocks and that's why they get crushed
+[00:11:29] because it's never the next Microsoft.
+[00:11:31] But what I do is I play in and out of the volatility
+[00:11:34] and making seven times in a day.
+[00:11:36] That's a little extreme, but Ebola's hot right now.
+[00:11:39] Normally, you can get a stock that's up 50 or 100
+[00:11:42] or 200% in a day.
+[00:11:44] So there is extreme volatility.
+[00:11:46] Yeah, okay, awesome.
+[00:11:48] Now, you put a big focus on researching stocks
+[00:11:52] of, sort of, heard you speaking previously
+[00:11:55] and I quote, being meticulous.
+[00:11:58] How do you go about researching stocks
+[00:12:00] and what is it that you're looking for?
+[00:12:03] Yeah, I mean, with penny stocks, it's either A or B
+[00:12:06] or either a scam or you're not.
+[00:12:08] If you're a scam, the reason why I'm interested in you
+[00:12:11] is because scams are meant to be, you know,
+[00:12:14] spiked and manipulated higher.
+[00:12:16] Knowing that gives you an advantage
+[00:12:18] because you know that someone behind the scenes
+[00:12:20] is manipulating the stock.
+[00:12:22] If it's not a scam, then the question is
+[00:12:24] can, you know, their story or their numbers
+[00:12:27] really interest the public to get the stock up?
+[00:12:30] I'm not interested in stocks that go down.
+[00:12:32] I only want to play stocks that go up.
+[00:12:34] And, you know, when stocks go up,
+[00:12:36] I can either buy them if I think the story has room to run
+[00:12:39] or I can short sell them after they're already been manipulated
+[00:12:42] higher and I think that the story is,
+[00:12:45] or the manipulation is ending and it's going to come down.
+[00:12:48] So I'm always looking for the hottest penny stocks
+[00:12:50] in the world and I'm just trying to judge,
+[00:12:52] you know, should I buy them or should I share with them?
+[00:12:54] It's pretty simple.
+[00:12:55] Okay, cool.
+[00:12:56] I've heard you speak about doing research
+[00:12:58] on a company's SEC filings to help you determine
+[00:13:01] whether or not these companies could be running a scam.
+[00:13:04] Can you elaborate a little more
+[00:13:06] on how they might possibly be a scam?
+[00:13:08] Yeah, I mean, scam, I'm not a lawyer.
+[00:13:10] I don't look to say, oh, what they're doing
+[00:13:12] has violated this section of the law legal code.
+[00:13:16] But when I say scam or pump, it's a question
+[00:13:19] of why do all of these insiders or promoters
+[00:13:23] have shares, you know, millions of shares
+[00:13:26] of like a half a penny a share or two cents a share.
+[00:13:29] And then they're sending out mailers or tweets
+[00:13:32] or voicemails sometimes or faxes or press releases,
+[00:13:37] you know, just trying to get the stock price higher.
+[00:13:39] So in the SEC filings, you look and see who,
+[00:13:42] you know, who's benefiting if the stock really spikes.
+[00:13:46] And what you find is by looking at these SEC filings,
+[00:13:48] you have all these sketchy characters
+[00:13:50] and it's kind of like the usual suspects.
+[00:13:52] It's the same people again and again,
+[00:13:54] and they hire promoters or investor relations
+[00:13:58] and they get the stock up so that they can basically dump it.
+[00:14:01] It's a very simple game. It's pump and dump.
+[00:14:03] So by looking at the SEC filings
+[00:14:05] and just seeing who owns how many shares and at what price,
+[00:14:08] and then you combine that with the knowledge
+[00:14:10] if there's like a mailer out there
+[00:14:12] or if, you know, 50 people are tweeting the ticker
+[00:14:14] like, new Ebola play, why are they hyping it up?
+[00:14:18] Why is it in their interest to get the stock price higher?
+[00:14:21] And sometimes it's not just insiders who want to sell.
+[00:14:24] Sometimes the company, you know,
+[00:14:26] wants to raise money at higher prices.
+[00:14:28] So if your stock is trading at 5 cents a share
+[00:14:30] and no one cares about you,
+[00:14:32] the company might design a two-week
+[00:14:35] investor relations program where they'll have a press release
+[00:14:38] every single day and they'll get their lowly 5 cents a stock
+[00:14:41] that no one cares about and they'll get it up to 50 cents
+[00:14:44] or a dollar and then do a financing
+[00:14:46] at like 20 cents a share with some institutional investor.
+[00:14:49] So that way insiders can pay themselves a salary
+[00:14:52] and it's a lot less, you know,
+[00:14:54] less risk of investigation for a pump and dump
+[00:14:57] even though the only reason they got the stock up
+[00:14:59] was so that they could raise a financing
+[00:15:01] at a discount price and then pay themselves in salary.
+[00:15:04] So it's a pretty evil unethical game
+[00:15:07] but it's pretty easy to spot
+[00:15:09] if you just look at who owns what
+[00:15:11] and then combine that with, you know,
+[00:15:13] why are they pumping the stock.
+[00:15:15] Okay, so let's say listeners have one of these companies
+[00:15:17] on their radar and want to look into it further.
+[00:15:20] How can they gain access to their SEC filings?
+[00:15:23] I mean, I just use OTCMarkets.com.
+[00:15:26] It's a free website and you can just type in the ticker
+[00:15:29] and you can type in, you know,
+[00:15:31] you just go to financials and disclosures
+[00:15:34] and you see all the filings that the company has
+[00:15:36] and whether it's a quarterly report
+[00:15:38] or, you know, any other kind of report,
+[00:15:40] they disclose who owns what
+[00:15:42] and, you know, if the company has like zero cash,
+[00:15:44] zero revenues, you know,
+[00:15:46] they have disclosures that their lawyer
+[00:15:48] made them put in saying,
+[00:15:50] oh, we don't have enough cash to exist
+[00:15:52] for the next three months, you know,
+[00:15:54] so you have a going concern note.
+[00:15:56] These are all like terrible, terrible companies.
+[00:15:58] Like they have so little, like I have more
+[00:16:00] in my wallet than most of these companies
+[00:16:02] do in their bank accounts
+[00:16:04] and yet they're still valued at 20, 30, 50,
+[00:16:06] $100 million thanks to manipulation
+[00:16:08] and because the people
+[00:16:10] who are being pitched these stocks
+[00:16:12] don't read the SEC filings.
+[00:16:14] So half my job is just getting people
+[00:16:16] to like even use the internet.
+[00:16:18] The Wolf of Wall Street was so successful
+[00:16:20] because he did it pre-internet.
+[00:16:22] You would just get a phone call being pitched
+[00:16:24] the penny stock and you couldn't look
+[00:16:26] on Google Street Maps.
+[00:16:28] I see some of these companies on Google Street View
+[00:16:30] and they're based out of like one company
+[00:16:32] and another one was like this little shack
+[00:16:34] and the CEO's phone number turned out
+[00:16:36] to be like a cell phone.
+[00:16:38] Another company, Sponstech, which I exposed,
+[00:16:40] I think it was the CFO's fax number
+[00:16:42] was the same phone number as
+[00:16:44] the company's legal counsel
+[00:16:46] and when the company was
+[00:16:48] eventually busted, they found out
+[00:16:50] the legal counsel didn't even exist.
+[00:16:52] They just had a made up lawyer.
+[00:16:54] So like it's crazy how
+[00:16:56] sketchy and shady this stuff is
+[00:16:58] but if you connect the dots using
+[00:17:00] the internet and just say in your mind
+[00:17:02] okay this company has so little cash
+[00:17:04] so many millions or billions
+[00:17:06] of shares out there
+[00:17:08] why is the stock going up and you can
+[00:17:10] kind of work your way back and say okay
+[00:17:12] this is a pump and dump and pump and dumps
+[00:17:14] you know are going to collapse.
+[00:17:16] Yeah so pump and dump seems to be a strategy
+[00:17:18] that you've mastered extremely well.
+[00:17:20] So you're profiting
+[00:17:22] which way are you trading that
+[00:17:24] typically? Do you aim to trade it
+[00:17:26] up as it's sort of been pumped up
+[00:17:28] or are you shorting it as the stock's been
+[00:17:30] dumped? I mean early
+[00:17:32] in my career I used to buy pumps
+[00:17:34] when I first got started teaching
+[00:17:36] I liked messing with people's minds
+[00:17:38] like I would write a blog post I would be like
+[00:17:40] why I invested $50,000 in this scam
+[00:17:42] and people are like why are you investing
+[00:17:44] your money in a scam and then
+[00:17:46] that would open the door to me teaching
+[00:17:48] how if you know it's a pump and dump
+[00:17:50] it's fine if it's a scam you risk it
+[00:17:52] being discovered but back then
+[00:17:54] a few years ago the SEC wasn't
+[00:17:56] so you could ride the wave up
+[00:17:58] for a little bit now the SEC
+[00:18:00] has cracked down on this a little bit good for them
+[00:18:02] and so now I predominantly
+[00:18:04] just short sell or bet against the
+[00:18:06] scams and I try and be there
+[00:18:08] the day of when it crashes 50-75%
+[00:18:10] Okay sure so
+[00:18:12] now you typically
+[00:18:14] day trade so you're in and out
+[00:18:16] the same day is that right?
+[00:18:18] Same day sometimes
+[00:18:20] like you know one or two days
+[00:18:22] it all depends like with pump and dumps
+[00:18:24] it's tough to be there on the exact day
+[00:18:26] so you have to look for signs
+[00:18:28] of when the pump is like kind of collapsing
+[00:18:30] so sometimes I give it like one, two or three days
+[00:18:32] you know I've been early, I've been late
+[00:18:34] sometimes I've been dead on I have
+[00:18:36] a blog post where I show four live
+[00:18:38] trades specifically where I'm shorting this
+[00:18:40] stock and it collapses 30% one of them
+[00:18:42] another one collapse 20%
+[00:18:44] another one collapse 50%
+[00:18:46] and another one collapse 70% all in one day
+[00:18:48] and I was short on every single one of them
+[00:18:50] so it was kind of awesome
+[00:18:52] I bet I'm sure that was a good day for you
+[00:18:54] I mean there are various days
+[00:18:56] but it's nice to know
+[00:18:58] that there's justice in the world
+[00:19:00] Yeah so
+[00:19:02] how do you define your exit point
+[00:19:04] once you're in these trades
+[00:19:06] is it sort of predefined
+[00:19:08] before you get in or are you waiting for a
+[00:19:10] signal as it's moving
+[00:19:12] I actually suck at exiting
+[00:19:14] you know I've been there on stocks
+[00:19:16] like when they collapse 70%
+[00:19:18] or when they spike 70% in a day
+[00:19:20] I usually just take
+[00:19:22] I try and take the meat of the move I try and make my 10
+[00:19:24] 20 sometimes 30%
+[00:19:26] and then I move on
+[00:19:28] I'm a far better teacher than I am trader
+[00:19:30] so that's why I think I have millionaire students
+[00:19:32] as opposed to me you know I'm up
+[00:19:34] 800,000 in 2014
+[00:19:36] in trading profits which is nice
+[00:19:38] considering I spent so much time teaching
+[00:19:40] but a lot of my students are up
+[00:19:42] you know a million and a million two
+[00:19:44] in this year alone so
+[00:19:46] they have much smaller accounts than me so
+[00:19:48] I'm better at teaching.
+[00:19:50] Yeah that's awesome.
+[00:19:52] Just taking a step back to when you were talking
+[00:19:54] about exposing scams
+[00:19:56] I've heard you also talk about exposing
+[00:19:58] some celebrities who got behind these
+[00:20:00] what's the go there?
+[00:20:02] Yeah I mean celebrities they don't know about
+[00:20:04] penny-style common dumps
+[00:20:06] my message hasn't really reached the
+[00:20:08] celebrities so like
+[00:20:10] people like Justin Bieber, Shaquille O'Neal
+[00:20:12] Carmen Electra
+[00:20:14] Michael Vick
+[00:20:16] Rudy the football player
+[00:20:18] I don't know if Rudy made it to Australia
+[00:20:20] have you heard of that movie Rudy?
+[00:20:22] Doesn't ring any bells
+[00:20:24] but that doesn't mean it didn't make it here.
+[00:20:26] It was an inspirational story for me
+[00:20:28] until he became like a penny-style promoter
+[00:20:30] you know they just don't know
+[00:20:32] they don't understand the game
+[00:20:34] the celebrities believe in the products
+[00:20:36] that are being pitched to them so Shaquille O'Neal
+[00:20:38] like he got pitched this like
+[00:20:40] Splenda you know artificial sugar
+[00:20:42] basically competitor
+[00:20:44] and I'm sure Shaq tried it and was like this was good
+[00:20:46] they pay him a few million
+[00:20:48] shares he puts his face on the box
+[00:20:50] and this company NXT
+[00:20:52] Nutritionals I mean
+[00:20:54] used his face everywhere and said
+[00:20:56] we're gonna take over Splenda because we have this amazing
+[00:20:58] spokesperson and
+[00:21:00] as it turned out they would pay grocery stores
+[00:21:02] to put their little artificial
+[00:21:04] sugar on the shelves so anytime
+[00:21:06] a grocery store would sell their product
+[00:21:08] they would actually lose money because
+[00:21:10] they have to produce the product and they're paying
+[00:21:12] the grocery store just for promotion
+[00:21:14] and they would do that because they don't care
+[00:21:16] about how many little packs of artificial
+[00:21:18] sugar they sold they cared about putting
+[00:21:20] out a press release saying look we're in this
+[00:21:22] grocery store and that would raise the stock
+[00:21:24] price so Shaq got
+[00:21:26] involved with that I exposed him
+[00:21:28] he sent me a cease and desist letter
+[00:21:30] but you know his stupid lawyer didn't
+[00:21:32] even spell the word egregious correctly
+[00:21:34] so I wasn't that scared at first I was scared
+[00:21:36] like I have like this you know big
+[00:21:38] like big big NBA
+[00:21:40] player going after me and then I was like wait a minute
+[00:21:42] I'm in the right here and so
+[00:21:44] we replied I'm like I'm not taking
+[00:21:46] it down same thing with Justin Bieber you know
+[00:21:48] he pumped this company
+[00:21:50] it was a cool technology it
+[00:21:52] prevented you from text messaging while you're
+[00:21:54] driving and so I'm sure he was pitched
+[00:21:56] the little product demonstration like save
+[00:21:58] teenagers lives and he was like
+[00:22:00] cool I'll promote that
+[00:22:02] he used his Twitter he went on
+[00:22:04] YouTube he promoted this technology
+[00:22:06] unfortunately nobody told Justin that
+[00:22:08] this company didn't own the technology they just
+[00:22:10] licensed it they had no cash in the bank
+[00:22:12] seven other companies had licensed
+[00:22:14] the exact same technology
+[00:22:16] they were better finance and the stock
+[00:22:18] went up when Justin Bieber announced
+[00:22:20] he was a spokesperson then it crashed
+[00:22:22] and you know that company sent me a cease
+[00:22:24] and desist letter when I exposed it and I
+[00:22:26] got hate messages like you know
+[00:22:28] Tim Sykes why do you want teenagers
+[00:22:30] to die while they're texting and driving
+[00:22:32] and I'm like I don't hate the product I
+[00:22:34] hate that company like red flags and
+[00:22:36] I would list was a blog post I list like
+[00:22:38] four red flags like this company has no
+[00:22:40] fucking money like what's wrong with you
+[00:22:42] so the celebrities don't know
+[00:22:44] and it'll happen again because I'm just
+[00:22:46] not that popular I I'm kind of mean
+[00:22:48] you know I tell I talk about how like
+[00:22:50] the party is over with these coming up
+[00:22:52] so nobody likes that everyone's like yeah
+[00:22:54] Justin Bieber awesome technology
+[00:22:56] don't worry about the how the business actually
+[00:22:58] works yeah with that raises another
+[00:23:00] point which I've heard you speak about previously
+[00:23:02] so people think the product
+[00:23:04] matters with these penny stocks when in
+[00:23:06] fact with penny stocks
+[00:23:08] the product is actually the stock
+[00:23:10] why is that
+[00:23:14] yeah I mean it's
+[00:23:16] people get pitched
+[00:23:18] or suckers get pitched the product
+[00:23:20] you know of the stock
+[00:23:22] and they think that they're investing in the story
+[00:23:24] this is just classic like misdirection
+[00:23:26] and I wish more people would
+[00:23:28] understand that and that's why I teach
+[00:23:30] I really hate seeing this
+[00:23:32] information I hate seeing people with a few
+[00:23:34] thousand dollars to their name this is why
+[00:23:36] penny stocks are hated not because penny stocks
+[00:23:38] are evil but because the way that they're
+[00:23:40] marketed is evil and that lures in a lot
+[00:23:42] of people and you know those
+[00:23:44] people hate penny stocks they don't
+[00:23:46] understand that they shouldn't
+[00:23:48] be hating on penny stocks don't
+[00:23:50] don't hate the game hate yourself for being
+[00:23:52] so stupid you know if you were
+[00:23:54] more informed and this is what I told the
+[00:23:56] SEC like I'm trying to get the SEC
+[00:23:58] to do more investor education I was like
+[00:24:00] by halting these
+[00:24:02] penny stocks sure like you stop
+[00:24:04] this scam another scam is just gonna pop up
+[00:24:06] why don't you do a whole
+[00:24:08] educational program to investors and
+[00:24:10] traders and how this stuff works
+[00:24:12] and that way if they get marketed
+[00:24:14] to they're not gonna fall for it so
+[00:24:16] you're gonna stop the whole process rather
+[00:24:18] than stopping one scam at a time which
+[00:24:20] you know it's never ending
+[00:24:22] but no one no one really listens to me
+[00:24:24] I'm just like the guy who's like penny stocks
+[00:24:26] are awesome the bearer bad news
+[00:24:28] I'm not
+[00:24:30] a fun guy I tell the party is over
+[00:24:32] I tell people they have to study they
+[00:24:34] have to read these fucking 70 page SEC
+[00:24:36] filings I understand what I teach
+[00:24:38] is not fun that's why I show pictures
+[00:24:40] of my Lamborghini and my Miami
+[00:24:42] mansion and then you know people are happy
+[00:24:44] so I have to show them
+[00:24:46] the carrot at the end
+[00:24:48] yeah the results I mean finance
+[00:24:50] can be a pretty pretty boring
+[00:24:52] topic I guess so you know
+[00:24:54] gotta put a bit of life into it
+[00:24:56] yeah I mean especially
+[00:24:58] especially penny stocks
+[00:25:00] so
+[00:25:02] sort of getting into a little bit
+[00:25:04] more about your strategy I mean I think it's probably
+[00:25:06] safe to say you wouldn't be where you are today
+[00:25:08] without some sharp risk
+[00:25:10] management so tell us
+[00:25:12] how do you manage your risk
+[00:25:14] and you know go about cutting losses
+[00:25:18] um I mean
+[00:25:22] you just you have to cut very
+[00:25:24] quickly it's
+[00:25:26] it's not
+[00:25:28] it's not an option of cutting losses
+[00:25:30] like just gradually because with
+[00:25:32] these penny stocks they have you know
+[00:25:34] one
+[00:25:36] you know big loss
+[00:25:38] and they're just crushed newbies can
+[00:25:40] get crushed so quickly by believing
+[00:25:42] in these companies so I'm kind of like
+[00:25:44] this this loss Nazi
+[00:25:46] um and and that's what I
+[00:25:48] have to do
+[00:25:50] yeah right okay so Tim
+[00:25:52] now that you're involved in the education
+[00:25:54] side of things where do you often
+[00:25:56] see entry level traders slipping up
+[00:25:58] and what would you say to them like what's
+[00:26:00] one of their biggest downfalls
+[00:26:02] um
+[00:26:04] I mean they don't cut losses quickly
+[00:26:06] I accept the fact that I'm wrong
+[00:26:08] so much of the time and I
+[00:26:10] if I'm wrong I just get out and newbies
+[00:26:12] are scared of the stock market they're scared
+[00:26:14] to lose but you shouldn't be scared
+[00:26:16] if you're willing to just lose a little
+[00:26:18] you know newbies don't think like
+[00:26:20] that they think like I have to win every single
+[00:26:22] time and that's wrong
+[00:26:24] uh cutting losses very quickly is is good
+[00:26:26] yes I mean you sort of
+[00:26:28] let your profits run when you have a good trade
+[00:26:30] and then when it's not going so good you've got
+[00:26:32] to cut your losses quickly and get out of there
+[00:26:34] what is it that you believe
+[00:26:36] um stops the majority of
+[00:26:38] traders making a huge success in the markets
+[00:26:40] like there's the the figure going around
+[00:26:42] that sort of 90 percent of traders fail
+[00:26:44] and that type of thing why do you think
+[00:26:46] that is I mean are they deterred
+[00:26:48] by the hard work and dedication it takes
+[00:26:50] and um are they just not
+[00:26:52] cut out for it I mean what is it
+[00:26:54] I think anybody's cut out for it
+[00:26:56] uh I think what it comes down to
+[00:26:58] is you know
+[00:27:00] just
+[00:27:02] discipline and going in with a game plan
+[00:27:04] newbies and in a lot of failed traders
+[00:27:06] they don't have game plans and if they did
+[00:27:08] they didn't stick to it uh if you
+[00:27:10] you you are very
+[00:27:12] you know definitive in your plans
+[00:27:14] I'm no different than a driving instructor you know
+[00:27:16] driving a car for the first time and you're
+[00:27:18] not adhering to red lights or stop signs
+[00:27:20] driving is very scary you know
+[00:27:22] you would just be driving 100 miles
+[00:27:24] an hour in like a uh you know
+[00:27:26] 20 mile an hour lane and you're not
+[00:27:28] even in the lane and you're gonna crash
+[00:27:30] but if you understand okay you need
+[00:27:32] to stop here you need to pause you need
+[00:27:34] to take smaller positions you need
+[00:27:36] to cut losses quickly if you follow
+[00:27:38] that then you know it's not
+[00:27:40] scary at all right so those
+[00:27:42] are the type of things that should be included
+[00:27:44] in a trading plan yeah
+[00:27:46] yeah I mean you need a plan
+[00:27:48] and that's why I say like learn from
+[00:27:50] a mentor because once you learn from a mentor
+[00:27:52] then you're good
+[00:27:54] one of the areas I don't think we've covered just
+[00:27:56] yet and that is the emotional side of
+[00:27:58] trading do you have any tips
+[00:28:00] around this and in addition how to
+[00:28:02] keep your confidence up especially after a few
+[00:28:04] losing trades um
+[00:28:06] I mean if you cut losses quickly
+[00:28:08] you're never really in that position but every now and then
+[00:28:10] I get undisciplined too
+[00:28:12] um I think that what you have to do
+[00:28:14] is just take your one trade at a time
+[00:28:16] if you do get on a losing streak
+[00:28:18] then trade smaller uh or
+[00:28:20] paper trade or don't trade
+[00:28:22] don't try and get all your money back
+[00:28:24] right away and be like okay I'm down
+[00:28:26] but let me go bigger now because your
+[00:28:28] mindset is not there anymore like you
+[00:28:30] kind of just had like a bad breakup
+[00:28:32] just send yourself up a failure
+[00:28:34] if you're sort of taking that approach so
+[00:28:36] anyway Tim that's great you've
+[00:28:38] given the listeners a lot to consider
+[00:28:40] great pointers so that's great thank you
+[00:28:42] um which is
+[00:28:44] bringing us towards the near the end of the
+[00:28:46] interview but before that let's go to the
+[00:28:48] closing bell so these are just a few short
+[00:28:50] questions then sharp answers
+[00:28:52] so uh let's do it
+[00:28:54] sure what's the best piece of advice
+[00:28:56] you've ever received
+[00:28:58] uh when I was
+[00:29:00] 23 and I was trying to raise money
+[00:29:02] for my hedge fund and one guy was like
+[00:29:04] no you have a great track record
+[00:29:06] you have a great strategy but you're not
+[00:29:08] yet and I was like what are you talking about
+[00:29:10] I never lost money
+[00:29:12] any big amount of money back then
+[00:29:14] and he was dead on right and I
+[00:29:16] you know later made a mistake I tried
+[00:29:18] investing I didn't follow my trading rules
+[00:29:20] and I lost roughly 35%
+[00:29:22] of my hedge fund and I went back to that
+[00:29:24] moment and I was like now I'm starved now
+[00:29:26] I know to be conservative so sometimes
+[00:29:28] you can say you don't want to take a big
+[00:29:30] loss but once you have that big loss
+[00:29:32] under your you know
+[00:29:34] in your belt I mean then then
+[00:29:36] you understand you don't want to be at
+[00:29:38] that point anymore and it makes you
+[00:29:40] conservative it makes you wiser and it's
+[00:29:42] better yeah so once you experience it
+[00:29:44] then you truly understand what
+[00:29:46] what you know what they're talking about
+[00:29:48] um what is the number one trading
+[00:29:50] resource you couldn't live without today
+[00:29:52] uh
+[00:29:54] twitter twitter has gotten
+[00:29:56] very uh you know
+[00:29:58] good at at breaking
+[00:30:00] news and and just sensing where all the
+[00:30:02] traders are with tickers and everything
+[00:30:04] awesome Tim what's
+[00:30:06] one book you believe is essential
+[00:30:08] for any trader just starting out
+[00:30:10] uh the psychology
+[00:30:12] of trading by doctor
+[00:30:14] uh brett steenbarger I think that's an
+[00:30:16] incredible book newbie traders probably
+[00:30:18] won't understand it but it's very
+[00:30:20] useful they'll just buy it and you'll
+[00:30:22] read it eventually if you're if you make
+[00:30:24] it past newbie state it'll help you
+[00:30:26] understand uh you know how to control
+[00:30:28] emotions and risk reward and everything
+[00:30:30] awesome we'll put that in the show notes
+[00:30:32] um knowing everything you do now
+[00:30:34] what would you have done differently come
+[00:30:36] day one
+[00:30:38] I would have gotten a mentor to start
+[00:30:40] uh you know I I learned everything
+[00:30:42] on my own and I learned well and I've
+[00:30:44] done well but I could have you know really
+[00:30:46] just learned and made a
+[00:30:48] lot of money a lot quicker um
+[00:30:50] so it's it's kind of bad
+[00:30:52] you know I wish I could go
+[00:30:54] back but I can't now I can just be the
+[00:30:56] mentor to people that uh but again I never had
+[00:30:58] yeah that's that's great advice so
+[00:31:00] um Tim you've got a
+[00:31:02] special offer for the listeners um
+[00:31:04] for this interview so um would you like to share
+[00:31:06] a bit more info on that yeah if
+[00:31:08] you go to profit.ly
+[00:31:10] slash guru uh we have a bunch of different
+[00:31:12] newsletters from multi-millionaire
+[00:31:14] traders not people who are like hired
+[00:31:16] I hate these like websites that have
+[00:31:18] journalists who pose as real traders
+[00:31:20] all of my people who are gurus
+[00:31:22] unprofitably are verified
+[00:31:24] millionaires uh and so if you go to
+[00:31:26] profitly slash guru and you use
+[00:31:28] the uh code uh traitor chat
+[00:31:30] then uh you'll get 10%
+[00:31:32] off any of the uh annual newsletter so
+[00:31:34] I think it's a pretty cool deal specifically
+[00:31:36] for your listeners yeah no that's
+[00:31:38] an awesome office so uh make sure
+[00:31:40] you head over to profit.ly
+[00:31:42] slash guru
+[00:31:44] that's it all right awesome Tim
+[00:31:46] so again thanks so much for coming on the
+[00:31:48] show and um tell listeners
+[00:31:50] where they can find out more about you and
+[00:31:52] then we'll call it a wrap
+[00:31:54] yeah if you go to timothy sakes.com
+[00:31:56] um you know there's a whole bunch of stuff
+[00:31:58] and also profitly is my website but
+[00:32:00] just google me you'll see some
+[00:32:02] some fun stuff you know it's not just
+[00:32:04] about my website and my trades I show
+[00:32:06] off my car I show off my trips I show
+[00:32:08] off my mansion that should get you guys
+[00:32:10] inspired to see the rewards of
+[00:32:12] of many years of good trading
+[00:32:14] awesome all right Tim thanks a lot
+[00:32:16] thanks a lot man
+[00:32:20] you've come to the end
+[00:32:22] of this episode of chat with traders
+[00:32:24] but don't worry more great episodes are on
+[00:32:26] the way to stay updated with each
+[00:32:28] great new episode be sure to subscribe
+[00:32:30] to the podcast in iTunes and
+[00:32:32] we'd love it if you leave us a rating and review
+[00:32:34] we'll see you next time on chat
+[00:32:36] with traders
+[00:32:54] you

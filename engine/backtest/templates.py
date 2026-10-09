@@ -13,9 +13,11 @@ Templates (``TEMPLATES``):
 * ``gap``                — gap continuation: buy at the open when it gaps ≥ ``gap_min`` above
                            the prior close (prior close > SMA50); stop ``stop`` below the open,
                            exit after ``max_hold`` days or on a close below SMA``trail_ma``.
-* ``relative_strength``  — rotation: every ``rebalance_days`` hold the ``top_n`` strongest
-                           names by ``lookback``-day return (close > SMA``trend_ma``), equal
-                           weight; cash when SPY < SMA200.
+* ``relative_strength``  — rotation: every ``rebalance_days`` (≥ 5, i.e. at most weekly) hold
+                           the ``top_n`` strongest names by ``lookback``-day return (close >
+                           SMA``trend_ma``), equal weight; cash when SPY < SMA200. Hysteresis:
+                           a holding is kept while it still ranks within ``top_n ×
+                           hold_buffer`` (default 2×), so names near the cut-off don't churn.
 
 Shared rules: signals use data up to the prior close (gap uses the day's open, known at the
 open), fills at the open (or stop / target level) with ``slippage_bps`` per side via
@@ -54,6 +56,7 @@ class RuleParams:
     lookback: int = 126
     top_n: int = 10
     rebalance_days: int = 21
+    hold_buffer: float = 2.0      # keep a holding while its rank <= top_n * hold_buffer
     # shared
     trend_ma: int = 200           # 0 = no trend filter
     trail_ma: int = 0             # 0 = no MA trail
@@ -92,7 +95,9 @@ class RuleParams:
         self.gap_min = c(float(self.gap_min), 0.01, 0.5)
         self.lookback = int(c(int(self.lookback), 10, 252))
         self.top_n = int(c(int(self.top_n), 1, 50))
-        self.rebalance_days = int(c(int(self.rebalance_days), 1, 126))
+        # daily rotation (1) churned ~10k round trips in 10 years: at most weekly
+        self.rebalance_days = int(c(int(self.rebalance_days), 5, 126))
+        self.hold_buffer = c(float(self.hold_buffer), 1.0, 5.0)
         self.trend_ma = int(c(int(self.trend_ma), 0, 250))
         self.trail_ma = int(c(int(self.trail_ma), 0, 250))
         self.target = c(float(self.target), 0, 2.0)
@@ -245,7 +250,12 @@ def run_rotation(bars, spy, start, end, p: RuleParams, capital: float = 100_000.
             want = []
             if not p.market_filter or risk_on.get(d, False):
                 m = mom.loc[d].where(ok.loc[d].fillna(False).astype(bool)).dropna()
-                want = list(m.sort_values(ascending=False).index[:p.top_n])
+                ranked = list(m.sort_values(ascending=False).index)
+                # hysteresis: keep holdings still ranked inside the buffer, fill the rest
+                keep_n = max(p.top_n, int(round(p.top_n * p.hold_buffer)))
+                keep = [s for s in ranked[:keep_n] if s in pos]
+                fresh = [s for s in ranked if s not in pos][:max(0, p.top_n - len(keep))]
+                want = keep + fresh
             for sym in [s for s in pos if s not in want]:
                 px = opn.at[d, sym]
                 px = float(px) if px == px else float(close[sym].asof(d))

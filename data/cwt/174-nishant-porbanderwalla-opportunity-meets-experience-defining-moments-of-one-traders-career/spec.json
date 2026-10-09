@@ -1,0 +1,73 @@
+{
+  "trader": "Nishant Porbanderwalla",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Main method is intraday reversal scalping on volume spikes and panic moves with quick holds (seconds to minutes), not approximable on daily bars.",
+  "template": "none",
+  "method_name": "Intraday panic reversal scalping",
+  "style": "discretionary intraday reversal with algo signals",
+  "timeframe": "intraday (seconds to minutes)",
+  "universe": {
+    "description": "US stocks and ETFs that move quickly, including low-float names"
+  },
+  "setup": [
+    {
+      "rule": "Detect strong quick move down with increasing volume via custom algo",
+      "quote": "I'm looking for a a strong move down. And it's all I've kind of made algorithms that that kind of show me that move where a stock is moving down very quickly with a lot of volume.",
+      "timestamp": "[00:32:16]"
+    },
+    {
+      "rule": "Focus on panic reversals not news-driven",
+      "quote": "I'll try to stay away from news reversals, but I'll play more like the panic reversals",
+      "timestamp": "[00:32:47]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Wait for green bar after volume spike and add in",
+      "quote": "if the volume is increasing steadily and if the stock is falling at the same time, you know, pretty hard, that pretty much signals to me that it's coming to an to an end and then I'll look for a green bar and add in and then put a stop.",
+      "timestamp": "[00:34:52]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Fixed risk stop, e.g. 35 cents",
+      "quote": "I'll risk maybe like 35 cents to make you know to at least make 55 or 60 cents",
+      "timestamp": "[00:34:21]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Target quick 25-40 cents profit",
+      "quote": "you try to make quick 25, 30, 40 cents and uh get out",
+      "timestamp": "[00:33:18]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Scale to full size when criteria met, respect buying power",
+      "quote": "if it's met uh I like to be in my in my full size",
+      "timestamp": "[00:34:21]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Prefer high VIX/volatility panic days",
+      "quote": "for me it's it's the VIX, you know, it's the volatility in the market. ... when the VIX is going crazy, when uh people are panicking, that's what that's what I like.",
+      "timestamp": "[00:20:50]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Mentions shorting reversals and occasional long low-float momentum",
+      "assumption": "Primary bread-and-butter is reversal scalping (long or short) but engine is long-only so not testable"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "174",
+    "page_url": "https://chatwithtraders.com/episode/174-nishant-porbanderwalla-opportunity-meets-experience-defining-moments-of-one-traders-career",
+    "youtube_url": "https://www.youtube.com/watch?v=Qrqlr27oVbo"
+  }
+}

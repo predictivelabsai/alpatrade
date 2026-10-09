@@ -1,0 +1,82 @@
+{
+  "trader": "Vincent Bruzzese",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Guest describes concrete long-side rules using daily charts, relative strength to SPY, and SMA filters that can be approximated on daily bars.",
+  "template": "relative_strength",
+  "method_name": "Relative strength daily swing",
+  "style": "relative strength with SMA confirmation",
+  "timeframe": "daily",
+  "universe": {
+    "description": "US stocks with relative strength to SPY"
+  },
+  "setup": [
+    {
+      "rule": "Market (SPY) first; avoid low probability environments",
+      "quote": "the market comes first, right? So everything revolves around the market. 75% of all stocks... will go with SPI.",
+      "timestamp": "[00:38:00]"
+    },
+    {
+      "rule": "Stock must show relative strength to SPY",
+      "quote": "second is, is a stock relatively strong or relatively weak to the market?... if you look today at Google... still green... institutions are buying that stock",
+      "timestamp": "[00:38:44]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Daily chart not extended, above all SMAs, above technical indicators, near all-time high",
+      "quote": "I took this trade because on the daily chart, it's not extended. It's above all of its SMAs. It's above its technical indicators. It's strong, relatively strong against the market.",
+      "timestamp": "[00:00:50]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Mental stop if SPY breaks 50 SMA; no hard stops for longer holds",
+      "quote": "I'm looking at the SMA 50 on spy as my line... Spy needs to break that line for me to no longer want to take bullish links.",
+      "timestamp": "[00:41:21]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Hold winners; avoid quick profit taking due to skepticism",
+      "quote": "traders in general do not come from a rich mentality... The moment you get a dollar profit, they run away with the money",
+      "timestamp": "[00:12:16]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Position size based on business plan for consistent monthly returns",
+      "quote": "if you say, I need to make $10,000 a month, you want that to be within $8,000 to $12,000.",
+      "timestamp": "[00:09:43]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Only trade in direction supported by SPY trend; SPY above 50 SMA for longs",
+      "quote": "Spy needs to break that line for me to no longer want to take bullish links.",
+      "timestamp": "[00:41:29]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "No exact lookback, top_n or rebalance_days specified for relative strength scan",
+      "assumption": "Use standard 20-60 session lookback and daily rebalance as implied by daily chart focus"
+    },
+    {
+      "issue": "Mentions options and futures but core rules are for stock direction",
+      "assumption": "Focus on long equity rules only per engine constraints"
+    }
+  ],
+  "params": {
+    "lookback": 20,
+    "top_n": 10,
+    "rebalance_days": 1,
+    "trend_ma": 50
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "312",
+    "page_url": "https://chatwithtraders.com/episode/312-vincent-bruzzese-aka-hari-seldon",
+    "youtube_url": ""
+  }
+}

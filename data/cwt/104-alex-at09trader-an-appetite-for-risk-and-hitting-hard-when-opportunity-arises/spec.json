@@ -1,0 +1,68 @@
+{
+  "trader": "Alex, @AT09_Trader",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "short-only",
+  "template": "none",
+  "method_name": "Short sympathy plays",
+  "style": "discretionary shorting",
+  "timeframe": "intraday to multi-day",
+  "universe": {
+    "description": "small-cap sympathy plays in hot sectors"
+  },
+  "setup": [
+    {
+      "rule": "identify main runner in sector then short sympathy plays when main reverses",
+      "quote": "my strategy is find the main stock that's running and short their sympathies when the main one starts to reverse",
+      "timestamp": "[00:39:31]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "short hard on reversal confirmation of main stock",
+      "quote": "when Sino starts to reverse I hit a different sympathy hard I short it as hard as I can",
+      "timestamp": "[00:39:31]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "cut when main thesis breaks or pain too high",
+      "quote": "if I'm wrong if sio starts to reverse I'm just going to take my loss",
+      "timestamp": "[00:39:31]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "hold 2-3 days for bleed after hype ends",
+      "quote": "when they do reverse I plan on holding maybe two or three days",
+      "timestamp": "[00:41:04]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "scale in feelers then add on way down with larger account",
+      "quote": "with bigger account I guess I have the leeway to short a little bit early to throw out some feelers into parabolics or throw out some feelers into bigger uh bigger size charts and slowly add on the way down",
+      "timestamp": "[00:34:17]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "hot sectors with chat room/Twitter attention and low float sympathy",
+      "quote": "when they start to have these sympathy plays in the similar sectors that every single person is talking about",
+      "timestamp": "[00:43:11]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "no long-side rules provided",
+      "assumption": "method is short-only"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "104",
+    "page_url": "https://chatwithtraders.com/episode/104-alex-at09trader-an-appetite-for-risk-and-hitting-hard-when-opportunity-arises",
+    "youtube_url": "https://www.youtube.com/watch?v=ChPNOrJFHng"
+  }
+}

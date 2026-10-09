@@ -1,0 +1,539 @@
+# 074: John Walsh – Pocketing $100k From a Trading Comp, and Making Simplicity a Priority w/ the Black Cabbie Trader
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT1462100443.mp3
+
+[00:00:00] What would your trading look like if capital wasn't the constraint?
+[00:00:03] That's the reality for most traders. It's not skill-holding them back, it's size.
+[00:00:07] Trade the pool changes that. Step into the U.S. equity markets with up to $200,000 in buying
+[00:00:13] power without committing your own capital. Full access to stocks and ETFs, longer short,
+[00:00:19] executed with the precision and freedom serious traders expect. Your performance is measured
+[00:00:23] by one standard, disciplined risk management and consistent execution. Meet that standard
+[00:00:28] and you operate at scale. No subscriptions, no ongoing obligations, just a clear path forward.
+[00:00:34] For those ready to trade beyond limitations, this is the next level.
+[00:00:39] Trading in the financial markets involves a risk of loss. Podcast episodes and other
+[00:00:43] content produced by chat with traders are for informational or educational purposes only
+[00:00:48] and do not constitute trading or investment recommendations or advice.
+[00:00:52] What's up traders? You're listening to Episode 74. I'm Aaron
+[00:01:07] Fryfield and thanks for being here. My guest this week is John Walsh aka the Black Cabby Trader.
+[00:01:14] The backstory of John, in 2012 he entered a competition, the City Index Trading Academy
+[00:01:21] which was a group of people with very little market experience to see how well they would perform
+[00:01:27] over the span of five weeks. John came out on top and won £100,000 in prize money.
+[00:01:34] He's of course continued trading ever since and has developed into quite the trend slash
+[00:01:39] position trader focused on U.S. equities and makes simplicity an absolute top priority.
+[00:01:45] He's also a Black Cab driver in London, which you'll hear more about very shortly.
+[00:01:51] In this episode we chat about the competition, John's trading methodology
+[00:01:55] and why you've got to stay out of your own way as John puts it.
+[00:01:59] If you're enjoying the podcast and if it's helped you in any way, I have a very small
+[00:02:04] favour to ask. Please leave a brief iTunes review. It's such a huge help. So if you can
+[00:02:10] help, just go to chatwithtraders.com forward slash iTunes. It'll take you all of about
+[00:02:17] two minutes. Thank you. Okay, you're listening to the Chat With Trades podcast. Here is an interview
+[00:02:24] with John Walsh. All right, John and we are rolling. What's up, man? How are you?
+[00:02:32] I'm good. Thanks, Aaron. How are you? I am doing just fine. Thank you very much for
+[00:02:36] coming on the podcast. It's really great to be speaking with you.
+[00:02:39] No worries. Thank you for having me on. I'm very pleased to be on. Hopefully people
+[00:02:43] get something from it. Obviously, you've had some big hitters before, so I'm
+[00:02:47] honoured to be among the last year's group. I'm sure they will. I'm sure they will.
+[00:02:52] So how's your day been? You keeping busy? Yeah, I'm not too bad. I trade US markets,
+[00:02:58] so I'm obviously in London, so I have to wait until the evening's over here before I can do
+[00:03:02] my homework and scanning charts. But as you know, I'm a black cab driver by trade, so I'll
+[00:03:07] do a few hours in the cab during the day, keep myself busy. So weather's increasing,
+[00:03:14] getting a bit better over here. So yeah, no, things are good. Very good. Very good. All
+[00:03:19] right, we'll dig into that all a lot more in just a bit. But let's start off with
+[00:03:24] talking about how you first developed an interest in markets and more specifically trading. So
+[00:03:30] where did everything kick off for you? Well, it started really early when I was a child,
+[00:03:35] like in my teenage years really. I mean, it's a bit of a cliche. I've heard a lot of people say
+[00:03:39] that they followed the stock prices in the newspaper. I did all that. I used to cut
+[00:03:43] them out each day and I used to have a pile and pile of newspaper clippings of old stock prices.
+[00:03:49] But in reality, I had no idea what moved the price up or down. I didn't know about charting
+[00:03:55] or anything like that. It was very basic. I used to follow tickers and was interested in the
+[00:03:59] company names. And from that, it just went up and I just started to read some books and stuff.
+[00:04:04] And I just started to love it really. But I hadn't actually started trading just yet. It was
+[00:04:09] just like just a hobby in the background that I just kept an eye on. Okay, cool. Cool. So,
+[00:04:14] John, I know you went on to going into, what did you do? You went into a competition. But prior
+[00:04:22] to the competition, which we'll talk about more in just a bit, what was your experience with
+[00:04:27] trading before entering? Well, Aaron, this is the thing. I literally had no trading experience
+[00:04:32] at all. I mean, I did a bit of paper trading, as you would call it. I used to look on Google
+[00:04:39] Finance and I built up a little paper portfolio of stocks. But it was just really, it wasn't even
+[00:04:45] technical or fundamental. I used to read about stocks, put them on the list, watch them go up,
+[00:04:50] watch them go down. And I used to just follow it like that. But no actual real trading experience
+[00:04:55] at all. Okay, got it. So, well, let's talk a little bit about the competition. I mean,
+[00:05:00] that's kind of how you got a bit of a name for yourself in the UK, especially. So,
+[00:05:04] how did you hear about the competition? What motivated you to try out? And what even was the
+[00:05:09] competition? Well, it was called the City Index Trading Academy. I don't know if some of your
+[00:05:14] listeners would be aware or not. City Index is a broker in the UK. And it's funny, a lot of people
+[00:05:20] ask this, how did I get involved? I literally do not remember. I must have been looking at
+[00:05:26] some kind of trading related website. And I saw an advert. And I literally just put my name and
+[00:05:31] email address in there. So they get back contact with you in a couple of weeks or so. And I thought,
+[00:05:36] well, I'll see if they get back to me. And they did. And we had to do like a phone interview
+[00:05:41] because they want to talk to you and make sure you could do what they required from you.
+[00:05:46] And they wanted people with no experience as well. So I fitted that category. And so I did
+[00:05:52] the phone interview. And then I think they had about 500 applicants sign up online. And they
+[00:05:58] whittled that down from the phone interview down to 80. And then we had to go for a live interview,
+[00:06:04] which they whittled that down from 80 down to 12. And then for the final 12, we had to do two
+[00:06:11] days filming at the City Index offices. And at the 12, they whittled that down to eight.
+[00:06:16] And we were the final eight. And then the competition started.
+[00:06:19] Okay. Okay. So what was the whole sort of concept, the idea of the competition?
+[00:06:25] Right. So the whole concept behind our idea was literally taking eight people off the street with
+[00:06:30] little or no trading experience at all. Teach us how to trade effectively what a lot of people
+[00:06:36] would say was the right way, like a combination of technical and fundamental analysis. We
+[00:06:42] would talk candle charts and candle patterns, how to read like fundamental news and how to put it
+[00:06:49] all together into a trading plan. And from that, we just learned a good basic foundation
+[00:06:56] and framework to trade. And we was off and running.
+[00:07:00] Okay. Okay. Interesting. So what were some of the questions that they asked you like,
+[00:07:06] what was the screening process like you said that you went to a couple of interviews?
+[00:07:10] What were some of the questions that they wanted you to answer?
+[00:07:14] Yeah. So we'd sat down and they literally hit us straight away. Like on the day I went for
+[00:07:18] my interview, but as soon as I sat my bum on the chair, they said to me, like, what,
+[00:07:24] what did the footsie close yesterday? And to be honest with you, I didn't have a clue because
+[00:07:28] I really had no idea. And they asked me what sort of, they asked me the price of oil
+[00:07:34] closed in the previous day. And also they asked me just to give them a financial
+[00:07:39] story that I'd read in the paper. So, but they just basically wanted to make sure that you had an
+[00:07:44] inkling and an interesting trading primarily, because they wanted to make sure that people
+[00:07:48] are interested in the subject matter at least. Because I've got to remember, there was 100
+[00:07:52] grand prize money up as well. So it was taking very serious. And a lot of people did follow it
+[00:07:57] in the UK at the time. Okay. And what was like, I mean, it kind of sounds like you just saw
+[00:08:04] this, this opportunity and you just sort of decided, I'll put my name in, I'll put in
+[00:08:09] my email and if I get it, I get it. And you did get it. But did you have any real desire to
+[00:08:16] become a trader, like make a career out of it? Oh, absolutely. I mean, when, when, when the
+[00:08:22] interview process was going on at the time, I was doing the knowledge to become a London
+[00:08:26] black cab driver. I'm not too sure if you know what the knowledge is. It's a,
+[00:08:29] it's a studying process. You have to go through to become a cab driver in London.
+[00:08:33] And the plan always was because it takes up a lot of time to study the knowledge,
+[00:08:37] become a cab driver. And then because I'm being obviously being a cab driver on my own
+[00:08:41] boss, I could then learn to trade afterwards. But because how things ended up transpiring
+[00:08:47] with the competition with me winning it, I ended up being sort of catapulted into
+[00:08:52] learning how to trade. Then I became the cab driver afterwards. And that is how the
+[00:08:56] black cabbie trader came about. It all sort of come together at once.
+[00:09:00] Okay. Okay. So let's just go off on a side tangent here. What is the knowledge?
+[00:09:04] Because I know the whole cab driving thing is taken very seriously in London. So
+[00:09:09] what is the knowledge? Right. So the knowledge is basically you've got a look,
+[00:09:13] the centre of London is Sharon Cross train station. Now you've got to learn the
+[00:09:17] six mile radius of that. And they say it's about 20,000 streets. And you have to
+[00:09:22] learn all what they call points of interest, which is essentially
+[00:09:25] anything that anyone can come up to you and ask you to take them to a train
+[00:09:30] stations, police stations, museums, theatres, absolutely anything you can think of,
+[00:09:35] statues. And you have to do that. And it's a process. And you just do your best. You
+[00:09:40] have a lot of them or exams, you literally go into a room with an examiner,
+[00:09:44] and they literally ask you four questions, take me from A to B, and you have to do
+[00:09:48] what they call call it. So I have to say left into Sonos O Street, right into
+[00:09:52] Sonos O Street, cross this roundabout, left into this street, right into that road.
+[00:09:56] And you have to get them there. And then it's a long old process. I'm very proud of
+[00:10:00] it. And eventually I got through it. But fortunately, I learned to trade before I
+[00:10:04] finished that. So I got to hit the ground running with both.
+[00:10:09] Right. That's really full on. So you don't have to use any GPS?
+[00:10:13] No, no, no GPS. No, it's all done by memory. And you just look at a basically a flat
+[00:10:19] laminated map of London. And you use like a water marker to pen in the line.
+[00:10:23] Because you have to go as straight as you can, essentially, like on the cotton,
+[00:10:28] which is basically you put a cotton string from one end of the route to the other.
+[00:10:33] And you try and call it as straight as you can. So left, right, left, right,
+[00:10:36] no going up major roads, and then just chuck in the left.
+[00:10:38] You've got to use all the intricate routes you can.
+[00:10:41] Wow. Wow. Okay.
+[00:10:43] And it's a busy time.
+[00:10:45] So where does that fit in in your life today? You still do,
+[00:10:48] what, a few hours cab driving each day?
+[00:10:50] Well, yeah, exactly. So because I trade the US markets, as I said in London,
+[00:10:54] they don't open until the afternoon. So I get up early in the morning.
+[00:10:58] I go out like seven, eight in the morning, two or three times a week, do a few hours,
+[00:11:03] come back in the afternoon, sometimes before the US market opens. Sometimes it's not just
+[00:11:08] yet, but I've done all the homework the night before. And then I watched the open,
+[00:11:12] but I've said on Twitter, sometimes a lot of the time the market opens and I do nothing
+[00:11:17] because I'm a position trader. Everything's very automated in respects to moving the stops.
+[00:11:22] I don't, unless I'm actually opening new trades, there's not much for me to do.
+[00:11:26] So I just, but I just watch it and I love it.
+[00:11:29] So it keeps you occupied during the day. It's excellent.
+[00:11:32] Exactly. You know, and I'm always, I'm on Twitter and stock twits. I'm reading articles
+[00:11:38] and I'm talking to people and I read, I'm answering emails, I'm reading trading books.
+[00:11:43] So I just try to immerse myself in it really.
+[00:11:45] Good stuff. Good stuff. So let's get back to the competition. I really want to dig into this a
+[00:11:49] little more. Why do you think they chose you? I mean, like you said, there was a lot of entries
+[00:11:56] to get into this competition. Why do you think they chose you? Is there anything that stands out?
+[00:12:01] Well, I actually did ask them this question after it was all over. And they just said that they
+[00:12:06] could see I was hungry. They could see I was really, I mean, I'm a competitive person in nature
+[00:12:10] and I really was keen to win. I mean, even if it was, even if there was an underground prize money,
+[00:12:15] I'd have still done my best to win because it was over five weeks, five trading weeks,
+[00:12:22] and I won three out of the five weeks. I finished second one week. And the week I didn't,
+[00:12:27] I finished in the bottom three. No one made any money. And they just saw something that I was,
+[00:12:33] I was really keen because I was so pleased to get to the final sort of almost the final
+[00:12:38] selection process. And they love, they just love my enthusiasm. And they thought I was going
+[00:12:44] to be good. And it ended up being that they were quite pleased with how I performed. And it all
+[00:12:49] finished with quite a, quite a bang at the end with my final trade. And it was all exciting.
+[00:12:55] And a lot of people followed it. So yeah, they were pleased with the result. And obviously,
+[00:12:58] I was too. Right. Okay. So what were you, I guess what I want to ask is what were you
+[00:13:04] taught? Like, what was the training like? Or were we just kind of sort of set free? Like,
+[00:13:10] was there any process that you went through right at the beginning, like maybe in the first week,
+[00:13:14] they put you through some sort of program? Was there anything like that?
+[00:13:17] Yeah, there was, that's correct. Yeah, there was, I mean, we used to go to their office every day
+[00:13:21] at the beginning, and we had a lot of seminars. And we were basically taught technical analysis
+[00:13:26] 101, like a basic candle charting. I mean, literally what the wick on a candle looked
+[00:13:32] like stuff. But then it went into technical analysis, ordered like, stochastics, moving
+[00:13:36] averages, chart patterns, and like everything you could almost think even, I mean, very advanced
+[00:13:42] for a beginner, because we literally, some of us have never even opened the trade,
+[00:13:45] some of them had, but they wasn't even that what they experienced. But it was literally
+[00:13:50] overkill. But it was done in such a way you couldn't help but not take it in. And because
+[00:13:55] it was for a competition, everyone was keen to listen and not miss out. So you just sort of
+[00:14:00] became a sponge. And I still use a lot of what I learned then today.
+[00:14:04] Okay. So who were, I think there were two sort of key mentors who were giving you some sort of
+[00:14:11] guidance throughout the whole competition. Who were the two mentors?
+[00:14:16] Yeah, that's correct. That's James Chen from the States. He came over. I mean, I think he
+[00:14:21] lived in London at the time during the competition. He's known in the States as a
+[00:14:25] charter technician. He's wrote a few books. And also Ashraf Liddy, who's a very well-known
+[00:14:32] person in the UK and even the world. He does Bloomberg and CNBC and stuff like that. And
+[00:14:37] he's wrote another person who wrote another couple of books. And but it wasn't just a
+[00:14:41] webinar. We had them on 24 hour call, you know, we'd get emails on phone calls and they were
+[00:14:47] really because during the competition, there was a live P and L table. So they could see and
+[00:14:51] we could see how everyone was doing. And it was really engrossing and they were really good
+[00:14:55] guys. And they gave us a lot of good advice. Also, not just about the technical part, but
+[00:14:59] also the psychological part, don't panic if you're having a bad day and stuff like it wasn't
+[00:15:03] just about that. It was because some of us had never traded before. So we didn't know how to
+[00:15:08] handle losses and if things would go in, not the way they should have done. So it was a lot
+[00:15:12] of aspects that I mean, to be fair, it was a real baptism of fire actually, unfortunate
+[00:15:18] that I got in hindsight. It was a very stressful time. I hardly slept for five, six weeks.
+[00:15:22] But afterwards, when I look back, I was really fortunate.
+[00:15:28] Okay. And just so we're clear, who's money we train? I presume it was probably,
+[00:15:33] who was it? City index?
+[00:15:35] Yes. So the thing was, we was talking at the start amongst ourselves, the traders,
+[00:15:39] we were saying it was some kind of demo account. But coming to the end of the last
+[00:15:43] few weeks and we started making some money, we wasn't completely convinced it was
+[00:15:47] demo because they were taking it a little bit too, I mean, I know it was a serious business.
+[00:15:51] I mean, regardless if it was demo or not, the winner on the last week was going to get 100
+[00:15:55] grand. But there was some real interest and so I'm not convinced it was demo. It may have been,
+[00:16:02] but then again, it could have easily been real money. And it was, I mean, we treated this,
+[00:16:08] we treated it as it was so.
+[00:16:10] Yeah. Yeah. So how much money were you allocated at the beginning and did that
+[00:16:15] like sort of increase over the weeks or decrease?
+[00:16:18] Yeah, it did. So the first week, we was given 5,000 each. And I think, I mean,
+[00:16:23] because it was a very, we didn't know what we was doing, essentially, and it was all very
+[00:16:28] nervous and we was dipping our toe in here and there. I don't think, honestly, we did as well
+[00:16:32] collectively as they thought we was going. So they kept it at the second week as 5 grand.
+[00:16:38] And then every other week, every week after that, it accumulated even more. And then in the
+[00:16:44] final week, we traded 100 grand account. Okay. For the finale.
+[00:16:50] Right. That's a big jumper. Yeah, it was, it was.
+[00:16:54] So what sort of style of trading did they promote and what products were you trading?
+[00:16:59] Well, see, as I've said to you previously in previous conversation that over in the UK,
+[00:17:04] we have something called Spreadbit, which I'm sure some of your listeners from the UK will
+[00:17:07] know what that is. So it's a leverage product and you trade it basically a pound or whatever it is
+[00:17:15] per point. So for instance, if you bought Apple, just say it was $100 and you did a pound a point,
+[00:17:21] for every cent it went up. So every dollar it went up, you'd make a hundred pounds.
+[00:17:26] So and you can trade anything you can trade effects, commodities, stocks, indices, any,
+[00:17:31] any sort of asset class that you want, but it's not you don't actually only
+[00:17:35] underlying it's basically a futures contract essentially.
+[00:17:38] Okay. And you were flat on all positions by the end of the day?
+[00:17:42] Well, no, what it was, it started on a Tuesday morning and it started and it ended
+[00:17:48] when did it ended Friday at noon. So we had like three and a half days of trading non-stop.
+[00:17:54] And I mean, I had a day job at the time and I was trading while I was at work and watching
+[00:17:59] the other guys trade. Some of the guys didn't have day jobs and they were trading day and
+[00:18:03] night, but sometimes that was to the detriment of their account. I just did what I could.
+[00:18:08] I was always there at the London Open and the New York Open,
+[00:18:12] but you could literally trade day and night up until noon on the Friday,
+[00:18:16] but I didn't want to go down that road. Okay. All right. Okay. Got it.
+[00:18:22] So you mentioned a little earlier that you were, you sort of came out on top at the top
+[00:18:27] of the leaderboard for I think was three out of five weeks. How did you manage that?
+[00:18:31] Do you think you were almost a little bit of a natural at this? Like,
+[00:18:36] or was there something that, something that you were doing a lot differently to many of the other
+[00:18:42] traders? Well, the main thing was I was trying to win every week regardless. You know, I've said
+[00:18:47] I would happily fall in on my shield if I had to, but a lot of the traders were essentially
+[00:18:52] trying not to win. They didn't want to finish in the bottom three, but they weren't trying to
+[00:18:55] win the week either. Whereas I tried to win every week. And as I said, they're three out of
+[00:19:00] five weeks. I did. Okay. So why weren't they trying to win just so that they were like,
+[00:19:05] just safe? They didn't want to risk too much. Precisely. They would just plan it. So, I mean,
+[00:19:10] some of them took some chances and that some of it went, sometimes it went in their favor,
+[00:19:15] sometimes it didn't. Yeah. They, it was not like the apprentice, the competition,
+[00:19:21] the program, the apprentice, as long as you don't finish in the bottom three,
+[00:19:24] you're safe. And they were just trying to get through each week. But I was just thinking,
+[00:19:28] I'm here. I'm going to make the most of this situation. I'm going to do my best. If I fall
+[00:19:33] on my shield, then so be it. But I'll try to do my best. I did. And I loved it. And like you said,
+[00:19:39] inadvertently, I did end up finding I had a knack for it. And I wasn't going to apologize for that
+[00:19:44] to the other traders. Of course, of course not. So come to the end of it. You won $100,000 prize
+[00:19:52] money. What did you end up to? 100,000 pounds. Yeah. Yeah. Got to get that straight.
+[00:19:58] What did you do with that money? Did it go straight into a trading account or
+[00:20:01] how'd you, what'd you do with it? Well, I mean, I spent a little bit of it,
+[00:20:06] obviously, I put a little bit away, but I used a very small amount because I mean,
+[00:20:12] I'd learned a lot, but it was only, I'd only been trading for six weeks. So it wasn't like,
+[00:20:16] all of a sudden, I think I'm more on Buffett or Kyle Icon or anything like that.
+[00:20:20] I was a realist. I knew a lot, but I had only actually been trading six weeks. So the competition
+[00:20:27] finished in the end of November 2000. And I think it's 12 now, yeah, 2012. And I literally didn't
+[00:20:35] trade for two months. The thought of it, I traded so much in like such a small time frame,
+[00:20:40] I just couldn't face it. So it ended in November 2012. I literally didn't start
+[00:20:45] trading again till February 2013. I had a lot of things to do with the competition afterwards.
+[00:20:51] I ended up on CNBC. I did some articles, some interviews with some websites and some
+[00:20:58] trading related publications. And but I just could not face it. And then after that, I started,
+[00:21:04] because I won the money, I was obviously able to give up the day job and finish the knowledge
+[00:21:09] full time studying as that. And it went hand in hand with trading. But I found day trading a
+[00:21:15] lonely business and after a few months, I didn't really like it. And I made money and I lost money
+[00:21:20] and overall I finished net up for that time. I was day trading, but I found it a lonely business
+[00:21:26] and I didn't really like it. Okay, John, so let's talk a little more about how you're actually
+[00:21:31] trading today, seen as you, you know, you said that you did start out day trading. I know
+[00:21:36] that's not the case any longer. Tell us about your approach today and explain your style of trading.
+[00:21:41] Yeah, right. So basically, if I have to move on from the day trading, I was day trading indices
+[00:21:47] and I said, okay, but trading stocks was always really going to be my passion going back to when
+[00:21:52] I was the teenager reading the stock ticker prices and all the rest of it. So I decided
+[00:21:58] to start trading stocks. I tried a bit UK stuff, but it was very
+[00:22:02] here and there. Didn't really have a standard approach. I was reading a little bit of fundamental.
+[00:22:06] I was reading everything online, but it was all sort of like yesterday's news. I was jumping on
+[00:22:11] any old ticker that was mentioned, but no real approach. And again, same with indices, I made
+[00:22:16] some money, lots of money, but finished net up. And then I decided to get serious. And so I read
+[00:22:22] some books. I decided to focus on the US market for many reasons, like the timeframe
+[00:22:28] difference. I love earning season, which we don't have over here. I mean, they do release results,
+[00:22:33] but it's not like a structured earning season like it is in the States. And it was then that I come
+[00:22:38] across Jesse Livermore, Nick Darvis and Richard Dennis and the Turtles. And I just love the
+[00:22:44] Turtles approach, you know, buying new highs, new lows and having a trading stop loss, getting
+[00:22:51] the signal, taking the signal, putting your stop loss in place. Don't get in your own way
+[00:22:55] by trying to second guess what the market's going to do. You know, just react. Don't try and predict.
+[00:23:00] And I've not looked back ever since. Ever watch a stock rip and think,
+[00:23:05] I could have nailed that if I had real capital. The truth is, many capable traders never reach
+[00:23:11] their potential, not due to lack of skill, but lack of scale. Trade the pool was built to
+[00:23:16] solve exactly that. A firm designed for serious individuals who want access to the US equity
+[00:23:21] markets with meaningful buying power up to $200,000 without committing their own capital.
+[00:23:27] Get access to virtually every stock in ETF. Go longer short freely with the flexibility
+[00:23:32] professional traders expect. You're evaluated on one thing, your ability to manage risk and
+[00:23:37] execute with consistency. Meet the standard and you trade at scale. No subscriptions,
+[00:23:43] no ongoing commitments. Whether you're still refining your strategy, a trader with experience
+[00:23:47] who hasn't yet broken through, or a seasoned professional simply looking for more capital,
+[00:23:53] trade the pool is built to meet you where you are and take you that next step further.
+[00:23:58] The markets have evolved, access has evolved. Now, so has the way traders operate within them.
+[00:24:04] Trade the pool. Okay, so were there any big challenges that hit you when you decided to
+[00:24:12] make that change from day trading to now taking more of a trend following longer term approach?
+[00:24:19] Like it's quite a big change and you also changed from trading futures to stocks.
+[00:24:25] So what was that transition like? Well, transition basically the main thing was
+[00:24:32] the timeframe. I started holding for weeks and months. So I would literally, as I said,
+[00:24:37] I would move stops and unless I was only in new positions, there wasn't much for me to do.
+[00:24:42] And I was taking lots of small losses. I mean, this is the thing with trend trading,
+[00:24:47] you've got to be able to get punched in the face repeatedly, but getting stopped out,
+[00:24:51] stopped out, stopped out for small losses, hopefully, while you're letting the big
+[00:24:55] winners run. So I take a lot of losses. But I'm in the background, the big winners are
+[00:25:00] slowly fermenting in my account, ticking over. Yeah, yeah. So just to be clear,
+[00:25:07] how long are you holding positions for on any given trade? Like you mentioned weeks,
+[00:25:13] months, like what would you say is maybe the average? Well, I would say on a winner,
+[00:25:19] we're say three to four months. Sometimes it's even been six months on losers. I'd say one to two
+[00:25:24] months. Sometimes I've literally got in at the worst time and it's shut me out within a week.
+[00:25:29] But that's the nature of the game. I've said before, show me traders that don't have losers
+[00:25:35] and I'll show you a liar. It's nature of the business. I take lossy. I don't even think about
+[00:25:41] that. I've used the analogy before. It's like a parachutist when they're going to go on their
+[00:25:46] first parachute jump, when they're about to jump out of the pain, they're nervous,
+[00:25:50] they don't like it, and then they jump out and they're scared. But then after their 100th jump,
+[00:25:55] like same as my 100th floss, you don't even think about it, you take it, you move on,
+[00:25:59] and you go on to the next trade. Yeah, you just accept it and move on like you said.
+[00:26:04] Exactly. It's just one of many trades. I've said previously, it doesn't even matter what the company
+[00:26:11] does that. The company ticker is borderline irrelevant. I run scans, I look at the charts,
+[00:26:15] I pick the charts, I put on the trade, I manage risk, I manage the stop. The fundamental side
+[00:26:22] of what the company actually does is very irrelevant and I just manage risk.
+[00:26:28] Okay. So let's talk about your scans. Like how do you run your scans and what are some of the
+[00:26:33] parameters that you're using? Right. So I use the website, I'm sure you're aware of a thin vis,
+[00:26:39] I mean, it's absolutely fantastic for US stocks. And in line with the turtles, I mean, I don't trade
+[00:26:44] exactly like the turtles. I took a lot from the book, the Complete Turtle Trader by Michael Cavell,
+[00:26:51] regarding what he, when he spoke to the traders, I long 52 week highs, I short 52 week lows
+[00:26:59] with a few added parameters, nothing major like, they've got to have a decent volume
+[00:27:05] and an increase in earnings per share, which is I always find handy. And I basically run the scan
+[00:27:11] every day in the evening UK time. And I really look for the same stocks. I don't just see the
+[00:27:18] stocks hit the scan on that day, I'll jump straight in the following day. I look to see
+[00:27:22] the same stock hitting the scan over and over again, and then I'll take a close look at the
+[00:27:26] chart. And sometimes I literally do get in at the wrong time, I watch it 10 times hit the scan,
+[00:27:31] I mean, not necessarily 10 times exactly, but I see it hit the scan number of times
+[00:27:35] jump in and that is literally at the wrong time. But because I manage risk,
+[00:27:39] and I risk a certain percent per trade, I have small losers, but big winners. So I never really
+[00:27:44] worry about getting stopped out. Could you tell us why you look at increased earnings per
+[00:27:50] share? Like, what does that matter to you? Well, it's just, I'm about 95% technical.
+[00:27:58] So I wanted to have a fundamental sort of part of my strategy and earnings per share,
+[00:28:05] it seems to be a good barometer. If it's got an increase in earnings per share,
+[00:28:10] obviously I want to along it. And if it has a decrease in one, that seems to be a good
+[00:28:13] barometer as a potential short. And I just keep it very simple like that, you know,
+[00:28:17] I don't overcomplicate things. And I've been doing this for two, three years now.
+[00:28:22] And as we say, we're the proofs in the pudding, I've been doing very well.
+[00:28:25] Okay, cool. So you used, you mentioned there, you use finviz.com. There are any other
+[00:28:31] resources or pieces of software that you use if you're scanning or trading each day?
+[00:28:37] So as I say, I use finviz for the scanning, but for the charts, because I'm in the end of day
+[00:28:42] charter, end of day trader, I don't need, I don't really have to pay for any intraday stuff.
+[00:28:48] So I use freestockcharts.com, which does everything I need. It's got every
+[00:28:54] technical indicator, anything you want to add to a chart, you can add to it. And also,
+[00:28:59] Twitter and Stocktwits, I know I post charts daily,
+[00:29:03] sometime I get critiqued on them. And I talk backwards and forwards with traders.
+[00:29:07] And if anyone asks me any questions, or if I have any questions for myself,
+[00:29:12] I'll talk to other traders. I find that's a great tool as well, being able to talk to
+[00:29:15] mother traders on social media these days is priceless.
+[00:29:19] No doubt. No, I completely agree with that. So you're very technical in your approach,
+[00:29:25] you know, like I said, 95% of what you do is based on technicals. What are you actually
+[00:29:31] looking for on a chart? I know you've kind of mentioned 52 week highs and lows and that
+[00:29:38] sort of thing. Is there anything else I noticed that you use trend lines to some extent?
+[00:29:45] Can you tell us a little bit about that, maybe some of the other things you're actually looking
+[00:29:48] for on a chart? Basically, on the charts, keep it very simple. I'm looking for smooth charts.
+[00:29:55] I look over a year or two years daily chart, and I really just want to see a smooth-ish line
+[00:30:02] where it's higher in the right hand side than it is on the left hand side.
+[00:30:05] And I don't want to see any major whipsaws. And if you look at some of the charts I've posted,
+[00:30:11] they are just slowly creeping up. It's not very exciting. It takes time for these trades to
+[00:30:16] sort of cross the threshold where they actually start making money. But if I'm real trading,
+[00:30:22] it's not exciting. This isn't a wall for Wall Street or anything like that. You know,
+[00:30:26] they're just in the background. It's not my primary day job. And I'm in a position where I
+[00:30:31] can, as they say, cut your losses and let your winners run.
+[00:30:35] Okay. So, I just want to ask you a couple of questions about actually using trend lines.
+[00:30:41] Just so I do have this right, trend lines are something you use. Is that correct?
+[00:30:45] Yeah, I use trend lines. But I mean, it's more lip service. I don't buy or sell when they bounce
+[00:30:52] off a trend line channel. They're on there purely for lip service, just so I can see that
+[00:30:59] it's in a channel. But regarding entry or exit, I don't really use them. They're on my chart. But
+[00:31:05] as I said, they're more for lip service, really, and just for me to be mindful of them. But yeah,
+[00:31:10] I don't do a diet by trend lines. Okay. Okay. No, that makes sense. So,
+[00:31:14] they're more there just is sort of a loose guide. Yeah, precisely. I mean, just a loose guide.
+[00:31:20] They're on there. I'm looking at them. I'm aware of them. But do they actually
+[00:31:24] really do much of my trading? Probably not. Because I mean, when I run the scan, all the
+[00:31:30] stocks that hit the scan to the long or short side, they're all hitting the parameters. So,
+[00:31:34] they're all essentially possible trade ideas. And then I then go in and I filter the scan to
+[00:31:41] look for the smooth charts that I like. And also, as I said before, look for the same stocks that
+[00:31:46] have appeared previously on the scans. And then I'll decide about opening the position or not.
+[00:31:51] Okay. So, let's talk about how you actually do open the position because I got a feeling that you
+[00:31:57] open your position just on the market open the following day. Is that how you approach that?
+[00:32:03] Yeah, that's correct. So, for example, tonight, I've run the scans. I've seen some stocks I like.
+[00:32:10] I'm not too sure if I'm going to open positions tomorrow. But hypothetically,
+[00:32:13] if I was to open trades tomorrow, first of all, I have to worry about my trade size. I risk
+[00:32:19] between 2% and 4% per trade. So, I have to look at where my stocks go because, as you said,
+[00:32:26] I open at the market open. So, I don't even know where I'm going to get in. But because I'm a trend
+[00:32:31] trader, and as I'm sure most trend traders will tell you, because you hold for such a long time,
+[00:32:35] entry isn't that very important, really. I just click the button and wherever I'm in,
+[00:32:40] I'm in because I'm not day trading. And I hold for weeks and months. If I get in and the markets,
+[00:32:46] I've lost a couple of cents here or there, it's not the end of the world.
+[00:32:50] So, basically, yeah, the night before, I look at where the stock needs to be placed because I know
+[00:32:56] where I'm going to get out before I even get in. So, I know where the stock's going to be placed.
+[00:33:00] I calculate where from the previous nights closed where the stock's going to be placed,
+[00:33:05] how much I can, what my trade size is going to be. I know all that down. The following day,
+[00:33:10] at the market open to for a UK time, I just open the trade with the trade size at the stop.
+[00:33:18] And it's off and running. Very simple. Okay. So, I know everyone does this slightly different.
+[00:33:24] How do you decide on your risk and position size for each trade? You mentioned they're 2 to 4%.
+[00:33:31] How do you decide what trades you're going to risk 2%, what trades you're going to risk 4%.
+[00:33:37] Just walk us through that a little more. I think that'd be really interesting.
+[00:33:40] Yeah. So, I mean, it goes back to looking at the charts, you know, if some of the charts I've looked
+[00:33:45] at previously are a bit wixori, I might risk slightly less. But if it's a nice smooth chart,
+[00:33:51] like obviously bottom left hand corner, and it ends up in the top right hand corner over the
+[00:33:55] last year or so, roughly, then I'll risk a little bit more because I like smooth trends. You know,
+[00:34:00] it's a very softly, softly trading in my experience isn't a get rich quick scheme.
+[00:34:05] So, I'm looking for soft, smooth moves, no stress. I don't have any stress in the market now.
+[00:34:11] And then I calculate where the stop is from the previous and where my stop's going to be from
+[00:34:18] and where the previous close was. And I can calculate how much I can actually trade on that
+[00:34:23] trade for IE 2 or 4%. So, I know my trade size. And then as I said the following day,
+[00:34:29] open the position. And that's pretty much my part apart from moving the stops.
+[00:34:34] Okay, got it, got it. So, let's discuss how you balance long and short positions. Is this something
+[00:34:42] you give any consideration to, like not to be too heavily weighted on longs versus shorts or?
+[00:34:47] Yeah, no, no, no. I think about this a lot because another reason why I try, I used to trade
+[00:34:52] long only the thought of short in the stock was just, it was just my brain couldn't program that
+[00:34:57] right. But I soon got rid of that. And I'm happy to long or short of stock. And over the course of
+[00:35:04] the whole portfolio, I do try to be evenly weighted because I want to be hedged against
+[00:35:07] general market conditions. Because in the past, I've had days where my longs have been absolutely
+[00:35:12] shredded, but I've been paid off on the shorts and vice versa. So, I do try to weigh it up.
+[00:35:18] But if the scans are giving me long more long trade candidates and shorts,
+[00:35:23] then I have to do what my system's telling me. So, I may lean towards being more slightly net
+[00:35:30] long than short. But then that also happens on the reverse side sometimes. But I do try
+[00:35:34] and that even it up as much as I can at all times.
+[00:35:37] Yeah, yeah. Okay. Now, that's really interesting. And what about like a maximum number of trades
+[00:35:44] that you have on at any one time? Is that something you also give some thought to?
+[00:35:48] Yeah, I mean, I do, because the more positions you have, the more sort of maintenance it takes.
+[00:35:53] It takes time and stuff like that. So, and I don't want to be doing too much of that because I like
+[00:35:57] it very mechanical. So, I like maybe eight positions at the max. But in the past, I mean,
+[00:36:02] I've had 20 positions and it was absolutely crazy. I just felt like I couldn't,
+[00:36:05] it was taking a lot of time to make move the stops and checking the prices each day. So,
+[00:36:11] I used to basically try to trade like a one man hedge fund. And I essentially still do to this
+[00:36:15] day. But I try and have a concentrate portfolio maybe of eight positions. If I can, as I said,
+[00:36:21] equal weight, it's along the shore. And also I try and diversify through the portfolio as well.
+[00:36:25] I don't have too much in one sector.
+[00:36:28] Okay. Okay. Right. Right. Now, that's really interesting. And I guess the last part of it is
+[00:36:36] how do you think about exits? What's your thought process around exiting trades?
+[00:36:40] How do you determine where that point will be? And we're talking about profitable trades here.
+[00:36:45] Yeah, of course. Well, exactly. Do you know what? I literally just in line with the turtle
+[00:36:50] trading guys, I use Donchin channels. And I follow certain Donchin channel time frames. And
+[00:36:58] every day when the market closes, I look if the stop needs to be raised, obviously for long
+[00:37:03] trades or lowered for the short trades. And I literally get stopped out on every trade for
+[00:37:09] a winner or a loss. And as I said, I've had lots of winners, lots of losers. And I don't
+[00:37:13] worry about either way. I just, I see trades closed for a winner. Pat myself on the bat for 30
+[00:37:18] seconds, five seconds. And then I move on. I like it. I like it. And just for anyone listening,
+[00:37:24] if you don't know what Donchin channels are, they're essentially just the highest high or the
+[00:37:28] lowest low over X number of days. And that's what I want to ask you about. Do you change the
+[00:37:35] parameters of Donchin channels for each stock that you're trading? Or do you have a generic
+[00:37:42] timeframe that you apply to each and every stock?
+[00:37:45] I literally trade exactly the same strategy for every single stock. So my, my long strategy
+[00:37:53] is actually a mirror image to my short strategy. I literally could not trade
+[00:37:57] any other way outside my strategy now. Otherwise, I'd start having sleepless nights.
+[00:38:01] I wouldn't know where I've got in. I wouldn't know where to get out. So I'm very OCD like
+[00:38:06] that. I've got a, I've got a system. And if they, as they say, if it ain't broke,
+[00:38:10] you know, don't fix it. And I've got a system and I'll stick to it. So it's all about the process.
+[00:38:15] Okay. So with the Donchin channels though, like the actual settings for the number of days highest
+[00:38:22] high? I found 20, the 20 days pretty good. I've looked at 40, but yeah, between 20 and 40 days,
+[00:38:29] because I was, because I'm holding in for weeks and months, I have to have a wider
+[00:38:33] Donchin channel. If you're going to be trading like a swing trade, maybe you can use a five
+[00:38:37] day or something like that. But yeah, I find the longer, the larger number day, the longer running
+[00:38:41] day Donchin channels work for my system because I'm holding for weeks and months.
+[00:38:45] Okay. Cool. Cool. Now there's something I want to ask you about. And that's how you view your
+[00:38:52] trades or your overall trading performance as like sort of from a portfolio level,
+[00:38:58] instead of actually being worried about how an individual trade performs. So could you
+[00:39:03] tell us a little bit about how you view and how you think about that side of it?
+[00:39:08] Well, what you mean talking about in terms of growth, I mean, I run lots of positions that one
+[00:39:14] closes, open another. And I've said before, I have a lot of losers, small losers, and I have big winners.
+[00:39:23] And I mean, when I open a position, I do not know which ones are going to be the winners or which
+[00:39:28] ones are going to be the losers. I just run the trades. I manage the risk. And over time,
+[00:39:33] all going well, the portfolio grows. It's very simple approach, you know, I don't try and over
+[00:39:41] complicate things. I don't get in my own way. I'm just looking as long as I stick to the process,
+[00:39:46] I know it's simple mathematics. If you have big winners or small losers over the long term,
+[00:39:51] because it's all about longevity at the end of the day, you're still going to be in the game.
+[00:39:55] Because if you haven't got any money, you can't trade. So as long as you've got money,
+[00:40:00] and in your account to trade, then you're still in the game. And that's what it's about for me.
+[00:40:04] Because I want to be doing this till the day I die, which hopefully is a long, long way from there.
+[00:40:09] 100%. No, I totally agree with you. One of the things which you kind of preach is that you
+[00:40:16] must follow your rules. And that's very, very important. I think the thing that a lot of traders
+[00:40:22] probably struggle with is that they doubt their rules and they don't know why they should trust
+[00:40:27] their rules. So I guess what I want to ask you is how did you validate your rules to have the
+[00:40:33] confidence to be so disciplined in your trading? Where did that come from? Like you obviously
+[00:40:39] came up with this strategy. How did you know to trust that strategy and follow through with it,
+[00:40:44] even when it's losing? Well, I mean, I said I read about a lot of successful traders. I said
+[00:40:51] Jesse Livingmore, Nick Darvist, The Turtles, Richard Dennis. I mean, these people were successful
+[00:40:56] people. So if you're going to follow people, learn from the successful ones. So I already knew
+[00:41:02] that their approach was sound. And I just had to give it a go myself. And you have to be patient.
+[00:41:08] That's what I find where a lot of new traders go wrong. They're too much of in a rush because
+[00:41:12] they think they're going to get the Lamborghini and the mansion in six months. And unfortunately,
+[00:41:16] that's not always going to be the case. So I was really patient. I knew it was going to take
+[00:41:20] time. And fortunately, because trading wasn't my day job, and obviously I won the money from
+[00:41:26] the training competition, earning the money wasn't exactly a major factor at the beginning. So
+[00:41:31] I could sit back and sort of put the time, put the chart time in and the screen time and stuff
+[00:41:37] like that. So it was just I found patience is the key, especially at the beginning.
+[00:41:43] Yeah. And that's a good spot to be where you're not forced to be making money from your
+[00:41:47] trading. Because as we know, that can lead to many irrational decisions. So no, very good point.
+[00:41:52] Now, last thing just to take us out here, I'd love it if you could just expand on what you mean
+[00:41:57] when you say don't get in your own way. Because I've heard you say it a couple of times throughout
+[00:42:01] the interview. And I think it's a really valid point. Well, what I mean, when I say get in my
+[00:42:05] way in the pot, I mean, I was guilty in the past of getting in my own way. I've had stops
+[00:42:10] in place and the trade was about to hit the stop. And I'll get in my own way and change
+[00:42:16] the process. I've moved the stock, I've removed a lower the stock or raise the stock if it was a
+[00:42:21] short. And I'll start tinkering around with the trade because like now I have a plan,
+[00:42:27] I stick to it, I don't know how to trade outside that plan. But when I'm in getting my way,
+[00:42:31] start tinkering around and have a plan, stick to it, have a process and have the patience to
+[00:42:38] ride that process to the good and the bad, because you're going to have some bad drawdowns
+[00:42:42] and some bad times, especially with trend trading, you're going to have lots of losses
+[00:42:46] while you're waiting for the big trades to come. So basically just let your system be,
+[00:42:50] keep it simple. Don't start tinkering with it every 30 seconds or every week because you've
+[00:42:55] had a losing trade thinking something's gone wrong. Give it time to breathe. Give your
+[00:42:59] trades time to move around. I buy trades, I'm in a long position sometimes, and they
+[00:43:05] pull back a little bit before they go ahead. And people say to me, oh, why do you get in there?
+[00:43:09] Why not wait for the breakout? But I'm happy to get in the trade, ride the pull back,
+[00:43:13] and then I'm already in for the next leg up. And I just let them do that. I don't get in my own way
+[00:43:18] by waiting for this or waiting for that. I'm in the trade and I'll let it do its thing.
+[00:43:23] Good stuff. Good stuff. Brilliant answer, John. Do you want to share with listeners where they can
+[00:43:27] go to find out more about you? Yeah. So obviously I'm on Twitter. You can find me at
+[00:43:32] at underscore John Walsh underscore. Same as StockTweets. My website on StockTweets
+[00:43:38] as the Black Cabbie Trader. And I'm just launched a website, BlackCabbieTrader.com. It's an educational
+[00:43:45] website where I talk about trades. There's also a subscription site to that. My email address is
+[00:43:50] John.Walsh at BlackCabbieTrader.com. I'm happy to talk, answer any questions and just generally
+[00:43:56] chat trading. I can talk trading down night, as I'm sure your listeners will tell. And please
+[00:44:02] get in touch. I'm happy to chat. Awesome. Awesome. John, would you be open to answering
+[00:44:07] questions that any listeners might have maybe in the comments section below this interview?
+[00:44:12] Absolutely, Aaron. That's a great idea. I never thought about that. Yeah, please. Any questions
+[00:44:15] anyone has? If I had a comment section, please do and I'll get back to you soon as I can.
+[00:44:20] Good stuff. So chatwithtraders.com, forward slash whatever number episode this is.
+[00:44:27] Scroll to the bottom of the page and leave a question in the comments area.
+[00:44:31] John, I'll get back to you on that. Obviously monitor that very closely myself as well.
+[00:44:36] And one thing I just want to point out is that you've mentioned the turtles a couple times. Jerry
+[00:44:42] Parker, who was one of the original turtles, has been on this podcast. He was on for episode 67.
+[00:44:49] So if you want to check that out, it probably complements this episode nicely. So that's
+[00:44:55] chatwithtraders.com forward slash 67. Awesome interview with Jerry.
+[00:45:01] All right, John, it's been a blast to have you on. Thank you very much for doing this,
+[00:45:05] man. Are there any final words or are we good for now?
+[00:45:08] Yeah, no, we're good. As I said, thank you for having me on. I love the way you do.
+[00:45:12] Keep up the good work and I look forward to future episodes too. So good job on your part.
+[00:45:17] I appreciate it, man. Thank you very much and let's stay in touch. All right, take care.
+[00:45:24] You've reached the end of this episode of chat with traders,
+[00:45:27] but rest assured, there are more episodes loaded with real market insight and zero hype
+[00:45:32] on the way soon. So to stay updated with each great new release, subscribe to the podcast and
+[00:45:38] iTunes and we'd love it if you'd leave a rating and review. We'll catch you next time on chat with traders.

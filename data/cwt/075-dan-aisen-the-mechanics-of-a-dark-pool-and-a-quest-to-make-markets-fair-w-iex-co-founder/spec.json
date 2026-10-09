@@ -1,0 +1,32 @@
+{
+  "trader": "Dan Aisen",
+  "category": "macro_commentary",
+  "testable": false,
+  "reason": "Guest discusses IEX market structure, dark pools, speed bumps, order routing algorithms and exchange fairness with no personal trading rules or signals for US stocks.",
+  "template": "none",
+  "method_name": "No trading strategy discussed",
+  "style": "market microstructure commentary",
+  "timeframe": "N/A",
+  "universe": {
+    "description": "N/A"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "No trading method described",
+      "assumption": "Episode focuses exclusively on exchange/ATS design and market fairness"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "75",
+    "page_url": "https://chatwithtraders.com/episode/075-dan-aisen-the-mechanics-of-a-dark-pool-and-a-quest-to-make-markets-fair-w-iex-co-founder",
+    "youtube_url": "https://www.youtube.com/watch?v=dbw4wFtC9II"
+  }
+}

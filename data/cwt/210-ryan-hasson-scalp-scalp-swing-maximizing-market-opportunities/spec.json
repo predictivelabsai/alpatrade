@@ -1,0 +1,73 @@
+{
+  "trader": "Ryan Hasson",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Main method is intraday scalping/day trading of low-float stocks and momentum/theme plays using VWAP, tape and intraday confirmation; swing trades are infrequent A+ additions that do not form a daily-bar testable system.",
+  "template": "none",
+  "method_name": "Intraday scalping with occasional theme swings",
+  "style": "scalping and momentum day trading with selective multi-day swings",
+  "timeframe": "intraday primary, occasional 2-5 day swings",
+  "universe": {
+    "description": "US equities: low-float stocks, OTC names, theme/sector plays (e.g. Bitcoin/blockchain, shipping, marijuana)"
+  },
+  "setup": [
+    {
+      "rule": "Identify theme heating up via trader talk, Twitter, abnormal volume and scanner filters",
+      "quote": "talking to other traders and sharing ideas and hearing the ideas often all the traders you know when many traders start mentioning the same symbols or the same theme or sector",
+      "timestamp": "[00:30:15]"
+    },
+    {
+      "rule": "Focus on sympathy plays after leader has already moved",
+      "quote": "you always get the leader so you get the first stock that goes and pulls up other stocks in that sector with it and then you get all the sympathy plays",
+      "timestamp": "[00:34:27]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Enter intraday on VWAP break, lower high or change of character; swing entry only after confirmation and during session",
+      "quote": "if the stock then pulls back to view up and breaks below v wap and trends lower then that's a change of character",
+      "timestamp": "[00:46:56]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Hard stop below key level (resistance turned support or VWAP); overnight short risk limited to prior day's profits",
+      "quote": "i'll have a stop in place for you know 4 am the next day if it's above a certain price i'll get out at a particular price which will essentially eat up the profits i made the previous day",
+      "timestamp": "[00:43:15]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Scale out on targets or full exit on change of character; pre-written plan with if-then statements",
+      "quote": "before each swing trade i have a clear plan i know i have my if then statements written out in front of me unless there's a change of character i stick to that",
+      "timestamp": "[00:39:07]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Intraday: ~10% of daily stop per stock; swing: 50-100% of daily stop on rare A+ setups",
+      "quote": "when i trade a swing trade that's a plus i'll allocate 50 percent or 100 to that swing trade",
+      "timestamp": "[00:37:33]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Only trade when pre-flight checklist (sleep, food, exercise, fresh) passes and A+ opportunity exists",
+      "quote": "did i sleep well did i have i eaten well did i exercise am i feeling fresh and is there any a plus opportunity on the day",
+      "timestamp": "[00:48:28]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "No exact numerical parameters or daily-bar rules provided for any setup",
+      "assumption": "edge requires intraday data and cannot be approximated on daily bars"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "210",
+    "page_url": "https://chatwithtraders.com/episode/210-ryan-hasson-scalp-scalp-swing-maximizing-market-opportunities",
+    "youtube_url": "https://www.youtube.com/watch?v=TzOvqLFfo2E"
+  }
+}

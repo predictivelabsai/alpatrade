@@ -1,0 +1,68 @@
+{
+  "trader": "Bryan Holdford",
+  "category": "options",
+  "testable": false,
+  "reason": "Main method is selling SPX credit spreads with strict daily loss control; not a long-side US stock strategy on daily bars.",
+  "template": "none",
+  "method_name": "SPX credit spread selling",
+  "style": "options selling with loss control",
+  "timeframe": "daily/weekly options expiration",
+  "universe": {
+    "description": "SPX index options credit spreads"
+  },
+  "setup": [
+    {
+      "rule": "Identify trend and pattern on SPX",
+      "quote": "trying to be in the trend and uh being able to identify Trend and the pattern of the market",
+      "timestamp": "[01:22:54]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Sell credit spreads on SPX",
+      "quote": "right now my main focus now is I'm selling credit spreads on the uh SPX",
+      "timestamp": "[00:18:17]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Exit on 1% daily loss",
+      "quote": "if I see a 1% loss in a day I'm I'm G cough the position up",
+      "timestamp": "[00:55:39]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Close or adjust on loss threshold breach",
+      "quote": "you need to get out when absolute when the you know",
+      "timestamp": "[01:17:40]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Deploy ~1/3 of equity; reduce size to respect 1% loss limit",
+      "quote": "I'm only I've only deployed uh uh little more than a third of the account of total Equity",
+      "timestamp": "[00:56:09]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Stay flexible; do not marry bullish or bearish view",
+      "quote": "you can't be married to one side of the market or the other",
+      "timestamp": "[01:15:37]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Mentions trend/pattern recognition but no concrete daily rules given",
+      "assumption": "Primary executable method is options credit spreads"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "268",
+    "page_url": "https://chatwithtraders.com/episode/268-bryan-holdford-is-loss-control-all-it-takes-to-become-consistent",
+    "youtube_url": "https://www.youtube.com/watch?v=ls9NeEoEmRc"
+  }
+}

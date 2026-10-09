@@ -1,0 +1,44 @@
+{
+  "trader": "Stephen Kalayjian",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Method relies on 30-minute timeframe signals, divergences across multiple intraday timeframes, and high-frequency day trading patterns that cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "Intraday divergence timing",
+  "style": "intraday technical analysis with divergences",
+  "timeframe": "intraday (30-min signals)",
+  "universe": {
+    "description": "US stocks and indices (90-100 names, 30-50 positions)"
+  },
+  "setup": [
+    {
+      "rule": "strategies based upon divergences using multiple time frames",
+      "quote": "All my strategies are based upon divergences. Um so, and I use multiple time frames. So, three time frames, five conditions and 10 strategies.",
+      "timestamp": "[00:26:54]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "30-minute buy signal on indices",
+      "quote": "we got a big buy signal on the 30-minute time frame on on the market on the Qs, the spiders, the diamonds",
+      "timestamp": "[00:24:50]"
+    }
+  ],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "no explicit long-only daily rules or parameters provided",
+      "assumption": "focus remains intraday only"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "322",
+    "page_url": "https://chatwithtraders.com/episode/322-stephen-kalayjian",
+    "youtube_url": "https://www.youtube.com/watch?v=AIcm2ZqhVqk"
+  }
+}

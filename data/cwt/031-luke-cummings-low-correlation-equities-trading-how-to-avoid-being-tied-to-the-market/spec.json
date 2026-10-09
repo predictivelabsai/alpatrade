@@ -1,0 +1,68 @@
+{
+  "trader": "Luke Cummings",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Strategy is post-announcement takeover arbitrage with discretionary human intervention on credibility, downside and position sizing; requires event data and is not reducible to daily-bar rules.",
+  "template": "none",
+  "method_name": "Takeover arbitrage swing",
+  "style": "event-driven low-correlation long",
+  "timeframe": "1-9 months",
+  "universe": {
+    "description": "Australian stocks under formal takeover offers"
+  },
+  "setup": [
+    {
+      "rule": "Wait for formal unconditional takeover announcement",
+      "quote": "our strategy actually is that we wait until the takeover has been announced and it's formal and then we buy the shares",
+      "timestamp": "[00:45:05]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Buy after announcement once downside is known and limited",
+      "quote": "make sure that we think it's a credible target a credible bidder that the downside you know is known and limited and then you know position accordingly",
+      "timestamp": "[00:47:59]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Hard stop at the guaranteed takeover price",
+      "quote": "you're going to be able to sell that stock at $1.71 so that's really your hard stop loss",
+      "timestamp": "[00:38:56]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Exit early if risk-reward no longer favorable or on improved/ competing bids",
+      "quote": "if the share price improves in the interim you know we may look to exit the position early if we think that the risk reward is no longer in our favor",
+      "timestamp": "[00:48:52]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Risk fixed amount per trade; scale up when reward/risk multiple is high",
+      "quote": "we're happy to risk X amount per trade you know for a stock standard what I'll call opportunity and that you know really dictates our position size",
+      "timestamp": "[00:36:20]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Low market beta once under takeover",
+      "quote": "takeovers have generally pretty low correlation to the market",
+      "timestamp": "[00:42:01]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Transcript describes Australian ASX stocks and takeover rules that no longer exist",
+      "assumption": "Core logic of post-announcement risk-defined arbitrage is the method discussed"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "31",
+    "page_url": "https://chatwithtraders.com/episode/031-luke-cummings-low-correlation-equities-trading-how-to-avoid-being-tied-to-the-market",
+    "youtube_url": "https://www.youtube.com/watch?v=0vpUa1e9uWg"
+  }
+}

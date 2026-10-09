@@ -1,0 +1,956 @@
+# 010: Tim Grittani – 5 Key Factors of Tim's Success as a 7-Figure Trader, and Transitioning From OTC to NASDAQ Stocks
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT1835997799.mp3
+
+[00:00:00] The biggest secret of the best traders in the world is that they're just like everyone else.
+[00:00:05] However, they've worked hard to learn the markets and discover what works and what doesn't.
+[00:00:10] But how can you hear about these journeys and get in on the strategies and tactics they use?
+[00:00:15] You can do it by listening to Chat with Traders.
+[00:00:18] Here's your host, Aaron Feifeld.
+[00:00:20] Hey, what's up guys? Thanks for tuning in to another episode of Chat with Traders.
+[00:00:34] This time it is episode number 10.
+[00:00:37] Can you believe we're up to episode number 10 already?
+[00:00:40] These weeks are just flying by.
+[00:00:42] It's nuts, but let's talk about today's guest.
+[00:00:48] Today's guest is Tim Grittani.
+[00:00:51] Many of you may know him also by Croyrunner89.
+[00:00:56] That's his Twitter handle that he goes by.
+[00:00:58] This guy is a very, very talented intraday trader.
+[00:01:03] He originally started with roughly a $3,000 account.
+[00:01:07] Over the years he's transformed that into well over $2 million.
+[00:01:13] Getting close to that $3 million mark.
+[00:01:16] In just a few years.
+[00:01:18] So he originally sort of kicked things off in 2012 when he first ventured into the jungle of penny stocks.
+[00:01:26] After catching on to how these markets operated and really got an understanding of the manipulation that goes on.
+[00:01:34] He was able to master a few setups that he could identify very well.
+[00:01:40] And obviously they paid him quite generously over and over again.
+[00:01:45] But eventually he hit a few limitations.
+[00:01:48] And now he's predominantly a short seller of Nasdaq stocks.
+[00:01:52] Which makes for a very interesting segment during this interview.
+[00:01:56] What's also interesting is the five key factors that Tim contributes to the majority of his success to date.
+[00:02:03] And he really breaks down each one of those throughout this interview.
+[00:02:07] So definitely some great insights you'll pick up from there.
+[00:02:11] You'll also hear about the events that led up to his gigantic single trade loss of $290,000 during October last year.
+[00:02:21] This will definitely give you a great appreciation of just how bad things can get when you go against your trading rules.
+[00:02:28] Because as you'll hear, when the ongoing problem surfaced it got ugly very very quickly.
+[00:02:34] And just before we roll into this week's interview, I'd like to remind you guys that the Luchi Method giveaway is still rolling on.
+[00:02:41] So we'll actually be wrapping that up this Sunday.
+[00:02:44] So that is the 8th of March at 7pm EST.
+[00:02:49] And if you have missed it, what that does include is it's a product offered by Sangluchi.
+[00:02:56] So these guys are selling this product at the moment for $2,699.
+[00:03:01] That's actually what it retails for, no made up value.
+[00:03:05] And what that includes is an extensive online course taught by Luchi himself, which has over 75 training modules.
+[00:03:14] You also get access to the Sangluchi chatroom, which is a great community, plenty of traders of all different levels.
+[00:03:22] You also get access to the weekend sessions.
+[00:03:25] Now the weekend sessions are really cool.
+[00:03:27] You can actually like a webinar that goes for about two hours every weekend.
+[00:03:32] And Luchi is actually running through his trades and any interesting take movement that he's spotted during the week.
+[00:03:42] And really sort of runs through all of that with you.
+[00:03:45] And it's also a good opportunity where you can hit him up with any questions you might have about your own trading.
+[00:03:50] Included in that is also a one-on-one session with Zach Hurwitz.
+[00:03:55] And this guy is just crazy when it comes to VWAP.
+[00:03:58] I think I might have mentioned that before actually.
+[00:04:00] So you'll get a one-on-one coaching session with him for about an hour.
+[00:04:04] And I'm actually got him on the show next week, so look forward to that one guys.
+[00:04:10] Also you'll get access to a truckload of videos like hours and hours of footage that the guys at Sangluchi have put together.
+[00:04:19] So much packed into this giveaway.
+[00:04:22] So make sure you enter, just head over to chatwithtraders.com, forward slash giveaway.
+[00:04:27] And it's all pretty self-explanatory.
+[00:04:30] Alright guys, let's roll into this week's interview.
+[00:04:33] And I hope you enjoy it.
+[00:04:37] Tim, how's it going man?
+[00:04:38] Good, how are you?
+[00:04:39] Good, good.
+[00:04:40] How's trading been going for you in the first few weeks of 2015?
+[00:04:44] It's been pretty good for the most part.
+[00:04:46] I had a really hot start to last week and then kind of just fell into some dumb sticks and I was concentrating at the end of it and gave it back.
+[00:04:54] But I saw a start to this week.
+[00:04:56] I'm building it back so that's good.
+[00:04:58] Nice, nice. Good to hear man.
+[00:05:00] So let's just jump right into it.
+[00:05:02] So what sparked your interest in the stock market back in 2011 when you sort of first got started?
+[00:05:09] I guess it was that I was a finance major.
+[00:05:12] And I had gotten most of the way through my major at Marquette and I was already going a semester long in school because I had transferred schools my way through.
+[00:05:21] And kind of got most of the way through the major and figured out I didn't like a whole lot about finance or there wasn't a whole lot I felt like I could do with it.
+[00:05:28] That would be interesting to me.
+[00:05:30] So what I did was I kind of stopped and thought about it and was like, well, I'm going to stick with this major, which you know was the goal.
+[00:05:38] One thing for the one area that interests me the most is the stock market.
+[00:05:42] And I think I was kind of drawn to that just because it was the idea of, you know, take money and turn it into more money.
+[00:05:49] I'd kind of been into like the whole poker scene and betting sports a little bit and stuff like that before.
+[00:05:55] So it was kind of like along the lines with some of the like the more risk-averse stuff I had enjoyed beforehand.
+[00:06:01] But this was just, you know, a bit more legitimate.
+[00:06:04] And so, yeah, I got into studying stocks because I just kind of figured, OK, if I'm going to come out of school and be looking for interviews or some kind of trading job,
+[00:06:14] I should try to at least have some idea of what I'm talking about and maybe have a little experience on my own.
+[00:06:19] OK, sure. So just before we move on there, how'd you go with your poker experience?
+[00:06:24] Did you have much luck there?
+[00:06:26] I think it was one of those things where there was some beginner's luck.
+[00:06:30] I've been playing since I was in high school, really.
+[00:06:33] And, you know, I guess first couple of summers I did pretty well.
+[00:06:38] And then after that, really not that much success.
+[00:06:41] And, you know, I'd never made any kind of serious money off of it.
+[00:06:45] I enjoyed it. I enjoyed the game greatly. I really did have fun with it.
+[00:06:49] So you're still playing your spare time, right?
+[00:06:51] Oh, yeah. Yeah, I still play here and there.
+[00:06:54] Mostly just like three poker at bars and stuff like that now, though.
+[00:06:57] Yeah, nice. So I sort of take it that what you're learning and your degree didn't really sort of teach you how to trade the markets.
+[00:07:08] No, I really didn't.
+[00:07:10] Yeah. So what were the first sort of steps that you took once you decided that the stock market was sort of something you wanted to look into a bit more?
+[00:07:19] Well, I guess the first thing I did was I just I wanted to open a trading account and just trade on my own a little bit
+[00:07:24] and just sort of see what I could pick up along the way.
+[00:07:26] And so I I think I funded some broker called share builder or something like that.
+[00:07:31] I was just a small broker that really wasn't all that great for anything in particular.
+[00:07:35] I think it's probably just the first one I found.
+[00:07:37] And I, you know, I just really randomly trading that was about it.
+[00:07:42] I had taken part in this class activity back in high school that I remembered where it was everybody in this economics class.
+[00:07:49] I think it was basically had a virtual trading account.
+[00:07:54] And there was a semester long competition for whoever had the most in their account at the end of the semester would win.
+[00:08:01] And so I mean, I don't remember doing all that well on that, but it was just something that I had kind of found fun and interesting along the way.
+[00:08:09] And back then I was kind of randomly buying and selling.
+[00:08:12] So I think I just kind of wanted to go in with the same strategy where it's just, you know, practice executing trades, see if I can make a little money.
+[00:08:19] And it really was just kind of the night, the naive idea that, oh, I can just buy this, you know, 30 cents stock and within a couple of weeks,
+[00:08:26] I'll try to sell it for a 10% gain or 20% gain.
+[00:08:29] And it's just that easy.
+[00:08:31] And within a couple of weeks, I had lost half my account and had to, you know, kind of take a step back and stop trading and reassess what I was doing.
+[00:08:40] Okay, sure. Yeah.
+[00:08:41] It's funny you mentioned that actually I interviewed Matthew, Matthew Owens, a Triforce trader.
+[00:08:48] And he had a similar story about trading in high school in a class he had there and told me he won the competition by just loading up on shares and Apple.
+[00:09:01] And he came out on top at the end of the semester.
+[00:09:05] Oh wow.
+[00:09:06] So I've heard you say that the first six months were quite a struggle for you.
+[00:09:12] So what were some of the things that you really sort of struggled with during that time?
+[00:09:18] Well, I guess the first six months I actually traded, I was a member with Timothy Sykes.
+[00:09:25] I was on his Penny Stocking Silver package.
+[00:09:28] And I spent a few months watching video lessons and paper trading a little bit and trying to get comfortable.
+[00:09:33] But then once I dove in and actually started trading for real, it was a combination of factors.
+[00:09:40] One being that there was so much emotion for me at least those first few months tied into entering a trade and just the fear of having money on the line.
+[00:09:53] And it was really different to experience it like that compared to when I had just been paper trading because when you're paper trading, it's the easiest thing in the world.
+[00:10:01] But when your mind is clouded by those emotions of having money on the line, you're not thinking as rationally, you're not making smart decisions.
+[00:10:09] And so I had a lot of trouble with that.
+[00:10:12] And then also I was trying just to blindly follow trade alerts at the same time.
+[00:10:18] I was trading my own ideas a little bit.
+[00:10:20] But anytime I saw a trade alert by a guru that I was following, I wanted to jump in and try to do the exact same trade as them.
+[00:10:27] Because, you know, again, by my kind of naive thinking, it was, oh, well they're a guru, they know what they're doing.
+[00:10:33] So I should just follow them and I'll make money too.
+[00:10:36] And it really wasn't practical because I just couldn't match entries and exits.
+[00:10:40] Yeah.
+[00:10:41] So what would you say to someone who is following, say, a guru's, a so-called guru's sort of alerts?
+[00:10:49] How should they be trading them instead of trying to follow them into each trade?
+[00:10:54] I mean, what I would recommend doing is just learn the reasoning behind the trade.
+[00:10:59] I don't think, I mean, other than maybe trying, if the guru has a big following and you know their alert can move the market,
+[00:11:06] maybe you can try to scalp along based off of that.
+[00:11:09] But that's about all I would do with it.
+[00:11:12] Otherwise, the whole idea for me and kind of what helps turn me around a little bit was starting to focus more on the why behind the trade
+[00:11:22] and the thought process.
+[00:11:24] And then I could learn to do it on my own with other setups.
+[00:11:28] Yeah.
+[00:11:29] And I think that's really important that last bit you said there.
+[00:11:32] So you also mentioned there the emotion side of it.
+[00:11:36] You sort of struggled with a little bit.
+[00:11:38] So what sort of things did you do to overcome your emotions or at least sort of keep a cap on them?
+[00:11:46] Well, one of the first things I did that I noticed made a big difference.
+[00:11:50] And it probably took me about four or five months to do this.
+[00:11:54] And that was around when I started to turn things around.
+[00:11:57] I hid my unrealized profit loss column on my brokers because I kind of realized that I'd be sitting there in a trade
+[00:12:05] and I'd see, oh, I'm up 100 bucks or on down 100 bucks.
+[00:12:09] And just having that number staring me in the face, that would kind of feed the emotional side of it a bit.
+[00:12:15] And I'd get either scared of losing a profit or scared that my loss is going to get worse or whatever.
+[00:12:21] But I'd start thinking about the money instead of the trade and about the setup.
+[00:12:25] And really I'd do sight of why I was in the trade in the first place.
+[00:12:28] And I would really just close trades out randomly based off of the money rather than off of what I thought was going to happen based off of the chart.
+[00:12:37] And so once I hid that, I mean, I still kind of knew in the back of my mind how the trade was going.
+[00:12:44] And if I was up or down in a general idea of how much, but just to not see it in front of me constantly made a huge difference.
+[00:12:51] And I noticed that really got the emotional side of it down for me.
+[00:12:55] Okay, so by hiding that sort of the P&L column, you could just sort of really focus in on the price action and sort of stick to your plan a little bit more.
+[00:13:05] Right, right.
+[00:13:06] Yeah, cool.
+[00:13:07] So obviously day trade full time now.
+[00:13:10] So at what sort of stage did you feel confident that that was going to be it and you were going to trade full time?
+[00:13:19] I'd say it was about six months into trading right around that time where I had six months of struggles.
+[00:13:26] I had dug myself into about a $1,300 hole in my accounts.
+[00:13:30] And I mean, that was a lot of money for me at the time, but it wasn't an insurmountable amount by any means.
+[00:13:37] I had worked a summer job and made three times that.
+[00:13:41] So it wasn't like it was an unrecoverable sum.
+[00:13:45] So I took him a couple months to dig out of that hole.
+[00:13:48] And then in November of 2011, I got back to the break even mark and then hit my first big trade,
+[00:13:56] which was buying a promotion early and selling it 10 minutes later into a huge spike and made about $2,000 on that.
+[00:14:04] And once I got past that break even point and I had seen a couple of consistent months of results
+[00:14:10] and I felt really comfortable that I knew what I was doing finally.
+[00:14:13] That was kind of my moment where I said, I'm graduating in a month, but I don't want to get a job right out of college.
+[00:14:20] I want to give this more time.
+[00:14:21] I want to keep trading full time and really see if I can turn this into something.
+[00:14:25] Yeah, awesome. So that's six months period. I mean, that's really not very long at all.
+[00:14:30] So how do you think you were able to sort of pick it up so quickly?
+[00:14:36] Well, I think that three months of preparation time before I started trading was very helpful to me.
+[00:14:43] I mean, I still made a lot of mistakes during that six months that I started trading,
+[00:14:48] but I think that I made far fewer because I did have a little bit of, you know, a background in it at that point, I guess.
+[00:14:57] Like I wasn't just diving and blind on day one.
+[00:15:00] I had had a little preparation time to learn some of the ins and outs.
+[00:15:05] But really, I kind of just remember along the way, especially, you know, I feel like there was like a solid month in there
+[00:15:14] every single day, I just felt like I was learning something new or making a new mistake
+[00:15:18] or just like figuring out something I could improve upon.
+[00:15:22] And it really was just that I was very, I was very self-reflective about what I was doing
+[00:15:30] and trying to take away from every single day any improvements that I could.
+[00:15:35] Okay. So were you maybe like writing these down recording them?
+[00:15:38] I know you've got a blog now, but were you sort of writing about it or journaling this in any way when you were sort of starting up?
+[00:15:46] The only journal I really kept was, like I guess one of the big turning points for me was I decided I wanted to focus in on just a couple of setups
+[00:15:55] because early on I had traded a lot of different setups and was having very mixed results.
+[00:16:01] So I chose to focus in on what I was good at, which was over the counter stocks, the pump and dumps
+[00:16:06] and it was buying promotions early and then it was buying multi-week breakouts
+[00:16:11] or 52 week breakouts or something like that on a daily chart, big time daily chart breaks.
+[00:16:17] And so I wouldn't so much journal like my emotions and stuff like that or just like little lessons,
+[00:16:24] but I did start tracking those setups and putting them into a spreadsheet
+[00:16:29] and just sort of keeping tabs on how they performed and what typical returns look like
+[00:16:35] and just having some idea of past performance so that when the next one came along
+[00:16:39] I could try to put my plan together a little bit better.
+[00:16:44] Okay, cool. So let's dive into that a little bit more and just talk a little bit more about your actual trading style.
+[00:16:51] So I know these days you're right into your NASDAQ listed equities, but I'm really keen to get into that also.
+[00:17:00] But before we do, I mean, you obviously started out playing penny stocks in the OTC markets.
+[00:17:05] So what was it that really attracted you to these particular types of stocks?
+[00:17:11] Well, it was partially, you know, after I'd had a lot of experience and I'd tried trading, you know,
+[00:17:17] the listed stocks that are earnings winners and I tried pretty much everything
+[00:17:22] and I would get really frustrated with some of the listed stocks
+[00:17:26] because I'd be trading a setup that looks great.
+[00:17:29] I'd be buying a stock breaking to the new high day and then something like the overall markets would dip
+[00:17:35] and the breakout on my stock would fail because the overall markets dragged it down.
+[00:17:39] Or there were just so many more factors that seemed like would influence those more expensive stocks
+[00:17:44] and it really was frustrating to me.
+[00:17:46] So in watching the OTC stocks, they kind of traded in a world of their own
+[00:17:52] and they didn't tend to follow the overall market, at least from what I could tell.
+[00:17:57] It was just more about who was promoting it, how effective the promoter is
+[00:18:02] and really it was just purely based off of technical analysis
+[00:18:07] because these were companies that had no fundamentals whatsoever
+[00:18:11] and everybody knew that eventually they're going to zero.
+[00:18:14] But the question is, you know, the people who are manipulating it and controlling it,
+[00:18:20] how far are they going to let it run first?
+[00:18:22] And so the only way to really play off of that and figure out what their intentions might be
+[00:18:29] was just to try to anticipate the chart patterns and learn which patterns repeated themselves.
+[00:18:35] Okay, so you mentioned in there about promoters.
+[00:18:38] Can you just give us sort of a brief rundown on how these sort of promoters work?
+[00:18:44] Yeah, absolutely.
+[00:18:46] So I guess the best way to put it is, especially with some of these big-time promoters,
+[00:18:52] the guys who are really running some huge plays back then,
+[00:18:56] what they would do is basically they would create a company with Scratch
+[00:19:00] and all of the free trading shares for this company would be inside our own.
+[00:19:05] So they control at what pace they sold their shares
+[00:19:09] and whether they're going to drive the pick into the ground
+[00:19:12] or if they're going to support it and keep the stock moving up.
+[00:19:15] But basically they were taking these stocks that were very easy to manipulate.
+[00:19:21] They had millions and millions of dollars, so they were completely in control of the action.
+[00:19:26] So it was really more of a game of trying to follow what is the big money doing.
+[00:19:31] And so they would come out with a new pick and send out an email blast to all their subscribers.
+[00:19:38] They would have these email newsletters with thousands and thousands of subscribers
+[00:19:42] and say our new pick is X, Y, Z or whatever.
+[00:19:46] And then usually what you would see is a really big strong spike on day one of the promotion,
+[00:19:52] most of the time ending the day up 50% or more.
+[00:19:55] And then after that it was just a question of whether they were going to turn it into a multi-week promotion or not.
+[00:20:02] And that really again was just, you could predict that based off of the chart patterns
+[00:20:06] and how they were controlling it.
+[00:20:09] Okay, so why don't you sort of saw these things?
+[00:20:12] Could you give us a bit of an overview on how you might have traded that?
+[00:20:16] Or if you weren't trading that, what you were looking for,
+[00:20:19] like what setups you were watching for when you were trading these OTC stocks?
+[00:20:24] Yeah, okay. So I mean the two big ones for me earlier, they kind of turned me around.
+[00:20:28] Like I said, new promotion releases.
+[00:20:30] And the idea behind that was as these promoters with every successful pick they put out,
+[00:20:35] more and more people became aware of them and more and more people wanted to play the next one.
+[00:20:39] Because the idea was, oh wow, the last one went up a thousand percent.
+[00:20:42] Well, this next one should be great too.
+[00:20:45] So I really tried hard early on to make sure I was one of the first people to get an email.
+[00:20:52] So that came down to knowing all of the connected promoter websites,
+[00:20:56] signing up to multiple email addresses.
+[00:20:59] And basically as soon as they sent out an email and said, you know, this is our new pick,
+[00:21:04] I was buying and I was trying to get in as quickly as I could
+[00:21:07] and to beat that rush in of people who wanted to get in.
+[00:21:10] And I mentioned earlier my first big win was a stock that spiked huge in about 10 minutes.
+[00:21:16] I think that was a 70% win in about a 10 minute window.
+[00:21:20] Because I was one of the first people to get fills because I just,
+[00:21:23] I got my email set up in an efficient enough way that I was getting the emails quickly.
+[00:21:28] So anytime a new promotion got released by one of these guys who had a, you know,
+[00:21:32] a good reputation, I guess, as you could put it, I was trying to get in quick.
+[00:21:37] And then beyond that, it would just sort of be a matter of letting the chart develop.
+[00:21:43] So after a few updates or maybe a week or two of promotion,
+[00:21:48] I'd look and I'd see, okay, what is the high that the promotion has reached so far
+[00:21:52] since the stock started getting pumped?
+[00:21:55] And if that high started, if it started to break past that high
+[00:22:00] and reach new all-time promotion highs, that was a breakout on the daily chart.
+[00:22:05] And that was another setup that I really liked.
+[00:22:08] And I would buy it as the stock was breaking those new highs in anticipation of it
+[00:22:13] having another up day or two or three and really running and squeezing.
+[00:22:19] Okay, so you talked about getting an early veer.
+[00:22:23] Pretty much like as soon as you got the email, were you just diving right in
+[00:22:26] or were you sort of waiting for a confirmation that something was going to come out of this?
+[00:22:33] No, I really would just dive right in because the email was the confirmation.
+[00:22:38] Okay.
+[00:22:39] Because once I get that email, I mean, everybody else who signed up that email list
+[00:22:43] is going to get it as well.
+[00:22:45] And because these guys, I mean, that's why promoter history was really important to me.
+[00:22:49] I wouldn't do that with just any random promoter.
+[00:22:52] It was the fact though that these guys had put out, you know, a few good promotions in a row.
+[00:22:58] And all of these, it really was just a very predictable spike
+[00:23:02] where you get 10, 15, 20 minutes of just straight-up spiking action
+[00:23:06] because everybody's trying to get a fill and trying to get in early
+[00:23:09] because they think this is the next big promotion.
+[00:23:12] Okay.
+[00:23:13] And how legitimate are these promotions?
+[00:23:15] Like is what they're doing there?
+[00:23:17] Is that sort of a legal operation they're running there?
+[00:23:22] That's kind of tricky to answer.
+[00:23:24] I mean, I'd say because there's a lot of very fine lines that they tell.
+[00:23:31] I mean, technically promoting is not illegal.
+[00:23:36] I think what's illegal is if you're promoting a stock
+[00:23:39] and you're selling shares without disclosing that you have those shares to sell.
+[00:23:44] Or it's a very fine line and I'm not really clear on the distinction.
+[00:23:48] But basically, as far as legitimacy goes, these were all worthless companies.
+[00:23:55] And I think pretty much every single one I've ever traded is probably at sub penny levels now
+[00:24:01] or very close to zero.
+[00:24:03] So, I mean, these were just, you know, some, I mean, this was, you know,
+[00:24:10] just a quarter trying to dupe people and trying to take their money.
+[00:24:13] And that really is all it was.
+[00:24:14] Yeah.
+[00:24:15] Okay.
+[00:24:16] So, last year, you sort of started leaning towards the NASDAQ listed stocks.
+[00:24:21] I mean, it was clear that you were already having great success
+[00:24:25] in making really good money trading penny stocks.
+[00:24:27] So, what influenced the change there?
+[00:24:30] Well, a couple of things.
+[00:24:33] One is that NASDAQs are a bit more scalable.
+[00:24:36] With the OTC market, one thing I learned along the way
+[00:24:40] is that volume and liquidity is very, very important
+[00:24:44] to being able to enter and exit trades.
+[00:24:46] And so, I mean, a lot of these, a lot of these patterns,
+[00:24:50] even though they repeat and even though they're predictable,
+[00:24:53] there's just simply not enough volume traded in them
+[00:24:56] to be able to take very large position sizes.
+[00:25:00] With NASDAQs, the volume and liquidity is much, much higher.
+[00:25:05] So, I think there's more opportunity there in that sense.
+[00:25:08] And I was kind of interested in it for a while because of that.
+[00:25:12] But I was kind of forced over there a little bit sooner than I had planned on.
+[00:25:16] And that was because first the SEC started to crack down on some of these promotions
+[00:25:21] in the OTC market.
+[00:25:23] And you started to see some of these players get halted.
+[00:25:25] And when an OTC promotion would get halted,
+[00:25:28] it would reopen two weeks later
+[00:25:30] and most of the time it would be down 50% or more
+[00:25:33] the price it was halted at.
+[00:25:35] So, that scared a lot of people away from the OTC market
+[00:25:38] because nobody wants to, you know, play these stocks
+[00:25:41] if you're halted at any minute.
+[00:25:43] And that really dried up the volume and liquidity over there.
+[00:25:48] A lot of the major promoters that I had been playing
+[00:25:51] for those first couple of years, you know,
+[00:25:54] I mean, either the people who were running them got arrested
+[00:25:57] or the sites got shut down.
+[00:25:59] But basically, most of the major promoters went away.
+[00:26:02] And so the OTC market, aside from a lot of the crappy marijuana stocks
+[00:26:07] running the first three months of 2014,
+[00:26:10] really has not had much activity in the past year.
+[00:26:14] Okay. So when you did start trading these NASDAQ stocks,
+[00:26:18] did you bring the same approach with you
+[00:26:20] or did you have to make a few changes to ADAPT?
+[00:26:25] It was a similar idea.
+[00:26:28] At that point, I was mostly a short seller.
+[00:26:32] I'd gotten away from buying some of these promotions a little bit
+[00:26:36] and more towards short selling them
+[00:26:38] once they had really spiked a lot
+[00:26:40] and seemed like they were overextended to me.
+[00:26:43] So I took that same sort of approach over to these NASDAQ stocks
+[00:26:46] because I felt like I would see it a lot on those as well
+[00:26:49] where you'd have, you know, maybe some good news
+[00:26:52] to get a stock or good earnings or something like that.
+[00:26:55] And for a few days, the stock would just go vertical.
+[00:26:59] It would, you know, maybe go from $2 to $5 or something like that.
+[00:27:03] And then it wouldn't collapse as fast as an OTC promotion would,
+[00:27:06] but a lot of times you would just sort of,
+[00:27:08] if you look back on some of the old ones or the old spikes,
+[00:27:11] you would see that over the course of the next month or two,
+[00:27:13] it just slowly faded back to where it had come from.
+[00:27:15] So it was pretty much the exact same pump and dump pattern
+[00:27:19] as I had seen on OTC stocks.
+[00:27:21] So that led me to believe, you know,
+[00:27:23] okay, it's happening to a degree
+[00:27:25] with some of these listed stocks as well.
+[00:27:28] But I did have to adjust how I traded at that.
+[00:27:32] I had to start looking for a smaller profit window
+[00:27:34] because again, I wouldn't hold short for a month or two.
+[00:27:38] It was, you know, I would try to trade a couple of days
+[00:27:40] when the stock was the most volatile and the most liquid
+[00:27:44] and then just move on to the next one.
+[00:27:46] Okay, so one of the big changes would be
+[00:27:48] that you were sort of holding for slightly longer,
+[00:27:51] even though it wasn't a month, you might sort of hold it overnight.
+[00:27:55] Sometimes I would go overnight with these,
+[00:27:58] although usually if I did it was because I'd gotten stubborn
+[00:28:01] with a bad entry.
+[00:28:03] But no, I think it was just more that, you know,
+[00:28:07] if I shorted an OTC that went from $2 to $5,
+[00:28:12] I would expect, you know, a 50% gain in probably a day or two.
+[00:28:18] With these listed stocks,
+[00:28:21] I wouldn't have that wide of a profit window
+[00:28:23] because like I mentioned, they came down a lot slower, I noticed.
+[00:28:26] So I'd really be looking for more like 5%, 10% or 15%.
+[00:28:31] I'd just try to find the predictable part of the move
+[00:28:33] where I could take my piece, you know, of the easy profits
+[00:28:37] and then just leave it alone after that.
+[00:28:40] Okay, yeah, now that makes sense.
+[00:28:42] So here's something I want to ask you,
+[00:28:44] and that is a lot of traders will say
+[00:28:46] that you need to have an edge to succeed as a trader, right?
+[00:28:49] So how would you define your edge?
+[00:28:55] My edge, I think, is really just that I understand chart patterns,
+[00:29:02] or at least I feel like I do.
+[00:29:05] And I have, you know, basically I could call the list of setups
+[00:29:10] where if I see a certain pattern forming,
+[00:29:13] I immediately know what to do
+[00:29:15] because I've seen that pattern time and time and time again.
+[00:29:18] So as I've gone on, I guess my edge's experience,
+[00:29:24] I guess you could say,
+[00:29:25] that now I get a better idea of what to look for.
+[00:29:28] But I guess that also comes from the fact
+[00:29:31] that I am able to recognize chart patterns
+[00:29:34] and recognize which ones are predictable and loopy.
+[00:29:38] Yeah, so it's just, again, really good
+[00:29:40] at picking a sort of particular or specific chart patterns
+[00:29:45] that you recognize.
+[00:29:46] And, you know, time and time again,
+[00:29:48] I've proved that this is generally what follows
+[00:29:52] if you sort of see that setup come together.
+[00:29:54] Right.
+[00:29:56] Yeah, right.
+[00:29:58] So as a day trader, I mean,
+[00:30:00] you're pretty well connected to the market while it's open.
+[00:30:02] But I'm keen to know how much time would you say
+[00:30:05] you spend researching and studying the market after hours?
+[00:30:09] What do you think of those?
+[00:30:12] It usually fluctuates a bit.
+[00:30:17] If I'm at a point where I'm comfortable
+[00:30:20] and I'm trading only setups that I'm familiar with
+[00:30:23] and have been doing for a while,
+[00:30:25] really the only time I'm putting in after market hours
+[00:30:28] is just to put together a watch list for the following day.
+[00:30:31] And that takes me maybe 15 minutes a night.
+[00:30:35] Now, if it's me trying to learn a new setup
+[00:30:38] or trying to improve a new area of the market,
+[00:30:41] then the time goes up a bit
+[00:30:44] because then I'm usually putting data in the spreadsheets
+[00:30:47] or saving charts and studying charts
+[00:30:49] or just doing a little bit of extra after hours work
+[00:30:53] trying to familiarize myself with that next setup
+[00:30:57] that I'm trying to move on to.
+[00:30:59] And then I'd say, you know,
+[00:31:01] it's more like an hour or two hours a day after market.
+[00:31:04] Okay, cool.
+[00:31:06] Now, here's one thing I wanted to speak to about
+[00:31:09] and I hope it's not too much of a touchy subject,
+[00:31:12] but October last year you took a whopping big loss
+[00:31:16] on I think it was about $270,000 on...
+[00:31:21] $290,000.
+[00:31:22] $290,000, okay.
+[00:31:24] Trading like when the Bola stocks were really hot
+[00:31:28] and they were all sort of surging.
+[00:31:30] But I mean, in relation to your trading capital,
+[00:31:33] it wasn't crippling,
+[00:31:34] but nobody could say that isn't a huge amount of money to lose.
+[00:31:38] So I wanted to hit you up about it
+[00:31:40] because there's definitely lessons in there for everyone.
+[00:31:42] Oh, for sure, yeah.
+[00:31:44] Tell us what went wrong
+[00:31:46] and what were the tough lessons
+[00:31:48] that you walked away from this one with?
+[00:31:52] Well, what went wrong?
+[00:31:54] It was really almost a year-long problem
+[00:31:58] that just had taken that long to surface
+[00:32:00] and it was that I was refusing to cut losses.
+[00:32:03] I had transitioned over into these Nasdaq stocks
+[00:32:06] and I think it was, I guess, May of 2014
+[00:32:10] that I transitioned over.
+[00:32:11] So I've been trading them for about five months at this point.
+[00:32:14] And I'd always kind of had the attitude with these
+[00:32:16] that they're a lot choppier and there's a lot more fakeouts
+[00:32:19] and they were a little trickier than the OTCs.
+[00:32:22] And a habit that I had gotten into,
+[00:32:25] mainly short-selling these big runners,
+[00:32:28] was if I missed time by entry,
+[00:32:30] I was just going to hold and let it squeeze me
+[00:32:34] and look to add higher.
+[00:32:36] And that would be fine.
+[00:32:39] And so I started doing this in May or June, I think.
+[00:32:42] And every now and then I'd get stuck in a stubborn trade
+[00:32:45] and then it would squeeze me
+[00:32:47] and I'd be down $10,000 or $20,000.
+[00:32:51] But it always ended where it would come back in my favor
+[00:32:54] and I would take off for either a small gain
+[00:32:56] or a small loss or a break even.
+[00:32:58] And basically it worked out okay every single time.
+[00:33:01] And so by the time Lake came around,
+[00:33:03] I took my entry in Lake on the short side
+[00:33:06] and I think it was probably about $9.90 or so
+[00:33:10] that I entered my short at.
+[00:33:12] And I had a small gain on it.
+[00:33:14] Some kind of press release came out midday
+[00:33:16] and spiked the stock a bit.
+[00:33:18] And I was pissed that I couldn't cover my position
+[00:33:21] for a gain.
+[00:33:22] Like I had maybe a $3,000 gain on it
+[00:33:24] and I watched that disappear and I was ticked off.
+[00:33:27] So I just figured okay, screw it.
+[00:33:29] I'm going to hold it until it comes back down
+[00:33:31] and fades again.
+[00:33:32] And then it just started breaking out.
+[00:33:35] It started going to new highs.
+[00:33:37] And because I conditioned myself
+[00:33:40] with that bad habit of not cutting losses,
+[00:33:42] yeah, I was getting squeezed
+[00:33:44] and I was really uncomfortable
+[00:33:46] and I was down and realized a pretty ugly amount of money.
+[00:33:48] But I just kind of figured it would end like every other one
+[00:33:52] where I would either add higher and get my average up
+[00:33:55] or it would just maybe squeeze for a day
+[00:33:57] and fade back off and I'd be fine.
+[00:33:59] But this one, it didn't work like that.
+[00:34:01] And I made the mistake of adding too early to my position
+[00:34:06] and then getting stubborn on my ads as well.
+[00:34:08] And really it was just a snowball effect
+[00:34:10] where I took a bad situation
+[00:34:11] and I kept making it worse and worse and worse
+[00:34:13] because I couldn't let go of my short bias
+[00:34:16] and it made that I was wrong
+[00:34:19] and would have been a very manageable loss.
+[00:34:22] And instead, before I knew it,
+[00:34:24] I was down this huge sum of money
+[00:34:26] and it really was mentally tough to deal with
+[00:34:29] in the trade and then the days following.
+[00:34:32] So what were some of the lessons that you took away from that?
+[00:34:35] Was there something you made like a mental notice
+[00:34:38] of like, I will never do this again sort of thing?
+[00:34:42] Yeah, it taught me that I had to cut losses.
+[00:34:45] And the big one for that one was that it
+[00:34:50] was that I held through as it was breaking out to new all-time highs.
+[00:34:55] Or I guess all-time in a sense
+[00:34:57] since it had started trading with volume
+[00:34:59] when all the Ebola news had started coming out.
+[00:35:01] I kind of looked at that as like the period of the pump,
+[00:35:05] I guess you would put it.
+[00:35:06] Okay.
+[00:35:07] And so, you know, the hide had gotten to
+[00:35:10] in the previous three, four, five days or whatever
+[00:35:14] when I was first starting to short it
+[00:35:16] was somewhere in the $10 range.
+[00:35:18] And so once it started to break past that
+[00:35:21] I should have just been done and should have been out
+[00:35:23] and respected that it could go higher.
+[00:35:26] So that was my lesson, my never again lesson
+[00:35:29] is I'm never going to let myself go on all these
+[00:35:32] rides like I did over the summer
+[00:35:35] where I'm just holding through big unrealized losses
+[00:35:38] and trusting that it will come back down
+[00:35:40] and everything will be okay.
+[00:35:42] It retaught me that I have to cut losses
+[00:35:45] and I have to respect the trend.
+[00:35:47] Yeah, yeah, good one.
+[00:35:49] So you actually did a really awesome
+[00:35:51] write up about that on your blog
+[00:35:53] so I'll make sure that I put a link to that in the show notes.
+[00:35:57] For sure.
+[00:35:58] Yeah, I know that's a lot more detailed
+[00:36:00] than I can get into over this.
+[00:36:02] Yeah, yeah.
+[00:36:03] So listeners definitely make sure you check that one out.
+[00:36:06] Awesome write up.
+[00:36:07] So let's get a little bit more
+[00:36:10] advice for sort of traders
+[00:36:12] because I know you did a presentation
+[00:36:15] towards the end of last year in Las Vegas
+[00:36:17] and you spoke a lot about
+[00:36:19] sort of advice for entry level traders
+[00:36:22] and sort of on the subject.
+[00:36:24] So at the presentation you gave out
+[00:36:27] five factors that you sort of linked
+[00:36:30] very closely to your success.
+[00:36:32] So I know we don't have
+[00:36:35] an hour, two hours to go through them in depth
+[00:36:38] but would you be able to briefly run us through
+[00:36:40] each one of those five factors
+[00:36:42] and why it's so important to get each one right?
+[00:36:46] For sure, yeah.
+[00:36:48] The first factor was have the right brokers
+[00:36:51] and I think that is one of the most key things.
+[00:36:54] You need the right broker for your trading strategy.
+[00:36:57] You need to know what your broker's strength
+[00:36:59] and weaknesses are.
+[00:37:00] Just an example of that.
+[00:37:02] I've been talking to a trader recently.
+[00:37:04] I was talking earlier here about how
+[00:37:06] buying new promotions on the OTC market
+[00:37:08] was a huge strategy of mine early.
+[00:37:11] I'm building my account.
+[00:37:13] And for that you needed a broker
+[00:37:15] that would get you good OTC executions.
+[00:37:18] And the best broker for that was Speed Trader
+[00:37:20] at the time and I think they probably still are now.
+[00:37:23] And so I made sure that I had Speed Trader
+[00:37:26] because if I wanted to buy promotions
+[00:37:29] I needed to have the best tool for it.
+[00:37:31] And it drives me crazy
+[00:37:34] because some traders, I remember talking to a trader
+[00:37:37] who was trying to buy OTC stocks
+[00:37:40] with a broker where it would take him
+[00:37:42] five minutes to get an execution on one of his orders.
+[00:37:45] And I was saying to him,
+[00:37:47] even if you have a stop-loss level in mind
+[00:37:51] with your position here,
+[00:37:53] if you are trying to get out of this trade
+[00:37:56] when things are going bad,
+[00:37:58] if your support level breaks down
+[00:38:00] and you want to sell,
+[00:38:01] you're not going to get that fill.
+[00:38:03] You might only want to risk a few cents a share
+[00:38:05] but you probably will wind up filling
+[00:38:07] at the bottom of the panic
+[00:38:09] because your broker just is not equipped to sell you
+[00:38:12] in a timely manner.
+[00:38:14] So it's really just...
+[00:38:16] the broker is your main tool for executing your trades
+[00:38:20] so you need to make sure that you're using one
+[00:38:23] that fits what you need.
+[00:38:26] The second key to success was
+[00:38:30] focus only on liquid and volatile stocks.
+[00:38:33] And I mean, I guess that's not for everybody
+[00:38:35] because I do know some traders
+[00:38:37] who are successful trading lower-flow plays
+[00:38:40] or lower-volume plays.
+[00:38:42] But for me, it was very important
+[00:38:44] for anything I trade to be liquid and volatile
+[00:38:46] because I need the volatility
+[00:38:49] in order to actually make meaningful returns.
+[00:38:52] And then as far as liquidity goes or good volume,
+[00:38:55] I've found that I'm far more comfortable
+[00:38:58] and it's far easier to trade sides
+[00:39:00] and far easier to get fills
+[00:39:04] on your entries and exits
+[00:39:06] than the traders going for you or against you.
+[00:39:09] Awesome. So what's number three there?
+[00:39:12] Number three was identify and focus on your niche.
+[00:39:16] And what I mean by that is
+[00:39:19] my big turning point, I think, as a trader
+[00:39:23] is when I cut down the number of setups
+[00:39:26] I was trying to trade.
+[00:39:28] I went from trying to do everything
+[00:39:30] to just trading those two OTC setups
+[00:39:32] that I was comfortable with.
+[00:39:34] And toward all of my focus and all of my attention
+[00:39:37] into those, I stopped trying to follow guru alerts
+[00:39:40] to stop doing random earnings winning plays.
+[00:39:43] I was just looking at the OTCs
+[00:39:45] and just looking at the new promotions
+[00:39:47] and at the breakouts.
+[00:39:49] And that focus on what I knew that I was comfortable with,
+[00:39:52] what I knew what I was good at,
+[00:39:55] that really made a meaningful difference
+[00:39:58] to my accounts because I started to see
+[00:40:00] far more consistent results.
+[00:40:02] Even that's how I started to build up my account
+[00:40:05] a little bit and be profitable.
+[00:40:07] And then once you feel like you've really mastered those
+[00:40:10] and understand those, you can always branch out from there.
+[00:40:12] But when you're first getting started
+[00:40:14] and you're first figuring out who you are as a trader,
+[00:40:17] don't try to do too much.
+[00:40:19] It's okay if you miss this huge short sale
+[00:40:23] that everybody else is beating their chest about
+[00:40:26] and saying, oh yeah, I killed it.
+[00:40:28] If you're not a short seller,
+[00:40:31] you're always going to miss stuff in the market
+[00:40:33] no matter who you are, no matter what set up you like,
+[00:40:36] you're going to miss things and that's fine.
+[00:40:38] What you need to do though is you need to figure out
+[00:40:40] where you succeed and just focus there
+[00:40:43] and make sure that those are the ones that you profit on.
+[00:40:46] Alright, and number four, what have you got there?
+[00:40:50] Number four was don't believe the hype
+[00:40:53] trade charts and price action only.
+[00:40:56] And that one was, you know,
+[00:41:00] that's also been pretty key to my success
+[00:41:02] because I see, especially now with these listed stocks,
+[00:41:07] I think, you know, everybody kind of knows,
+[00:41:09] okay, oh, these stocks are usually garbage.
+[00:41:12] But with listed stocks,
+[00:41:14] the fact that they're on major exchanges,
+[00:41:16] I think everybody kind of gives them
+[00:41:18] a little bit added of a degree of legitimacy
+[00:41:21] and we'll just assume like, oh, well,
+[00:41:23] this company put out news.
+[00:41:24] So that's got to be great for it.
+[00:41:26] That means it's going to go up.
+[00:41:28] And yeah, maybe it goes up for a little bit,
+[00:41:30] but when that chart momentum turns
+[00:41:32] and it starts coming back down,
+[00:41:34] far too many people just hold and hope
+[00:41:36] and say, and still think, oh, well,
+[00:41:38] that news means that it's got to go up.
+[00:41:40] It's got to keep going.
+[00:41:41] And I mean, that really goes for both sides of the play
+[00:41:44] because also, I mean, that's exactly
+[00:41:46] what I did with the lake trade
+[00:41:48] was I ignored what the chart was telling me.
+[00:41:50] I ignored stocks was breaking out.
+[00:41:52] This was so latched onto my short bias
+[00:41:54] because I thought that the company was garbage.
+[00:41:57] So whether it's a good bias
+[00:42:01] towards the company or a bad bias towards the company,
+[00:42:03] it really doesn't matter.
+[00:42:05] All that matters is what the market is telling you
+[00:42:07] and that's best deciphered through charts.
+[00:42:10] Absolutely no, I completely agree with that one.
+[00:42:13] So fifth and final,
+[00:42:16] what's that one there?
+[00:42:18] That's cut losses intelligently.
+[00:42:20] And I kind of specify there and not necessarily quickly.
+[00:42:24] And it's really funny because I did talk about this in Vegas
+[00:42:28] and this was probably a week before my lake loss happened.
+[00:42:32] And, you know, looking back on it now,
+[00:42:35] I still agree with that to a degree.
+[00:42:38] You should cut losses intelligently.
+[00:42:40] For me, an intelligent loss cut on a lake
+[00:42:44] would have been when it was breaking new all-time highs.
+[00:42:47] That would have been the intelligent move
+[00:42:50] because I would have respected that it was a breakout.
+[00:42:53] Now, what I think I meant more by that
+[00:42:56] with cut losses intelligently, not necessarily quickly,
+[00:42:59] is a lot of people will have preconceived numbers in their mind.
+[00:43:03] Like, I don't want to lose more than 1% per trade
+[00:43:06] or I don't want to lose more than 3% per trade.
+[00:43:09] And, you know, if their stop loss gets hit, they're out.
+[00:43:13] And what I mean when I say cut losses intelligently
+[00:43:16] is don't base it off of some preconceived number necessarily.
+[00:43:21] Whether that's a dollar amount or a percentage figure,
+[00:43:24] I like to base it off of the chart.
+[00:43:26] So, basically, if there's a huge support level on a stock
+[00:43:32] that's 5% away from my entry,
+[00:43:35] I don't want to be cutting my loss at 2%
+[00:43:38] when really the chart never broke down
+[00:43:40] and there was no real reason to get out
+[00:43:42] other than I had hit some preconceived number in my head.
+[00:43:45] I want to be trading off of the action
+[00:43:47] and off of the chart in front of me.
+[00:43:49] Okay, so you can still predetermine
+[00:43:51] where your stop's going to be when you enter a trade, right?
+[00:43:54] So, by looking at the chart and the price action
+[00:43:57] previous to where you enter,
+[00:43:59] what you're saying is you can still put your stop loss on
+[00:44:03] as you enter the trade
+[00:44:05] but don't have like a hard and fast rule
+[00:44:08] like it's going to be this far behind my entry.
+[00:44:11] Right, exactly.
+[00:44:13] I mean, this is how I think about risk.
+[00:44:15] So, let's say you've got a stock that has
+[00:44:18] a huge support level at $1 per share.
+[00:44:21] If, I mean, if I enter that stock at $1.10,
+[00:44:26] that means I'm risking $0.10 a share or 10%.
+[00:44:29] Now, that's, you know, 10% is a pretty big percentage
+[00:44:32] I've lost to take.
+[00:44:33] So, I would figure out my risk
+[00:44:35] based off of how much size am I going to take.
+[00:44:38] So, if I'm taking that $1.10 entry
+[00:44:40] risking off of $1 and that's 10%,
+[00:44:43] I probably don't want to be playing large size.
+[00:44:46] I probably don't want to be all in.
+[00:44:48] I'd probably play smaller size
+[00:44:50] because I'm using a wider stop loss.
+[00:44:52] But if I get in at $1.03
+[00:44:55] and I'm only risking $0.03 a share or 3%,
+[00:44:58] then maybe I'm willing to size up a little bit more.
+[00:45:01] So, I think in terms of, I guess,
+[00:45:03] dollar risk and what it means to my account
+[00:45:06] but I would use the same stop in both situations
+[00:45:09] just a question of how much would I size in
+[00:45:11] based off of how far away from that level am I?
+[00:45:14] Exactly, yeah.
+[00:45:15] Now, that makes sense.
+[00:45:16] So, well, this sort of brings us
+[00:45:18] close to the end of the interview
+[00:45:20] and it's been really good.
+[00:45:21] So, thanks so much for coming on.
+[00:45:23] Absolutely, yeah.
+[00:45:24] But let's take it to the closing bell.
+[00:45:26] So, just a few questions that we asked all the guests
+[00:45:29] and the first one would be
+[00:45:31] what's the best piece of advice you've ever received?
+[00:45:36] I mean, I'm not sure it was directed personally at me
+[00:45:38] but the best I've seen is from Nate
+[00:45:42] or Investors Live and his little phrase
+[00:45:45] trade to the ticker and not the company
+[00:45:47] and that goes along with what I was talking about earlier
+[00:45:50] where I want my trading decisions to be based off
+[00:45:54] of what the chart is telling me,
+[00:45:55] what the price action is telling me,
+[00:45:57] not some kind of preconceived notions
+[00:45:59] about how good or bad the company is
+[00:46:01] based off of the news or fundamentals
+[00:46:03] or whatever other factors.
+[00:46:04] Yeah, cool.
+[00:46:05] I like that.
+[00:46:06] I really like that one.
+[00:46:07] So, what is the number one trading resource
+[00:46:10] you couldn't live without today?
+[00:46:14] I think it would have to be market scanners.
+[00:46:18] For me right now, I'm using stocks to trade
+[00:46:20] but I've also used equity feed
+[00:46:22] or Interactive Brokers, the scanner on their platform
+[00:46:26] but I think a market scanner is really key
+[00:46:30] to what I do now
+[00:46:31] because that's just how I find my place.
+[00:46:33] I will punch in my criteria
+[00:46:36] of what I'm looking for.
+[00:46:37] Usually, it's just top percent gainers
+[00:46:39] that have certain volume requirements.
+[00:46:41] I look for the ones that have traded
+[00:46:44] I'd say at least probably $5 million
+[00:46:47] on the day for listed stocks.
+[00:46:50] And I mean half of these I'd probably
+[00:46:53] never even know about
+[00:46:54] if I wasn't using my scanner
+[00:46:56] at the end of the day
+[00:46:57] and running through the list of these plays
+[00:46:58] and then pulling up charts
+[00:46:59] based off of what it finds.
+[00:47:01] Yeah, cool.
+[00:47:02] So, let's say you've watched this
+[00:47:03] for the following day, right?
+[00:47:05] Yeah, it's almost entirely scanner based.
+[00:47:07] Awesome.
+[00:47:08] So, I know you're not a huge radar on books
+[00:47:11] and that sort of thing
+[00:47:12] but is there any one book you believe
+[00:47:14] is a must read for any trader just starting out?
+[00:47:17] No, there really isn't
+[00:47:18] because I really haven't read many trading books.
+[00:47:22] Actually, I don't think I've really read any.
+[00:47:24] So, one thing I do want to check out this year
+[00:47:28] as I continue trying to improve a little bit
+[00:47:31] I want to get into some trading psychology books.
+[00:47:34] So, I think that's the most useful area
+[00:47:37] if you're going to read books on trading
+[00:47:39] is don't worry so much about a book
+[00:47:41] that's trying to give you
+[00:47:42] the holy grail of all trading systems
+[00:47:44] but maybe worry more about the books
+[00:47:47] that will help you be psychologically right
+[00:47:51] while you trade
+[00:47:52] and maybe learn to control those emotions better
+[00:47:54] stuff that is a little more practical and useful.
+[00:47:57] Okay, cool.
+[00:47:58] That's probably a really good answer
+[00:48:00] better than a specific book.
+[00:48:02] So, yeah, thank you for that.
+[00:48:04] Knowing everything you do now
+[00:48:07] is there anything you would have done differently
+[00:48:09] come day one again?
+[00:48:10] Oh, definitely, yeah.
+[00:48:12] I mean, I would have absolutely dove in
+[00:48:18] without trying to follow alerts.
+[00:48:20] That's the first thing
+[00:48:21] I would have never wasted my time
+[00:48:22] trying to follow trade alerts
+[00:48:23] or mimic people's trades.
+[00:48:25] I would have focused a lot more
+[00:48:26] just on what I was doing and tried to, you know
+[00:48:29] I think that's how you build confidence as a trader.
+[00:48:31] You make your own trades
+[00:48:33] you make your own mistakes.
+[00:48:34] Yeah, you're going to take losses along the way
+[00:48:36] but then you learn from those losses.
+[00:48:38] So, I wish I had kind of gotten started
+[00:48:40] with that a little bit sooner
+[00:48:41] with the, you know
+[00:48:43] being a little bit more self-reflective
+[00:48:45] and saying, okay, well, I just lost on this setup
+[00:48:48] why did I lose?
+[00:48:49] What did I do wrong?
+[00:48:51] Or what did I do right?
+[00:48:53] You know, if I was just cutting a loss
+[00:48:54] on a setup that just didn't work.
+[00:48:56] But the other thing is
+[00:48:57] I wish I had been a lot more mindful
+[00:48:58] about volume and liquidity
+[00:49:00] because one of my earliest losses
+[00:49:03] that I can remember
+[00:49:04] like my first big loss I took
+[00:49:06] was because I was trying to trade
+[00:49:09] a very thinly traded stock
+[00:49:11] with the same rules that I had been applying
+[00:49:14] to some stocks that traded with more volume.
+[00:49:16] And I didn't really understand the difference
+[00:49:18] and I took a huge loss as a result
+[00:49:20] because the bottom dropped out of this one
+[00:49:22] so much quicker than it did on any of the others
+[00:49:24] because there just wasn't the volume there to support it.
+[00:49:28] Okay, awesome points.
+[00:49:30] That's really good.
+[00:49:31] So that brings us to the end of the interview, Tim.
+[00:49:34] So thanks so much for coming on.
+[00:49:36] Absolutely, yeah.
+[00:49:37] It's been awesome.
+[00:49:38] So before we wrap things up
+[00:49:40] do you just want to share with the listeners
+[00:49:42] where they can find out more about you
+[00:49:44] and connect?
+[00:49:46] Oh, sure, yeah.
+[00:49:47] Well, my blog that I mentioned earlier
+[00:49:49] is tradetheticker.blogspot.com
+[00:49:53] and I put a lot of posts on there
+[00:49:55] that I try to gear towards beginners
+[00:49:57] and helping people on and get started.
+[00:50:00] And then also I have a Twitter,
+[00:50:02] I believe it's at CroyRunner89.
+[00:50:06] I believe I have the 89 in there.
+[00:50:08] Yeah, I do.
+[00:50:09] At CroyRunner89 is my Twitter.
+[00:50:10] So I'm on there.
+[00:50:11] I'm somewhat active here and there.
+[00:50:14] But yeah, those are the best two places to look for me.
+[00:50:17] Okay, awesome.
+[00:50:18] And all the links and everything mentioned in the show
+[00:50:21] will be on the show notes at chatwithtraders.com.
+[00:50:24] So definitely make sure you check out
+[00:50:26] Tim's blog.
+[00:50:27] There's some awesome posts on there
+[00:50:29] and yeah, plenty to learn.
+[00:50:32] So thanks a lot, Tim,
+[00:50:34] and we'll speak soon.
+[00:50:36] All right, that was good. Thank you.
+[00:50:39] Okay, now that brings us to
+[00:50:41] the end of this week's episode.
+[00:50:43] So I hope you guys found some value
+[00:50:45] inside of that interview.
+[00:50:47] Tim's a very switched on guy as you can tell
+[00:50:49] and doing a great job.
+[00:50:51] Doing a very, very great job.
+[00:50:53] So just a quick reminder
+[00:50:55] the lucha method giveaway is wrapping up
+[00:50:57] this weekend on Sunday
+[00:50:59] at 7pm EST.
+[00:51:01] So guys, make sure you're in that.
+[00:51:03] It's a massive prize.
+[00:51:05] Just go to chatwithtraders.com
+[00:51:07] forward slash giveaway.
+[00:51:09] All the details there.
+[00:51:10] All you got to do is just answer a very, very simple
+[00:51:13] multi-choice question
+[00:51:15] and put in your email address.
+[00:51:17] And that's it. You're in.
+[00:51:18] If you want to increase your chances of winning,
+[00:51:20] you'll be given a unique URL.
+[00:51:22] Take that URL
+[00:51:24] and just sort of share it around.
+[00:51:26] Anyone who enters through that URL
+[00:51:29] you score another 10 entries.
+[00:51:31] So very easy to dramatically increase
+[00:51:33] your chances of winning too.
+[00:51:35] All right, well I look forward to speaking with
+[00:51:37] some of you throughout the week
+[00:51:39] and new episode coming same time next week.
+[00:51:41] Take care.
+[00:51:54] If you enjoyed this episode,
+[00:51:56] be sure to subscribe to the podcast in iTunes
+[00:51:58] and we'd love it if you leave us a rating and review.
+[00:52:00] We'll see you next time on chat with traders.
+[00:52:24] you

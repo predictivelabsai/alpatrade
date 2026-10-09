@@ -1,0 +1,73 @@
+{
+  "trader": "Stan Gluzman",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "short-only",
+  "template": "none",
+  "method_name": "Intraday gap fader short",
+  "style": "intraday scalping and fading",
+  "timeframe": "intraday (flat by noon, no overnight)",
+  "universe": {
+    "description": "small-cap US stocks with low float (<100M shares, often <20M), gapping up on PR/news"
+  },
+  "setup": [
+    {
+      "rule": "gap scanner for small float small-cap stocks gapping up on news/PR",
+      "quote": "I have a gap scanner. So with with certain criteria. So I like filter it out by float and market cap. So I want to I want to see a stock with a smaller float like maybe under 100 million. Most of them are like less than 20 million share floats. And you know, I want it to be a small cap.",
+      "timestamp": "[00:46:13]"
+    },
+    {
+      "rule": "focus on stocks likely to fail and revert (PR irrelevant, dilution risk)",
+      "quote": "if you read the PR, if you read the filings, you know that is irrelevant. You know, the PR is completely irrelevant and they're probably going to dilute",
+      "timestamp": "[00:43:37]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "scale in short near top with multiple entries (quarter size first), use tape, level 2, dark pools/midpoint",
+      "quote": "if I for example think, oh this is this is the top and I get in full size and I'm wrong, I take a big loss. Versus if I think, oh this is the top. Let me take a quarter position.",
+      "timestamp": "[00:47:18]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "set risk amount; exit if exceeded, avoid stubbornness",
+      "quote": "I have a set risk amount that I'm willing to lose. If I go past that amount, um stopping myself out and that's it. Sometimes I don't and that's when I take the biggest uh my biggest losses when I get stubborn.",
+      "timestamp": "[00:51:56]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "scale out on washouts (cover quarter on sharp drops), short bounces, ride core fade if trend continues",
+      "quote": "If the stock drops sharply, I want to take some risk off the table because there's probably going to be a bounce. So, I I might take off a quarter. Um if it drops, you know, puts on another two big red candles, then I'm going to take off another quarter.",
+      "timestamp": "[00:50:56]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "scale in/out with quarters or smaller; size down after two red days",
+      "quote": "for me it's just sizing down. First thing I do is always I size down. I bring down my my risk for the day, my lockout for the day divided by four automatically.",
+      "timestamp": "[00:22:55]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "avoid holding into close; focus morning inefficiency",
+      "quote": "I don't really like to trade the close anymore. The close used to be my go-to time, but the market has shifted, and I guess I've adapted to just hit it in the morning and kind of leave it alone for the rest of the day",
+      "timestamp": "[00:02:09]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "mentions some long trades in SSR context but primary described method is short fading",
+      "assumption": "main method is short-only"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "171",
+    "page_url": "https://chatwithtraders.com/episode/171-stan-gluzman-raid-the-money-box",
+    "youtube_url": "https://www.youtube.com/watch?v=puDBc5vi4Nw"
+  }
+}

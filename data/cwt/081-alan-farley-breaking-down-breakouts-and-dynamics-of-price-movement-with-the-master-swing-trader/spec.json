@@ -1,0 +1,32 @@
+{
+  "trader": "Alan Farley",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Transcript provides only qualitative concepts (breakout phases, pullbacks, convergence/divergence) with no concrete numerical rules or parameters for entries, stops, exits or sizing.",
+  "template": "none",
+  "method_name": "Swing trading breakouts with pullbacks",
+  "style": "swing trading",
+  "timeframe": "days to weeks",
+  "universe": {
+    "description": "US equities"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Mentions buying pullbacks after breakouts and using stochastics/Bollinger but supplies no thresholds or lookbacks.",
+      "assumption": "Rules are discretionary and cannot be coded from transcript alone."
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "81",
+    "page_url": "https://chatwithtraders.com/episode/081-alan-farley-breaking-down-breakouts-and-dynamics-of-price-movement-with-the-master-swing-trader",
+    "youtube_url": "https://www.youtube.com/watch?v=QczwNaegeXA"
+  }
+}

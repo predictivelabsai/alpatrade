@@ -1,0 +1,62 @@
+{
+  "trader": "Liam Vaughan (on Navinder Sarao)",
+  "category": "futures_fx",
+  "testable": false,
+  "reason": "Main method was intraday scalping of S&P e-mini futures (short side only) using spoofing/layering algorithms during volatile down moves.",
+  "template": "none",
+  "method_name": "Short scalping with spoofing",
+  "style": "intraday scalping",
+  "timeframe": "intraday (seconds to minutes)",
+  "universe": {
+    "description": "S&P e-mini futures (later also DAX)"
+  },
+  "setup": [
+    {
+      "rule": "Trade during high volatility falling markets",
+      "quote": "Navs strategy was principally to go short the market in a falling market and then get out quickly and keep getting in and out you know during highly volatile periods when markets were falling",
+      "timestamp": "[00:16:47]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Place spoof sell orders then enter genuine short",
+      "quote": "simultaneously to doing that he would also be just shorting the market waiting for it to go down a couple of ticks and then exiting his position",
+      "timestamp": "[00:21:04]"
+    }
+  ],
+  "stop": [],
+  "exits": [
+    {
+      "rule": "Exit after a few ticks profit",
+      "quote": "he would just get in and out after a few ticks",
+      "timestamp": "[00:21:34]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Scale up size aggressively with profits",
+      "quote": "his ability to just keep upping size and continually take on more and more risk",
+      "timestamp": "[00:10:02]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Only during volatile down days",
+      "quote": "during highly volatile periods when markets were falling",
+      "timestamp": "[00:16:47]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "No concrete long-only US stock rules provided",
+      "assumption": "Method is futures scalping and therefore outside scope"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "194",
+    "page_url": "https://chatwithtraders.com/episode/194-liam-vaughan-bedroom-trader-amasses-fortune-becomes-prime-suspect-of-flash-crash",
+    "youtube_url": "https://www.youtube.com/watch?v=GiOBXjL52eg"
+  }
+}

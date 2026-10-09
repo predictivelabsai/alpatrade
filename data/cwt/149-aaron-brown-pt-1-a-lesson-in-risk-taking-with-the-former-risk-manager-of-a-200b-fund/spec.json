@@ -1,0 +1,27 @@
+{
+  "trader": "Aaron Brown",
+  "category": "no_concrete_rules",
+  "testable": false,
+  "reason": "No concrete long-side trading rules for US stocks are described; transcript covers poker background, risk management career, quant equity crisis, and qualitative risk concepts without any testable strategy details.",
+  "template": "none",
+  "method_name": "No specific method described",
+  "style": "Risk management and quant oversight",
+  "timeframe": "N/A",
+  "universe": {
+    "description": "N/A"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "149",
+    "page_url": "https://chatwithtraders.com/episode/149-aaron-brown-pt-1-a-lesson-in-risk-taking-with-the-former-risk-manager-of-a-200b-fund",
+    "youtube_url": "https://www.youtube.com/watch?v=qttBNpZ47e8"
+  }
+}

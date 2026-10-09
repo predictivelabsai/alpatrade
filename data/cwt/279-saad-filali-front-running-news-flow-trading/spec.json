@@ -1,0 +1,63 @@
+{
+  "trader": "Saad Filali",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Entirely discretionary news-flow and macro-prediction trading with zero technical rules or concrete entry/exit criteria that can be coded.",
+  "template": "none",
+  "method_name": "News flow front-running macro",
+  "style": "discretionary macro event-driven",
+  "timeframe": "seconds to 2 weeks",
+  "universe": {
+    "description": "US equities, indexes, futures, forex, bonds, gold, oil"
+  },
+  "setup": [
+    {
+      "rule": "Identify news or data not yet priced in or diverging from fundamentals",
+      "quote": "Identify situations where market pricing diverges from the fundamental valuation for a period of time, which can range from seconds to weeks.",
+      "timestamp": "[00:19:56]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Predict event outcome and price reaction ahead of consensus; enter on news release if not already priced",
+      "quote": "I would actually predict it. So, I would come before it happens and I would decide beforehand if they are going to surprise and be more dovish than expected or not.",
+      "timestamp": "[00:26:46]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Exit immediately if price does not react as predicted after event",
+      "quote": "if you do get it wrong I just take the loss and wait for the next opportunity.",
+      "timestamp": "[00:49:04]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Exit after event reaction or when consensus forms; hold max ~2 weeks",
+      "quote": "it goes from seconds, really seconds to a couple days or no more than 2 weeks.",
+      "timestamp": "[00:11:06]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Increase size on high-conviction unique events; otherwise moderate to meet client volatility limits",
+      "quote": "if it's something that's really strong that would definitely incentivize me to to put more size on for sure.",
+      "timestamp": "[00:47:31]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Avoid when CTAs or retail momentum dominate; monitor sell-side consensus for discrepancies",
+      "quote": "the CTAs they don't read the news they don't care about the price. They don't care about they don't care about valuation.",
+      "timestamp": "[00:33:32]"
+    }
+  ],
+  "ambiguities": [],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "279",
+    "page_url": "https://chatwithtraders.com/episode/279-saad-filali-front-running-news-flow-trading",
+    "youtube_url": "https://www.youtube.com/watch?v=oX19-a89i-c"
+  }
+}

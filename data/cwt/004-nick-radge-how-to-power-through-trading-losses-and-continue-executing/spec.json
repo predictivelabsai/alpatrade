@@ -1,0 +1,44 @@
+{
+  "trader": "Nick Radge",
+  "category": "no_concrete_rules",
+  "testable": false,
+  "reason": "Guest describes a US S&P 500 short-term mean-reversion strategy that buys dips but provides no concrete, codable rules or parameters.",
+  "template": "none",
+  "method_name": "US mean-reversion dip buying",
+  "style": "systematic trend and mean-reversion",
+  "timeframe": "mixed (multi-day to months)",
+  "universe": {
+    "description": "S&P 500 stocks for mean-reversion; small-cap ex-ASX 100 for trend"
+  },
+  "setup": [],
+  "entry": [
+    {
+      "rule": "buy dips (mean reversion)",
+      "quote": "it's actually buying dips so it's buying into weakness rather than breakouts",
+      "timestamp": "[00:32:28]"
+    }
+  ],
+  "stop": [],
+  "exits": [],
+  "sizing": [
+    {
+      "rule": "risk small % per trade via fixed fractional",
+      "quote": "each time we have a loss it only represents half a percent or maybe even 08 of 1% of loss of our trading Capital",
+      "timestamp": "[00:14:36]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "no numerical parameters or exact entry/exit rules given for the US dip strategy",
+      "assumption": "insufficient detail for daily-bar testable spec"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "4",
+    "page_url": "https://chatwithtraders.com/episode/004-nick-radge-how-to-power-through-trading-losses-and-continue-executing",
+    "youtube_url": "https://www.youtube.com/watch?v=Ur78U_89LM8"
+  }
+}

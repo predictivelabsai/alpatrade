@@ -1,0 +1,62 @@
+{
+  "trader": "Sam Miesse",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "short-only",
+  "template": "none",
+  "method_name": "Intraday short parabolic moves",
+  "style": "quantitative short intraday",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "small cap stocks"
+  },
+  "setup": [
+    {
+      "rule": "gapping stocks overnight filter then subjective chart check",
+      "quote": "the highest level filter would be gapping stocks overnight",
+      "timestamp": "[00:18:45]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "specific time window after filters",
+      "quote": "it's providing you within a Time window",
+      "timestamp": "[00:31:50]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "hard stop",
+      "quote": "I do use hard stop",
+      "timestamp": "[00:35:57]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "manual exit on winning trades",
+      "quote": "if I don't need to do a hard stop and it's a winning trade or whatever then I'll I'll actually just execute that",
+      "timestamp": "[00:36:58]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "reset risk daily based on account size",
+      "quote": "every day I was resetting risk whether it was down or up I would reset risk based upon the account size",
+      "timestamp": "[00:33:53]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "exact entry rules and filters not disclosed",
+      "assumption": "edge kept private as stated"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "291",
+    "page_url": "https://chatwithtraders.com/episode/291-sam-miesse-small-cap-quant-trader-grows-10k-into-38m-in-3-years",
+    "youtube_url": "https://www.youtube.com/watch?v=ZCmCoYRJwi0"
+  }
+}

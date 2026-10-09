@@ -1,0 +1,664 @@
+# 096: Nico, @InefficientMrkt – An Eight Year Overnight Success Story, and a Thirst for Momentum
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT2569254525.mp3
+
+[00:00:00] What would your trading look like if capital wasn't the constraint?
+[00:00:03] That's the reality for most traders. It's not skill-holding them back, it's size.
+[00:00:07] Trade the pool changes that. Step into the US equity markets with up to $200,000 in buying power
+[00:00:14] without committing your own capital. Full access to stocks and ETFs, longer short,
+[00:00:19] executed with the precision and freedom serious traders expect. Your performance
+[00:00:23] is measured by one standard. Discipline risk management and consistent execution.
+[00:00:27] Meet that standard and you operate at scale. No subscriptions, no ongoing obligations,
+[00:00:32] just a clear path forward. For those ready to trade beyond limitations, this is the next level.
+[00:00:58] Let me briefly introduce my guest, then we'll jump right into the interview.
+[00:01:03] This week, I spoke with Nico, who asked me to keep his last name private,
+[00:01:08] though he does go buy at inefficient MRKT on Twitter. Put simply, Nico is a day trader
+[00:01:17] with a thirst for momentum. He predominantly trades low-priced stocks that have a tendency
+[00:01:23] to move fast and far and roughly 90% of his positions are on the short side.
+[00:01:29] But the main reason why I brought Nico onto the podcast is I feel as though he has a really
+[00:01:34] interesting story which many traders will be able to relate to on one level or another.
+[00:01:40] The short of it is Nico placed his first trade in 2007,
+[00:01:44] made 4X on his starting capital, year one, and then slowly bled his trading account
+[00:01:50] for the next seven years. He's now found his groove but his overnight success was eight years in the
+[00:01:56] making. The subjects we discussed during this episode are very much centered around Nico's journey
+[00:02:02] and development as a trader and how full-time trading became more than just a pipe dream.
+[00:02:07] Please enjoy guys, I'm Aaron Firefield and here is my guest, Nico.
+[00:02:14] Nico, what's good man, what's going on? Greetings, how are you?
+[00:02:18] I'm doing all right, how about you?
+[00:02:21] Great, I just spent the day and I set up my new war rig. I got two 43-inch screens. I had to buy a
+[00:02:31] new table for my desk though because they wouldn't fit before. Trader problems.
+[00:02:38] Nice, two 43-inch screens, that must be massive.
+[00:02:42] They are so cool. They're Dell's new multi-clients and you can divide them into virtual screens.
+[00:02:51] Even though I have two physical screens, I have 12 usable virtual screens.
+[00:02:58] That's really cool. What were you using before?
+[00:03:01] I had four 24-inch screens and a 28-inch vertical in portrait that I was using before but this is
+[00:03:23] much more, this is way better. That's awesome. I imagine it might take a little bit of getting
+[00:03:30] used to, yeah? It does, it does. It was actually a gift from my girlfriend. She got me,
+[00:03:36] greatest gift of all, man. She got me one of these beasts for my birthday and I started,
+[00:03:42] I wanted to use it and my computer at the time was too slow so I used that as an excuse to
+[00:03:48] get a new machine that could power it and I started using it. I loved it so much. I was just like,
+[00:03:55] I just need one more of these and that's all I need and I end up getting rid of all my other
+[00:04:00] older monitors. That's very cool. That's very cool. What's the resolution on those? Are they 4K?
+[00:04:06] They are 4K so you get the standard 3840 by 2160 for each one.
+[00:04:12] Nice, man. I like it. You'll have to share a photo with us.
+[00:04:16] Definitely, definitely. I plan on it.
+[00:04:18] And how'd you go with the desk? Did you find a desk that fit?
+[00:04:22] Gosh, you know, I was almost signed off, resigned to the fact that I might need a custom desk because
+[00:04:29] these things, these two monitors next to each other are about 76 inches wide and I was hard pressed
+[00:04:39] to find a wide enough desk that I could put both of them on without, you know, a ton of monitor hanging
+[00:04:47] off the edge and it looking funny but I found one desk at Ikea that fit the profile and I just
+[00:04:54] mounted it to my elevator desk legs and we're good to go. Good stuff, man. Good stuff. Yeah,
+[00:05:01] well, I look forward to seeing quite a bit. Thank you. Well, before we go any further,
+[00:05:05] I want to say congrats on having a really good month in August. I think that was
+[00:05:10] your best month to date, yeah? It was. Thank you very, very, very much.
+[00:05:16] You must be stoked with that. It feels amazing. Yeah, it feels really good.
+[00:05:21] Cool. All right. Well, I know a little bit about your story, Niko. And what I do know is that
+[00:05:27] it's going to really inspire a lot of people who are listening to this podcast right now. So
+[00:05:31] I'm really excited to have you on and I'm looking forward to, you know, the conversation we're about
+[00:05:36] to have. So let's get this underway. Take us back 10 years or so, right to the very beginning.
+[00:05:43] What got you interested in trading? Where did you start?
+[00:05:48] I was working for a small boutique software development firm in
+[00:05:58] out of out of high school and I was developing software and the short story goes, I wanted to
+[00:06:06] make more money and the owner was reluctant to pay me more money because he held it over my head
+[00:06:13] that I stopped going to, I dropped out of college and I then had to decide whether I wanted to
+[00:06:19] go back to school or go into business for myself. And I wasn't too fond of school at the time because
+[00:06:29] it just, I wanted to take computer science classes and whatnot, but it's just they wanted
+[00:06:34] me to take all these other classes, all these other courses I had a hard time taking.
+[00:06:38] So I decided I didn't want to go back to school. So I went into business for myself
+[00:06:41] and I knew computers and you had to develop software. So I started building
+[00:06:47] my own business from nothing and one of the very first clients I had traded stocks, traded equities.
+[00:06:56] And I had never, I mean, I heard the stock market before, but I never had much interest to the
+[00:07:05] degree that I would actually do something about it. But to finally meet someone in my life that
+[00:07:12] was familiar with it, that was a good starting point and gave me good exposure to it.
+[00:07:19] And once I understood the kind of money that could be made, that definitely held my attention.
+[00:07:27] So how did you find out that this guy, this client of yours,
+[00:07:31] traded stocks, did it just come up in conversation or had that come about?
+[00:07:36] I eventually got comfortable enough to ask, hey, where's some of this money come from?
+[00:07:41] And that was basically the answer. To have someone that you see that you respect and
+[00:07:49] who's doing well for themselves and to ask them where their money comes from, and that's the
+[00:07:56] answer. That was enough for me to finally start getting very interested in seeing what I could
+[00:08:04] learn about it. Okay. So it was obviously quite clear to you that he was doing quite well.
+[00:08:09] I mean, was there any hints that sort of gave it away? Was he a high paying customer?
+[00:08:13] I mean, what sort of gave it away that he was doing quite well?
+[00:08:16] Yeah, I mean, I was definitely making more from having him as one client alone than I was
+[00:08:22] working at my software company that I worked for, you know, six or seven years.
+[00:08:27] And he was just my very first client. And I knew I had to charge more than I was making
+[00:08:35] at the software company. But it was a great situation for both of us. And I got compensated
+[00:08:43] well, and I got to learn a little bit. But, you know, what I learned from him, it was very
+[00:08:49] different than what I was ever really interested in in the sense that he would trade
+[00:08:56] big cap, you know, large cap stocks. And, you know, he was interested in
+[00:09:00] Dow Jones components and whatnot. And I just, once I understood what volatility was and I had
+[00:09:08] a sense for it, you know, watching those stocks move one, two or 3% in a day, you know, 3% is
+[00:09:15] a big move for stocks like those. That wasn't very interesting to me. But when I found out about,
+[00:09:23] you know, cheaper price stocks, that was, you know, wow, these things move 10, 20, you know,
+[00:09:29] 50, 100% in a day. That was much more interesting to me.
+[00:09:33] Okay. So it's almost fair to say he was probably more of a longer term guy or a bit more of an
+[00:09:38] investor. Yeah. Definitely. Okay, cool. So walk us through your first year, like from when you
+[00:09:46] became interested, because of your client there, until about one year on. So I think it was
+[00:09:52] about one year before you actually placed your first trade with real money. What was going on inside of
+[00:09:57] that year? I was trying to learn as much as I could. And I was also going from when I was
+[00:10:04] a software developer, I was living paycheck to paycheck, and I had no savings at all.
+[00:10:09] So for me to try to start out and was something in the market, I'd need to just, I had some,
+[00:10:16] not only did I need to save money, but I had some spin, you know, I had all these habits that
+[00:10:21] I had to get in check for living paycheck to paycheck. You know, once I started having some
+[00:10:26] income, decent income, I had to, at first I got excited and I was, you know, probably spending
+[00:10:32] more than I should have. But after a while, I was like, okay, you know, this is great having
+[00:10:36] money, but I really need to save some money because it would be great to open up a trading,
+[00:10:41] trading counter to brokerage. And that's kind of where that first, what that first 12 months
+[00:10:47] was after I learned about the stock market was me rearranging some habits and saving some money.
+[00:10:53] And meanwhile, learning, I won't say as much as I could about the stock market,
+[00:10:59] but definitely learning, learning some about the stock market and just kind of trying to
+[00:11:03] be able to stand on my own two feet and get something going right from the start.
+[00:11:06] But it took me a while, about a year. Okay. Okay. So I just want to pick up on something
+[00:11:11] you said there. I mean, it's a little bit off topic, but you mentioned that you had to break
+[00:11:15] some habits so that you weren't just going paycheck to paycheck. Now, you know, I know
+[00:11:20] there are a lot of people who do this and it's kind of crazy to me to think that people do that,
+[00:11:26] obviously when they don't have to. What were some of the habits that you had to break? How
+[00:11:31] did you break those habits so that you weren't going paycheck to paycheck?
+[00:11:37] Well, for years, I mean, for all the years I worked at the software company, I was paycheck
+[00:11:43] to paycheck. So that means I was, whether I liked it or not, but I was programmed to spend my
+[00:11:49] entire paycheck every month because that's all I needed every, every bit of it to survive,
+[00:11:55] to pay rent, to buy food, you know, living on my own, to, you know, whatever. I was a lot younger,
+[00:12:02] but, you know, I probably spent money on stuff I didn't need to spend it on.
+[00:12:07] But all that, you know, that was a big habit for a long time, you know, seven years of doing that.
+[00:12:13] So once I finally got some decent income, here I was used to spending my entire paycheck. So
+[00:12:21] after a few months, I think I love spending my new paycheck when I went into business for myself,
+[00:12:30] which by the way, that wasn't an immediate thing. I made the decision I'm going to leave my
+[00:12:34] software company, but I still worked there until I was able to get something going on the side and
+[00:12:40] generate some, you know, a good chance of possible income on the side before I jumped ship because
+[00:12:45] I did have bills to pay, just like everyone else, you know, food and rent and whatnot. But
+[00:12:49] eventually it was, it was fine. But I, yeah, the habits thing, it was just,
+[00:12:53] I was programmed to, to spend money and I was, it took me a while to realize,
+[00:12:56] hey, you know, just because you're making more money, you know, don't need to spend it
+[00:13:01] all every month, like save, save some and see what happens, you know, especially if you want to,
+[00:13:06] you know, dabble in the stock market. Gotta have, gotta have some money to play with.
+[00:13:10] It's got to come from somewhere. Absolutely. And I think like when you,
+[00:13:14] when you go into business for yourself, obviously you don't kind of have that,
+[00:13:19] that same sense of security as you do as a full-time job, you know, you've got another
+[00:13:24] paycheck coming next month. And when you're out on your own, it's kind of like you don't
+[00:13:28] know, don't necessarily know where your next client is coming from or where your next,
+[00:13:36] you know, when you're next going to send out your next invoice or whatever.
+[00:13:39] So that is the truth, man. Complete truth.
+[00:13:43] Yeah. Yeah. I mean, I went about it much the same way because I used to run a
+[00:13:46] graphic and web design business, which I kind of built up while I was running a,
+[00:13:50] while I was doing my full-time job.
+[00:13:52] Oh, nice. That's the best way for anyone that wants to do their own thing,
+[00:13:56] work for themselves, go into business for themselves, please. I mean,
+[00:14:00] do not quit your job and just do it. I mean, if you, I mean, I definitely think I'm of the
+[00:14:06] opinion, at least for me, it's much better to keep getting your paycheck from your regular job
+[00:14:13] and try and get something started on the side. Start, see if you can get something to stand
+[00:14:18] up on its own while you still have a job and you still have that paycheck you can rely on
+[00:14:23] before you cut loose because it makes it so much easier, at least psychologically, for me it did.
+[00:14:29] I mean, that can even tie in neatly with trading too. So there's definitely overlaps there.
+[00:14:35] So do you recall your first trade? Like how did that go? What were the emotions like when you,
+[00:14:40] you know, put on that position? What was it like?
+[00:14:44] Yeah. My first trade was in early 2007 and I bought some stock in Apple
+[00:14:52] at the time. And I don't know what my time horizon was, how long I was planning to hold it,
+[00:15:00] but I think I ended up selling it later the same day for maybe $100. And I just thought that was
+[00:15:11] the greatest thing ever. I just thought that was the easiest $100 I'd ever made. And that,
+[00:15:16] I'll never forget it. And even though it was only $100, man, it stuck with me this whole time.
+[00:15:21] And that was my first taste of it. Even though it was just Apple in a big cap stock, a large cap,
+[00:15:28] you know, it was just getting paid that much without, you know, I couldn't even call it work.
+[00:15:36] It definitely resonated with me. And that was the kind of money I wanted to make,
+[00:15:42] you know, compared with going to work, working in a cube or an office. And
+[00:15:48] it's nothing wrong with that. But it's just, it's a different mentality. And once I got a taste of
+[00:15:53] that, I definitely wanted more. Yeah. I feel that for sure. And I think that's, you know,
+[00:15:59] a lot of people who are attracted to this, I mean, that's kind of what goes through their
+[00:16:02] mind as well when they first come into trading. So I mean, during that first year, what were
+[00:16:07] some of the things you were learning about, you know, about the stock market, what were you
+[00:16:11] rating? We'd be getting your information from. Yeah. So back then I was using a
+[00:16:18] charting platform called Telechart. And Telecharts, a company called Warden Brothers, I guess
+[00:16:24] they've been around forever. Apparently they had stock chart programs since before Windows you
+[00:16:29] get stock charts and they're in DOS. They had a DOS program for stock charts and whatnot. But
+[00:16:36] anyways, I was using their Windows program and started using that in 2007. And it had a built-in
+[00:16:43] chat window that I just, I've always been in the chat. I used to, when I was a kid, I used to chat
+[00:16:47] on IRC when I was younger in high school and whatnot. And I've just always been big into
+[00:16:51] chatting and whatnot. And to have a chat room with a bunch of investors and traders, man,
+[00:16:57] I thought that was the coolest thing ever. And, you know, I got to see what people typed
+[00:17:02] and who knew what and that type of thing. And that got my gears turned in in all different
+[00:17:07] sorts of directions. And it was really good for me to learn about other people, what they were
+[00:17:14] doing that helped clue me in. I was definitely directed towards, self-directed towards technical
+[00:17:22] analysis. I love the idea of looking at a stock chart and just going, okay, I don't, you know,
+[00:17:28] do I want to buy this, sell this or not touch it at all? And that appealed to me a lot.
+[00:17:33] A lot more than the fundamental side. The fundamental side was very,
+[00:17:38] man, it seemed like so much work. That seemed like going, having a regular job all over again,
+[00:17:43] because it seemed like you can just pour all these hours and hours and hours and hours of
+[00:17:46] research. You know, maybe you've studied something for days, weeks, maybe even months,
+[00:17:50] I don't know, you know, just one stock or a handful of stocks. And you get to know them
+[00:17:55] intimately and you understand their business. But it just seemed like, at least back then to me,
+[00:18:01] it might take six months or a year for the market to realize whatever you may have realized,
+[00:18:07] doing your fundamental analysis. And even if you thought it was a great investment and you
+[00:18:11] buy it, I mean, if the market doesn't know it was a great investment, maybe it takes nine months
+[00:18:15] or nine years for market to catch up to what you were thinking, if at all. So just timing
+[00:18:23] the market using stock charts, that was instinct gratification. I love that idea. That was big for
+[00:18:34] me. Okay, cool. Cool. So, you know, we're about one year in at this point, you've taken your first
+[00:18:40] trade on Apple, you banked 100 bucks, your interest has been peaked in technical analysis.
+[00:18:46] What was it like moving forward from there? Maybe walk us through the next year or
+[00:18:50] couple of years on from that point. What was your experience?
+[00:18:54] Okay, so for the, basically my first year since I placed my first trade for the next 12 months
+[00:18:59] after that, I was attracted to low price stocks. And I didn't even know what shorting was at the
+[00:19:05] time. And I just thought the only thing I could do was go long. So I was just buying all kinds of
+[00:19:14] low price stocks, I mean, on momentum. I mean, any stock that had volume coming into it, and
+[00:19:22] it was on a rampage, ripping up, I was buying some, I was chasing it, I was,
+[00:19:30] you know, take your pick, I was doing it all, I was doing anything I could to get long and
+[00:19:36] buy some shares. And I don't know whether it was the micro cap market of 2007,
+[00:19:41] or just pure luck. But basically a year of doing that, I made about close to $20,000 doing that my
+[00:19:50] first year. And that made me feel on top of the world. I thought, man, this isn't so tough. I
+[00:19:57] don't understand why everyone says, you know, over 90% of traders fail. This is so easy. Oh,
+[00:20:04] man, you know, I'm going to do this rest of my life. This is a walk in the park. I don't know
+[00:20:10] what everyone's fussing about. I don't know why they're having such a hard time doing it. It's
+[00:20:15] easy for me. And that was probably the worst thing that could have happened to me,
+[00:20:20] as you could imagine, because, well, I don't want to get too far ahead of your question. But
+[00:20:27] yeah, that was basically my first year. So I had a taste of large success from basically
+[00:20:33] not knowing much of anything. And I think it was just, like I said, I don't know whether it was
+[00:20:38] the micro cap market of 2007, or just dumb luck, beginner's luck. But I had a good year in terms
+[00:20:47] of profits. Okay. Yeah, I mean, that's a really decent first year to have made $20,000. What did
+[00:20:54] you, I mean, how much capital did you start with? So my first account I opened with, I saved up
+[00:21:00] $5,000 and opened up a fidelity account. And just slowly over time kept saving more money and adding
+[00:21:08] more money, adding more money to it. But I never really, you know, my first year might have been
+[00:21:14] a little strong with my position sizes just because I was doing so well, I didn't know any better.
+[00:21:19] But I'm sure we'll get into it. But later on, I toned my size down significantly and kept it
+[00:21:25] in check once I realized I knew that I didn't know. Yeah. Well, I mean, let's get into that a little
+[00:21:31] bit. So the first year, sorry, yeah, first year you made $20,000. You felt like you were on top
+[00:21:39] of the world and you nailed this trading thing. When did that begin to change? When did you
+[00:21:44] realize that you hadn't quite nailed it yet? Oh man, probably, I don't know, not very,
+[00:21:51] not soon after, maybe the next month after my first year, the short time after that. I just,
+[00:21:57] everything I was doing that entire past 12 months, it wasn't working anymore. Either my luck ran out
+[00:22:04] and or the market changed and what used to work no longer worked for whatever reason. And I,
+[00:22:12] unfortunately, thoughtlessly, just continued to be the junkie degenerate gambler at the slot machine
+[00:22:24] and I just kept pulling the handle. And even though it didn't, it stopped working, I just kept,
+[00:22:29] I just kept doing it. I kept pulling the handle. And I'd say the next 12 months after that,
+[00:22:36] I had lost all of that profit that I made the first 12 months. And I was just kind of left
+[00:22:45] scratching my head the entire way going, I don't understand why this isn't working. Maybe it's
+[00:22:50] going to start working soon. It must start working soon because man, I know it definitely
+[00:22:53] worked that first 12 months and I'm not doing anything differently. And it was just the cold
+[00:22:58] reality slammed me right in the face and took all those profits away, maybe even a little
+[00:23:04] bit more that first year. Or I mean, my first losing year after my first winning year. But
+[00:23:11] yeah, that was the cold truth hurt at that point. It was finally caught up to me. Okay,
+[00:23:17] now I understand why everyone says this is so hard. Damn, you're impossible. And
+[00:23:23] over 90% of the people fail doing this. All right, so let's just bring listeners up to
+[00:23:30] speed and put things into perspective here. So from what I understand, it was the next
+[00:23:36] eight years that followed from there where you pretty much had losing year after losing year
+[00:23:42] after losing year. Is that right? That's right. Yeah, seven years to be exact. And it was
+[00:23:48] for those seven years at the end of every year, I was in the red. Okay. So again, it's just,
+[00:23:55] yeah, go ahead. Yeah, so I really want to dive into this because I think there's a lot of value
+[00:24:00] and really kind of dissecting this and finding out why it took you so long,
+[00:24:05] how you managed to break through and all that sort of good stuff. So I mean,
+[00:24:09] probably one of the first questions I'd like to ask you around this,
+[00:24:13] you know, seven years losing year after year, it's got to be painful. How are you able to
+[00:24:20] sustain these losses? And what sort of things did you do to manage your risk during this time?
+[00:24:26] Okay. So great questions because after my second year of trading, I had my first year winning,
+[00:24:33] second year I lost all everything I won the first year. And at that point, I realized, okay,
+[00:24:42] it's easy to lose or it felt better to lose money that I'd made from trading in the markets,
+[00:24:47] but it really hurt to lose money that I worked hourly for that I worked
+[00:24:56] had a real, I worked legitimately, I don't want to say legitimately for, but I worked as my job,
+[00:25:03] my work, my business, a lot harder to lose that kind of money than it was to lose profits I'd
+[00:25:08] already made in the market. So once I started losing job money, my work money, that was,
+[00:25:17] that's when the emotions just, that's when it just felt terrible. It just felt so hard because
+[00:25:23] I'd lose it so fast. And it would take me so long, so many hours, X amount of hours I'd have to work to
+[00:25:33] make up for those losses in the market. And so that's when I started understanding and I just
+[00:25:38] went, whoa, okay, I don't know what I'm doing. This was very misleading for me to have a successful
+[00:25:44] first year. And I clearly did not do well the second year. And I think I'm starting to know
+[00:25:51] that I don't know any, you know, I don't know anything really. I thought I knew all this stuff
+[00:25:55] my first year, I don't. And that's when I put my size in check. And that's when I said, okay,
+[00:26:01] since I don't know, and I've got a lot to learn, I am going to serious dramatically size down.
+[00:26:08] And I basically went to just trading very small, you know, I don't think over,
+[00:26:16] I say on average, maybe $5,000 positions. And, you know, sometimes I might get up to close to 10,
+[00:26:26] but I just kept it in check. I never, I never ballooned up because I didn't want to,
+[00:26:32] I didn't want to do more damage than, than I could recover from. But that was, that was tremendous
+[00:26:38] for me because, and it's not to say I didn't have, you know, spurts of profitability in those
+[00:26:46] seven years. It's just that I, you know, I would be, I'd hit periods of profitability. And I do
+[00:26:54] well for some amount of time, but it was just inevitable that it just dried up and the drawdowns
+[00:27:01] would return. And I just would continue to just lose back on the drawdown, you know,
+[00:27:08] I'm back to lose the money and, and got it, you know, got to wait for something to change or got to
+[00:27:13] change what I'm doing. I try and change what I was doing. And I tried all kinds of things. And
+[00:27:21] some of that just led me off in the worst directions, I think, but a lot of it was just,
+[00:27:26] I think having poor habits for a large number of years. And also because I own my own business,
+[00:27:32] I wasn't, I wasn't starving. So I didn't really have like dire motivation. So I was, I was making
+[00:27:42] a good living working for myself. So I had income. So even though I might have been in the red for
+[00:27:47] seven years, you know, hey, I'll add a little bit more money each year, you know, every six
+[00:27:52] months to refund and make my accounts healthy again. And, you know, hope for the best.
+[00:27:59] I mean, that's basically what it was. Okay. So you said you had like some spurts of profitability.
+[00:28:06] Do you recall maybe what was your greatest winning streak? Like were you profitable for say three
+[00:28:13] months in a row or anything like that? Or? Yeah, maybe, maybe nothing that, that good.
+[00:28:21] Maybe more like I was, you know, I'd hit maybe three weeks where I do really well. And then
+[00:28:27] it was, you know, it was always, it was all, man, it was always three steps forward and five
+[00:28:32] steps back. Anytime I hit some x steps forward, I was taken more than x steps backwards. It was
+[00:28:39] just a matter of time in those seven years. It was just really hard. Okay. And how frequently
+[00:28:44] were you trading during this period, just sort of on average, were you trading, you know,
+[00:28:48] five day trades each day, or was it something, you know, a couple of days a week? Yeah. So,
+[00:28:54] a couple years into it, I don't really know, but at some point, maybe if I was, if I was a guest,
+[00:29:01] I'd say maybe three years into it, maybe a little less two and a half years, I don't know, somewhere
+[00:29:10] around there. I kept funding my accounts and, and I'd have, I probably had one account at that
+[00:29:17] time. And I got over 25,000. So I was getting a taste of day traders margin and the ability to
+[00:29:24] fly in and out as frequently as I wanted to, with as much as I wanted to, and not being shackled
+[00:29:29] by the pattern day trader rule. So that was really good. But you know, in hindsight,
+[00:29:37] even though I had over 25,000 in the account, I almost wish like I didn't because I probably
+[00:29:43] would have saved a lot of time and money had I, had I been under the pattern day trader rule,
+[00:29:49] probably would have been more of a service to me than a disservice. You know, I think a lot of
+[00:29:54] people see it as a disservice and it is. But I mean, the reason it exists is to quote,
+[00:29:58] protect people, at least the people that were as degenerate gambling, had degenerate gambling
+[00:30:05] habits like I did. You know, I think that's why the pattern day trader rule to protect us from
+[00:30:10] losing all our money so quickly at least. So how were you affected by the pattern day
+[00:30:16] trader rule when your account was under 25 grand in the beginning?
+[00:30:21] Yeah. So when I break under 25,000, it was like, okay, now I'm shackled, right? I'm shackled
+[00:30:30] by the pattern day trader rule. So then I would just do my best to either trade my way back above
+[00:30:34] it. Even if I did it, I was always nervous because I was so damn close to it. Or I'd go,
+[00:30:40] all right, I'll just throw in another five grand and, you know, boost me up above it. So I don't
+[00:30:45] have to keep being so paranoid about it that I'm going to break it and get below it again and
+[00:30:50] lose my, all my freedoms of flying in and out of stuff as I please.
+[00:30:55] Yeah. Okay. So it was kind of like that $25,000 point was like a psychological level
+[00:31:01] completely. Oh man, I think I still have nightmares about it even though it's not
+[00:31:06] really a problem for me anymore. I just, just an old nightmare that won't leave me alone.
+[00:31:31] $200,000 without committing their own capital, get access to virtually every stock in ETF.
+[00:31:38] Go longer short freely with the flexibility professional traders expect. You're evaluated
+[00:31:43] on one thing, your ability to manage risk and execute with consistency. Meet the standard
+[00:31:49] and you trade at scale. No subscriptions, no ongoing commitments. Whether you're still refining
+[00:31:54] your strategy, a trader with experience who hasn't yet broken through or a seasoned professional
+[00:32:00] simply looking for more capital. Trade the pool is built to meet you where you are and take you
+[00:32:05] that next step further. The markets have evolved. Access has evolved. Now, so has the way traders
+[00:32:11] operate within them. Trade the pool. So what did your partner and your friends think about
+[00:32:19] your trading efforts during this time? Like I presume it probably came up in conversation
+[00:32:24] as you're talking about your friends and friends might ask you how you're going with,
+[00:32:27] how's your trading going? You've been at it for a while now and you can't really say like,
+[00:32:33] making much progress. What did they kind of make of it? What did your partner think of it?
+[00:32:39] Yeah, I'm keen to hear. So I wasn't too, I was doing really well with my business on the side,
+[00:32:48] well enough that I could fund my accounts. And because I kept my size in check
+[00:32:51] when I was trading, it was just a slow bleed over time. And even though I was bleeding out for seven
+[00:32:58] years, it's not like I was taking 20% hits of my of an account on a single trade or anything.
+[00:33:06] So I was always around. I was always just trying to figure it out. I had deep,
+[00:33:12] deep aspirations. I had passion for the markets. I knew one day. I hoped one day.
+[00:33:17] I mean, I'd figure it out and I would rise and stand up and banish all these losses I've had and
+[00:33:27] figure out what I was missing and find that holy grail that I've been looking for and
+[00:33:32] just always consider myself an intelligent person. And I love solving problems and puzzles and
+[00:33:37] whatnot. And I've just always been mesmerized by the stock market and just drawn to it since
+[00:33:44] I was ever exposed to it. And I just always thought I could, I could figure it out. So when friends,
+[00:33:49] you know, girlfriends and whatnot at the time and friends, friends of mine would ask me,
+[00:33:54] Hey, how's it going? You know, man, I just tell them, this shit's tough.
+[00:34:02] The problem was I told them all my first year how great I was. And I was so proud of myself
+[00:34:07] for my first, my success for my first year. When they kept asking me later on, hey,
+[00:34:12] you know, how are things now? And I was going, well, you know, I'm getting a reality check.
+[00:34:18] He's getting my ass handed to me. And good thing I'm keeping my size small because if I wasn't,
+[00:34:23] I think I would have blown up by now because that was definitely the course I was on.
+[00:34:29] And seriously, the only only thing that kept me going as long as I did was minimizing my size
+[00:34:36] just because just knowing I didn't know when people asked me, I always feel good, you know,
+[00:34:41] being happy is a habit. I try not to let the money affect me, but it's hard losing money for seven years
+[00:34:48] on something you're so passionate about. So when someone tells you that's close to you,
+[00:34:51] hey, how's it going? How are things? You know, I'd love to tell them, hey, things are great.
+[00:34:56] But, you know, instead, I just smile on my face that this is hard. And I'm determined to figure
+[00:35:04] it out. But as the years went on, yeah, I definitely started doubting myself, you know,
+[00:35:10] maybe this isn't for me or whatever. But I pulled through, you know, I was just honest
+[00:35:18] with people when they asked. I don't think anyone was worried I was going to lose all my money.
+[00:35:23] Not that I had a ton of money, but I think everyone believed in me around me. And
+[00:35:28] that helped me keep doing what I was doing too, even if I was losing money.
+[00:35:34] So speak to us about that doubt, you know what I mean? Because I think there's a lot of us
+[00:35:38] who do experience some doubt, especially when we've been sort of chipping away at
+[00:35:41] this for a few years. And it feels like sometimes we're just spinning our wheels.
+[00:35:46] We're not making a whole a great deal of progress. How did you overcome or push through
+[00:35:52] those doubts? Like what kind of kept you going?
+[00:35:58] I think I had hope from the periods of profitability I would encounter.
+[00:36:04] I just something inside me said there's got to be more to that than luck.
+[00:36:09] And I just got to figure it out. Like there's got to be more than just luck to that.
+[00:36:14] And I mean, if it was just luck, then fine, you know, why am I even doing this? Because
+[00:36:19] I'm proven that if it was luck alone, I'm losing money more than I'm making money. So,
+[00:36:25] but I think that's what that's what, even though I'd encounter those doubts,
+[00:36:29] that's what held me together. It was my determination, perseverance, if you will.
+[00:36:35] But I was just convinced it had to be more than luck. You know, poker is a game of
+[00:36:43] skill and luck. It's got both factors. And I definitely today think that now more than ever
+[00:36:50] about the stock market. But back then, I was just hoping it was more than luck.
+[00:36:56] And the glimpse of that was those periods of profitability I would hit. And when I hit them,
+[00:37:03] I'd love them and it'd feel great. It was just unfortunate that my poor habits and
+[00:37:09] would basically, I attribute to the inevitable drawdowns returning.
+[00:37:15] Yeah. So what do you think were the aspects of trading that you found most challenging to
+[00:37:22] come to grips with? Just, man, it seemed like no matter what,
+[00:37:29] it was really hard for me to understand. I'd learn patterns. I love patterns and whatnot,
+[00:37:33] but I'd learn a pattern and I'd see it work. Some, I mean, obviously nothing's gonna work
+[00:37:37] 100% of the time, but to see a pattern that looked like it would succeed and it,
+[00:37:43] it was the same looks like a similar setup the past 10 times I'd seen it succeed.
+[00:37:49] And then to have it fail, that was really hard for me to accept because
+[00:37:54] because I wanted it to succeed because I wanted me to succeed. And I think I was,
+[00:38:00] I was just pressing a lot of beliefs to, you know, a lot of hopes into what I was doing
+[00:38:07] instead of being more of an observer and more objective in taking a step back. You know,
+[00:38:15] I was much more forceful trying to make things work. And there was a lot,
+[00:38:23] I mean, there's a lot of aspects about trading that are challenging, no doubt.
+[00:38:27] Yeah. So if I was to kind of summarize what you said there, it sounds as though you were trying to
+[00:38:34] trade what you wanted to happen instead of trading what was actually happening.
+[00:38:40] Like you were trying to push your beliefs onto the markets
+[00:38:43] and override what was actually going on. So let's cut to more recent times now. I think we're
+[00:38:50] going back about 14 months or so now. And obviously if anyone who's listening to this
+[00:38:57] sometime in the future, we're recording this September 2015. So what was your turning point?
+[00:39:05] What changed that you were able to go from a losing trader to a winning trader? What was,
+[00:39:10] what was significant about how, what was a significant change in how you approach things?
+[00:39:18] Okay. Great question. First, I may have misheard you, but I think you said 2015,
+[00:39:24] recording this. I just wanted to declare 2016. I might be wrong. I may have misheard you, but
+[00:39:30] you didn't mishear me. That's, that's quite embarrassing. Yeah. That's
+[00:39:35] maybe I wish it was 2015 still embarrassing is losing money for seven years straight.
+[00:39:40] And not doing anything different. To answer your question, what finally made me flip the switch
+[00:39:48] after about eight years, I reached the end of my, I just, I couldn't take it anymore.
+[00:39:58] And I just had a serious sit down talk with myself. Might as well have been looking in a mirror.
+[00:40:05] And I was just, you know, Hey man, I've been doing this for eight years. I am sick and tired of adding
+[00:40:11] money. I'm sick and tired of taking money I work for on the side income I make and depositing it,
+[00:40:17] adding it to my trading accounts and just slowly losing it over time. You know, it's not sustainable.
+[00:40:23] I need, I need something. I need to prove to myself that, Hey, yeah, it's great to be
+[00:40:29] passionate about this dog market, but man, I need to see some serious results and
+[00:40:35] prove to myself this isn't just some pipe dream that isn't ever going to happen.
+[00:40:40] And that I am able to do this. And man, Aaron, I wish I would have done that
+[00:40:50] years and years before I did because that's, that was the catalyst for
+[00:40:57] all my major changes to lead me to become a consistently profitable trader.
+[00:41:05] I mean, there's, there's so many things. I'd say all of these are factors, but
+[00:41:11] it's hard to say any one of them was, I mean, they're, they're all to different degrees
+[00:41:16] important, obviously, but it's hard for me to pinpoint the most important ones. But
+[00:41:22] two years ago, I, I went full time. So I had a perfect environment for trading stocks. I had no,
+[00:41:31] no competing, no competition from, from work, from, you know, anything. So I was in charge of
+[00:41:38] my own schedule. So I could, I could be there on this, you know, when the start market's over,
+[00:41:43] I'm trading stocks, you know, I had my full attention. I didn't have any competing forces.
+[00:41:46] That was major. So all those other eight years, I was trading part-time, trading at work, trading when
+[00:41:54] I shouldn't have been trading. And it hardly ever worked out well, unless I got lucky. But,
+[00:42:01] so going full time two years ago was a big deal. Not only that, this is surprising though, but
+[00:42:06] I've always been actually a really private person. And I've never really been on social media.
+[00:42:13] I've never had a Facebook account. I still don't. I've never had a MySpace account.
+[00:42:18] I've never had LinkedIn or Instagram or Snapchat or I don't know all the crazy kids
+[00:42:24] and what they use today. I don't do any of that stuff. And so all those eight years I was trading,
+[00:42:30] I was trading alone and I was by myself and I had basically no one to compare myself to.
+[00:42:41] And that created an environment for me to just float around and go nowhere or even a little
+[00:42:48] south because I lost money for so long. Once I discovered Twitter, oh my gosh,
+[00:42:55] that just changed everything for me because I got plugged in, man. I went from being passionate
+[00:43:02] about the stock market and knowing no one and seeing what other traders were doing to
+[00:43:06] being passionate about the stock market and getting plugged in to Twitter where all the
+[00:43:10] traders are. And I could see what everyone was doing and that just made the world of a difference
+[00:43:16] because surrounding yourself with people that are better than you is huge. And since for those
+[00:43:25] eight years I've started myself with no one, that's a factor of why I went nowhere. So
+[00:43:32] once I discovered, I discovered IU and Nate and I learned about shorting. I mean, for those
+[00:43:39] eight years I traded, I was long only. I knew about shorting later on, but I didn't even know you
+[00:43:45] could short cheap stocks, low price per share stocks. I just kept going long, bad habits,
+[00:43:52] I guess. Once I discovered IU and hey, there's multi-millionaire traders in this chat room,
+[00:43:57] wow, let's see what that's about. So I got plugged in there and I just started watching
+[00:44:05] what other people were doing between IU and Twitter, man. That just really gave me the
+[00:44:10] social connection to other traders where I could thrive because I'm a competitive person myself
+[00:44:21] in a good way. And I think competition brings out the best in some people and the worst in
+[00:44:26] others. But for me, I think it brings out the best in me. And I don't know why I went eight years
+[00:44:33] trying without any competition, but once I was able to surround great people around me,
+[00:44:39] then I was able to start asking myself, hey, these guys are humans. Why can't you do what
+[00:44:45] they're doing? Not that I'm a multi-millionaire trader, but they're consistently profitable.
+[00:44:51] Why am I not consistently profitable? It's not like I have worse luck than them.
+[00:44:58] I mean, we're all getting the same luck in the market. It's the skills. What are they doing
+[00:45:03] that I'm not doing or what are they not doing that I am doing? And that was a big factor also.
+[00:45:09] Okay. So I mean, there were a few things which had a big impact on your own trading. So
+[00:45:17] they were your working environment. You went full-time into this. So you weren't competing
+[00:45:22] with your day-to-day job. You kind of reached a snapping point and you had a big mind shift
+[00:45:28] and getting plugged in with other traders like meeting others who were
+[00:45:32] doing what you wanted to be doing and were better at it. So that's really cool. Now,
+[00:45:38] I do want to ask you, how did you prepare to go full-time trading?
+[00:45:45] Did you have a significant amount of savings? Did you cut down on how much work you were actually
+[00:45:50] doing or did you just straight up close the doors one day? How did you actually prepare to go
+[00:45:55] full-time trading? So I actually still own my business. I just am not trying to grow it like
+[00:46:06] I used to try and grow it. It is big enough that I am comfortable and I can choose my own
+[00:46:18] schedule and I decided I no longer want to work on site. I want to work from home and so I just
+[00:46:25] do my own thing at home on my own hours and that gives me the ability to trade
+[00:46:34] as I please. That was a big deal. So yeah, I do have savings. I do. That definitely helped also
+[00:46:45] making the switch, but just being in charge of my own thing. It's tough to beat that kind of
+[00:46:51] freedom and I feel very fortunate to have it. I really do.
+[00:46:58] Let's move on a little bit. Let's talk about how you're actually trading today.
+[00:47:02] Let's dig into your actual methodology. So how are you trading today?
+[00:47:07] What is your approach if you had to define it for us?
+[00:47:11] So I love shorting. I'd say I'm 90% a short seller I think. I'd say I'd guess about 10% of my trades
+[00:47:17] are longs, maybe less. And my ideal short is what they call flying pigs, junk micro-cap companies
+[00:47:27] that are starving for cash, laden with debt. They're just terrible companies and they're
+[00:47:35] hurting and they're forced to do dirty things to raise money. And when they do those dirty things
+[00:47:44] like put out fluffy PRs and you get these stocks gapping up 30, 50, 80, 100%, something silly,
+[00:47:53] whatever it is, I'm highly interested. Those are great things. Good opportunities there.
+[00:48:02] So how do you find these junk stocks as you call them?
+[00:48:07] I find them every morning by just looking at what's moving in the market and pre-market.
+[00:48:13] What's gapping up? What volume breakouts do we have? What stocks are up today on more
+[00:48:21] volume in pre-market than they've had for the average volume the past 20 months?
+[00:48:30] Is their volume in pre-market up 400% from there? Well, I want to know about it.
+[00:48:35] But it could be even much simpler, much more simple than that. It could just be
+[00:48:40] high a day gainers list in pre-market. What's flying high? What's flying high this morning?
+[00:48:46] Okay. So you said a little bit just before your ideal short setup or your ideal short stock that you
+[00:48:52] would short would have some sort of fluffy PR around it or they've done something sketchy to try and
+[00:48:58] raise the price of their stock. Looking at your pre-market gainers list and that sort of thing,
+[00:49:06] that's obviously looking at the price. Do you also need some sort of story to support this?
+[00:49:12] Sure. So as I encounter what a lot of us call pigs, I have a pig list, which is just a watch list.
+[00:49:20] I've titled pigs and I recommend anyone that's interested in shorting pigs do this if they're
+[00:49:26] not already doing it. But it's a very simple idea. Probably a lot of people are already doing it.
+[00:49:32] I didn't think I invented it. When I encounter a pig, I add it to the list and
+[00:49:39] over time, my pig list grows. Right now, I think I'm up to, I have maybe a little more than 200 pigs
+[00:49:49] in my list and this makes future, when they run in the future, a former runner. So as they tend to
+[00:50:00] pop up, a lot of traders know how they traded in the past. I always have my pig list up sorted
+[00:50:06] by net percent change on the day and as something starts flying, if it's on my pig list, I already
+[00:50:14] know I'm interested in shorting it. I don't have any homework to do. I don't need to go looking at
+[00:50:18] the SEC filings to see what's going on. Although, I might look up at the headline to see, okay,
+[00:50:23] well, why is it moving? I definitely want to know why it's moving today. Is it up on nothing?
+[00:50:29] Is it just up because traders are just buying it up? It's just chasing it up because it's
+[00:50:34] low float or is there some kind of fluffy PR? Is there some kind of, or is there an SEC filing?
+[00:50:42] What's the reason it's up and try and understand why it's up? But as long as it's on the pig list,
+[00:50:50] I know I'm interested in shorting it. Once it starts moving again, it's just a question of
+[00:50:56] when and at what price. Okay, well, that's the next question I want to ask you is,
+[00:51:01] when do you actually go short? Obviously, you're identifying these stocks pre-market,
+[00:51:06] which are significantly above the close of the prior day. At what point are you looking for a
+[00:51:13] short opportunity to actually enter? Yeah, ideally, I'd probably be waiting for the backside for it to
+[00:51:23] go as high as it's going and then for it to, if it's going to fade off, fade off,
+[00:51:27] or if it's going to snap VWAP or crack or whatever it's doing, high day rejection,
+[00:51:33] stuff off the high, whatever it is, and then just get in there because that's typically
+[00:51:39] much safer water to jump into for the short seller. But it's not to say I don't like a thrill,
+[00:51:47] although that might be ideal. I tend to start shorting on the front side, which
+[00:51:53] isn't, which is definitely a lot harder than shorting the backside of the move. You're basically
+[00:51:59] stepping in front of a train and you wish, you don't just wish for the best, but you try and
+[00:52:06] identify where you think at my top, or at least that's what I'm doing. I'm just trying to read
+[00:52:11] the chart and see, read the chart, the volume, see how it's responding to VWAP and make an
+[00:52:17] educated guess. Okay. So like you said, I mean, it could, some people might interpret this as
+[00:52:23] standing in front of a train. Oh, definitely. Momentum is dangerous if you're a short seller.
+[00:52:30] So how do you manage your risk in that case? Because I imagine if you time this wrong,
+[00:52:35] you could be very wrong very quickly. How do you go about managing your risk?
+[00:52:40] So part of the, you know, the, it's kind of goes back to that similar answer from
+[00:52:46] how did I lose money for seven years straight and just was still alive to keep being in the
+[00:52:55] stock market. And it's, for me, it's controlling my size. I don't, I'm not a, I'm not a gunsling
+[00:53:02] in cowboy. I don't, I don't size up. I'm not, I'm not throwing size around like a lot of
+[00:53:09] other traders do. And I'm not saying that's bad that they do that. It's just, for me,
+[00:53:14] I still have a lot to learn about the, about trading. And I'm always going to be learning
+[00:53:21] about trading, but I still have a lot to learn in the sense that although I've learned incredible
+[00:53:29] amounts more than I used to, enough that I feel comfortable, you know, I can step in front of,
+[00:53:34] on the short side or on front side and get short. I'm keeping my size controlled so that
+[00:53:42] if something rips against me and goes, you know, just ridiculous, parabolic or something, you
+[00:53:49] know, I'm not sitting in there with my entire account sweating bullets now, because I'm
+[00:53:56] definitely not trying to put myself in very, very bad situations like I used to do. And I'm
+[00:54:05] much more aware of that. So yeah, controlling size is definitely my answer. So scaling helps,
+[00:54:11] you know, if you're a one bullet shooter, it's kind of hard for the guys that are
+[00:54:14] under the pattern day trader role because they can't really, they can't scale because they got,
+[00:54:19] they got one shot, you know, or two shots or whatever, you know, however many bullets
+[00:54:23] they got. And that's about it for their, you know, for a few days until they get their bullets back to
+[00:54:30] take some trades. But scaling, scaling and controlling size is how I stay safe.
+[00:54:39] Okay. And on any given trade or short opportunity that you've identified,
+[00:54:44] how many times are you willing to be wrong before you let it go and just move on? Like,
+[00:54:48] if you get in and, you know, let's say you have a stop higher up that gets hit taken out,
+[00:54:55] you're out of the market, do you attempt to go short again X number of times before you
+[00:55:00] just leave that alone? Yeah, I used to not do that. I used to, I try it once, maybe twice.
+[00:55:07] And then if I hit, you know, if I, if it got to my risk level, I just took my loss.
+[00:55:13] And then it seemed like inevitably it would finally do what I wanted it to. And I was just
+[00:55:19] watching it not participating and then go, man, should have taken it again. But some stocks are
+[00:55:27] very, very, very difficult. I'm sure a lot of traders have the same thoughts, you know,
+[00:55:33] you have an idea on it and you, you take it and it didn't work. You take your loss and then
+[00:55:38] you could try that. In some of these stocks, I swear they're doing it just to mess with you.
+[00:55:43] And you might try it, you know, four, eight, 12, 15, you know, 15 times and you're just exhausted
+[00:55:51] taking small losses on it. But, you know, then you get easier ones that they just crack and you
+[00:55:57] just get in there and you just hold on for the fade and you get paid. There's all kinds of
+[00:56:02] different animals in these charts. And there's so many different types of plays too. It's just
+[00:56:08] a lot of patterns and a lot of opportunities to make use of.
+[00:56:14] Okay, so just slightly changing the subject, you know, looking at your Twitter feed,
+[00:56:20] it's clear to see you're massive on documenting your trades. I don't know if you've always been
+[00:56:24] this way, but what exactly do you do? Like what do you go through and how do you document your trades?
+[00:56:32] Sure. So when I finally reached the end of my rope and was like, I need to see some results in my
+[00:56:41] trading because I just been losing money for so long. Part of that was I realized that, you know,
+[00:56:47] you can't improve what you don't measure. And I think some people will argue, you know, well,
+[00:56:52] your account balance is what is the metric. That's how you measure. But for me, I needed
+[00:56:57] something more than that. And I started tracking my P&L. And to not be that degenerate gambler who's
+[00:57:10] just pulling the handle on the slot machine time after time after time again, even though it
+[00:57:14] stops work, you know, even though it's not working, I wanted to start tracking my journey
+[00:57:20] and see what I could learn from it. And it seemed to me from some of the books I read that,
+[00:57:28] you know, tracking your equity or your P&L curve is a good metric of how you're performing. So I
+[00:57:36] thought, wow, that's interesting. I haven't done that for eight years. Maybe I should start now.
+[00:57:40] You know, I'm trying to make big changes to make this trading thing work. I should start doing
+[00:57:45] that. So I got a Twitter account. And I said, all right, man, you know, everything, you know,
+[00:57:56] whatever I trade today, I'm going to put it on Twitter for the world to see. And
+[00:58:02] it's not really so much for those people for everyone to see. It was for, it was for me.
+[00:58:08] It was for my own benefit to help me stop being a degenerate gambler in that sense and to be more
+[00:58:16] responsible and to hold myself accountable for my trading decisions each and every day. And
+[00:58:24] that helped me get a handle on my over trading, that helped me get a handle on my being impatient,
+[00:58:36] that helped me get a handle on becoming consistent. It helped. There's a lot of people that don't believe
+[00:58:44] in posting P&L. I'm pretty certain I'm outvoted. A lot of people don't think it's a good thing
+[00:58:50] for the trader to do that. Me personally, I so firmly believe for me that it was a factor,
+[00:59:00] and I even think to say a large factor in helping me go from being a losing trader to a
+[00:59:10] consistently profitable trader because the amount of accountability and response,
+[00:59:19] feeling of responsibility that it provided me, thinking that all these other traders were
+[00:59:26] looking over my shoulder, not that they were, not that I had all these followers or anything.
+[00:59:31] I mean, I didn't have any followers when I first started doing it. But again, I was doing it for
+[00:59:35] me, not for other people. It just, man, it changed something in my head. And I started
+[00:59:42] making much better decisions when I, that was definitely a factor to me making much,
+[00:59:48] much better trading decisions. It kept me from being reckless because I was, I was very
+[00:59:55] easy to be reckless for a lot of years. I could, you know, I could go from zero to reckless extremely
+[01:00:01] quickly. And I don't do that anymore at all. I try not to. Yeah, like what you're saying there,
+[01:00:08] because when you do post, you know, your P&L, and when you are not so much that, when you do have
+[01:00:15] that accountability, I mean, it's very easy to light yourself as much as you don't want to do
+[01:00:20] it. It's very easy to do. But when you've actually got like, as you described it, there's someone
+[01:00:24] looking over your shoulder, you know, that accountability and actually having to light
+[01:00:30] to someone else is, is very difficult. Well, for most people anyway. But I just want to throw in
+[01:00:35] there actually, you know, measuring your P&L, I think is probably quite effective
+[01:00:41] when you're at least a profitable trader. When you're not a profitable trader up until that
+[01:00:46] point, it can be quite difficult to measure your success in terms of P&L. And Futures Trader 71,
+[01:00:52] who was on episode 82, has a really good bit about how other ways to measure your success or
+[01:01:00] your progress, I should say, besides your P&L. So if anyone wants to hear more about that,
+[01:01:06] chatwithtraders.com forward slash 82. I think I want to hear more. I think I'll be listening
+[01:01:11] to that one because that sounds great. Yeah, he's awesome. Definitely check out that episode
+[01:01:16] with FT71. He's the man. That's cool. That's cool. Yeah, for me, when once I started,
+[01:01:21] when I could see that I was building a spreadsheet and putting my, my daily P&L in it and it would
+[01:01:27] change what my P&L curve was doing, I felt like I was, I had something tangible. Like I was,
+[01:01:33] I felt for the first time ever, I was in the driver seat and I was going, okay, I can make good
+[01:01:40] decisions so that I can end the day in the green and my line, my curve will go up. And I
+[01:01:48] felt like I was drawing something slowly over time each day. And I felt like an artist. Like I was,
+[01:01:56] you know, I was like, wow, this is really cool. You know, I wanted, I wanted, I want a really nice
+[01:02:01] line. And it helped me making my decisions when I was trading and going, before I took a trade,
+[01:02:07] I go, you know, is this really a good trade to take? Is this just a substandard trade I
+[01:02:10] should be skipping? You know, is this really a trade that I want to affect my P&L curve?
+[01:02:15] Because if it's, if it's not, I don't need to be, I don't need to be trading it.
+[01:02:20] I'll just wait for a better setup. And, and that was, that was a big deal for me.
+[01:02:25] I really like how you framed that as in, is this a trade I want to be affecting
+[01:02:30] my P&L or my equity curve? I think that's, that's a really good way of looking at it.
+[01:02:34] That's cool. So just to wrap this up here, what suggestions do you have for traders who
+[01:02:42] are just starting out today? If there was just maybe one or two things you could share with them,
+[01:02:46] you've already shared a ton of great insight, but just to wind things down, one or two things
+[01:02:52] to take away, what would you suggest to them? We just, we just got done saying it,
+[01:02:57] but you can't improve what you don't measure. And for me, that was, that was creating a P&L
+[01:03:03] curve and tracking my, my daily P&L, along with some other stats that I've been,
+[01:03:08] I've included also. But the other trader you mentioned had some good ideas you said about
+[01:03:15] for beginner traders or struggling traders for tracking and measuring, you know,
+[01:03:19] some kind of metrics that they're using, whatever it is,
+[01:03:24] take a scientific approach and measure what you're doing. Please, if you're not,
+[01:03:30] it's, I really think it can help you gain insight into what you're doing and why you're
+[01:03:36] doing it. That was a big deal for me. Another thing is habits. I'm a firm believer in,
+[01:03:45] you know, good trading is synonymous with good habits. And when you have bad habits,
+[01:03:52] I had bad habits for eight years. And it was very hard for me to unlearn those habits and create
+[01:03:59] better good habits. And if you're just starting out, it's, it's great because you can start out from
+[01:04:07] not having bad habits and you can develop good habits, habits from the get go. But if you've
+[01:04:12] been struggling a while, identify what you're, what you're struggling on, you know, are you
+[01:04:18] over trading? Are you impatient? Are you just gambling? You know, are you just, we all have
+[01:04:25] the same problems. It's just identify what you're doing wrong. And, and, you know, what
+[01:04:30] they often, you know, it's very common to say a wing chain is as strong as its weakest link.
+[01:04:35] Find your weakest link and focus on it, you know, pick on yourself, you know, what,
+[01:04:39] what can you do to become a stronger person and a stronger trader? And lastly,
+[01:04:44] I traded in solid, you know, by myself for, for eight years. I'm a competitive person. If
+[01:04:48] you are to surround yourself with, with great traders, surround yourself with traders that are,
+[01:04:53] are similar to you or a little better and like minded, you know, I have, I have trading buddies
+[01:05:00] I trade with, you know, TWB 52 shout out to him for trade shout out to him. Those guys were
+[01:05:08] like minded people and we, we trade the same things and we, you know, if you're out there hunting,
+[01:05:14] if you're, if you're just one wolf hunting for food, you're, you're not going to eat like you
+[01:05:19] are if you're out there hunting with more, more wolves or another wolf or you have a team of wolves
+[01:05:25] or a pack of wolves that are, that are like minded and are, and are, are looking to feed on the same
+[01:05:29] thing. So, you know, connect with other people, see, see what, find people that are like you and
+[01:05:37] see what you guys can do, you know, it's, it's the Boy Scout system, you know,
+[01:05:41] I used to be a boy scout, I don't remember what it is, but have their back, you know,
+[01:05:45] and they'll have your back and keep you, keep trying to keep each other out of, out of trouble
+[01:05:50] and just do your best and always learn, man. Good stuff. Good stuff. Neko, where is the best place
+[01:05:57] listeners can go to find out more about you? Right now, it would probably just be,
+[01:06:04] I always, I guess my Twitter, so at inefficient, inefficient MRKT and that's my Twitter handle.
+[01:06:15] I think I'm going to start a blog though, because over the past 14 months I've had a
+[01:06:21] tremendous amount of people ask me for my spreadsheet that I created where I tracked
+[01:06:26] my stats and my daily PNL and my PNL curve. And I think I'm actually going to be releasing it
+[01:06:33] very, very shortly into the wild for everyone to use because I know a lot of people use
+[01:06:39] TraderView, I think it might be called, I think it's free. Anyways, I don't know much
+[01:06:43] about it, but if there's a lot to be said for just whatever it is, if you're using TraderView,
+[01:06:49] great. If you don't want to pay for a service like that, I got a spreadsheet you can use. If you
+[01:06:54] like what I'm doing, you could modify the spreadsheet however you please. And you know,
+[01:06:58] I'd love to just, I've gotten an extreme amount of support from a lot of people
+[01:07:02] for what I've been doing for the past 14 months. And I just want to say thank you guys and
+[01:07:07] hey, if you're not consistently profitable, I'd love to help you as much as I can. Send me a message.
+[01:07:15] Very good. So at inefficient MKT on Twitter, that's it, right?
+[01:07:20] I think, yeah, I think it's MRKT. MRKT, okay. Mark it without the vowels.
+[01:07:26] There you go. Cool. All right, man. Well, I'll put a link to that in the show notes. And
+[01:07:31] probably if anyone wants to get that spreadsheet that you're going to be releasing
+[01:07:35] very soon, probably the best thing to do is follow you on Twitter because I'm sure you put
+[01:07:37] the word out then when it's available. Yeah. Perfect. Absolutely. Cool.
+[01:07:42] Well, Nico, I just want to say thanks a lot for coming on the podcast, man. I appreciate it.
+[01:07:46] Aaron, thanks for having me. I'm honored. Appreciate it.
+[01:07:51] You've reached the end of this episode of Chat with Traders, but rest assured,
+[01:07:55] there are more episodes loaded with real market insight and zero hype on the ways soon.
+[01:08:01] So to stay updated with each great new release, subscribe to the podcast and iTunes,
+[01:08:06] and we'd love it if you'd leave a rating and review. We'll catch you next time on Chat with Traders.

@@ -1,0 +1,78 @@
+{
+  "trader": "Jon Boorman",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Long-only trend following on US stocks using new highs on daily/weekly bars with price-based exits and fixed risk sizing.",
+  "template": "breakout",
+  "method_name": "Long-only trend following breakout",
+  "style": "trend following",
+  "timeframe": "daily to weekly",
+  "universe": {
+    "description": "US stocks"
+  },
+  "setup": [
+    {
+      "rule": "Buy stocks in uptrends using new highs screens",
+      "quote": "I buy stocks in uptrends and manage risk.",
+      "timestamp": "[00:43:37]"
+    },
+    {
+      "rule": "New highs on daily or weekly: all-time highs, 52-week highs or 50-day highs",
+      "quote": "simple stuff, they're really simple screens, all time highs, 52 week highs, they could be 50 day highs, they just need to be new highs and whatever timeframe best suits you",
+      "timestamp": "[00:46:42]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Take signal on new high; act immediately on signal",
+      "quote": "when you get your signal, just take it, just instantly acting on it",
+      "timestamp": "[00:16:28]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Exit when trend invalidated by price",
+      "quote": "exit trends when they're invalidated",
+      "timestamp": "[00:44:52]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Exit on trend invalidation by price alone",
+      "quote": "if the trend invalidates by price alone, then I'm out",
+      "timestamp": "[00:50:47]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Risk 0.5% of capital per trade",
+      "quote": "it's always half a percent",
+      "timestamp": "[01:05:49]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Exact exit rule (e.g. 25-day low) and consolidation filter not stated for stocks",
+      "assumption": "Similar to futures example of new 50-day high entry / 25-day low exit"
+    }
+  ],
+  "params": {
+    "momentum_lookback_days": 50,
+    "momentum_min_pct": 0,
+    "consolidation_days": 0,
+    "consolidation_max_range_pct": 0,
+    "trail_ma": 0,
+    "partial_after_days": 0,
+    "partial_frac": 0,
+    "risk_per_trade_pct": 0.5,
+    "max_position_pct": 0,
+    "max_positions": 15
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "43",
+    "page_url": "https://chatwithtraders.com/episode/043-jon-boorman-buying-stocks-in-uptrends-managing-risk-and-tips-for-long-term-survival",
+    "youtube_url": "https://www.youtube.com/watch?v=iOlSqwz5-Fw"
+  }
+}

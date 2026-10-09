@@ -1,0 +1,27 @@
+{
+  "trader": "Best of Day Trading, Pt. 1 (compilation)",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "All clips describe intraday day trading, order flow, tape reading, shorting parabolics, and opening print tactics that rely on sub-daily price action and cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "Intraday order flow day trading",
+  "style": "day trading with order flow and tape reading",
+  "timeframe": "intraday (1-5 min and opening print)",
+  "universe": {
+    "description": "US equities and index futures"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "223",
+    "page_url": "https://chatwithtraders.com/episode/223-best-of-day-trading-pt-1",
+    "youtube_url": "https://www.youtube.com/watch?v=-YRBNgTtd58"
+  }
+}

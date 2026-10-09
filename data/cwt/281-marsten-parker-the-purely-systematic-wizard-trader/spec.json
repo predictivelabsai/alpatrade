@@ -1,0 +1,76 @@
+{
+  "trader": "Marsten Parker",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Concrete long-side breakout rules on daily bars for US stocks using volume and price move filters with mechanical exits.",
+  "template": "breakout",
+  "method_name": "Volume breakout swing",
+  "style": "systematic",
+  "timeframe": "swing (few days hold)",
+  "universe": {
+    "description": "all common US stocks meeting liquidity and price filters"
+  },
+  "setup": [
+    {
+      "rule": "unusual volume at least two or three times average, significant move up several percent in one day, prior flat congestion not overbought",
+      "quote": "unusual volume, like at least two times average or three times average volume, a significant move, you know, not like up 5 cents on two times average volume, but, you know, up several percent uh in one day. And then the pre prior to that, it should not have already been overbought. So, you know, ideally it's it's like a flat congestion area and then a breakout from there.",
+      "timestamp": "[00:24:54]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "buy breakout at next open market",
+      "quote": "place an order to buy or short at the open at market with an attached bracket",
+      "timestamp": "[00:27:31]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "7% adverse stop",
+      "quote": "5% favorable or 7% adverse",
+      "timestamp": "[00:27:31]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "5% target or 7% stop or time stop",
+      "quote": "there was also a time stop, so there's basically three three components to the exit",
+      "timestamp": "[00:22:49]"
+    },
+    {
+      "rule": "average hold 3-4 days",
+      "quote": "most mostly, it was within a few days... average holding period, maybe three, four days",
+      "timestamp": "[00:28:02]"
+    }
+  ],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "consolidation_days and consolidation_max_range_pct not specified numerically",
+      "assumption": "flat congestion implies prior consolidation but no exact days or range given"
+    },
+    {
+      "issue": "momentum_lookback_days, trail_ma, partial params, risk_per_trade_pct, max_position_pct, max_positions not specified",
+      "assumption": "use 1-day momentum lookback and no trailing/partial as bracket target/stop used instead"
+    }
+  ],
+  "params": {
+    "momentum_lookback_days": 1,
+    "momentum_min_pct": 0.05,
+    "consolidation_days": 20,
+    "consolidation_max_range_pct": 0.1,
+    "trail_ma": 0,
+    "partial_after_days": 0,
+    "partial_frac": 0,
+    "risk_per_trade_pct": 0,
+    "max_position_pct": 0,
+    "max_positions": 0
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "281",
+    "page_url": "https://chatwithtraders.com/episode/281-marsten-parker-the-purely-systematic-wizard-trader",
+    "youtube_url": "https://www.youtube.com/watch?v=vhx3yeFBlNA"
+  }
+}

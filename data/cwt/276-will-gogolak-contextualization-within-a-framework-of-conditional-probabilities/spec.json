@@ -1,0 +1,68 @@
+{
+  "trader": "Will Gogolak",
+  "category": "futures_fx",
+  "testable": false,
+  "reason": "Method uses futures and leveraged ETFs with intraday minute-bar moving averages and conditional probabilities, not daily-bar rules for US stocks.",
+  "template": "none",
+  "method_name": "Buy the dip MA deviation",
+  "style": "quantitative mean-reversion",
+  "timeframe": "intraday to multi-day",
+  "universe": {
+    "description": "Futures and leveraged ETFs"
+  },
+  "setup": [
+    {
+      "rule": "Define dip as current price X% below long moving average (e.g. 1000 bars)",
+      "quote": "I would Define a dip as when current price moves X below an average price that's usually a good indication to buy",
+      "timestamp": "[00:36:57]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Buy when price 2-3% below 1000-bar MA on 1-min or 5-min timeframe",
+      "quote": "when the price takes a dip say 3% below this very lengthy average there's some research to suggest on my end that it's a good signal that the market might be in a short short-term over reaction",
+      "timestamp": "[00:37:59]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Use low initial position size and build over time with risk management",
+      "quote": "you just start with a low position size you start building a position over time and you you kind of you kind of just have to do this especially when you're using leverage",
+      "timestamp": "[00:42:41]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Exit when reverts back up to mean; adapt via conditional probabilities",
+      "quote": "you wait for the trade when you get the trade you enter and then you get out when it reverts back up",
+      "timestamp": "[00:49:00]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Start small, add leverage on further dips while maintaining risk tools",
+      "quote": "once you get an opportunity to buy the dip you could slowly begin to add leverage to that position",
+      "timestamp": "[00:49:31]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Use VIX for additional context; avoid RSI",
+      "quote": "yes I will use the vix there's a lot of information in that vix it tells you a lot",
+      "timestamp": "[00:39:30]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Exact % dip, MA length, and holding period not numerically fixed across assets",
+      "assumption": "Parameters like 2-3% and 1000 bars are representative"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "276",
+    "page_url": "https://chatwithtraders.com/episode/276-will-gogolak-contextualization-within-a-framework-of-conditional-probabilities",
+    "youtube_url": "https://www.youtube.com/watch?v=9UH-GHz6O6Y"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "trader": "Bert Mouler",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Focus is high-frequency trading, market making, arbitrage and ML automation with no concrete daily-bar long-side rules for US stocks.",
+  "template": "none",
+  "method_name": "High-frequency arbitrage market making",
+  "style": "algorithmic HFT automation",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "US equities and other markets for HFT/arbitrage"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Mentions long-only systems and ML but no specific rules given",
+      "assumption": "No testable daily strategy extractable"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "142",
+    "page_url": "https://chatwithtraders.com/episode/142-bert-mouler-using-creative-thought-and-automation-to-bypass-human-flaws",
+    "youtube_url": "https://www.youtube.com/watch?v=ofL66mh6Tw0"
+  }
+}

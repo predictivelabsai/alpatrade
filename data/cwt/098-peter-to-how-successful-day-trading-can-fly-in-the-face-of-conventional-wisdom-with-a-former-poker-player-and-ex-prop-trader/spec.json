@@ -1,0 +1,68 @@
+{
+  "trader": "Peter To",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Edge is purely intraday scalping/day trading of volatile momentum stocks using short-term charts, volume, level 2 and tape reading to catch open-to-close moves; no rules survive daily-bar approximation.",
+  "template": "none",
+  "method_name": "Intraday momentum price action",
+  "style": "discretionary intraday momentum",
+  "timeframe": "intraday (1-5 min bars)",
+  "universe": {
+    "description": "OTC stocks, biotechs, IPOs, micro caps, growth/tech names with unusual volume and catalysts"
+  },
+  "setup": [
+    {
+      "rule": "Catalyst-driven ideas with unusual volume and volatile movement",
+      "quote": "catalyst driven ideas stocks with unusual volume volatile movement that's what I'm looking for",
+      "timestamp": "[00:47:01]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Read short-term supply/demand via 1-5 min charts, volume, level 2/tape to time turning points",
+      "quote": "use certain tools like short term charts five minute one minute candlesticks volume the level two aka reading the tape ... when the price action looks right and you have a thesis ... that's when you make your move",
+      "timestamp": "[00:48:03]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Minimize risk until timing/price action confirms; cut when timing off",
+      "quote": "trying to keep risk minimum until the play is ready ... minimize damage when you are wrong or when your timing is off",
+      "timestamp": "[00:49:36]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Ride big move from open to close; exit at equilibrium or when move exhausts",
+      "quote": "generate trading ideas that can give me a big move from the open to the close ... riding it all day",
+      "timestamp": "[00:47:01]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Scale with conviction once timing confirmed; allow emotional leeway on winners",
+      "quote": "I'm able to like take pain on certain stocks for a certain amount of time and let it play out",
+      "timestamp": "[01:00:35]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Follow order flow/themes that are in fashion; avoid when OTC illiquid",
+      "quote": "themes go in and out of fashion ... you want to go to where the order flow is",
+      "timestamp": "[00:50:39]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Mentions short parabolic penny stocks as example but overall long/short intraday",
+      "assumption": "Primarily long-side intraday momentum on listed/OTC equities"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "98",
+    "page_url": "https://chatwithtraders.com/episode/098-peter-to-how-successful-day-trading-can-fly-in-the-face-of-conventional-wisdom-with-a-former-poker-player-and-ex-prop-trader",
+    "youtube_url": "https://www.youtube.com/watch?v=kpMe8_oJ9DY"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "trader": "Kenny Sharkness",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "85-90% of trading is discretionary with no concrete, codable rules for entries, stops or exits on daily bars.",
+  "template": "none",
+  "method_name": "Discretionary multi-strategy equity trading",
+  "style": "discretionary with options hedging",
+  "timeframe": "intraday to multi-day swing",
+  "universe": {
+    "description": "US equities including low-float and larger-cap names"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "mentions daily chart breakouts and pullbacks but provides no rules or parameters",
+      "assumption": "none"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "233",
+    "page_url": "https://chatwithtraders.com/episode/233-kenny-sharkness-blowout-loss-creates-a-cold-blooded-killer",
+    "youtube_url": ""
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "trader": "John Welsh",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Trading is driven by news releases and company fundamentals in biotech with no concrete technical entry/exit rules that can be coded or tested on daily bars.",
+  "template": "none",
+  "method_name": "News and fundamentals biotech trading",
+  "style": "discretionary news-driven long/short",
+  "timeframe": "intraday and swing (weeks to months)",
+  "universe": {
+    "description": "biotech stocks (80-90% of trades)"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Mentions 10 personal rules but none quoted or detailed",
+      "assumption": "rules are psychological and not mechanically testable"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "18",
+    "page_url": "https://chatwithtraders.com/episode/018-john-welsh-giving-weight-to-fundamentals-news-plus-the-advantage-of-focusing-on-a-single-sector",
+    "youtube_url": ""
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "trader": "Diego Ivan Cortes Lopez",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Edge lives inside the day on 5-min reversal bars at daily S/R levels with first-hour timing and no overnight holds; cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "Intraday reversal at S/R",
+  "style": "rule-based intraday reversal",
+  "timeframe": "5-minute execution on daily levels",
+  "universe": {
+    "description": "Large-cap US stocks with low spreads (e.g. TSLA, AMD, MU, MSFT, META, MSTR)"
+  },
+  "setup": [
+    {
+      "rule": "Identify major daily support/resistance (yesterday high/low or obvious prior levels)",
+      "quote": "All I focus on is the daily. ... any major support. So any daily high. ... yesterday's high and yesterday's low.",
+      "timestamp": "[00:13:37]"
+    },
+    {
+      "rule": "Wait for overextension (multiple same-color bars) into the level",
+      "quote": "on a 5minute chart, there's just 10 red candles in a row. That's obviously overextended.",
+      "timestamp": "[00:16:46]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Reversal bar (tail bar / elephant bar / wide range bar) at the level that is obvious to the eye",
+      "quote": "if it gives me, for example, a tail bar, I'll consider a long. ... any reversal bar",
+      "timestamp": "[00:14:09]"
+    },
+    {
+      "rule": "Prefer violent move or second-chance entry in gift zone after retrace",
+      "quote": "if the retracement happens very violently ... wait for the price to come back down",
+      "timestamp": "[00:20:28]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Stop beyond the reversal bar extreme; monetary risk small",
+      "quote": "short at the tail bar at the low of the tail bar and the stop will go above the tail bar",
+      "timestamp": "[00:29:30]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Target minimum 2:1, aim 3:1+; partial at 2:1 then trail",
+      "quote": "go for a 3 one, four one, but minimum 2 to one",
+      "timestamp": "[00:17:19]"
+    },
+    {
+      "rule": "Trail with MA or bar-by-bar; out by end of first hour",
+      "quote": "I'm always out of the trades before the hour ends the first hour",
+      "timestamp": "[00:40:29]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Fixed position size / risk per trade; same size on every setup",
+      "quote": "I keep my position size relatively the same since I just don't know which trade is going to be the winner",
+      "timestamp": "[00:31:37]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Avoid wide/trending state (20/200 MA separation); prefer ranging/calm markets",
+      "quote": "If the 20 and the 200 get too separated ... be careful going long now. ... Wide state.",
+      "timestamp": "[00:26:50]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Exact definition of 'obvious' reversal bar and 80% removal rule for stops",
+      "assumption": "Visual discretion on 5-min chart; 80% guideline is optional for experienced traders"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "309",
+    "page_url": "https://chatwithtraders.com/episode/309-diego-ivan-cortes-lopez",
+    "youtube_url": "https://www.youtube.com/watch?v=D7brUyY3UWA"
+  }
+}

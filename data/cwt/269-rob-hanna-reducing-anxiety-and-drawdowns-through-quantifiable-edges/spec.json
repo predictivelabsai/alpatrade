@@ -1,0 +1,55 @@
+{
+  "trader": "Rob Hanna",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Guest describes concrete quantitative rules on daily bars for US stocks using price action, seasonality, overbought/oversold and Fed days that can be approximated programmatically.",
+  "template": "dip",
+  "method_name": "Quant edge mean-reversion swing",
+  "style": "quantitative swing mean-reversion with filters",
+  "timeframe": "daily",
+  "universe": {
+    "description": "S&P 500 stocks and broad indices"
+  },
+  "setup": [
+    {
+      "rule": "three down days close at 10-day low above 200-day MA",
+      "quote": "what happens if we have uh three down days and we close at a 10day low and we're above the 200 day moving average",
+      "timestamp": "[00:20:28]"
+    }
+  ],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [
+    {
+      "rule": "Fed day after selloff",
+      "quote": "when you have the market doing poorly heading into a Fed day it's been an even stronger bullish Edge",
+      "timestamp": "[00:48:19]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "No exact numeric parameters, position sizing or full rule set provided for any single system",
+      "assumption": "Closest template is dip based on described price-stretch rebounds and 3-down-day example"
+    }
+  ],
+  "params": {
+    "dip": 0.03,
+    "ref_days": 10,
+    "rsi_max": 0,
+    "trend_ma": 200,
+    "target": 0,
+    "stop": 0,
+    "max_hold": 5,
+    "sma5_exit": false,
+    "pos_pct": 0,
+    "max_positions": 0
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "269",
+    "page_url": "https://chatwithtraders.com/episode/269-rob-hanna-reducing-anxiety-and-drawdowns-through-quantifiable-edges",
+    "youtube_url": "https://www.youtube.com/watch?v=CiXWgFkSwF8"
+  }
+}

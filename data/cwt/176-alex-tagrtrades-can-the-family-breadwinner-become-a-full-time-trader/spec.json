@@ -1,0 +1,38 @@
+{
+  "trader": "Alex, @TAGRtrades",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Guest is a full-time day trader focused on intraday momentum in US equities and is always flat by end of day; no daily-bar rules given.",
+  "template": "none",
+  "method_name": "Intraday momentum day trading",
+  "style": "momentum day trading",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "US equities, primarily small caps"
+  },
+  "setup": [
+    {
+      "rule": "flags and pennants on multiple timeframes",
+      "quote": "things like flags and pennants and in certain setups that happen on all different time frames",
+      "timestamp": "[00:22:32]"
+    }
+  ],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "no specific entry/exit/sizing rules provided in transcript",
+      "assumption": "method is discretionary intraday momentum"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "176",
+    "page_url": "https://chatwithtraders.com/episode/176-alex-tagrtrades-can-the-family-breadwinner-become-a-full-time-trader",
+    "youtube_url": "https://www.youtube.com/watch?v=bE0HR6KiiZA"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "trader": "Lance Breitstein",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Method is intraday day trading focused on fast markets, hotkeys and pattern recognition inside the day with no daily-bar rules provided.",
+  "template": "none",
+  "method_name": "Intraday pattern recognition trading",
+  "style": "day trading",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "US stocks"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "229",
+    "page_url": "https://chatwithtraders.com/episode/229-lance-breitstein-the-ultimate-day-trader-pt-2",
+    "youtube_url": "https://www.youtube.com/watch?v=d3mmLd_VO0w"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "trader": "Ryan Moffett",
+  "category": "options",
+  "testable": false,
+  "reason": "Method is complex options structures (butterflies) not long-side US stock rules on daily bars.",
+  "template": "none",
+  "method_name": "Complex options butterfly strategy",
+  "style": "mechanical options",
+  "timeframe": "multi-day to multi-week",
+  "universe": {
+    "description": "options on equities/indices"
+  },
+  "setup": [
+    {
+      "rule": "net seller of options in high volatility",
+      "quote": "we're a net seller of options and if you know anything about insurance when somebody's old and sick their insurance premiums are higher versus someone that's young and healthy well a volatile Market is kind of like a sick market so there's a lot of premiums",
+      "timestamp": "[00:40:44]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "butterfly put structure",
+      "quote": "a butterfly is basically just you just we just do it an allp put so you buy one put you sell two and you buy another one",
+      "timestamp": "[00:40:13]"
+    }
+  ],
+  "stop": [],
+  "exits": [],
+  "sizing": [
+    {
+      "rule": "max 10% of portfolio",
+      "quote": "we take a very small portion of their port portfolio no more than 10%",
+      "timestamp": "[00:41:16]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "prefers high volatility environments",
+      "quote": "in an' 08 type environment 07 type environment 2011 last year when the volatility was extremely high it eats it alive it it really likes volatility",
+      "timestamp": "[00:40:44]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "no specific strike selection or exact entry timing rules given",
+      "assumption": "strategy is mechanical but details omitted from interview"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "83",
+    "page_url": "https://chatwithtraders.com/episode/083-ryan-moffett-getting-mentors-starting-a-fund-and-deliberate-practice-w-blackpier-capital",
+    "youtube_url": "https://www.youtube.com/watch?v=WP8g9rZ2Zrg"
+  }
+}

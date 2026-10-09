@@ -1,0 +1,68 @@
+{
+  "trader": "Jason Shapiro",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Method relies on COT positioning extremes plus discretionary news-failure confirmation on futures/indices; no concrete long-only daily-bar rules for US stocks.",
+  "template": "none",
+  "method_name": "COT contrarian turn picker",
+  "style": "contrarian participation reversal",
+  "timeframe": "2-6 months typical hold",
+  "universe": {
+    "description": "stock indices and commodities futures via COT"
+  },
+  "setup": [
+    {
+      "rule": "Speculators extremely long (commercials extremely short) or vice versa",
+      "quote": "when commercials are extremely short and speculators are extremely long that's when a good turn can happen",
+      "timestamp": "[00:20:55]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Wait for news-failure confirmation on the crowded side",
+      "quote": "I'm looking for what I like to call a news failure event ... if I'm looking to get long I'm looking for some kind of bearish news to come out and then the market to not go down on that news",
+      "timestamp": "[00:33:27]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Exit when speculator crowding returns to neutral",
+      "quote": "I'm entering when things are showing speculators super crowded I am therefore exiting when speculators are no more no longer crowded",
+      "timestamp": "[00:41:17]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Mean-reversion in participation to neutral (not full opposite extreme)",
+      "quote": "I get out at the neutral point",
+      "timestamp": "[00:42:19]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Risk management per trade with correlation adjustment across portfolio",
+      "quote": "each individual trade has its own risk management ... if the trades are highly correlated then it's really not one trade",
+      "timestamp": "[00:37:36]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Only act when COT extremes align with news-failure tape action",
+      "quote": "I'm not going to just get along because of that right I'm going to wait for the market to confirm this",
+      "timestamp": "[00:32:25]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "No numeric thresholds or exact COT percentile rules given",
+      "assumption": "none"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "245",
+    "page_url": "https://chatwithtraders.com/episode/245-jason-shapiro-the-mind-of-a-tape-reading-contrarian-trader",
+    "youtube_url": "https://www.youtube.com/watch?v=7p5pk_gxLg8"
+  }
+}

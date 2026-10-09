@@ -1,0 +1,84 @@
+{
+  "trader": "Kenny Glick",
+  "category": "daily_testable",
+  "testable": true,
+  "reason": "Describes concrete long-side breakout rules from multi-week/month consolidation ranges on US stocks that survive daily-bar approximation.",
+  "template": "breakout",
+  "method_name": "Consolidation range breakout swing",
+  "style": "momentum breakout after consolidation",
+  "timeframe": "daily to multi-month swing",
+  "universe": {
+    "description": "US stocks coming out of long consolidation or beaten-down ranges"
+  },
+  "setup": [
+    {
+      "rule": "stock consolidating in range after being beaten down, sellers dried up",
+      "quote": "finding stocks that are coming out of a malaise or coming out of a depression or or just or just coming out of just sitting around and consolidating and once I see them reversing and breaking some previous you know not just a day but going back you know a month sometimes two months sometimes a year",
+      "timestamp": "[00:45:54]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "breakout above consolidation range high or VWAP",
+      "quote": "once they break out of that channel or that that range that they're sitting in",
+      "timestamp": "[00:45:54]"
+    },
+    {
+      "rule": "use 9-month or yearly VWAP as guide for breakout confirmation",
+      "quote": "once these stocks reverse and they break the vwap the trades have been working about 90% of the time",
+      "timestamp": "[00:48:00]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "exit if fails to hold breakout or re-enters range",
+      "quote": "if it pulls back and you know goes right back down to 385 no harm no foul",
+      "timestamp": "[01:02:21]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "scale out at prior breakdown highs or next range targets; use VWAP for profit taking",
+      "quote": "I'm using the vwap as a guide to where I might be looking to take some profit and if it does break over these yearly vaps you're getting another 10 15 20% on some of these stocks",
+      "timestamp": "[00:49:34]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "start small, scale out most on initial move, hold remainder as swing",
+      "quote": "stock spurts 40 cents guess what I'm doing I'm selling 800 shares of it taking the money off the table and I'm holding 200 shares as a swing trade",
+      "timestamp": "[00:55:54]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "prefer bull market environment for long breakouts",
+      "quote": "once the shorts get nervous the stock goes and has a monster move and I just go from stock to stock",
+      "timestamp": "[00:46:57]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "no exact numerical thresholds for range length, breakout pct, or stops given",
+      "assumption": "use standard daily-bar breakout params with consolidation_days=20-60, momentum_min_pct=5-10"
+    }
+  ],
+  "params": {
+    "momentum_lookback_days": 20,
+    "momentum_min_pct": 5,
+    "consolidation_days": 30,
+    "consolidation_max_range_pct": 10,
+    "trail_ma": 20,
+    "partial_after_days": 3,
+    "partial_frac": 0.8,
+    "risk_per_trade_pct": 1,
+    "max_position_pct": 10,
+    "max_positions": 5
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "94",
+    "page_url": "https://chatwithtraders.com/episode/094-kenny-glick-shady-tales-from-a-real-life-boiler-room-and-things-profitable-traders-do",
+    "youtube_url": "https://www.youtube.com/watch?v=G5UMKkOg1xg"
+  }
+}

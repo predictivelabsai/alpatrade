@@ -1,0 +1,27 @@
+{
+  "trader": "Jorge Soltero",
+  "category": "options",
+  "testable": false,
+  "reason": "Guest describes options market making at Hull and institutional options/ETF trading with no concrete long-side rules for US stocks on daily bars.",
+  "template": "none",
+  "method_name": "Options market making",
+  "style": "Market making with models and discretion",
+  "timeframe": "Intraday floor and institutional",
+  "universe": {
+    "description": "Options on equities, indices, currencies, futures; later ETFs and delta-one products"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "112",
+    "page_url": "https://chatwithtraders.com/episode/112-jorge-soltero-reminiscences-of-a-trader-at-hull-trading-co-and-a-sell-side-career",
+    "youtube_url": "https://www.youtube.com/watch?v=MIKV210yit8"
+  }
+}

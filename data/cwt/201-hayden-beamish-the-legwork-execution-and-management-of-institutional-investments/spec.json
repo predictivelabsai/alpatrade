@@ -1,0 +1,56 @@
+{
+  "trader": "Hayden Beamish",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Process is qualitative fundamental analysis with management meetings, DCF valuations and 3-5 year holds; no concrete quantitative rules for daily-bar testing.",
+  "template": "none",
+  "method_name": "Fundamental quality investing",
+  "style": "fundamental discretionary",
+  "timeframe": "3-5 years",
+  "universe": {
+    "description": "ASX stocks with high ROIC, high and growing margins, founder-led businesses"
+  },
+  "setup": [
+    {
+      "rule": "Screen for ROIC >15%, ROE >15%, EBIT margin >20% and growing",
+      "quote": "I like to screen for a company with uh return on equity above 15%, return on invested capital above 15%, a EBIT margin above 20%, EBIT margin that's growing say at least 10% peranom",
+      "timestamp": "[00:35:06]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Meet management and obtain third-party verification before investing",
+      "quote": "the next step is to meet management is the main criteria. We need to meet management. We need some third party verification.",
+      "timestamp": "[00:22:33]"
+    }
+  ],
+  "stop": [],
+  "exits": [
+    {
+      "rule": "Sell when valuation stretched or better opportunities appear",
+      "quote": "the last step in the in the process is that selling selling discipline really which is just all about the valuation",
+      "timestamp": "[00:27:46]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "High conviction 20-30 holdings",
+      "quote": "we've got a fairly high conviction portfolios between 30 stocks and and the hedge portfolio is is 20 stocks",
+      "timestamp": "[00:18:52]"
+    }
+  ],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Transcript covers ASX not US stocks",
+      "assumption": "Rules do not transfer to US daily-bar testing"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "201",
+    "page_url": "https://chatwithtraders.com/episode/201-hayden-beamish-the-legwork-execution-and-management-of-institutional-investments",
+    "youtube_url": "https://www.youtube.com/watch?v=CgqA6B-gXUs"
+  }
+}

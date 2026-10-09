@@ -1,0 +1,68 @@
+{
+  "trader": "Eduardo Briceño",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "Edge is based on intraday price action, gappers spiking then fading within the first 25-30 minutes and throughout the day on small-cap penny stocks.",
+  "template": "none",
+  "method_name": "Penny stock framework day trading",
+  "style": "intraday scalping and fading gappers",
+  "timeframe": "intraday (1-5 min bars)",
+  "universe": {
+    "description": "US small caps / penny stocks below $200M market cap, gappers >20%"
+  },
+  "setup": [
+    {
+      "rule": "Identify gappers >20% from prior close",
+      "quote": "if you see every single small cap that has been doing a gap over 20%",
+      "timestamp": "[00:25:13]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Long first stage of framework or backside bounces; short extension/fade after 9:50 peak",
+      "quote": "in the first stage of the framework, I would be a long basis penetrator",
+      "timestamp": "[00:24:42]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Dynamic levels with share recycling; avoid sizing into 1000% runners",
+      "quote": "I recycle shares a lot because I divide the trade in levels",
+      "timestamp": "[00:53:19]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Scale out on range; hold core only on high-conviction first red days",
+      "quote": "the trades that I trust the most are the first red days",
+      "timestamp": "[01:12:14]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Scale in/out dynamically; size up only on high-conviction setups after experience",
+      "quote": "how do I know that this set up is the one that I'm going to be sized in",
+      "timestamp": "[00:39:51]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Avoid hot sectors for shorts; favor volatility with many 50-200% runners",
+      "quote": "if you see a lot of 50%, 100%, 200% runners, that's crazy stuff for me",
+      "timestamp": "[00:59:05]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Mentions both long and short but 60% short bias",
+      "assumption": "Still intraday_only as all rules are time-of-day specific"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "321",
+    "page_url": "https://chatwithtraders.com/episode/321-eduardo-briceno",
+    "youtube_url": "https://www.youtube.com/watch?v=KuGCeyZQhbQ"
+  }
+}

@@ -41,3 +41,37 @@ Artefacts in `data/cwt/212-kristjan-kullamagi-breakouts-home-runs-exponential-re
 `transcript.txt` (captions), `gemini_strategy.md`, `spec.json` (Grok), `backtest.json`,
 `skill.md`, `equity_full.csv`, `trades_full.csv`. Results are in the skill.md and on
 `/strategies/{id}` (kind = backtest).
+
+## Bulk run results (2026-10-10, v0.33.3)
+135 `stocks` episodes → **16 testable** (one strategy per trader + template; all 16 published),
+**119 not testable** (intraday, options/futures, discretionary, no concrete rules, macro), 0
+skipped (< 10 trades). Stan Gluzman (ep. 171, 211) is overridden to `intraday_only` and his row
+is unpublished. Universe: today's S&P 500 (survivorship-biased), Alpaca SIP daily bars, cash
+only, 10 bps per side. Test = 2022-01-03 → 2026-10-09 slice of the full 2016-01-04 run.
+
+| Trader | Template | Test ann. % | SPY ann. % | Alpha ann. % | Sharpe / SPY | Max DD % | Trades (test) | Full ann. % |
+|---|---|---|---|---|---|---|---|---|
+| Vincent Bruzzese | relative_strength | 37.5 | 12.3 | +25.2 | 1.17 / 0.76 | -32.3 | 731 | 19.1 |
+| Ross Haber | relative_strength | 29.8 | 12.3 | +17.5 | 1.33 / 0.76 | -17.4 | 1534 | 19.2 |
+| Rob Hanna | dip | 19.5 | 12.3 | +7.1 | 0.70 / 0.76 | -32.1 | 1930 | 16.3 |
+| Tom Basso | trend_ma | 9.4 | 12.3 | -3.0 | 0.68 / 0.76 | -16.6 | 957 | 8.5 |
+| Ivaylo Ivanhoff | breakout | 7.0 | 12.3 | -5.3 | 0.39 / 0.76 | -37.9 | 1051 | -7.1 |
+| Kristjan Kullamägi | breakout | -0.8 | 12.3 | -13.2 | -0.43 / 0.76 | -4.3 | 52 | -1.1 |
+| Dan Shapiro | breakout | -3.4 | 12.3 | -15.8 | -0.02 / 0.76 | -45.6 | 940 | -6.7 |
+| Julian Komar | breakout | -3.6 | 12.3 | -15.9 | -0.35 / 0.76 | -20.1 | 241 | -1.2 |
+| Jon Boorman | breakout | -4.3 | 12.3 | -16.6 | -0.23 / 0.76 | -35.7 | 656 | -5.5 |
+| Christian Carreon | breakout | -4.9 | 12.3 | -17.2 | -0.46 / 0.76 | -29.8 | 205 | -5.4 |
+| Kenny Glick | breakout | -6.0 | 12.3 | -18.3 | -1.38 / 0.76 | -25.6 | 574 | -6.3 |
+| Mark Ritchie II | breakout | -8.1 | 12.3 | -20.4 | -0.36 / 0.76 | -52.2 | 711 | -13.6 |
+| George, @RollyTrader | breakout | -9.3 | 12.3 | -21.7 | -1.00 / 0.76 | -38.9 | 942 | -5.7 |
+| Nick Radge | breakout | -10.6 | 12.3 | -23.0 | -0.93 / 0.76 | -44.4 | 2386 | -8.5 |
+| Marsten Parker | breakout | -14.0 | 12.3 | -26.4 | -1.17 / 0.76 | -52.3 | 960 | -15.8 |
+| John Walsh | breakout | -16.8 | 12.3 | -29.1 | -0.82 / 0.76 | -66.2 | 1061 | -15.6 |
+
+Sanity fixes in this run (see `docs/change_log.md` v0.33.3): LLM `0` = not stated → template
+default (was clamped to the lower bound), feasible breakout windows (`mom_days ≥ cons_days + 20`),
+rotation at most weekly with a 2× rank buffer, manual classification overrides, unpublish of
+stale rows, publish without burning sequence ids. Every breakout group is negative vs SPY on
+large caps; the low-of-day stop + SMA trail is a coarse daily stand-in for intraday entries.
+Marsten Parker's method (volume thrust, 5% target / 7% stop, 3–4 day hold) is only loosely
+approximated by the breakout template.

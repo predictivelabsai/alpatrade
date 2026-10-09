@@ -1,0 +1,73 @@
+{
+  "trader": "Michael Katz",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "The method relies on intraday order flow, tape reading, velocity of prints, and short-term patterns like parabolics and h-patterns that cannot be approximated on daily bars.",
+  "template": "none",
+  "method_name": "Intraday parabolic and dip trading",
+  "style": "discretionary day trading with order flow",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "US small-cap equities and market-leading stocks"
+  },
+  "setup": [
+    {
+      "rule": "Detect short squeeze precursors: weak names not following through on breaks, making new highs after 10:30-11am",
+      "quote": "if a trash name looks like it's going lower it breaks previous support and it just peeks below it and has no follow-through that's information right that's telling us there isn't any follow-through there's a lot of soaking a lot of buying going on there",
+      "timestamp": "[00:09:54]"
+    },
+    {
+      "rule": "Favorite small cap setups: parabolics, h-pattern after parabolic, backside bounces in downtrend",
+      "quote": "parabolics is definitely a big one um the h pattern after after the parabolic that's key for us as well so something that's been running drops hard it's not able to make new highs",
+      "timestamp": "[00:19:46]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "Wait for lower high on backside or failed short setups in strong names; use volume, velocity and soaking on tape for reversals",
+      "quote": "the safer way to do it is to wait for that lower high right so as something is going up it's accelerating and it's it's peaking let's say now the top is in",
+      "timestamp": "[00:16:06]"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "Predefine exit before entry; trail to previous pivots or lower highs",
+      "quote": "you really want to know where you're getting out let the price tell you where",
+      "timestamp": "[00:30:44]"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "Scale out on target rs multiples or when volume/velocity signals smart money selling; trail remaining to pivots",
+      "quote": "i do also take pieces off as it's working but i do want to make sure that i have some for the bigger move",
+      "timestamp": "[00:38:31]"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "Prefer one or two shots at inflection points; cut size in half after red days until green streak returns",
+      "quote": "unless my position is going to be so large that i have to scale in without choice i really prefer to do it in one or two shots",
+      "timestamp": "[00:18:12]"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "Avoid thin pre-market names without liquidity; sit on hands in quiet markets",
+      "quote": "we trade actively pre-market but we won't just trade anything obviously it's got to have a reason for us to be in there it has to have volume",
+      "timestamp": "[00:11:25]"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "Mentions both long dip-buying in trends and heavy short parabolic trading",
+      "assumption": "Primary edge described is intraday and not daily-testable"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "205",
+    "page_url": "https://chatwithtraders.com/episode/205-michael-katz-day-trading-the-questions-you-want-answered",
+    "youtube_url": "https://www.youtube.com/watch?v=2FpJ3f55Om8"
+  }
+}

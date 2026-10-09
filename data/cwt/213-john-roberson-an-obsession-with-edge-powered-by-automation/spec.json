@@ -1,0 +1,27 @@
+{
+  "trader": "John Roberson",
+  "category": "intraday_only",
+  "testable": false,
+  "reason": "All strategies described are intraday automated models (mean reversion, momentum, order book, news/earnings, microstructure) with no concrete long-side daily-bar rules provided.",
+  "template": "none",
+  "method_name": "Automated intraday models",
+  "style": "automated systematic",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "US equities with meaningful volume"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "",
+    "page_url": "https://chatwithtraders.com/episode/213-john-roberson-an-obsession-with-edge-powered-by-automation",
+    "youtube_url": "https://www.youtube.com/watch?v=nX0HFc25BzU"
+  }
+}

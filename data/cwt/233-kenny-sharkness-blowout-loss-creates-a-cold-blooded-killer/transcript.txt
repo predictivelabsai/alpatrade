@@ -1,0 +1,954 @@
+# 233: Kenny Sharkness – Blowout Loss Creates a Cold-Blooded Killer
+# source: faster-whisper small (CPU int8) https://chrt.fm/track/E6BB91/traffic.megaphone.fm/CWT6788704784.mp3
+
+[00:00:00] What's up friends, welcome to the show.
+[00:00:14] This year, so far, I have brought you some truly phenomenal traders, and that continues
+[00:00:19] right here on episode 233.
+[00:00:23] My guest is equities trader Kenny Sharkness, although some will know him better simply
+[00:00:29] as Shark.
+[00:00:31] While Kenny himself keeps a low profile online, anyone that follows S&B capital
+[00:00:36] has likely heard Mike Ballafuray make references to Shark as he's consistently
+[00:00:42] one of the top performing traders at the firm, which he joined in 2010.
+[00:00:49] Now, the areas we covered during this interview, I think will be of most
+[00:00:52] interest to developing traders, those who are early on in their trading journey.
+[00:00:57] But of course, there is something for everyone.
+[00:01:00] We cover things like a slow start, gaining consistency, growing P&L,
+[00:01:06] the positives that can follow from a blowout loss, complacency, expanding
+[00:01:12] into additional strategies and mindset.
+[00:01:15] So there's quite a bit packed in here.
+[00:01:19] As there are references to specific stocks and prices, as well as some talk
+[00:01:24] of preparing for the year ahead, I will point out that this was actually
+[00:01:28] recorded a couple of days before Christmas.
+[00:01:31] Now, I know that probably sounds quite odd to hear.
+[00:01:34] I've been sitting on this interview for four months, but it's just
+[00:01:37] the way things have worked out with scheduling and ordering, etc.
+[00:01:42] Anyway, I am now pleased to present from New York, Kenny Sharkness
+[00:01:47] on Chat with Traders.
+[00:01:49] If we could start by just going back in time a little bit, back to 2010,
+[00:01:58] I think it was, why did you want to become a trader?
+[00:02:04] I guess I wanted to become a trader because it seemed like something
+[00:02:08] I'd like to do really as straightforward as that.
+[00:02:12] You know, as a finance major, I was looking for kind of the next step
+[00:02:16] and I always was into strategic games.
+[00:02:20] I played poker or played a bunch of video games in college.
+[00:02:24] And I got a hold of market wizards and some other books.
+[00:02:28] And I was like, wow, this is really something that could be up my alley.
+[00:02:32] And I interviewed at a few brokerage houses and I realized it was just
+[00:02:37] cold calling and and selling and that sort of thing.
+[00:02:41] That just wasn't me.
+[00:02:42] And and so then I dug into it a little bit more.
+[00:02:46] I said, OK, you know, I'm going to try this out.
+[00:02:49] Luckily, I had supportive parents that kind of supported me for the first year.
+[00:02:54] I told them, you know, give me a year to figure this out.
+[00:02:56] And, you know, luckily it worked out.
+[00:03:00] And at that point, had you gone down the route of trying to get
+[00:03:04] yourself on a prop trading desk?
+[00:03:07] Yeah, I knew nothing at the start.
+[00:03:10] And so I knew I needed to get some training.
+[00:03:13] And so I looked around to places that had programs that taught you how to trade.
+[00:03:20] And SMB was the one that I gravitated to and went through a few interviews
+[00:03:25] and got the job and, you know, at the time, it's different now.
+[00:03:29] But we actually had to pay for the training, but then they would
+[00:03:32] onboard you and give you an account to trade very small at the time.
+[00:03:37] You know, they give you more risk if you do well.
+[00:03:39] But so I actually paid to start, you know, my first job out of college,
+[00:03:45] which is, I would say a little bit unusual, but it was also very beneficial
+[00:03:50] because I knew nothing and I just got taught good habits from the get-go.
+[00:03:55] And I didn't have to break any bad habits.
+[00:03:57] And and and I think I started from a, you know, a good footprint, basically.
+[00:04:04] So you hadn't placed any trades prior to joining SMB?
+[00:04:09] None, none whatsoever.
+[00:04:11] I didn't even know what a bid ask level one, level two, anything, anything, really,
+[00:04:17] when I first started.
+[00:04:19] Let's go through your early experience.
+[00:04:22] So talk to me about that first year.
+[00:04:25] You know, did you have a natural talent for this?
+[00:04:27] Did you just hit the ground running or what did it look like?
+[00:04:32] I mean, it's so long ago now, but I don't think I was some sort of savant
+[00:04:37] or prodigy or any of that.
+[00:04:40] I think what benefited me was having the right attitude from the get-go,
+[00:04:46] knowing that I was I was going to suck and I was going to take a while.
+[00:04:49] And my focus really was getting better and setting goals and making
+[00:04:54] incremental progress and all the cliche things that really work.
+[00:04:59] So, you know, the first year, I think I just got my account
+[00:05:03] green after 10 months, but but the biggest benefit.
+[00:05:07] And I guess the biggest service I did for myself was never dig myself
+[00:05:10] a hole trading super small hundred share lots until I really proved to myself
+[00:05:17] that I had some consistency, I had some edge.
+[00:05:20] And and then from there on out, it was about just developing
+[00:05:24] that a little bit further and scaling up and that sort of thing.
+[00:05:29] I think that's probably quite an important point you bring up there.
+[00:05:34] Never or you didn't dig yourself into a hole.
+[00:05:37] So I'd like to just not gloss over that.
+[00:05:40] I mean, how did you go about that?
+[00:05:43] I know you said you just traded very small, but was there, you know,
+[00:05:47] for someone else who's listening to this, who's just coming into trading,
+[00:05:52] they might hear that, OK, don't dig yourself into a hole.
+[00:05:55] I mean, what more to it is there?
+[00:05:59] Yeah, I mean, keeping your risk limits super small
+[00:06:02] at the beginning is as simple as that.
+[00:06:05] Obviously, I'm at a firm and we have our risk limits there
+[00:06:08] and there's a risk manager.
+[00:06:09] And so it's a little bit different if you're trading on your own,
+[00:06:12] but you can still set yourself risk limits and stick to it
+[00:06:16] and never lose more than just a couple hundred bucks in a day at the beginning.
+[00:06:20] And usually at the beginning, especially when you're not trading well
+[00:06:25] and you're down money, it's not something that you're just going to dig yourself out of.
+[00:06:30] You just kind of take a step back, treat as a little bit of tuition
+[00:06:33] and go about the next day trying to get a little bit better.
+[00:06:37] So that was that was the biggest thing was just keeping things super small
+[00:06:41] until I had, you know, some some sort of
+[00:06:46] little albeit track record and then go from there.
+[00:06:50] OK, when we spoke beforehand the other week,
+[00:06:56] you said that your progress was very slow
+[00:06:59] and maybe a little bit too slow.
+[00:07:02] Can you speak to that a little more?
+[00:07:05] Yeah, it's so funny looking back because it's not
+[00:07:08] it's definitely not a problem I have these days.
+[00:07:09] But at the beginning, my biggest problem was scaling up.
+[00:07:15] And and and so I said that because I think
+[00:07:19] I could have been trading bigger, you know, your two year, three year,
+[00:07:23] four and and making a lot more.
+[00:07:25] But at the same time, it was probably beneficial to go
+[00:07:31] incremental, so my psychology was always there.
+[00:07:34] But but that was a big thing.
+[00:07:36] And what I did was I set goals to try to trade a little bit bigger,
+[00:07:41] feel a little bit more uncomfortable in my trades and journaled about it,
+[00:07:46] reviewed it each month and and then kind of just chipped away at it.
+[00:07:51] And it seems slow at the time, but I guess looking back,
+[00:07:55] you know, I'm I'm I'm happy with the with the progress I've made, I guess.
+[00:08:00] I know it was 10 or more years ago,
+[00:08:02] but can you recall what some of those goals were?
+[00:08:06] Sure, I mean, like I just said,
+[00:08:11] maybe I wanted to make sure I felt uncomfortable in my best trades,
+[00:08:14] meaning I put a little bit more size than I was used to.
+[00:08:18] And, you know, across the line a little bit where I'd start to feel it.
+[00:08:23] But I always was was very good about about setting goals.
+[00:08:27] I would have a whole process of, you know, each month I would
+[00:08:31] I would have a goal and then I would drill that down to each day.
+[00:08:34] And it would always be something process oriented, not not P&L.
+[00:08:37] So like I said, maybe I feeling uncomfortable in a trade
+[00:08:40] or maybe holding my winners a little bit longer with the system
+[00:08:44] and following the system.
+[00:08:46] And then I would grade myself on that stuff.
+[00:08:48] Each day at the end of the month, I would kind of see how I did
+[00:08:52] progress wise and decide whether I wanted to kind of shift
+[00:08:54] my next month's goal and my daily goal
+[00:08:57] and and just chip away at things like that.
+[00:09:01] And, you know, there's all these books about goals.
+[00:09:04] I forget the whole acronym, you know, you have to be measurable, attainable,
+[00:09:07] blah, blah, blah, blah, blah.
+[00:09:08] But, you know, you got to hit you got to set the goal
+[00:09:13] and then set the steps that you're going to do to get towards it.
+[00:09:16] And and it's always slow progress, but, you know, progress is made over time.
+[00:09:22] So it almost sounds like you kind of picked one thing each month
+[00:09:26] and then almost like prioritized that.
+[00:09:29] Yeah, I would say it would maybe be three or four things for the month,
+[00:09:33] but then it would just be one thing each day.
+[00:09:35] And I thought that doing that, I'd get good
+[00:09:39] or I'd make I'd make improvements, I should say,
+[00:09:41] on the one thing I was really focusing on and being my
+[00:09:45] forefront of my brain each day.
+[00:09:46] So I'd really be thinking about it rather than having, you know,
+[00:09:49] 10 goals where I see some people do that
+[00:09:52] and they're trying to work on 10 things at once,
+[00:09:53] but they don't really do it in a, you know, a disciplined way
+[00:09:58] or a way that's going to actually improve
+[00:10:00] the just spreading their self to thin.
+[00:10:03] So I think.
+[00:10:05] Yeah, that was that was definitely instrumental
+[00:10:07] doing it the right way and just making progress
+[00:10:09] one or two things at a time and not trying to be a be a hero.
+[00:10:14] Can you speak more to the consistency part of this?
+[00:10:18] Like, how did you gain consistency?
+[00:10:21] I know that's probably quite a simple question
+[00:10:24] or a very broad question, but, you know, obviously,
+[00:10:28] as for new traders and developing traders,
+[00:10:31] that is kind of like the ultimate thing, right?
+[00:10:35] And the in the very beginning is to get consistent.
+[00:10:39] How were you able to develop consistency?
+[00:10:42] I mean, it really goes back to the same the same sort of thing.
+[00:10:45] Just review having a process to get better each day.
+[00:10:49] It's good to be on a desk where you're seeing people
+[00:10:52] that make money and you can emulate them a little bit.
+[00:10:55] So you learn the setups a little bit better
+[00:10:58] rather than just going at it at a thin air.
+[00:11:00] So, you know, you learn the setups.
+[00:11:02] You think about what worked, what didn't each day.
+[00:11:05] Why was it the way you traded it?
+[00:11:08] Was it the market where your stop suit tight?
+[00:11:11] Did you not hold your winners?
+[00:11:13] You know, then through that process,
+[00:11:15] you see the mistakes you're repeating,
+[00:11:17] kind of attack those a little bit.
+[00:11:19] You see what you do well.
+[00:11:20] You try to scale that up a little bit
+[00:11:23] and you see what you do good in certain markets
+[00:11:26] and what you do bad in other markets
+[00:11:28] and all those things you just make little tweaks
+[00:11:29] and little tweaks until until your edge
+[00:11:32] kind of comes into its own
+[00:11:34] and everyone's going to be different.
+[00:11:35] Some people are going to trade,
+[00:11:37] you know, 10 minute time frame.
+[00:11:39] Some people are going to trade two week time frame
+[00:11:41] and I knew that I had to find what kind of worked for me
+[00:11:44] and that was a little bit more of an active style
+[00:11:48] and through that style,
+[00:11:49] consistency was really important
+[00:11:52] because if you're day trading,
+[00:11:54] you really want to try the best you can
+[00:11:56] to pull some money out of the market each day.
+[00:11:59] And obviously when you're swing trading
+[00:12:00] or you're doing longer-term investing,
+[00:12:02] it can be a lot more up and down.
+[00:12:05] So just making those little changes each day
+[00:12:09] and again gets back to all this cliche stuff
+[00:12:12] but that's really what worked at the beginning for me.
+[00:12:14] What were some of those setups
+[00:12:16] which you first started to trade and you found,
+[00:12:20] you know, that started to work for you?
+[00:12:23] Oh man, I remember it's kind of funny looking back.
+[00:12:26] We used to sometimes find charts
+[00:12:28] that were in a five cent range for like 30 minutes
+[00:12:31] and then, you know, that five cent range would break
+[00:12:33] and you just play the break
+[00:12:36] and that actually would work a little bit back in the day
+[00:12:38] but algorithms have totally eliminated that stuff
+[00:12:41] but it's just funny thinking back
+[00:12:44] but I would have a bucket of things
+[00:12:47] and I would try to just pick up as much as I could
+[00:12:49] from people that are doing well.
+[00:12:51] So whether that be kind of a daily chart breakout
+[00:12:55] or, you know, a stock that was in play
+[00:12:58] and was breaking the opening range
+[00:13:00] or, you know, opening drive setup
+[00:13:03] where you'd have a stock
+[00:13:05] that's doing a lot of pre-market volume
+[00:13:07] and you would just get in in the first move
+[00:13:09] and try to kind of follow the tape a little bit.
+[00:13:12] When I first started, I did a lot more on tape reading
+[00:13:17] and really short-term stuff and then over the years,
+[00:13:21] I think that one has become more difficult
+[00:13:24] with algorithms and other things being more competitive
+[00:13:29] and two, I'm just too old for that
+[00:13:32] and three is just not as scalable.
+[00:13:34] So my style has definitely adapted a ton over the years
+[00:13:42] but at the beginning it was a lot more short-term, quick stuff.
+[00:13:46] Okay, we're absolutely gonna get into
+[00:13:48] more of what you're doing nowadays
+[00:13:50] but just sticking with this point of consistency,
+[00:13:54] you know, the position you're in at the moment,
+[00:13:56] I presume you interact with a lot of the junior traders
+[00:14:00] at the firm and I'm sure, you know,
+[00:14:03] some of those traders are still trying to find their feet,
+[00:14:08] still trying to find consistency.
+[00:14:10] Is there any kind of theme or common, you know,
+[00:14:14] stumbling blocks you've observed
+[00:14:18] which sort of hinders their consistency?
+[00:14:24] You know, really everyone has their own thing, you know,
+[00:14:27] some people go at it too fast,
+[00:14:29] some people go at it too slow.
+[00:14:32] Some people don't hold one or some people, you know,
+[00:14:36] everyone has their own thing and their own obstacles
+[00:14:39] and they kind of have to attack it their own ways.
+[00:14:41] I've seen it not work out from many a trader
+[00:14:45] for a variety of different reasons.
+[00:14:48] As far as commonalities, I mean, it's just about
+[00:14:54] having a plan, being able to stick to it.
+[00:14:56] All the, you know, really the psychology aspect,
+[00:15:00] of course, is the most important.
+[00:15:02] And so the ones that can kind of get their psychology
+[00:15:04] under their feet and being able to deal with the ups
+[00:15:07] and downs and still make the next trade the same way,
+[00:15:10] even if the previous trade was a loser
+[00:15:13] and just really drill down on what triggers them
+[00:15:15] and their psychology are the ones that are gonna work out.
+[00:15:17] I don't really have the one thing that I see across
+[00:15:21] everyone that hasn't made it, if that makes sense.
+[00:15:25] It does, yeah.
+[00:15:27] That's what I would say there.
+[00:15:27] I think everyone has their own issues, their own demons,
+[00:15:31] and it's about finding them out and attacking them.
+[00:15:35] Let's get more into growing profitability.
+[00:15:41] So I think you said, you know, that first year,
+[00:15:43] by the end of it, you did manage to be slightly green
+[00:15:48] on the year, but what was it like after that point?
+[00:15:53] How quickly were you able to ramp up,
+[00:15:55] you know, your daily PNL numbers?
+[00:15:58] Oh man, it took a while, but every year
+[00:16:01] was a little bit better and then the numbers,
+[00:16:04] I would pretty much grow seemingly at the similar,
+[00:16:08] you know, kind of make double the previous year
+[00:16:11] for many years and that was just about making my goals
+[00:16:17] about trading bigger and like I said,
+[00:16:19] it wasn't really as fast as I wanted things to happen,
+[00:16:21] but I did it in a way that never messed up my psychology
+[00:16:25] and then really, I think the turning point
+[00:16:29] to really turning it up a little bit
+[00:16:31] was when it was a KBIO, I know a lot of people
+[00:16:36] talked about that one in the past probably,
+[00:16:38] and I took a really big loss on that trade
+[00:16:41] like 10 times bigger than any other loss I had taken
+[00:16:45] and then just seeing myself dig out of that
+[00:16:49] within a couple months, you know,
+[00:16:51] I think at that point I was like,
+[00:16:52] man, it's just not that bad.
+[00:16:54] Like if I can deal with that,
+[00:16:58] my just my risk tolerance grew so much at that point,
+[00:17:01] I think, and then if you go even further,
+[00:17:05] taking some more big losses and coming back,
+[00:17:08] you just build that resiliency over the years
+[00:17:10] and then you make a little bit of money
+[00:17:13] and it just becomes a little bit easier
+[00:17:16] to deal with some of the swings.
+[00:17:18] Okay, so if that KBIO trade
+[00:17:21] was a bit of a pivotal moment, what year was this?
+[00:17:24] This must have been like 2018, 17, like it was a while back,
+[00:17:30] right?
+[00:17:32] Yeah, something like that.
+[00:17:34] Maybe I half erased it from my memory.
+[00:17:36] I don't remember the year.
+[00:17:40] What was, how come you took such a big loss on that,
+[00:17:44] you know, 10 times bigger than what you normally
+[00:17:46] would accept?
+[00:17:48] Well, you know, I did all the cardinal sin things there.
+[00:17:53] I had a, I remember it was a bankruptcy stock
+[00:17:58] that was trading like 250 and I was shorted
+[00:18:01] because the parts were worth 50 cents or something,
+[00:18:05] but it was a low flow.
+[00:18:06] And then Martin Screlli came in, did a reverse merger
+[00:18:09] and then it started squeezing after hours.
+[00:18:11] And instead of just eating my loss,
+[00:18:13] even though it kind of skipped up two bucks
+[00:18:15] before I could get out, I tried to do the add, add, add game.
+[00:18:19] And then, you know, it went from two to 10 to 15 to 20.
+[00:18:22] And I had never seen a squeeze like that.
+[00:18:25] Now there's seemingly one like that every month,
+[00:18:27] but, you know, I didn't get out
+[00:18:30] and I tried to fight my way out of it.
+[00:18:31] And that was the, the costlier.
+[00:18:35] So, you know, when in doubt, get out.
+[00:18:37] And that's the big lesson.
+[00:18:41] Right, so once this trade was, you'd covered you're out,
+[00:18:45] it was kind of booked.
+[00:18:47] I mean, how did you feel at the time?
+[00:18:50] Yeah, I was a little traumatic at the time.
+[00:18:51] I remember walking back, just thinking and replaying it
+[00:18:56] and it definitely felt a little bit down,
+[00:18:58] but I kind of worked it out with the firm
+[00:19:02] over the next few days where they would just cut my split
+[00:19:05] and as I chipped it away,
+[00:19:08] so that really helped my psychology as well.
+[00:19:11] And, you know, instead of getting my normal split,
+[00:19:13] they just pay me out 10% and the rest would go to the whole.
+[00:19:17] And that was, that was instrumental, I think.
+[00:19:20] And, you know, I just got back up,
+[00:19:23] tried to just make a couple green days,
+[00:19:25] get a little confidence knowing that was kind of a fluke thing
+[00:19:28] and learn from it.
+[00:19:29] And, you know, like I said,
+[00:19:32] we really got into a really volatile time, I think,
+[00:19:35] a couple of months later
+[00:19:37] and I was able to just get out of it real quickly.
+[00:19:40] So at that point, I think I kind of hit a light bulb
+[00:19:44] where, you know, things are not that bad.
+[00:19:46] You lose a little bit of money, it's okay
+[00:19:48] and there'll be another day.
+[00:19:51] This might sound like a bit of an odd question,
+[00:19:53] but, you know, do you think if it wasn't
+[00:19:56] for those kind of, you know, taking those big hits
+[00:20:02] that you might not be the trader you are today?
+[00:20:07] Yeah, I think that's 100% true
+[00:20:10] and I think every big trader
+[00:20:13] can probably point to some of those moments.
+[00:20:15] I think I heard once Paul Tudor Jones won't hire people
+[00:20:19] that haven't dealt with a situation like that before
+[00:20:23] because you just have to have some bumps and bruises
+[00:20:27] to build that resiliency and build that tolerance
+[00:20:31] and that sort of thing.
+[00:20:32] So I 100% believe that if it wasn't for those things
+[00:20:36] that feel like the worst thing ever at the time.
+[00:20:40] But in the end can be very instrumental
+[00:20:44] in long-term success.
+[00:20:46] Yeah, as devastating it is at the time.
+[00:20:49] I'm not saying go out and just blow up an account
+[00:20:53] so you can feel it, but it's kind of inevitable
+[00:20:56] if you're trading long enough.
+[00:20:57] Of course.
+[00:21:00] What about in terms of any systems or processes
+[00:21:03] you put in place to help build your risk tolerance?
+[00:21:08] Yeah, I mean being at a firm it's a lot more organized.
+[00:21:11] So the way it works is we have a stop loss for the day
+[00:21:16] and if you hit that number
+[00:21:18] you at least have to have a conversation.
+[00:21:20] And if it's a really special circumstance
+[00:21:22] you can maybe keep trading depending on
+[00:21:25] if your mind's in the right spot.
+[00:21:26] But over the years as you do better and better
+[00:21:30] and you say, oh I've proven I can make this amount
+[00:21:34] then they'll increase your stop loss.
+[00:21:36] And that just can go on and on and on.
+[00:21:40] So it's a little bit more organized I think
+[00:21:43] when you're at a prop firm than it is
+[00:21:47] if you're trading on your own
+[00:21:49] but that's not to say you can't organize it yourself
+[00:21:53] and have your stop loss
+[00:21:55] and increase it as your account grows
+[00:21:57] so that you're not risking too much of your account
+[00:21:59] on any day or any trade.
+[00:22:02] What was the process for increasing your risk each day?
+[00:22:06] Or sorry, as your account grew I should say?
+[00:22:10] The process was just chipping away at my size
+[00:22:14] hitting those goals, having record month
+[00:22:18] going to the risk manager saying next month
+[00:22:20] I want to increase my stop by 10% or 15% or whatever it is
+[00:22:25] and then trying to structure each trade within that.
+[00:22:29] So if your stop is say 500
+[00:22:32] maybe you're risking $50 of trade
+[00:22:35] and then your stop goes to 1,000
+[00:22:36] you'll risk $100 of trade and try to trade the same way.
+[00:22:41] As it grows and grows and grows
+[00:22:42] then maybe your strategies have to adjust
+[00:22:45] because scalability becomes an issue but very systemized
+[00:22:49] and as you risk more you really want to evaluate
+[00:22:53] if you're trading the same way and if it makes sense
+[00:22:56] and you're not changing your strategy
+[00:22:59] just because you have a little bit more size.
+[00:23:03] How long was it until you hit your first million dollar year?
+[00:23:09] Oh, how long ago was that?
+[00:23:13] I think it took me maybe five or six years.
+[00:23:18] I don't remember the exact year
+[00:23:20] but it definitely took a while.
+[00:23:24] And how did that feel at the time?
+[00:23:25] Like was that also another pivotal moment in your career?
+[00:23:30] I mean, that was a big goal I had, sure.
+[00:23:32] So it felt good at the time
+[00:23:35] but as with everything it's kind of you hit your goal
+[00:23:38] you celebrate maybe do something or reward yourself
+[00:23:40] and then you set another one
+[00:23:41] and it's kind of all about the chase
+[00:23:44] and the process and enjoying it.
+[00:23:46] So yeah, it felt good.
+[00:23:49] I do remember but it wasn't like some euphoric moment
+[00:23:52] by any means.
+[00:23:55] Okay, I'd be interested to learn a bit more
+[00:23:59] about how you've kind of pushed the boundaries,
+[00:24:03] how you've maximized your edge.
+[00:24:06] Up to this point we've kind of spoken about
+[00:24:08] your early developments, gaining consistency,
+[00:24:12] sort of growing your profitability,
+[00:24:14] building your risk tolerance
+[00:24:15] but how were you able to continue pushing the boundaries?
+[00:24:20] Like what's enabled you to go from having your first
+[00:24:24] million dollar year to then doing five,
+[00:24:26] 10 million dollars a year and so forth?
+[00:24:29] Like are you just doing the same things but bigger?
+[00:24:32] I'm sure it's not as simple as that.
+[00:24:35] Well, you know, the thing I love about trading
+[00:24:39] is you always pursue the best version yourself
+[00:24:43] and you have that pursuit of excellence all the time.
+[00:24:46] And I was always really competitive
+[00:24:48] so I wanted to be kind of the biggest best trader
+[00:24:50] at the firm so that was something that motivated me
+[00:24:53] and then just trying to see how good I could be
+[00:24:56] is another thing that motivated me.
+[00:24:58] Yeah, so every year I just try to improve
+[00:25:02] and then as I've gotten over the years
+[00:25:06] then your strategy is just a little bit
+[00:25:08] so maybe on low floats you gotta be careful
+[00:25:10] about taking too much size for example
+[00:25:13] and so now I've started to gravitate
+[00:25:15] a little bit more to bigger cap stocks
+[00:25:16] and doing a little bit more with options and hedging
+[00:25:20] and being able to take overnight risk comfortably.
+[00:25:24] So certainly, you know, my timeframe
+[00:25:28] has also probably lengthened quite a bit.
+[00:25:34] So yeah, all those things kind of go into it, I would say.
+[00:25:36] Okay, I think possibly what I'm trying to get out here
+[00:25:40] is, you know, Mike speaks quite often about breadth.
+[00:25:45] Like is that relevant to this question here?
+[00:25:49] I think that's one of my strengths
+[00:25:51] is I'm able to do a lot of things at once
+[00:25:54] but I don't think that matters that much
+[00:25:57] in that certain traders can do really well
+[00:26:01] just trading a couple of symbols a day.
+[00:26:03] For me, I would get impatient
+[00:26:05] and it was just beneficial for me to trade more symbols
+[00:26:09] so that I could not get too impulsive.
+[00:26:13] And then additionally, if you do have the ability
+[00:26:16] to kind of process a lot of trades at once,
+[00:26:18] you're obviously making more bets.
+[00:26:20] Trading is the game of probabilities,
+[00:26:22] you wanna be the casino, so the more good bets
+[00:26:24] you can make, the better you should do,
+[00:26:27] the more consistent you should be
+[00:26:28] and the more money you should make.
+[00:26:29] So that's definitely a strength that goes into it.
+[00:26:32] I don't think it's necessarily pivotal
+[00:26:39] because I see other traders do great
+[00:26:41] just trading a few names.
+[00:26:43] What about specific challenges you've encountered
+[00:26:47] along the way while scaling?
+[00:26:49] I think, I may be wrong here,
+[00:26:52] but I think when I did a podcast
+[00:26:54] with Mike a little while ago,
+[00:26:56] he made some comment about how,
+[00:26:59] and correct me if I'm wrong here,
+[00:27:01] you were too early, often you'd have the issue
+[00:27:05] where you would be too early shorting,
+[00:27:08] you'd like to short the front side of a move
+[00:27:11] but you'd often run into issues where you were too early.
+[00:27:15] So like what did you do to kind of counter those issues?
+[00:27:19] And that's just one example,
+[00:27:21] but like are there other things,
+[00:27:22] like did you, I don't know,
+[00:27:24] I can't even think of something at the moment,
+[00:27:26] but like not just like P&L,
+[00:27:29] maybe like there was something like psychological
+[00:27:32] that you had to kind of push through.
+[00:27:35] Yeah, so that's actually,
+[00:27:38] that's a good one because one of the big stumbling blocks
+[00:27:43] in my psychology was just being over-eager
+[00:27:46] and I was always pretty competitive.
+[00:27:48] So if I saw a big trade setting up,
+[00:27:53] then the FOMO would kick in
+[00:27:54] and you'd be scared of missing it.
+[00:27:57] I'd be scared of missing it
+[00:27:58] and I might do a little bit of size
+[00:28:01] one or two days early
+[00:28:03] and then that would really eat into the trade.
+[00:28:07] So yeah, I've definitely made a lot of strides on that
+[00:28:14] by really focusing on lowering my stress points
+[00:28:17] and these trade, if I felt stressed or eager,
+[00:28:20] I would really try to be on top of it.
+[00:28:22] Additionally, now I use options often
+[00:28:25] if the stock is optionable,
+[00:28:28] where if I'm trading front side,
+[00:28:30] I'll almost never do it without a hedge.
+[00:28:32] And then additionally,
+[00:28:34] if I'm doing like a low float, for example,
+[00:28:37] I'm almost always waiting for the back side now
+[00:28:40] because it's just not worth it,
+[00:28:43] especially with what we've seen the last couple of years
+[00:28:46] and how far things can go up, it's been pretty amazing.
+[00:28:51] So that was a big thing,
+[00:28:53] thinking about where there was any stress points
+[00:28:56] in my trading and really trying to eliminate that
+[00:28:59] and I think that's been super instrumental
+[00:29:02] in kind of my success over the last couple of years.
+[00:29:06] Are there other trades or other strategies which you play
+[00:29:11] where you've also lowered your stress points
+[00:29:14] other than just shorting parabolic stocks?
+[00:29:18] I've tried to do that across the board,
+[00:29:21] lower my variance overnight by using hedges
+[00:29:23] or taking less pieces overnight.
+[00:29:26] That was one thing.
+[00:29:30] Just trying to have winners overnight
+[00:29:33] rather than anticipating or getting an early,
+[00:29:36] only take winners overnight
+[00:29:38] if I'm not hedged out or something like that.
+[00:29:43] I think the idea of being early
+[00:29:48] is not just on a parabolic shorts
+[00:29:50] about any trade that you anticipate.
+[00:29:53] So I try to kind of implement the same thing across the board
+[00:29:57] rather than just on kind of parabolic shorts.
+[00:30:00] Yeah.
+[00:30:01] Now you've been trading a little over 10 years now.
+[00:30:04] There's traders who have been doing this
+[00:30:06] as long as you, if not longer
+[00:30:09] and most, the majority here
+[00:30:11] do not have comparable performance to you.
+[00:30:15] How come?
+[00:30:16] Like how come you're an outlier?
+[00:30:22] I mean, that's a tough question to answer
+[00:30:24] but I think I do see a lot of complacency I would say.
+[00:30:29] You get stuck in a pay-the-bills mode
+[00:30:33] and then you just get used to it
+[00:30:35] and you just go and punch the keys every day
+[00:30:37] without really trying to improve.
+[00:30:39] I think I definitely have
+[00:30:45] a little bit more competitiveness than most
+[00:30:47] and so that's certainly helped motivate me.
+[00:30:51] I think a mix of being competitive
+[00:30:54] but being humble enough to know when you're wrong
+[00:30:57] and take a step back is a combination
+[00:31:01] that I don't see that often.
+[00:31:04] So that's definitely one thing I think that.
+[00:31:08] But yeah, I see it across the people I train
+[00:31:11] and across the firm where you just get comfortable
+[00:31:14] and one day bleeds into the next
+[00:31:16] and you're not really pushing the boundaries.
+[00:31:21] It's interesting because how, like is that ever
+[00:31:25] so complacency and getting comfortable
+[00:31:27] has never really been an issue with you
+[00:31:29] because obviously you've made enough money
+[00:31:30] where that could easily be the case?
+[00:31:34] I mean, it hasn't yet.
+[00:31:37] Maybe it will one day.
+[00:31:38] I see some of my friends that were super successful
+[00:31:41] losing a little motivation lately.
+[00:31:43] Hasn't happened to me.
+[00:31:44] I'm not saying it never will.
+[00:31:45] I still love trading and I wanna push myself
+[00:31:49] as much as I can and I enjoy it.
+[00:31:53] The money's never been a motivating factor.
+[00:31:55] It's kind of just how you keep score in trading.
+[00:31:58] It's been about trying to be the best version yourself,
+[00:32:00] trying to just trying to be the best out there if possible.
+[00:32:06] Let's get more into how you are trading today.
+[00:32:12] You spoke right at the beginning.
+[00:32:13] You know, you'd trade these little
+[00:32:15] five cent range breakouts back in the day
+[00:32:18] but what are the sort of things that you're doing now?
+[00:32:22] I try to have a lot of different strategies
+[00:32:26] and then pull out which ones are working
+[00:32:30] in the current market.
+[00:32:32] So I definitely do gravitate towards the short side
+[00:32:37] and those parabolic shorts we mentioned
+[00:32:39] is something that I like.
+[00:32:41] You know, the GMEs at four or 500,
+[00:32:46] that sort of stuff is my bread and butter I would say
+[00:32:48] but I'm doing a lot of different things.
+[00:32:52] For example, now I'm put on some stocks
+[00:32:55] for the January effect where maybe there's some tax loss
+[00:32:58] selling at the end of the year
+[00:32:59] and stocks might go up at the beginning of the year
+[00:33:02] and doing some of those trades
+[00:33:04] and I do some breakouts from daily charts
+[00:33:06] and pullback trades and if the market's really volatile
+[00:33:09] then I'll try to shorten my stroke a little bit
+[00:33:12] and do more scalping around the indexes
+[00:33:15] based on key levels and a nicey tick
+[00:33:18] and that sort of thing.
+[00:33:20] So I try to basically see
+[00:33:24] wherever anyone's making money
+[00:33:26] and if it makes sense to me
+[00:33:27] I try to implement it into my game with small size
+[00:33:31] and as I get more comfortable with the setups
+[00:33:35] I'll try to just ramp those up
+[00:33:37] and that's how I've been able to kind of add
+[00:33:39] different strategies and pull them out
+[00:33:41] when they're relevant for the current environment.
+[00:33:45] Did I hear you say nicey tick?
+[00:33:47] What's that?
+[00:33:49] That's a common indicator people use of
+[00:33:53] where this the amount of stocks up ticking once
+[00:33:56] at the nicey I think is
+[00:33:58] and then usually people view plus or minus a thousand
+[00:34:01] as a statistically significant rather.
+[00:34:06] That's not something I'm necessarily gonna trade on
+[00:34:08] but it's just one indicator I might use
+[00:34:10] while trading the indexes.
+[00:34:12] I don't love trading the indexes
+[00:34:13] but when market gets really volatile
+[00:34:16] even like it has been in the last couple of weeks
+[00:34:19] that's where you gotta kind of gravitate towards
+[00:34:22] and I do see another commonality
+[00:34:25] going back to your previous question of
+[00:34:27] people kind of get stuck in one strategy
+[00:34:29] and then maybe they learn something
+[00:34:31] that works for a little bit
+[00:34:32] and they're not working on their game outside of that
+[00:34:35] and that's something that can kind of
+[00:34:37] get people stuck in the model a little bit.
+[00:34:40] Yeah, well let's speak about that
+[00:34:41] because that's a good point actually.
+[00:34:43] So say you have developed consistency
+[00:34:46] and you're doing quite well with a particular strategy
+[00:34:50] or a couple of strategies
+[00:34:51] and a niche or an area of the market.
+[00:34:55] How do you start to build your confidence
+[00:34:59] and your ability to trade other strategies?
+[00:35:05] Yeah, kind of like what I just mentioned
+[00:35:07] is just doing it small.
+[00:35:10] Reaching out to people that are doing other things
+[00:35:12] and learning from them and talking to them
+[00:35:15] and doing it with small size,
+[00:35:18] making a plan, sticking to it,
+[00:35:21] seeing if you can get a little bit of track record
+[00:35:23] under your belt and then once you see some success
+[00:35:26] it's a lot easier to scale things up comfortably.
+[00:35:31] And the other key is looking for other things,
+[00:35:34] not getting too comfortable if something's working.
+[00:35:37] And so again, that's an advantage about being at a firm
+[00:35:40] where you're seeing a lot of guys
+[00:35:43] do a lot of different things
+[00:35:44] and so you can pick up on a lot more
+[00:35:46] rather than just going about it on your own.
+[00:35:50] And all these things you've mentioned,
+[00:35:53] these various types of strategies and plays,
+[00:35:56] are these all discretionary
+[00:35:59] or is there some systematic aspect to it?
+[00:36:01] For the most part, I mean, I run one model.
+[00:36:05] It's not a very large percentage of my P&L.
+[00:36:09] I do have a lot of different filters
+[00:36:11] and things like that that are giving me ideas
+[00:36:14] but for the most part I would say 85%,
+[00:36:17] maybe 90% of my trading is discretionary, yeah.
+[00:36:21] Okay, could we take a few moments
+[00:36:24] to go through one or two recent trade examples?
+[00:36:31] Okay, sure, without giving away too much.
+[00:36:35] So a trade that I'm in now is I'm short some AMC
+[00:36:42] and oftentimes what I'll do is as the stock's going up,
+[00:36:46] I'll buy some calls
+[00:36:48] and anticipate it going a little bit higher
+[00:36:51] so I can kind of work into a short with a built-in stop.
+[00:36:53] So that's kind of what I did with AMC.
+[00:36:56] I bought 32 calls and I was shorting it
+[00:36:58] over the last couple of days
+[00:37:00] and then I'm hoping that it will stop somewhere
+[00:37:04] around here and turn its way down
+[00:37:07] and go towards eventually its fundamental value
+[00:37:11] of lower than here.
+[00:37:14] So if that, without giving away too much,
+[00:37:19] that's one trade I'm in.
+[00:37:21] Another trade I mentioned is for the January effect,
+[00:37:27] long a little bit of BABA
+[00:37:29] because I think everyone has sold it out a little bit much
+[00:37:35] and oftentimes there's tax law selling
+[00:37:38] at the end of the year
+[00:37:39] and people buy back those stocks at the beginning of the year.
+[00:37:42] So that's another trade I'm in.
+[00:37:45] This AMC trade, this is,
+[00:37:47] you're obviously talking about a multi-day
+[00:37:49] kind of swing short here.
+[00:37:52] Yeah.
+[00:37:53] Would you be able to go into how you use options
+[00:37:57] a little more?
+[00:37:57] This is something we, you know,
+[00:37:59] not many traders speak about this too much,
+[00:38:03] especially we haven't really covered it
+[00:38:05] on the podcast too much.
+[00:38:08] You know, you're an equities trader
+[00:38:10] but you do use options for the purpose of hedging.
+[00:38:14] Can you speak to that a little more?
+[00:38:16] Like I know this kind of probably plays into one
+[00:38:19] of those issues you highlighted earlier
+[00:38:21] where, you know, you can get crushed by being too early
+[00:38:24] but options can help to counter that.
+[00:38:28] Yeah.
+[00:38:30] What I found was that, you know,
+[00:38:32] I would do okay with options just directionally
+[00:38:36] but, you know, options are like insurance
+[00:38:39] where you don't ever really want, you know,
+[00:38:42] insurance, you pay for it each year
+[00:38:44] but you don't want something to happen
+[00:38:46] and over time option dealers are the ones
+[00:38:50] that really make money as, you know,
+[00:38:53] as long as you avoid those crazy outlier events.
+[00:38:56] So yeah, that was the crux of it from the beginning.
+[00:39:00] And then secondly, as you mentioned about being early,
+[00:39:02] that was a big problem of mine.
+[00:39:04] So I use the options to avoid that a little bit
+[00:39:07] and then I've kind of developed over time
+[00:39:11] a little bit more and more on that strategy
+[00:39:13] where I might, you know, you try to be short volatility
+[00:39:17] on some options in certain situations
+[00:39:19] if the implied volatility is really high
+[00:39:22] or maybe I'll try to be long volatility
+[00:39:24] if I anticipate a range breakout, that sort of thing.
+[00:39:30] But the crux of it is just risk management
+[00:39:32] where I'm pretty good.
+[00:39:34] I found that finding turning points within a day or two
+[00:39:39] and rather than having to be so perfect
+[00:39:43] and picking the exact day
+[00:39:45] and then additionally, you know,
+[00:39:49] additionally waiting for something to break
+[00:39:51] so that you have a clear stop point with options
+[00:39:54] I'm able to kind of have built-in stops
+[00:39:56] and that helps me trade around positions
+[00:39:59] and time things not so perfectly.
+[00:40:01] So usually I can be within a few days.
+[00:40:04] That's where the options really help.
+[00:40:07] Okay, this might sound like a bit of a silly question
+[00:40:11] but what's the added benefit of using options as a hedge?
+[00:40:16] Like, so if I understand correctly, you know
+[00:40:19] in this AMC example, you're shorting the AMC stock
+[00:40:23] but then you're buying option calls.
+[00:40:26] So you're effectively long the options and short the stock.
+[00:40:31] So you're hedged.
+[00:40:33] Like how come you don't just forget about the options
+[00:40:37] and just wait to short the stock at a later point
+[00:40:41] if you think that you're early
+[00:40:44] at the time of putting on a hedge?
+[00:40:47] Yeah, there's a couple of things.
+[00:40:51] The first thing is if I'm waiting for the stock to break
+[00:40:56] you know, I'm usually gonna be shorting
+[00:40:57] at a lower point anyway.
+[00:40:59] So if I'm trading on the options
+[00:41:01] and I'm doing a little bit on the front side
+[00:41:03] maybe I'm a little bit early
+[00:41:05] but I can usually scale into the position
+[00:41:08] and make up the difference in the premium
+[00:41:11] by just having a better price when it turns.
+[00:41:14] And then additionally, I can usually trade around
+[00:41:18] the position and you know, use the wiggles
+[00:41:20] to kind of pay for the hedge
+[00:41:21] and then leave a core on for a kind of a bigger trade.
+[00:41:25] And then finally, the big thing is you can sleep at night
+[00:41:31] especially as positions get larger.
+[00:41:33] So you always have your worst case scenario covered
+[00:41:38] and in the end trading really is just about
+[00:41:41] live into fight another day.
+[00:41:43] So that's been instrumental in lowering my stress
+[00:41:46] and helping me sleep better at night
+[00:41:50] and scaling up in a more controlled way basically.
+[00:41:54] Right, lowering your stress points.
+[00:41:56] So with your hedge, do you typically make money
+[00:42:01] or lose money on that?
+[00:42:03] Well, the idea is to lose money on the hedge.
+[00:42:06] You know, there are times where each scenario
+[00:42:09] is a little bit different, you know
+[00:42:10] and you evaluate the risk reward on a trade
+[00:42:13] as the trade develops.
+[00:42:15] So sometimes I'll sell my hedge
+[00:42:18] and go naked shore completely.
+[00:42:20] Sometimes I'll sell my hedges and buy another strike up
+[00:42:25] maybe even double size.
+[00:42:27] Sometimes I'll sell premium against them.
+[00:42:30] So it really is very situation specific
+[00:42:32] and in the end that's where my discretion
+[00:42:35] of what I think the next most likely scenario is
+[00:42:38] and putting myself in the best situation.
+[00:42:44] So that's a hard question to answer specifically.
+[00:42:48] I think, yes, I'm anticipating losing
+[00:42:52] on the hedge most likely.
+[00:42:54] Okay, yeah, that makes sense.
+[00:42:58] Now Mike often speaks about the idea
+[00:43:00] or this concept of being a bionic trader.
+[00:43:03] So using technology to assist your trading.
+[00:43:08] Is this something you do quite a bit of
+[00:43:10] like are there custom tools that you've built out
+[00:43:13] to help you?
+[00:43:16] Yeah, I have a million different things
+[00:43:20] that are spinning me information.
+[00:43:21] So that's certainly the case.
+[00:43:24] I just try to get as many inputs as possible
+[00:43:26] and then I kind of use my discretion to sift through them.
+[00:43:29] So there are some filters that look for patterns.
+[00:43:33] For example, maybe something moves a lot really fast
+[00:43:38] and then I'll immediately spit that symbol out to me
+[00:43:42] and then I'll look if there's news, what's the news
+[00:43:44] and I'll try to process that and then make a decision.
+[00:43:49] That's one example.
+[00:43:50] I have lists of stocks that are doing a neutral volume
+[00:43:53] and I'll sift through those every day,
+[00:43:55] things that get halted and then other things,
+[00:43:59] one layer forward of even having models that trade
+[00:44:02] and enter and exit for themselves.
+[00:44:05] Like I said, not a huge percentage from my P&L
+[00:44:09] but something that could grow
+[00:44:13] and be more important in the future.
+[00:44:16] Last question here, Kenny
+[00:44:18] and I think this is quite fitting
+[00:44:19] given the time of the year.
+[00:44:22] As we're about to roll over into 2022,
+[00:44:26] how do you prepare?
+[00:44:27] How do you set yourself up for a great year ahead?
+[00:44:31] What sort of things are you doing around this time?
+[00:44:34] Yeah, well, number one is recharging.
+[00:44:38] So I'll typically take a vacation around this time
+[00:44:41] and I'll be going to the beach here
+[00:44:44] for the first time in a couple of years next week.
+[00:44:47] So looking forward to that
+[00:44:48] and spending some of the time there
+[00:44:50] to look over my numbers, see what worked,
+[00:44:54] think about goals for the next year,
+[00:44:56] how am I gonna go about trying to hit those goals,
+[00:45:00] making sure they're not too P&L focused
+[00:45:02] because so much is dependent on what the market gives you.
+[00:45:08] And just making sure you're doing the things
+[00:45:10] to not get burnt out, staying motivated
+[00:45:14] and putting yourself in a good place psychologically.
+[00:45:22] Do you have any idea what some of those goals may be?
+[00:45:27] Yeah, it's funny.
+[00:45:27] I've been kind of thinking about it a little bit
+[00:45:29] but I haven't really sat down
+[00:45:31] and did a proper write up thought
+[00:45:35] but my goals are certainly shifting
+[00:45:38] at this point in my career
+[00:45:39] where this year, for example, with a new baby,
+[00:45:43] a lot of my goals went away
+[00:45:45] from taking some time away from the screens
+[00:45:48] and spending more time with family
+[00:45:50] and being home for all that stuff.
+[00:45:51] And I actually think that's been really good
+[00:45:54] for my trading because it's just made it less important
+[00:46:01] and made it so that even on a bad day,
+[00:46:04] the next day doesn't bleed in,
+[00:46:06] bad day doesn't bleed into the next day rather.
+[00:46:08] As far as work and goals specific to trading,
+[00:46:12] I haven't really given it too much thought yet.
+[00:46:15] I've kind of had a good year
+[00:46:18] and been trying to just enjoy the end of the year a little bit
+[00:46:20] and then we'll figure it out here
+[00:46:22] within the next week or two.
+[00:46:24] I know you said earlier that, especially earlier on,
+[00:46:28] you were kind of like doubling your performance
+[00:46:31] each year pretty consistently.
+[00:46:33] Is that still the case?
+[00:46:36] No, that's not the case anymore.
+[00:46:39] I think most experienced traders hit a point
+[00:46:43] where the market really dictates your P&L
+[00:46:47] and you can always improve and get better
+[00:46:49] and then if you had the same market the second time,
+[00:46:53] maybe you do a lot better,
+[00:46:55] but the market's been really good in the last couple of years
+[00:46:59] as so many people have gotten into trading.
+[00:47:01] We had so much volatility with COVID.
+[00:47:03] There's been a lot of stocks that have been flying crazy
+[00:47:06] and providing a lot of opportunity.
+[00:47:08] So there's no guarantee that that's gonna continue.
+[00:47:12] So that's why I said it's really hard to...
+[00:47:16] I really try not to set P&L goals anymore
+[00:47:18] and I really didn't think this year would be as good
+[00:47:20] as it was, but you never really know.
+[00:47:22] So that's why you just try to do your best every day,
+[00:47:26] push yourself and then things kind of fall into their own.
+[00:47:31] Just one more thing I'd be curious to know about.
+[00:47:35] How has your mindset and your attitude towards trading
+[00:47:39] evolved as you've had more success?
+[00:47:42] A lot of new traders come in,
+[00:47:43] they're very eager, excitable, that kind of thing.
+[00:47:47] You've been doing this 10 or more years, had vast success.
+[00:47:53] How's your attitude and mindset to trading changed?
+[00:47:58] Yeah, I think it's just less important now
+[00:48:01] and I think anyone that trades long enough
+[00:48:04] and has a couple of years money in the bank,
+[00:48:07] it just becomes a lot easier to trade
+[00:48:09] and deal with ups and downs and dealing with the slumps.
+[00:48:13] And it still hurts every time,
+[00:48:16] but it hurts for a lot less time
+[00:48:18] and the next day is a lot easier to not make mistakes
+[00:48:23] when you've been trading for a long time.
+[00:48:24] So yeah, I think through all the ups and downs
+[00:48:29] you just become pretty level headed, I think.
+[00:48:33] And that's always been my ammo a little bit as well
+[00:48:37] is just don't get too high or too low.
+[00:48:40] And that has certainly gotten easier over the years
+[00:48:43] as you just see more and you deal, you have more experience.
+[00:48:49] Okay, Kenny, will I appreciate you taking the time
+[00:48:52] to do this?
+[00:48:53] It's been just fantastic to have the opportunity
+[00:48:56] to speak with you.
+[00:48:57] I don't know why we didn't do this sooner.
+[00:49:00] Yeah, that was great, thank you.
+[00:49:02] I know you keep a pretty low profile online.
+[00:49:05] I always ask guests at the end,
+[00:49:07] like, is there anywhere they can go to follow you,
+[00:49:11] find out more about you?
+[00:49:12] I don't know if you have an answer for this.
+[00:49:15] Yeah, I'm not a big Twitter, Instagram guy,
+[00:49:19] not big with the social media.
+[00:49:21] Okay, all right, once again, Kenny,
+[00:49:24] greatly appreciate your time, thank you very much.
+[00:49:26] Thanks for having me.
+[00:49:29] You've reached the end of this episode
+[00:49:31] of Chat with Traders, but rest assured,
+[00:49:34] there are more episodes loaded with real market insight
+[00:49:37] and zero hype on the way soon.
+[00:49:40] So to stay updated with each great new release,
+[00:49:43] subscribe to the podcast and iTunes,
+[00:49:45] and we'd love it if you'd leave a rating and review.
+[00:49:48] We'll catch you next time on Chat with Traders.

@@ -1,0 +1,32 @@
+{
+  "trader": "Jack Schwager & George Coyle",
+  "category": "no_concrete_rules",
+  "testable": false,
+  "reason": "Transcript discusses unifying high-level principles (respect price action, let winners run, cut losers) and asymmetric risk from many wizards but provides zero concrete, codable rules for US stocks.",
+  "template": "none",
+  "method_name": "Timeless risk principles",
+  "style": "discretionary commentary",
+  "timeframe": "multi",
+  "universe": {
+    "description": "various across wizards"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "no specific rules stated",
+      "assumption": "none"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "325",
+    "page_url": "https://chatwithtraders.com/episode/325-jack-schwager-george-coyle",
+    "youtube_url": "https://www.youtube.com/watch?v=LT8DKDQTzuU"
+  }
+}

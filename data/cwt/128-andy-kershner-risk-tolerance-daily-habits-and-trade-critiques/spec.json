@@ -1,0 +1,32 @@
+{
+  "trader": "Andy Kershner",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "Guest describes multiple discretionary approaches (fading extensions, swing breakouts, bottom picking) with no concrete quantifiable rules for daily bars.",
+  "template": "none",
+  "method_name": "Discretionary fade and swing trading",
+  "style": "discretionary scaling with intuition",
+  "timeframe": "swing to multi-day",
+  "universe": {
+    "description": "US equities"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "mentions of momentum breakouts and fading extensions",
+      "assumption": "no testable parameters provided"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "128",
+    "page_url": "https://chatwithtraders.com/episode/128-andy-kershner-risk-tolerance-daily-habits-and-trade-critiques",
+    "youtube_url": "https://www.youtube.com/watch?v=6nuEHhTozsE"
+  }
+}

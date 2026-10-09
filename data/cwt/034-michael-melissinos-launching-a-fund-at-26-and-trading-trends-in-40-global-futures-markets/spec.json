@@ -1,0 +1,44 @@
+{
+  "trader": "Michael Melissinos",
+  "category": "futures_fx",
+  "testable": false,
+  "reason": "Method is systematic trend following on 40 global futures markets, not US stocks.",
+  "template": "none",
+  "method_name": "Long-term systematic trend following",
+  "style": "systematic trend following",
+  "timeframe": "long-term (avg hold 7-8 months)",
+  "universe": {
+    "description": "40 global futures markets including currencies, commodities, foreign stocks and interest rates"
+  },
+  "setup": [
+    {
+      "rule": "Diversified systematic long-term trend following",
+      "quote": "diversified systematic long-term trend following",
+      "timestamp": "[00:40:21]"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "200-day breakout example",
+      "quote": "if the market makes a 200 day high you know I'll get in",
+      "timestamp": "[00:46:50]"
+    }
+  ],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "No concrete rules or parameters given beyond example",
+      "assumption": "200-day breakout is illustrative only"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "34",
+    "page_url": "https://chatwithtraders.com/episode/034-michael-melissinos-launching-a-fund-at-26-and-trading-trends-in-40-global-futures-markets",
+    "youtube_url": "https://www.youtube.com/watch?v=A9AONH3usCc"
+  }
+}

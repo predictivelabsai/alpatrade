@@ -1,5 +1,38 @@
 # Change Log
 
+## 2026-10-10 — v0.33.3: Chat With Traders bulk results committed + backtest sanity fixes
+
+- **Results committed:** `data/cwt/` episode folders (transcripts, specs, per-episode state is
+  still git-ignored), `bulk_summary.json` and `strategies/<trader>-<template>/` (backtest.json,
+  skill.md, equity curve). Bars, logs, captions and audio stay ignored. Final: **135 episodes,
+  16 testable groups / 16 published, 119 not testable, 0 skipped**; Stan Gluzman unpublished.
+- **Breakout parameter mapping** (`spec_params`): the LLM writes `0` for "not stated", which was
+  clamped *up to the lower bound* (5% consolidation range, 2-day 10% partial, 5% max position,
+  3 positions). `<= 0` / missing now means the template default; fractions given for percent
+  fields (0.1 → 10%) are converted; the momentum window must reach ≥ 20 sessions before the
+  consolidation (`mom_days ≥ cons_days + 20`) — with equal windows "≥ 10% momentum" and "≤ 5%
+  range" contradicted each other, so Marsten Parker / Christian Carreon had 0 trades and Julian
+  Komar 4. Now 2358 / 460 / 500 trades (all still negative vs SPY) and published.
+- **Template parameters** (`group_params`): `0` is dropped for size/window fields (pos_pct,
+  max_positions, top_n, lookback, rebalance_days, …) — Rob Hanna's dip had run at 2% per
+  position with 1 slot (0.8% CAGR); now 10% × 10 (16.3% CAGR full, 19.5% test).
+- **Relative-strength rotation** (`engine/backtest/templates.py`): rebalance at most weekly
+  (`rebalance_days ≥ 5`; the LLM's daily rebalance churned 4977 / 10190 round trips) plus
+  hysteresis `hold_buffer` (keep a holding while it ranks within top_n × 2). Vincent Bruzzese
+  4977 → 1703 trades, Ross Haber 10190 → 3088. Costs unchanged: 10 bps per side in every fill.
+- **Classification overrides** (`CLASSIFICATION_OVERRIDES`, applied on load): Stan Gluzman ep.
+  171 and 211 → `intraday_only` (scalper: tape, level 2, 1–5 min charts, flat by noon). The
+  `finish` step now **unpublishes** (`is_public = FALSE`, never deletes) any Chat With Traders
+  row it did not publish, with the reason in `alpatrade.cwt_episodes.status_reason` and
+  `bulk_summary.json → unpublished`.
+- **Strategy id gaps** (e.g. no id 10): `INSERT … ON CONFLICT DO UPDATE` takes a sequence value
+  even when it only updates (id 10 went to the Kullamägi pilot row's re-keyed upsert, 18–27 and
+  30–31 to the second `finish` run's updates). Ids are kept (they're in `/strategies/{id}` URLs);
+  publish now UPDATEs by seed_key first and only INSERTs new rows, so re-runs no longer burn ids
+  (this run: new rows 32–34, sequence stayed at 34).
+- Cached group backtests are re-run when the params or `ENGINE_REV` change. Tests: zero/percent
+  mapping, feasible windows, rotation hysteresis + P&L reconciliation, Stan override.
+
 ## 2026-10-10 — v0.33.2: Grok-only prefill + Copy to clipboard
 
 - Julian's test: only Grok honours the `?q=` prefill. The **Copy for ChatGPT** and **Copy for

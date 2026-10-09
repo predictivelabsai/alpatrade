@@ -1,0 +1,32 @@
+{
+  "trader": "Jim Mellon",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "No concrete, codable rules given for US stock trades; transcript contains only career anecdotes, macro themes, and qualitative selection criteria.",
+  "template": "none",
+  "method_name": "Opportunistic long-term sector bets",
+  "style": "discretionary macro",
+  "timeframe": "multi-year",
+  "universe": {
+    "description": "US equities and emerging-market stocks"
+  },
+  "setup": [],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "Mentions daily trading in currencies and occasional stocks",
+      "assumption": "still no testable US-equity rules provided"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "216",
+    "page_url": "https://chatwithtraders.com/episode/216-jim-mellon-becoming-an-opportunistic-billionaire-investor",
+    "youtube_url": "https://www.youtube.com/watch?v=UpOtgESh8G8"
+  }
+}

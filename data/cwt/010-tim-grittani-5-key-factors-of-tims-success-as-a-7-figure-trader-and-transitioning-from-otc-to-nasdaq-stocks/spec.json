@@ -1,0 +1,38 @@
+{
+  "trader": "Tim Grittani",
+  "category": "discretionary",
+  "testable": false,
+  "reason": "short-only",
+  "template": "none",
+  "method_name": "Short seller of momentum spikes",
+  "style": "intraday short selling",
+  "timeframe": "intraday",
+  "universe": {
+    "description": "NASDAQ stocks that spiked on news or earnings"
+  },
+  "setup": [
+    {
+      "rule": "short overextended spikes",
+      "quote": "I'd gotten away from buying some of these promotions a little bit and more towards short selling them once they had really spiked a lot and seemed like they were overextended to me.",
+      "timestamp": "[00:26:32]"
+    }
+  ],
+  "entry": [],
+  "stop": [],
+  "exits": [],
+  "sizing": [],
+  "market_filter": [],
+  "ambiguities": [
+    {
+      "issue": "no long-side rules provided",
+      "assumption": "short-only method"
+    }
+  ],
+  "params": {},
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "10",
+    "page_url": "https://chatwithtraders.com/episode/010-tim-grittani-5-key-factors-of-tims-success-as-a-7-figure-trader-and-transitioning-from-otc-to-nasdaq-stocks",
+    "youtube_url": ""
+  }
+}
