@@ -1,5 +1,26 @@
 # Change Log
 
+## 2026-10-09 — v0.32.1: deposits are not P&L; no annualising short records
+
+- **Bug:** dashboard MTD P&L showed ~+$2,073 and the leaderboard Mag-7 live return +76.82%
+  (annualised +1613%, alpha +75.35%) because the $2,000 instant-ACH deposit of 2026-10-09
+  (Alpaca CSD, transfer b29c1438-…) was counted as an equity gain.
+- **Fix** (`engine/reporting/cash_flows.py`): P&L = equity change − net deposits (CSD / CSW /
+  JNLC activities booked after the baseline); return % = P&L / (baseline + deposits). Applied to
+  the dashboard (day / MTD / YTD, live and paper, plus a "net deposits" KPI), `/live/account`
+  day P&L and since-start, the daily LIVE email (day P&L, since start, MTD/YTD annualised; shows
+  "Net deposits today") and the **leaderboard**, which now uses a **time-weighted return**
+  (daily session closes chained, each day net of its flows); alpha = TWR − SPY.
+- Read-only live client: one new allow-listed GET, `/v2/account/activities` with
+  `activity_types=CSD,CSW,JNLC` mandatory (never an unfiltered activity listing).
+- **Annualisation** (`engine/reporting/annualize.py`): not computed below 63 NYSE sessions
+  (~90 calendar days); rendered "n/a (<90d)" with an explanatory tooltip. Short live records
+  rank on the leaderboard by their (non-annualised) return.
+- Corrected live figures (2026-10-09 close): MTD P&L +$73.29 (+1.54%), day +$10.07 with
+  $2,000 net deposits; leaderboard Mag-7 return +3.44% vs SPY +1.47%, alpha +1.97%,
+  annualised n/a (12 trading days).
+- Tests: `tests/test_cash_flows.py` (deposit scenario across dashboard, email, leaderboard).
+
 ## 2026-10-09 — v0.32.0: Semi 7 BTD + multiple strategies per Alpaca account (sleeves)
 
 - **Semi 7 buy-the-dip** (`buy_the_dip_semi7_minhold_live`, seeded **inactive** by

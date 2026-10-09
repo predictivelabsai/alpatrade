@@ -91,7 +91,7 @@ def test_client_exposes_no_mutating_operations():
         assert verb not in src, verb
     assert ro.LIVE_BASE_URL == "https://api.alpaca.markets"
     assert set(ro.ALLOWED_GETS) == {"/v2/account", "/v2/positions", "/v2/orders",
-                                    "/v2/account/activities/FILL",
+                                    "/v2/account/activities/FILL", "/v2/account/activities",
                                     "/v2/account/portfolio/history", "/v2/calendar"}
 
 
@@ -184,7 +184,9 @@ def test_live_link_table_is_only_used_by_the_readonly_view():
                "engine/web/ph_pnl.py",
                # Strategy allocations page: GET-only account read to validate allocations;
                # writes only alpatrade.strategy_allocations, never orders
-               "engine/web/ph_strategy_allocations.py", "tests/test_strategy_allocation.py"}
+               "engine/web/ph_strategy_allocations.py", "tests/test_strategy_allocation.py",
+               # Leaderboard: owner's GET-only link for deposit/withdrawal activities only
+               "engine/leaderboard/perf.py", "tests/test_cash_flows.py"}
     pat = re.compile(r"user_live_broker_accounts|engine\.live_accounts|get_live_account_credentials"
                      r"|alpaca_live_readonly")
     hits = set()

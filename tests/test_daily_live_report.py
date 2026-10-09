@@ -62,6 +62,8 @@ class FakeHTTP:
         elif path == "/v2/account/activities/FILL":
             lo, hi = params.get("after", ""), params.get("until", "9999")
             body = [f for f in HISTORY_FILLS if lo < f["transaction_time"] <= hi]
+        elif path == "/v2/account/activities" and params.get("activity_types") == "CSD,CSW,JNLC":
+            body = []  # no deposits / withdrawals
         else:  # pragma: no cover
             raise AssertionError(path)
         return SimpleNamespace(status_code=200, json=lambda: body)

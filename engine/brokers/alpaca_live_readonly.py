@@ -36,6 +36,7 @@ ALLOWED_GETS: dict[str, dict[str, str]] = {
     "/v2/positions": {},
     "/v2/orders": {"status": "open"},
     "/v2/account/activities/FILL": {},
+    "/v2/account/activities": {},
     "/v2/account/portfolio/history": {},
     "/v2/calendar": {},
 }
@@ -55,6 +56,10 @@ ALLOWED_QUERIES: dict[str, dict[str, Any]] = {
     "/v2/account/activities/FILL": {"date": _DATE, "after": _TS, "until": _TS,
                                     "direction": {"asc", "desc"}, "page_size": _INT,
                                     "page_token": _TOKEN},
+    # cash flows only (deposits / withdrawals / cash journals) for deposit-aware P&L
+    "/v2/account/activities": {"activity_types": {"CSD,CSW,JNLC"}, "after": _DATE, "until": _DATE,
+                               "direction": {"asc", "desc"}, "page_size": _INT,
+                               "page_token": _TOKEN},
     "/v2/account/portfolio/history": {"period": {"1D", "1W", "1M", "3M", "6M", "1A", "all"},
                                       "timeframe": {"1Min", "5Min", "15Min", "1H", "1D"},
                                       "start": _TS, "end": _TS,
@@ -70,6 +75,8 @@ def _query_allowed(path: str, params: dict) -> bool:
         return False
     if path == "/v2/orders" and params.get("status") not in ("open", "closed"):
         return False  # status is mandatory: never an unfiltered/all listing
+    if path == "/v2/account/activities" and params.get("activity_types") != "CSD,CSW,JNLC":
+        return False  # cash flows only: never an unfiltered activity listing
     for key, value in params.items():
         rule = spec.get(key)
         if rule is None or not isinstance(value, str):
@@ -175,6 +182,26 @@ class LiveReadOnlyClient:
         for _ in range(max_pages):
             params = dict(base, **({"page_token": token} if token else {}))
             page = self._get("/v2/account/activities/FILL", params)
+            if not isinstance(page, list) or not page:
+                break
+            out.extend(page)
+            if len(page) < 100:
+                break
+            token = str(page[-1].get("id") or "")
+            if not token:
+                break
+        return out
+
+    def get_cash_flows(self, after: str, until: Optional[str] = None, max_pages: int = 10) -> list[dict]:
+        """CSD / CSW / JNLC activities (deposits, withdrawals, cash journals) after a date."""
+        base: dict[str, str] = {"activity_types": "CSD,CSW,JNLC", "after": after,
+                                "direction": "asc", "page_size": "100"}
+        if until:
+            base["until"] = until
+        out: list[dict] = []
+        token = None
+        for _ in range(max_pages):
+            page = self._get("/v2/account/activities", dict(base, **({"page_token": token} if token else {})))
             if not isinstance(page, list) or not page:
                 break
             out.extend(page)

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "alpatrade"
-version = "0.32.0"
+version = "0.32.1"
 description = "Multi-asset trading platform — shared backtesting & paper-trading engine across equities, crypto, FX, and prediction markets"
 readme = "README.md"
 license = "MIT"
@@ -24,6 +24,7 @@ classifiers = [
     "Topic :: Office/Business :: Financial :: Investment",
 ]
 dependencies = [
+    "Pillow>=10",  # email equity PNG (engine/reporting/live_perf.py); already in requirements.txt
     "pandas>=2.0",
     "numpy>=1.24",
     "plotly>=5.0",

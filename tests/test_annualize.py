@@ -4,9 +4,18 @@ from engine.reporting.annualize import annualize, trading_days_between, nyse_hol
 
 
 def test_simple_and_compound():
-    a = annualize(1.0, 21)
+    a = annualize(6.0, 126)
     assert abs(a["simple_pct"] - 12.0) < 1e-9
-    assert abs(a["compound_pct"] - ((1.01 ** 12) - 1) * 100) < 1e-9
+    assert abs(a["compound_pct"] - ((1.06 ** 2) - 1) * 100) < 1e-9
+    a = annualize(1.0, 21, min_days=1)
+    assert abs(a["simple_pct"] - 12.0) < 1e-9
+
+
+def test_short_periods_are_not_annualised():
+    a = annualize(76.8, 11)  # e.g. 15 calendar days: compounding would be absurd
+    assert a["simple_pct"] is None and a["compound_pct"] is None and a["short_period"]
+    assert fmt_ann(a) == "n/a (<90d)"
+    assert annualize(5.0, 63)["simple_pct"] is not None
 
 
 def test_guard_zero_days():
@@ -44,7 +53,7 @@ def test_since_start_annualized_uses_run_start(monkeypatch):
     assert a["basis"] == "since_start" and a["start_date"] == "2026-09-24"
     assert a["days"] == 9
     assert abs(a["return_pct"] - 3.1) < 1e-9
-    assert abs(a["simple_pct"] - 3.1 * 252 / 9) < 1e-9
+    assert a["simple_pct"] is None and a["short_period"]  # 9 sessions < 63: not annualised
 
 
 def test_ann_metric_label_since_start():

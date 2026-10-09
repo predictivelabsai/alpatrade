@@ -191,7 +191,8 @@ def _annualised_cell(m: dict, label: bool = True) -> str:
     sub_m = sub.replace("class='lb-sub'", "class='lb-sub m'")
     return ((f"<span class='lb-l'>Annualised return</span>" if label else "")
             + f"<span class='lb-v {_cls(v)}' data-tip='{_e(lperf.annualised_tip(m))}' "
-              f"title='{_e(lperf.annualised_tip(m))}'>{lperf.pct(v)}</span>" + sub_m)
+              f"title='{_e(lperf.annualised_tip(m))}'>"
+              f"{'n/a (&lt;90d)' if v is None and m.get('annualised_short') else lperf.pct(v)}</span>" + sub_m)
 
 
 def _alpha_cell(m: dict, label: bool = True) -> str:
