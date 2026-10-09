@@ -141,6 +141,7 @@ def backtest_metrics(strategy: dict) -> dict:
         "sharpe": _num(bm.get("sharpe")), "max_drawdown_pct": _num(bm.get("max_drawdown_pct")),
         "win_rate_pct": _num(bm.get("win_rate_pct")), "trades": bm.get("trades"),
         "test": bm.get("test") or {}, "universe": bm.get("universe"),
+        "template": bm.get("template"), "episodes": bm.get("episodes") or [],
     })
     return out
 

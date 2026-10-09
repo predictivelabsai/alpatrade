@@ -210,6 +210,8 @@ __marimo__/
 data/*
 !data/cwt/
 data/cwt/bars/
+data/cwt/logs/
+data/cwt/**/state.json
 data/cwt/**/captions*.json3
 data/cwt/**/*.mp3
 backtest-results/

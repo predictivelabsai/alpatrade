@@ -144,3 +144,65 @@ def test_skill_md_round_trips_params_and_front_matter():
     block = skill.extract_params(md)
     assert block["kind"] == "backtest" and block["params"]["slippage_bps"] >= 5
     assert json.loads((d / "backtest.json").read_text())["full"]["trades"] > 0
+
+
+def test_leaderboard_filters_and_pagination():
+    from engine.web import ph_leaderboard as lb
+    live = {"id": 1, "user_id": "u", "name": "Mag-7 BTD", "author": "Predictive Labs Ltd",
+            "description": "", "kind": "live", "skill_md": "", "is_public": True}
+    rows = [(live, dict(perf.EMPTY))] + [
+        (_bt(id=100 + i, name=f"Trader {i} · Dip", author=f"Trader {i}"), perf.strategy_metrics(_bt()))
+        for i in range(60)]
+    html = lb.leaderboard_html(rows, None)
+    assert "page 1 of 3" in html and "Next →" in html and "Predictive Labs Ltd" in html
+    assert html.count("class='lb-row' id='strategy-") == lb.PAGE_SIZE
+    bt = lb.leaderboard_html(rows, None, kind="backtest", page=3)
+    assert "Predictive Labs Ltd" not in bt.split("lb-note")[0] and "page 3 of 3" in bt
+    assert bt.count("class='lb-row' id='strategy-") == 10
+    lv = lb.leaderboard_html(rows, None, kind="live")
+    assert "Mag-7 BTD" in lv and "Trader 1 · Dip" not in lv
+    q = lb.leaderboard_html(rows, None, q="trader 42")
+    assert "Trader 42" in q and "1 strategy" in q
+    src = lb.leaderboard_html(rows, None, source="AlpaTrade")
+    assert "Mag-7 BTD" in src and "Trader 3 ·" not in src
+    assert "<script>" not in lb.leaderboard_html(rows, None, q="<script>").split("LB_JS")[0].split("<script>\n(function")[0]
+    assert "(hover: none)" in lb.LB_JS and "min-height:44px" in lb.LB_CSS
+
+
+def test_multi_episode_sources_listed():
+    from engine.web import ph_leaderboard as lb
+    bm = {**BM, "episodes": [{"episode": "64", "url": "https://chatwithtraders.com/episode/64-x", "title": "a"},
+                             {"episode": "4", "url": "https://chatwithtraders.com/episode/4-y", "title": "b"},
+                             {"episode": "9", "url": "javascript:alert(1)", "title": "c"}]}
+    s = _bt(backtest_metrics=bm)
+    assert "2 episodes" in lb._source(s)
+    page = lb.strategy_html(s, perf.strategy_metrics(s), None)
+    assert "ep. 64 ↗" in page and "ep. 4 ↗" in page and "javascript:" not in page
+
+
+def test_templates_no_look_ahead_and_reconcile():
+    from engine.backtest import templates as T
+    spy = _bars(seed=99)
+    for tpl, extra in (("dip", {"dip": 0.01, "target": 0.03, "stop": 0.03, "max_hold": 5, "trend_ma": 0}),
+                       ("trend_ma", {"fast": 5, "slow": 20, "exit_ma": 20}),
+                       ("gap", {"gap_min": 0.01, "stop": 0.03, "max_hold": 5}),
+                       ("relative_strength", {"lookback": 20, "top_n": 2, "rebalance_days": 5, "trend_ma": 0})):
+        p = T.RuleParams.from_dict({"template": tpl, "market_filter": False, **extra})
+        a = {s: _bars(n=400, seed=i) for i, s in enumerate("ABCD")}
+        b = {s: _bars(n=400, seed=i, jump_at=300) for i, s in enumerate("ABCD")}
+        a = {s: df.assign(o=df["c"].shift(1).fillna(df["c"]) * (1.02 if tpl == "gap" else 1.0)) for s, df in a.items()}
+        b = {s: df.assign(o=df["c"].shift(1).fillna(df["c"]) * (1.02 if tpl == "gap" else 1.0)) for s, df in b.items()}
+        ra = T.run(a, spy.reindex(a["A"].index).ffill(), "2020-03-01", "2021-07-01", p, capital=10_000)
+        rb = T.run(b, spy.reindex(b["A"].index).ffill(), "2020-03-01", "2021-07-01", p, capital=10_000)
+        k = a["A"].index[298]
+        assert ra["equity"].loc[:k].equals(rb["equity"].loc[:k]), tpl
+        assert sum(t["pnl"] for t in ra["trips"]) == pytest.approx(ra["equity"].iloc[-1] - 10_000, rel=1e-6, abs=1e-6), tpl
+
+
+def test_rule_params_clamp_and_percent_fix():
+    from engine.backtest.templates import RuleParams
+    p = RuleParams.from_dict({"template": "dip", "dip": 0.9, "pos_pct": 3, "max_positions": 500, "junk": 1})
+    assert p.dip == 0.5 and p.pos_pct == 0.25 and p.max_positions == 50
+    g = {"template": "dip", "members": [{"spec": {"params": {"dip": 5, "target": 8, "pos_pct": 10}}}]}
+    q = cwt.group_params(g)
+    assert q.dip == 0.05 and q.target == 0.08 and q.pos_pct == 0.10

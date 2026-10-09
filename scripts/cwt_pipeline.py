@@ -239,7 +239,7 @@ def transcribe_youtube(ep: dict) -> Path | None:
     d = ep_dir(ep)
     for lang in ("en-orig", "en"):
         subprocess.run([YTDLP, "--skip-download", "--ignore-no-formats-error", "--write-auto-subs", "--write-subs",
-                        "--sub-langs", lang, "--sub-format", "json3", "-o", str(d / "captions"),
+                        "--sub-langs", lang, "--sub-format", "json3", "--sleep-requests", "1", "-o", str(d / "captions"),
                         f"https://www.youtube.com/watch?v={vid}"], capture_output=True, timeout=180)
         f = d / f"captions.{lang}.json3"
         if f.exists():
@@ -251,25 +251,42 @@ def transcribe_youtube(ep: dict) -> Path | None:
     return None
 
 
-def transcribe_whisper(ep: dict, model: str = "small") -> Path | None:
-    """Fallback when there are no captions: faster-whisper on the episode mp3 (CPU int8)."""
-    try:
-        from faster_whisper import WhisperModel
-    except ImportError:
-        print("faster-whisper not installed (pip install faster-whisper)")
+WHISPER_PY = os.getenv("CWT_WHISPER_PY", str(Path.home() / ".venvs" / "cwt-whisper" / "bin" / "python"))
+_WHISPER_CODE = r"""
+import sys
+from faster_whisper import WhisperModel
+mp3, out, model, threads = sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4])
+segs, _ = WhisperModel(model, device="cpu", compute_type="int8", cpu_threads=threads).transcribe(mp3)
+def hms(t):
+    t = int(t); return f"{t//3600:02d}:{t%3600//60:02d}:{t%60:02d}"
+with open(out, "w", encoding="utf-8") as f:
+    for s in segs:
+        f.write(f"[{hms(s.start)}] {s.text.strip()}\n")
+"""
+
+
+def transcribe_whisper(ep: dict, model: str = "small", threads: int = 4) -> Path | None:
+    """Fallback when there are no captions: faster-whisper (CPU int8) on the episode mp3, run in
+    a separate venv (CWT_WHISPER_PY, default ~/.venvs/cwt-whisper) so the app venv is untouched."""
+    if not Path(WHISPER_PY).exists():
+        print(f"faster-whisper venv not found at {WHISPER_PY}")
         return None
     d = ep_dir(ep)
     mp3 = d / "audio.mp3"
-    if not mp3.exists():
+    if not mp3.exists() or mp3.stat().st_size < 100_000:
         with requests.get(ep["audio_url"], headers=UA, stream=True, timeout=120) as r:
             r.raise_for_status()
             with mp3.open("wb") as f:
                 for chunk in r.iter_content(1 << 16):
                     f.write(chunk)
-    segs, _ = WhisperModel(model, device="cpu", compute_type="int8").transcribe(str(mp3))
-    txt = "\n".join(f"[{_hms(s.start)}] {s.text.strip()}" for s in segs)
+    raw = d / "whisper_raw.txt"
+    subprocess.run([WHISPER_PY, "-c", _WHISPER_CODE, str(mp3), str(raw), model, str(threads)],
+                   check=True, timeout=4 * 3600)
     out = d / "transcript.txt"
-    out.write_text(f"# {ep['title']}\n# source: faster-whisper {model}\n\n{txt}\n", encoding="utf-8")
+    out.write_text(f"# {ep['title']}\n# source: faster-whisper {model} (CPU int8) {ep['audio_url']}\n\n"
+                   + raw.read_text(encoding="utf-8"), encoding="utf-8")
+    raw.unlink(missing_ok=True)
+    mp3.unlink(missing_ok=True)
     return out
 
 
@@ -307,12 +324,40 @@ def gemini_summary(ep: dict, model: str = "gemini-2.5-flash") -> Path | None:
     return out
 
 
-def transcribe(ep: dict, gemini: bool = False) -> None:
-    out = transcribe_youtube(ep) or transcribe_whisper(ep)
-    print(f"transcribe {ep['episode_number']}: {out.relative_to(ROOT) if out else 'FAILED'}")
+def _mark(ep: dict, step: str, **info) -> None:
+    """Per-episode resumable state in data/cwt/<slug>/state.json."""
+    f = ep_dir(ep) / "state.json"
+    st = json.loads(f.read_text()) if f.exists() else {}
+    st[step] = {**info, "at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+    f.write_text(json.dumps(st, indent=1))
+
+
+def state(ep: dict) -> dict:
+    f = DATA / ep["slug"] / "state.json"
+    return json.loads(f.read_text()) if f.exists() else {}
+
+
+def transcribe(ep: dict, gemini: bool = False, mode: str = "auto") -> str:
+    """mode: auto (captions, then whisper) | captions | whisper. Skips finished episodes.
+    Returns 'skip' | 'captions' | 'whisper' | 'failed'."""
+    if (DATA / ep["slug"] / "transcript.txt").exists():
+        return "skip"
+    out, how = None, "failed"
+    if mode in ("auto", "captions") and ep.get("youtube_url"):
+        try:
+            out = transcribe_youtube(ep)
+            how = "captions" if out else "failed"
+        except Exception as exc:  # noqa: BLE001
+            print(f"  captions error: {type(exc).__name__}")
+    if not out and mode in ("auto", "whisper"):
+        out = transcribe_whisper(ep)
+        how = "whisper" if out else "failed"
+    _mark(ep, "transcribe", result=how)
+    print(f"transcribe {ep['episode_number']} {ep['slug'][:40]}: {how}", flush=True)
     if gemini:
         g = gemini_summary(ep)
         print(f"gemini {ep['episode_number']}: {g.relative_to(ROOT) if g else 'skipped/failed'}")
+    return how
 
 
 # ---------------------------------------------------------------- extract
@@ -349,31 +394,98 @@ Transcript:
 """
 
 
-def grok(prompt: str, model: str = "grok-4.3") -> str:
+CATEGORIES = ("daily_testable", "intraday_only", "options", "futures_fx", "discretionary",
+              "no_concrete_rules", "macro_commentary")
+
+BULK_PROMPT = """You turn a trading-podcast transcript into a precise, testable strategy spec.
+Trader(s): {guest}. Episode: {title}.
+
+1) Classify the guest's MAIN trading method for US stocks:
+   category = one of {categories}
+   - daily_testable: concrete long-side rules for US stocks that can be approximated on DAILY
+     bars (swing / position / trend / mean-reversion / gap / relative-strength rotation).
+   - intraday_only: the edge lives inside the day (scalping, day trading, order flow, ORB on
+     1-5 min bars) and does not survive a daily-bar approximation.
+   - options / futures_fx: the method is mainly options, futures or FX.
+   - discretionary / no_concrete_rules: no rules concrete enough to code; macro_commentary:
+     market views, career story, psychology, interviews without a method.
+   A short-selling-only method counts as not testable (our engine is long only): use
+   "discretionary" with reason "short-only".
+2) If daily_testable, choose the closest template and fill its params (numbers only):
+   - breakout: momentum_lookback_days, momentum_min_pct, consolidation_days,
+     consolidation_max_range_pct, trail_ma (10|20), partial_after_days, partial_frac,
+     risk_per_trade_pct, max_position_pct, max_positions
+   - dip: dip (fraction, e.g. 0.05), ref_days (high lookback), rsi_max (0 = none),
+     trend_ma (0|50|200), target (fraction, 0 = none), stop (fraction, 0 = none),
+     max_hold (sessions), sma5_exit (bool), pos_pct, max_positions
+   - trend_ma: fast, slow, exit_ma, atr_stop (ATR multiple, 0 = none), pos_pct, max_positions
+   - gap: gap_min (fraction), stop (fraction), max_hold (sessions), trail_ma (0|10|20|50),
+     pos_pct, max_positions
+   - relative_strength: lookback (sessions), top_n, rebalance_days, trend_ma (0|50|200)
+3) Name the method in <= 6 words (method_name), e.g. "Momentum breakout swing".
+Use ONLY what the guest says; quote verbatim with the [hh:mm:ss] timestamp of the transcript
+paragraph. Never invent quotes. Put guesses in "ambiguities" with your assumption.
+Return ONLY one JSON object:
+{{"trader": str, "category": str, "testable": bool, "reason": str (one sentence),
+  "template": "breakout|dip|trend_ma|gap|relative_strength|none", "method_name": str,
+  "style": str, "timeframe": str,
+  "universe": {{"description": str}},
+  "setup": [{{"rule": str, "quote": str, "timestamp": str}}], "entry": [...], "stop": [...],
+  "exits": [...], "sizing": [...], "market_filter": [...],
+  "ambiguities": [{{"issue": str, "assumption": str}}],
+  "params": {{...template params...}}}}
+
+Transcript:
+{transcript}
+"""
+
+
+def grok(prompt: str, model: str = "grok-4.3", retries: int = 5) -> str:
     key = os.getenv("XAI_API_KEY")
     if not key:
         raise SystemExit("XAI_API_KEY not set")
-    r = requests.post("https://api.x.ai/v1/chat/completions", timeout=900,
-                      headers={"Authorization": f"Bearer {key}"},
-                      json={"model": model, "temperature": 0.1,
-                            "response_format": {"type": "json_object"},
-                            "messages": [{"role": "user", "content": prompt}]})
-    r.raise_for_status()
-    return r.json()["choices"][0]["message"]["content"]
+    for attempt in range(retries):
+        try:
+            r = requests.post("https://api.x.ai/v1/chat/completions", timeout=900,
+                              headers={"Authorization": f"Bearer {key}"},
+                              json={"model": model, "temperature": 0.1,
+                                    "response_format": {"type": "json_object"},
+                                    "messages": [{"role": "user", "content": prompt}]})
+        except requests.RequestException:
+            r = None
+        if r is not None and r.ok:
+            return r.json()["choices"][0]["message"]["content"]
+        code = r.status_code if r is not None else 0
+        if code and code not in (408, 429, 500, 502, 503, 504):
+            raise RuntimeError(f"xAI HTTP {code}")
+        time.sleep(min(120, 10 * 2 ** attempt))  # back off on rate limits / transient errors
+    raise RuntimeError("xAI: retries exhausted")
 
 
-def extract(ep: dict, model: str = "grok-4.3") -> Path:
+def extract(ep: dict, model: str = "grok-4.3", force: bool = False) -> Path | None:
     d = ep_dir(ep)
-    transcript = (d / "transcript.txt").read_text(encoding="utf-8")
-    raw = grok(EXTRACT_PROMPT.format(guest=ep["guest"], title=ep["title"],
-                                     schema=json.dumps(SPEC_SCHEMA, indent=1),
-                                     transcript=transcript), model=model)
+    out = d / "spec.json"
+    if out.exists() and not force:
+        spec = json.loads(out.read_text(encoding="utf-8"))
+        if "category" in spec:
+            return out
+    tf = d / "transcript.txt"
+    if not tf.exists():
+        return None
+    transcript = tf.read_text(encoding="utf-8")[:240_000]
+    raw = grok(BULK_PROMPT.format(guest=ep["guest"], title=ep["title"], categories=CATEGORIES,
+                                  transcript=transcript), model=model)
     spec = json.loads(raw)
+    if spec.get("category") not in CATEGORIES:
+        spec["category"] = "no_concrete_rules"
+    if spec.get("template") not in ("breakout", "dip", "trend_ma", "gap", "relative_strength"):
+        spec["template"] = "none"
+    spec["testable"] = bool(spec.get("category") == "daily_testable" and spec["template"] != "none")
     spec["_meta"] = {"model": model, "episode": ep["episode_number"], "page_url": ep["page_url"],
                      "youtube_url": ep["youtube_url"]}
-    out = d / "spec.json"
     out.write_text(json.dumps(spec, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"extract {ep['episode_number']}: {out.relative_to(ROOT)}")
+    _mark(ep, "extract", category=spec["category"], template=spec["template"])
+    print(f"extract {ep['episode_number']} {ep['slug'][:40]}: {spec['category']} / {spec['template']}", flush=True)
     return out
 
 
@@ -502,7 +614,13 @@ def backtest(ep: dict, grid: bool = True) -> Path:
 def spec_params(spec: dict):
     """Map the LLM's daily_bar_params onto BreakoutParams (clamped to sane ranges)."""
     from engine.backtest.breakout import BreakoutParams
-    q = spec.get("daily_bar_params") or {}
+    q = dict(spec.get("daily_bar_params") or {})
+    np_ = spec.get("params") or {}
+    for k in ("momentum_lookback_days", "momentum_min_pct", "consolidation_days",
+              "consolidation_max_range_pct", "trail_ma", "partial_after_days", "partial_frac",
+              "risk_per_trade_pct", "max_position_pct", "max_positions"):
+        if np_.get(k) is not None:
+            q[k] = np_[k]
 
     def num(k, default, lo, hi, cast=float):
         try:
@@ -756,8 +874,362 @@ def publish(ep: dict) -> int:
     return int(sid)
 
 
+# ---------------------------------------------------------------- bulk: group / backtest / publish
+STRAT = DATA / "strategies"
+MIN_TRADES = 10
+TEMPLATE_TEXT = {
+    "breakout": "momentum breakout: strong prior run-up, tight consolidation, buy-stop at the "
+                "consolidation high, low-of-day stop (≤ 1 ADR), partial after N days, trail on "
+                "the 10/20-day SMA",
+    "dip": "mean reversion: buy the next open after the close is a set % below its recent high "
+           "(optional RSI(2) and long-term trend filter), exit on target / stop / close above "
+           "the 5-day SMA / time",
+    "trend_ma": "trend following: buy the next open after the fast SMA crosses above the slow "
+                "SMA, exit on a close below the exit SMA or an ATR stop",
+    "gap": "gap continuation: buy at the open on a gap up of at least the set % in an uptrend, "
+           "fixed stop below the open, exit after N sessions or on a close below the trail SMA",
+    "relative_strength": "relative-strength rotation: every N sessions hold the strongest names "
+                         "by trailing return (above their trend SMA), equal weight, cash when "
+                         "SPY < SMA200",
+}
+
+
+def _slug(t: str) -> str:
+    import unicodedata
+    t = unicodedata.normalize("NFKD", t or "").encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "-", t.lower()).strip("-")
+
+
+def trader_name(ep: dict, spec: dict) -> str:
+    name = (spec.get("trader") or "").strip()
+    g = ep["guest"].strip()
+    # prefer the catalogue guest when the LLM name is a sub/superstring (handles '@handles')
+    if not name or len(name) > 60:
+        name = g
+    return re.sub(r"\s+", " ", name)
+
+
+def group_key(ep: dict, spec: dict) -> str:
+    return f"{_slug(ep['guest'])[:60]}-{spec['template']}"
+
+
+def build_groups() -> dict:
+    """One Leaderboard strategy per (trader, template): merges repeat guests' episodes."""
+    groups: dict[str, dict] = {}
+    for ep in load_catalogue():
+        f = DATA / ep["slug"] / "spec.json"
+        if not f.exists():
+            continue
+        spec = json.loads(f.read_text(encoding="utf-8"))
+        if not spec.get("testable"):
+            continue
+        k = group_key(ep, spec)
+        g = groups.setdefault(k, {"key": k, "template": spec["template"], "members": []})
+        g["members"].append({"ep": ep, "spec": spec})
+    for g in groups.values():
+        g["members"].sort(key=lambda m: int(m["ep"]["episode_number"] or 0), reverse=True)
+        g["trader"] = trader_name(g["members"][0]["ep"], g["members"][0]["spec"])
+        g["hash"] = "|".join(m["ep"]["slug"] for m in g["members"])
+    return groups
+
+
+_BARS_CACHE: dict = {}
+
+
+def _bars():
+    if not _BARS_CACHE:
+        b = load_bars(universe() + ["SPY"])
+        _BARS_CACHE["spy"] = b.pop("SPY")
+        _BARS_CACHE["bars"] = b
+    return _BARS_CACHE["bars"], _BARS_CACHE["spy"]
+
+
+def group_params(g: dict):
+    from engine.backtest.templates import RuleParams
+    spec = g["members"][0]["spec"]  # most recent episode's numbers
+    if g["template"] == "breakout":
+        return spec_params(spec)
+    raw = {**(spec.get("params") or {}), "template": g["template"]}
+    for k in ("pos_pct",):
+        if raw.get(k) and raw[k] > 1:
+            raw[k] = raw[k] / 100
+    for k in ("dip", "target", "stop", "gap_min"):
+        if raw.get(k) and raw[k] >= 1:  # LLM gave percent instead of fraction
+            raw[k] = raw[k] / 100
+    return RuleParams.from_dict(raw)
+
+
+def backtest_group(g: dict, force: bool = False) -> dict | None:
+    from engine.backtest import breakout, templates
+    d = STRAT / g["key"]
+    d.mkdir(parents=True, exist_ok=True)
+    out = d / "backtest.json"
+    if out.exists() and not force:
+        old = json.loads(out.read_text())
+        if old.get("members_hash") == g["hash"]:
+            return old
+    bars, spy = _bars()
+    end = str(spy.index[-1].date())
+    test_start = str(spy.index[spy.index > TRAIN_END][0].date())
+    p = group_params(g)
+    full = (breakout.run(bars, spy, BT_START, end, p) if g["template"] == "breakout"
+            else templates.run(bars, spy, BT_START, end, p))
+    res = {"key": g["key"], "template": g["template"], "members_hash": g["hash"],
+           "universe": f"S&P 500 current members ({len(bars)} with data)",
+           "data": "Alpaca SIP daily bars, adjustment=all (splits+dividends)",
+           "spec_params": p.to_dict(), "full": _fmt(full),
+           "train": _fmt(templates.slice_metrics(full, spy, BT_START, TRAIN_END)),
+           "test": _fmt(templates.slice_metrics(full, spy, test_start, end))}
+    out.write_text(json.dumps(res, indent=2, default=str), encoding="utf-8")
+    full["equity"].to_csv(d / "equity_full.csv", header=["equity"])
+    (d / "skill.md").write_text(skill_md_group(g, res), encoding="utf-8")
+    f = res["full"]
+    print(f"backtest {g['key']}: CAGR {f['annualised_pct']:.1f}% vs SPY {f['spy_annualised_pct']:.1f}% "
+          f"trades {f['trades']} | test {res['test']['annualised_pct']:.1f}%", flush=True)
+    return res
+
+
+def _tbl(m: dict) -> str:
+    def v(x, sharpe=False):
+        return "—" if x is None else (f"{x:.2f}" if sharpe else f"{x:+.1f}%")
+    return "\n".join([
+        "| Metric | Strategy | SPY |", "|---|---|---|",
+        f"| Annualised return (CAGR) | {v(m['annualised_pct'])} | {v(m['spy_annualised_pct'])} |",
+        f"| Total return | {v(m['total_return_pct'])} | {v(m['spy_return_pct'])} |",
+        f"| Sharpe (daily, N-1) | {v(m['sharpe'], True)} | {v(m['spy_sharpe'], True)} |",
+        f"| Max drawdown | {v(m['max_drawdown_pct'])} | {v(m['spy_max_drawdown_pct'])} |",
+        f"| Alpha vs SPY (annualised, CAGR − SPY CAGR) | {v(m['alpha_annualised_pct'])} | |",
+        f"| CAPM alpha (ann.) / beta | {v(m['capm_alpha_ann_pct'])} / {m['beta']:.2f} | |",
+        f"| Trades / win rate | {m['trades']} / {m['win_rate_pct']:.1f}% | |"])
+
+
+def skill_md_group(g: dict, res: dict) -> str:
+    trader, t = g["trader"], g["template"]
+    lead = g["members"][0]["spec"]
+    method = (lead.get("method_name") or t.replace("_", " ")).strip()
+    eps = [m["ep"] for m in g["members"]]
+    full, train, test, p = res["full"], res["train"], res["test"], res["spec_params"]
+    title = f"{trader} · {method} (backtest)"[:150]
+    ep_list = ", ".join(f"ep. {e['episode_number'] or '?'}" for e in eps)
+    desc = (f"Daily-bar backtest of the {method.lower()} method {trader} describes on Chat With "
+            f"Traders ({ep_list}). Template: {t.replace('_', ' ')}. S&P 500, cash only, 10 bps "
+            f"slippage. Backtest, not live.")
+    sections = []
+    for name in ("setup", "entry", "stop", "exits", "sizing", "market_filter"):
+        lines = []
+        for m in g["members"]:
+            for it in m["spec"].get(name) or []:
+                q = (it.get("quote") or "").strip().replace("\n", " ")
+                lines.append(f"- {it.get('rule', '').strip()}" + (
+                    f"  \n  > \"{q}\" — ep. {m['ep']['episode_number']} [{it.get('timestamp', '')}]" if q else ""))
+        sections.append(f"### {name.replace('_', ' ').title()}\n" + ("\n".join(lines) or "- (not stated)"))
+    amb = []
+    for m in g["members"]:
+        for a in m["spec"].get("ambiguities") or []:
+            amb.append(f"- **{a.get('issue')}** → assumption: {a.get('assumption')}")
+    links = "\n".join(f"- Ep. {e['episode_number']} — [{e['title']}]({e['page_url']})"
+                      + (f" · [YouTube]({e['youtube_url']})" if e.get("youtube_url") else "")
+                      for e in eps)
+    params = {"schema": "alpatrade.strategy_config/v1", "name": f"cwt_{g['key']}"[:96],
+              "display_name": title, "kind": "backtest", "template": t,
+              "params": {**p, "universe": "sp500_current", "timeframe": "1d"},
+              "execution": {"cash_only": True, "slippage_bps_per_side": p.get("slippage_bps", 10)},
+              "backtest": {"engine": "engine.backtest.breakout" if t == "breakout" else "engine.backtest.templates",
+                           "data": res["data"], "universe": res["universe"],
+                           "train": [train["period_start"], train["period_end"]],
+                           "test": [test["period_start"], test["period_end"]], "benchmark": "SPY"},
+              "source": {"site": "chatwithtraders.com",
+                         "episodes": [{"episode": e["episode_number"], "url": e["page_url"]} for e in eps]}}
+    return f"""---
+title: {title}
+description: {desc}
+kind: backtest
+author: {trader}
+source: chatwithtraders.com
+source_url: {eps[0]['page_url']}
+tags: {t.replace('_', '-')}, chat-with-traders, backtest
+license: MIT
+---
+
+# {title}
+
+*For research and education only. This is not investment advice. This is AlpaTrade's
+daily-bar interpretation of rules {trader} described in a podcast interview. It is **not**
+{trader}'s own code, account or track record, and it has **never been traded live**.*
+
+## Sources (Chat With Traders)
+{links}
+
+## How to use this skill
+- **ChatGPT / Claude / Grok:** paste this file into a new chat and ask, e.g. "Explain this
+  strategy and its risks" or "Re-run the backtest on a different universe".
+- **AlpaTrade:** "Clone into AlpaTrade" on alpatrade.chat/leaderboard copies it into your own
+  strategies (private until you publish it).
+
+## The strategy in plain language (quotes from the episode{'s' if len(eps) > 1 else ''})
+Style: {lead.get('style', '')}; timeframe: {lead.get('timeframe', '')}. Universe described:
+{(lead.get('universe') or {}).get('description', '')}.
+
+{chr(10).join(sections)}
+
+## How it was backtested
+Template **{t}** — {TEMPLATE_TEXT[t]}. Parameters (from the most recent episode's rules, LLM
+mapped and clamped to sane ranges) are in the block below.
+
+### Ambiguities and assumptions
+{chr(10).join(amb) or '- none recorded'}
+- Daily bars only: intraday entries, stops and discretion are approximated or dropped.
+- Long only, cash only (no margin or shorting), one position per symbol.
+- No earnings calendar, news or fundamentals; no same-day volume confirmation.
+
+## Backtest results
+Universe {res['universe']}; {res['data']}; 10 bps slippage per side; signals from the prior
+close (gap entries use the day's open). Train / test are slices of the full-period run.
+
+### Full period {full['period_start']} → {full['period_end']}
+{_tbl(full)}
+
+### Train {train['period_start']} → {train['period_end']}
+{_tbl(train)}
+
+### Test {test['period_start']} → {test['period_end']} (out-of-sample, same rules)
+{_tbl(test)}
+
+### Caveats
+- **Survivorship bias:** today's S&P 500 members, which flatters long strategies historically.
+- Rules were extracted by an LLM from auto-captions / Whisper transcripts; quotes may contain
+  transcription errors. Parameters were not optimised.
+
+## Instructions for the assistant
+1. Treat the Parameters block as the source of truth and restate the rules first.
+2. Daily bars, signals from the prior close, cash only; report CAGR, Sharpe, max drawdown,
+   alpha vs SPY, trades and win rate over the same period.
+3. Never place live orders. Suggest paper trading before any real money.
+
+## Parameters (machine-readable)
+```json
+{json.dumps(params, indent=2, ensure_ascii=False, default=str)}
+```
+"""
+
+
+def _db():
+    from engine.db.pool import DatabasePool
+    return DatabasePool()
+
+
+def publish_group(g: dict, res: dict) -> int | None:
+    from sqlalchemy import text
+    from engine.leaderboard.skill import front_matter
+    d = STRAT / g["key"]
+    md = (d / "skill.md").read_text(encoding="utf-8")
+    fm = front_matter(md)
+    f = res["full"]
+    eps = [m["ep"] for m in g["members"]]
+    metrics = {k: f[k] for k in ("period_start", "period_end", "trading_days", "total_return_pct",
+                                 "annualised_pct", "spy_return_pct", "spy_annualised_pct",
+                                 "alpha_pct", "alpha_annualised_pct", "sharpe", "max_drawdown_pct",
+                                 "win_rate_pct", "trades", "capm_alpha_ann_pct", "beta")}
+    metrics["test"] = {k: res["test"][k] for k in ("period_start", "period_end", "annualised_pct",
+                                                   "spy_annualised_pct", "sharpe", "max_drawdown_pct",
+                                                   "trades")}
+    metrics.update({"universe": res["universe"], "template": g["template"],
+                    "episodes": [{"episode": e["episode_number"], "title": e["title"],
+                                  "url": e["page_url"]} for e in eps]})
+    key = f"cwt-{g['key']}"[:96]
+    with _db().get_session() as s:
+        uid = s.execute(text("SELECT user_id FROM alpatrade.users WHERE lower(email)=lower(:e)"),
+                        {"e": OWNER_EMAIL}).scalar()
+        # the pilot row (seed_key cwt-<episode slug>) is re-keyed to the merged strategy key
+        for e in eps:
+            s.execute(text("UPDATE alpatrade.user_strategies SET seed_key = :new WHERE seed_key = :old "
+                           "AND NOT EXISTS (SELECT 1 FROM alpatrade.user_strategies WHERE seed_key = :new)"),
+                      {"new": key, "old": f"cwt-{e['slug']}"[:96]})
+        sid = s.execute(text("""
+            INSERT INTO alpatrade.user_strategies (user_id, name, author_name, description,
+                skill_md, is_public, seed_key, kind, source, source_url, backtest_metrics)
+            VALUES (CAST(:uid AS UUID), :name, :author, :desc, :md, TRUE, :key, 'backtest',
+                'chatwithtraders.com', :url, CAST(:m AS JSONB))
+            ON CONFLICT (seed_key) DO UPDATE SET name = EXCLUDED.name,
+                author_name = EXCLUDED.author_name, description = EXCLUDED.description,
+                skill_md = EXCLUDED.skill_md, kind = 'backtest', source = EXCLUDED.source,
+                source_url = EXCLUDED.source_url, backtest_metrics = EXCLUDED.backtest_metrics,
+                is_public = TRUE, updated_at = NOW()
+            RETURNING id"""), {"uid": str(uid), "name": fm["title"][:160],
+                               "author": g["trader"][:60], "desc": fm.get("description", "")[:2000],
+                               "md": md, "key": key, "url": eps[0]["page_url"],
+                               "m": json.dumps(metrics, default=str)}).scalar()
+    return int(sid)
+
+
+def set_status(rows: list[dict]) -> None:
+    from sqlalchemy import text
+    with _db().get_session() as s:
+        for r in rows:
+            s.execute(text("""UPDATE alpatrade.cwt_episodes SET status = :status,
+                status_reason = :reason, category = :category, template = :template,
+                transcript_source = :src, strategy_key = :key, strategy_id = :sid,
+                updated_at = NOW() WHERE slug = :slug"""), r)
+
+
+def bulk_finish(publish: bool = True) -> dict:
+    """Group testable specs, backtest each group (resumable), publish, record every episode's
+    status in alpatrade.cwt_episodes. Returns counts."""
+    groups = build_groups()
+    results, status = {}, {}
+    for k, g in groups.items():
+        try:
+            res = backtest_group(g)
+        except Exception as exc:  # noqa: BLE001
+            print(f"backtest {k}: FAILED {type(exc).__name__}: {exc}", flush=True)
+            for m in g["members"]:
+                status[m["ep"]["slug"]] = ("failed", f"backtest error: {type(exc).__name__}", k, None)
+            continue
+        if res["full"]["trades"] < MIN_TRADES:
+            for m in g["members"]:
+                status[m["ep"]["slug"]] = ("skipped", f"too few trades ({res['full']['trades']}) "
+                                           f"with the {g['template']} template", k, None)
+            continue
+        sid = publish_group(g, res) if publish else None
+        results[k] = {"id": sid, "res": res, "trader": g["trader"], "n_eps": len(g["members"])}
+        for m in g["members"]:
+            status[m["ep"]["slug"]] = ("published" if sid else "testable", f"{g['template']} backtest",
+                                       k, sid)
+        print(f"publish {k}: id {sid}", flush=True)
+    rows = []
+    for ep in load_catalogue():
+        st = state(ep)
+        src = (st.get("transcribe") or {}).get("result")
+        f = DATA / ep["slug"] / "spec.json"
+        spec = json.loads(f.read_text()) if f.exists() else {}
+        if ep["slug"] in status:
+            stt, reason, key, sid = status[ep["slug"]]
+        elif not (DATA / ep["slug"] / "transcript.txt").exists():
+            stt, reason, key, sid = "no_transcript", "transcription failed or pending", None, None
+        elif "category" not in spec:
+            stt, reason, key, sid = "transcribed", "extraction pending or failed", None, None
+        else:
+            stt, reason, key, sid = ("not_testable", f"{spec['category']}: {spec.get('reason', '')}"[:500],
+                                     None, None)
+        rows.append({"slug": ep["slug"], "status": stt, "reason": reason,
+                     "category": spec.get("category"), "template": spec.get("template"),
+                     "src": src, "key": key, "sid": sid})
+    if publish:
+        set_status(rows)
+    summary = {"groups": len(groups), "published": len(results)}
+    from collections import Counter
+    summary["status"] = dict(Counter(r["status"] for r in rows))
+    (DATA / "bulk_summary.json").write_text(json.dumps(
+        {"summary": summary, "episodes": rows,
+         "strategies": {k: {"id": v["id"], "trader": v["trader"], "episodes": v["n_eps"],
+                            "full": v["res"]["full"], "test": v["res"]["test"]}
+                        for k, v in results.items()}}, indent=1, default=str))
+    print("BULK", summary, flush=True)
+    return summary
+
+
 # ---------------------------------------------------------------- CLI
-STEPS = ("catalogue", "transcribe", "extract", "backtest", "publish")
+STEPS = ("catalogue", "transcribe", "extract", "backtest", "publish", "finish")
 
 
 def main(argv=None) -> None:
@@ -765,34 +1237,50 @@ def main(argv=None) -> None:
     ap.add_argument("step", choices=STEPS + ("all",))
     g = ap.add_mutually_exclusive_group()
     g.add_argument("--episode", help="episode number or slug")
-    g.add_argument("--all", action="store_true", help="every catalogued episode (bulk)")
+    g.add_argument("--all", action="store_true", help="every catalogued episode (bulk, resumable)")
     ap.add_argument("--db", action="store_true", help="catalogue: also upsert alpatrade.cwt_episodes")
     ap.add_argument("--no-youtube", action="store_true")
     ap.add_argument("--gemini", action="store_true", help="transcribe: also Gemini strategy summary")
+    ap.add_argument("--mode", choices=("auto", "captions", "whisper"), default="auto",
+                    help="transcribe: captions only, whisper only, or captions then whisper")
+    ap.add_argument("--sleep", type=float, default=4.0, help="seconds between YouTube / xAI calls")
     ap.add_argument("--no-grid", action="store_true")
+    ap.add_argument("--no-publish", action="store_true", help="finish: backtest only")
     a = ap.parse_args(argv)
     from dotenv import load_dotenv
     load_dotenv()
     if a.step == "catalogue":
         catalogue(youtube=not a.no_youtube, db=a.db)
         return
+    if a.step == "finish":  # group + backtest + publish every testable episode (bulk)
+        bulk_finish(publish=not a.no_publish)
+        return
     if not (a.episode or a.all):
         ap.error("--episode or --all is required for this step")
     eps = load_catalogue() if a.all else [find_episode(a.episode)]
-    steps = STEPS[1:] if a.step == "all" else (a.step,)
+    if a.all and a.step in ("backtest", "publish", "all"):
+        ap.error("bulk backtest/publish: use the 'finish' step (merges repeat guests)")
+    steps = STEPS[1:5] if a.step == "all" else (a.step,)
     for ep in eps:
+        st = "?"
         try:
             for st in steps:
                 if st == "transcribe":
-                    transcribe(ep, gemini=a.gemini)
+                    r = transcribe(ep, gemini=a.gemini, mode=a.mode)
+                    if a.all and r in ("captions",):
+                        time.sleep(a.sleep)
                 elif st == "extract":
-                    extract(ep)
+                    before = (DATA / ep["slug"] / "spec.json").exists()
+                    if extract(ep) and a.all and not before:
+                        time.sleep(a.sleep / 2)
                 elif st == "backtest":
                     backtest(ep, grid=not a.no_grid)
                 elif st == "publish":
                     publish(ep)
         except Exception as exc:  # noqa: BLE001 — keep going in bulk mode
-            print(f"{ep['episode_number']} {st}: FAILED {type(exc).__name__}: {exc}")
+            print(f"{ep['episode_number']} {st}: FAILED {type(exc).__name__}: {exc}", flush=True)
+            if ep.get("slug"):
+                _mark(ep, f"{st}_error", error=f"{type(exc).__name__}: {str(exc)[:200]}")
             if not a.all:
                 raise
 

@@ -75,6 +75,17 @@ LB_CSS = """
 .lb-badge.bt{border-color:#7a5a12;color:#7a5a12;background:#fff7e0}
 .lb-src{display:inline-block;margin-top:.3rem;font-size:.76rem;color:var(--ink-muted);overflow-wrap:anywhere}
 .lb-src a{color:var(--accent)}
+.lb-filters{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem;margin:0 0 .9rem}
+.lb-pill{display:inline-flex;align-items:center;gap:.3rem;border:1px solid var(--line-br);border-radius:2rem;padding:.32rem .8rem;
+ font-size:.8rem;color:var(--ink);text-decoration:none;background:var(--bg-elev);min-height:34px;box-sizing:border-box}
+.lb-pill.on{background:var(--ink);border-color:var(--ink);color:var(--bg-elev)}
+.lb-pill small{opacity:.7}
+.lb-filters form{display:flex;gap:.4rem;margin:0 0 0 auto}
+.lb-filters input[type=search]{border:1px solid var(--line-br);border-radius:2rem;padding:.35rem .8rem;font:inherit;font-size:.82rem;
+ background:var(--bg-elev);color:var(--ink);min-width:12rem}
+.lb-pager{display:flex;align-items:center;justify-content:center;gap:.8rem;margin:1rem 0 0;font-size:.84rem;color:var(--ink-muted)}
+.lb-pager a{min-height:40px;display:inline-flex;align-items:center}
+.lb-count{font-size:.8rem;color:var(--ink-muted);margin:0 0 .5rem}
 .lb-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem;margin:1.1rem 0}
 .lb-kpi{background:var(--bg-elev);border:1px solid var(--line);border-radius:.7rem;padding:.85rem .95rem}
 .lb-kpi .k{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim)}
@@ -115,6 +126,9 @@ LB_CSS = """
  .lb-band{flex-direction:column;align-items:stretch}
  .lb-md{padding:.9rem}
  .lb-form input[type=text]{min-height:44px;font-size:16px}  /* tap target; no iOS zoom */
+ .lb-pill{min-height:40px}
+ .lb-filters form{margin:0;width:100%}
+ .lb-filters input[type=search]{flex:1;min-width:0;min-height:44px;font-size:16px}
 }
 """
 
@@ -209,13 +223,25 @@ def _bt_badge(s: dict) -> str:
             "traded live'>Backtest</span>" if store.is_backtest(s) else "")
 
 
-def _source(s: dict) -> str:
+def _episodes(s: dict) -> list[dict]:
+    bm = s.get("backtest_metrics") if isinstance(s.get("backtest_metrics"), dict) else {}
+    return [e for e in (bm.get("episodes") or [])
+            if isinstance(e, dict) and str(e.get("url", "")).startswith(("https://", "http://"))]
+
+
+def _source(s: dict, full: bool = False) -> str:
     url = (s.get("source_url") or "").strip()
     if not url.startswith(("https://", "http://")):
         return ""
     label = s.get("source") or url.split("/")[2]
+    eps = _episodes(s)
+    if full and len(eps) > 1:
+        links = " · ".join(f"<a href='{_e(e['url'])}' target='_blank' rel='noopener nofollow' "
+                           f"title='{_e(e.get('title'))}'>ep. {_e(e.get('episode'))} ↗</a>" for e in eps)
+        return f"<div class='lb-src'>Sources ({_e(label)}): {links}</div>"
+    more = f" · {len(eps)} episodes" if len(eps) > 1 else ""
     return (f"<div class='lb-src'>Source: <a href='{_e(url)}' target='_blank' "
-            f"rel='noopener nofollow'>{_e(label)} ↗</a></div>")
+            f"rel='noopener nofollow'>{_e(label)} ↗</a>{more}</div>")
 
 
 def _running_cell(m: dict, label: bool = True) -> str:
@@ -269,15 +295,86 @@ _METHOD_NOTE = (
     "little about the future. Strategies marked Backtest are hypothetical: their figures come "
     "from a daily-bar backtest (annualised = CAGR over the stated period, cash only, slippage "
     "included; alpha = CAGR minus SPY's CAGR over the same period), they were never traded live and "
-    "are listed after live strategies. Not investment advice.")
+    "are listed after live strategies. Backtests use today's S&P 500 members, which flatters "
+    "momentum and relative-strength rules in particular (survivorship bias). Not investment advice.")
+
+
+PAGE_SIZE = 25
+
+
+def _src_label(s: dict) -> str:
+    return (s.get("source") or "AlpaTrade").strip() or "AlpaTrade"
+
+
+def filter_rows(rows, kind: str = "", source: str = "", q: str = ""):
+    """(rank, strategy, metrics) after the Live/Backtest, source and text filters.
+    Ranks are positions in the full Leaderboard, so they don't change with filters."""
+    out = []
+    q = (q or "").strip().lower()
+    for i, (s, m) in enumerate(rows):
+        if kind == "live" and store.is_backtest(s):
+            continue
+        if kind == "backtest" and not store.is_backtest(s):
+            continue
+        if source and _src_label(s) != source:
+            continue
+        if q and q not in f"{s.get('name', '')} {s.get('author', '')} {s.get('description', '')}".lower():
+            continue
+        out.append((i + 1, s, m))
+    return out
+
+
+def _qs(**kw) -> str:
+    from urllib.parse import urlencode
+    kv = {k: v for k, v in kw.items() if v not in (None, "", 1, "1")}
+    return ("?" + urlencode(kv)) if kv else ""
+
+
+def _filters_html(rows, kind, source, q) -> str:
+    n_all = len(rows)
+    n_bt = sum(1 for s, _ in rows if store.is_backtest(s))
+    pills = []
+    for val, label, n in (("", "All", n_all), ("live", "Live", n_all - n_bt), ("backtest", "Backtest", n_bt)):
+        on = " on" if kind == val else ""
+        pills.append(f"<a class='lb-pill{on}' href='/leaderboard{_qs(kind=val, source=source, q=q)}'>"
+                     f"{label} <small>{n}</small></a>")
+    sources = sorted({_src_label(s) for s, _ in rows})
+    if len(sources) > 1:
+        for src in sources:
+            on = " on" if source == src else ""
+            nxt = "" if source == src else src
+            pills.append(f"<a class='lb-pill{on}' href='/leaderboard{_qs(kind=kind, source=nxt, q=q)}'>"
+                         f"{_e(src)}</a>")
+    form = ("<form method='get' action='/leaderboard' role='search'>"
+            + (f"<input type='hidden' name='kind' value='{_e(kind)}'>" if kind else "")
+            + (f"<input type='hidden' name='source' value='{_e(source)}'>" if source else "")
+            + f"<input type='search' name='q' value='{_e(q)}' placeholder='Search trader or strategy' "
+              "aria-label='Search strategies'></form>")
+    return "<nav class='lb-filters' aria-label='Filter strategies'>" + "".join(pills) + form + "</nav>"
 
 
 def leaderboard_html(rows: list[tuple[dict, dict]], user: Optional[dict], msg: str = "",
-                     error: str = "") -> str:
+                     error: str = "", kind: str = "", source: str = "", q: str = "",
+                     page: int = 1) -> str:
+    kind = kind if kind in ("live", "backtest") else ""
+    shown = filter_rows(rows, kind, source, q)
+    pages = max(1, -(-len(shown) // PAGE_SIZE))
+    page = min(max(1, int(page or 1)), pages)
+    chunk = shown[(page - 1) * PAGE_SIZE: page * PAGE_SIZE]
     head = ("<div class='lb-row lb-head'><div>#</div><div>Strategy</div><div>User</div>"
             "<div>Annualised return</div><div>Running / period</div><div>Alpha vs SPY</div></div>")
-    body = "".join(_row(i + 1, s, m, user) for i, (s, m) in enumerate(rows)) or \
-        "<div class='lb-empty'>No public strategies yet.</div>"
+    body = "".join(_row(r, s, m, user) for r, s, m in chunk) or \
+        ("<div class='lb-empty'>No strategies match these filters.</div>" if rows
+         else "<div class='lb-empty'>No public strategies yet.</div>")
+    count = (f"<p class='lb-count'>{len(shown)} strateg{'y' if len(shown) == 1 else 'ies'}"
+             + (f" · page {page} of {pages}" if pages > 1 else "") + "</p>")
+    pager = ""
+    if pages > 1:
+        prev = (f"<a class='lb-btn' href='/leaderboard{_qs(kind=kind, source=source, q=q, page=page - 1)}'>← Previous</a>"
+                if page > 1 else "")
+        nxt = (f"<a class='lb-btn' href='/leaderboard{_qs(kind=kind, source=source, q=q, page=page + 1)}'>Next →</a>"
+               if page < pages else "")
+        pager = f"<nav class='lb-pager' aria-label='Pages'>{prev}<span>Page {page} of {pages}</span>{nxt}</nav>"
     as_ofs = sorted({m["as_of"] for _, m in rows if m.get("as_of") and not m.get("is_backtest")})
     latest = (f" Latest data: session close {lperf.fmt_day(as_ofs[-1])}." if as_ofs else "")
     flash = (f"<div class='flash err'>{_e(error)}</div>" if error else "") + \
@@ -296,7 +393,8 @@ def leaderboard_html(rows: list[tuple[dict, dict]], user: Optional[dict], msg: s
             "annualised return, followed by clearly marked backtests of strategies traders have "
             "described in public (e.g. on Chat With Traders). Copy any strategy into ChatGPT or Claude as a ready-made skill, or "
             "clone it into your own AlpaTrade strategies to backtest and paper-trade it.</p>"
-            f"<div class='lb-list'>{head}{body}</div>"
+            + _filters_html(rows, kind, source, q) + count
+            + f"<div class='lb-list'>{head}{body}</div>{pager}"
             f"<p class='lb-note'>{_METHOD_NOTE}{latest}</p>{band}</div>{LB_JS}")
 
 
@@ -369,7 +467,7 @@ def _strategy_backtest_html(s: dict, m: dict, user: Optional[dict], badges: str,
     return (f"<div class='lb'>{flash}<a href='/leaderboard' style='font-size:.82rem'>← Leaderboard</a>"
             f"<h1>{_e(s['name'])}{badges}</h1>"
             f"<p class='lede' style='margin-bottom:.4rem'>by <b>{_e(s['author'])}</b> · {_e(s.get('description'))}</p>"
-            + _source(s) + warn + strip + oos
+            + _source(s, full=True) + warn + strip + oos
             + _actions(s, user, wide_view=True).replace("class='lb-actions'", "class='lb-actions' style='margin:0'")
             + (f"<div class='lb-actions' style='margin:.2rem 0 0'><a class='lb-btn' href='/strategies/{sid}/edit'>Edit</a></div>"
                if user and str(user.get("user_id")) == s.get("user_id") else "")
@@ -487,7 +585,8 @@ def register(app, rt):
             ph_layout.TRADE_PAGES.append(entry)
 
     @rt("/leaderboard", methods=["GET"])
-    def leaderboard_get(session, msg: str = "", error: str = ""):
+    def leaderboard_get(session, msg: str = "", error: str = "", kind: str = "",
+                        source: str = "", q: str = "", page: int = 1):
         user = _user(session)
         try:
             rows = public_rows()
@@ -495,7 +594,8 @@ def register(app, rt):
             log.warning("leaderboard load failed: %s", type(exc).__name__)
             rows, error = [], error or "The Leaderboard is unavailable right now."
         return _render(user, "Strategy Leaderboard · AlpaTrade", "leaderboard",
-                       leaderboard_html(rows, user, msg=msg, error=error))
+                       leaderboard_html(rows, user, msg=msg, error=error, kind=kind,
+                                        source=source, q=q, page=page))
 
     @rt("/leaderboard.json", methods=["GET"])
     def leaderboard_json():

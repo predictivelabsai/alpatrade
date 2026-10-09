@@ -1,5 +1,29 @@
 # Change Log
 
+## 2026-10-10 — v0.31.0: Chat With Traders bulk run + Leaderboard filters / pagination
+
+- **Bulk pipeline** (`scripts/cwt_pipeline.py`): resumable per-episode state
+  (`data/cwt/<slug>/state.json`; finished steps are skipped), `transcribe --all --mode
+  captions|whisper|auto` (YouTube captions with request sleeps; faster-whisper *small* CPU int8
+  fallback in a separate venv `~/.venvs/cwt-whisper`, so the app venv is untouched), `extract
+  --all` (Grok, back-off on 429/5xx) with a **classification** (daily_testable, intraday_only,
+  options, futures_fx, discretionary, no_concrete_rules, macro_commentary) and a **template**,
+  and a new `finish` step: groups testable episodes into **one strategy per trader + template**
+  (repeat guests merged, all episodes linked), backtests each group (resumable by member hash),
+  publishes groups with ≥ 10 trades and records every episode's status/reason in
+  `alpatrade.cwt_episodes` (`sql/45_cwt_episodes_status.sql`: status, status_reason, category,
+  template, transcript_source, strategy_key). Orchestrator: `data/cwt/logs/run_bulk.sh` (nohup).
+- **Backtest templates** `engine/backtest/templates.py`: `dip` (mean reversion), `trend_ma`
+  (SMA cross), `gap` (gap continuation at the open), `relative_strength` (rotation) alongside the
+  pilot `breakout`; shared friction/metrics, cash only, prior-close signals, stop-before-target,
+  parameters clamped (LLM percent→fraction fixed); train/test as slices of the full run.
+- **Leaderboard UX for ~100 entries:** All / Live / Backtest and source filter pills with
+  counts, a search box (trader or strategy), 25 per page with Previous / Next (ranks stay the
+  full-board position), backtest sources list every linked episode, survivorship caveat in the
+  method note. 375px: pills wrap, 40–44px tap targets, 16px search input, no overflow.
+- Tests: filters/pagination/search, multi-episode source links (non-http rejected), templates
+  no-look-ahead + P&L reconciliation, parameter clamping.
+
 ## 2026-10-10 — v0.30.0: Chat With Traders → backtested Leaderboard strategies (pilot: Kristjan Kullamägi)
 
 - **Pipeline** `scripts/cwt_pipeline.py catalogue|transcribe|extract|backtest|publish|all`
