@@ -2,14 +2,14 @@
 title: Mag-7 Buy-the-Dip · 3-day hold (live)
 description: Buys a Magnificent-7 stock near the close after a 3%+ dip from its 20-day high, exits at +8% / −1.5% or after 3 days. Cash-only, 1/7 of equity per name. Live on Alpaca since 24 Sep 2026.
 kind: strategy
-author: Julian Kaljuvee
+author: Predictive Labs Ltd
 tags: buy-the-dip, mag-7, swing, mean-reversion, alpaca, live
 license: MIT
 ---
 
 # Mag-7 Buy-the-Dip · 3-day hold (live)
 
-*For research and education only. This is not investment advice. It describes a strategy Julian Kaljuvee runs on his own Alpaca live account; anything you trade is your own decision, in your own account.*
+*For research and education only. This is not investment advice. It describes a strategy Predictive Labs Ltd runs on its own Alpaca live account; anything you trade is your own decision, in your own account.*
 
 A small, cash-only, long-only swing strategy on the seven largest US tech stocks. It buys short, sharp pullbacks from a recent high late in the session and gives each trade three days to bounce, with a tight stop and a wide target. The exact numbers live in the **Parameters** block at the end of this file; if anything in the prose disagrees with that block, the block wins.
 

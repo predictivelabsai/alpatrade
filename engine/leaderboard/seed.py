@@ -1,4 +1,4 @@
-"""Seed Julian Kaljuvee's live Mag-7 BTD strategy as his public Leaderboard strategy.
+"""Seed the live Mag-7 BTD strategy (owner kaljuvee@gmail.com, shown as Predictive Labs Ltd).
 
 Idempotent (``seed_key``): re-running never overwrites later edits unless ``--update``.
 Its live figures come from his live runner run (``live_strategy_slug``), computed at
@@ -17,7 +17,7 @@ from engine.leaderboard.skill import front_matter
 SEEDS = [{
     "seed_key": "mag7-btd-live",
     "email": "kaljuvee@gmail.com",
-    "author_name": "Julian Kaljuvee",
+    "author_name": "Predictive Labs Ltd",  # public 'Shown as' name (Julian's company)
     "file": Path(__file__).resolve().parent / "seeds" / "mag7-btd-live.md",
     "live_strategy_slug": "buy_the_dip_mag7_minhold_live",
     "is_public": True,

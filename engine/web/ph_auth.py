@@ -102,6 +102,32 @@ def current_user(session):
         return None
 
 
+def safe_next(target) -> str:
+    """Validate a post-auth ``next`` target: a same-site absolute path only.
+
+    Returns ``""`` for anything that could leave the site (``//evil``, ``/\\evil``,
+    ``https://…``, control characters) so callers fall back to ``/dashboard``.
+    """
+    t = (target or "").strip() if isinstance(target, str) else ""
+    if not t.startswith("/") or t.startswith("//") or t.startswith("/\\"):
+        return ""
+    if any(c in t for c in "\\\r\n\t") or len(t) > 512:
+        return ""
+    return t
+
+
+def _after_auth(target) -> str:
+    """Where to land after sign-in / sign-up: the validated ``next`` or the dashboard."""
+    return safe_next(target) or "/dashboard"
+
+
+def _with_next(path: str, target) -> str:
+    """Append a validated ``next`` to an auth link (``/register``, ``/login`` …)."""
+    from urllib.parse import quote
+    n = safe_next(target)
+    return f"{path}?next={quote(n, safe='/')}" if n else path
+
+
 def _session_login(session, user: dict) -> None:
     """Persist the login. Only the id is stored; the record is re-fetched."""
     session["user_id"] = user["user_id"]
@@ -142,11 +168,11 @@ def _send_verification_email(user: dict, request) -> None:
 # ---------------------------------------------------------------------------
 # Skin fragments
 # ---------------------------------------------------------------------------
-def _google_btn(label: str):
+def _google_btn(label: str, next_: str = ""):
     return A(
         Span(NotStr(_GOOGLE_SVG), cls="google-btn-icon"),
         Span(label, cls="google-btn-text"),
-        href="/login", cls="google-btn",
+        href=_with_next("/login", next_), cls="google-btn",
     )
 
 
@@ -171,10 +197,15 @@ def _notice(error: str = "", msg: str = ""):
 # ---------------------------------------------------------------------------
 # Page builders
 # ---------------------------------------------------------------------------
-def _signin_page(email: str = "", error: str = "", msg: str = ""):
+def _next_field(next_: str):
+    n = safe_next(next_)
+    return [Input(type="hidden", name="next", value=n)] if n else []
+
+
+def _signin_page(email: str = "", error: str = "", msg: str = "", next_: str = ""):
     blocks = [H2("Welcome back"), *_notice(error, msg)]
     if _oauth_enabled:
-        blocks.append(_google_btn("Continue with Google"))
+        blocks.append(_google_btn("Continue with Google", next_))
         blocks.append(_or_divider())
     blocks.append(Form(
         Label("Email", fr="signin-email"),
@@ -183,19 +214,20 @@ def _signin_page(email: str = "", error: str = "", msg: str = ""):
         Label("Password", fr="signin-password"),
         Input(id="signin-password", name="password", type="password",
               autocomplete="current-password", required=True),
+        *_next_field(next_),
         Button("Log in", type="submit", cls="auth-primary-btn", style="width:100%"),
         method="post", action="/signin",
     ))
     blocks.append(A("Forgot password?", href="/forgot", cls="forgot-link"))
-    blocks.append(P("Don't have an account? ", A("Sign up", href="/register"),
+    blocks.append(P("Don't have an account? ", A("Sign up", href=_with_next("/register", next_)),
                     cls="forgot-link"))
     return auth_shell(*blocks, title="AlpaTrade · Sign in")
 
 
-def _register_page(email: str = "", error: str = ""):
+def _register_page(email: str = "", error: str = "", next_: str = ""):
     blocks = [H2("Create your account"), *_notice(error)]
     if _oauth_enabled:
-        blocks.append(_google_btn("Sign up with Google"))
+        blocks.append(_google_btn("Sign up with Google", next_))
         blocks.append(_or_divider())
     blocks.append(Form(
         Label("Display name", fr="register-name"),
@@ -208,10 +240,11 @@ def _register_page(email: str = "", error: str = ""):
         Input(id="register-password", name="password", type="password", minlength="8",
               autocomplete="new-password",
               placeholder="At least 8 characters", required=True),
+        *_next_field(next_),
         Button("Create account", type="submit", cls="auth-primary-btn", style="width:100%"),
         method="post", action="/register",
     ))
-    blocks.append(P("Already have an account? ", A("Log in", href="/signin"),
+    blocks.append(P("Already have an account? ", A("Log in", href=_with_next("/signin", next_)),
                     cls="forgot-link"))
     return auth_shell(*blocks, title="AlpaTrade · Register")
 
@@ -320,31 +353,32 @@ def register(app, rt):
 
     # ---- sign in ----------------------------------------------------------
     @rt("/signin", methods=["GET"])
-    def signin_get(session, error: str = "", msg: str = ""):
+    def signin_get(session, error: str = "", msg: str = "", next: str = ""):
         if current_user(session):
-            return RedirectResponse("/dashboard", status_code=303)
-        return _signin_page(error=error, msg=msg)
+            return RedirectResponse(_after_auth(next), status_code=303)
+        return _signin_page(error=error, msg=msg, next_=next)
 
     @app.post("/signin")
     async def signin_post(session, request):
         form = await request.form()
         email = (form.get("email") or "").strip()
         pw = form.get("password") or ""
+        nxt = safe_next(form.get("next"))
         try:
             user = authenticate(email, pw)
         except Exception:  # noqa: BLE001
             user = None
         if not user:
-            return _signin_page(email=email, error="Invalid email or password.")
+            return _signin_page(email=email, error="Invalid email or password.", next_=nxt)
         _session_login(session, user)
-        return RedirectResponse("/dashboard", status_code=303)
+        return RedirectResponse(_after_auth(nxt), status_code=303)
 
     # ---- register ---------------------------------------------------------
     @rt("/register", methods=["GET"])
-    def register_get(session, error: str = ""):
+    def register_get(session, error: str = "", next: str = ""):
         if current_user(session):
-            return RedirectResponse("/dashboard", status_code=303)
-        return _register_page(error=error)
+            return RedirectResponse(_after_auth(next), status_code=303)
+        return _register_page(error=error, next_=next)
 
     @app.post("/register")
     async def register_post(session, request):
@@ -352,19 +386,20 @@ def register(app, rt):
         email = (form.get("email") or "").strip()
         pw = form.get("password") or ""
         dn = (form.get("display_name") or "").strip() or None
+        nxt = safe_next(form.get("next"))
         if not email or not pw:
-            return _register_page(email=email, error="Email and password are required.")
+            return _register_page(email=email, error="Email and password are required.", next_=nxt)
         if len(pw) < 8:
-            return _register_page(email=email, error="Password must be at least 8 characters.")
+            return _register_page(email=email, error="Password must be at least 8 characters.", next_=nxt)
         try:
             if get_user_by_email(email):
-                return _register_page(email=email, error="That email is already registered.")
+                return _register_page(email=email, error="That email is already registered.", next_=nxt)
             user = create_user(email=email, password=pw, display_name=dn)
         except Exception as e:  # noqa: BLE001
             logger.error("register failed: %s", e)
-            return _register_page(email=email, error="Could not create account. Please try again.")
+            return _register_page(email=email, error="Could not create account. Please try again.", next_=nxt)
         if not user:
-            return _register_page(email=email, error="Could not create account. Please try again.")
+            return _register_page(email=email, error="Could not create account. Please try again.", next_=nxt)
         _session_login(session, user)
         try:
             from engine.web.onboarding import record_event
@@ -372,7 +407,7 @@ def register(app, rt):
         except Exception:  # noqa: BLE001
             pass
         _send_verification_email(user, request)
-        return RedirectResponse("/dashboard", status_code=303)
+        return RedirectResponse(_after_auth(nxt), status_code=303)
 
     # ---- email verification -----------------------------------------------
     @rt("/verify", methods=["GET"])
@@ -486,7 +521,13 @@ def register(app, rt):
     # ---- Google OAuth -----------------------------------------------------
     if _oauth_enabled:
         @rt("/login")
-        async def google_login(request):
+        async def google_login(request, session, next: str = ""):
+            # Remember where to land after the Google round-trip (validated again on use).
+            n = safe_next(next)
+            if n:
+                session["auth_next"] = n
+            else:
+                session.pop("auth_next", None)
             scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
             host = request.headers.get("host", request.url.netloc)
             redirect_uri = f"{scheme}://{host}/auth/callback"
@@ -525,11 +566,11 @@ def register(app, rt):
                 mark_email_verified(user["user_id"])  # Google emails verified at source
             except Exception:  # noqa: BLE001
                 pass
-            return RedirectResponse("/dashboard", status_code=303)
+            return RedirectResponse(_after_auth(session.pop("auth_next", "")), status_code=303)
     else:
         @rt("/login")
-        def google_login_stub():
-            return RedirectResponse("/signin", status_code=303)
+        def google_login_stub(next: str = ""):
+            return RedirectResponse(_with_next("/signin", next), status_code=303)
 
     # ---- profile ----------------------------------------------------------
     @rt("/profile", methods=["GET"])

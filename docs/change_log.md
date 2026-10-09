@@ -1,5 +1,35 @@
 # Change Log
 
+## 2026-10-09 — v0.29.0: Hedge Funds replaces Pricing on the landing page; Leaderboard name
+
+- **Pricing removed from the public site** (nav, footer, Platform hero button, `pricing_page`).
+  AlpaTrade is free for everyone for now; `/pricing` now 301-redirects to `/#hedge-funds`.
+- **Hedge Funds section on the home page** (`#hedge-funds`, nav + footer link in Pricing's old
+  position): a real screenshot of the signed-in `/hedge-funds` page (13F-implied estimated
+  annual returns vs SPY, 13F screener) with alt text, served from
+  `static/landing/hedge-funds-desktop.png` (content pane only, app sidebar cropped so no
+  account details show) and `hedge-funds-mobile.png` (414px phone rendering, used ≤560px via
+  `<picture>`). Regenerate with `scripts/hedge_funds_snapshot.py` against a local instance
+  using the dev-login bypass. **See more** CTA links to `/hedge-funds`.
+- **`/hedge-funds` is now sign-in only** (it was publicly reachable): signed-out visitors get
+  a 303 to `/signin?next=/hedge-funds` (query string preserved); the JSON endpoints
+  (`/hedge-funds/data`, `/13f.json`, `/performance.json`) return 401 without a session.
+- **Auth `next` support** (`engine/web/ph_auth.py`): `/signin`, `/register` and Google
+  `/login` accept `?next=`; it is carried through a hidden form field, the Sign up / Log in
+  cross-links and the Google round-trip (`session['auth_next']`), validated by `safe_next()`
+  (same-site absolute paths only — `//host`, `/\host`, schemes and control chars are dropped)
+  and used instead of `/dashboard` after sign-in / sign-up. Signed-in users hitting
+  `/signin?next=…` go straight to the target.
+- **Leaderboard public name:** the seeded live Mag-7 BTD strategy is shown as
+  **Predictive Labs Ltd** (seed `author_name` + skill front matter / disclaimer). Prod row
+  `alpatrade.user_strategies` id 1 (`seed_key='mag7-btd-live'`) updated in place
+  (`author_name`, `skill_md`), so `/leaderboard`, `/strategies/1` and `/strategies/1/skill.md`
+  no longer show the personal name.
+- Mobile: checked at 375 / 414px (no horizontal overflow; phone screenshot served).
+- Tests: `tests/test_landing_hedge_funds.py` (added to CI), `tests/test_leaderboard.py`,
+  `tests/test_ui_navigation.py`. No changes to live trading, the runner, config, sizing or
+  schedules.
+
 ## 2026-10-09 — v0.28.0: strategy Leaderboard + user strategies (moved from FastSkills)
 
 - **`/leaderboard` (public)** — linked from the landing nav (desktop + a mobile-visible link),

@@ -78,6 +78,9 @@ def test_root_stays_landing_and_login_redirects_to_dashboard():
     auth_source = inspect.getsource(ph_auth.register)
     assert 'RedirectResponse("/dashboard"' not in landing_source
     assert 'return RedirectResponse("/dashboard", status_code=303)' in auth_source
+    # sign-in / sign-up land on a validated ?next= target, else the dashboard
+    assert 'or "/dashboard"' in inspect.getsource(ph_auth._after_auth)
+    assert "RedirectResponse(_after_auth(" in auth_source
 
 
 def test_landing_links_to_developer_docs_and_openapi():

@@ -56,7 +56,7 @@ def test_rank_puts_strategies_without_data_last():
 def test_seed_skill_params_match_live_config_v2():
     md = SEED_MD.read_text(encoding="utf-8")
     fm = skill.front_matter(md)
-    assert fm["title"].startswith("Mag-7 Buy-the-Dip") and fm["author"] == "Julian Kaljuvee"
+    assert fm["title"].startswith("Mag-7 Buy-the-Dip") and fm["author"] == "Predictive Labs Ltd"
     block = skill.extract_params(md)
     assert block["name"] == "buy_the_dip_mag7_minhold_live" and block["config_version"] == 2
     assert block["params"] == {

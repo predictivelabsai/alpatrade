@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from fasthtml.common import (A, Button, Details, Div, Form, Hidden, Input, Label, NotStr, Option, P, Script,
                              Select, Span, Style, Summary, Table, Tbody, Td, Th, Thead, Tr)
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, RedirectResponse
 
 from engine.web.ph_layout import page
 
@@ -299,22 +299,39 @@ def register(app, rt):
     if entry not in ph_layout.EXPLORE_PAGES:
         ph_layout.EXPLORE_PAGES.append(entry)
 
+    def _signed_in(session) -> bool:
+        return bool(session and session.get("user_id"))
+
+    def _unauth_json():
+        return JSONResponse({"error": "sign in required"}, status_code=401)
+
     @rt("/hedge-funds", methods=["GET"])
-    def hf_get(session, ticker: str = "", form: str = "", sort: str = "latest", q: str = "",
+    def hf_get(request, session, ticker: str = "", form: str = "", sort: str = "latest", q: str = "",
                period: str = "", min_aum: str = "", pos: str = "", rtype: str = "holdings",
                holds: str = "", perf: str = "", hsort: str = "aum", method: str = "quarter_end"):
+        # Signed-in only: the public landing shows a static snapshot whose "See more" CTA
+        # lands here; signed-out visitors go to sign-in and come back via ?next=.
+        user = _user(session)
+        if not user:
+            from urllib.parse import quote
+            target = request.url.path + (f"?{request.url.query}" if request.url.query else "")
+            return RedirectResponse(f"/signin?next={quote(target, safe='/')}", status_code=303)
         params = _clean_params(q, period, min_aum, pos, rtype, holds, perf, hsort, method)
-        return _page(_user(session), ticker=ticker, form=form, sort=sort, params=params)
+        return _page(user, ticker=ticker, form=form, sort=sort, params=params)
 
     @rt("/hedge-funds/data", methods=["GET"])
-    def hf_data(limit: int = 40):
+    def hf_data(session, limit: int = 40):
+        if not _signed_in(session):
+            return _unauth_json()
         from engine.publicmarkets.hedge_funds import top_funds
         return JSONResponse({"funds": top_funds(limit)})
 
     @rt("/hedge-funds/13f.json", methods=["GET"])
-    def hf_13f_json(q: str = "", period: str = "", min_aum: str = "", pos: str = "",
+    def hf_13f_json(session, q: str = "", period: str = "", min_aum: str = "", pos: str = "",
                     rtype: str = "holdings", holds: str = "", perf: str = "", hsort: str = "aum",
                     limit: int = 50):
+        if not _signed_in(session):
+            return _unauth_json()
         from engine.publicmarkets.hedge_funds import default_period, filing_periods, screen_13f
         p = _clean_params(q, period, min_aum, pos, rtype, holds, perf, hsort)
         period_ = p["period"] or default_period(filing_periods())
@@ -323,7 +340,9 @@ def register(app, rt):
         return JSONResponse(res)
 
     @rt("/hedge-funds/performance.json", methods=["GET"])
-    def hf_perf_json(method: str = "quarter_end"):
+    def hf_perf_json(session, method: str = "quarter_end"):
+        if not _signed_in(session):
+            return _unauth_json()
         from engine.publicmarkets.hedge_funds import performance_rows
         m = method if method in ("quarter_end", "follow_filing") else "quarter_end"
         return JSONResponse(dict(performance_rows(m), method=m,

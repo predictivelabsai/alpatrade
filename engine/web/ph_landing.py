@@ -12,11 +12,14 @@ Contract: exposes :func:`register(app, rt)`, which wires the anonymous marketing
 routes. Logged-in visitors (``session['user_id']``) are bounced from ``/`` to the
 app at ``/app``. All CTAs point at the real auth surface: Sign in (``/signin``),
 Start (``/register``) and Continue with Google (``/login``).
+
+Pricing: AlpaTrade is free for everyone for now, so there is no public Pricing page;
+``/pricing`` permanently redirects to the home page's Hedge Funds section.
 """
 from __future__ import annotations
 
 from fasthtml.common import (
-    A, Div, Footer, H1, H2, H3, Main, Nav, NotStr, P, Section, Span, Strong, Style,
+    A, Div, Footer, H1, H2, H3, Img, Main, Nav, NotStr, P, Picture, Section, Source, Span, Strong, Style,
 )
 from starlette.responses import RedirectResponse
 
@@ -25,6 +28,18 @@ from engine.web.ph_layout import head, TILE_MARK
 
 SITE_NAME = "AlpaTrade"
 SITE_TAGLINE = "Backtest, paper-trade and prove the P&L — one AI trading desk on Alpaca."
+
+# Public teaser for the signed-in /hedge-funds page: a real screenshot of that page
+# (static assets, regenerated with scripts/hedge_funds_snapshot.py). The CTA links to
+# /hedge-funds itself, which requires sign-in and bounces signed-out visitors to
+# /signin?next=/hedge-funds — so after auth they land on the page.
+HEDGE_FUNDS_HREF = "/hedge-funds"
+HEDGE_FUNDS_ANCHOR = "/#hedge-funds"
+HF_IMG_DESKTOP = "/static/landing/hedge-funds-desktop.png"
+HF_IMG_MOBILE = "/static/landing/hedge-funds-mobile.png"
+HF_IMG_ALT = ("Screenshot of the AlpaTrade Hedge Funds page: 13F-implied estimated annual returns "
+              "for well-known hedge funds compared with SPY, and a screener over 13F filers' "
+              "holdings with filters for quarter, AUM and positions.")
 
 # Android APK — published as a GitHub release asset (binary kept out of the repo/image).
 # /download/android resolves the LATEST release's .apk dynamically, so the website link
@@ -195,17 +210,17 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 .dev-contracts { margin-top: 1.5rem; color: var(--ink-muted); font-size: .8rem; line-height: 1.7; }
 .dev-contracts a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
 
-/* pricing */
-.lp-price { background: var(--bg-elev); border: 1px solid var(--line); border-radius: 1rem;
-  padding: 1.9rem; display: flex; flex-direction: column; height: 100%; }
-.lp-price.hot { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.lp-price .name { font-family: var(--font-mono); font-size: .7rem; letter-spacing: .14em;
-  text-transform: uppercase; color: var(--ink-dim); }
-.lp-price .amt { font-size: 2.6rem; font-weight: 600; letter-spacing: -.03em; color: var(--ink); margin-top: .5rem; }
-.lp-price .per { font-size: .85rem; color: var(--ink-muted); margin-left: .3rem; font-weight: 400; }
-.lp-price .feat { font-size: .84rem; color: var(--ink-muted); padding: .3rem 0; }
-.lp-price .feat b { color: var(--accent); font-weight: 700; margin-right: .4rem; }
-.lp-price-cta { margin-top: auto; padding-top: 1.4rem; }
+/* hedge funds teaser */
+.lp-hf { scroll-margin-top: 4.5rem; }
+.lp-hf-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1.25rem; }
+.lp-hf-head .lp-lede { margin-top: 1rem; }
+.lp-hf-shot { display: block; margin-top: 2rem; border: 1px solid var(--line); border-radius: 1rem;
+  overflow: hidden; background: var(--bg-elev); box-shadow: 0 10px 44px rgba(0,0,0,.07);
+  transition: border-color .18s ease; }
+.lp-hf-shot:hover { border-color: var(--accent); }
+.lp-hf-shot img { display: block; width: 100%; height: auto; max-width: 100%; }
+.lp-hf-cta { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1rem; margin-top: 1.4rem; }
+.lp-hf-note { font-size: .8rem; color: var(--ink-dim); }
 
 /* cta band */
 .lp-band { position: relative; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
@@ -309,7 +324,7 @@ def _nav(active="home"):
             _brand(),
             Div(link("Platform", "/platform", "platform"),
                 link("Leaderboard", "/leaderboard", "leaderboard"),
-                link("Pricing", "/pricing", "pricing"),
+                link("Hedge Funds", HEDGE_FUNDS_ANCHOR, "hedgefunds"),
                 link("Developers", "/developers", "developers"),
                 cls="lp-nav-links"),
             Div(A("Leaderboard", href="/leaderboard",
@@ -352,7 +367,7 @@ def _footer():
                 Div(
                     A("Platform", href="/platform"),
                     A("Leaderboard", href="/leaderboard"),
-                    A("Pricing", href="/pricing"),
+                    A("Hedge Funds", href=HEDGE_FUNDS_ANCHOR),
                     A("Developers", href="/developers"),
                     A("Sign in", href="/signin"),
                     A("Start free", href="/register"),
@@ -448,6 +463,37 @@ def _how():
     )
 
 
+def _hedge_funds():
+    """Hedge Funds teaser: real snapshot of the signed-in page + a sign-in-gated CTA."""
+    return Section(
+        Div(
+            Div(
+                Span("Hedge Funds", cls="lp-eyebrow"),
+                H2("See what the big funds hold — and how it performed.", cls="lp-h2",
+                   style="margin-top:.75rem;max-width:26ch"),
+                P("13F holdings for every filer: screen by quarter, AUM and position, follow "
+                  "well-known funds, and compare their estimated annual returns with SPY. "
+                  "Free for everyone — just sign in.", cls="lp-lede"),
+            ),
+            cls="lp-hf-head",
+        ),
+        A(
+            Picture(
+                Source(media="(max-width: 560px)", srcset=HF_IMG_MOBILE, width="800", height="1159"),
+                Img(src=HF_IMG_DESKTOP, alt=HF_IMG_ALT, width="1600", height="982",
+                    loading="lazy", decoding="async"),
+            ),
+            href=HEDGE_FUNDS_HREF, cls="lp-hf-shot", aria_label="Open the Hedge Funds page",
+        ),
+        Div(_btn("See more", HEDGE_FUNDS_HREF, "primary", arrow=True),
+            Span("Sign in or create a free account to open the full Hedge Funds page.",
+                 cls="lp-hf-note"),
+            cls="lp-hf-cta"),
+        id="hedge-funds",
+        cls="lp-section lp-bordered lp-hf",
+    )
+
+
 def _cta_band():
     return Section(
         Div(
@@ -476,7 +522,7 @@ def _shell(title, *sections, active="home"):
 def home_page():
     return _shell(
         "AlpaTrade — AI trading, backtest & P&L analyst squad",
-        _hero(), _stats(), _pillars(), _how(), _cta_band(),
+        _hero(), _stats(), _hedge_funds(), _pillars(), _how(), _cta_band(),
         active="home",
     )
 
@@ -490,7 +536,7 @@ def platform_page():
           "Every vertical inherits the same backtest → validate → paper-trade → report workflow.",
           cls="lp-lede"),
         Div(_btn("Start free", "/register", "primary", arrow=True),
-            _btn("See pricing", "/pricing", "ghost"),
+            _btn("See Hedge Funds", HEDGE_FUNDS_ANCHOR, "ghost"),
             cls="lp-cta-row"),
         cls="lp-hero-inner",
     )
@@ -499,51 +545,6 @@ def platform_page():
         Section(hero, cls="lp-hero"),
         _stats(), _pillars(), _how(), _cta_band(),
         active="platform",
-    )
-
-
-def pricing_page():
-    tiers = [
-        ("Research", "$0", "/mo", False,
-         [("✓", "Backtesting on delayed data"), ("✓", "Full strategy library"),
-          ("✓", "50 AI queries / month"), ("✓", "Community support")],
-         "Start free"),
-        ("Trader", "$29", "/mo", True,
-         [("✓", "Everything in Research"), ("✓", "Live Alpaca paper trading"),
-          ("✓", "Reproducible backtest artifacts"), ("✓", "Validation & reconciliation"),
-          ("✓", "Unlimited AI queries")],
-         "Start free"),
-        ("Desk", "Contact", "us", False,
-         [("✓", "Everything in Trader"), ("✓", "Multi-account & team"),
-          ("✓", "Priority support"), ("✓", "Custom strategies")],
-         "Talk to us"),
-    ]
-
-    def card(name, amt, per, hot, feats, cta):
-        return Div(
-            Div(name, cls="name"),
-            Div(Span(amt), Span(per, cls="per"), cls="amt"),
-            Div(*[Div(Span(mark, style="color:var(--accent);font-weight:700;margin-right:.4rem"),
-                      Span(txt), cls="feat") for mark, txt in feats],
-                style="margin-top:1.25rem"),
-            Div(_btn(cta, "/register", "primary" if hot else "ghost", arrow=True),
-                cls="lp-price-cta"),
-            cls="lp-price" + (" hot" if hot else ""),
-        )
-
-    hero = Section(
-        Span("Pricing", cls="lp-eyebrow"),
-        H1("Start free on paper.", cls="lp-h1"),
-        P("Bring your own Alpaca keys. Upgrade when you go live.", cls="lp-lede"),
-        cls="lp-hero-inner",
-    )
-    return _shell(
-        "Pricing — AlpaTrade",
-        Section(hero, cls="lp-hero"),
-        Section(Div(*[card(*t) for t in tiers], cls="lp-grid c3", style="margin-top:0"),
-                cls="lp-section lp-bordered"),
-        _cta_band(),
-        active="pricing",
     )
 
 
@@ -700,8 +701,9 @@ def register(app, rt):
         return platform_page()
 
     @rt("/pricing")
-    def landing_pricing(session):
-        return pricing_page()
+    def landing_pricing():
+        # No public pricing — AlpaTrade is free for everyone for now.
+        return RedirectResponse(HEDGE_FUNDS_ANCHOR, status_code=301)
 
     @rt("/developers")
     def landing_developers(session):
