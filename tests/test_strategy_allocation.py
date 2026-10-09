@@ -197,6 +197,27 @@ def test_sleeve_buying_power_capped_at_allocation(tmp_path, monkeypatch):
     assert sum(float(o["notional"]) for o in s7) <= 4000
 
 
+import pytest
+
+
+@pytest.mark.parametrize("tracked", [True, False])
+def test_open_mag7_position_counts_against_mag7_sleeve(tmp_path, monkeypatch, tracked):
+    """META bought at 15:45 ET (~$1.4k) must use up Mag-7 headroom: sleeve = $10k equity − $2k Semi 7
+    = $8k; $6.6k headroom; target $8k/7 = $1,142.86 -> at most 5 more Mag-7 buys, never > $8k total."""
+    semi = Sleeve("buy_the_dip_semi7_minhold_live", "s7btd", 2000.0)
+    held = {"META": {"symbol": "META", "market_value": "1400", "qty": "2.03", "unrealized_plpc": "0"}}
+    st = {"positions": ({"META": {"entry_date": "2026-10-09", "client_id": "btd-META-20261009"}} if tracked else {}),
+          "last_entry": {}, "rec": {"pending": []}}
+    r, posted = _runner(tmp_path, monkeypatch, equity=10000.0, cash=8600.0, positions=held, store=FakeStore(st),
+                        sleeves=[(semi, _cfg(semi.strategy_name, SEMI7))])
+    r._run(["entry"], _cfg("buy_the_dip_mag7_minhold_live", MAG7))
+    mag = [o for o in posted if o["symbol"] in MAG7]
+    assert "META" not in {o["symbol"] for o in mag}
+    assert {o["notional"] for o in mag} == {f"{8000 / 7:.2f}"}
+    assert len(mag) == 5
+    assert 1400 + sum(float(o["notional"]) for o in mag) <= 8000
+
+
 def test_open_order_of_other_strategy_does_not_block_unrelated_symbols(tmp_path, monkeypatch):
     semi = Sleeve("buy_the_dip_semi7_minhold_live", "s7btd", 20000.0)
     oo = [{"symbol": "AMD", "side": "buy", "notional": "100", "client_order_id": "manual-1"}]

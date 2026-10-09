@@ -19,7 +19,7 @@ jobs:
       HAS_DB_SECRET: ${{ secrets.DATABASE_URL != '' }}
     services:
       postgres:
-        image: postgres:16
+        image: public.ecr.aws/docker/library/postgres:16  # ECR mirror, avoids Docker Hub pull rate limits
         env:
           POSTGRES_HOST_AUTH_METHOD: trust
         ports:

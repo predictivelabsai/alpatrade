@@ -1,0 +1,70 @@
+"""Semi 7 leaderboard backtest entry, built from the walk-forward report
+(docs/walk_forward_btd_semi7_*.json, scripts/walk_forward_btd.py --basket semi7).
+
+The out-of-sample fold returns are chained into an equity curve (one point per fold
+boundary, $10k base), SPY closes on the same dates give the benchmark. Annualised = CAGR over
+the covered calendar period. ``live_slug`` makes the leaderboard switch to live figures once
+the live Semi 7 sleeve has a session-close snapshot (engine.leaderboard.perf).
+"""
+from __future__ import annotations
+
+from datetime import date
+from typing import Optional
+
+SEED_KEY = "semi7-btd-backtest"
+LIVE_SLUG = "buy_the_dip_semi7_minhold_live"
+CAPITAL = 10_000.0
+
+
+def _d(s: str) -> date:
+    return date.fromisoformat(s[:10])
+
+
+def build_metrics(wf: dict, spy_close: dict, source: str = "") -> dict:
+    """wf = walk-forward JSON; spy_close = {YYYY-MM-DD: close} (nearest prior close used)."""
+    from engine.reporting.annualize import trading_days_between
+    rows = wf["rows"]
+    bounds = [r["test_period"].split("→") for r in rows]
+    dates = [bounds[0][0]] + [b[1] for b in bounds]
+    eq = [CAPITAL]
+    for r in rows:
+        eq.append(eq[-1] * (1 + float(r.get("oos_ret", r["oos_pnl"] / CAPITAL))))
+    keys = sorted(spy_close)
+
+    def spy_on(d):
+        prior = [k for k in keys if k <= d]
+        return float(spy_close[prior[-1]]) if prior else None
+    spy = [spy_on(d) for d in dates]
+    start, end = _d(dates[0]), _d(dates[-1])
+    years = (end - start).days / 365.25
+    tot = eq[-1] / eq[0] - 1
+    spy_tot = (spy[-1] / spy[0] - 1) if spy[0] and spy[-1] else None
+    cagr = (1 + tot) ** (1 / years) - 1
+    spy_cagr = (1 + spy_tot) ** (1 / years) - 1 if spy_tot is not None else None
+    peak, mdd = eq[0], 0.0
+    for v in eq:
+        peak = max(peak, v); mdd = min(mdd, v / peak - 1)
+    m = wf.get("metrics") or {}
+    trades = sum(int(r.get("oos_trades") or 0) for r in rows)
+    return {
+        "period_start": dates[0], "period_end": dates[-1],
+        "trading_days": trading_days_between(start, end),
+        "total_return_pct": tot * 100, "annualised_pct": cagr * 100,
+        "spy_return_pct": None if spy_tot is None else spy_tot * 100,
+        "spy_annualised_pct": None if spy_cagr is None else spy_cagr * 100,
+        "alpha_pct": None if spy_tot is None else (tot - spy_tot) * 100,
+        "alpha_annualised_pct": None if spy_cagr is None else (cagr - spy_cagr) * 100,
+        "sharpe": m.get("btd_sharpe"), "max_drawdown_pct": mdd * 100,
+        "win_rate_pct": m.get("trade_win_rate"), "trades": trades,
+        "universe": "Semi 7: TSM, AVGO, MU, AMD, ASML, INTC, AMAT",
+        "template": "buy_the_dip walk-forward (8 × 30d out-of-sample folds)",
+        "test": {}, "episodes": [], "source_report": source,
+        "equity_curve": {"dates": dates, "equity": [round(v, 2) for v in eq], "spy": spy},
+        "live_slug": LIVE_SLUG,
+    }
+
+
+def latest_report(root) -> Optional[str]:
+    from pathlib import Path
+    files = sorted(Path(root, "docs").glob("walk_forward_btd_semi7_*.json"))
+    return str(files[-1]) if files else None

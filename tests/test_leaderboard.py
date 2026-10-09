@@ -34,7 +34,10 @@ def test_metrics_from_live_run_snapshot():
     assert m["spy_return_pct"] == pytest.approx((774.30 / 767.29 - 1) * 100)
     assert m["alpha_pct"] == pytest.approx(m["return_pct"] - m["spy_return_pct"])
     # 11 sessions < 63 (~90 calendar days): not annualised
-    assert m["annualised_pct"] is None and m["annualised_compound_pct"] is None
+    # <90d rule reverted: always annualised, compounded on the TWR, with a short-period hint
+    r = m["return_pct"] / 100
+    assert m["annualised_pct"] == pytest.approx(((1 + r) ** (252 / 11) - 1) * 100)
+    assert m["annualised_short"] is True and "Short period" in perf.annualised_tip(m)
     assert m["annualised_short"] is True
 
 
@@ -106,7 +109,8 @@ def test_leaderboard_html_has_fields_actions_and_mobile_hooks():
                                                    dict(perf.EMPTY))], None)
     assert "Mag-7 &lt;BTD&gt;" in html and "<BTD>" not in html.split("<script")[0]
     assert "Julian Kaljuvee" in html and "Buys dips" in html
-    assert "n/a (&lt;90d)" in html and perf.pct(m["alpha_pct"]) in html
+    assert "n/a (&lt;90d)" not in html and perf.pct(m["annualised_pct"]) in html
+    assert perf.pct(m["alpha_pct"]) in html
     assert "Since 24 Sep 2026" in html and "15 days running" in html
     assert "Copy for ChatGPT" in html and "Copy for Claude" in html
     assert "action='/strategies/7/clone'" in html and "Clone into AlpaTrade" in html
@@ -291,3 +295,82 @@ def test_new_and_clone_default_to_email_local_part(owner_client):
     assert calls["create"] == "kaljuvee"
     c.post("/strategies/9/clone", follow_redirects=False)
     assert calls["clone"] == "kaljuvee"
+
+
+# ---- View more detail, AI logo buttons, Semi 7 backtest entry -------------------------------
+
+def test_index_series_removes_deposits_and_draws_down():
+    from engine.leaderboard.detail import index_series
+    from datetime import date
+    flows = [{"date": date(2026, 10, 9), "amount": 2000.0}]
+    s = index_series(["2026-10-07", "2026-10-08", "2026-10-09"], [10000, 9500, 11500], [100, 99, 100], flows)
+    assert s["index"][0] == 100 and abs(s["index"][1] - 95) < 1e-9
+    assert abs(s["index"][2] - 95) < 1e-9          # +$2k deposit is not a return
+    assert abs(s["drawdown_pct"][2] + 5) < 1e-9 and s["max_drawdown_pct"] == s["drawdown_pct"][1]
+    assert s["spy_index"] == [100.0, 99.0, 100.0] and s["daily_return_pct"][2] == 0
+
+
+def _wf():
+    return {"rows": [{"test_period": "2026-01-02→2026-02-02", "oos_pnl": 1000, "oos_ret": 0.10, "oos_trades": 4},
+                     {"test_period": "2026-02-02→2026-03-02", "oos_pnl": -550, "oos_ret": -0.05, "oos_trades": 3}],
+            "metrics": {"btd_sharpe": 1.2, "trade_win_rate": 55.0}}
+
+
+def test_semi7_build_metrics_curve_alpha_and_live_switch():
+    from engine.leaderboard import semi7
+    bm = semi7.build_metrics(_wf(), {"2026-01-02": 100.0, "2026-01-30": 102.0, "2026-03-02": 104.0})
+    assert bm["equity_curve"]["equity"] == [10000.0, 11000.0, 10450.0]
+    assert bm["equity_curve"]["spy"] == [100.0, 102.0, 104.0]   # nearest prior close on 2026-02-02
+    assert abs(bm["total_return_pct"] - 4.5) < 1e-9 and abs(bm["alpha_pct"] - 0.5) < 1e-9
+    assert abs(bm["max_drawdown_pct"] + 5) < 1e-9 and bm["trades"] == 7
+    assert bm["live_slug"] == "buy_the_dip_semi7_minhold_live"
+    assert bm["annualised_pct"] > bm["total_return_pct"]
+
+
+def test_backtest_entry_switches_to_live_when_live_record_exists(monkeypatch):
+    from engine.leaderboard import perf, semi7
+    bm = semi7.build_metrics(_wf(), {"2026-01-02": 100.0, "2026-03-02": 104.0})
+    row = {"id": 17, "kind": "backtest", "user_id": "u1", "backtest_metrics": bm, "live_strategy_slug": None}
+    real = perf.strategy_metrics
+    monkeypatch.setattr(perf, "metrics_from_run", lambda *a, **k: {**perf.EMPTY, "has_data": False}, raising=False)
+    monkeypatch.setattr(perf, "_live_run", lambda uid, slug: None)
+    m = real(dict(row))
+    assert m["is_backtest"] and m["annualised_pct"] is not None
+    live = {**perf.EMPTY, "has_data": True, "annualised_pct": 12.0}
+    calls = {}
+
+    def fake(strategy, today=None, _real=real):
+        if strategy.get("kind") == "live":
+            calls["slug"] = strategy["live_strategy_slug"]; return live
+        return _real(strategy, today)
+    monkeypatch.setattr(perf, "strategy_metrics", fake)
+    r2 = dict(row)
+    assert real(r2) is live and r2["kind"] == "live" and calls["slug"] == semi7.LIVE_SLUG
+
+
+def test_cards_have_view_more_and_ai_logo_buttons_including_grok():
+    from engine.web import ph_leaderboard as lb
+    s = {"id": 5, "name": "X", "description": "d", "skill_md": "---\ntitle: X\n---\nbody", "kind": "live",
+         "author_name": "A", "user_id": "u"}
+    html = lb._actions(s, None) if hasattr(lb, "_actions") else ""
+    assert "/strategies/5#details" in html and "View more" in html
+    assert "Copy for Grok" in html and html.count("<svg") == 3
+    assert "grok.com/?q=" in lb.LB_JS
+
+
+def test_detail_html_backtest_has_plotly_charts_params_and_skill():
+    from engine.leaderboard import semi7
+    from engine.leaderboard.detail import backtest_detail
+    from engine.web import ph_leaderboard as lb
+    md = open("engine/leaderboard/seeds/semi7-btd-backtest.md").read()
+    s = {"id": 17, "kind": "backtest", "description": "Semi 7 dip buyer", "skill_md": md, "name": "Semi 7",
+         "backtest_metrics": semi7.build_metrics(_wf(), {"2026-01-02": 100.0, "2026-03-02": 104.0})}
+    det = backtest_detail(s)
+    assert det["series"]["dates"] and det["config"]["params"]["symbols"][0] == "TSM"
+    html = lb.detail_html(s, {"is_backtest": True}, det)
+    for want in ("id='details'", "lb-eq-17", "lb-dd-17", "plotly", "Parameters", "Strategy prompt",
+                 "SKILL.md", "lbCopyRaw(17)"):
+        assert want in html, want
+    assert "id='lb-dr-17'" not in html       # no daily returns for a fold-level backtest curve
+    none = lb.detail_html({**s, "backtest_metrics": {}}, {"is_backtest": True}, {"series": {}})
+    assert "No equity curve stored" in none

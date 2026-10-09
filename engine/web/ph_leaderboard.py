@@ -55,6 +55,11 @@ LB_CSS = """
 .lb-sub.m{display:none}
 .lb .pos{color:#147a4b}.lb .neg{color:#b43b35}
 .lb-actions{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.55rem}
+.lb-btn.ai svg{height:15px;width:auto;display:block;flex:none}.lb-btn.ai svg path{fill:currentColor}
+.lb-det{margin:1.2rem 0}.lb-det h2{font-size:1rem;margin:1.1rem 0 .4rem}.lb-det .chart{height:300px;width:100%}
+.lb-det .chart.small{height:200px}.lb-det table{border-collapse:collapse;font-size:.82rem}
+.lb-det td,.lb-det th{padding:.25rem .7rem .25rem 0;text-align:left;border-bottom:1px solid var(--line)}
+.lb-det pre{white-space:pre-wrap;font-size:.78rem;background:var(--bg-elev);border:1px solid var(--line);padding:.7rem;border-radius:.5rem;max-height:420px;overflow:auto}
 .lb-btn{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;border:1px solid var(--line-br);background:var(--bg-elev);
  color:var(--ink);border-radius:2rem;padding:.42rem .9rem;font-size:.8rem;font-weight:550;cursor:pointer;text-decoration:none;
  font-family:inherit;line-height:1.2;min-height:36px}
@@ -136,7 +141,8 @@ LB_JS = """
 <script>
 (function(){
 var AI={chatgpt:{q:'https://chatgpt.com/?q=',home:'https://chatgpt.com/',name:'ChatGPT'},
-        claude:{q:'https://claude.ai/new?q=',home:'https://claude.ai/new',name:'Claude'}};
+        claude:{q:'https://claude.ai/new?q=',home:'https://claude.ai/new',name:'Claude'},
+        grok:{q:'https://grok.com/?q=',home:'https://grok.com/',name:'Grok'}};
 function toast(m){var t=document.getElementById('lb-toast');if(!t){t=document.createElement('div');t.id='lb-toast';
  t.className='lb-toast';t.setAttribute('role','status');document.body.appendChild(t)}t.textContent=m;t.classList.add('show');
  clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show')},Math.max(3800,m.length*45))}
@@ -148,6 +154,8 @@ window.lbCopy=function(id,p){var t=md(id);if(!t)return;var b=AI[p];var url=b.q+e
  copyText(t).then(function(){toast('Strategy skill copied to clipboard \u2014 '+(deep?'opening '+b.name:'paste it into '+b.name))})
   .catch(function(){toast('Copy failed \u2014 use Download .md on the strategy page')});
  window.open(deep?url:b.home,'_blank','noopener')};
+window.lbCopyRaw=function(id){var t=md(id);if(!t)return;copyText(t).then(function(){toast('SKILL.md copied to clipboard')})
+ .catch(function(){toast('Copy failed \u2014 use Download .md')})};
 window.lbChat=function(prompt){try{sessionStorage.setItem('alpatrade.pendingPrompt',prompt)}catch(e){}window.location.href='/app'};
 window.lbToast=toast;
 document.addEventListener('click',function(e){var el=e.target.closest&&e.target.closest('[data-tip]');
@@ -192,7 +200,7 @@ def _annualised_cell(m: dict, label: bool = True) -> str:
     return ((f"<span class='lb-l'>Annualised return</span>" if label else "")
             + f"<span class='lb-v {_cls(v)}' data-tip='{_e(lperf.annualised_tip(m))}' "
               f"title='{_e(lperf.annualised_tip(m))}'>"
-              f"{'n/a (&lt;90d)' if v is None and m.get('annualised_short') else lperf.pct(v)}</span>" + sub_m)
+              f"{lperf.pct(v)}</span>" + sub_m)
 
 
 def _alpha_cell(m: dict, label: bool = True) -> str:
@@ -260,8 +268,11 @@ def _running_cell(m: dict, label: bool = True) -> str:
 
 def _actions(s: dict, user: Optional[dict], *, wide_view: bool = False) -> str:
     sid = int(s["id"])
-    out = [f"<button type='button' class='lb-btn' onclick='lbCopy({sid},\"chatgpt\")'>Copy for ChatGPT</button>",
-           f"<button type='button' class='lb-btn' onclick='lbCopy({sid},\"claude\")'>Copy for Claude</button>"]
+    from engine.web.ai_logos import ANTHROPIC_SVG, GROK_SVG, OPENAI_SVG
+    out = [f"<a class='lb-btn view' href='/strategies/{sid}#details'>View more</a>",
+           f"<button type='button' class='lb-btn ai' onclick='lbCopy({sid},\"chatgpt\")'>{OPENAI_SVG}Copy for ChatGPT</button>",
+           f"<button type='button' class='lb-btn ai' onclick='lbCopy({sid},\"claude\")'>{ANTHROPIC_SVG}Copy for Claude</button>",
+           f"<button type='button' class='lb-btn ai' onclick='lbCopy({sid},\"grok\")'>{GROK_SVG}Copy for Grok</button>"]
     own = bool(user and str(user.get("user_id")) == s.get("user_id"))
     if not own:
         out.append(f"<form method='post' action='/strategies/{sid}/clone'>"
@@ -287,9 +298,9 @@ def _row(rank: int, s: dict, m: dict, user: Optional[dict]) -> str:
 
 
 _METHOD_NOTE = (
-    "Annualised return = return since the strategy went live × 252 / trading days (simple). "
-    "The compounded figure, (1+r)^(252/d)−1, is shown on hover (or under the figure on mobile) and "
-    "is indicative only, as gains aren't reinvested immediately. Alpha = strategy return minus "
+    "Annualised return = (1+r)^(252/d)−1, where r is the time-weighted return since the strategy "
+    "went live (deposits and withdrawals excluded) and d the trading days; over a short period it "
+    "is very sensitive (hover for the simple r×252/d figure). Alpha = strategy return minus "
     "SPY's return over the same period. Figures are computed live from each strategy's AlpaTrade "
     "live run (account equity and SPY at the latest session close; tap or hover a figure for the "
     "as-of date); \"—\" means no live track record yet. Past performance over a short period says "
@@ -399,7 +410,69 @@ def leaderboard_html(rows: list[tuple[dict, dict]], user: Optional[dict], msg: s
             f"<p class='lb-note'>{_METHOD_NOTE}{latest}</p>{band}</div>{LB_JS}")
 
 
-def strategy_html(s: dict, m: dict, user: Optional[dict], msg: str = "") -> str:
+_PLOTLY = "<script src='https://cdn.plot.ly/plotly-2.35.2.min.js'></script>"
+
+
+def detail_html(s: dict, m: dict, det: Optional[dict]) -> str:
+    """'View more' section: equity vs SPY (base 100), drawdown, daily returns + trade markers,
+    parameters, description/prompt and the copyable skill."""
+    sid = int(s["id"])
+    det = det or {}
+    ser = det.get("series") or {}
+    bt = bool(m.get("is_backtest"))
+    parts = ["<section class='lb-det' id='details'><h2>Equity curve vs SPY "
+             f"<span class='muted' style='font-weight:400;font-size:.78rem'>(base 100"
+             f"{', deposit-adjusted time-weighted' if not bt else ', backtest'})</span></h2>"]
+    if ser.get("dates"):
+        payload = json.dumps({"s": ser, "trades": det.get("trades") or [], "bt": bt}).replace("</", "<\\/")
+        parts.append(f"<div id='lb-eq-{sid}' class='chart'></div><h2>Drawdown</h2>"
+                     f"<div id='lb-dd-{sid}' class='chart small'></div>"
+                     + ("" if bt else f"<h2>Daily returns</h2><div id='lb-dr-{sid}' class='chart small'></div>")
+                     + f"<script type='application/json' id='lb-det-{sid}'>{payload}</script>"
+                     + _PLOTLY + _DETAIL_JS.replace("__SID__", str(sid)))
+        if det.get("cash_flows_ok") is False:
+            parts.append("<p class='lb-note'>Deposit/withdrawal history unavailable: the curve may include transfers.</p>")
+    else:
+        parts.append("<p class='lb-note'>No equity curve stored for this strategy yet.</p>")
+    tr = det.get("trades") or []
+    if tr:
+        def _pl(v):
+            return "—" if v is None else f"{v:+,.2f}"
+        rows = "".join(f"<tr><td>{_e(t['symbol'])}</td><td>{_e(t.get('entry'))}</td><td>{_e(t.get('exit') or 'open')}</td>"
+                       f"<td>{_pl(t.get('pnl'))}</td></tr>" for t in tr[-30:])
+        parts.append(f"<h2>Trades ({len(tr)})</h2><table><tr><th>Symbol</th><th>Entry</th><th>Exit</th><th>P&amp;L $</th></tr>{rows}</table>")
+    cfg = det.get("config") or {}
+    if cfg.get("params"):
+        src = (f"alpatrade.strategy_configs <code>{_e(cfg.get('name'))}</code> v{_e(cfg.get('version'))}"
+               if cfg.get("version") else "skill Parameters block")
+        parts.append(f"<h2>Parameters</h2><p class='lb-note' style='margin:0'>From {src}.</p>"
+                     f"<pre>{_e(json.dumps({'params': cfg.get('params'), 'execution': cfg.get('execution')}, indent=2, default=str))}</pre>")
+    parts.append(f"<h2>Strategy prompt</h2><p>{_e(s.get('description'))}</p>"
+                 "<h2>Skill (SKILL.md)</h2><p class='lb-note' style='margin:0'>Copy it into ChatGPT, Claude or Grok, "
+                 "download it, or clone it into your own AlpaTrade strategies.</p>"
+                 f"<pre id='lb-skill-{sid}'>{_e(copy_text(s))}</pre>"
+                 f"<div class='lb-actions'><button type='button' class='lb-btn' onclick=\"lbCopyRaw({sid})\">Copy SKILL.md</button></div>"
+                 "</section>")
+    return "".join(parts)
+
+
+_DETAIL_JS = """<script>(function(){var n=document.getElementById('lb-det-__SID__');if(!n||!window.Plotly)return;
+var d=JSON.parse(n.textContent),s=d.s,L={margin:{l:40,r:10,t:10,b:30},paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
+legend:{orientation:'h'},xaxis:{type:'date'}},C={displayModeBar:false,responsive:true};
+var tr=[{x:s.dates,y:s.index,name:d.bt?'Strategy (backtest)':'Account (TWR)',line:{color:'#1F5D43',width:2}}];
+if(s.spy_index&&s.spy_index.some(function(v){return v!=null}))tr.push({x:s.dates,y:s.spy_index,name:'SPY',line:{color:'#7A867E'}});
+var pos={};s.dates.forEach(function(x,i){pos[x]=s.index[i]});var bx=[],by=[],bt=[],sx=[],sy=[],st=[];
+(d.trades||[]).forEach(function(t){if(t.entry&&pos[t.entry]!=null){bx.push(t.entry);by.push(pos[t.entry]);bt.push('Buy '+t.symbol)}
+ if(t.exit&&pos[t.exit]!=null){sx.push(t.exit);sy.push(pos[t.exit]);st.push('Sell '+t.symbol+(t.pnl!=null?' '+t.pnl.toFixed(2):''))}});
+if(bx.length)tr.push({x:bx,y:by,text:bt,mode:'markers',name:'Buys',marker:{symbol:'triangle-up',color:'#147a4b',size:9},hoverinfo:'text+x'});
+if(sx.length)tr.push({x:sx,y:sy,text:st,mode:'markers',name:'Sells',marker:{symbol:'triangle-down',color:'#b43b35',size:9},hoverinfo:'text+x'});
+Plotly.newPlot('lb-eq-__SID__',tr,L,C);
+Plotly.newPlot('lb-dd-__SID__',[{x:s.dates,y:s.drawdown_pct,fill:'tozeroy',name:'Drawdown %',line:{color:'#b43b35'}}],L,C);
+if(document.getElementById('lb-dr-__SID__'))Plotly.newPlot('lb-dr-__SID__',[{x:s.dates,y:s.daily_return_pct,type:'bar',name:'Daily return %',
+ marker:{color:s.daily_return_pct.map(function(v){return v>=0?'#147a4b':'#b43b35'})}}],L,C);})();</script>"""
+
+
+def strategy_html(s: dict, m: dict, user: Optional[dict], msg: str = "", det: Optional[dict] = None) -> str:
     sid = int(s["id"])
     own = bool(user and str(user.get("user_id")) == s.get("user_id"))
     badges = ("<span class='lb-badge pub'>Public</span>" if s.get("is_public")
@@ -410,7 +483,7 @@ def strategy_html(s: dict, m: dict, user: Optional[dict], msg: str = "") -> str:
         badges += f"<span class='lb-badge'>Clone of #{int(s['cloned_from_id'])}</span>"
     badges += _bt_badge(s)
     if m.get("is_backtest"):
-        return _strategy_backtest_html(s, m, user, badges, msg)
+        return _strategy_backtest_html(s, m, user, badges, msg, det)
     strip = ("<div class='lb-strip'>"
              f"<div class='lb-kpi'><div class='k'>Annualised return</div>{_annualised_cell(m, False)}</div>"
              f"<div class='lb-kpi'><div class='k'>Alpha vs SPY</div>{_alpha_cell(m, False)}</div>"
@@ -436,11 +509,12 @@ def strategy_html(s: dict, m: dict, user: Optional[dict], msg: str = "") -> str:
             + owner_bar
             + f"<div class='lb-md' data-md-render='lb-md-{sid}'><pre>{_e(copy_text(s))}</pre></div>"
             + _json_script(f"lb-md-{sid}", copy_text(s))
+            + (detail_html(s, m, det) if det is not None else "")
             + f"<p class='lb-note'>{_METHOD_NOTE}</p></div>{LB_JS}")
 
 
 def _strategy_backtest_html(s: dict, m: dict, user: Optional[dict], badges: str,
-                            msg: str = "") -> str:
+                            msg: str = "", det: Optional[dict] = None) -> str:
     """Strategy page for a kind='backtest' row: backtest KPIs, period and source link."""
     sid = int(s["id"])
     t = m.get("test") or {}
@@ -474,6 +548,7 @@ def _strategy_backtest_html(s: dict, m: dict, user: Optional[dict], badges: str,
                if user and str(user.get("user_id")) == s.get("user_id") else "")
             + f"<div class='lb-md' data-md-render='lb-md-{sid}'><pre>{_e(copy_text(s))}</pre></div>"
             + _json_script(f"lb-md-{sid}", copy_text(s))
+            + (detail_html(s, m, det) if det is not None else "")
             + f"<p class='lb-note'>{_METHOD_NOTE}</p></div>{LB_JS}")
 
 
@@ -557,6 +632,15 @@ def _not_found() -> HTMLResponse:
     return HTMLResponse("<!doctype html><title>Not found · AlpaTrade</title>"
                         "<p style='font-family:system-ui;padding:2rem'>Strategy not found. "
                         "<a href='/leaderboard'>Back to the Leaderboard</a></p>", status_code=404)
+
+
+def _detail(s: dict, m: dict) -> dict:
+    try:
+        from engine.leaderboard.detail import detail
+        return detail(s, m)
+    except Exception as exc:  # noqa: BLE001 — never break the page
+        log.warning("strategy detail failed: %s", type(exc).__name__)
+        return {}
 
 
 def _render(user, title: str, active: str, inner: str):
@@ -652,7 +736,8 @@ def register(app, rt):
         if not s:
             return _not_found()
         return _render(user, f"{s['name']} · AlpaTrade", "leaderboard",
-                       strategy_html(s, lperf.strategy_metrics(s), user, msg=msg))
+                       strategy_html(s, m := lperf.strategy_metrics(s), user, msg=msg,
+                                     det=_detail(s, m)))
 
     @rt("/strategies/{sid}/skill.md", methods=["GET"])
     def strategy_md(session, sid: int):
