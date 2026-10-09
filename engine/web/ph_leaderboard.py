@@ -268,7 +268,7 @@ _METHOD_NOTE = (
     "as-of date); \"—\" means no live track record yet. Past performance over a short period says "
     "little about the future. Strategies marked Backtest are hypothetical: their figures come "
     "from a daily-bar backtest (annualised = CAGR over the stated period, cash only, slippage "
-    "included; alpha = return minus SPY over the same period), they were never traded live and "
+    "included; alpha = CAGR minus SPY's CAGR over the same period), they were never traded live and "
     "are listed after live strategies. Not investment advice.")
 
 
@@ -278,7 +278,7 @@ def leaderboard_html(rows: list[tuple[dict, dict]], user: Optional[dict], msg: s
             "<div>Annualised return</div><div>Running / period</div><div>Alpha vs SPY</div></div>")
     body = "".join(_row(i + 1, s, m, user) for i, (s, m) in enumerate(rows)) or \
         "<div class='lb-empty'>No public strategies yet.</div>"
-    as_ofs = sorted({m["as_of"] for _, m in rows if m.get("as_of")})
+    as_ofs = sorted({m["as_of"] for _, m in rows if m.get("as_of") and not m.get("is_backtest")})
     latest = (f" Latest data: session close {lperf.fmt_day(as_ofs[-1])}." if as_ofs else "")
     flash = (f"<div class='flash err'>{_e(error)}</div>" if error else "") + \
             (f"<div class='flash'>{_e(msg)}</div>" if msg else "")

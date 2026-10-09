@@ -31,6 +31,8 @@
   `/leaderboard.json` and the skill.md front matter. Owned by kaljuvee@gmail.com, shown as the
   trader. Strategy 1 is unchanged (Predictive Labs Ltd).
 - Mobile (375px): leaderboard card + strategy page checked, no horizontal overflow.
+- Follow-up: the method note defines backtest alpha as CAGR − SPY CAGR, and the "Latest data:
+  session close" line only uses live strategies (a backtest end date no longer feeds it).
 - Tests: `tests/test_cwt_pipeline.py` (backtest metrics, ranking, badges/source escaping, no
   look-ahead, cash/P&L reconciliation, caption + guest parsing, skill front matter/params).
 - `.gitignore`: `data/cwt/` is tracked (except cached bars, caption JSON and audio).
