@@ -55,6 +55,9 @@ LB_CSS = """
 .lb-sub.m{display:none}
 .lb .pos{color:#147a4b}.lb .neg{color:#b43b35}
 .lb-actions{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.55rem}
+.lb-skill-h{display:flex;align-items:center;gap:.6rem}
+.lb-copy{display:inline-flex;align-items:center;gap:.3rem;border:1px solid var(--line-br);background:var(--bg-elev);color:var(--ink);
+ border-radius:.45rem;padding:.2rem .5rem;font-size:.75rem;font-weight:500;cursor:pointer}.lb-copy:hover{border-color:var(--accent);color:var(--accent)}
 .lb-btn.ai svg{height:15px;width:auto;display:block;flex:none}.lb-btn.ai svg path{fill:currentColor}
 .lb-det{margin:1.2rem 0}.lb-det h2{font-size:1rem;margin:1.1rem 0 .4rem}.lb-det .chart{height:300px;width:100%}
 .lb-det .chart.small{height:200px}.lb-det table{border-collapse:collapse;font-size:.82rem}
@@ -150,11 +153,19 @@ function md(id){var n=document.getElementById('lb-md-'+id);try{return n?JSON.par
 function copyText(t){if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(t);
  return new Promise(function(ok,no){var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';
  document.body.appendChild(a);a.select();var r=false;try{r=document.execCommand('copy')}catch(e){}a.remove();r?ok():no()})}
-window.lbCopy=function(id,p){var t=md(id);if(!t)return;var b=AI[p];var url=b.q+encodeURIComponent(t);var deep=url.length<7000;
- copyText(t).then(function(){toast('Strategy skill copied to clipboard \u2014 '+(deep?'opening '+b.name:'paste it into '+b.name))})
-  .catch(function(){toast('Copy failed \u2014 use Download .md on the strategy page')});
- window.open(deep?url:b.home,'_blank','noopener')};
-window.lbCopyRaw=function(id){var t=md(id);if(!t)return;copyText(t).then(function(){toast('SKILL.md copied to clipboard')})
+var MAXURL=6000;  /* prefill limit: longer ?q= URLs get truncated or rejected by the chat sites */
+function page(id){return location.origin+'/strategies/'+id}
+window.lbPrefill=function(id,p,t){var b=AI[p],full=b.q+encodeURIComponent(t);if(full.length<=MAXURL)return {url:full,full:true};
+ var short='I am looking at this AlpaTrade trading-strategy skill: '+page(id)+' (raw SKILL.md: '+page(id)+'/skill.md). '+
+  'I have copied the full SKILL.md to my clipboard and will paste it in my next message. '+
+  'Once I do, explain the strategy, its exact rules and its main risks.';
+ return {url:b.q+encodeURIComponent(short),full:false}};
+window.lbCopy=function(id,p){var t=md(id);if(!t)return;var b=AI[p],r=lbPrefill(id,p,t);
+ copyText(t).then(function(){toast(r.full?'Copied \u2014 opening '+b.name+' with the strategy prefilled'
+   :'Copied \u2014 '+b.name+' opens with a short prompt; paste (Ctrl/\u2318+V) the full SKILL.md there')})
+  .catch(function(){toast(r.full?'Opening '+b.name+' with the strategy prefilled':'Copy failed \u2014 '+b.name+' gets the page link; use Download .md')});
+ window.open(r.url,'_blank','noopener')};
+window.lbCopyRaw=function(id){var t=md(id);if(!t)return;copyText(t).then(function(){toast('Copied')})
  .catch(function(){toast('Copy failed \u2014 use Download .md')})};
 window.lbChat=function(prompt){try{sessionStorage.setItem('alpatrade.pendingPrompt',prompt)}catch(e){}window.location.href='/app'};
 window.lbToast=toast;
@@ -410,6 +421,10 @@ def leaderboard_html(rows: list[tuple[dict, dict]], user: Optional[dict], msg: s
             f"<p class='lb-note'>{_METHOD_NOTE}{latest}</p>{band}</div>{LB_JS}")
 
 
+COPY_SVG = ("<svg viewBox='0 0 24 24' width='15' height='15' fill='none' stroke='currentColor' stroke-width='2' "
+            "stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><rect x='9' y='9' width='13' height='13' "
+            "rx='2' ry='2'></rect><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'></path></svg>")
+
 _PLOTLY = "<script src='https://cdn.plot.ly/plotly-2.35.2.min.js'></script>"
 
 
@@ -448,10 +463,9 @@ def detail_html(s: dict, m: dict, det: Optional[dict]) -> str:
         parts.append(f"<h2>Parameters</h2><p class='lb-note' style='margin:0'>From {src}.</p>"
                      f"<pre>{_e(json.dumps({'params': cfg.get('params'), 'execution': cfg.get('execution')}, indent=2, default=str))}</pre>")
     parts.append(f"<h2>Strategy prompt</h2><p>{_e(s.get('description'))}</p>"
-                 "<h2>Skill (SKILL.md)</h2><p class='lb-note' style='margin:0'>Copy it into ChatGPT, Claude or Grok, "
-                 "download it, or clone it into your own AlpaTrade strategies.</p>"
-                 f"<pre id='lb-skill-{sid}'>{_e(copy_text(s))}</pre>"
-                 f"<div class='lb-actions'><button type='button' class='lb-btn' onclick=\"lbCopyRaw({sid})\">Copy SKILL.md</button></div>"
+                 "<h2 class='lb-skill-h'>Skill (SKILL.md) "
+                 f"<button type='button' class='lb-copy' onclick='lbCopyRaw({sid})' title='Copy SKILL.md to clipboard' "
+                 f"aria-label='Copy SKILL.md to clipboard'>{COPY_SVG}<span>Copy</span></button></h2>"
                  "</section>")
     return "".join(parts)
 
