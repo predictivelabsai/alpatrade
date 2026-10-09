@@ -112,7 +112,7 @@ def test_leaderboard_html_has_fields_actions_and_mobile_hooks():
     assert "n/a (&lt;90d)" not in html and perf.pct(m["annualised_pct"]) in html
     assert perf.pct(m["alpha_pct"]) in html
     assert "Since 24 Sep 2026" in html and "15 days running" in html
-    assert "Copy for ChatGPT" in html and "Copy for Claude" in html
+    assert "Open in Grok" in html and "Copy to clipboard" in html and "Copy for ChatGPT" not in html
     assert "action='/strategies/7/clone'" in html and "Clone into AlpaTrade" in html
     assert "id='lb-md-7'" in html and "data-tip=" in html
     assert "session close 8 Oct 2026" in html
@@ -354,7 +354,9 @@ def test_cards_have_view_more_and_ai_logo_buttons_including_grok():
          "author_name": "A", "user_id": "u"}
     html = lb._actions(s, None) if hasattr(lb, "_actions") else ""
     assert "/strategies/5#details" in html and "View more" in html
-    assert "Copy for Grok" in html and html.count("<svg") == 3
+    assert "Open in Grok" in html and "Copy to clipboard" in html and "lbCopyClip(5)" in html
+    assert "ChatGPT" not in html and "Claude" not in html and html.count("<svg") == 2
+    assert "paste into Claude or ChatGPT" in lb.LB_JS and "chatgpt.com" not in lb.LB_JS
     assert "grok.com/?q=" in lb.LB_JS
 
 
@@ -398,10 +400,10 @@ def test_prefill_urls_full_or_short_with_page_link():
     harness = ("var location={origin:'https://alpatrade.chat'};var window={matchMedia:function(){return{matches:false}}};"
                "var document={getElementById:function(){return null},addEventListener:function(){},"
                "querySelectorAll:function(){return []}};" + js +
-               ";var o={};['chatgpt','claude','grok'].forEach(function(p){o[p]=[window.lbPrefill(1,p,'short skill'),"
+               ";var o={};['grok'].forEach(function(p){o[p]=[window.lbPrefill(1,p,'short skill'),"
                "window.lbPrefill(1,p,'x'.repeat(9000))]});console.log(JSON.stringify(o))")
     out = json.loads(subprocess.run([node, "-e", harness], capture_output=True, text=True, check=True).stdout)
-    bases = {"chatgpt": "https://chatgpt.com/?q=", "claude": "https://claude.ai/new?q=", "grok": "https://grok.com/?q="}
+    bases = {"grok": "https://grok.com/?q="}
     for p, (short, long_) in out.items():
         assert short["full"] and short["url"] == bases[p] + "short%20skill"
         assert not long_["full"] and long_["url"].startswith(bases[p]) and len(long_["url"]) < 1000
