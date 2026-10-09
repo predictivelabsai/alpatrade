@@ -1,5 +1,13 @@
 # Change Log
 
+## 2026-10-10 — v0.33.2: Grok-only prefill + Copy to clipboard
+
+- Julian's test: only Grok honours the `?q=` prefill. The **Copy for ChatGPT** and **Copy for
+  Claude** buttons are removed from the leaderboard and strategy pages. What's left: **Open in Grok**
+  (logo; `grok.com/?q=` prefill, with a short page-link prompt plus clipboard copy for long skills)
+  and **Copy to clipboard** (double-page icon; copies the full SKILL.md, toast "Copied — paste into
+  Claude or ChatGPT").
+
 ## 2026-10-10 — v0.33.1: AI prefill links; no repeated SKILL.md
 
 - **Copy for ChatGPT / Claude / Grok** now always open the chat with a prompt prefilled

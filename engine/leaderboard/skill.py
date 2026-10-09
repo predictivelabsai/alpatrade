@@ -1,6 +1,6 @@
 """The single-markdown strategy *skill*: rules prompt + a machine-readable Parameters block.
 
-A strategy's ``skill_md`` is what "Copy for ChatGPT / Claude" puts on the clipboard. The
+A strategy's ``skill_md`` is what "Copy to clipboard" copies and "Open in Grok" prefills. The
 Parameters block is the first fenced JSON object that carries a ``params`` dict (same shape
 as an ``alpatrade.strategy_configs`` row: ``params`` + ``execution``).
 """

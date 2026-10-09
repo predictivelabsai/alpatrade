@@ -1,7 +1,7 @@
 """Strategy Leaderboard + user strategies (``/leaderboard``, ``/strategies`` …).
 
 * ``/leaderboard`` (public): every *public* strategy — name, user, description, annualised
-  return, period running and alpha vs SPY — with Copy for ChatGPT, Copy for Claude and
+  return, period running and alpha vs SPY — with Open in Grok, Copy to clipboard and
   Clone into AlpaTrade. Figures are computed live from the owner's live runner run
   (:mod:`engine.leaderboard.perf`); a strategy without live data shows "—".
 * ``/strategies`` (signed in): the user's own strategies (several allowed), each private or
@@ -58,7 +58,7 @@ LB_CSS = """
 .lb-skill-h{display:flex;align-items:center;gap:.6rem}
 .lb-copy{display:inline-flex;align-items:center;gap:.3rem;border:1px solid var(--line-br);background:var(--bg-elev);color:var(--ink);
  border-radius:.45rem;padding:.2rem .5rem;font-size:.75rem;font-weight:500;cursor:pointer}.lb-copy:hover{border-color:var(--accent);color:var(--accent)}
-.lb-btn.ai svg{height:15px;width:auto;display:block;flex:none}.lb-btn.ai svg path{fill:currentColor}
+.lb-btn.ai svg{height:15px;width:auto;display:block;flex:none}.lb-btn.ai svg path{fill:currentColor}.lb-btn.ai.cp svg path{fill:none}
 .lb-det{margin:1.2rem 0}.lb-det h2{font-size:1rem;margin:1.1rem 0 .4rem}.lb-det .chart{height:300px;width:100%}
 .lb-det .chart.small{height:200px}.lb-det table{border-collapse:collapse;font-size:.82rem}
 .lb-det td,.lb-det th{padding:.25rem .7rem .25rem 0;text-align:left;border-bottom:1px solid var(--line)}
@@ -143,9 +143,7 @@ LB_CSS = """
 LB_JS = """
 <script>
 (function(){
-var AI={chatgpt:{q:'https://chatgpt.com/?q=',home:'https://chatgpt.com/',name:'ChatGPT'},
-        claude:{q:'https://claude.ai/new?q=',home:'https://claude.ai/new',name:'Claude'},
-        grok:{q:'https://grok.com/?q=',home:'https://grok.com/',name:'Grok'}};
+var AI={grok:{q:'https://grok.com/?q=',home:'https://grok.com/',name:'Grok'}};
 function toast(m){var t=document.getElementById('lb-toast');if(!t){t=document.createElement('div');t.id='lb-toast';
  t.className='lb-toast';t.setAttribute('role','status');document.body.appendChild(t)}t.textContent=m;t.classList.add('show');
  clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show')},Math.max(3800,m.length*45))}
@@ -165,6 +163,8 @@ window.lbCopy=function(id,p){var t=md(id);if(!t)return;var b=AI[p],r=lbPrefill(i
    :'Copied \u2014 '+b.name+' opens with a short prompt; paste (Ctrl/\u2318+V) the full SKILL.md there')})
   .catch(function(){toast(r.full?'Opening '+b.name+' with the strategy prefilled':'Copy failed \u2014 '+b.name+' gets the page link; use Download .md')});
  window.open(r.url,'_blank','noopener')};
+window.lbCopyClip=function(id){var t=md(id);if(!t)return;copyText(t).then(function(){toast('Copied \u2014 paste into Claude or ChatGPT')})
+ .catch(function(){toast('Copy failed \u2014 use Download .md')})};
 window.lbCopyRaw=function(id){var t=md(id);if(!t)return;copyText(t).then(function(){toast('Copied')})
  .catch(function(){toast('Copy failed \u2014 use Download .md')})};
 window.lbChat=function(prompt){try{sessionStorage.setItem('alpatrade.pendingPrompt',prompt)}catch(e){}window.location.href='/app'};
@@ -279,11 +279,13 @@ def _running_cell(m: dict, label: bool = True) -> str:
 
 def _actions(s: dict, user: Optional[dict], *, wide_view: bool = False) -> str:
     sid = int(s["id"])
-    from engine.web.ai_logos import ANTHROPIC_SVG, GROK_SVG, OPENAI_SVG
+    from engine.web.ai_logos import GROK_SVG
+    # Only Grok honours a ?q= prefill reliably (Julian, 2026-10-10); for ChatGPT / Claude the
+    # user copies the SKILL.md and pastes it.
     out = [f"<a class='lb-btn view' href='/strategies/{sid}#details'>View more</a>",
-           f"<button type='button' class='lb-btn ai' onclick='lbCopy({sid},\"chatgpt\")'>{OPENAI_SVG}Copy for ChatGPT</button>",
-           f"<button type='button' class='lb-btn ai' onclick='lbCopy({sid},\"claude\")'>{ANTHROPIC_SVG}Copy for Claude</button>",
-           f"<button type='button' class='lb-btn ai' onclick='lbCopy({sid},\"grok\")'>{GROK_SVG}Copy for Grok</button>"]
+           f"<button type='button' class='lb-btn ai' onclick='lbCopy({sid},\"grok\")'>{GROK_SVG}Open in Grok</button>",
+           f"<button type='button' class='lb-btn ai cp' onclick='lbCopyClip({sid})' title='Copy the full SKILL.md'>"
+           f"{COPY_SVG}Copy to clipboard</button>"]
     own = bool(user and str(user.get("user_id")) == s.get("user_id"))
     if not own:
         out.append(f"<form method='post' action='/strategies/{sid}/clone'>"
@@ -414,7 +416,7 @@ def leaderboard_html(rows: list[tuple[dict, dict]], user: Optional[dict], msg: s
             "<h1>Leaderboard</h1>"
             "<p class='lede'>Public trading strategies with a live track record, ranked by "
             "annualised return, followed by clearly marked backtests of strategies traders have "
-            "described in public (e.g. on Chat With Traders). Copy any strategy into ChatGPT or Claude as a ready-made skill, or "
+            "described in public (e.g. on Chat With Traders). Open any strategy in Grok or copy it into ChatGPT or Claude as a ready-made skill, or "
             "clone it into your own AlpaTrade strategies to backtest and paper-trade it.</p>"
             + _filters_html(rows, kind, source, q) + count
             + f"<div class='lb-list'>{head}{body}</div>{pager}"
@@ -628,7 +630,7 @@ def form_html(action: str, s: Optional[dict] = None, error: str = "",
             f"<label>Description <small>(one or two sentences)</small><textarea name='description' rows='3' "
             f"maxlength='{store.MAX_DESC}'>{_e(s.get('description'))}</textarea></label>"
             "<label>Strategy skill (markdown) <small>— the rules prompt plus a fenced JSON Parameters "
-            "block with a <code>params</code> object; this is what Copy for ChatGPT / Claude copies</small>"
+            "block with a <code>params</code> object; this is what Open in Grok / Copy to clipboard use</small>"
             f"<textarea class='code' name='skill_md'>{_e(s.get('skill_md'))}</textarea></label>"
             f"<label class='chk'><input type='checkbox' name='is_public' value='1'{checked}> Public — list it on the Leaderboard</label>"
             "<div class='lb-actions' style='margin:0'><button class='lb-btn primary' type='submit'>Save</button>"
