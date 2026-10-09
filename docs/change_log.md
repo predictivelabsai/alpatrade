@@ -1,5 +1,15 @@
 # Change Log
 
+## 2026-10-10 — v0.33.1: AI prefill links; no repeated SKILL.md
+
+- **Copy for ChatGPT / Claude / Grok** now always open the chat with a prompt prefilled
+  (`chatgpt.com/?q=`, `claude.ai/new?q=`, `grok.com/?q=`, URL-encoded). If the full SKILL.md would
+  make the URL longer than 6,000 characters, the prefill is a short prompt with the strategy page and
+  raw `/skill.md` links, and the full text is copied to the clipboard (toast says to paste it).
+  Previously long skills just opened the site's home page.
+- **Strategy page:** the SKILL.md repeated at the bottom of "View more" is gone; it is a single compact
+  Copy button (double-page icon, "Copied" toast). Download .md and Clone stay in the top action row.
+
 ## 2026-10-10 — v0.33.0: leaderboard detail, Semi 7 backtest entry, front-page "How it works?"
 
 - **Leaderboard annualised:** the `<90d` rule is reverted. Annualised is always the compounded

@@ -374,3 +374,35 @@ def test_detail_html_backtest_has_plotly_charts_params_and_skill():
     assert "id='lb-dr-17'" not in html       # no daily returns for a fold-level backtest curve
     none = lb.detail_html({**s, "backtest_metrics": {}}, {"is_backtest": True}, {"series": {}})
     assert "No equity curve stored" in none
+
+
+def test_detail_has_single_compact_copy_not_repeated_skill():
+    from engine.leaderboard.detail import backtest_detail
+    from engine.web import ph_leaderboard as lb
+    md = open("engine/leaderboard/seeds/semi7-btd-backtest.md").read()
+    s = {"id": 17, "kind": "backtest", "description": "d", "skill_md": md, "name": "Semi 7", "backtest_metrics": {}}
+    html = lb.detail_html(s, {"is_backtest": True}, backtest_detail(s))
+    assert "lb-skill-17" not in html and "<pre id=" not in html
+    assert html.count("lbCopyRaw(17)") == 1 and "<rect" in html and ">Copy<" in html
+    assert "toast('Copied')" in lb.LB_JS
+
+
+def test_prefill_urls_full_or_short_with_page_link():
+    import json, shutil, subprocess
+    from engine.web import ph_leaderboard as lb
+    node = shutil.which("node")
+    if not node:
+        import pytest
+        pytest.skip("node not installed")
+    js = lb.LB_JS.split("<script>")[1].split("</script>")[0]
+    harness = ("var location={origin:'https://alpatrade.chat'};var window={matchMedia:function(){return{matches:false}}};"
+               "var document={getElementById:function(){return null},addEventListener:function(){},"
+               "querySelectorAll:function(){return []}};" + js +
+               ";var o={};['chatgpt','claude','grok'].forEach(function(p){o[p]=[window.lbPrefill(1,p,'short skill'),"
+               "window.lbPrefill(1,p,'x'.repeat(9000))]});console.log(JSON.stringify(o))")
+    out = json.loads(subprocess.run([node, "-e", harness], capture_output=True, text=True, check=True).stdout)
+    bases = {"chatgpt": "https://chatgpt.com/?q=", "claude": "https://claude.ai/new?q=", "grok": "https://grok.com/?q="}
+    for p, (short, long_) in out.items():
+        assert short["full"] and short["url"] == bases[p] + "short%20skill"
+        assert not long_["full"] and long_["url"].startswith(bases[p]) and len(long_["url"]) < 1000
+        assert "alpatrade.chat%2Fstrategies%2F1" in long_["url"]
