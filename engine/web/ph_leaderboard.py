@@ -111,6 +111,7 @@ LB_CSS = """
  .lb-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
  .lb-band{flex-direction:column;align-items:stretch}
  .lb-md{padding:.9rem}
+ .lb-form input[type=text]{min-height:44px;font-size:16px}  /* tap target; no iOS zoom */
 }
 """
 
@@ -293,7 +294,7 @@ def strategy_html(s: dict, m: dict, user: Optional[dict], msg: str = "") -> str:
             f"<p class='lede' style='margin-bottom:.4rem'>by <b>{_e(s['author'])}</b> · {_e(s.get('description'))}</p>"
             + strip + _actions(s, user, wide_view=True).replace("class='lb-actions'", "class='lb-actions' style='margin:0'")
             + owner_bar
-            + f"<div class='lb-md' data-md-render='lb-md-{sid}'><pre>{_e(s.get('skill_md') or '')}</pre></div>"
+            + f"<div class='lb-md' data-md-render='lb-md-{sid}'><pre>{_e(copy_text(s))}</pre></div>"
             + _json_script(f"lb-md-{sid}", copy_text(s))
             + f"<p class='lb-note'>{_METHOD_NOTE}</p></div>{LB_JS}")
 
@@ -337,16 +338,26 @@ def my_strategies_html(rows: list[tuple[dict, dict]], msg: str = "", error: str 
             f"<div class='lb-list'>{head}{body}</div></div>{LB_JS}")
 
 
-def form_html(action: str, s: Optional[dict] = None, error: str = "") -> str:
+def form_html(action: str, s: Optional[dict] = None, error: str = "",
+              default_author: str = "") -> str:
+    """New / edit strategy form. "Shown as" is prefilled with the strategy's current public
+    name (``author``), else the submitted value, else ``default_author`` (email local part)."""
     s = s or {}
     title = "Edit strategy" if s.get("id") else "New strategy"
     flash = f"<div class='flash err'>{_e(error)}</div>" if error else ""
     checked = " checked" if s.get("is_public") else ""
+    if s.get("user_id"):  # a stored row: its effective public name
+        shown_as = s.get("author") or s.get("author_name") or default_author
+    else:  # new form, or a re-rendered submission after a validation error
+        shown_as = (s.get("author_name") or "").strip() or default_author
     return (f"<div class='lb'>{flash}<a href='/strategies' style='font-size:.82rem'>← My strategies</a>"
             f"<h1>{title}</h1><form class='lb-form' method='post' action='{_e(action)}'>"
             f"<label>Name<input type='text' name='name' required maxlength='{store.MAX_NAME}' value='{_e(s.get('name'))}'></label>"
-            f"<label>Shown as <small>(the user name on the Leaderboard; leave blank to use your profile name)</small>"
-            f"<input type='text' name='author_name' maxlength='{store.MAX_AUTHOR}' value='{_e(s.get('author_name'))}'></label>"
+            f"<label for='lb-author'>Shown as <small>(your public user name on the Leaderboard and the "
+            f"strategy page; up to {store.MAX_AUTHOR} characters — left blank, it reverts to "
+            f"<b>{_e(default_author) or 'your email name'}</b>)</small>"
+            f"<input type='text' id='lb-author' name='author_name' maxlength='{store.MAX_AUTHOR}' "
+            f"autocomplete='nickname' placeholder='{_e(default_author)}' value='{_e(shown_as)}'></label>"
             f"<label>Description <small>(one or two sentences)</small><textarea name='description' rows='3' "
             f"maxlength='{store.MAX_DESC}'>{_e(s.get('description'))}</textarea></label>"
             "<label>Strategy skill (markdown) <small>— the rules prompt plus a fenced JSON Parameters "
@@ -381,6 +392,11 @@ def _render(user, title: str, active: str, inner: str):
 
 def _bool(v) -> bool:
     return str(v or "").strip().lower() in ("1", "true", "on", "yes")
+
+
+def _author(form, user: dict) -> str:
+    """Submitted "Shown as" name, sanitised; blank falls back to the email local part."""
+    return store.clean_author(form.get("author_name"), store.default_author(user))
 
 
 def register(app, rt):
@@ -430,7 +446,7 @@ def register(app, rt):
         if not user:
             return RedirectResponse("/signin", status_code=303)
         return _render(user, "New strategy · AlpaTrade", "strategies",
-                       form_html("/strategies/new"))
+                       form_html("/strategies/new", default_author=store.default_author(user)))
 
     @app.post("/strategies/new")
     async def strategy_new_post(session, request):
@@ -440,10 +456,11 @@ def register(app, rt):
         f = await request.form()
         try:
             sid = store.create(str(user["user_id"]), f.get("name"), f.get("description"),
-                               f.get("skill_md"), f.get("author_name"), _bool(f.get("is_public")))
+                               f.get("skill_md"), _author(f, user), _bool(f.get("is_public")))
         except ValueError as exc:
             return _render(user, "New strategy · AlpaTrade", "strategies",
-                           form_html("/strategies/new", dict(f), error=str(exc)))
+                           form_html("/strategies/new", dict(f), error=str(exc),
+                                     default_author=store.default_author(user)))
         return RedirectResponse(f"/strategies/{sid}?msg=Strategy+saved", status_code=303)
 
     @rt("/strategies/{sid}", methods=["GET"])
@@ -473,7 +490,8 @@ def register(app, rt):
         if not s or s["user_id"] != str(user["user_id"]):
             return _not_found()
         return _render(user, "Edit strategy · AlpaTrade", "strategies",
-                       form_html(f"/strategies/{sid}/edit", s))
+                       form_html(f"/strategies/{sid}/edit", s,
+                                 default_author=store.default_author(user)))
 
     @app.post("/strategies/{sid}/edit")
     async def strategy_edit_post(session, request, sid: int):
@@ -483,11 +501,11 @@ def register(app, rt):
         f = await request.form()
         try:
             ok = store.update(sid, str(user["user_id"]), f.get("name"), f.get("description"),
-                              f.get("skill_md"), f.get("author_name"), _bool(f.get("is_public")))
+                              f.get("skill_md"), _author(f, user), _bool(f.get("is_public")))
         except ValueError as exc:
             return _render(user, "Edit strategy · AlpaTrade", "strategies",
                            form_html(f"/strategies/{sid}/edit", {**dict(f), "id": sid},
-                                     error=str(exc)))
+                                     error=str(exc), default_author=store.default_author(user)))
         if not ok:
             return _not_found()
         return RedirectResponse(f"/strategies/{sid}?msg=Strategy+saved", status_code=303)
@@ -520,7 +538,7 @@ def register(app, rt):
         if not user:
             from urllib.parse import quote_plus
             return RedirectResponse(f"/signin?msg={quote_plus(_SIGNIN_MSG)}", status_code=303)
-        new_id = store.clone(sid, str(user["user_id"]))
+        new_id = store.clone(sid, str(user["user_id"]), author_name=store.default_author(user))
         if not new_id:
             return _not_found()
         return RedirectResponse(

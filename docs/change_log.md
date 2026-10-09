@@ -1,5 +1,28 @@
 # Change Log
 
+## 2026-10-09 — v0.29.1: editable Leaderboard "Shown as" name
+
+- **"Shown as" is now a proper per-strategy public user name** on the owner's edit view
+  (`/strategies/{id}/edit`) and on New strategy (`/strategies/new`). It was already an input
+  and the handler saved it, but: the edit form showed it **blank** when `author_name` was
+  NULL (the page displayed a fallback the owner couldn't see/edit), new strategies and clones
+  stored NULL (falling back to the profile display name), there was no sanitising beyond a
+  120-char cap, and **`/strategies/{id}/skill.md` (and Copy for ChatGPT / Claude) kept the old
+  name** in the skill's front-matter `author:` line.
+- Now: the field is prefilled with the current public name (edit) or the **email local part**
+  (new; clones get it too). On save it is trimmed, HTML tags / control characters stripped,
+  whitespace collapsed, capped at **60** chars; blank falls back to the email local part.
+  Everything is still HTML-escaped on render. Only the owner can edit (writes stay scoped by
+  `user_id`; non-owners get 404).
+- The skill's front-matter `author:` is rewritten to the "Shown as" name on save and at render
+  time (`skill.with_author`), so `/leaderboard`, `/leaderboard.json`, `/strategies/{id}` and
+  `/strategies/{id}/skill.md` all agree. Per-strategy only; the profile display name
+  (`users.display_name`, `/profile`) is untouched and remains the fallback for legacy NULL rows.
+- Mobile (375px): form inputs are 44px tall with 16px text (no iOS zoom), no horizontal overflow.
+- Strategy id 1 (live Mag-7 BTD) keeps **Predictive Labs Ltd** (no data change).
+- Tests: `tests/test_leaderboard.py` (sanitising, front-matter sync, prefill/escaping, owner
+  edit round-trip across all four pages, non-owner 404, new/clone defaults).
+
 ## 2026-10-09 — v0.29.0: Hedge Funds replaces Pricing on the landing page; Leaderboard name
 
 - **Pricing removed from the public site** (nav, footer, Platform hero button, `pricing_page`).

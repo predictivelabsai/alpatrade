@@ -180,3 +180,114 @@ def test_home_links_leaderboard():
     import app  # noqa: F401
     from engine.web import ph_layout
     assert ("Leaderboard", "/leaderboard", "leaderboard") in ph_layout.TRADE_PAGES
+
+
+# ── "Shown as" (public user name) ────────────────────────────────────────────
+def test_clean_author_trims_strips_html_caps_and_falls_back():
+    assert store.MAX_AUTHOR == 60
+    assert store.clean_author("  Predictive   Labs Ltd \n") == "Predictive Labs Ltd"
+    assert store.clean_author("<b>Acme</b><script>x</script>") == "Acmex"
+    assert store.clean_author("&lt;i&gt;Bob&lt;/i&gt;") == "Bob"
+    assert store.clean_author("A & B") == "A & B"
+    assert len(store.clean_author("x" * 200)) == 60
+    assert store.clean_author("   ", "kaljuvee") == "kaljuvee"
+    assert store.clean_author("<br>", "kaljuvee") == "kaljuvee"
+    assert store.clean_author("", None) is None
+    assert store.default_author({"email": "kaljuvee@gmail.com", "display_name": "Julian"}) == "kaljuvee"
+    assert store.default_author({"display_name": "Julian"}) == "Julian"
+
+
+def test_with_author_rewrites_front_matter_only():
+    md = SEED_MD.read_text(encoding="utf-8")
+    out = skill.with_author(md, "New Name")
+    assert skill.front_matter(out)["author"] == "New Name"
+    assert out.replace("author: New Name", "author: Predictive Labs Ltd", 1) == md
+    assert skill.with_author("# no front matter\nauthor: x\n", "Y") == "# no front matter\nauthor: x\n"
+    assert skill.with_author(md, "") == md
+    # skill.md / Copy-for text follow the strategy's current "Shown as" name
+    assert "author: Shown Elsewhere" in skill.copy_text(
+        {"skill_md": md, "author": "Shown Elsewhere"})
+    assert skill.front_matter(skill.copy_text({"skill_md": md, "author": "Predictive Labs Ltd"}))[
+        "author"] == "Predictive Labs Ltd"
+
+
+def test_clean_syncs_skill_author_on_save():
+    md = SEED_MD.read_text(encoding="utf-8")
+    name, _, out_md, author = store._clean("N", "d", md, "  <i>Kalju</i> Labs ")
+    assert author == "Kalju Labs" and skill.front_matter(out_md)["author"] == "Kalju Labs"
+
+
+def test_form_prefills_shown_as_and_escapes():
+    from engine.web import ph_leaderboard as lb
+    edit = lb.form_html("/strategies/7/edit", _strategy(author="Predictive Labs Ltd",
+                                                        author_name="Predictive Labs Ltd"),
+                        default_author="kaljuvee")
+    assert "name='author_name'" in edit and "value='Predictive Labs Ltd'" in edit
+    assert "maxlength='60'" in edit and "disabled" not in edit and "readonly" not in edit
+    new = lb.form_html("/strategies/new", default_author="kaljuvee")
+    assert "value='kaljuvee'" in new
+    xss = lb.form_html("/strategies/new", {"author_name": "'><script>x</script>"},
+                       default_author="k")
+    assert "<script>x" not in xss and "&#x27;&gt;&lt;script&gt;" in xss
+    page = lb.strategy_html(_strategy(author="<b>Evil</b>"), dict(perf.EMPTY), None)
+    assert "<b>Evil</b>" not in page and "&lt;b&gt;Evil&lt;/b&gt;" in page
+
+
+@pytest.fixture
+def owner_client(monkeypatch):
+    from starlette.testclient import TestClient
+    import app as app_module
+    from engine.web import ph_leaderboard as lb
+    owner = {"user_id": "owner-1", "email": "kaljuvee@gmail.com", "display_name": "Julian"}
+    rows = {1: _strategy(id=1, author="Predictive Labs Ltd", author_name="Predictive Labs Ltd"),
+            9: _strategy(id=9, user_id="owner-2", author="other", author_name="other")}
+    calls = {}
+
+    def fake_update(sid, uid, name, desc, md, author, pub):
+        calls["update"] = (sid, uid, author)
+        s = rows.get(int(sid))
+        if not s or s["user_id"] != uid:
+            return False
+        s.update(name=name, author_name=author, author=author, skill_md=md, is_public=pub)
+        return True
+
+    monkeypatch.setattr(lb, "_user", lambda session: owner)
+    monkeypatch.setattr(store, "get", lambda sid: rows.get(int(sid)))
+    monkeypatch.setattr(store, "list_public", lambda: [s for s in rows.values() if s["is_public"]])
+    monkeypatch.setattr(store, "update", fake_update)
+    monkeypatch.setattr(store, "create", lambda uid, n, d, md, author, pub:
+                        calls.setdefault("create", author) and 77)
+    monkeypatch.setattr(store, "clone", lambda sid, uid, author_name=None:
+                        calls.setdefault("clone", author_name) and 78)
+    monkeypatch.setattr(lb.lperf, "strategy_metrics", lambda s, today=None: dict(perf.EMPTY))
+    return TestClient(app_module.app), calls, rows
+
+
+def test_owner_edits_shown_as_and_it_shows_everywhere(owner_client):
+    c, calls, rows = owner_client
+    r = c.get("/strategies/1/edit")
+    assert r.status_code == 200 and "value='Predictive Labs Ltd'" in r.text
+    assert c.get("/strategies/9/edit").status_code == 404  # not the owner
+    form = {"name": rows[1]["name"], "description": "d", "skill_md": rows[1]["skill_md"],
+            "is_public": "1", "author_name": "  Kalju <b>Capital</b> "}
+    r = c.post("/strategies/1/edit", data=form, follow_redirects=False)
+    assert r.status_code == 303 and calls["update"] == (1, "owner-1", "Kalju Capital")
+    assert "Kalju Capital" in c.get("/leaderboard").text
+    assert c.get("/leaderboard.json").json()["strategies"][0]["user"] == "Kalju Capital"
+    assert "by <b>Kalju Capital</b>" in c.get("/strategies/1").text
+    assert "author: Kalju Capital" in c.get("/strategies/1/skill.md").text
+    # blank -> email local part; non-owner save is refused
+    c.post("/strategies/1/edit", data={**form, "author_name": "   "}, follow_redirects=False)
+    assert calls["update"][2] == "kaljuvee"
+    assert c.post("/strategies/9/edit", data=form, follow_redirects=False).status_code == 404
+    assert rows[9]["author"] == "other"
+
+
+def test_new_and_clone_default_to_email_local_part(owner_client):
+    c, calls, _ = owner_client
+    r = c.get("/strategies/new")
+    assert r.status_code == 200 and "value='kaljuvee'" in r.text
+    c.post("/strategies/new", data={"name": "X", "author_name": ""}, follow_redirects=False)
+    assert calls["create"] == "kaljuvee"
+    c.post("/strategies/9/clone", follow_redirects=False)
+    assert calls["clone"] == "kaljuvee"

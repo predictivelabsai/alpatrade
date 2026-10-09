@@ -6,6 +6,8 @@ user's strategy are limited to public ones.
 """
 from __future__ import annotations
 
+import html
+import re
 from typing import Optional
 
 TABLE = "alpatrade.user_strategies"
@@ -15,7 +17,7 @@ _COLS = ("s.id, s.user_id, s.name, s.author_name, s.description, s.skill_md, s.i
 _FROM = f"{TABLE} s LEFT JOIN alpatrade.users u ON u.user_id = s.user_id"
 
 MAX_NAME = 160
-MAX_AUTHOR = 120
+MAX_AUTHOR = 60  # public "Shown as" name (DB column allows 120)
 MAX_DESC = 2000
 MAX_SKILL = 60000
 
@@ -34,17 +36,47 @@ def public_name(display_name: Optional[str], email: Optional[str] = None) -> str
     return src.split("@", 1)[0] if src else "AlpaTrade user"
 
 
+_TAG = re.compile(r"<[^>]*>")
+_CTRL = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def default_author(user: Optional[dict]) -> str:
+    """Default public "Shown as" name for a new / cloned strategy: the email's local part."""
+    user = user or {}
+    email = (user.get("email") or "").strip()
+    if email:
+        return email.split("@", 1)[0][:MAX_AUTHOR] or "AlpaTrade user"
+    return public_name(user.get("display_name"))[:MAX_AUTHOR]
+
+
+def clean_author(raw: Optional[str], default: Optional[str] = None) -> Optional[str]:
+    """Sanitise a "Shown as" name: strip HTML tags / control chars, collapse whitespace,
+    trim, cap at ``MAX_AUTHOR``; blank falls back to ``default`` (itself cleaned).
+    Output is still HTML-escaped on render."""
+    v = _TAG.sub("", html.unescape(str(raw or "")))
+    v = re.sub(r"\s+", " ", _CTRL.sub(" ", v)).strip()[:MAX_AUTHOR].strip()
+    if v:
+        return v
+    if default is not None and str(default).strip():
+        return clean_author(default)
+    return None
+
+
 def author_of(row: dict) -> str:
     return (row.get("author_name") or "").strip() or public_name(
         row.get("user_display_name"), row.get("user_email"))
 
 
 def _clean(name, description, skill_md, author_name):
+    from engine.leaderboard.skill import with_author
     name = (name or "").strip()[:MAX_NAME]
     if not name:
         raise ValueError("A strategy needs a name.")
-    return (name, (description or "").strip()[:MAX_DESC], (skill_md or "")[:MAX_SKILL],
-            ((author_name or "").strip()[:MAX_AUTHOR] or None))
+    author = clean_author(author_name)
+    md = (skill_md or "")[:MAX_SKILL]
+    if author:  # keep the skill's front-matter ``author:`` in step with "Shown as"
+        md = with_author(md, author)[:MAX_SKILL]
+    return (name, (description or "").strip()[:MAX_DESC], md, author)
 
 
 def _rows(sql: str, params: dict) -> list[dict]:

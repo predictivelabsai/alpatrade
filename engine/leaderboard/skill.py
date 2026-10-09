@@ -39,12 +39,31 @@ def extract_params(md: str) -> Optional[dict]:
     return None
 
 
+_AUTHOR_LINE = re.compile(r"^author:[^\n]*$", re.MULTILINE)
+
+
+def with_author(md: str, author: Optional[str]) -> str:
+    """``md`` with its front-matter ``author:`` set to ``author`` (the public "Shown as" name).
+
+    Only an existing ``author:`` line inside the front matter is rewritten; markdown without
+    front matter or without that key is returned unchanged.
+    """
+    author = (author or "").strip()
+    m = _FRONT.match(md or "")
+    if not author or not m or not _AUTHOR_LINE.search(m.group(1)):
+        return md or ""
+    fm = _AUTHOR_LINE.sub(lambda _: f"author: {author}", m.group(1), count=1)
+    return md[:m.start(1)] + fm + md[m.end(1):]
+
+
 def copy_text(strategy: dict) -> str:
     """Clipboard text for ChatGPT / Claude: the strategy skill markdown itself.
 
+    The front-matter ``author:`` always reflects the strategy's current "Shown as" name.
     Strategies without a skill body still get a usable prompt (name + description).
     """
-    md = (strategy.get("skill_md") or "").strip()
+    md = with_author(strategy.get("skill_md") or "",
+                     strategy.get("author") or strategy.get("author_name")).strip()
     if md:
         return md + "\n"
     return (f"# {strategy.get('name') or 'Trading strategy'}\n\n"
