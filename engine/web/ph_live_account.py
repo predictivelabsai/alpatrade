@@ -364,7 +364,8 @@ def render(view: dict) -> str:
             "(account, positions, open orders). It cannot place, cancel or close anything, "
             "and this account is not available to chat trading tools or paper jobs. "
             "Runner-tracked strategy trades and performance are under "
-            "<a href='/live'>Live runs</a>.</p>")
+            "<a href='/live'>Live runs</a>; per-strategy cash allocations under "
+            "<a href='/live/allocations'>Strategy allocations</a>.</p>")
     return f"<div class='la'>{_head(sub, badge)}{body}{foot}</div>{_LOCAL_TIME_JS}{_EQUITY_CHART_JS}"
 
 

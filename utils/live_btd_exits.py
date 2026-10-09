@@ -45,17 +45,18 @@ def exit_prices(entry_price: float, tp_pct: float, sl_pct: float) -> tuple[float
     return round(tp, 2), round(sl, 2)
 
 
-def cids(sym: str, today: date) -> Dict[str, str]:
+def cids(sym: str, today: date, prefix: str = "btd") -> Dict[str, str]:
+    """Deterministic exit client ids; ``prefix`` = the strategy's cid prefix (primary: btd)."""
     d = f"{today:%Y%m%d}"
-    return {"oco": f"btdtp-{sym}-{d}", "stop": f"btdsl-{sym}-{d}", "market": f"btdx-{sym}-{d}"}
+    return {"oco": f"{prefix}tp-{sym}-{d}", "stop": f"{prefix}sl-{sym}-{d}", "market": f"{prefix}x-{sym}-{d}"}
 
 
 def plan_broker_exits(sym: str, qty: Any, entry_price: float, tp_pct: float, sl_pct: float,
-                      today: date, plpc_pct: Optional[float] = None) -> Dict[str, Any]:
+                      today: date, plpc_pct: Optional[float] = None, prefix: str = "btd") -> Dict[str, Any]:
     """Return {"action": "market"|"orders", "reason", "orders": [bodies], "tp", "sl"}.
     plpc_pct = Alpaca's unrealized P&L %% (current vs entry) used for the at-open TP/SL check."""
     tp, sl = exit_prices(entry_price, tp_pct, sl_pct)
-    c = cids(sym, today)
+    c = cids(sym, today, prefix)
     q = float(qty)
     if plpc_pct is not None and plpc_pct >= tp_pct:
         return {"action": "market", "reason": f"TP {plpc_pct:.2f}% at open", "tp": tp, "sl": sl,
@@ -90,14 +91,15 @@ def _market(sym: str, qty: Any, cid: str) -> Dict[str, Any]:
             "client_order_id": cid}
 
 
-def fallback_full_stop(sym: str, qty: Any, sl: float, today: date) -> Dict[str, Any]:
+def fallback_full_stop(sym: str, qty: Any, sl: float, today: date, prefix: str = "btd") -> Dict[str, Any]:
     """OCO rejected: protect the whole position with one stop (same deterministic stop id)."""
-    return stop_order(sym, qty, sl, cids(sym, today)["stop"])
+    return stop_order(sym, qty, sl, cids(sym, today, prefix)["stop"])
 
 
-def own_open_exits(open_orders: List[Dict[str, Any]], sym: str) -> List[Dict[str, Any]]:
+def own_open_exits(open_orders: List[Dict[str, Any]], sym: str, prefix: str = "btd") -> List[Dict[str, Any]]:
+    own = OWN_EXIT_PREFIXES if prefix == "btd" else (f"{prefix}tp-", f"{prefix}sl-", f"{prefix}x-")
     return [o for o in open_orders if o.get("symbol") == sym and o.get("side") == "sell"
-            and str(o.get("client_order_id") or "").startswith(OWN_EXIT_PREFIXES)]
+            and str(o.get("client_order_id") or "").startswith(own)]
 
 
 def order_fill(o: Dict[str, Any]) -> tuple[float, float, bool]:
