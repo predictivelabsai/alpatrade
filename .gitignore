@@ -206,8 +206,12 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# AlpaTrade runtime data
-data/
+# AlpaTrade runtime data (data/cwt/ catalogue + pilot artefacts are tracked; bars/audio are not)
+data/*
+!data/cwt/
+data/cwt/bars/
+data/cwt/**/captions*.json3
+data/cwt/**/*.mp3
 backtest-results/
 test-results/
 reports/

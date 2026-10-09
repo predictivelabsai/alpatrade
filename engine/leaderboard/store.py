@@ -13,6 +13,7 @@ from typing import Optional
 TABLE = "alpatrade.user_strategies"
 _COLS = ("s.id, s.user_id, s.name, s.author_name, s.description, s.skill_md, s.is_public, "
          "s.live_strategy_slug, s.seed_key, s.cloned_from_id, s.created_at, s.updated_at, "
+         "s.kind, s.source, s.source_url, s.backtest_metrics, "
          "u.display_name AS user_display_name, u.email AS user_email")
 _FROM = f"{TABLE} s LEFT JOIN alpatrade.users u ON u.user_id = s.user_id"
 
@@ -25,6 +26,10 @@ MAX_SKILL = 60000
 def _pool():
     from engine.db.pool import DatabasePool
     return DatabasePool()
+
+
+def is_backtest(row: dict) -> bool:
+    return (row or {}).get("kind") == "backtest"
 
 
 def public_name(display_name: Optional[str], email: Optional[str] = None) -> str:
@@ -88,6 +93,14 @@ def _rows(sql: str, params: dict) -> list[dict]:
         d = dict(r)
         d["user_id"] = str(d["user_id"]) if d.get("user_id") else None
         d["author"] = author_of(d)
+        d["kind"] = d.get("kind") or "live"
+        bm = d.get("backtest_metrics")
+        if isinstance(bm, str):
+            import json
+            try:
+                d["backtest_metrics"] = json.loads(bm)
+            except ValueError:
+                d["backtest_metrics"] = None
         d.pop("user_email", None)
         out.append(d)
     return out

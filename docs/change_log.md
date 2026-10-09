@@ -1,5 +1,40 @@
 # Change Log
 
+## 2026-10-10 — v0.30.0: Chat With Traders → backtested Leaderboard strategies (pilot: Kristjan Kullamägi)
+
+- **Pipeline** `scripts/cwt_pipeline.py catalogue|transcribe|extract|backtest|publish|all`
+  (`--episode N` / `--all`): scrapes chatwithtraders.com (sitemap + each episode page's embedded
+  API state) → **135 `stocks` episodes** (of 337; 152 h), mp3 URL for all, YouTube URL for 124
+  (yt-dlp `ytsearch` on the Chat With Traders channel, scored + de-duplicated) →
+  `data/cwt/episodes.csv` + new table **`alpatrade.cwt_episodes`** (`sql/43_cwt_episodes.sql`).
+  Transcribe = YouTube auto-captions (free), faster-whisper fallback, optional Gemini 2.5 Flash
+  strategy read of the YouTube URL; extract = Grok (`grok-4.3`, JSON) → rule spec with quotes +
+  timestamps + ambiguities; backtest + skill.md; publish. Bulk run **not** executed yet.
+  Transcription cost/speed comparison: `docs/cwt_pipeline.md`.
+- **Backtest engine** `engine/backtest/breakout.py`: daily-bar momentum breakout (prior momentum,
+  tight consolidation, buy-stop at the consolidation high, low-of-day stop capped at 1 ADR,
+  partial after N days + break-even stop, trail on the 10/20-day SMA, SPY 10>20 SMA filter),
+  cash only, 10 bps slippage per side, signals from the prior close (no look-ahead; tested).
+  Reuses the core engine's `Friction` and metric definitions. Data: Alpaca SIP daily bars,
+  adjustment=all, current S&P 500 (survivorship-biased; noted in the skill).
+- **Pilot ep. 212 Kristjan Kullamägi** (`data/cwt/212-…/`): 2016-01-04 → 2026-10-09 CAGR
+  −1.8% vs SPY +15.2% (Sharpe −0.20, max DD −30.2%, 334 trades, 27% win rate); train 2016–21
+  −0.7% vs +17.4%; test 2022–26 −3.2% vs +12.3%; train-optimised grid config OOS −3.3%. The
+  daily-bar, S&P 500 version of the method does not reproduce his edge (he trades smaller,
+  faster names with intraday opening-range entries).
+- **Leaderboard: backtest strategies.** `alpatrade.user_strategies` gains `kind`
+  ('live' | 'backtest'), `source`, `source_url`, `backtest_metrics` JSONB
+  (`sql/44_user_strategies_backtest.sql`, additive). Backtests show a **Backtest** badge, the
+  source link, "Backtest period" instead of "Running", CAGR and annualised alpha vs SPY on
+  `/leaderboard` (always ranked after live strategies), a backtest KPI strip + "not a live track
+  record" notice + out-of-sample figures on `/strategies/{id}`; `kind`/`source`/`source_url` in
+  `/leaderboard.json` and the skill.md front matter. Owned by kaljuvee@gmail.com, shown as the
+  trader. Strategy 1 is unchanged (Predictive Labs Ltd).
+- Mobile (375px): leaderboard card + strategy page checked, no horizontal overflow.
+- Tests: `tests/test_cwt_pipeline.py` (backtest metrics, ranking, badges/source escaping, no
+  look-ahead, cash/P&L reconciliation, caption + guest parsing, skill front matter/params).
+- `.gitignore`: `data/cwt/` is tracked (except cached bars, caption JSON and audio).
+
 ## 2026-10-09 — v0.29.1: editable Leaderboard "Shown as" name
 
 - **"Shown as" is now a proper per-strategy public user name** on the owner's edit view

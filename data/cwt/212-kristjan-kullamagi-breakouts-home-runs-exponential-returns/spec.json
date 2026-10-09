@@ -1,0 +1,78 @@
+{
+  "trader": "Kristjan Kullamägi",
+  "style": "swing trader breakout",
+  "timeframe": "daily with 60min for entry",
+  "universe": {
+    "description": "strongest stocks US equities mid/large caps most liquid",
+    "min_price": 5.0,
+    "min_dollar_volume_20d": 150000000.0
+  },
+  "setup": [
+    {
+      "rule": "big absolute and relative momentum then pullback or sideways consolidation with volatility contraction",
+      "quote": "you have a leg higher and then it usually goes sideways or pull backs pulls back and uh many times what happens is the volatility contracts like it gets tighter",
+      "timestamp": "00:18:51"
+    }
+  ],
+  "entry": [
+    {
+      "rule": "buy opening range high on daily breakout confirmation",
+      "quote": "i buy the opening range highs and the opening range highs is when the stock takes out uh obviously it has to be a breakout first",
+      "timestamp": "00:35:32"
+    }
+  ],
+  "stop": [
+    {
+      "rule": "initial stop low of day then trail 10 or 20 day MA waiting for close",
+      "quote": "initially my stop is always low low sodium day uh and once the moving averages the 10 and the 20 uh the moving averages it depends on the stock the faster moving stops are you stocks i moved uh i used the 10 day and the slow we're moving once i use the 20 day",
+      "timestamp": "00:41:43"
+    }
+  ],
+  "exits": [
+    {
+      "rule": "scale out 20-25% into first burst of strength then trail rest with MA hold as long as possible",
+      "quote": "i always sell some into that first burst uh to lock in a little bit of profits maybe i sell 20 or 25 or it can vary a lot",
+      "timestamp": "00:23:32"
+    }
+  ],
+  "sizing": [
+    {
+      "rule": "buy everything at once aggressively no scaling in unless new setup",
+      "quote": "i buy everything at once uh very aggressively",
+      "timestamp": "00:34:30"
+    }
+  ],
+  "market_filter": [
+    {
+      "rule": "only uptrending or sideways market after correction prefer stocks with relative strength",
+      "quote": "you obviously need uh uh up trending or sideways market to trade this method",
+      "timestamp": "00:29:44"
+    }
+  ],
+  "ambiguities": [
+    {
+      "issue": "exact consolidation range pct or days not specified",
+      "assumption": "use 20-60 days with max 15% range for daily approximation"
+    }
+  ],
+  "daily_bar_params": {
+    "momentum_lookback_days": 90,
+    "momentum_min_pct": 50.0,
+    "consolidation_days": 30,
+    "consolidation_max_range_pct": 15.0,
+    "volume_mult": 1.5,
+    "stop": "low_of_day_then_10_or_20_ma_close",
+    "partial_after_days": 5,
+    "partial_frac": 0.25,
+    "trail_ma": 20,
+    "risk_per_trade_pct": 1.0,
+    "max_position_pct": 20.0,
+    "max_positions": 25
+  },
+  "_meta": {
+    "model": "grok-4.3",
+    "episode": "212",
+    "page_url": "https://chatwithtraders.com/episode/212-kristjan-kullamagi-breakouts-home-runs-exponential-returns",
+    "youtube_url": "https://www.youtube.com/watch?v=K0F73Sq90j0"
+  }
+}

@@ -72,6 +72,9 @@ LB_CSS = """
  color:var(--ink-muted);vertical-align:middle;margin-left:.35rem;text-transform:uppercase;letter-spacing:.05em}
 .lb-badge.pub{border-color:var(--accent);color:var(--accent)}
 .lb-badge.live{border-color:#b43b35;color:#b43b35}
+.lb-badge.bt{border-color:#7a5a12;color:#7a5a12;background:#fff7e0}
+.lb-src{display:inline-block;margin-top:.3rem;font-size:.76rem;color:var(--ink-muted);overflow-wrap:anywhere}
+.lb-src a{color:var(--accent)}
 .lb-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem;margin:1.1rem 0}
 .lb-kpi{background:var(--bg-elev);border:1px solid var(--line);border-radius:.7rem;padding:.85rem .95rem}
 .lb-kpi .k{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim)}
@@ -179,14 +182,45 @@ def _annualised_cell(m: dict, label: bool = True) -> str:
 
 def _alpha_cell(m: dict, label: bool = True) -> str:
     v = m.get("alpha_pct")
-    sub = (f"<span class='lb-sub'>return {lperf.pct(m.get('return_pct'))} · SPY "
-           f"{lperf.pct(m.get('spy_return_pct'))}</span>" if v is not None else "")
+    if m.get("is_backtest"):
+        sub = (f"<span class='lb-sub'>annualised · CAGR {lperf.pct(m.get('annualised_pct'))} vs SPY "
+               f"{lperf.pct(m.get('spy_annualised_pct'))}</span>" if v is not None else "")
+    else:
+        sub = (f"<span class='lb-sub'>return {lperf.pct(m.get('return_pct'))} · SPY "
+               f"{lperf.pct(m.get('spy_return_pct'))}</span>" if v is not None else "")
     return ((f"<span class='lb-l'>Alpha vs SPY</span>" if label else "")
             + f"<span class='lb-v {_cls(v)}' data-tip='{_e(lperf.alpha_tip(m))}' "
               f"title='{_e(lperf.alpha_tip(m))}'>{lperf.pct(v)}</span>" + sub)
 
 
+def _period_cell(m: dict, label: bool = True) -> str:
+    """Backtest period instead of "Running" for kind='backtest' strategies."""
+    if not m.get("start_date"):
+        body = "<span class='lb-v'>—</span>"
+    else:
+        body = (f"<span class='lb-v' style='font-size:.9rem'>{_e(lperf.fmt_day(m['start_date']))} – "
+                f"{_e(lperf.fmt_day(m['as_of']))}</span><span class='lb-sub'>backtest"
+                + (f" · {m['trading_days']} trading days" if m.get("trading_days") else "") + "</span>")
+    return (f"<span class='lb-l'>Backtest period</span>" if label else "") + body
+
+
+def _bt_badge(s: dict) -> str:
+    return ("<span class='lb-badge bt' title='Hypothetical backtest on historical data — never "
+            "traded live'>Backtest</span>" if store.is_backtest(s) else "")
+
+
+def _source(s: dict) -> str:
+    url = (s.get("source_url") or "").strip()
+    if not url.startswith(("https://", "http://")):
+        return ""
+    label = s.get("source") or url.split("/")[2]
+    return (f"<div class='lb-src'>Source: <a href='{_e(url)}' target='_blank' "
+            f"rel='noopener nofollow'>{_e(label)} ↗</a></div>")
+
+
 def _running_cell(m: dict, label: bool = True) -> str:
+    if m.get("is_backtest"):
+        return _period_cell(m, label)
     if not m.get("start_date"):
         body = "<span class='lb-v'>—</span>"
     else:
@@ -214,8 +248,8 @@ def _row(rank: int, s: dict, m: dict, user: Optional[dict]) -> str:
     sid = int(s["id"])
     return (f"<div class='lb-row' id='strategy-{sid}'>"
             f"<div class='lb-rank'>{rank}</div>"
-            f"<div class='lb-name'><a href='/strategies/{sid}'>{_e(s['name'])}</a>"
-            f"<div class='lb-desc'>{_e(s.get('description'))}</div></div>"
+            f"<div class='lb-name'><a href='/strategies/{sid}'>{_e(s['name'])}</a>{_bt_badge(s)}"
+            f"<div class='lb-desc'>{_e(s.get('description'))}</div>{_source(s)}</div>"
             f"<div class='lb-cell'><span class='lb-l'>User</span>{_e(s['author'])}</div>"
             f"<div class='lb-cell'>{_annualised_cell(m)}</div>"
             f"<div class='lb-cell'>{_running_cell(m)}</div>"
@@ -232,13 +266,16 @@ _METHOD_NOTE = (
     "SPY's return over the same period. Figures are computed live from each strategy's AlpaTrade "
     "live run (account equity and SPY at the latest session close; tap or hover a figure for the "
     "as-of date); \"—\" means no live track record yet. Past performance over a short period says "
-    "little about the future. Not investment advice.")
+    "little about the future. Strategies marked Backtest are hypothetical: their figures come "
+    "from a daily-bar backtest (annualised = CAGR over the stated period, cash only, slippage "
+    "included; alpha = return minus SPY over the same period), they were never traded live and "
+    "are listed after live strategies. Not investment advice.")
 
 
 def leaderboard_html(rows: list[tuple[dict, dict]], user: Optional[dict], msg: str = "",
                      error: str = "") -> str:
     head = ("<div class='lb-row lb-head'><div>#</div><div>Strategy</div><div>User</div>"
-            "<div>Annualised return</div><div>Running</div><div>Alpha vs SPY</div></div>")
+            "<div>Annualised return</div><div>Running / period</div><div>Alpha vs SPY</div></div>")
     body = "".join(_row(i + 1, s, m, user) for i, (s, m) in enumerate(rows)) or \
         "<div class='lb-empty'>No public strategies yet.</div>"
     as_ofs = sorted({m["as_of"] for _, m in rows if m.get("as_of")})
@@ -256,7 +293,8 @@ def leaderboard_html(rows: list[tuple[dict, dict]], user: Optional[dict], msg: s
     return (f"<div class='lb' id='leaderboard'>{flash}<span class='eyebrow'>Strategies</span>"
             "<h1>Leaderboard</h1>"
             "<p class='lede'>Public trading strategies with a live track record, ranked by "
-            "annualised return. Copy any strategy into ChatGPT or Claude as a ready-made skill, or "
+            "annualised return, followed by clearly marked backtests of strategies traders have "
+            "described in public (e.g. on Chat With Traders). Copy any strategy into ChatGPT or Claude as a ready-made skill, or "
             "clone it into your own AlpaTrade strategies to backtest and paper-trade it.</p>"
             f"<div class='lb-list'>{head}{body}</div>"
             f"<p class='lb-note'>{_METHOD_NOTE}{latest}</p>{band}</div>{LB_JS}")
@@ -271,6 +309,9 @@ def strategy_html(s: dict, m: dict, user: Optional[dict], msg: str = "") -> str:
         badges += "<span class='lb-badge live'>Live</span>"
     if s.get("cloned_from_id"):
         badges += f"<span class='lb-badge'>Clone of #{int(s['cloned_from_id'])}</span>"
+    badges += _bt_badge(s)
+    if m.get("is_backtest"):
+        return _strategy_backtest_html(s, m, user, badges, msg)
     strip = ("<div class='lb-strip'>"
              f"<div class='lb-kpi'><div class='k'>Annualised return</div>{_annualised_cell(m, False)}</div>"
              f"<div class='lb-kpi'><div class='k'>Alpha vs SPY</div>{_alpha_cell(m, False)}</div>"
@@ -294,6 +335,44 @@ def strategy_html(s: dict, m: dict, user: Optional[dict], msg: str = "") -> str:
             f"<p class='lede' style='margin-bottom:.4rem'>by <b>{_e(s['author'])}</b> · {_e(s.get('description'))}</p>"
             + strip + _actions(s, user, wide_view=True).replace("class='lb-actions'", "class='lb-actions' style='margin:0'")
             + owner_bar
+            + f"<div class='lb-md' data-md-render='lb-md-{sid}'><pre>{_e(copy_text(s))}</pre></div>"
+            + _json_script(f"lb-md-{sid}", copy_text(s))
+            + f"<p class='lb-note'>{_METHOD_NOTE}</p></div>{LB_JS}")
+
+
+def _strategy_backtest_html(s: dict, m: dict, user: Optional[dict], badges: str,
+                            msg: str = "") -> str:
+    """Strategy page for a kind='backtest' row: backtest KPIs, period and source link."""
+    sid = int(s["id"])
+    t = m.get("test") or {}
+    num = lambda v, f="{:.2f}": "—" if v is None else f.format(v)  # noqa: E731
+    strip = ("<div class='lb-strip'>"
+             f"<div class='lb-kpi'><div class='k'>Annualised (CAGR, backtest)</div>{_annualised_cell(m, False)}"
+             f"<span class='lb-sub'>SPY {lperf.pct(m.get('spy_annualised_pct'))}</span></div>"
+             f"<div class='lb-kpi'><div class='k'>Alpha vs SPY</div>{_alpha_cell(m, False)}</div>"
+             f"<div class='lb-kpi'><div class='k'>Sharpe · max drawdown</div><span class='lb-v'>"
+             f"{num(m.get('sharpe'))}</span><span class='lb-sub'>max DD {lperf.pct(m.get('max_drawdown_pct'))}"
+             f" · {m.get('trades') or 0} trades · win {num(m.get('win_rate_pct'), '{:.0f}%')}</span></div>"
+             f"<div class='lb-kpi'><div class='k'>Backtest period</div>{_period_cell(m, False)}</div></div>")
+    oos = ""
+    if t.get("annualised_pct") is not None:
+        oos = (f"<p class='lb-note' style='margin-top:0'>Out-of-sample test window "
+               f"{_e(lperf.fmt_day(t.get('period_start')))} – {_e(lperf.fmt_day(t.get('period_end')))}: "
+               f"CAGR {lperf.pct(t.get('annualised_pct'))} vs SPY {lperf.pct(t.get('spy_annualised_pct'))}, "
+               f"Sharpe {num(t.get('sharpe'))}, max drawdown {lperf.pct(t.get('max_drawdown_pct'))}. "
+               f"Universe: {_e(m.get('universe') or '—')}.</p>")
+    warn = ("<div class='flash' style='background:#fff7e0;color:#5c4410'><b>Backtest, not a live "
+            "track record.</b> These are hypothetical results of AlpaTrade's daily-bar interpretation "
+            f"of rules {_e(s['author'])} described in public. They are not {_e(s['author'])}'s own "
+            "trades or account, and the strategy has never been traded live on AlpaTrade.</div>")
+    flash = f"<div class='flash'>{_e(msg)}</div>" if msg else ""
+    return (f"<div class='lb'>{flash}<a href='/leaderboard' style='font-size:.82rem'>← Leaderboard</a>"
+            f"<h1>{_e(s['name'])}{badges}</h1>"
+            f"<p class='lede' style='margin-bottom:.4rem'>by <b>{_e(s['author'])}</b> · {_e(s.get('description'))}</p>"
+            + _source(s) + warn + strip + oos
+            + _actions(s, user, wide_view=True).replace("class='lb-actions'", "class='lb-actions' style='margin:0'")
+            + (f"<div class='lb-actions' style='margin:.2rem 0 0'><a class='lb-btn' href='/strategies/{sid}/edit'>Edit</a></div>"
+               if user and str(user.get("user_id")) == s.get("user_id") else "")
             + f"<div class='lb-md' data-md-render='lb-md-{sid}'><pre>{_e(copy_text(s))}</pre></div>"
             + _json_script(f"lb-md-{sid}", copy_text(s))
             + f"<p class='lb-note'>{_METHOD_NOTE}</p></div>{LB_JS}")
@@ -424,7 +503,9 @@ def register(app, rt):
         for i, (s, m) in enumerate(public_rows()):
             out.append({"rank": i + 1, "id": s["id"], "name": s["name"], "user": s["author"],
                         "description": s.get("description") or "",
-                        "url": f"/strategies/{s['id']}", **{k: m.get(k) for k in (
+                        "url": f"/strategies/{s['id']}", "kind": s.get("kind") or "live",
+                        "source": s.get("source"), "source_url": s.get("source_url"),
+                        **{k: m.get(k) for k in (
                             "start_date", "days_running", "trading_days", "as_of", "return_pct",
                             "spy_return_pct", "alpha_pct", "annualised_pct",
                             "annualised_compound_pct")}})

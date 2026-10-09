@@ -120,8 +120,36 @@ def _live_run(user_id: str, slug: str) -> Optional[dict]:
     return dict(row) if row else None
 
 
+def backtest_metrics(strategy: dict) -> dict:
+    """Figures for a ``kind='backtest'`` strategy from its stored ``backtest_metrics`` JSON
+    (written by scripts/cwt_pipeline.py publish). Annualised = CAGR over the backtest period."""
+    bm = strategy.get("backtest_metrics") or {}
+    out = dict(EMPTY)
+    out["is_backtest"] = True
+    if not isinstance(bm, dict) or _num(bm.get("annualised_pct")) is None:
+        return out
+    out.update({
+        "has_data": True, "start_date": bm.get("period_start"), "as_of": bm.get("period_end"),
+        "trading_days": bm.get("trading_days"), "return_pct": _num(bm.get("total_return_pct")),
+        "spy_return_pct": _num(bm.get("spy_return_pct")),
+        # over a multi-year backtest the annualised gap (CAGR − SPY CAGR) is the comparable alpha
+        "alpha_pct": _num(bm.get("alpha_annualised_pct")),
+        "alpha_total_pct": _num(bm.get("alpha_pct")),
+        "annualised_pct": _num(bm.get("annualised_pct")),
+        "spy_annualised_pct": _num(bm.get("spy_annualised_pct")),
+        "alpha_annualised_pct": _num(bm.get("alpha_annualised_pct")),
+        "sharpe": _num(bm.get("sharpe")), "max_drawdown_pct": _num(bm.get("max_drawdown_pct")),
+        "win_rate_pct": _num(bm.get("win_rate_pct")), "trades": bm.get("trades"),
+        "test": bm.get("test") or {}, "universe": bm.get("universe"),
+    })
+    return out
+
+
 def strategy_metrics(strategy: dict, today: Optional[date] = None) -> dict:
-    """Live metrics for one strategy row (cached briefly); EMPTY when not linked/unavailable."""
+    """Live metrics for one strategy row (cached briefly); EMPTY when not linked/unavailable.
+    Backtest strategies (``kind='backtest'``) return their stored backtest figures instead."""
+    if strategy.get("kind") == "backtest":
+        return backtest_metrics(strategy)
     slug, uid = strategy.get("live_strategy_slug"), strategy.get("user_id")
     if not slug or not uid:
         return dict(EMPTY)
@@ -157,6 +185,12 @@ def fmt_day(v) -> str:
 
 
 def annualised_tip(m: dict) -> str:
+    if m.get("is_backtest"):
+        if m.get("annualised_pct") is None:
+            return "No backtest figures stored for this strategy."
+        return (f"Backtest CAGR {pct(m['annualised_pct'])} vs SPY {pct(m.get('spy_annualised_pct'))} "
+                f"from {fmt_day(m['start_date'])} to {fmt_day(m['as_of'])} (daily bars, cash only, "
+                f"slippage included). Hypothetical — never traded live.")
     if m.get("annualised_pct") is None:
         return "No live track record available for this strategy yet."
     return (f"Simple: return × 252 / trading days = {pct(m['return_pct'])} × 252 / "
@@ -166,6 +200,14 @@ def annualised_tip(m: dict) -> str:
 
 
 def alpha_tip(m: dict) -> str:
+    if m.get("is_backtest"):
+        if m.get("alpha_pct") is None:
+            return "No backtest figures stored for this strategy."
+        return (f"Annualised alpha = backtest CAGR {pct(m['annualised_pct'])} − SPY CAGR "
+                f"{pct(m.get('spy_annualised_pct'))} = {pct(m['alpha_pct'])} "
+                f"({fmt_day(m['start_date'])}–{fmt_day(m['as_of'])}; total return "
+                f"{pct(m['return_pct'])} vs SPY {pct(m['spy_return_pct'])}). Hypothetical — never "
+                f"traded live.")
     if m.get("alpha_pct") is None:
         return "No live track record available for this strategy yet."
     return (f"Strategy {pct(m['return_pct'])} vs SPY {pct(m['spy_return_pct'])} from "
@@ -174,6 +216,8 @@ def alpha_tip(m: dict) -> str:
 
 
 def rank_key(m: dict):
-    """Sort: strategies with figures first, by annualised return (desc)."""
+    """Sort: live strategies with figures first (by annualised return, desc), then live ones
+    without figures, then backtests (by annualised return) — backtests never outrank live."""
     v = m.get("annualised_pct")
-    return (0, -v) if v is not None else (1, 0.0)
+    bt = 1 if m.get("is_backtest") else 0
+    return (bt, 0, -v) if v is not None else (bt, 1, 0.0)
