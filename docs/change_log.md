@@ -1,5 +1,30 @@
 # Change Log
 
+## 2026-10-09 — v0.32.0: Semi 7 BTD + multiple strategies per Alpaca account (sleeves)
+
+- **Semi 7 buy-the-dip** (`buy_the_dip_semi7_minhold_live`, seeded **inactive** by
+  `sql/46_strategy_allocations.sql`): the 7 largest US-listed semiconductors by market cap that
+  are not Mag-7 (NVDA excluded) — TSM, AVGO, MU, AMD, ASML, INTC, AMAT (yfinance caps
+  2026-10-09: $2346B / 1726B / 1159B / 992B / 684B / 552B / 402B; next LRCX $399B). Same params
+  as the live Mag-7 BTD (dip 3% vs 20d high, TP 8, SL 1.5, min/max hold 3d, cash only).
+- **Strategy sleeves** (`utils/strategy_allocation.py`, table `alpatrade.strategy_allocations`):
+  one runner process / one DB lease + heartbeat per account trades the primary strategy plus every
+  active sleeve in the same pass. Each sleeve has its own cash allocation (NULL = rest of the
+  account), its own `client_order_id` prefix (`btd` = Mag-7, `s7btd` = Semi 7; entries `<p>-SYM-
+  YYYYMMDD`, exits `<p>tp-/<p>sl-/<p>x-`), its own sub-state and `alpatrade.runs` row. Sizing =
+  pos_frac × sleeve; buys capped at sleeve − own exposure − own pending buys and at account cash
+  (no margin). Held/open-order checks are per strategy; a symbol held by another sleeve is never
+  bought (Alpaca nets per symbol). **Backward compatible:** with no allocation rows the Mag-7
+  runner is unchanged (pos_frac 1/7 of equity, `btd-` ids); BNBX/untracked positions still ignored.
+- **Web:** `/live/allocations` sets each strategy's allocation per linked live account, validated
+  against the account's equity (sum ≤ equity, ≥ 0, disjoint universes) with a warning above free
+  cash. Writes only the allocations table; `/live/account` stays read-only (links to it).
+- Daily live email / dashboard keep reporting the primary (Mag-7) run when sleeves add runs.
+- `scripts/walk_forward_btd.py --basket semi7` + CAGR / Sharpe / max DD / win rate vs
+  equal-weight buy-and-hold; report `docs/walk_forward_btd_semi7_20261009T195838.md` (+ .json).
+- Tests: `tests/test_strategy_allocation.py` (allocation math, cid tagging, sleeve-capped buying
+  power on a fake Alpaca, unchanged single-strategy path, web validation, metrics).
+
 ## 2026-10-10 — v0.31.0: Chat With Traders bulk run + Leaderboard filters / pagination
 
 - **Bulk pipeline** (`scripts/cwt_pipeline.py`): resumable per-episode state

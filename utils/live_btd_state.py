@@ -246,7 +246,8 @@ def alpaca_symbol_busy(get: Callable[..., Any], base: str, sym: str, cid: str) -
 _CID = re.compile(r"^btd-([A-Z.]+)-(\d{8})$")
 
 
-def adopt_runner_position(get: Callable[..., Any], base: str, sym: str) -> Optional[Dict[str, Any]]:
+def adopt_runner_position(get: Callable[..., Any], base: str, sym: str,
+                          prefix: str = "btd") -> Optional[Dict[str, Any]]:
     """A basket position the state doesn't know: adopt it only if its latest filled order is
     a runner entry (client id btd-<SYM>-<YYYYMMDD>). Anything else stays pre-existing."""
     try:
@@ -256,7 +257,8 @@ def adopt_runner_position(get: Callable[..., Any], base: str, sym: str) -> Optio
     for o in orders:
         if o.get("symbol") != sym or float(o.get("filled_qty") or 0) <= 0:
             continue
-        m = _CID.match(o.get("client_order_id") or "")
+        rx = _CID if prefix == "btd" else re.compile(rf"^{re.escape(prefix)}-([A-Z.]+)-(\d{{8}})$")
+        m = rx.match(o.get("client_order_id") or "")
         if o.get("side") == "buy" and m and m.group(1) == sym:
             d = m.group(2)
             return {"entry_date": f"{d[:4]}-{d[4:6]}-{d[6:]}", "client_id": o["client_order_id"],

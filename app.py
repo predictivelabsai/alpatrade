@@ -56,6 +56,7 @@ from engine.web import ph_settings  # noqa: E402
 from engine.web import ph_pnl  # noqa: E402
 from engine.web import ph_runs  # noqa: E402
 from engine.web import ph_live_account  # noqa: E402
+from engine.web import ph_strategy_allocations  # noqa: E402
 from engine.web import ph_devlogin  # noqa: E402
 from engine.web import ph_filings  # noqa: E402
 from engine.web import ph_marketintel  # noqa: E402
@@ -83,6 +84,7 @@ ph_settings.register(app, rt)
 ph_pnl.register(app, rt)
 ph_runs.register(app, rt)
 ph_live_account.register(app, rt)
+ph_strategy_allocations.register(app, rt)
 ph_devlogin.register(app, rt)  # no-op unless ALPATRADE_DEV_LOGIN=1 (never set in prod)
 ph_filings.register(app, rt)
 ph_marketintel.register(app, rt)

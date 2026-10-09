@@ -234,7 +234,11 @@ def live_run(user_id: str, account_number: str | None = None) -> dict:
                     r[k] = json.loads(r[k])
         tagged = [r for r in rows if str((r.get("config") or {}).get("account_number") or "")
                   == str(account_number or "")]
-        return (tagged or rows or [{}])[0]
+        # Several strategies (sleeves) can share one account, each with its own run; the
+        # daily email / dashboard keep reporting the primary (Mag-7) run.
+        from utils.live_btd_store import STRATEGY_SLUG
+        primary = [r for r in (tagged or rows) if (r.get("strategy_slug") or STRATEGY_SLUG) == STRATEGY_SLUG]
+        return (primary or tagged or rows or [{}])[0]
     except Exception as exc:  # noqa: BLE001
         log.warning("live run lookup failed: %s", type(exc).__name__)
         return {}

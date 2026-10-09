@@ -1,0 +1,149 @@
+{
+  "rows": [
+    {
+      "test_period": "2026-02-11\u21922026-03-13",
+      "regime": "",
+      "params": {
+        "dip_threshold": 0.03,
+        "take_profit": 0.015,
+        "hold_days": 1
+      },
+      "is_pnl": 4647.0,
+      "oos_pnl": 4094.0,
+      "oos_trades": 108,
+      "base_pnl": 3617.0,
+      "oos_ret": 0.40943419130134573,
+      "oos_win_rate": 45.370370370370374,
+      "bh_ret": -0.045788887130616004
+    },
+    {
+      "test_period": "2026-03-13\u21922026-04-12",
+      "regime": "",
+      "params": {
+        "dip_threshold": 0.03,
+        "take_profit": 0.015,
+        "hold_days": 1
+      },
+      "is_pnl": 4987.0,
+      "oos_pnl": 385.0,
+      "oos_trades": 88,
+      "base_pnl": 285.0,
+      "oos_ret": 0.03854448006057664,
+      "oos_win_rate": 57.95454545454546,
+      "bh_ret": 0.16284121071109428
+    },
+    {
+      "test_period": "2026-04-12\u21922026-05-12",
+      "regime": "",
+      "params": {
+        "dip_threshold": 0.05,
+        "take_profit": 0.015,
+        "hold_days": 1
+      },
+      "is_pnl": 810.0,
+      "oos_pnl": 2686.0,
+      "oos_trades": 21,
+      "base_pnl": 2653.0,
+      "oos_ret": 0.2685648951492307,
+      "oos_win_rate": 76.19047619047619,
+      "bh_ret": 0.39264602515400615
+    },
+    {
+      "test_period": "2026-05-12\u21922026-06-11",
+      "regime": "",
+      "params": {
+        "dip_threshold": 0.05,
+        "take_profit": 0.015,
+        "hold_days": 1
+      },
+      "is_pnl": 3071.0,
+      "oos_pnl": 3265.0,
+      "oos_trades": 55,
+      "base_pnl": 3181.0,
+      "oos_ret": 0.3265226382980341,
+      "oos_win_rate": 69.0909090909091,
+      "bh_ret": 0.12463741106182369
+    },
+    {
+      "test_period": "2026-06-11\u21922026-07-11",
+      "regime": "",
+      "params": {
+        "dip_threshold": 0.03,
+        "take_profit": 0.015,
+        "hold_days": 1
+      },
+      "is_pnl": 4754.0,
+      "oos_pnl": 3426.0,
+      "oos_trades": 73,
+      "base_pnl": 2459.0,
+      "oos_ret": 0.3425860510940551,
+      "oos_win_rate": 67.12328767123287,
+      "bh_ret": 0.024456732020833476
+    },
+    {
+      "test_period": "2026-07-11\u21922026-08-10",
+      "regime": "",
+      "params": {
+        "dip_threshold": 0.03,
+        "take_profit": 0.015,
+        "hold_days": 1
+      },
+      "is_pnl": 3875.0,
+      "oos_pnl": 3530.0,
+      "oos_trades": 104,
+      "base_pnl": 2505.0,
+      "oos_ret": 0.3529968224334707,
+      "oos_win_rate": 65.38461538461539,
+      "bh_ret": -0.035889025958986985
+    },
+    {
+      "test_period": "2026-08-10\u21922026-09-09",
+      "regime": "",
+      "params": {
+        "dip_threshold": 0.03,
+        "take_profit": 0.015,
+        "hold_days": 1
+      },
+      "is_pnl": 3994.0,
+      "oos_pnl": 983.0,
+      "oos_trades": 92,
+      "base_pnl": 940.0,
+      "oos_ret": 0.09829210333251942,
+      "oos_win_rate": 45.65217391304348,
+      "bh_ret": 0.027503724000839305
+    },
+    {
+      "test_period": "2026-09-09\u21922026-10-09",
+      "regime": "",
+      "params": {
+        "dip_threshold": 0.03,
+        "take_profit": 0.015,
+        "hold_days": 1
+      },
+      "is_pnl": 2680.0,
+      "oos_pnl": 3243.0,
+      "oos_trades": 60,
+      "base_pnl": 3168.0,
+      "oos_ret": 0.324325068447113,
+      "oos_win_rate": 58.333333333333336,
+      "bh_ret": 0.04323180769103019
+    }
+  ],
+  "total_oos": 21612.0,
+  "total_is": 28818.0,
+  "total_naive": 18808.0,
+  "oos_wins": 8,
+  "metrics": {
+    "n": 8,
+    "btd_cagr": 16.26313983636198,
+    "btd_sharpe": 7.668520571471535,
+    "btd_mdd": 0.0,
+    "bh_cagr": 1.527675211469313,
+    "bh_sharpe": 2.2645352848112923,
+    "bh_mdd": 0.04578888713061602,
+    "btd_pos": 8,
+    "bh_pos": 6,
+    "beat": 6,
+    "trade_win_rate": 60.63746392606578
+  }
+}

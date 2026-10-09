@@ -181,7 +181,10 @@ def test_live_link_table_is_only_used_by_the_readonly_view():
                "engine/web/ph_settings.py",
                # Dashboard live dropdown / vs-SPY curve (GET-only client, no trading)
                "engine/reporting/pnl_dashboard.py", "tests/test_pnl_dashboard.py",
-               "engine/web/ph_pnl.py"}
+               "engine/web/ph_pnl.py",
+               # Strategy allocations page: GET-only account read to validate allocations;
+               # writes only alpatrade.strategy_allocations, never orders
+               "engine/web/ph_strategy_allocations.py", "tests/test_strategy_allocation.py"}
     pat = re.compile(r"user_live_broker_accounts|engine\.live_accounts|get_live_account_credentials"
                      r"|alpaca_live_readonly")
     hits = set()
