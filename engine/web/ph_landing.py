@@ -19,6 +19,7 @@ Pricing: AlpaTrade is free for everyone for now, so there is no public Pricing p
 from __future__ import annotations
 
 from fasthtml.common import (
+    Em, Details, Summary, Ol, Li,
     A, Div, Footer, H1, H2, H3, Img, Main, Nav, NotStr, P, Picture, Section, Source, Span, Strong, Style,
 )
 from starlette.responses import RedirectResponse
@@ -139,6 +140,29 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 .lp-accent { color: var(--accent); }
 .lp-muted { color: var(--ink-muted); }
 
+/* how it works: systematic trading primer */
+.lp-primer { margin-top: 2.5rem; max-width: 760px; }
+.lp-primer-h { font-size: 1.15rem; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.lp-primer-p { font-size: .92rem; line-height: 1.6; color: var(--ink-muted); margin-top: .7rem; }
+.lp-pieces { display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; margin-top: 1rem; }
+.lp-piece { border: 1px solid var(--line); border-radius: .75rem; padding: .7rem .8rem; background: var(--bg-elev); }
+.lp-piece .k { font-family: var(--font-mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.lp-piece .v { font-size: .84rem; color: var(--ink); margin-top: .25rem; }
+.lp-origins { margin-top: 1.2rem; }
+.lp-origins summary { cursor: pointer; font-weight: 600; color: var(--ink); font-size: .92rem; }
+.lp-timeline { list-style: none; padding: 0; margin: .7rem 0 0; border-left: 2px solid var(--line); }
+.lp-timeline li { position: relative; padding: .3rem 0 .3rem 1rem; font-size: .86rem; line-height: 1.5; color: var(--ink-muted); }
+.lp-timeline li::before { content: ""; position: absolute; left: -5px; top: .75rem; width: 8px; height: 8px; border-radius: 99px; background: var(--accent); }
+.lp-timeline .y { font-family: var(--font-mono); color: var(--ink); font-weight: 600; margin-right: .55rem; }
+.lp-through { color: var(--ink); font-weight: 500; }
+.lp-alpa { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--bg-elev); }
+.lp-alpa-inner { max-width: 1160px; margin: 0 auto; padding: 3.5rem 1.5rem; text-align: center; }
+.lp-alpa-word { font-size: clamp(3rem, 9vw, 6.5rem); font-weight: 700; line-height: 1.05; letter-spacing: -.02em; margin-top: .9rem; color: var(--ink); }
+.lp-alpa-word .dev { color: var(--accent); font-family: "Noto Sans Devanagari", "Mangal", "Kohinoor Devanagari", var(--font-sans, sans-serif); }
+.lp-alpa-word .dot { color: var(--ink-muted); font-weight: 400; }
+.lp-alpa-gloss { font-family: var(--font-mono); font-size: .9rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-muted); margin-top: .6rem; }
+.lp-alpa-line { font-size: clamp(1.35rem, 3vw, 2.1rem); line-height: 1.3; font-weight: 500; letter-spacing: -.01em; color: var(--ink); max-width: 28ch; margin: 1.2rem auto 0; }
+@media (max-width: 640px) { .lp-pieces { grid-template-columns: repeat(2, 1fr); } }
 /* hero */
 .lp-hero { position: relative; overflow: hidden;
   background: radial-gradient(ellipse 70% 55% at 50% -10%, var(--accent-dim), transparent 65%); }
@@ -280,15 +304,32 @@ PILLARS = [
 ]
 
 STEPS = [
-    ("01", "Pick a strategy & universe",
-     "Choose Buy-the-Dip, VIX, Momentum or Box-Wedge, set your tickers and parameters. "
-     "The strategy library encodes it as a compact, reproducible slug."),
-    ("02", "Backtest across the grid",
-     "Sweep the parameter space on real Alpaca data. Every run is stored to the database, "
-     "and the methodology lab writes a deterministic, dated artifact folder you can reproduce."),
-    ("03", "Paper-trade & prove the P&L",
-     "Send the winner to Alpaca paper trading. The validator checks every fill, the reconciler "
-     "ties out positions, and the reporter shows P&L, drawdown and top strategies."),
+    ("01", "Describe a strategy",
+     "Start from Buy-the-Dip, VIX, Momentum, Box-Wedge or any leaderboard skill, and pick your "
+     "universe. Every rule is written down: entry, exit, size and risk."),
+    ("02", "Fine-tune the parameters with AI",
+     "Chat with the desk: the AI proposes dip thresholds, stops, targets and hold times, sweeps "
+     "the grid on real Alpaca data and explains what moved the result and why."),
+    ("03", "Walk-forward, then go live",
+     "Re-test the chosen settings on unseen data, paper-trade them, then run them live in a "
+     "cash-only sleeve of your own account, with every fill validated and the P&L reported."),
+]
+
+PRIMER_PIECES = [
+    ("Signal", "When to enter and exit."),
+    ("Sizing", "How much to trade each time."),
+    ("Risk", "Stops, exposure caps, limits."),
+    ("Execution", "How orders reach the market."),
+]
+
+PRIMER_TIMELINE = [
+    ("1730", "Dojima rice exchange, Osaka: the roots of candlestick charting."),
+    ("1900", "Bachelier models prices as a random walk."),
+    ("1952", "Markowitz turns diversification into mathematics."),
+    ("1969", "Thorp's Princeton Newport runs quantitative arbitrage."),
+    ("1970s", "After 1971, trend-following CTAs (Campbell, Millburn, later AHL, Winton, Aspect); Bridgewater founded 1975."),
+    ("1980s", "Renaissance (1982); the Turtles learn rules, not instinct (1983–84); Tartaglia's stat-arb desk at Morgan Stanley; D.E. Shaw."),
+    ("Today", "Smart beta and high-frequency trading bring rules to every corner of the market."),
 ]
 
 STATS = [
@@ -394,9 +435,7 @@ def _hero():
         Div(
             Div(Span("◈ ", cls="lp-accent"),
                 Span("AI trading desk · backtest → paper → P&L", cls="lp-eyebrow")),
-            H1(Span("Backtest, "), Span("paper-trade", cls="lp-accent"),
-               Span(" and prove the "), Span("P&L", cls="lp-accent"), Span("."),
-               cls="lp-h1"),
+            H1(Span("Systematic trading", cls="lp-accent"), Span(", reimagined."), cls="lp-h1"),
             P("A squad of specialist AI analysts on Alpaca — they screen and research the market, "
               "backtest strategies across a parameter grid, paper-trade the winners live, then validate "
               "every fill and report the P&L. Chat-first, from ticker to track record.",
@@ -420,6 +459,20 @@ def _hero():
             cls="lp-hero-inner",
         ),
         cls="lp-hero",
+    )
+
+
+def _alpa():
+    """Name origin, right under the hero (Julian, 2026-10-10)."""
+    return Section(
+        Div(Span("Why AlpaTrade?", cls="lp-eyebrow"),
+            Div(Span("अल्प", cls="dev", lang="sa"), Span(" · ", cls="dot"), Span("alpa", cls="lat"),
+                cls="lp-alpa-word"),
+            Div("Sanskrit for “little”", cls="lp-alpa-gloss"),
+            P("It ties into the idea of small, disciplined edges compounding over time.",
+              cls="lp-alpa-line"),
+            cls="lp-alpa-inner"),
+        id="why-alpatrade", cls="lp-alpa",
     )
 
 
@@ -454,12 +507,37 @@ def _pillars():
 
 def _how():
     return Section(
-        Span("How it works", cls="lp-eyebrow"),
-        H2("From ticker to track record in an afternoon.", cls="lp-h2",
-           style="margin-top:.75rem;max-width:22ch"),
+        Span("How it works?", cls="lp-eyebrow"),
+        H2("You set the rules. AI helps you tune them.", cls="lp-h2",
+           style="margin-top:.75rem;max-width:24ch"),
         Div(*[Div(Div(num, cls="num"), Div(title, cls="title"), Div(body, cls="body"), cls="lp-card")
               for num, title, body in STEPS], cls="lp-grid c3"),
+        _primer(),
+        id="how-it-works",
         cls="lp-section lp-bordered",
+    )
+
+
+def _primer():
+    """Condensed 'what is systematic trading' summary (brief from Julian, 2026-10-10)."""
+    return Div(
+        H3("Systematic trading, in short", cls="lp-primer-h"),
+        P("Trading by fixed rules instead of in-the-moment judgment. Entries, exits, position size and "
+          "risk limits are set in advance and applied the same way every time, so the same signal gives "
+          "the same decision whether you are confident, scared or away from the screen. "
+          "It is rule-based; ", Em("algorithmic"), " is just the delivery, the rules coded so a computer "
+          "places the orders (many early systems were run by hand).", cls="lp-primer-p"),
+        Div(*[Div(Div(k, cls="k"), Div(v, cls="v"), cls="lp-piece") for k, v in PRIMER_PIECES],
+            cls="lp-pieces"),
+        P("Unlike discretionary trading, a system is backtested on history first and only then traded "
+          "live. Common styles: trend following, mean reversion, carry, statistical arbitrage and "
+          "volatility strategies.", cls="lp-primer-p"),
+        Details(Summary("Origins: from rice charts to Medallion"),
+                Ol(*[Li(Span(y, cls="y"), Span(t)) for y, t in PRIMER_TIMELINE], cls="lp-timeline"),
+                open=True, cls="lp-origins"),
+        P("The through-line: explicit, testable rules beat in-the-moment judgment.",
+          cls="lp-primer-p lp-through"),
+        cls="lp-primer",
     )
 
 
@@ -522,7 +600,7 @@ def _shell(title, *sections, active="home"):
 def home_page():
     return _shell(
         "AlpaTrade — AI trading, backtest & P&L analyst squad",
-        _hero(), _stats(), _hedge_funds(), _pillars(), _how(), _cta_band(),
+        _hero(), _alpa(), _stats(), _how(), _hedge_funds(), _pillars(), _cta_band(),
         active="home",
     )
 

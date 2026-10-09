@@ -1,5 +1,28 @@
 # Change Log
 
+## 2026-10-10 — v0.33.0: leaderboard detail, Semi 7 backtest entry, front-page "How it works?"
+
+- **Leaderboard annualised:** the `<90d` rule is reverted. Annualised is always the compounded
+  `(1+r)^(252/d)−1` on the deposit-adjusted time-weighted return, and the ranking uses it; under
+  63 trading days the tooltip adds a "Short period" hint (simple r×252/d is shown there too).
+- **View more** on every strategy (`/strategies/{id}#details`, `engine/leaderboard/detail.py`):
+  Plotly equity vs SPY (base 100, deposit-adjusted TWR for live), drawdown, daily returns with
+  buy/sell markers from the run's trades, parameters (`strategy_configs`, or the skill's
+  Parameters block for backtests), strategy prompt, SKILL.md with copy, download and clone.
+- **Copy buttons** now carry the ChatGPT / Claude logos, and there is a new **Copy for Grok**
+  (marks copied from predictivelabsai/fastskills `fastskills/logos.py`).
+- **Semi 7 on the leaderboard** as a *Backtest* entry (`engine/leaderboard/semi7.py`,
+  `scripts/seed_semi7_backtest.py`): 8 chained out-of-sample walk-forward folds from
+  `docs/walk_forward_btd_semi7_20261009T195838.json`, SPY on the same dates. It switches to
+  live figures automatically once `buy_the_dip_semi7_minhold_live` has a session-close snapshot
+  (`backtest_metrics.live_slug`).
+- **Sleeve sizing:** a strategy's own exposure now also counts every open position in its own
+  universe, not only the ones in its state file, so a Mag-7 position bought from the whole
+  account (META, 9 Oct 15:45 ET) uses up Mag-7 sleeve headroom (equity − other allocations).
+- **Front page:** hero headline "Systematic trading, reimagined"; a new "How it works?" section
+  (describe → fine-tune parameters with AI → walk-forward and go live), a short systematic-trading
+  primer with an origins timeline, and a large "Why AlpaTrade?" band right under the hero (अल्प · alpa, Sanskrit for "little": "It ties into the idea of small, disciplined edges compounding over time.").
+
 ## 2026-10-09 — v0.32.1: deposits are not P&L; no annualising short records
 
 - **Bug:** dashboard MTD P&L showed ~+$2,073 and the leaderboard Mag-7 live return +76.82%

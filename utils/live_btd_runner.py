@@ -724,7 +724,10 @@ class Runner:
             log.info("sizing: target/position=$%.2f (%.1f%% equity) available_cash=$%.2f exposure=$%.2f",
                      target, P["pos_frac"] * 100, avail, exposure)
         else:
-            own = [p for s, p in positions.items() if s in state["positions"]]
+            # own exposure = positions this strategy tracks PLUS any open position in its own
+            # universe (universes are disjoint), so e.g. a Mag-7 name bought before sleeves existed
+            # or adopted from the broker still counts against the sleeve (no overspend)
+            own = [p for s, p in positions.items() if s in state["positions"] or s in syms]
             exposure = sum(abs(float(p["market_value"])) for p in own)
             own_pending = sum(float(o.get("notional") or 0) or float(o.get("qty") or 0) * float(o.get("limit_price") or 0)
                               for o in open_orders if o["side"] == "buy" and sleeve.owns_cid(o.get("client_order_id")))

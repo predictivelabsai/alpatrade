@@ -13,10 +13,9 @@ These are the same numbers as ``/dashboard`` and the daily LIVE email:
                     Without flow data it falls back to equity / start_equity − 1.
 * SPY return      = SPY / start_SPY − 1          (same period)
 * alpha           = return − SPY return
-* annualised      = return × 252 / trading days  (simple; ``engine.reporting.annualize``);
-                    None ("n/a (<90d)") below 63 trading days (~90 calendar days)
-* compounded      = (1+r)^(252/d) − 1             (indicative only — gains aren't reinvested
-                                                   immediately)
+* annualised      = (1+r)^(252/d) − 1 on the time-weighted return r (compounded; always shown,
+                    with a "short period" hint in the tooltip below 63 trading days)
+* simple          = r × 252 / d (shown in the tooltip)
 * trading days    = NYSE sessions from the start date to the snapshot date, inclusive
                     (``trading_days_between``, same as the dashboard's since-start KPI)
 
@@ -119,13 +118,14 @@ def metrics_from_run(run: Optional[dict], today: Optional[date] = None,
             ret, dep = (equity / start_eq - 1) * 100, None
         spy_ret = (spy / start_spy - 1) * 100
         days = trading_days_between(start, d)
-        ann = annualize(ret, days)
+        ann = annualize(ret, days, min_days=1)
         out.update(
             has_data=True, as_of=d.isoformat(), trading_days=days,
             net_deposits=dep, cash_flows_ok=flows is not None,
-            annualised_short=ann.get("short_period", False),
+            annualised_short=days < 63,
             return_pct=ret, spy_return_pct=spy_ret, alpha_pct=ret - spy_ret,
-            annualised_pct=ann["simple_pct"], annualised_compound_pct=ann["compound_pct"],
+            annualised_pct=ann["compound_pct"], annualised_simple_pct=ann["simple_pct"],
+            annualised_compound_pct=None,
             equity=equity,
         )
         break
@@ -205,6 +205,16 @@ def strategy_metrics(strategy: dict, today: Optional[date] = None) -> dict:
     """Live metrics for one strategy row (cached briefly); EMPTY when not linked/unavailable.
     Backtest strategies (``kind='backtest'``) return their stored backtest figures instead."""
     if strategy.get("kind") == "backtest":
+        bm = strategy.get("backtest_metrics") if isinstance(strategy.get("backtest_metrics"), dict) else {}
+        live_slug = bm.get("live_slug")
+        if live_slug and strategy.get("user_id"):
+            # Backtest placeholder (e.g. Semi 7) that switches to live figures as soon as its
+            # live run has a session-close snapshot. Mutates the row so the page labels it Live.
+            m = strategy_metrics({**strategy, "kind": "live", "live_strategy_slug": live_slug}, today)
+            if m.get("has_data"):
+                strategy["kind"] = "live"
+                strategy["live_strategy_slug"] = live_slug
+                return m
         return backtest_metrics(strategy)
     slug, uid = strategy.get("live_strategy_slug"), strategy.get("user_id")
     if not slug or not uid:
@@ -249,15 +259,13 @@ def annualised_tip(m: dict) -> str:
                 f"from {fmt_day(m['start_date'])} to {fmt_day(m['as_of'])} (daily bars, cash only, "
                 f"slippage included). Hypothetical — never traded live.")
     if m.get("annualised_pct") is None:
-        if m.get("annualised_short"):
-            return (f"Not annualised: only {m.get('trading_days')} trading days since "
-                    f"{fmt_day(m.get('start_date'))} (needs 63, ~90 calendar days). Return since "
-                    f"start {pct(m.get('return_pct'))}, time-weighted, deposits excluded.")
         return "No live track record available for this strategy yet."
-    return (f"Simple: return × 252 / trading days = {pct(m['return_pct'])} × 252 / "
-            f"{m['trading_days']} = {pct(m['annualised_pct'])}. Compounded (1+r)^(252/d)−1 = "
-            f"{pct(m['annualised_compound_pct'])} — indicative only, as gains aren't reinvested "
-            f"immediately. Live account, session close {fmt_day(m['as_of'])}.")
+    short = (f" Short period: only {m['trading_days']} trading days, so the annualised figure "
+             "is very sensitive and says little about the future." if m.get("annualised_short") else "")
+    return (f"Compounded (1+r)^(252/d)−1 on the time-weighted return r = {pct(m['return_pct'])} "
+            f"(deposits/withdrawals excluded) over {m['trading_days']} trading days = "
+            f"{pct(m['annualised_pct'])}; simple r × 252 / d = {pct(m.get('annualised_simple_pct'))}."
+            f"{short} Live account, session close {fmt_day(m['as_of'])}.")
 
 
 def alpha_tip(m: dict) -> str:
