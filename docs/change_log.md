@@ -1,5 +1,28 @@
 # Change Log
 
+## 2026-10-10 — v0.34.0: backtest audit guardrails
+
+- **`utils/backtest_audit.py`**: every backtest result can be audited to pass / warn / fail with
+  reasons. Checks: engine_version, reconciliation (Σ trade P&L = equity change, reported return),
+  same_bar_exits (capital_after = initial + realised P&L whenever flat: the Semi 7 double count),
+  cash (never negative without margin), tp_sl_same_bar (stop-first or fail), costs (slippage and
+  fees > 0 and recorded), params (labelled live ⇒ = active `strategy_configs`, else 'research'),
+  lookahead (signal ≤ fill ≤ exit; next-open / close fill rule), universe (survivorship),
+  plausibility (warn > 200% annualised / Sharpe > 4 / zero DD with > 20 trades; fail > 1000% /
+  Sharpe > 8 unless overridden with a note), min_trades (< 10 fail, < 30 warn), OOS vs IS.
+- **Engine stamp** (`utils/engine_stamp.py`): every `alpatrade.runs` row written by
+  `agent_storage.store_run` records `config.engine_stamp` (engine, app version, git sha); published
+  backtests carry `backtest_metrics.engine_stamp`. buy_the_dip results older than b47e6de (v0.33.6)
+  or without a stamp **fail**.
+- **Publish gate** (`engine/leaderboard/audit_gate.py`): `cwt_pipeline publish` / `publish_group` and
+  `seed_semi7_backtest.py` refuse a failing audit and store `backtest_metrics.audit`.
+- **Leaderboard:** backtest entries show "Audit: passed / warnings / failed" (reasons on hover and
+  in an Audit table on View more, `/strategies/{id}#audit`). Nothing is hidden.
+- **CLI** `scripts/audit_backtest.py --strategy-id N | --run-id ID | --btd-live CONFIG` (exit 0/1/2)
+  and skill `.claude/skills/backtest-audit/SKILL.md`; `agents/backtester/SKILL.md` requires it.
+- **CI** step "Backtest audit guardrails" (tests/test_backtest_audit.py, tests/test_btd_equity_fixes.py),
+  with synthetic reproductions of each Semi 7 bug that must fail.
+
 ## 2026-10-10 — v0.33.6: buy_the_dip backtester fixes + Semi 7 / Mag-7 re-run on the exact live rules
 
 - **Equity bug** (`utils/buy_the_dip.py`): when several positions closed on the same bar, a position

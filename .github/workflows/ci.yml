@@ -54,6 +54,9 @@ jobs:
           python -c "import app; print('app import OK')"
           python -c "from engine.web import landing, layout; print('shell import OK')"
 
+      - name: Backtest audit guardrails
+        run: python -m pytest tests/test_backtest_audit.py tests/test_btd_equity_fixes.py -q
+
       - name: LLM usage unit tests
         run: python -m pytest tests/test_llm_usage.py tests/test_llm_cost_guards.py -q
 

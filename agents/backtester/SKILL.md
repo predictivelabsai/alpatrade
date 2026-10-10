@@ -80,3 +80,7 @@ The Backtester agent runs parameterized backtests using existing strategy implem
 - `buy_the_dip` -> `utils/backtester_util.backtest_buy_the_dip()`
 - `momentum` -> `utils/backtester_util.backtest_momentum_strategy()`
 - `vix` -> `utils/backtester_util.backtest_vix_strategy()`
+
+## Audit before reporting
+
+Before reporting any backtest figure, run `python scripts/audit_backtest.py` (see `.claude/skills/backtest-audit/SKILL.md`) and quote its status (pass / warnings / FAILED) with the numbers. Never report a failing audit's figures as results.

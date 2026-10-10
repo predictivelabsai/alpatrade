@@ -78,6 +78,9 @@ LB_CSS = """
 .lb-empty{padding:1.6rem;text-align:center;color:var(--ink-muted);font-size:.9rem}
 .lb-badge{display:inline-block;font-size:.66rem;font-weight:650;border-radius:1rem;padding:.1rem .5rem;border:1px solid var(--line-br);
  color:var(--ink-muted);vertical-align:middle;margin-left:.35rem;text-transform:uppercase;letter-spacing:.05em}
+.lb-badge.audit.warn{border-color:#b7791f;color:#b7791f}.lb-badge.audit.fail{border-color:#b43b35;color:#b43b35;background:rgba(180,59,53,.06)}
+.lb-badge.audit.ok{border-color:#147a4b;color:#147a4b}.lb-badge.audit{margin-left:.3rem;text-decoration:none}
+.lb-audit tr.a-fail td{color:#b43b35}.lb-audit tr.a-warn td{color:#8a5a12}
 .lb-badge.pub{border-color:var(--accent);color:var(--accent)}
 .lb-badge.live{border-color:#b43b35;color:#b43b35}
 .lb-badge.bt{border-color:#7a5a12;color:#7a5a12;background:#fff7e0}
@@ -240,9 +243,46 @@ def _period_cell(m: dict, label: bool = True) -> str:
     return (f"<span class='lb-l'>Backtest period</span>" if label else "") + body
 
 
+def _audit(s: dict):
+    """Backtest audit for a leaderboard row (cached on the row dict for this request)."""
+    if "_audit" not in s:
+        try:
+            from engine.leaderboard.audit_gate import audit_strategy
+            s["_audit"] = audit_strategy(s)
+        except Exception as exc:  # noqa: BLE001 -- never break the page
+            log.warning("audit failed: %s", type(exc).__name__)
+            s["_audit"] = None
+    return s["_audit"]
+
+
+def _audit_badge(s: dict) -> str:
+    rep = _audit(s)
+    if rep is None or rep.status == "pass":
+        return "" if rep is None else "<span class='lb-badge audit ok' title='Backtest audit passed'>Audit: passed</span>"
+    label, cls = ("Audit: failed", "fail") if rep.status == "fail" else ("Audit: warnings", "warn")
+    tip = " · ".join(rep.reasons[:6])
+    return (f"<a class='lb-badge audit {cls}' href='/strategies/{int(s['id'])}#audit' "
+            f"title='{_e(tip)}'>{label}</a>")
+
+
 def _bt_badge(s: dict) -> str:
-    return ("<span class='lb-badge bt' title='Hypothetical backtest on historical data — never "
-            "traded live'>Backtest</span>" if store.is_backtest(s) else "")
+    return (("<span class='lb-badge bt' title='Hypothetical backtest on historical data — never "
+             "traded live'>Backtest</span>" + _audit_badge(s)) if store.is_backtest(s) else "")
+
+
+def audit_html(s: dict) -> str:
+    rep = _audit(s) if store.is_backtest(s) else None
+    if rep is None:
+        return ""
+    icon = {"pass": "✓", "warn": "!", "fail": "✕"}
+    rows = "".join(f"<tr class='a-{c.status}'><td>{icon[c.status]}</td><td>{_e(c.name)}</td><td>{_e(c.reason)}</td></tr>"
+                   for c in rep.checks)
+    head = {"pass": "Audit: passed", "warn": "Audit: warnings", "fail": "Audit: failed"}[rep.status]
+    return (f"<section class='lb-det lb-audit' id='audit'><h2>{head}</h2>"
+            "<p class='lb-note' style='margin:0'>Automatic backtest audit (utils/backtest_audit.py): "
+            "reconciliation, costs, same-bar fills, lookahead, params vs live, plausibility and "
+            "engine version. Failing backtests can't be published; existing entries stay listed "
+            "with their result.</p><table>" + rows + "</table></section>")
 
 
 def _episodes(s: dict) -> list[dict]:
@@ -528,7 +568,7 @@ def strategy_html(s: dict, m: dict, user: Optional[dict], msg: str = "", det: Op
             + owner_bar
             + f"<div class='lb-md' data-md-render='lb-md-{sid}'><pre>{_e(copy_text(s))}</pre></div>"
             + _json_script(f"lb-md-{sid}", copy_text(s))
-            + (detail_html(s, m, det) if det is not None else "")
+            + audit_html(s) + (detail_html(s, m, det) if det is not None else "")
             + f"<p class='lb-note'>{_METHOD_NOTE}</p></div>{LB_JS}")
 
 
@@ -570,7 +610,7 @@ def _strategy_backtest_html(s: dict, m: dict, user: Optional[dict], badges: str,
                if user and str(user.get("user_id")) == s.get("user_id") else "")
             + f"<div class='lb-md' data-md-render='lb-md-{sid}'><pre>{_e(copy_text(s))}</pre></div>"
             + _json_script(f"lb-md-{sid}", copy_text(s))
-            + (detail_html(s, m, det) if det is not None else "")
+            + audit_html(s) + (detail_html(s, m, det) if det is not None else "")
             + f"<p class='lb-note'>{_METHOD_NOTE}</p></div>{LB_JS}")
 
 

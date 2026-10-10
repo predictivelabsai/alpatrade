@@ -860,6 +860,8 @@ def publish(ep: dict) -> int:
                                                    "spy_annualised_pct", "sharpe", "max_drawdown_pct",
                                                    "trades")}
     metrics["universe"] = res["universe"]
+    from engine.leaderboard.audit_gate import gate
+    metrics = gate(metrics, md)    # PermissionError on a failing backtest audit: never published
     key = f"cwt-{ep['slug']}"[:96]
     with DatabasePool().get_session() as s:
         for f_ in ("44_user_strategies_backtest.sql",):
@@ -1186,6 +1188,8 @@ def publish_group(g: dict, res: dict) -> int | None:
     metrics.update({"universe": res["universe"], "template": g["template"],
                     "episodes": [{"episode": e["episode_number"], "title": e["title"],
                                   "url": e["page_url"]} for e in eps]})
+    from engine.leaderboard.audit_gate import gate
+    metrics = gate(metrics, md)    # PermissionError on a failing backtest audit: never published
     key = f"cwt-{g['key']}"[:96]
     with _db().get_session() as s:
         uid = s.execute(text("SELECT user_id FROM alpatrade.users WHERE lower(email)=lower(:e)"),

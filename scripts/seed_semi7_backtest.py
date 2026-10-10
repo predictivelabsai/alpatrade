@@ -47,6 +47,12 @@ def main(argv=None) -> int:
 
 def _upsert(bm: dict) -> int:
     md = MD.read_text(encoding="utf-8")
+    from engine.leaderboard.audit_gate import gate
+    try:
+        bm = gate(bm, md)          # refuses to publish a failing backtest audit
+    except PermissionError as e:
+        print(e, file=sys.stderr)
+        return 2
     fm = front_matter(md)
     from sqlalchemy import text
     from engine.db.pool import DatabasePool
