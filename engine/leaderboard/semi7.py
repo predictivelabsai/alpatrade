@@ -2,8 +2,9 @@
 (docs/walk_forward_btd_semi7_*.json, scripts/walk_forward_btd.py --basket semi7).
 
 The out-of-sample fold returns are chained into an equity curve (one point per fold
-boundary, $10k base), SPY closes on the same dates give the benchmark. Annualised = CAGR over
-the covered calendar period. ``live_slug`` makes the leaderboard switch to live figures once
+boundary, $10k base), SPY closes on the same dates give the benchmark. Annualised = SIMPLE
+total × 252 / trading days (engine/reporting/annualize.py); CAGR kept as a secondary field.
+``live_slug`` makes the leaderboard switch to live figures once
 the live Semi 7 sleeve has a session-close snapshot (engine.leaderboard.perf).
 """
 from __future__ import annotations
@@ -36,11 +37,14 @@ def build_metrics(wf: dict, spy_close: dict, source: str = "") -> dict:
         return float(spy_close[prior[-1]]) if prior else None
     spy = [spy_on(d) for d in dates]
     start, end = _d(dates[0]), _d(dates[-1])
-    years = (end - start).days / 365.25
     tot = eq[-1] / eq[0] - 1
     spy_tot = (spy[-1] / spy[0] - 1) if spy[0] and spy[-1] else None
-    cagr = (1 + tot) ** (1 / years) - 1
-    spy_cagr = (1 + spy_tot) ** (1 / years) - 1 if spy_tot is not None else None
+    from engine.reporting.annualize import annualize
+    days = trading_days_between(start, end)
+    cagr = (annualize(tot * 100, days, 1)["compound_pct"] or 0.0) / 100
+    spy_cagr = (annualize(spy_tot * 100, days, 1)["compound_pct"] or 0.0) / 100 if spy_tot is not None else None
+    ann = tot * 252 / days if days else 0.0
+    spy_ann = spy_tot * 252 / days if (days and spy_tot is not None) else None
     peak, mdd = eq[0], 0.0
     for v in eq:
         peak = max(peak, v); mdd = min(mdd, v / peak - 1)
@@ -49,11 +53,13 @@ def build_metrics(wf: dict, spy_close: dict, source: str = "") -> dict:
     return {
         "period_start": dates[0], "period_end": dates[-1],
         "trading_days": trading_days_between(start, end),
-        "total_return_pct": tot * 100, "annualised_pct": cagr * 100,
+        "total_return_pct": tot * 100, "annualised_pct": ann * 100,
+        "annualised_cagr_pct": cagr * 100,
         "spy_return_pct": None if spy_tot is None else spy_tot * 100,
-        "spy_annualised_pct": None if spy_cagr is None else spy_cagr * 100,
+        "spy_annualised_pct": None if spy_ann is None else spy_ann * 100,
+        "spy_annualised_cagr_pct": None if spy_cagr is None else spy_cagr * 100,
         "alpha_pct": None if spy_tot is None else (tot - spy_tot) * 100,
-        "alpha_annualised_pct": None if spy_cagr is None else (cagr - spy_cagr) * 100,
+        "alpha_annualised_pct": None if spy_ann is None else (ann - spy_ann) * 100,
         "sharpe": m.get("btd_sharpe"), "max_drawdown_pct": mdd * 100,
         "win_rate_pct": m.get("trade_win_rate"), "trades": trades,
         "universe": "Semi 7: TSM, AVGO, MU, AMD, ASML, INTC, AMAT",

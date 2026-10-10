@@ -207,6 +207,8 @@ def _annualised_cell(m: dict, label: bool = True) -> str:
     v = m.get("annualised_pct")
     sub = (f"<span class='lb-sub'>compounded {lperf.pct(m.get('annualised_compound_pct'))}</span>"
            if m.get("annualised_compound_pct") is not None else "")
+    if m.get("is_backtest") and v is not None:
+        sub = "<span class='lb-sub'>simple, ×252/trading days</span>"
     sub_m = sub.replace("class='lb-sub'", "class='lb-sub m'")
     return ((f"<span class='lb-l'>Annualised return</span>" if label else "")
             + f"<span class='lb-v {_cls(v)}' data-tip='{_e(lperf.annualised_tip(m))}' "
@@ -217,7 +219,7 @@ def _annualised_cell(m: dict, label: bool = True) -> str:
 def _alpha_cell(m: dict, label: bool = True) -> str:
     v = m.get("alpha_pct")
     if m.get("is_backtest"):
-        sub = (f"<span class='lb-sub'>annualised · CAGR {lperf.pct(m.get('annualised_pct'))} vs SPY "
+        sub = (f"<span class='lb-sub'>simple, ×252/trading days · {lperf.pct(m.get('annualised_pct'))} vs SPY "
                f"{lperf.pct(m.get('spy_annualised_pct'))}</span>" if v is not None else "")
     else:
         sub = (f"<span class='lb-sub'>return {lperf.pct(m.get('return_pct'))} · SPY "
@@ -318,8 +320,9 @@ _METHOD_NOTE = (
     "live run (account equity and SPY at the latest session close; tap or hover a figure for the "
     "as-of date); \"—\" means no live track record yet. Past performance over a short period says "
     "little about the future. Strategies marked Backtest are hypothetical: their figures come "
-    "from a daily-bar backtest (annualised = CAGR over the stated period, cash only, slippage "
-    "included; alpha = CAGR minus SPY's CAGR over the same period), they were never traded live and "
+    "from a daily-bar backtest (annualised = simple, total return × 252 / trading days of the "
+    "stated period, cash only, slippage included; alpha = that minus SPY's simple annualised "
+    "return over the same days; the compounded CAGR is in the tooltip), they were never traded live and "
     "are listed after live strategies. Backtests use today's S&P 500 members, which flatters "
     "momentum and relative-strength rules in particular (survivorship bias). Not investment advice.")
 
@@ -536,7 +539,7 @@ def _strategy_backtest_html(s: dict, m: dict, user: Optional[dict], badges: str,
     t = m.get("test") or {}
     num = lambda v, f="{:.2f}": "—" if v is None else f.format(v)  # noqa: E731
     strip = ("<div class='lb-strip'>"
-             f"<div class='lb-kpi'><div class='k'>Annualised (CAGR, backtest)</div>{_annualised_cell(m, False)}"
+             f"<div class='lb-kpi'><div class='k'>Annualised (simple, ×252/trading days · backtest)</div>{_annualised_cell(m, False)}"
              f"<span class='lb-sub'>SPY {lperf.pct(m.get('spy_annualised_pct'))}</span></div>"
              f"<div class='lb-kpi'><div class='k'>Alpha vs SPY</div>{_alpha_cell(m, False)}</div>"
              f"<div class='lb-kpi'><div class='k'>Sharpe · max drawdown</div><span class='lb-v'>"
@@ -547,7 +550,10 @@ def _strategy_backtest_html(s: dict, m: dict, user: Optional[dict], badges: str,
     if t.get("annualised_pct") is not None:
         oos = (f"<p class='lb-note' style='margin-top:0'>Out-of-sample test window "
                f"{_e(lperf.fmt_day(t.get('period_start')))} – {_e(lperf.fmt_day(t.get('period_end')))}: "
-               f"CAGR {lperf.pct(t.get('annualised_pct'))} vs SPY {lperf.pct(t.get('spy_annualised_pct'))}, "
+               f"annualised (simple, ×252/trading days) "
+               f"{lperf.pct(lperf.simple_from_cagr(t.get('annualised_pct'), t.get('period_start'), t.get('period_end')))}"
+               f" vs SPY {lperf.pct(lperf.simple_from_cagr(t.get('spy_annualised_pct'), t.get('period_start'), t.get('period_end')))}"
+               f" (CAGR {lperf.pct(t.get('annualised_pct'))} vs {lperf.pct(t.get('spy_annualised_pct'))}), "
                f"Sharpe {num(t.get('sharpe'))}, max drawdown {lperf.pct(t.get('max_drawdown_pct'))}. "
                f"Universe: {_e(m.get('universe') or '—')}.</p>")
     warn = ("<div class='flash' style='background:#fff7e0;color:#5c4410'><b>Backtest, not a live "

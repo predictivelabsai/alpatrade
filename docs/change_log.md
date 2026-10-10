@@ -1,5 +1,30 @@
 # Change Log
 
+## 2026-10-10 — v0.33.4: backtest leaderboard rows use simple annualisation (×252/trading days)
+
+- **Headline "Annualised return" for every `kind='backtest'` row** (Semi 7 + the CWT backtests)
+  is now SIMPLE: total return × 252 / trading days of the backtest period — the same rule as live
+  (`engine/reporting/annualize.py`). It is recomputed in `engine.leaderboard.perf.backtest_metrics`
+  from the stored `total_return_pct` / `spy_return_pct` / `trading_days`; the stored
+  `annualised_pct` (compounded CAGR) is ignored, so no DB re-seed is needed.
+- **Alpha vs SPY** = simple annualised strategy − simple annualised SPY over the same days.
+- **CAGR only in the tooltip** (strategy, SPY and CAGR-basis alpha). Labels say
+  "simple, ×252/trading days"; the CWT out-of-sample test-window note converts its stored CAGR
+  back to simple. Method note updated.
+- `engine/leaderboard/semi7.py` / `scripts/seed_semi7_backtest.py` write simple `annualised_pct`
+  (+ `annualised_cagr_pct`) for future seeds.
+- Effect: Semi 7 +1629.7% → **+831.1%** (alpha +1608.6% → +810.9%, SPY +21.1% → +20.2%) over
+  167 sessions on a stored total of +550.8%. CWT (2708 sessions) simple is *higher* than CAGR
+  (e.g. Ross Haber 19.2% → 52.3%, SPY 15.2% → 33.1%); negative ones shrink (Marsten Parker
+  −15.8% → −7.8%). Leaderboard order unchanged.
+- **Known issue, not fixed here:** the Semi 7 total itself is inflated by a `utils/buy_the_dip.py`
+  equity bug (`capital_after` double-counts positions closed earlier in the same bar, and
+  `total_return` is read from the last trade's `capital_after`), plus optimistic TP-before-SL
+  ordering on daily bars. Re-running the 8 folds: summed fold PnL $2,802 (+28%) vs reported
+  $21,612; $644 with conservative TP/SL ordering. Needs a backtester fix + re-seed.
+- Tests: `tests/test_backtest_annualised.py` (short-window 167-day case, long window, negative,
+  missing days, tooltips/labels, Semi 7 build_metrics).
+
 ## 2026-10-10 — v0.33.3: Chat With Traders bulk results committed + backtest sanity fixes
 
 - **Results committed:** `data/cwt/` episode folders (transcripts, specs, per-episode state is

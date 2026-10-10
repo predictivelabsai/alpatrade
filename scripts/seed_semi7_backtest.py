@@ -58,8 +58,8 @@ def main(argv=None) -> int:
                                "md": md, "key": semi7.SEED_KEY, "bm": json.dumps(bm, default=float),
                                "url": "https://github.com/predictivelabsai/alpatrade/blob/main/" + bm["source_report"].replace(".json", ".md")}).scalar()
         s.commit()
-    print(f"semi7 backtest strategy id {rid}: CAGR {bm['annualised_pct']:.1f}% vs SPY "
-          f"{bm['spy_annualised_pct']:.1f}%, alpha {bm['alpha_annualised_pct']:.1f}% (annualised), "
+    print(f"semi7 backtest strategy id {rid}: simple ann. {bm['annualised_pct']:.1f}% vs SPY "
+          f"{bm['spy_annualised_pct']:.1f}%, alpha {bm['alpha_annualised_pct']:.1f}% (simple ×252/d), CAGR {bm['annualised_cagr_pct']:.1f}%, "
           f"total {bm['total_return_pct']:.1f}% vs SPY {bm['spy_return_pct']:.1f}%")
     return 0
 
