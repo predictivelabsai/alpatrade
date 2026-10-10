@@ -1,5 +1,15 @@
 # Change Log
 
+## 2026-10-10 — clone follow-up: stop-change trade count explained; clone naming
+
+- Strategy #37 rerun with a 2% stop kept 4,952 trades: **not a bug**. `sl` reaches
+  utils/buy_the_dip.py as `stop_loss=0.02` (stop exits 2,188 → 1,878, return +27.7% → +19.7%),
+  but with min hold = max hold = 3 days every position lives exactly 3 days, so the entry
+  schedule — and the trade count — can't depend on the stop (with min_hold 0: 7,013 vs 6,506).
+  The chat result now says so for such BTD configs.
+- Clones are named "<name> — clone" (a trailing "(live)" / "(copy)" is dropped) instead of
+  "… (live) (copy)". Tests in tests/test_clone_flow.py.
+
 ## 2026-10-10 — v0.35.2: one-click "Clone strategy" → paper strategy + backtest streamed into chat
 
 - **What was broken:** "Clone into AlpaTrade" only copied the skill markdown into a private

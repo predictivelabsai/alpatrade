@@ -347,6 +347,10 @@ def result_markdown(s: dict, bm: dict, cfg: dict, status: dict) -> str:
     except Exception:  # noqa: BLE001
         pass
     p = json.dumps(cfg.get("params") or {}, default=str)
+    cp = cfg.get("params") or {}
+    if cfg.get("template") == BTD and cp.get("min_hold") and cp.get("min_hold") == cp.get("max_hold"):
+        audit += (f"\n\n*Min hold = max hold = {cp['min_hold']} days: every trade lasts exactly that long, so "
+                  "changing the stop or target changes exits and P&L, not the number of trades.*")
     return (f"### Backtest: {s['name']}\n\n"
             f"{bm['period_start']} → {bm['period_end']} · {bm['trading_days']} trading days · "
             f"template `{(cfg.get('template') or '')}` · fees + slippage on · alpha vs SPY "

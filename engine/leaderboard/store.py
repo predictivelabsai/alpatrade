@@ -183,13 +183,22 @@ def delete(strategy_id: int, user_id: str) -> bool:
     return n == 1
 
 
+def clone_name(name: str) -> str:
+    """'<name> — clone': drops a trailing '(live)' / '(copy)' / '— clone' (a clone is never live)."""
+    n = (name or "Strategy").strip()
+    while True:
+        m = re.sub(r"\s*(\((live|copy)\)|— clone)\s*$", "", n, flags=re.I)
+        if m == n:
+            break
+        n = m
+    return f"{n or 'Strategy'} — clone"[:MAX_NAME]
+
+
 def clone(strategy_id: int, user_id: str, author_name: Optional[str] = None) -> Optional[int]:
     """Copy a public (or own) strategy into ``user_id``'s strategies — private, no live link."""
     src = get_visible(strategy_id, user_id)
     if not src:
         return None
-    name = src["name"]
-    if not name.endswith("(copy)"):
-        name = f"{name} (copy)"[:MAX_NAME]
+    name = clone_name(src["name"])
     return create(user_id, name, src.get("description") or "", src.get("skill_md") or "",
                   author_name=author_name, is_public=False, cloned_from_id=src["id"])

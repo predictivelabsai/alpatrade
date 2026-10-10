@@ -185,3 +185,20 @@ def test_actions_buttons_and_copy_toast():
 def test_chat_renders_strategy_vs_spy_chart():
     from engine.web import ph_chat
     assert "data.type==='strategy_vs_spy'" in ph_chat.CHAT_JS and "/backtest-strategy" in Path(ph_chat.__file__).read_text()
+
+
+def test_clone_name():
+    assert store.clone_name("Mag-7 Buy-the-Dip · 3-day hold (live)") == "Mag-7 Buy-the-Dip · 3-day hold — clone"
+    assert store.clone_name("X (live) (copy)") == "X — clone"
+    assert store.clone_name("X — clone") == "X — clone"
+
+
+def test_btd_stop_reaches_engine_and_min_eq_max_hold_fixes_entry_count(db, monkeypatch):
+    """#37: with min_hold == max_hold every position lives exactly max_hold days, so entries (and
+    the trade count) don't depend on the stop; the stop must still reach the engine."""
+    seen = {}
+    import utils.buy_the_dip as btd
+    monkeypatch.setattr(btd, "backtest_buy_the_dip", lambda syms, a, b, **kw: seen.update(kw) or None)
+    with pytest.raises(RuntimeError):
+        clone_bt._btd({"sl": 2.0, "tp": 8.0, "dip": 3.0, "min_hold": 3, "max_hold": 3}, "2020-01-01", "2020-02-01", print)
+    assert seen["stop_loss"] == 0.02 and seen["min_hold_days"] == 3 and seen["hold_days"] == 3
