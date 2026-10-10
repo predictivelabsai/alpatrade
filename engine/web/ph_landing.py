@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from fasthtml.common import (
     Em, Details, Summary, Ol, Li,
-    A, Div, Footer, H1, H2, H3, Img, Main, Nav, NotStr, P, Picture, Section, Source, Span, Strong, Style,
+    A, Button, Div, Footer, H1, H2, H3, Img, Main, Nav, NotStr, P, Picture, Section, Source, Span, Strong, Style, Script,
 )
 from starlette.responses import RedirectResponse
 
@@ -270,7 +270,20 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 .lp-fine { font-size: .72rem; line-height: 1.55; color: var(--ink-dim); max-width: 60rem;
   margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
 
+.lp-burger { display: none; width: 40px; height: 40px; align-items: center; justify-content: center;
+  border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--ink);
+  cursor: pointer; padding: 0; }
+.lp-burger.open { background: var(--line); }
+.lp-menu { display: none; }
 @media (max-width: 960px) {
+  .lp-burger { display: inline-flex; }
+  .lp-menu:not([hidden]) { display: flex; flex-direction: column; padding: .4rem 1rem 1rem;
+    border-top: 1px solid var(--line); background: var(--bg, #fff); max-height: calc(100vh - 4rem);
+    overflow-y: auto; box-shadow: 0 12px 24px rgba(0,0,0,.08); }
+  .lp-menu-link { padding: .8rem .25rem; font-size: 1rem; color: var(--ink);
+    border-bottom: 1px solid var(--line); }
+  .lp-menu-link:last-child { border-bottom: 0; }
+  .lp-menu-link.active { color: var(--accent); font-weight: 600; }
   .lp-nav-links { display: none; }
   .lp-nav-lb { display: inline-flex; }
   .lp-grid.c5 { grid-template-columns: repeat(2, 1fr); }
@@ -281,6 +294,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 @media (max-width: 560px) {
   .lp-grid.c5 { grid-template-columns: 1fr; }
   .lp-nav-cta .lp-btn.ghost { display: none; }
+  .lp-nav-lb { display: none; }
   .lp-nav-inner { padding: 0 1rem; }
   .lp-nav-cta { gap: .35rem; }
   .dev-agent-grid, .dev-summary { grid-template-columns: 1fr; }
@@ -372,11 +386,42 @@ def _nav(active="home"):
                   cls="lp-nav-lb" + (" active" if active == "leaderboard" else "")),
                 _btn("Sign in", "/signin", "ghost", sm=True),
                 _btn("Start", "/register", "primary", sm=True, arrow=True),
+                Button(NotStr(_BURGER_SVG), type="button", cls="lp-burger", id="lp-burger",
+                       aria_label="Open menu", aria_expanded="false", aria_controls="lp-menu"),
                 cls="lp-nav-cta"),
             cls="lp-nav-inner",
         ),
+        Div(*[A(label, href=href, cls="lp-menu-link" + (" active" if key == active else ""))
+              for label, href, key in MOBILE_MENU],
+            id="lp-menu", cls="lp-menu", hidden=True),
+        Script(_BURGER_JS),
         cls="lp-nav",
     )
+
+
+# Mobile hamburger (≤960px; desktop nav unchanged). Same pattern as carhero's
+# .mobile-menu-btn: 3-line SVG, 40×40 tap target, hidden on desktop.
+MOBILE_MENU = [
+    ("Platform", "/platform", "platform"),
+    ("Leaderboard", "/leaderboard", "leaderboard"),
+    ("Hedge Funds", HEDGE_FUNDS_ANCHOR, "hedgefunds"),
+    ("Developers", "/developers", "developers"),
+    ("Open app / Chat", "/app", "app"),
+    ("Profile", "/profile", "profile"),
+    ("Sign in", "/signin", "signin"),
+    ("Start — create account", "/register", "register"),
+]
+_BURGER_SVG = ('<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+               'stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/>'
+               '<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>')
+_BURGER_JS = """(function(){var b=document.getElementById('lp-burger'),m=document.getElementById('lp-menu');
+if(!b||!m)return;function set(o){m.hidden=!o;b.setAttribute('aria-expanded',o?'true':'false');
+b.setAttribute('aria-label',o?'Close menu':'Open menu');b.classList.toggle('open',o);}
+b.addEventListener('click',function(e){e.stopPropagation();set(m.hidden);});
+m.addEventListener('click',function(e){if(e.target.closest('a'))set(false);});
+document.addEventListener('click',function(e){if(!m.hidden&&!m.contains(e.target))set(false);});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false);});
+window.addEventListener('resize',function(){if(window.innerWidth>960)set(false);});})();"""
 
 
 _ANDROID_SVG = (

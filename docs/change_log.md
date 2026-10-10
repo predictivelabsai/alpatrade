@@ -1,5 +1,16 @@
 # Change Log
 
+## 2026-10-10 — v0.33.5: mobile hamburger menu in the public top nav
+
+- At ≤960px the public top nav (home, Platform, Leaderboard, Developers, strategy pages; all
+  `ph_landing._shell` pages) gets a hamburger button at the top right (3-line SVG, 40×40 tap
+  target, same pattern as carhero's `.mobile-menu-btn`). It opens a full-width dropdown with every
+  item: Platform, Leaderboard, Hedge Funds, Developers, Open app / Chat, Profile, Sign in, Start.
+  Closes on link tap, outside tap, Escape, or resizing to desktop; `aria-expanded`/`aria-controls`.
+- Desktop (>960px) nav unchanged; the duplicate mobile "Leaderboard" link is hidden ≤560px (it
+  is in the menu), "Start" stays visible.
+- Tests: `tests/test_mobile_nav.py`.
+
 ## 2026-10-10 — v0.33.4: backtest leaderboard rows use simple annualisation (×252/trading days)
 
 - **Headline "Annualised return" for every `kind='backtest'` row** (Semi 7 + the CWT backtests)
