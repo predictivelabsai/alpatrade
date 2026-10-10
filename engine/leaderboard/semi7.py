@@ -17,6 +17,29 @@ LIVE_SLUG = "buy_the_dip_semi7_minhold_live"
 CAPITAL = 10_000.0
 
 
+LIVE_PARAMS = {"dip": 3.0, "tp": 8.0, "sl": 1.5, "min_hold": 3, "max_hold": 3}
+
+
+def audit_input(wf: dict | None = None) -> dict:
+    """What the audit needs to know about how this walk-forward was produced
+    (scripts/walk_forward_btd.py on utils/buy_the_dip.py as of 2026-10-09), incl. faults found
+    by live ops on 2026-10-10 that the stored fold returns cannot show by themselves."""
+    tested = {"dip_threshold": 0.03, "take_profit": 0.015, "stop_loss": 0.005, "hold_days": 1}
+    if wf and wf.get("rows"):
+        tested = dict(wf["rows"][0].get("params") or tested)
+    out = {"engine": "buy_the_dip", "engine_stamp": {"engine": "buy_the_dip", "engine_version": "0.32.1"},
+           "slippage_bps": 0.0, "fees_recorded": False, "label": "live", "params": tested,
+           "live_params": LIVE_PARAMS, "same_bar_policy": "target_first", "fill_rule": "close",
+           "universe": ["TSM", "AVGO", "MU", "AMD", "ASML", "INTC", "AMAT"], "universe_as_of": "2026-10-09",
+           "known_issues": ["utils/buy_the_dip.py overstated capital_after when several positions closed on "
+                            "the same bar: the reported +550.8% total is about +28% once reconciled "
+                            "(AlpaTrade live ops, 2026-10-10)"]}
+    if wf:
+        out["is_return_pct"] = wf.get("total_is", 0) / CAPITAL * 100 if wf.get("total_is") is not None else None
+        out["oos_return_pct"] = wf.get("total_oos", 0) / CAPITAL * 100 if wf.get("total_oos") is not None else None
+    return out
+
+
 def _d(s: str) -> date:
     return date.fromisoformat(s[:10])
 
@@ -67,6 +90,7 @@ def build_metrics(wf: dict, spy_close: dict, source: str = "") -> dict:
         "test": {}, "episodes": [], "source_report": source,
         "equity_curve": {"dates": dates, "equity": [round(v, 2) for v in eq], "spy": spy},
         "live_slug": LIVE_SLUG,
+        "audit_input": audit_input(wf),
     }
 
 
@@ -94,7 +118,18 @@ def build_metrics_live_rules(report: dict, basket: str = "semi7", source: str = 
         "episodes": [], "source_report": source,
         "equity_curve": L.get("curve") or {},
         "live_slug": LIVE_SLUG,
+        "engine_stamp": report.get("engine_stamp") or _stamp(),
+        "audit_input": {"engine": "buy_the_dip", "label": "live", "params": dict(LIVE_PARAMS),
+                        "live_params": dict(LIVE_PARAMS), "slippage_bps": 10.0,
+                        "fees_recorded": bool(report.get("fees_included")), "same_bar_policy": "stop_first",
+                        "fill_rule": "close", "universe": ["TSM", "AVGO", "MU", "AMD", "ASML", "INTC", "AMAT"],
+                        "universe_as_of": "2026-10-09"},
     }
+
+
+def _stamp() -> dict:
+    from utils.engine_stamp import stamp
+    return stamp("buy_the_dip")
 
 
 def latest_report(root) -> Optional[str]:

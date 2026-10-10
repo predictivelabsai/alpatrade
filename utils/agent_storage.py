@@ -55,6 +55,18 @@ def _py(val):
 # Runs (DB only)
 # ---------------------------------------------------------------------------
 
+def _stamped(config: Optional[Dict], strategy: Optional[str]) -> Dict:
+    """Every run records which engine/version produced it (utils/engine_stamp.py)."""
+    cfg = dict(config or {})
+    if "engine_stamp" not in cfg:
+        try:
+            from utils.engine_stamp import stamp
+            cfg["engine_stamp"] = stamp(strategy or cfg.get("strategy"))
+        except Exception:  # noqa: BLE001 -- never block a run on the stamp
+            pass
+    return cfg
+
+
 def store_run(run_id: str, mode: str, strategy: str = None,
               config: Dict = None, strategy_slug: str = None,
               user_id: Optional[str] = None, account_id: Optional[str] = None):
@@ -80,7 +92,7 @@ def store_run(run_id: str, mode: str, strategy: str = None,
                 "run_id": run_id,
                 "mode": mode,
                 "strategy": strategy,
-                "config": json.dumps(_json_safe(config or {}), default=str, allow_nan=False),
+                "config": json.dumps(_json_safe(_stamped(config, strategy)), default=str, allow_nan=False),
                 "started_at": datetime.now(timezone.utc),
                 "strategy_slug": strategy_slug,
                 "user_id": user_id,
