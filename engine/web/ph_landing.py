@@ -19,7 +19,7 @@ Pricing: AlpaTrade is free for everyone for now, so there is no public Pricing p
 from __future__ import annotations
 
 from fasthtml.common import (
-    Em, Details, Summary, Ol, Li,
+    Code, Em, Details, Summary, Ol, Li,
     A, Button, Div, Footer, H1, H2, H3, Img, Main, Nav, NotStr, P, Picture, Section, Source, Span, Strong, Style, Script,
 )
 from starlette.responses import RedirectResponse
@@ -181,6 +181,17 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
 .lp-stat-value { font-size: 1.7rem; font-weight: 600; color: var(--ink); letter-spacing: -.02em; }
 .lp-stat-cap { font-size: .78rem; color: var(--ink-muted); margin-top: .25rem; }
+.lp-brokers { display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 1rem 2rem; padding-top: 1.4rem; padding-bottom: 1.4rem; }
+.lp-brokers-label { font-family: var(--font-mono); font-size: .68rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--ink-dim); }
+.lp-brokers-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 1rem 2.25rem; max-width: 100%; }
+.lp-broker { display: inline-flex; align-items: center; height: 28px; }
+.lp-broker img { height: 100%; width: auto; max-width: 150px; object-fit: contain;
+  filter: grayscale(1) contrast(.9); opacity: .6; transition: filter .18s ease, opacity .18s ease; }
+.lp-broker:hover img, .lp-broker:focus-visible img { filter: none; opacity: 1; }
+.dev-cli-note { margin-top: .6rem; font-size: .74rem; color: var(--ink-dim); font-style: italic; }
 
 /* card grids */
 .lp-grid { display: grid; gap: 1rem; margin-top: 2.5rem; }
@@ -288,7 +299,6 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
   .lp-nav-lb { display: inline-flex; }
   .lp-grid.c5 { grid-template-columns: repeat(2, 1fr); }
   .lp-grid.c3 { grid-template-columns: 1fr; }
-  .lp-stats-inner { grid-template-columns: repeat(2, 1fr); }
   .dev-summary { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 560px) {
@@ -298,6 +308,9 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
   .lp-nav-inner { padding: 0 1rem; }
   .lp-nav-cta { gap: .35rem; }
   .dev-agent-grid, .dev-summary { grid-template-columns: 1fr; }
+  .lp-brokers-row { gap: .9rem 1.5rem; }
+  .lp-broker { height: 22px; }
+  .lp-broker img { max-width: 110px; }
   .dev-group-head { align-items: flex-start; flex-direction: column; gap: .25rem; }
 }
 """
@@ -346,12 +359,22 @@ PRIMER_TIMELINE = [
     ("Today", "Smart beta and high-frequency trading bring rules to every corner of the market."),
 ]
 
-STATS = [
-    ("5-agent", "trading squad"),
-    ("4", "strategies built-in"),
-    ("Alpaca", "live paper trading"),
-    ("Reproducible", "dated backtest artifacts"),
+# "Works with" broker row (replaces the old stats stripe, 2026-10-10). Official logo files
+# are vendored under static/brokers/ (never hotlinked): (name, site, logo path).
+BROKERS = [
+    ("LHV", "https://www.lhv.ee", "/static/brokers/lhv.svg"),
+    ("Alpaca", "https://alpaca.markets", "/static/brokers/alpaca.svg"),
+    ("Interactive Brokers", "https://www.interactivebrokers.com", "/static/brokers/ibkr.svg"),
+    ("Saxo Bank", "https://www.home.saxo", "/static/brokers/saxo.svg"),
+    ("moomoo", "https://www.moomoo.com", "/static/brokers/moomoo.png"),
 ]
+
+# Example CLI session shown on /developers. Figures are illustrative, not a live result.
+CLI_EXAMPLE = {
+    "cmd": "alpatrade backtest paper btd-7dp-05sl-1tp-1d-3m",
+    "out": "42 trades · win-rate 61% · Sharpe 1.34 · max DD -6.2%",
+    "artifacts": "backtest-results/2026-…_AAPL_buy_the_dip_1d/",
+}
 
 
 # --------------------------------------------------------------------------- chrome
@@ -491,16 +514,6 @@ def _hero():
                 cls="lp-cta-row"),
             A(Span("◆ "), Span("See live strategies on the Leaderboard"), Span(" →"),
               href="/leaderboard", cls="lp-lb-link"),
-            Div(
-                Div(Span("$ ", cls="dim"),
-                    Span("alpatrade backtest paper btd-7dp-05sl-1tp-1d-3m", cls="cmd"),
-                    cls="row"),
-                Div(Span("→ 42 trades · win-rate 61% · Sharpe 1.34 · max DD -6.2%", cls="out"),
-                    cls="row"),
-                Div(Span("→ artifacts → backtest-results/2026-…_AAPL_buy_the_dip_1d/", cls="dim"),
-                    cls="row"),
-                cls="lp-terminal",
-            ),
             cls="lp-hero-inner",
         ),
         cls="lp-hero",
@@ -522,10 +535,51 @@ def _alpa():
 
 
 def _stats():
+    """'Works with' broker logo row (same spot as the old stats stripe)."""
     return Div(
-        Div(*[Div(Div(v, cls="lp-stat-value"), Div(c, cls="lp-stat-cap"))
-              for v, c in STATS], cls="lp-stats-inner"),
+        Div(Span("Works with", cls="lp-brokers-label"),
+            Div(*[A(Img(src=logo, alt=f"{name} logo", loading="lazy"),
+                    href=site, target="_blank", rel="noopener noreferrer",
+                    title=name, cls="lp-broker")
+                  for name, site, logo in BROKERS], cls="lp-brokers-row"),
+            cls="lp-stats-inner lp-brokers"),
         cls="lp-stats",
+    )
+
+
+def _cli_section():
+    ex = CLI_EXAMPLE
+    return Section(
+        Span("Command line", cls="lp-eyebrow"),
+        H2("Backtest from your terminal.", cls="lp-h2", style="margin-top:.75rem"),
+        P("The alpatrade CLI runs the same backtester as the web desk and writes every run to a "
+          "dated folder you can diff, re-run and share.", cls="lp-lede", style="margin-top:1rem"),
+        Div(
+            Div(Span("$ ", cls="dim"), Span(ex["cmd"], cls="cmd"), cls="row"),
+            Div(Span("→ " + ex["out"], cls="out"), cls="row"),
+            Div(Span("→ artifacts → " + ex["artifacts"], cls="dim"), cls="row"),
+            cls="lp-terminal",
+        ),
+        P("Example output — illustrative figures, not a live result.", cls="dev-cli-note"),
+        Div(
+            Div(H3("Command name format", cls="dev-group-title"),
+                P(Code("btd-7dp-05sl-1tp-1d-3m"), " reads as: ", Strong("btd"),
+                  " buy-the-dip strategy · ", Strong("7dp"), " 7% dip threshold · ",
+                  Strong("05sl"), " 0.5% stop-loss · ", Strong("1tp"), " 1% take-profit · ",
+                  Strong("1d"), " 1-day hold · ", Strong("3m"), " 3-month lookback. "
+                  "Pattern: {strategy}-{param}-…-{lookback}; 0.5% is written 05.",
+                  cls="dev-agent-body"),
+                cls="dev-agent"),
+            Div(H3("The artifacts folder", cls="dev-group-title"),
+                P("Each run lands in ", Code("backtest-results/<date>_<symbol>_<strategy>_<interval>/"),
+                  ": config.json and strategy_spec.json (parameters), "
+                  "trades.csv and round_trips.csv, equity.csv with a benchmark curve, summary.json "
+                  "(trades, win-rate, Sharpe, max drawdown), data_fingerprint.json and fee_source.json, "
+                  "report.md / notes.md, and a run.py that reproduces the run.", cls="dev-agent-body"),
+                cls="dev-agent"),
+            cls="dev-agent-grid", style="margin-top:1.5rem",
+        ),
+        id="cli", cls="lp-section lp-bordered",
     )
 
 
@@ -804,6 +858,7 @@ def developers_page():
     return _shell(
         "Developers — AlpaTrade API",
         Section(hero, cls="lp-hero"),
+        _cli_section(),
         catalogue,
         contracts,
         access,

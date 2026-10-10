@@ -1,5 +1,18 @@
 # Change Log
 
+## 2026-10-10 — landing: "Works with" broker logos; CLI example moves to /developers
+
+- **Home stats stripe removed** ("5-agent trading squad · 4 strategies built-in · Alpaca live
+  paper trading · Reproducible…"). Same spot (home + /platform) now shows a single "Works with"
+  row: LHV, Alpaca, Interactive Brokers, Saxo Bank, moomoo (Futu OpenAPI — the broadest global
+  API footprint of the candidates: US, HK, SG, AU, CA, JP, MY). Official logo files vendored in
+  `static/brokers/` (no hotlinking), each linking to the broker site, grayscale → colour on
+  hover, alt text, wraps on mobile.
+- **CLI backtest example** (`alpatrade backtest paper btd-7dp-05sl-1tp-1d-3m`) removed from the
+  hero and added as a "Command line" section (`#cli`) on /developers with the slug format and
+  artifact-folder contents. Figures are labelled as illustrative example output.
+- Tests: `tests/test_landing_brokers_cli.py`.
+
 ## 2026-10-10 — v0.35.1: daily LIVE report — deposits are cash flows; per-strategy breakdown
 
 - **Fix: a deposit day showed as a loss** (Fri Oct 9: −$1,997.44 / −41.56% instead of ≈ +$11).
