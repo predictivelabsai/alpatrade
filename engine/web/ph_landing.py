@@ -191,6 +191,9 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 .lp-broker img { height: 100%; width: auto; max-width: 150px; object-fit: contain;
   filter: grayscale(1) contrast(.9); opacity: .6; transition: filter .18s ease, opacity .18s ease; }
 .lp-broker:hover img, .lp-broker:focus-visible img { filter: none; opacity: 1; }
+#cli .dev-agent { min-width: 0; }
+#cli .dev-agent-body, #cli .dev-agent-body code { overflow-wrap: anywhere; }
+#cli .lp-terminal { max-width: 100%; overflow-wrap: anywhere; }
 .dev-cli-note { margin-top: .6rem; font-size: .74rem; color: var(--ink-dim); font-style: italic; }
 
 /* card grids */
