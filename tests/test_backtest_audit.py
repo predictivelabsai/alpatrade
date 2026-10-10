@@ -153,10 +153,17 @@ def test_leaderboard_badge_and_audit_section_for_failing_entry():
           "metrics": {"btd_sharpe": 7.67, "trade_win_rate": 60.6}, "total_is": 30000, "total_oos": 25000}
     bm = semi7.build_metrics(wf, {"2026-02-11": 100.0, "2026-03-13": 101.0})
     row = {"id": 17, "kind": "backtest", "backtest_metrics": bm, "skill_md": "", "name": "Semi 7"}
-    badge = lb._bt_badge(row)
-    assert "Backtest" in badge and "Audit: failed" in badge and "#audit" in badge
-    sec = lb.audit_html(row)
-    assert "id='audit'" in sec and "engine_version" in sec and "costs" in sec and "params" in sec
+    row["user_id"] = "owner"
+    # public / other users: no audit badge or section at all (no PASS / WARN / FAILED)
+    for viewer in (None, {"user_id": "someone"}):
+        badge = lb._bt_badge(row, viewer)
+        assert "Backtest" in badge and "Audit" not in badge and "#audit" not in badge and "Failed" not in badge
+        assert lb.audit_html(row, viewer) == ""
+    assert lb._audit(row).status == "fail"            # the gate still evaluates it
+    own = {"user_id": "owner"}
+    assert "Failed checks" in lb._bt_badge(row, own)
+    sec = lb.audit_html(row, own)
+    assert "Failed backtest checks" in sec and "engine_version" in sec and "Audit" not in sec
 
 
 def test_publish_gate_blocks_failing_and_stamps_passing():

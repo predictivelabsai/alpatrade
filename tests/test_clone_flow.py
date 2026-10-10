@@ -139,6 +139,7 @@ def test_run_job_uses_matching_engine_and_stores_audit_stamp(db, monkeypatch):
     assert bm["engine_stamp"]["engine_version"] and bm["audit_input"]["fees_recorded"] is True
     assert saved["bm"] is bm and "__CHART_DATA__" in md and "strategy_vs_spy" in md
     assert "SPY" in md and f"/strategies/{new_id}" in md
+    assert "audit" not in md.lower() and "audit" in bm      # verdict stored, not shown
 
 
 def test_routes_signed_out_redirect_and_signed_in_kicks_off_backtest(db, monkeypatch):

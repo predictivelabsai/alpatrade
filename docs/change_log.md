@@ -1,5 +1,15 @@
 # Change Log
 
+## 2026-10-10 — audit verdicts no longer shown publicly
+
+- Removed the public "Audit: passed / warnings / failed" badge (and its #audit link) from the
+  Leaderboard and strategy pages, the #audit section on strategy pages, and the "Backtest
+  audit" line in chat backtest results. No PASS / WARN is displayed anywhere.
+- The audit gate is unchanged: it still runs, its verdict is stored (`backtest_metrics.audit`,
+  now also for clone backtests) and it still blocks FAILED backtests from publishing (v0.34).
+  Only the owner of a backtest that fails sees a "Failed checks (only you see this)" badge and
+  the failing checks on their own strategy page.
+
 ## 2026-10-10 — clone follow-up: stop-change trade count explained; clone naming
 
 - Strategy #37 rerun with a 2% stop kept 4,952 trades: **not a bug**. `sl` reaches

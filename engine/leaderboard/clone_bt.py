@@ -338,14 +338,7 @@ def result_markdown(s: dict, bm: dict, cfg: dict, status: dict) -> str:
             ("Max drawdown", _f(bm.get("max_drawdown_pct")), "—"),
             ("Trades · win rate", f"{bm.get('trades') or 0} · {_f(bm.get('win_rate_pct'), '{:.0f}%')}", "—")]
     table = "| Metric | Strategy | SPY |\n|---|---|---|\n" + "\n".join(f"| {a} | {b} | {c} |" for a, b, c in rows)
-    audit = ""
-    try:
-        from engine.leaderboard.audit_gate import audit_strategy
-        rep = audit_strategy({**s, "kind": "backtest", "backtest_metrics": bm})
-        if rep is not None:
-            audit = f"\n\n**Backtest audit:** {rep.status}" + (f" — {'; '.join(rep.reasons[:3])}" if rep.reasons else "")
-    except Exception:  # noqa: BLE001
-        pass
+    audit = ""   # verdict is stored on backtest_metrics.audit, not shown (no PASS / WARN)
     p = json.dumps(cfg.get("params") or {}, default=str)
     cp = cfg.get("params") or {}
     if cfg.get("template") == BTD and cp.get("min_hold") and cp.get("min_hold") == cp.get("max_hold"):
@@ -379,6 +372,13 @@ def run_job(strategy_id: int, user_id: str, overrides: Optional[dict] = None,
         cfg["params"] = {**cfg["params"], **overrides}
         upsert_config(strategy_id, user_id, cfg["template"], cfg["params"], cfg["execution"], cfg["mode"])
     bm = compute(cfg["template"], cfg["params"], progress=progress)
+    try:   # the audit gate still runs and its verdict is stored (scripts/audit_backtest.py)
+        from engine.leaderboard.audit_gate import audit_strategy
+        rep = audit_strategy({**s, "kind": "backtest", "backtest_metrics": bm})
+        if rep is not None:
+            bm["audit"] = rep.to_dict()
+    except Exception as exc:  # noqa: BLE001
+        log.warning("audit failed: %s", type(exc).__name__)
     save_metrics(strategy_id, user_id, bm)
     status = paper_status(cfg["template"], user_id)
     return result_markdown(s, bm, cfg, status), bm
