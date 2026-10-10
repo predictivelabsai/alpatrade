@@ -106,3 +106,19 @@ def fetch_flows(client: Any, since: date) -> Optional[list[dict]]:
     except Exception as exc:  # noqa: BLE001
         log.warning("cash-flow activities unavailable: %s", type(exc).__name__)
         return None
+
+
+def twr_pct(start: date, start_eq: float, points: Iterable, rows: Optional[list]) -> tuple[float, float]:
+    """(time-weighted return %, net deposits) from ascending [(day, equity)] session closes
+    after ``start`` (whose close is ``start_eq``). Each segment's return is
+    (E_k - flows in (prev_day, k]) / E_prev - 1, i.e. a flow is booked at the end of its day,
+    so a deposit is never performance and never dilutes the return."""
+    growth, prev_eq, prev_day, dep = 1.0, float(start_eq), start, 0.0
+    for d, e in points:
+        if d <= start:
+            continue
+        f = net_flows(rows or [], prev_day, d)
+        if prev_eq > 0:
+            growth *= (float(e) - f) / prev_eq
+        prev_eq, prev_day, dep = float(e), d, dep + f
+    return (growth - 1) * 100, round(dep, 2)

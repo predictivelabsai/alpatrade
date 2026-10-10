@@ -1,5 +1,29 @@
 # Change Log
 
+## 2026-10-10 — v0.35.1: daily LIVE report — deposits are cash flows; per-strategy breakdown
+
+- **Fix: a deposit day showed as a loss** (Fri Oct 9: −$1,997.44 / −41.56% instead of ≈ +$11).
+  Root cause: Alpaca's 1D portfolio history has no point for the latest session until the next
+  one opens, so a weekend report for Friday took *Thursday's* close as Friday's equity and then
+  subtracted Friday's $2,000 CSD. New `live_perf.daily_equity_points` / `session_close_equity`
+  fill the missing session close from intraday (5-min, market hours) history and never reuse
+  the previous day's point; `_historical_equity` returns None rather than a wrong day.
+  Day P&L = equity − last_equity − net CSD/CSW/JNLC that day (unchanged formula, now correct
+  inputs).
+- **Since-start, MTD and YTD returns are time-weighted** (`cash_flows.twr_pct`, flows booked at
+  end of day; moved from `engine/leaderboard/perf.py`, which now delegates to it). Used by the
+  daily email, `/live/account` (dashboard live_perf) and period annualisation; the dashboard
+  equity curve also gets the missing latest close. The leaderboard live row already used TWR
+  from the runner's daily snapshots and keeps the same numbers.
+- **Per-strategy breakdown** in the email ("Strategies"): Mag-7 (prefix `btd`, rest of the
+  account) and every active `strategy_allocations` sleeve (Semi 7, `s7btd`, $2,000) with sleeve
+  value, open positions (by universe), market value, unrealised, and this session's fills /
+  realised P&L attributed by client_order_id prefix (`Sleeve.owns_cid`). A sleeve without
+  activity shows "No fills yet — $X idle". Fills tagged `s7btd*` / `btdtp-` / `btdsl-` are now
+  labelled runner (was only `btd-`/`btdx-`).
+- Tests: deposit day (Friday from Saturday, missing 1D point), TWR with a deposit, strategy
+  breakdown + prefix attribution. Report/dashboard code only; no runner, scheduler or order code.
+
 ## 2026-10-10 — v0.35.0: CWT method templates for Marsten Parker, John Walsh, Mark Ritchie II
 
 - **Three new backtest templates** in `engine/backtest/templates.py` (no look-ahead, 10 bps per

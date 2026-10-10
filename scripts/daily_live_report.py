@@ -264,6 +264,69 @@ def runner_trades(run_id: str | None) -> list[dict]:
         return []
 
 
+def strategy_sleeves(account_number: str | None) -> list[dict]:
+    """Live strategies sharing the account: the primary (Mag-7, prefix ``btd``, rest of the
+    account) plus every active ``alpatrade.strategy_allocations`` row, each with its
+    display name and universe from ``alpatrade.strategy_configs``. Read-only."""
+    from utils.live_btd_config import DEFAULT_STRATEGY
+    from utils.strategy_allocation import PRIMARY_PREFIX, Sleeve
+    rows: list = []
+    cfgs: dict = {}
+    try:
+        from sqlalchemy import text
+        with _pool().get_session() as session:
+            rows = session.execute(text(
+                "SELECT strategy_name, cid_prefix, allocation_usd FROM alpatrade.strategy_allocations "
+                "WHERE account_number = :a AND is_active ORDER BY id"),
+                {"a": str(account_number or "")}).all()
+            for r in session.execute(text(
+                    "SELECT name, display_name, params FROM alpatrade.strategy_configs "
+                    "WHERE is_active")).all():
+                params = r[2] if isinstance(r[2], dict) else json.loads(r[2] or "{}")
+                cfgs[r[0]] = {"display": r[1] or r[0], "symbols": list(params.get("symbols") or [])}
+    except Exception as exc:  # noqa: BLE001
+        log.warning("strategy allocations unavailable: %s", type(exc).__name__)
+    out = []
+    prim = next((r for r in rows if r[0] == DEFAULT_STRATEGY), None)
+    out.append({"name": DEFAULT_STRATEGY, "sleeve": Sleeve(DEFAULT_STRATEGY, PRIMARY_PREFIX,
+                None if not prim or prim[2] is None else float(prim[2]), True)})
+    for r in rows:
+        if r[0] != DEFAULT_STRATEGY:
+            out.append({"name": r[0], "sleeve": Sleeve(r[0], r[1], None if r[2] is None else float(r[2]))})
+    for s in out:
+        c = cfgs.get(s["name"]) or {}
+        s["display"] = c.get("display") or s["name"]
+        s["symbols"] = c.get("symbols") or []
+        s["active"] = s["name"] in cfgs
+    return out
+
+
+def strategy_breakdown(sleeves: list[dict], equity: float, positions: list[dict],
+                       orders: list[dict]) -> list[dict]:
+    """Per-strategy sleeve, open positions (by universe; sleeves are disjoint) and this
+    session's fills / realised P&L (by client_order_id prefix)."""
+    from utils.strategy_allocation import sleeve_value
+    allsl = [s["sleeve"] for s in sleeves]
+    out = []
+    for s in sleeves:
+        syms = {x.upper() for x in s["symbols"]}
+        pos = [p for p in positions if str(p.get("symbol") or "").upper() in syms]
+        fills = [o for o in orders if o.get("strategy") == s["name"]]
+        real = [o["realized"] for o in fills if o.get("realized") is not None]
+        val = sleeve_value(s["sleeve"], equity or 0.0, allsl)
+        mv = sum(_f(p.get("market_value")) for p in pos)
+        out.append({
+            "name": s["name"], "display": s["display"], "prefix": s["sleeve"].cid_prefix,
+            "allocation": s["sleeve"].allocation_usd, "sleeve_value": val,
+            "symbols": s["symbols"], "active": s["active"],
+            "positions": [p.get("symbol") for p in pos], "market_value": mv,
+            "unrealized": sum(_f(p.get("unrealized_pl")) for p in pos),
+            "fills": len(fills), "realized": sum(real) if real else None,
+            "idle": max(0.0, val - mv), "has_activity": bool(pos or fills),
+        })
+    return out
+
+
 def _db_ok() -> bool:
     try:
         from sqlalchemy import text
@@ -361,16 +424,17 @@ def fifo_realized(history: list[dict], targets: list[dict]) -> dict[str, float |
 
 
 def _historical_equity(client, day: date):
-    """(equity at end of ``day``, previous trading day's equity) from portfolio history."""
+    """(equity at ``day``'s close, previous session's close) from portfolio history.
+
+    Alpaca's 1D history lacks the latest session until the next one opens; the close is then
+    read from intraday history (live_perf.daily_equity_points). None when ``day``'s close is
+    unknown — the previous day's point is never passed off as ``day``'s."""
     try:
-        hist = client.get_portfolio_history((day - timedelta(days=10)).isoformat(),
-                                            day.isoformat(), "1D")
-        ts, eq = hist.get("timestamp") or [], hist.get("equity") or []
-        upto = [float(e) for t, e in zip(ts, eq)
-                if e is not None and datetime.fromtimestamp(int(t), ET).date() <= day]
-        if not upto:
+        from engine.reporting.live_perf import daily_equity_points
+        pts = daily_equity_points(client, day - timedelta(days=10), day)
+        if not pts or pts[-1][0] != day:
             return None
-        return upto[-1], (upto[-2] if len(upto) >= 2 else upto[-1])
+        return pts[-1][1], (pts[-2][1] if len(pts) >= 2 else pts[-1][1])
     except Exception:  # noqa: BLE001
         return None
 
@@ -471,12 +535,17 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
     cids = {str(o.get("id")): str(o.get("client_order_id") or "") for o in closed}
 
     run = live_run(target["user_id"], target.get("account_number"))
+    sleeves = strategy_sleeves(target.get("account_number"))
+    if sleeves and not sleeves[0]["symbols"]:
+        sleeves[0]["symbols"] = list((run.get("config") or {}).get("symbols") or [])
     rtrades = runner_trades(run.get("run_id"))
     by_cid = {str(t.get("order_id") or ""): t for t in rtrades}
     for o in orders:
         cid = cids.get(o["order_id"], "")
         o["client_order_id"] = cid
-        o["source"] = "runner" if cid.startswith(("btd-", "btdx-")) else "other"
+        owner = next((sl for sl in sleeves if sl["sleeve"].owns_cid(cid)), None)
+        o["strategy"] = owner["name"] if owner else None
+        o["source"] = "runner" if owner else "other"
         o["realized"] = realized.get(o["order_id"]) if o["side"] == "sell" else None
         o["realized_src"] = "FIFO" if o["realized"] is not None else None
         if o["side"] == "sell" and cid.startswith("btdx-"):
@@ -530,6 +599,13 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
         started_d = _parse_started(cfg, run)
         since_dep = net_flows(flows or [], started_d, day) if started_d else 0.0
         acct_pnl, acct_ret = adjusted_pnl(equity_day, start_eq, since_dep)
+        if started_d:  # time-weighted (deposits are cash flows, not return)
+            from engine.reporting.live_perf import daily_equity_points, since_start_return
+            try:
+                pts = daily_equity_points(client, started_d, day)
+            except Exception:  # noqa: BLE001
+                pts = None
+            acct_ret = since_start_return(run, day, equity_day, pts, flows, fallback=acct_ret)
         spy_ret = (spy / start_spy - 1) * 100 if spy and start_spy else None
         perf = {"started": cfg.get("started") or run.get("started_at"),
                 "start_equity": start_eq, "equity": equity_day, "account_return_pct": acct_ret,
@@ -555,6 +631,8 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
     except Exception:  # noqa: BLE001
         annualized = {}
 
+    strategies = strategy_breakdown(sleeves, equity_day, positions, orders)
+
     signals = []
     if with_signals and run.get("run_id"):
         signals = dip_signals([s for s in (cfg.get("symbols") or [])],
@@ -570,7 +648,7 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
         "long_market_value": _f(acct.get("long_market_value")),
         "positions": positions, "ignored_positions": ignored_positions, "open_orders": open_orders, "fills": orders,
         "run": run, "perf": perf, "annualized": annualized, "curves": curves, "runner_open": runner_open, "runner_actions": actions,
-        "runner_heartbeat": hb, "signals": signals, "warnings": warnings,
+        "runner_heartbeat": hb, "signals": signals, "strategies": strategies, "warnings": warnings,
         "db_ok": _db_ok(), "account_ok": True,
     }
 
@@ -821,6 +899,31 @@ def _runner_block(d: dict) -> str:
         f"<h4 style='margin:.5rem 0 .2rem'>Runner open positions</h4>{lots}{sigs}"
 
 
+def _strategies_block(d: dict) -> str:
+    rows = ""
+    for s in d.get("strategies") or []:
+        alloc = (f"{_money(s['allocation'])} fixed" if s["allocation"] is not None
+                 else f"{_money(s['sleeve_value'])} (rest of account)")
+        if not s["has_activity"]:
+            detail = (f"<td colspan='4' style='color:{MUTED}'>No fills yet — "
+                      f"{_money(s['sleeve_value'])} idle, waiting for a dip signal.</td>")
+        else:
+            rp = s["realized"]
+            detail = (f"<td>{_e(', '.join(s['positions']) or '—')}</td>"
+                      f"<td {_R}>{_money(s['market_value'])}</td>"
+                      f"<td {_R} style='color:{_col(s['unrealized'])}'>{_money(s['unrealized'], True)}</td>"
+                      f"<td {_R}>{s['fills']} fill(s), realised "
+                      f"{_money(rp, True) if rp is not None else '—'}</td>")
+        rows += (f"<tr><td><b>{_e(s['display'])}</b><br><small style='color:{MUTED}'>"
+                 f"{_e(s['prefix'])}- · {_e(','.join(s['symbols']))}</small></td>"
+                 f"<td>{alloc}</td>{detail}</tr>")
+    if not rows:
+        return ""
+    return (f"<h3>Strategies</h3><table {_TABLE}><thead><tr {_TH}><th>Strategy</th><th>Sleeve</th>"
+            "<th>Open positions</th><th>Market value</th><th>Unrealised</th><th>This session</th>"
+            f"</tr></thead><tbody>{rows}</tbody></table>")
+
+
 def render(d: dict) -> str:
     day_label = datetime.strptime(d["day"], "%Y-%m-%d").strftime("%a %b %d, %Y")
     if d.get("no_trading_day"):
@@ -870,6 +973,7 @@ def render(d: dict) -> str:
   {_perf_block(d)}
   {_ann_block(d)}
   {_curves_block(d)}
+  {_strategies_block(d)}
   <h3>Fills this session ({len(fills)})</h3>
   <p style="color:#415046;font-size:13px;margin:.15rem 0 .4rem">{buys} buy · {sells} sell ·
      realised P&amp;L <b style="color:{_col(sum(realised))}">{_money(sum(realised), True) if realised else '—'}</b>

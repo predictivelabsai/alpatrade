@@ -335,8 +335,15 @@ def load_view(user_id: str) -> dict:
         from engine.reporting.live_perf import _parse_started
         started = _parse_started(run.get("config") or {}, run) if run.get("run_id") else None
         dep = net_flows(flows or [], started, today) if started else 0.0
+        pts = None
+        if started:
+            from engine.reporting.live_perf import daily_equity_points
+            try:
+                pts = daily_equity_points(client, started, today)
+            except Exception:  # noqa: BLE001
+                pts = None
         out["perf"] = performance_since_start(equity, run, day=today, runner_open=runner_open,
-                                              net_deposits=dep)
+                                              net_deposits=dep, points=pts, flows=flows)
         out["curves"] = equity_curves(client, run, end=today) or {}
         out["run_id"] = run.get("run_id")
     except Exception as exc:  # noqa: BLE001

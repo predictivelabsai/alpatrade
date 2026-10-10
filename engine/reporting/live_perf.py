@@ -56,6 +56,45 @@ def spy_close(day: date, run: dict | None = None) -> Optional[float]:
     return _fn(snap.get("spy")) or _fn((res.get("latest") or {}).get("spy"))
 
 
+def session_close_equity(client, day: date) -> Optional[float]:
+    """Account equity at ``day``'s regular close from intraday history (5-min bars, market
+    hours). Alpaca's 1D portfolio history only gets the latest session's point once the
+    next session starts, so a weekend report for Friday must read Friday's close here."""
+    try:
+        start = datetime.combine(day, dtime(9, 30), ET).astimezone(timezone.utc)
+        end = datetime.combine(day, dtime(16, 0), ET).astimezone(timezone.utc)
+        hist = client.get_portfolio_history(start.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                            end.strftime("%Y-%m-%dT%H:%M:%SZ"), "5Min")
+        pts = [float(e) for t, e in zip(hist.get("timestamp") or [], hist.get("equity") or [])
+               if e is not None and float(e) > 0
+               and start.timestamp() <= int(t) <= end.timestamp()]
+        return pts[-1] if pts else None
+    except Exception as exc:  # noqa: BLE001
+        log.warning("intraday portfolio history failed: %s", type(exc).__name__)
+        return None
+
+
+def daily_equity_points(client, start: date, end: date) -> list[tuple[date, float]]:
+    """Ascending [(ET session date, close equity)] from ``start`` through ``end``.
+
+    Alpaca stamps a 1D point at the ET date of the session it closes; the most recent
+    session is missing until the next one opens, so ``end``'s close is filled in from
+    intraday history when absent (never by reusing the previous day's point)."""
+    hist = client.get_portfolio_history(start.isoformat(), end.isoformat(), "1D")
+    pts: dict[date, float] = {}
+    for t, e in zip(hist.get("timestamp") or [], hist.get("equity") or []):
+        if e is None or float(e) <= 0:
+            continue
+        d = datetime.fromtimestamp(int(t), ET).date()
+        if start <= d <= end:
+            pts[d] = float(e)
+    if end not in pts and end.weekday() < 5 and end <= datetime.now(ET).date():
+        close = session_close_equity(client, end)
+        if close is not None:
+            pts[end] = close
+    return sorted(pts.items())
+
+
 def performance_since_start(
     equity: float | None,
     run: dict,
@@ -63,6 +102,8 @@ def performance_since_start(
     spy: float | None = None,
     runner_open: list[dict] | None = None,
     net_deposits: float = 0.0,
+    points: list | None = None,
+    flows: list | None = None,
 ) -> dict:
     """Account / SPY / strategy summary since the live runner started.
 
@@ -78,6 +119,7 @@ def performance_since_start(
         spy = spy_close(day, run)
     equity = _fn(equity)
     acct_pnl, acct_ret = adjusted_pnl(equity, start_eq, net_deposits)
+    acct_ret = since_start_return(run, day, equity, points, flows, fallback=acct_ret)
     spy_ret = (spy / start_spy - 1) * 100 if spy and start_spy else None
     latest = ((run or {}).get("results") or {}).get("latest") or {}
     upl = sum(_f(r.get("upl")) for r in (runner_open or []))
@@ -105,7 +147,21 @@ def performance_since_start(
     return out
 
 
-def _parse_started(cfg: dict, run: dict) -> Optional[date]:
+def since_start_return(run: dict, day: date, equity: Optional[float], points: Optional[list],
+                       flows: Optional[list], fallback: Optional[float] = None) -> Optional[float]:
+    """Time-weighted since-start return % (cash_flows.twr_pct) from daily session closes,
+    with ``equity`` as the ``day`` point. Falls back to the net-of-deposits ratio when the
+    history or the flows are unavailable."""
+    from engine.reporting.cash_flows import twr_pct
+    cfg = (run or {}).get("config") or {}
+    start, start_eq = _parse_started(cfg, run or {}), _fn(cfg.get("start_equity"))
+    if not (start and start_eq and equity) or points is None or flows is None:
+        return fallback
+    pts = [(d, e) for d, e in points if start < d < day] + ([(day, float(equity))] if day > start else [])
+    return twr_pct(start, start_eq, pts, flows)[0]
+
+def _parse_started(
+cfg: dict, run: dict) -> Optional[date]:
     raw = cfg.get("started") or (run or {}).get("started_at")
     if raw is None:
         return None
@@ -148,16 +204,7 @@ def equity_curves(
     dates: list[str] = []
     account: list[float] = []
     try:
-        hist = client.get_portfolio_history(
-            (start_d - timedelta(days=2)).isoformat(),
-            end.isoformat(),
-            "1D",
-        )
-        ts, eq = hist.get("timestamp") or [], hist.get("equity") or []
-        for t, e in zip(ts, eq):
-            if e is None:
-                continue
-            d = datetime.fromtimestamp(int(t), ET).date()
+        for d, e in daily_equity_points(client, start_d - timedelta(days=2), end):
             if d < start_d or d > end:
                 continue
             dates.append(d.isoformat())
@@ -428,17 +475,13 @@ def period_annualized(client, day: date, equity_day: float,
     ``flows`` = cash_flows.flow_rows(); deposits/withdrawals after the baseline are
     excluded from the return (fetched from the client when None).
     """
-    from engine.reporting.cash_flows import adjusted_pnl, fetch_flows, net_flows
+    from engine.reporting.cash_flows import adjusted_pnl, fetch_flows, net_flows, twr_pct
     if flows is None:
         flows = fetch_flows(client, date(day.year, 1, 1) - timedelta(days=1)) or []
     from engine.reporting.annualize import annualize, trading_days_between
     out: dict[str, Any] = {}
     try:
-        hist = client.get_portfolio_history(date(day.year, 1, 1).isoformat(),
-                                            day.isoformat(), "1D")
-        pts = [(datetime.fromtimestamp(int(t), ET).date(), float(e))
-               for t, e in zip(hist.get("timestamp") or [], hist.get("equity") or [])
-               if e is not None and float(e) > 0]
+        pts = daily_equity_points(client, date(day.year, 1, 1), day)
     except Exception as exc:  # noqa: BLE001
         log.warning("period_annualized history failed: %s", type(exc).__name__)
         pts = []
@@ -447,6 +490,9 @@ def period_annualized(client, day: date, equity_day: float,
         base = first[1] if first else None
         dep = net_flows(flows, first[0], day) if first else 0.0
         pnl, ret = adjusted_pnl(equity_day, base, dep)
+        if first and ret is not None:  # time-weighted: deposits never dilute or inflate
+            seg = [(d, e) for d, e in pts if first[0] < d < day] + ([(day, equity_day)] if day > first[0] else [])
+            ret = twr_pct(first[0], base, seg, flows)[0]
         out[key] = {"return_pct": ret, "pnl": pnl, "net_deposits": dep,
                     **annualize(ret, trading_days_between(start, day))}
     perf = perf or {}

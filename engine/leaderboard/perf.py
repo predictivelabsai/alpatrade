@@ -68,16 +68,9 @@ EMPTY: dict[str, Any] = {
 
 
 def twr_pct(start: date, start_eq: float, points: list, flows: Optional[list]) -> tuple[float, float]:
-    """(time-weighted return %, net deposits) from ascending [(day, equity)] session closes.
-    Each segment's return = (E_k − flows in (prev_day, k]) / E_prev − 1 (flow at end of day)."""
-    from engine.reporting.cash_flows import net_flows
-    growth, prev_eq, prev_day, dep = 1.0, float(start_eq), start, 0.0
-    for d, e in points:
-        f = net_flows(flows or [], prev_day, d)
-        if prev_eq > 0:
-            growth *= (float(e) - f) / prev_eq
-        prev_eq, prev_day, dep = float(e), d, dep + f
-    return (growth - 1) * 100, round(dep, 2)
+    """(time-weighted return %, net deposits); shared with the daily email / dashboard."""
+    from engine.reporting.cash_flows import twr_pct as _twr
+    return _twr(start, start_eq, points, flows)
 
 
 def metrics_from_run(run: Optional[dict], today: Optional[date] = None,

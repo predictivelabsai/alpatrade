@@ -90,11 +90,21 @@ RTRADES = [{"symbol": "GOOGL", "shares": 4.5, "entry_price": 200.0, "exit_price"
             "created_at": datetime(2026, 9, 25, 19, 47, tzinfo=timezone.utc)}]
 
 
+def _sleeves():
+    from utils.strategy_allocation import Sleeve
+    return [{"name": "buy_the_dip_mag7_minhold_live", "display": "Mag-7 BTD", "active": True,
+             "symbols": ["GOOGL", "AMZN"], "sleeve": Sleeve("buy_the_dip_mag7_minhold_live", "btd", None, True)},
+            {"name": "buy_the_dip_semi7_minhold_live", "display": "Semi 7 BTD", "active": True,
+             "symbols": ["TSM", "AVGO", "MU", "AMD", "ASML", "INTC", "AMAT"],
+             "sleeve": Sleeve("buy_the_dip_semi7_minhold_live", "s7btd", 2000.0)}]
+
+
 @pytest.fixture
 def db(monkeypatch):
     monkeypatch.setattr(rep, "live_run", lambda uid, acct=None: RUN)
     monkeypatch.setattr(rep, "runner_trades", lambda rid: RTRADES)
     monkeypatch.setattr(rep, "_db_ok", lambda: True)
+    monkeypatch.setattr(rep, "strategy_sleeves", lambda acct: _sleeves())
     monkeypatch.setattr(rep, "spy_close", lambda day, run: 612.0)
     monkeypatch.setattr(rep, "dip_signals", lambda syms, day, thr: [
         {"symbol": "GOOGL", "close": 204, "high20": 212, "dip": 3.8, "status": "signal"},
@@ -363,3 +373,79 @@ def test_bnbx_zombie_excluded_from_positions_and_upl(db, monkeypatch):
     import re
     assert not re.search(r"<td[^>]*>\s*<b>BNBX</b>", html)
     assert "Excluded from this report" in html
+
+
+# ---- deposits are cash flows; per-strategy breakdown --------------------------------
+
+class DepositHTTP(FakeHTTP):
+    """Fri Oct 9 2026 as seen on Saturday: a $2,000 instant-ACH deposit at 15:45 ET, the 1D
+    history still ends at Thursday's close, Friday's close only in intraday history."""
+
+    def get(self, url, headers=None, params=None, timeout=None):
+        path = url.replace(ro.LIVE_BASE_URL, "")
+        params = params or {}
+        utc = lambda *a: int(datetime(*a, tzinfo=timezone.utc).timestamp())  # noqa: E731
+        if path == "/v2/account":
+            body = {**ACCOUNT, "equity": "4819.61", "last_equity": "2808.58", "cash": "3320.02"}
+        elif path == "/v2/calendar":
+            cal = [{"date": f"2026-10-0{i}", "open": "09:30", "close": "16:00"} for i in (5, 6, 7, 8, 9)]
+            body = [c for c in cal if params["start"] <= c["date"] <= params["end"]]
+        elif path == "/v2/account/portfolio/history" and params.get("timeframe") == "1D":
+            body = {"timestamp": [utc(2026, 10, 8), utc(2026, 10, 9)],   # Wed / Thu closes
+                    "equity": [2806.02, 2808.58]}
+        elif path == "/v2/account/portfolio/history":
+            body = {"timestamp": [utc(2026, 10, 9, 19, 30), utc(2026, 10, 9, 19, 55), utc(2026, 10, 9, 20, 0)],
+                    "equity": [2822.07, 4821.88, 4819.21]}
+        elif path == "/v2/account/activities":
+            body = [{"activity_type": "CSD", "date": "2026-10-09", "net_amount": "2000",
+                     "status": "executed", "description": "instant_ach"}]
+        elif path == "/v2/account/activities/FILL" or path == "/v2/orders" or path == "/v2/positions":
+            body = [] if path != "/v2/orders" or params.get("status") == "closed" else []
+        else:
+            return super().get(url, headers, params, timeout)
+        return SimpleNamespace(status_code=200, json=lambda: body)
+
+
+def test_deposit_day_is_not_a_loss(db, monkeypatch):
+    run = {**RUN, "config": {**RUN["config"], "start_equity": 2727.91, "started": "2026-10-06"},
+           "heartbeat_at": datetime(2026, 10, 9, 19, 55, tzinfo=timezone.utc)}
+    monkeypatch.setattr(rep, "live_run", lambda uid, acct=None: run)
+    monkeypatch.setattr(rep, "runner_trades", lambda rid: [])
+    sat = datetime(2026, 10, 10, 4, 40, tzinfo=timezone.utc)
+    d = rep.gather(_client(DepositHTTP()), TARGET, day=date(2026, 10, 9), now=sat)
+    assert d["equity"] == pytest.approx(4819.21)          # Friday's close, not Thursday's
+    assert d["last_equity"] == pytest.approx(2808.58)
+    assert d["day_deposits"] == pytest.approx(2000)
+    assert d["day_pnl"] == pytest.approx(10.63, abs=0.01)
+    assert d["day_pct"] > 0
+    # since start: time-weighted; the deposit is neither a loss nor a gain
+    twr = (2808.58 / 2727.91) * ((4819.21 - 2000) / 2808.58) - 1
+    assert d["perf"]["account_return_pct"] == pytest.approx(twr * 100, abs=1e-6)
+    assert d["perf"]["net_deposits"] == pytest.approx(2000)
+    html = rep.render(d)
+    assert "+$10.63" in html and "-$1,99" not in html
+    assert rep.subject_for(d).startswith("AlpaTrade LIVE PnL — Oct 09, 2026 (+$11")
+
+
+def test_strategy_breakdown_sections(db):
+    d = rep.gather(_client(), TARGET, now=SAT)
+    st = {s["name"]: s for s in d["strategies"]}
+    mag, semi = st["buy_the_dip_mag7_minhold_live"], st["buy_the_dip_semi7_minhold_live"]
+    assert mag["positions"] == ["GOOGL"] and mag["fills"] == 1 and mag["prefix"] == "btd"
+    assert mag["sleeve_value"] == pytest.approx(10150 - 2000)
+    assert semi["sleeve_value"] == pytest.approx(2000) and not semi["has_activity"]
+    html = rep.render(d)
+    assert "Strategies" in html and "Semi 7 BTD" in html and "No fills yet" in html
+
+
+def test_s7btd_fill_attributed_to_semi7_not_mag7():
+    from utils.strategy_allocation import Sleeve
+    sl = _sleeves()
+    orders = [{"order_id": "a", "strategy": "buy_the_dip_semi7_minhold_live", "realized": 5.0},
+              {"order_id": "b", "strategy": "buy_the_dip_mag7_minhold_live", "realized": None}]
+    assert not sl[0]["sleeve"].owns_cid("s7btd-TSM-20261012")
+    assert sl[1]["sleeve"].owns_cid("s7btdtp-TSM-20261012")
+    out = {s["name"]: s for s in rep.strategy_breakdown(sl, 4819.0, [], orders)}
+    assert out["buy_the_dip_semi7_minhold_live"]["realized"] == 5.0
+    assert out["buy_the_dip_mag7_minhold_live"]["fills"] == 1
+    assert isinstance(sl[1]["sleeve"], Sleeve)

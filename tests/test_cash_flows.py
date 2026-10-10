@@ -128,3 +128,13 @@ def test_daily_live_email_day_pnl_excludes_deposit(monkeypatch):
     assert d["day_pnl"] == pytest.approx(0.0)
     assert d["perf"]["net_deposits"] == 150
     assert d["perf"]["account_pnl"] == pytest.approx(10150 - 10000 - 150)
+
+
+def test_twr_ignores_deposit_day():
+    from datetime import date
+    from engine.reporting.cash_flows import twr_pct
+    rows = [{"date": date(2026, 10, 9), "amount": 2000.0, "type": "CSD", "description": ""}]
+    pts = [(date(2026, 10, 8), 2808.58), (date(2026, 10, 9), 4819.21)]
+    ret, dep = twr_pct(date(2026, 10, 7), 2808.58, pts, rows)
+    assert dep == 2000.0
+    assert abs(ret - (4819.21 - 2000 - 2808.58) / 2808.58 * 100) < 1e-9
