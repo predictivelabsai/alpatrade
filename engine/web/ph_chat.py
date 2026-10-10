@@ -321,6 +321,17 @@ CHAT_JS = r"""
         font:{size:13,color:'#14231B'}};
       Plotly.newPlot(div,[eq,cap],base,{responsive:true,displayModeBar:false});
 
+    } else if(data.type==='strategy_vs_spy'){
+      var e0=data.equity[0],s0=(data.spy||[]).find(function(v){return v!=null;});
+      var tr=[{x:data.dates,y:data.equity.map(function(v){return v/e0*100;}),type:'scatter',mode:'lines',
+        name:'Strategy',line:{color:'#1F5D43',width:2}}];
+      if(s0)tr.push({x:data.dates,y:data.spy.map(function(v){return v==null?null:v/s0*100;}),type:'scatter',
+        mode:'lines',name:'SPY',line:{color:'#7A867E',width:1.5}});
+      base.yaxis.tickprefix='';base.xaxis.type='date';
+      base.title={text:data.title||'Strategy vs SPY (base 100)',font:{size:12,color:'#14231B'}};
+      if(window.innerWidth<480){base.margin={t:34,r:8,b:36,l:38};base.title.font.size=11;}
+      Plotly.newPlot(div,tr,base,{responsive:true,displayModeBar:false});
+
     } else if(data.type==='research_correlation_heatmap'){
       var events=[...new Set((data.matrix||[]).map(function(x){return x.event;}))];
       var industries=[...new Set((data.matrix||[]).map(function(x){return x.industry;}))];
@@ -1429,6 +1440,40 @@ async def _stream(msg: str, session) -> StreamingResponse:
                 thread_id, user_key, "assistant", reply,
                 {"agent": "Usage", "framework": "command", "dispatch": "usage"},
             )
+            yield _sse("done", {})
+            return
+
+        # Leaderboard clone / "Run backtest": deterministic, no LLM query. The job runs in a
+        # background thread and also saves its result into this thread (engine.leaderboard.clone_bt),
+        # so the result arrives even if this stream is cut; here we stream progress + the result.
+        _bt = re.match(r"^/backtest-strategy\s+(\d+)(\s+cloned)?\s*$", msg.strip(), re.I)
+        if _bt:
+            from engine.leaderboard import clone_bt, store as _lstore
+            yield _sse("agent_route", {"slug": "backtest", "agent": "Backtest"})
+            sid = int(_bt.group(1))
+            srow = _lstore.get(sid) if user_key else None
+            if not srow or srow.get("user_id") != user_key:
+                reply = "Sign in and clone the strategy first." if not user_key else f"Strategy #{sid} isn't one of your strategies."
+                yield _sse("token", {"text": reply})
+                _save_chat_message(thread_id, user_key, "assistant", reply, {"agent": "Backtest"})
+                yield _sse("done", {})
+                return
+            intro = (f"Cloned **{srow['name']}** as your paper strategy (#{sid}, private) — running backtest…"
+                     if _bt.group(2) else f"Running backtest of **{srow['name']}** (#{sid})…")
+            _save_chat_message(thread_id, user_key, "assistant", intro, {"agent": "Backtest"})
+            jid = await asyncio.to_thread(clone_bt.start_backtest, sid, user_key, None, thread_id)
+            started = time.monotonic()
+            job = clone_bt.JOBS[jid]
+            while job["state"] == "running":
+                yield _sse("progress", {"message": intro.replace("**", "") + " " + job["message"],
+                                        "elapsed_seconds": int(time.monotonic() - started)})
+                await asyncio.sleep(2)
+            text_out = job["markdown"] or ""
+            yield _sse("token", {"text": text_out})
+            yield _sse("follow_ups", {"items": [f"Change the stop to 2% and rerun strategy #{sid}",
+                                                f"Explain the rules of strategy #{sid}"]})
+            history.append({"role": "user", "content": msg})
+            history.append({"role": "assistant", "content": job["markdown"] or ""})
             yield _sse("done", {})
             return
 

@@ -749,6 +749,27 @@ def queue_backtest(strategy: str = "buy_the_dip", symbols: list[str] | None = No
 
 
 @tool
+def backtest_my_strategy(strategy_id: int, param_overrides: dict | None = None,
+                         runtime: ToolRuntime[DeepAgentContext] = None) -> str:
+    """Backtest one of the caller's own strategies (My strategies / a Leaderboard clone, by its
+    #id) on the fixed backtester with its stored template + params, optionally changing params
+    first, e.g. {"sl": 2.0} for a BTD stop of 2% or {"stop": 0.02} for a template stop. Overrides
+    are saved on the user's paper config. Returns metrics vs SPY and an equity chart. Never
+    places orders. Use when the user asks to rerun / change a parameter of their strategy."""
+    context = _require_tenant(runtime)
+    from engine.leaderboard import clone_bt
+    overrides = {str(k)[:40]: v for k, v in (param_overrides or {}).items()
+                 if isinstance(v, (int, float, str, bool, list))} or None
+    try:
+        md, _ = clone_bt.run_job(int(strategy_id), str(context.user_id), overrides)
+    except PermissionError as exc:
+        return str(exc)
+    except Exception as exc:  # noqa: BLE001
+        return f"Backtest failed: {exc}"
+    return md
+
+
+@tool
 def queue_advisor_backtest(
     report_id: str,
     recommendation_id: str,
@@ -1103,7 +1124,7 @@ PORTFOLIO_TOOLS = (
 )
 
 STRATEGY_TOOLS = (
-    queue_backtest, queue_advisor_backtest, validate_run, compare_strategy_results,
+    backtest_my_strategy, queue_backtest, queue_advisor_backtest, validate_run, compare_strategy_results,
     get_recent_runs, get_run_report, get_job_status, get_job_events, get_job_results,
 )
 

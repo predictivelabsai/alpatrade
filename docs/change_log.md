@@ -1,5 +1,36 @@
 # Change Log
 
+## 2026-10-10 — v0.35.2: one-click "Clone strategy" → paper strategy + backtest streamed into chat
+
+- **What was broken:** "Clone into AlpaTrade" only copied the skill markdown into a private
+  `user_strategies` row and landed on a page with no working next step: no paper config, no
+  backtest (the copy of a backtest entry lost its kind, so it showed "—"), and signed-out
+  visitors were sent to /signin without `next`, so the clone never completed after sign-in.
+- **Now:** a prominent **Clone strategy** button on every Leaderboard row and strategy page.
+  One click (idempotent per user + source) creates the private copy (`cloned_from_id`, "Shown
+  as" = email local part) plus an `alpatrade.user_strategy_configs` row (new table,
+  `sql/47_user_strategy_configs.sql`: template + params, `mode` paper/simulated, `is_live`
+  pinned FALSE by a CHECK, active) — never `strategy_configs` / `strategy_allocations`. It then
+  redirects to `/app?new=1&autorun=/backtest-strategy <id> cloned`: the chat streams progress,
+  then posts total, simple ×252 annualised, Sharpe, max DD, trades, win rate vs SPY and an
+  inline Plotly equity curve vs SPY (`strategy_vs_spy` chart, dates on x), linked to the
+  strategy page. The job runs in a background thread and saves its result into the chat
+  thread too. Results are stored on the clone's `backtest_metrics` with `engine_stamp` +
+  `audit_input` (scripts/audit_backtest.py --strategy-id works).
+- **Engines:** BTD → utils.buy_the_dip (v0.33.6+ fixes, TAF/CAT fees, 10 bps slippage, yfinance
+  data — no Alpaca keys needed); Chat With Traders templates (relative_strength, trend_ma,
+  volume_spike, donchian, trend_template, dip, gap, breakout) → engine.backtest.templates /
+  breakout with the cloned params. Only BTD can paper-trade today; other templates are marked
+  simulated with a note. Without Alpaca paper keys a BTD clone is "Paper (simulated) — connect
+  Alpaca paper keys" with a link to /settings.
+- **Chat follow-ups:** new DeepAgents tool `backtest_my_strategy(strategy_id, param_overrides)`
+  (owner-only; overrides saved on the paper config), e.g. "change the stop to 2% and rerun".
+- Signed-out Clone → `/signin?next=/strategies/{id}/clone`; the GET route completes the clone.
+- "Run backtest" (My strategies / own strategy page) opens the same chat flow. Copy to clipboard
+  keeps its "Copied" toast.
+- Tests: `tests/test_clone_flow.py` (rows, idempotency, ownership, signed-out redirect, backtest
+  kick-off, no live flags).
+
 ## 2026-10-10 — landing: "Works with" broker logos; CLI example moves to /developers
 
 - **Home stats stripe removed** ("5-agent trading squad · 4 strategies built-in · Alpaca live

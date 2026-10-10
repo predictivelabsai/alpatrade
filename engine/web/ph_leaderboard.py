@@ -1,8 +1,8 @@
 """Strategy Leaderboard + user strategies (``/leaderboard``, ``/strategies`` …).
 
 * ``/leaderboard`` (public): every *public* strategy — name, user, description, annualised
-  return, period running and alpha vs SPY — with Open in Grok, Copy to clipboard and
-  Clone into AlpaTrade. Figures are computed live from the owner's live runner run
+  return, period running and alpha vs SPY — with Clone strategy (one click: private paper copy +
+  backtest streamed into a new chat), Open in Grok and Copy for ChatGPT / Claude. Figures are computed live from the owner's live runner run
   (:mod:`engine.leaderboard.perf`); a strategy without live data shows "—".
 * ``/strategies`` (signed in): the user's own strategies (several allowed), each private or
   public, with a one-click public/private toggle, edit and delete.
@@ -166,7 +166,7 @@ window.lbCopy=function(id,p){var t=md(id);if(!t)return;var b=AI[p],r=lbPrefill(i
    :'Copied \u2014 '+b.name+' opens with a short prompt; paste (Ctrl/\u2318+V) the full SKILL.md there')})
   .catch(function(){toast(r.full?'Opening '+b.name+' with the strategy prefilled':'Copy failed \u2014 '+b.name+' gets the page link; use Download .md')});
  window.open(r.url,'_blank','noopener')};
-window.lbCopyClip=function(id){var t=md(id);if(!t)return;copyText(t).then(function(){toast('Copied \u2014 paste into Claude or ChatGPT')})
+window.lbCopyClip=function(id,who){var t=md(id);if(!t){toast('Nothing to copy');return}copyText(t).then(function(){toast('Copied \u2014 '+(who?'paste into '+who:'paste into Claude or ChatGPT'))})
  .catch(function(){toast('Copy failed \u2014 use Download .md')})};
 window.lbCopyRaw=function(id){var t=md(id);if(!t)return;copyText(t).then(function(){toast('Copied')})
  .catch(function(){toast('Copy failed \u2014 use Download .md')})};
@@ -319,22 +319,56 @@ def _running_cell(m: dict, label: bool = True) -> str:
     return (f"<span class='lb-l'>Running</span>" if label else "") + body
 
 
+def clone_href(sid: int) -> str:
+    return f"/strategies/{int(sid)}/clone"
+
+
 def _actions(s: dict, user: Optional[dict], *, wide_view: bool = False) -> str:
     sid = int(s["id"])
     from engine.web.ai_logos import GROK_SVG
+    own = bool(user and str(user.get("user_id")) == s.get("user_id"))
+    out = []
+    # Primary: one click clones into the user's paper strategies and starts a backtest in chat.
+    # Signed out it is a plain link: /strategies/{id}/clone -> sign-in with ?next back to it.
+    if own:
+        out.append(f"<a class='lb-btn primary' href='{backtest_href(sid)}'>▶ Run backtest</a>")
+    elif user:
+        out.append(f"<form method='post' action='{clone_href(sid)}'>"
+                   "<button type='submit' class='lb-btn primary'>⑂ Clone strategy</button></form>")
+    else:
+        out.append(f"<a class='lb-btn primary' href='{clone_href(sid)}' rel='nofollow'>⑂ Clone strategy</a>")
     # Only Grok honours a ?q= prefill reliably (Julian, 2026-10-10); for ChatGPT / Claude the
     # user copies the SKILL.md and pastes it.
-    out = [f"<a class='lb-btn view' href='/strategies/{sid}#details'>View more</a>",
-           f"<button type='button' class='lb-btn ai' onclick='lbCopy({sid},\"grok\")'>{GROK_SVG}Open in Grok</button>",
-           f"<button type='button' class='lb-btn ai cp' onclick='lbCopyClip({sid})' title='Copy the full SKILL.md'>"
-           f"{COPY_SVG}Copy to clipboard</button>"]
-    own = bool(user and str(user.get("user_id")) == s.get("user_id"))
-    if not own:
-        out.append(f"<form method='post' action='/strategies/{sid}/clone'>"
-                   "<button type='submit' class='lb-btn primary'>⑂ Clone into AlpaTrade</button></form>")
+    out += [f"<a class='lb-btn view' href='/strategies/{sid}#details'>View more</a>",
+            f"<button type='button' class='lb-btn ai' onclick='lbCopy({sid},\"grok\")'>{GROK_SVG}Open in Grok</button>",
+            f"<button type='button' class='lb-btn ai cp' onclick='lbCopyClip({sid})' title='Copy the full SKILL.md'>"
+            f"{COPY_SVG}Copy to clipboard</button>"]
     if wide_view:
         out.append(f"<a class='lb-btn wide' href='/strategies/{sid}/skill.md'>Download .md</a>")
     return "<div class='lb-actions'>" + "".join(out) + "</div>"
+
+
+def backtest_href(sid: int, cloned: bool = False) -> str:
+    from urllib.parse import quote
+    return "/app?new=1&autorun=" + quote(f"/backtest-strategy {int(sid)}" + (" cloned" if cloned else ""))
+
+
+def paper_html(s: dict, user: Optional[dict]) -> str:
+    """Paper-strategy status for the owner's clone (never live)."""
+    if not (user and str(user.get("user_id")) == s.get("user_id")):
+        return ""
+    try:
+        from engine.leaderboard import clone_bt
+        cfg = clone_bt.get_config(int(s["id"]), str(user["user_id"]))
+        if not cfg:
+            return ""
+        st = clone_bt.paper_status(cfg["template"], str(user["user_id"]))
+    except Exception as exc:  # noqa: BLE001
+        log.warning("paper status failed: %s", type(exc).__name__)
+        return ""
+    link = (" <a href='/settings'>Connect Alpaca paper keys →</a>" if st.get("keys") is False else "")
+    return (f"<div class='flash lb-paper'><b>Template:</b> <code>{_e(cfg['template'])}</code> · "
+            f"<b>Mode:</b> {_e(cfg['mode'])} · live trading off. {_e(st['label'])}{link}</div>")
 
 
 def _row(rank: int, s: dict, m: dict, user: Optional[dict]) -> str:
@@ -560,6 +594,7 @@ def strategy_html(s: dict, m: dict, user: Optional[dict], msg: str = "", det: Op
                      f"<a class='lb-btn' href='/strategies/{sid}/edit'>Edit</a>"
                      f"<button type='button' class='lb-btn' onclick='lbChat({_e(json.dumps(chat_prompt(s)))})'>"
                      "Backtest in AlpaTrade chat</button></div>")
+    owner_bar += paper_html(s, user)
     flash = f"<div class='flash'>{_e(msg)}</div>" if msg else ""
     return (f"<div class='lb'>{flash}<a href='/leaderboard' style='font-size:.82rem'>← Leaderboard</a>"
             f"<h1>{_e(s['name'])}{badges}</h1>"
@@ -606,7 +641,8 @@ def _strategy_backtest_html(s: dict, m: dict, user: Optional[dict], badges: str,
             f"<p class='lede' style='margin-bottom:.4rem'>by <b>{_e(s['author'])}</b> · {_e(s.get('description'))}</p>"
             + _source(s, full=True) + warn + strip + oos
             + _actions(s, user, wide_view=True).replace("class='lb-actions'", "class='lb-actions' style='margin:0'")
-            + (f"<div class='lb-actions' style='margin:.2rem 0 0'><a class='lb-btn' href='/strategies/{sid}/edit'>Edit</a></div>"
+            + (f"<div class='lb-actions' style='margin:.2rem 0 0'><a class='lb-btn' href='/strategies/{sid}/edit'>Edit</a>"
+               f"<a class='lb-btn' href='{backtest_href(sid)}'>Rerun backtest in chat</a></div>" + paper_html(s, user)
                if user and str(user.get("user_id")) == s.get("user_id") else "")
             + f"<div class='lb-md' data-md-render='lb-md-{sid}'><pre>{_e(copy_text(s))}</pre></div>"
             + _json_script(f"lb-md-{sid}", copy_text(s))
@@ -635,6 +671,7 @@ def my_strategies_html(rows: list[tuple[dict, dict]], msg: str = "", error: str 
             f"<input type='hidden' name='public' value='{'false' if pub else 'true'}'>"
             f"<input type='hidden' name='back' value='/strategies'>"
             f"<button class='lb-btn' type='submit'>{'Make private' if pub else 'Make public'}</button></form>"
+            f"<a class='lb-btn primary' href='{backtest_href(sid)}'>▶ Run backtest</a>"
             f"<a class='lb-btn' href='/strategies/{sid}'>View</a>"
             f"<a class='lb-btn' href='/strategies/{sid}/edit'>Edit</a>"
             f"<form method='post' action='/strategies/{sid}/delete' "
@@ -861,17 +898,32 @@ def register(app, rt):
             return _not_found()
         return RedirectResponse("/strategies?msg=Strategy+deleted", status_code=303)
 
-    @app.post("/strategies/{sid}/clone")
-    async def strategy_clone(session, sid: int):
+    def _do_clone(session, sid: int):
         user = _user(session)
         if not user:
-            from urllib.parse import quote_plus
-            return RedirectResponse(f"/signin?msg={quote_plus(_SIGNIN_MSG)}", status_code=303)
-        new_id = store.clone(sid, str(user["user_id"]), author_name=store.default_author(user))
-        if not new_id:
+            from urllib.parse import quote, quote_plus
+            return RedirectResponse(f"/signin?msg={quote_plus(_SIGNIN_MSG)}&next={quote(clone_href(sid), safe='/')}",
+                                    status_code=303)
+        from engine.leaderboard import clone_bt
+        try:
+            res = clone_bt.clone_strategy(sid, user)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("clone failed: %s", type(exc).__name__)
+            return RedirectResponse("/leaderboard?error=Clone+failed%2C+please+try+again", status_code=303)
+        if not res:
             return _not_found()
-        return RedirectResponse(
-            f"/strategies/{new_id}?msg=Cloned+into+your+strategies+%28private%29", status_code=303)
+        new_id, created = res
+        # Straight into a new chat that runs the backtest and streams the results.
+        return RedirectResponse(backtest_href(new_id, cloned=True), status_code=303)
+
+    @app.post("/strategies/{sid}/clone")
+    async def strategy_clone(session, sid: int):
+        return _do_clone(session, sid)
+
+    @rt("/strategies/{sid}/clone", methods=["GET"])
+    def strategy_clone_get(session, sid: int):
+        # Signed-out Clone links and the post-sign-in ?next land here; idempotent per user.
+        return _do_clone(session, sid)
 
     return ["/leaderboard", "/leaderboard.json", "/strategies", "/strategies/new",
             "/strategies/{sid}", "/strategies/{sid}/skill.md", "/strategies/{sid}/edit"]

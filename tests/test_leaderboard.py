@@ -113,7 +113,7 @@ def test_leaderboard_html_has_fields_actions_and_mobile_hooks():
     assert perf.pct(m["alpha_pct"]) in html
     assert "Since 24 Sep 2026" in html and "15 days running" in html
     assert "Open in Grok" in html and "Copy to clipboard" in html and "Copy for ChatGPT" not in html
-    assert "action='/strategies/7/clone'" in html and "Clone into AlpaTrade" in html
+    assert "href='/strategies/7/clone'" in html and "Clone strategy" in html
     assert "id='lb-md-7'" in html and "data-tip=" in html
     assert "session close 8 Oct 2026" in html
     assert html.count("—") >= 3  # strategy without live data shows dashes
@@ -293,8 +293,27 @@ def test_new_and_clone_default_to_email_local_part(owner_client):
     assert r.status_code == 200 and "value='kaljuvee'" in r.text
     c.post("/strategies/new", data={"name": "X", "author_name": ""}, follow_redirects=False)
     assert calls["create"] == "kaljuvee"
-    c.post("/strategies/9/clone", follow_redirects=False)
-    assert calls["clone"] == "kaljuvee"
+    from engine.leaderboard import clone_bt
+    import pytest as _pt
+    mp = _pt.MonkeyPatch()
+    mp.setattr(clone_bt, "existing_clone", lambda sid, uid: None)
+    mp.setattr(clone_bt, "_pool", lambda: _NoDB())
+    mp.setattr(clone_bt, "get_config", lambda sid, uid: {"template": "buy_the_dip"})
+    try:
+        r = c.post("/strategies/9/clone", follow_redirects=False)
+    finally:
+        mp.undo()
+    assert calls["clone"] == "kaljuvee" and "/app?new=1&autorun=" in r.headers["location"]
+
+
+class _NoDB:
+    def get_session(self):
+        import contextlib
+
+        class S:
+            def execute(self, *a, **k):
+                return None
+        return contextlib.nullcontext(S())
 
 
 # ---- View more detail, AI logo buttons, Semi 7 backtest entry -------------------------------
