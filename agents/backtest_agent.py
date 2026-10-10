@@ -104,10 +104,10 @@ class BacktestAgent:
         intraday_exit = request.get("intraday_exit", False)
         pdt_protection = request.get("pdt_protection")
         conservative_metrics = bool(request.get("conservative_metrics", False))
-        conservative_execution = bool(request.get("conservative_execution", False))
+        conservative_execution = bool(request.get("conservative_execution", True))
         include_taf_fees = bool(request.get("include_taf_fees", False))
         include_cat_fees = bool(request.get("include_cat_fees", False))
-        slippage_bps = float(request.get("slippage_bps", 0.0) or 0.0)
+        slippage_bps = float(request.get("slippage_bps", 10.0) if request.get("slippage_bps") is not None else 10.0)
 
         # Determine date range
         end_date = datetime.now()
@@ -446,10 +446,10 @@ class BacktestAgent:
         vol_target: Optional[float] = None,
         atr_exit_mult: Optional[float] = None,
         conservative_metrics: bool = False,
-        conservative_execution: bool = False,
+        conservative_execution: bool = True,
         include_taf_fees: bool = False,
         include_cat_fees: bool = False,
-        slippage_bps: float = 0.0,
+        slippage_bps: float = 10.0,
     ) -> List[Dict]:
         """Run buy-the-dip backtests across a parameter grid."""
         dip_thresholds = variations.get("dip_threshold", [0.05])

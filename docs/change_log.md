@@ -1,5 +1,34 @@
 # Change Log
 
+## 2026-10-10 — v0.33.6: buy_the_dip backtester fixes + Semi 7 / Mag-7 re-run on the exact live rules
+
+- **Equity bug** (`utils/buy_the_dip.py`): when several positions closed on the same bar, a position
+  closed earlier in that bar was counted again at market value in later trades' `capital_after`,
+  and `total_return` was read from the last trade's `capital_after`. Now already-closed positions
+  are excluded and `total_return` / `total_pnl` / `final_equity` come from the true end-of-run
+  equity curve (cash + open positions at the last close).
+- **Fills:** stop-before-target is now the default when one daily bar touches both
+  (`conservative_execution=True`); a stop that is gapped through (or stayed dormant during the
+  min-hold while the price fell through it) fills at the bar's open, not at the stop price;
+  slippage defaults to **10 bps per side** (`slippage_bps=10`). Same defaults in `BacktestAgent`
+  and the orchestrator.
+- **Re-run on the live rules** (`scripts/btd_live_rules_wf.py`; dip 3% vs 20-day high, TP 8%,
+  SL 1.5%, min = max hold 3 days, 1/7 per position, cash only; report
+  `docs/btd_live_rules_wf_20261010T032956.md`):
+  - Semi 7, 11 Feb – 9 Oct 2026: +6.7% (simple ann. +10.1%, Sharpe 0.53, max DD −11.4%) vs SPY
+    +13.4%; 2016–2026: +41.2% (simple +3.7%, CAGR +3.2%, Sharpe 0.27, max DD −38.4%) vs SPY +360.6%.
+  - Mag-7, same windows: −2.2% vs SPY +13.4%; 2016–2026: +28.6% (CAGR +2.3%) vs SPY +360.6%.
+  - Pre-fix code on the same rules reported Semi 7 +73.5% / Mag-7 +63.6% for 2026.
+  No edge vs SPY on the live rules. The earlier Semi 7 walk-forward (+550.8% on the leaderboard)
+  and the Mag-7 walk-forward (docs/walk_forward_btd_20260720T105423.md, $27,550 OOS) relied on
+  the bugged code and are superseded.
+- `engine/leaderboard/semi7.build_metrics_live_rules` + `scripts/seed_semi7_backtest.py
+  --live-rules <json>` to re-seed leaderboard row 17 from this report (2016–2026 headline,
+  2026 window as the test window).
+- Tests: `tests/test_btd_equity_fixes.py` (same-bar exits, stop-before-target, gapped stop,
+  10 bps default); `tests/test_cwt_pipeline.py` expectations updated for v0.33.4 simple
+  annualisation.
+
 ## 2026-10-10 — v0.33.5: mobile hamburger menu in the public top nav
 
 - At ≤960px the public top nav (home, Platform, Leaderboard, Developers, strategy pages; all

@@ -87,6 +87,12 @@ def _check_intraday_exit(symbol: str, trade: Dict, current_date,
     return None
 
 
+# Realistic defaults (v0.33.6): when a daily bar touches both the stop and the target we
+# assume the STOP filled first (we can't know the intraday order), and every fill pays
+# 10 bps slippage per side (entry above, exit below the reference price).
+DEFAULT_SLIPPAGE_BPS = 10.0
+
+
 def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: datetime,
                         initial_capital: float = 10000, position_size: float = 0.1,
                         dip_threshold: float = 0.02, hold_days: int = 2,
@@ -99,8 +105,8 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                         vol_target: Optional[float] = None,
                         atr_exit_mult: Optional[float] = None,
                         conservative_metrics: bool = False,
-                        conservative_execution: bool = False,
-                        slippage_bps: float = 0.0,
+                        conservative_execution: bool = True,
+                        slippage_bps: float = DEFAULT_SLIPPAGE_BPS,
                         min_hold_days: int = 0) -> Tuple[pd.DataFrame, Dict]:
     """
     Backtest buy-the-dip strategy
@@ -312,9 +318,13 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
 
                 if conservative_execution and hit_tp and hit_sl:
                     hit_tp = False
+                # A stop can't fill above the bar's open: if the stock opened below the stop
+                # (overnight gap, or the min-hold kept the stop dormant while the price fell
+                # through it) the fill is the open, not the stop price.
+                bar_open = float(current_bar['Open']) if 'Open' in current_bar else trade['stop_price']
                 raw_exit_price = (
                     trade['target_price'] if hit_tp else
-                    trade['stop_price'] if hit_sl else float(current_bar['Close'])
+                    min(trade['stop_price'], bar_open) if hit_sl else float(current_bar['Close'])
                 )
                 exit_price = raw_exit_price * (1 - max(0.0, slippage_bps) / 10000)
 
@@ -333,7 +343,9 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
             # Calculate total equity (Cash + Market Value of REMAINING positions)
             total_market_value = 0
             for open_symbol, open_trade in active_trades.items():
-                if open_symbol == symbol:
+                # Positions already closed earlier in this same bar are back in cash
+                # (available_capital); don't count them again at market value.
+                if open_symbol == symbol or open_symbol in closed_this_tick:
                     continue
                 try:
                     cur_p = float(price_data[open_symbol].loc[current_date, 'Close'])
@@ -468,6 +480,16 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
     
     # Calculate metrics using equity curve for drawdown for better accuracy
     metrics = calculate_metrics(trades_df, initial_capital, start_date, end_date)
+
+    # total_return / total_pnl from the TRUE end-of-run equity (cash + open positions
+    # marked at the last close), not from the last closed trade's capital_after.
+    if not equity_df.empty:
+        final_eq = float(equity_df['equity'].iloc[-1])
+        metrics['final_equity'] = final_eq
+        metrics['total_pnl'] = final_eq - initial_capital
+        metrics['total_return'] = (final_eq / initial_capital - 1) * 100
+        days = (end_date - start_date).days
+        metrics['annualized_return'] = (metrics['total_return'] * 365.25 / days) if days > 0 else 0
     
     # Override max drawdown from equity curve (more accurate than trade-only)
     if not equity_df.empty:

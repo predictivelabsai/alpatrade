@@ -28,7 +28,13 @@ MD = ROOT / "engine" / "leaderboard" / "seeds" / "semi7-btd-backtest.md"
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--report", default=semi7.latest_report(ROOT))
+    ap.add_argument("--live-rules", help="docs/btd_live_rules_wf_<ts>.json (exact live rules, "
+                    "fixed backtester); replaces the walk-forward figures")
     a = ap.parse_args(argv)
+    if a.live_rules:
+        bm = semi7.build_metrics_live_rules(json.loads(Path(a.live_rules).read_text()),
+                                            source=str(Path(a.live_rules).resolve().relative_to(ROOT)))
+        return _upsert(bm)
     wf = json.loads(Path(a.report).read_text())
     first = date.fromisoformat(wf["rows"][0]["test_period"][:10])
     import yfinance as yf
@@ -36,6 +42,10 @@ def main(argv=None) -> int:
                      progress=False)["Close"].squeeze().dropna()
     spy = {d.date().isoformat(): float(v) for d, v in px.items()}
     bm = semi7.build_metrics(wf, spy, source=str(Path(a.report).relative_to(ROOT)))
+    return _upsert(bm)
+
+
+def _upsert(bm: dict) -> int:
     md = MD.read_text(encoding="utf-8")
     fm = front_matter(md)
     from sqlalchemy import text

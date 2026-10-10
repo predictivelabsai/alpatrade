@@ -70,6 +70,33 @@ def build_metrics(wf: dict, spy_close: dict, source: str = "") -> dict:
     }
 
 
+def build_metrics_live_rules(report: dict, basket: str = "semi7", source: str = "") -> dict:
+    """backtest_metrics from scripts/btd_live_rules_wf.py (exact live rules, fixed backtester):
+    headline = the continuous 2016–2026 run; ``test`` = the 2026-02-11 → 2026-10-09 window."""
+    r = report["baskets"][basket]
+    L, S = r["long"], r["span"]
+    return {
+        "period_start": L["period"][0], "period_end": L["period"][1],
+        "trading_days": L["trading_days"], "total_return_pct": L["total_return_pct"],
+        "annualised_pct": L["simple_ann_pct"], "annualised_cagr_pct": L["cagr_pct"],
+        "spy_return_pct": L["spy_return_pct"], "spy_annualised_pct": L["spy_simple_ann_pct"],
+        "spy_annualised_cagr_pct": L["spy_cagr_pct"],
+        "alpha_pct": L["total_return_pct"] - L["spy_return_pct"],
+        "alpha_annualised_pct": L["alpha_simple_ann_pct"],
+        "sharpe": L["sharpe"], "max_drawdown_pct": L["max_drawdown_pct"],
+        "win_rate_pct": L["win_rate_pct"], "trades": L["trades"],
+        "universe": "Semi 7: TSM, AVGO, MU, AMD, ASML, INTC, AMAT (today's largest; survivorship bias)",
+        "template": ("buy_the_dip, exact live rules: dip 3% vs 20-day high, TP 8%, SL 1.5%, min = max "
+                     "hold 3 days, 1/7 per position, cash only; stop-before-target, 10 bps/side"),
+        "test": {"period_start": S["period"][0], "period_end": S["period"][1],
+                 "annualised_pct": S["cagr_pct"], "spy_annualised_pct": S["spy_cagr_pct"],
+                 "sharpe": S["sharpe"], "max_drawdown_pct": S["max_drawdown_pct"], "trades": S["trades"]},
+        "episodes": [], "source_report": source,
+        "equity_curve": L.get("curve") or {},
+        "live_slug": LIVE_SLUG,
+    }
+
+
 def latest_report(root) -> Optional[str]:
     from pathlib import Path
     files = sorted(Path(root, "docs").glob("walk_forward_btd_semi7_*.json"))
