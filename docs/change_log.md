@@ -1,5 +1,14 @@
 # Change Log
 
+## 2026-10-10 — v0.34.1: live-rules BTD re-run with fees + engine stamp (audit gate)
+
+- `scripts/btd_live_rules_wf.py` now runs with FINRA TAF + CAT fees on by default
+  (`--no-fees` to omit), records `fees_paid` per run, and writes `engine_stamp`
+  (`utils.engine_stamp.stamp("buy_the_dip")`), `fees_included`, `slippage_bps` and
+  `same_bar_policy` into the report, so `semi7.build_metrics_live_rules` / the audit gate see
+  engine version and costs. Report regenerated from a clean checkout of this commit; Semi 7
+  leaderboard row 17 re-seeded from it.
+
 ## 2026-10-10 — v0.34.0: backtest audit guardrails
 
 - **`utils/backtest_audit.py`**: every backtest result can be audited to pass / warn / fail with

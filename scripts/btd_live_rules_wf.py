@@ -72,9 +72,13 @@ def _curve_stats(eq):
     return {"sharpe": (mu / sd * math.sqrt(252)) if sd else None, "max_drawdown_pct": mdd * 100}
 
 
-def run(mod, syms, a, b, **kw):
+FEES = dict(include_taf_fees=True, include_cat_fees=True)   # FINRA TAF + CAT on every trade
+
+
+def run(mod, syms, a, b, fees: bool = True, **kw):
     res = mod.backtest_buy_the_dip(syms, datetime.fromisoformat(a), datetime.fromisoformat(b),
-                                   initial_capital=CAP, data_source="yfinance", **LIVE, **kw)
+                                   initial_capital=CAP, data_source="yfinance", **LIVE,
+                                   **(FEES if fees else {}), **kw)
     if res is None:
         return {"total_return_pct": 0.0, "trades": 0}
     t, m, e = res
@@ -89,6 +93,7 @@ def run(mod, syms, a, b, **kw):
             "simple_ann_pct": an["simple_pct"], "cagr_pct": an["compound_pct"], **st,
             "trades": int(len(t)), "win_rate_pct": float((t["pnl"] > 0).mean() * 100) if len(t) else None,
             "tp": int(t["TP"].sum()), "sl": int(t["SL"].sum()),
+            "fees_paid": float(t["total_fees"].sum()) if "total_fees" in t else 0.0,
             "spy_return_pct": sp, "spy_simple_ann_pct": sa["simple_pct"], "spy_cagr_pct": sa["compound_pct"],
             "spy": spy_daily_stats(a, b),
             "alpha_simple_ann_pct": an["simple_pct"] - sa["simple_pct"],
@@ -115,7 +120,10 @@ def to_md(out) -> str:
          f"_Generated {out['generated'][:16]} UTC · rules: dip 3% vs 20-day high, TP 8%, SL 1.5%, "
          "min = max hold 3 calendar days, 1/7 of equity per position, cash only · daily bars "
          "(yfinance, adjusted), entry at the signal close + 10 bps, stop before target when both are "
-         "touched, stop fills at the open when gapped through, 10 bps per side._", "",
+         "touched, stop fills at the open when gapped through, 10 bps per side, "
+         f"FINRA TAF + CAT fees {'on' if out.get('fees_included') else 'OFF'} · engine "
+         f"{(out.get('engine_stamp') or {}).get('engine_version')} "
+         f"({(out.get('engine_stamp') or {}).get('git_sha')})._", "",
          "Annualised = simple total × 252 / trading days (CAGR alongside). Sharpe from daily equity, rf 0.", ""]
     hdr = ("| Basket | Run | Period | Total | Simple ann. | CAGR | Sharpe | Max DD | Trades | Win | "
            "SPY total | SPY simple | SPY Sharpe | SPY max DD | Alpha (simple) |")
@@ -148,21 +156,26 @@ def main(argv=None):
     ap.add_argument("--basket", default="both", choices=["semi7", "mag7", "both"])
     ap.add_argument("--old", help="path to the pre-fix utils/buy_the_dip.py for a before/after")
     ap.add_argument("--no-long", action="store_true")
+    ap.add_argument("--no-fees", action="store_true", help="omit FINRA TAF / CAT fees (default: on)")
     a = ap.parse_args(argv)
     old = None
     if a.old:
         spec = importlib.util.spec_from_file_location("old_btd", a.old)
         old = importlib.util.module_from_spec(spec); spec.loader.exec_module(old)
-    out = {"rules": LIVE, "generated": datetime.now(timezone.utc).isoformat(), "baskets": {}}
+    from utils.engine_stamp import stamp
+    out = {"rules": LIVE, "generated": datetime.now(timezone.utc).isoformat(), "baskets": {},
+           "engine_stamp": stamp("buy_the_dip"), "fees_included": not a.no_fees,
+           "slippage_bps": btd.DEFAULT_SLIPPAGE_BPS, "same_bar_policy": "stop_first"}
     for name in (["semi7", "mag7"] if a.basket == "both" else [a.basket]):
         syms = BASKETS[name]; r = {}
-        r["folds"] = [run(btd, syms, x, y) for x, y in FOLDS]
-        r["span"] = run(btd, syms, *SPAN)
+        f = not a.no_fees
+        r["folds"] = [run(btd, syms, x, y, fees=f) for x, y in FOLDS]
+        r["span"] = run(btd, syms, *SPAN, fees=f)
         if old:
             r["folds_old"] = [run(old, syms, x, y, conservative_execution=False, slippage_bps=0.0) for x, y in FOLDS]
             r["span_old"] = run(old, syms, *SPAN, conservative_execution=False, slippage_bps=0.0)
         if not a.no_long:
-            r["long"] = run(btd, syms, *LONG)
+            r["long"] = run(btd, syms, *LONG, fees=f)
         r["fold_sum_pct"] = sum(f["total_return_pct"] for f in r["folds"])
         out["baskets"][name] = r
         print(name, json.dumps({k: (v if not isinstance(v, list) else len(v)) for k, v in r.items()}, default=str)[:2000], flush=True)
