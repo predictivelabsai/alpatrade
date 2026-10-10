@@ -74,35 +74,35 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
 ### Full period 2016-01-04 → 2026-10-09
 | Metric | Strategy | SPY |
 |---|---|---|
-| Annualised return (CAGR) | +19.2% | +15.2% |
-| Total return | +562.4% | +356.2% |
-| Sharpe (daily, N-1) | 1.04 | 0.90 |
-| Max drawdown | -22.2% | -33.8% |
-| Alpha vs SPY (annualised, CAGR − SPY CAGR) | +4.1% | |
-| CAPM alpha (ann.) / beta | +11.2% / 0.52 | |
-| Trades / win rate | 3088 / 43.2% | |
+| Annualised return (CAGR) | +19.5% | +15.2% |
+| Total return | +580.1% | +356.2% |
+| Sharpe (daily, N-1) | 1.05 | 0.90 |
+| Max drawdown | -22.3% | -33.8% |
+| Alpha vs SPY (annualised, CAGR − SPY CAGR) | +4.4% | |
+| CAPM alpha (ann.) / beta | +11.4% / 0.52 | |
+| Trades / win rate | 3081 / 43.3% | |
 
 ### Train 2016-01-04 → 2021-12-31
 | Metric | Strategy | SPY |
 |---|---|---|
-| Annualised return (CAGR) | +11.6% | +17.4% |
-| Total return | +93.4% | +161.2% |
-| Sharpe (daily, N-1) | 0.77 | 1.00 |
-| Max drawdown | -22.2% | -33.8% |
-| Alpha vs SPY (annualised, CAGR − SPY CAGR) | -5.7% | |
-| CAPM alpha (ann.) / beta | +3.9% / 0.48 | |
-| Trades / win rate | 1554 / 43.1% | |
+| Annualised return (CAGR) | +11.8% | +17.4% |
+| Total return | +94.7% | +161.2% |
+| Sharpe (daily, N-1) | 0.78 | 1.00 |
+| Max drawdown | -22.3% | -33.8% |
+| Alpha vs SPY (annualised, CAGR − SPY CAGR) | -5.6% | |
+| CAPM alpha (ann.) / beta | +4.0% / 0.48 | |
+| Trades / win rate | 1550 / 43.3% | |
 
 ### Test 2022-01-03 → 2026-10-09 (out-of-sample, same rules)
 | Metric | Strategy | SPY |
 |---|---|---|
-| Annualised return (CAGR) | +29.8% | +12.3% |
-| Total return | +245.8% | +73.7% |
-| Sharpe (daily, N-1) | 1.33 | 0.76 |
-| Max drawdown | -17.4% | -24.5% |
-| Alpha vs SPY (annualised, CAGR − SPY CAGR) | +17.5% | |
-| CAPM alpha (ann.) / beta | +20.9% / 0.57 | |
-| Trades / win rate | 1534 / 43.4% | |
+| Annualised return (CAGR) | +30.4% | +12.3% |
+| Total return | +252.6% | +73.7% |
+| Sharpe (daily, N-1) | 1.34 | 0.76 |
+| Max drawdown | -17.5% | -24.5% |
+| Alpha vs SPY (annualised, CAGR − SPY CAGR) | +18.1% | |
+| CAPM alpha (ann.) / beta | +21.3% / 0.58 | |
+| Trades / win rate | 1531 / 43.3% | |
 
 ### Caveats
 - **Survivorship bias:** today's S&P 500 members, which flatters long strategies historically.
@@ -137,6 +137,13 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
     "top_n": 50,
     "rebalance_days": 5,
     "hold_buffer": 2.0,
+    "ret_min": 0.04,
+    "vol_mult": 2.0,
+    "cons_days": 20,
+    "cons_max": 0.25,
+    "high_days": 252,
+    "donchian_days": 20,
+    "risk_pct": 0.0,
     "trend_ma": 50,
     "trail_ma": 0,
     "target": 0.0,
@@ -148,6 +155,8 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
     "min_price": 5.0,
     "market_filter": true,
     "slippage_bps": 10.0,
+    "include_taf_fees": true,
+    "include_cat_fees": true,
     "universe": "sp500_current",
     "timeframe": "1d"
   },

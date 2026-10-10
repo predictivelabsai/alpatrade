@@ -13,6 +13,20 @@ Templates (``TEMPLATES``):
 * ``gap``                — gap continuation: buy at the open when it gaps ≥ ``gap_min`` above
                            the prior close (prior close > SMA50); stop ``stop`` below the open,
                            exit after ``max_hold`` days or on a close below SMA``trail_ma``.
+* ``volume_spike``       — unusual-volume momentum (Marsten Parker): after a close-to-close
+                           gain ≥ ``ret_min`` on volume ≥ ``vol_mult`` × its 50-day average,
+                           out of a non-extended base (prior ``cons_days`` range ≤ ``cons_max``),
+                           buy the next open with a +``target`` / −``stop`` bracket and a
+                           ``max_hold``-session time stop.
+* ``donchian``           — 52-week-high trend following (John Walsh): after a close at a
+                           ``high_days`` high in a stock higher than a year ago, buy the next
+                           open; initial and trailing stop = lowest low of the prior
+                           ``donchian_days`` sessions (only ever raised); size by ``risk_pct``.
+* ``trend_template``     — Minervini-style trend template + pivot breakout (Mark Ritchie II):
+                           close > SMA50 > SMA150 > SMA200, SMA200 rising, within 25% of the
+                           52-week high and ≥ 30% above the low; buy-stop at the prior
+                           ``ref_days`` high; ``stop`` below the fill; exit on a close below
+                           SMA``trail_ma``; size by ``risk_pct``.
 * ``relative_strength``  — rotation: every ``rebalance_days`` (≥ 5, i.e. at most weekly) hold
                            the ``top_n`` strongest names by ``lookback``-day return (close >
                            SMA``trend_ma``), equal weight; cash when SPY < SMA200. Hysteresis:
@@ -35,7 +49,8 @@ import pandas as pd
 
 from engine.backtest.fills import Friction
 
-TEMPLATES = ("breakout", "dip", "trend_ma", "gap", "relative_strength")
+TEMPLATES = ("breakout", "dip", "trend_ma", "gap", "relative_strength", "volume_spike",
+             "donchian", "trend_template")
 
 
 @dataclass
@@ -57,7 +72,16 @@ class RuleParams:
     top_n: int = 10
     rebalance_days: int = 21
     hold_buffer: float = 2.0      # keep a holding while its rank <= top_n * hold_buffer
+    # volume_spike
+    ret_min: float = 0.04
+    vol_mult: float = 2.0
+    cons_days: int = 20
+    cons_max: float = 0.25
+    # donchian
+    high_days: int = 252
+    donchian_days: int = 20
     # shared
+    risk_pct: float = 0.0         # >0: size = risk_pct x equity / stop distance (capped by pos_pct)
     trend_ma: int = 200           # 0 = no trend filter
     trail_ma: int = 0             # 0 = no MA trail
     target: float = 0.0           # 0 = no profit target
@@ -69,6 +93,8 @@ class RuleParams:
     min_price: float = 5.0
     market_filter: bool = True    # SPY SMA10 > SMA20 (dip: SPY > SMA200)
     slippage_bps: float = 10.0
+    include_taf_fees: bool = True  # FINRA TAF on sells (utils.fees, same as buy_the_dip)
+    include_cat_fees: bool = True  # CAT fee on buys and sells
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -99,6 +125,13 @@ class RuleParams:
         self.rebalance_days = int(c(int(self.rebalance_days), 5, 126))
         self.hold_buffer = c(float(self.hold_buffer), 1.0, 5.0)
         self.trend_ma = int(c(int(self.trend_ma), 0, 250))
+        self.ret_min = c(float(self.ret_min), 0.01, 0.5)
+        self.vol_mult = c(float(self.vol_mult), 1.0, 20.0)
+        self.cons_days = int(c(int(self.cons_days), 5, 120))
+        self.cons_max = c(float(self.cons_max), 0.02, 1.0)
+        self.high_days = int(c(int(self.high_days), 20, 252))
+        self.donchian_days = int(c(int(self.donchian_days), 5, 100))
+        self.risk_pct = c(float(self.risk_pct), 0.0, 0.05)
         self.trail_ma = int(c(int(self.trail_ma), 0, 250))
         self.target = c(float(self.target), 0, 2.0)
         self.stop = c(float(self.stop), 0, 0.5)
@@ -138,6 +171,28 @@ def _feat(df: pd.DataFrame, p: RuleParams) -> pd.DataFrame:
         gap = o / c.shift(1) - 1
         f["sig"] = prev_ok & (gap >= p.gap_min)   # known at the open of the day
         f["score"] = gap
+    elif p.template == "volume_spike":
+        v = df["v"]
+        ret1 = c / c.shift(1) - 1
+        vavg = v.rolling(50).mean().shift(1)            # average of the 50 sessions BEFORE the day
+        base = (h.rolling(p.cons_days).max() / l.rolling(p.cons_days).min() - 1).shift(1)
+        sig = (c >= p.min_price) & (ret1 >= p.ret_min) & (v >= p.vol_mult * vavg) & (base <= p.cons_max)
+        f["score"] = (v / vavg).shift(1)
+        f["sig"] = sig.shift(1)
+    elif p.template == "donchian":
+        # closing 52-week high in a stock above its close a year ago
+        sig = (c >= p.min_price) & (c >= c.rolling(p.high_days).max()) & (c > c.shift(p.high_days))
+        f["score"] = (c / c.shift(p.high_days) - 1).shift(1)
+        f["sig"] = sig.shift(1)
+    elif p.template == "trend_template":
+        s50, s150, s200 = c.rolling(50).mean(), c.rolling(150).mean(), c.rolling(200).mean()
+        hi, lo = h.rolling(252).max(), l.rolling(252).min()
+        tt = ((c >= p.min_price) & (c > s50) & (s50 > s150) & (s150 > s200)
+              & (s200 > s200.shift(21)) & (c >= 0.75 * hi) & (c >= 1.30 * lo))
+        f["sig"] = tt.shift(1)
+        f["lvl"] = h.rolling(p.ref_days).max().shift(1)  # pivot = prior ref_days high (buy-stop)
+        f["score"] = (c / c.shift(126) - 1).shift(1)
+    f["dlow"] = l.rolling(p.donchian_days).min().shift(1)  # lowest low of the PRIOR N sessions
     f["sig"] = f["sig"].fillna(False).astype(bool)
     tr = pd.concat([h - l, (h - c.shift()).abs(), (l - c.shift()).abs()], axis=1).max(axis=1)
     f["atr_prev"] = tr.rolling(14).mean().shift(1)
@@ -145,6 +200,33 @@ def _feat(df: pd.DataFrame, p: RuleParams) -> pd.DataFrame:
     f["trail"] = c.rolling(p.trail_ma).mean() if p.trail_ma else np.nan
     f["exit_ma"] = c.rolling(p.exit_ma).mean()
     return f
+
+
+def reg_fee(shares: float, side: str, p) -> float:
+    """Regulatory fees per order (utils.fees): TAF on sells, CAT on both sides."""
+    from utils.fees import calculate_cat_fee, calculate_finra_taf_fee
+    n = int(round(shares))
+    f = calculate_cat_fee(n) if getattr(p, "include_cat_fees", False) else 0.0
+    if side == "sell" and getattr(p, "include_taf_fees", False):
+        f += calculate_finra_taf_fee(n)
+    return float(f)
+
+
+def _buy_cost(value: float, fill: float, cash: float, p) -> tuple[float, float, float]:
+    """(shares, gross value, fee) with value + fee <= cash (never negative cash)."""
+    fee = reg_fee(value / fill, "buy", p)
+    if value + fee > cash:
+        value = cash - fee
+    return value / fill, value, fee
+
+
+def _open_mark(df: pd.DataFrame, d) -> float:
+    """Mark a holding for sizing decisions taken at the OPEN of day d: today's open, else the last
+    known close BEFORE d (never the close of d, which is not known yet; v0.33.6 parity)."""
+    if d in df.index:
+        return float(df.at[d, "o"])
+    prev = df["c"].loc[:d]
+    return float(prev.iloc[-1]) if len(prev) else 0.0
 
 
 def run(bars: Dict[str, pd.DataFrame], spy: pd.DataFrame, start, end, p: RuleParams,
@@ -169,11 +251,12 @@ def run(bars: Dict[str, pd.DataFrame], spy: pd.DataFrame, start, end, p: RulePar
         nonlocal cash
         q = pos.pop(sym)
         fill = fr.sell(px)
-        cash += q["sh"] * fill
-        pnl = q["sh"] * fill - q["cost"]
+        rf = reg_fee(q["sh"], "sell", p)
+        cash += q["sh"] * fill - rf
+        pnl = q["sh"] * fill - rf - q["cost"]
         trips.append({"symbol": sym, "entry_date": str(q["d"].date()), "exit_date": str(d.date()),
                       "entry_px": round(q["px"], 4), "exit_px": round(px, 4), "days": q["n"],
-                      "pnl": pnl, "ret": pnl / q["cost"], "fees": q["sh"] * px * fr.pct * 2,
+                      "pnl": pnl, "ret": pnl / q["cost"], "fees": q["sh"] * px * fr.pct * 2 + rf + q.get("rf", 0.0),
                       "exit": why})
 
     for d in days:
@@ -186,6 +269,10 @@ def run(bars: Dict[str, pd.DataFrame], spy: pd.DataFrame, start, end, p: RulePar
                 continue
             q["n"] += 1
             o, h, l, c = float(b["o"]), float(b["h"]), float(b["l"]), float(b["c"])
+            if p.template == "donchian":
+                dl = f.at[d, "dlow"]
+                if dl == dl:
+                    q["stop"] = max(q["stop"], float(dl))  # trailing channel stop, only raised
             if q["stop"] and l <= q["stop"]:
                 sell(sym, min(o, q["stop"]), d, "stop"); continue
             if q["tgt"] and h >= q["tgt"]:
@@ -199,7 +286,7 @@ def run(bars: Dict[str, pd.DataFrame], spy: pd.DataFrame, start, end, p: RulePar
             if p.max_hold and q["n"] >= p.max_hold:
                 sell(sym, c, d, "time"); continue
         if (not p.market_filter or mkt.get(d, False)) and len(pos) < p.max_positions:
-            eq = cash + sum(q["sh"] * float(bars[s]["c"].asof(d)) for s, q in pos.items())
+            eq = cash + sum(q["sh"] * _open_mark(bars[s], d) for s, q in pos.items())
             cands = []
             for sym, f in feats.items():
                 if sym in pos or d not in f.index or not f.at[d, "sig"]:
@@ -210,16 +297,31 @@ def run(bars: Dict[str, pd.DataFrame], spy: pd.DataFrame, start, end, p: RulePar
                     break
                 b = bars[sym].loc[d]
                 px = float(b["o"])
-                value = min(eq * p.pos_pct, cash)
-                if value < 100 or px <= 0:
+                if p.template == "trend_template":  # buy-stop at the pivot (prior N-day high)
+                    lvl = feats[sym].at[d, "lvl"]
+                    if not lvl == lvl or float(b["h"]) < lvl:
+                        continue
+                    px = max(px, float(lvl))
+                if px <= 0:
                     continue
-                fill = fr.buy(px)
                 atr = feats[sym].at[d, "atr_prev"]
                 stop = px * (1 - p.stop) if p.stop else 0.0
                 if p.template == "trend_ma" and p.atr_stop and atr == atr:
                     stop = max(stop, px - p.atr_stop * atr)
-                cash -= value
-                pos[sym] = {"d": d, "px": fill, "sh": value / fill, "cost": value, "n": 0,
+                if p.template == "donchian":
+                    dl = feats[sym].at[d, "dlow"]
+                    if not dl == dl or dl >= px:
+                        continue
+                    stop = float(dl)
+                value = min(eq * p.pos_pct, cash)
+                if p.risk_pct and stop:
+                    value = min(eq * p.risk_pct / max((px - stop) / px, 1e-4), eq * p.pos_pct, cash)
+                if value < 100:
+                    continue
+                fill = fr.buy(px)
+                sh, value, bf = _buy_cost(value, fill, cash, p)
+                cash -= value + bf
+                pos[sym] = {"d": d, "px": fill, "sh": sh, "cost": value + bf, "rf": bf, "n": 0,
                             "stop": stop, "tgt": px * (1 + p.target) if p.target else 0.0}
                 # same-day (entry bar) stop check: the open is the entry, so only the low matters
                 if stop and float(b["l"]) <= stop:
@@ -261,12 +363,13 @@ def run_rotation(bars, spy, start, end, p: RuleParams, capital: float = 100_000.
                 px = float(px) if px == px else float(close[sym].asof(d))
                 q = pos.pop(sym)
                 fill = fr.sell(px)
-                cash += q["sh"] * fill
-                pnl = q["sh"] * fill - q["cost"]
+                rf = reg_fee(q["sh"], "sell", p)
+                cash += q["sh"] * fill - rf
+                pnl = q["sh"] * fill - rf - q["cost"]
                 trips.append({"symbol": sym, "entry_date": str(q["d"].date()), "exit_date": str(d.date()),
                               "entry_px": q["px"], "exit_px": px, "days": i - q["i"], "pnl": pnl,
-                              "ret": pnl / q["cost"], "fees": q["sh"] * px * fr.pct * 2, "exit": "rotation"})
-            eq = cash + sum(q["sh"] * float(close[s].asof(d)) for s, q in pos.items())
+                              "ret": pnl / q["cost"], "fees": q["sh"] * px * fr.pct * 2 + rf + q.get("rf", 0.0), "exit": "rotation"})
+            eq = cash + sum(q["sh"] * _open_mark(bars[s], d) for s, q in pos.items())
             for sym in [s for s in want if s not in pos]:
                 px = opn.at[d, sym]
                 if not px == px or px <= 0:
@@ -275,17 +378,19 @@ def run_rotation(bars, spy, start, end, p: RuleParams, capital: float = 100_000.
                 if value < 100:
                     continue
                 fill = fr.buy(float(px))
-                cash -= value
-                pos[sym] = {"d": d, "i": i, "px": fill, "sh": value / fill, "cost": value}
+                sh, value, bf = _buy_cost(value, fill, cash, p)
+                cash -= value + bf
+                pos[sym] = {"d": d, "i": i, "px": fill, "sh": sh, "cost": value + bf, "rf": bf}
         curve.append((d, cash + sum(q["sh"] * float(close[s].asof(d)) for s, q in pos.items()), len(pos)))
     for sym, q in list(pos.items()):
         px = float(close[sym].asof(days[-1]))
         fill = fr.sell(px)
-        cash += q["sh"] * fill
-        pnl = q["sh"] * fill - q["cost"]
+        rf = reg_fee(q["sh"], "sell", p)
+        cash += q["sh"] * fill - rf
+        pnl = q["sh"] * fill - rf - q["cost"]
         trips.append({"symbol": sym, "entry_date": str(q["d"].date()), "exit_date": str(days[-1].date()),
                       "entry_px": q["px"], "exit_px": px, "days": len(days) - q["i"], "pnl": pnl,
-                      "ret": pnl / q["cost"], "fees": q["sh"] * px * fr.pct * 2, "exit": "end of test"})
+                      "ret": pnl / q["cost"], "fees": q["sh"] * px * fr.pct * 2 + rf + q.get("rf", 0.0), "exit": "end of test"})
     if curve:
         curve[-1] = (curve[-1][0], cash, curve[-1][2])
     return _finish(curve, trips, spy_c, p, capital)

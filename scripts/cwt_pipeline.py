@@ -905,6 +905,20 @@ TEMPLATE_TEXT = {
                 "SMA, exit on a close below the exit SMA or an ATR stop",
     "gap": "gap continuation: buy at the open on a gap up of at least the set % in an uptrend, "
            "fixed stop below the open, exit after N sessions or on a close below the trail SMA",
+    "volume_spike": "unusual-volume momentum: after a close-to-close gain of at least ret_min on "
+                    "volume of at least vol_mult x its prior 50-day average, out of a non-extended "
+                    "base (prior cons_days range <= cons_max), buy the next open with a +target / "
+                    "-stop bracket (stop checked first on a day that touches both) and exit at the "
+                    "close of session max_hold",
+    "donchian": "52-week-high trend following: after a closing high_days high in a stock above its "
+                "close a year earlier, buy the next open; stop = lowest low of the prior "
+                "donchian_days sessions, raised (never lowered) every session; size = risk_pct of "
+                "equity / stop distance, capped at pos_pct",
+    "trend_template": "Minervini-style trend template (close > SMA50 > SMA150 > SMA200, SMA200 "
+                      "rising, within 25% of the 52-week high, >= 30% above the low) on the prior "
+                      "close, then a buy-stop at the prior ref_days high (fill max(open, pivot)); "
+                      "stop below the fill (an entry-day low through it counts, conservatively), "
+                      "exit on a close below SMA trail_ma; size = risk_pct / stop distance",
     "relative_strength": "relative-strength rotation: every N sessions (at most weekly) hold the "
                          "strongest names by trailing return (above their trend SMA), equal "
                          "weight, a holding is kept while it still ranks in the top 2N "
@@ -925,6 +939,137 @@ CLASSIFICATION_OVERRIDES = {
 }
 
 
+def _r(rule, quote, ts):
+    return {"rule": rule, "quote": quote, "timestamp": ts}
+
+
+# Hand-reviewed method rewrites (re-read transcripts, v0.34.0): the LLM had mapped these three
+# onto the breakout template (-85..-89% drawdowns). Timestamps are caption-chunk starts (the
+# quote falls within ~30 s after). legacy_key keeps the existing Leaderboard row id.
+METHOD_OVERRIDES = {
+    "281": {
+        "template": "volume_spike", "method_name": "Unusual-volume momentum with a 5%/7% bracket",
+        "legacy_key": "marsten-parker-breakout", "style": "systematic short-term swing (long side)",
+        "timeframe": "daily scan after the close, hold ~3-4 days",
+        "setup": [_r("Scan all liquid US common stocks after the close for unusual volume (≥2-3× average) "
+                     "and a significant up move (several percent in one day)",
+                     "unusual volume, like at least two times average or three times average volume, a "
+                     "significant move ... up several percent uh in one day", "[00:24:54]"),
+                  _r("Not already overbought: ideally a flat congestion area, then the breakout",
+                     "prior to that, it should not have already been overbought ... ideally it's it's "
+                     "like a flat congestion area and then a br[eakout]", "[00:25:25]")],
+        "entry": [_r("Buy at the next open at market", "place an order to buy or short at the open at "
+                     "market with an attached bracket of a target and a stop", "[00:26:59]")],
+        "stop": [_r("Stop 7% below the entry (bracket, one-cancels-other)",
+                    "calculated in advance as ... 5% favorable or 7% adverse ... 5% up and 7% down",
+                    "[00:27:31]")],
+        "exits": [_r("Target +5% above the entry", "I think we were using like a 5% uh target and a 7% "
+                     "stop initially", "[00:21:47]"),
+                  _r("Time stop: average hold 3-4 days", "there was also a time stop, so there's "
+                     "basically three three components to the exit", "[00:21:47]"),
+                  _r("Holding period", "a few days was the average holding period, maybe three, four "
+                     "days", "[00:28:02]")],
+        "sizing": [_r("~10% of the account per position", "each position was 10% of my a[ccount] ... "
+                      "on average around that size. 10 to 15", "[00:40:32]")],
+        "market_filter": [],
+        "ambiguities": [
+            {"issue": "'several percent' and '2-3× average volume' are not exact",
+             "assumption": "small train-only grid: gain ≥ 3% or 5%, volume ≥ 2× or 3× its 50-day average"},
+            {"issue": "'not overbought / flat congestion' is discretionary",
+             "assumption": "range (max high / min low) of the 20 sessions before the signal day ≤ 25%"},
+            {"issue": "time-stop length not stated, only the 3-4 day average hold",
+             "assumption": "exit at the close of session 3 or 4 (train-only grid)"},
+            {"issue": "short side (breakdowns on heavier volume) and the later mean-reversion systems",
+             "assumption": "omitted: long-only, cash-only engine; this is his original 1998-2015 long side"},
+            {"issue": "10% sizing was for the later mean-reversion book",
+             "assumption": "10% of equity per position, max 10 positions; no market filter (none stated)"}],
+        "params": {"ret_min": 0.04, "vol_mult": 2.0, "cons_days": 20, "cons_max": 0.25, "target": 0.05,
+                   "stop": 0.07, "max_hold": 4, "pos_pct": 0.10, "max_positions": 10, "trend_ma": 0,
+                   "market_filter": False},
+        "grid": {"ret_min": [0.03, 0.05], "vol_mult": [2.0, 3.0], "max_hold": [3, 4]},
+    },
+    "74": {
+        "template": "donchian", "method_name": "52-week-high trend following with a Donchian trailing stop",
+        "legacy_key": "john-walsh-breakout", "style": "position / trend following (long side here)",
+        "timeframe": "daily, holds for months",
+        "setup": [_r("Long stocks at 52-week highs (Turtle-style: buy new highs, short new lows)",
+                     "I long 52 week highs, I short 52 week lows", "[00:26:51]"),
+                  _r("Smooth uptrend: price higher on the right of a 1-2 year daily chart than the left",
+                     "I look over a year or two years daily chart, and I really just want to see a "
+                     "smooth-ish line where it's higher in the right hand side", "[00:29:55]")],
+        "entry": [_r("Enter at the market open; entry precision does not matter for a trend trader",
+                     "I open at the market open. So, I don't even know where I'm going to get in",
+                     "[00:32:26]")],
+        "stop": [_r("Trailing stop from a Donchian channel (lowest low of the last 20-40 days), checked "
+                    "after every close and only ever raised",
+                    "Donchin channels are, they're essentially just the highest high or the [lowest low]",
+                    "[00:37:24]"),
+                 _r("Channel length", "I found 20, the 20 days pretty good. I've looked at 40, but yeah, "
+                    "between 20 and 40 days", "[00:38:22]"),
+                 _r("Raise the stop daily", "every day when the market closes, I look if the stop needs "
+                    "to be raised", "[00:36:58]")],
+        "exits": [_r("Exit only on the trailing stop: 'I literally get stopped out on every trade'",
+                     "I literally get stopped out on every trade", "[00:36:58]")],
+        "sizing": [_r("Risk 2-4% of the account per trade, size from the stop distance",
+                      "How do you decide on your risk and position size for each trade? You mentioned "
+                      "they're 2 to 4%", "[00:33:24]")],
+        "market_filter": [],
+        "ambiguities": [
+            {"issue": "'smooth-ish' trend is visual",
+             "assumption": "close above its close 252 sessions earlier"},
+            {"issue": "channel length 20-40 days and risk 2-4%",
+             "assumption": "train-only grid over {20, 40} days × {2%, 4%} risk; position capped at 20% of equity, max 10"},
+            {"issue": "short side (52-week lows) and earnings filter",
+             "assumption": "omitted: long-only, cash-only, no fundamentals"}],
+        "params": {"high_days": 252, "donchian_days": 20, "risk_pct": 0.02, "pos_pct": 0.20,
+                   "max_positions": 10, "trend_ma": 0, "market_filter": False},
+        "grid": {"donchian_days": [20, 40], "risk_pct": [0.02, 0.04]},
+    },
+    "290": {
+        "template": "trend_template", "method_name": "Minervini-style trend template + pivot breakout",
+        "legacy_key": "mark-ritchie-ii-breakout", "style": "price-action swing trading, long side",
+        "timeframe": "daily, days to weeks",
+        "setup": [_r("Method is Mark Minervini's (SEPA, after William O'Neil)",
+                     "90% of it was taught to me by Mark minini", "[00:19:53]"),
+                  _r("Only stocks in a long-term uptrend (weekly chart / 200-day MA); never bottom fishing",
+                     "I want something in a long-term uptrend ... based upon the weekly uh chart and ... "
+                     "maybe something like the 200 day moving average", "[00:35:01]")],
+        "entry": [_r("Buy the breakout from the base (discretionary chart read)",
+                     "for discretionary breakout type Traders", "[00:38:37]")],
+        "stop": [_r("Stop at most 8% (8-10 the max), usually mid single digits; long-term average loss under 5%",
+                    "I don't take um individual price stops ... more than eight eight% 8 to 10 being the Max",
+                    "[00:41:11]"),
+                 _r("Tight stops", "be mid single digits my long-term average is under 5%", "[00:41:44]")],
+        "exits": [_r("Don't sell a stock that is acting well for less than the average loss; trail it",
+                     "as a rule I don't want to sell a stock that's acting well for less than my ave[rage loss]",
+                     "[00:41:44]"),
+                  _r("Protect gains with a back stop or trailing stop", "protection mode you can set some "
+                     "type of a back stop or a trailing stop", "[00:40:40]")],
+        "sizing": [_r("Risk 0.5-1% of capital per trade", "I'm not going to risk more than I think it was "
+                      "something like 1% of capital or 50 basis points half a percent", "[00:12:31]")],
+        "market_filter": [_r("Hardest periods are corrections / bear markets; growth areas trade poorly first",
+                             "coming out of bare markets ... where it's harder to get positioned with sort "
+                             "of a tight stop", "[00:46:27]")],
+        "ambiguities": [
+            {"issue": "'long-term uptrend' and the base are discretionary",
+             "assumption": "Minervini trend template: close > SMA50 > SMA150 > SMA200, SMA200 rising "
+                           "over 21 sessions, within 25% of the 52-week high, ≥30% above the 52-week low"},
+            {"issue": "pivot / breakout point is a chart read (VCP)",
+             "assumption": "buy-stop at the prior 20-session high: fill max(open, pivot) when the high reaches it"},
+            {"issue": "stop 'mid single digits', max 8%",
+             "assumption": "train-only grid over a 5% or 8% stop below the fill (entry-day low counts, conservative)"},
+            {"issue": "trailing exit not specified",
+             "assumption": "exit on a close below the 50-day SMA (Minervini's usual line)"},
+            {"issue": "sizing: risk 1% per trade",
+             "assumption": "position = 1% of equity / stop distance, capped at 20% of equity, max 10; "
+                           "SPY SMA10 > SMA20 market filter; no earnings/fundamental screen"}],
+        "params": {"ref_days": 20, "stop": 0.05, "trail_ma": 50, "risk_pct": 0.01, "pos_pct": 0.20,
+                   "max_positions": 10, "trend_ma": 0, "market_filter": True},
+        "grid": {"stop": [0.05, 0.08]},
+    },
+}
+
+
 def load_spec(ep: dict) -> dict:
     f = DATA / ep["slug"] / "spec.json"
     if not f.exists():
@@ -933,6 +1078,10 @@ def load_spec(ep: dict) -> dict:
     o = CLASSIFICATION_OVERRIDES.get(str(ep.get("episode_number") or ""))
     if o and "category" in spec:
         spec = {**spec, **o, "_override": True}
+    mo = METHOD_OVERRIDES.get(str(ep.get("episode_number") or ""))
+    if mo and "category" in spec:
+        spec = {**spec, **mo, "category": "daily_testable", "testable": True, "_method_override": True,
+                "reason": "manual review: " + mo["method_name"]}
     return spec
 
 
@@ -986,7 +1135,8 @@ def _bars():
 NONZERO_KEYS = ("pos_pct", "max_positions", "top_n", "lookback", "rebalance_days", "ref_days",
                 "dip", "gap_min", "fast", "slow", "exit_ma")
 # bump when an engine / parameter-mapping change must invalidate cached group backtests
-ENGINE_REV = {"breakout": 2, "dip": 2, "trend_ma": 2, "gap": 2, "relative_strength": 2}
+ENGINE_REV = {"breakout": 4, "dip": 3, "trend_ma": 3, "gap": 3, "relative_strength": 3,
+              "volume_spike": 2, "donchian": 2, "trend_template": 2}  # 3: sizing marks at the open (v0.35.0)
 
 
 def group_params(g: dict):
@@ -995,6 +1145,8 @@ def group_params(g: dict):
     if g["template"] == "breakout":
         return spec_params(spec)
     raw = {**(spec.get("params") or {}), "template": g["template"]}
+    if spec.get("_method_override"):  # hand-reviewed params: taken as-is (still clamped)
+        return RuleParams.from_dict(raw)
     # 0 is meaningful for trend_ma / target / stop / max_hold / rsi_max / atr_stop ("none"),
     # but not for these: the LLM's 0 = "not stated" (Rob Hanna had pos_pct 0 -> 2%, 1 position)
     for k in NONZERO_KEYS:
@@ -1009,6 +1161,82 @@ def group_params(g: dict):
     return RuleParams.from_dict(raw)
 
 
+def _stamp(template: str) -> dict:
+    from utils.engine_stamp import stamp
+    return stamp(f"cwt_{template}")
+
+
+def _audit_input_fields(g: dict, p, res_train: dict | None = None, res_test: dict | None = None) -> dict:
+    return {"slippage_bps": float(p.slippage_bps),
+            "fees_recorded": bool(p.slippage_bps > 0 and p.include_taf_fees and p.include_cat_fees),
+            "same_bar_policy": "stop_first",
+            "fill_rule": "next_open", "label": "research", "engine": f"cwt_{g['template']}",
+            # today's S&P 500 members: chosen after the 2016 start (survivorship bias, disclosed)
+            "universe_as_of": time.strftime("%Y-%m-%d"),
+            "is_return_pct": (res_train or {}).get("total_return_pct"),
+            "oos_return_pct": (res_test or {}).get("total_return_pct")}
+
+
+def _trade_level_audit(g: dict, full: dict, p, spy, end) -> dict:
+    """utils.backtest_audit on the full run's trades (reconciliation, cash, look-ahead, costs)."""
+    from utils import backtest_audit as ba
+    # cash replay at NET prices: entry = cost incl. slippage + fees per share, exit = net proceeds
+    # per share (partial exits folded in), so -cost / +(cost + pnl) are exact; costs are recorded
+    # separately (fees_recorded, slippage_bps) and the gross figure is kept as cost_fees
+    trades = []
+    for t in full["trips"]:
+        cost = t["pnl"] / t["ret"] if t["ret"] else 0.0
+        if cost <= 0 or not t["entry_px"]:
+            continue
+        sh = cost / t["entry_px"]
+        legs = t.get("legs") or [(t["exit_date"], sh, cost + t["pnl"])]
+        sh0 = sum(x[1] for x in legs) or sh
+        for dt, lsh, proceeds in legs:  # one audit trade per exit leg (partials at their own date)
+            part = cost * lsh / sh0
+            trades.append({"pnl": proceeds - part, "shares": part / t["entry_px"],
+                           "entry_price": t["entry_px"], "exit_price": proceeds / (part / t["entry_px"]),
+                           "entry_time": t["entry_date"], "exit_time": dt, "total_fees": 0.0,
+                           "cost_fees": t["fees"] * lsh / sh0})
+    eq = full["equity"]
+    a = ba.AuditInput(trades=trades, initial_capital=100_000.0, final_equity=float(eq.iloc[-1]),
+                      reported_return_pct=float(full["total_return_pct"]),
+                      params=json.loads(json.dumps(p.to_dict(), default=str)), universe=["sp500_current"],
+                      period_start=str(eq.index[0].date()), period_end=end,
+                      annualised_pct=float(full["annualised_pct"]), sharpe=float(full["sharpe"] or 0),
+                      max_drawdown_pct=float(full["max_drawdown_pct"]), n_trades=len(trades),
+                      engine_stamp=_stamp(g["template"]), **{k: v for k, v in _audit_input_fields(g, p).items()
+                                                             if k not in ("is_return_pct", "oos_return_pct")})
+    rep = ba.audit(a)
+    print(f"  audit (trade level) {g['key']}: {rep.status}", flush=True)
+    return rep.to_dict()
+
+
+def RuleParams_from(p, overrides: dict):
+    from engine.backtest.templates import RuleParams
+    return RuleParams.from_dict({**p.to_dict(), **overrides})
+
+
+def _train_grid(g: dict, p, bars, spy) -> dict | None:
+    """Small sensitivity grid over the stated ranges, scored on the TRAIN window only (Sharpe);
+    the test window never influences the choice."""
+    import itertools
+    from engine.backtest import templates
+    grid = g["members"][0]["spec"].get("grid") if g["members"][0]["spec"].get("_method_override") else None
+    if not grid:
+        return None
+    keys = list(grid)
+    rows = []
+    for combo in itertools.product(*(grid[k] for k in keys)):
+        o = dict(zip(keys, combo))
+        r = templates.run(bars, spy, BT_START, TRAIN_END, RuleParams_from(p, o))
+        rows.append({**o, "train_sharpe": round(float(r["sharpe"] or 0), 3),
+                     "train_cagr_pct": round(float(r["annualised_pct"] or 0), 2), "trades": r["trades"]})
+        print(f"  grid {g['key']} {o}: train Sharpe {rows[-1]['train_sharpe']}", flush=True)
+    best = max(rows, key=lambda x: x["train_sharpe"])
+    return {"base_params": json.loads(json.dumps(p.to_dict(), default=str)), "rows": rows,
+            "best": {k: best[k] for k in keys}, "chosen_on": f"train {BT_START}..{TRAIN_END}, max Sharpe"}
+
+
 def backtest_group(g: dict, force: bool = False) -> dict | None:
     from engine.backtest import breakout, templates
     d = STRAT / g["key"]
@@ -1018,18 +1246,24 @@ def backtest_group(g: dict, force: bool = False) -> dict | None:
     rev = ENGINE_REV.get(g["template"], 1)
     if out.exists() and not force:
         old = json.loads(out.read_text())
+        base = (old.get("grid") or {}).get("base_params", old.get("spec_params"))
         if (old.get("members_hash") == g["hash"] and old.get("engine_rev") == rev
-                and old.get("spec_params") == json.loads(json.dumps(p.to_dict(), default=str))):
+                and base == json.loads(json.dumps(p.to_dict(), default=str))):
             return old
     bars, spy = _bars()
     end = str(spy.index[-1].date())
+    grid = _train_grid(g, p, bars, spy)
+    if grid:
+        p = RuleParams_from(p, grid["best"])
     test_start = str(spy.index[spy.index > TRAIN_END][0].date())
     full = (breakout.run(bars, spy, BT_START, end, p) if g["template"] == "breakout"
             else templates.run(bars, spy, BT_START, end, p))
+    audit = _trade_level_audit(g, full, p, spy, end)
     res = {"key": g["key"], "template": g["template"], "members_hash": g["hash"], "engine_rev": rev,
+           "engine_stamp": _stamp(g["template"]), "trade_level_audit": audit,
            "universe": f"S&P 500 current members ({len(bars)} with data)",
            "data": "Alpaca SIP daily bars, adjustment=all (splits+dividends)",
-           "spec_params": p.to_dict(), "full": _fmt(full),
+           "spec_params": p.to_dict(), "grid": grid, "full": _fmt(full),
            "train": _fmt(templates.slice_metrics(full, spy, BT_START, TRAIN_END)),
            "test": _fmt(templates.slice_metrics(full, spy, test_start, end))}
     out.write_text(json.dumps(res, indent=2, default=str), encoding="utf-8")
@@ -1053,6 +1287,18 @@ def _tbl(m: dict) -> str:
         f"| Alpha vs SPY (annualised, CAGR − SPY CAGR) | {v(m['alpha_annualised_pct'])} | |",
         f"| CAPM alpha (ann.) / beta | {v(m['capm_alpha_ann_pct'])} / {m['beta']:.2f} | |",
         f"| Trades / win rate | {m['trades']} / {m['win_rate_pct']:.1f}% | |"])
+
+
+def _grid_note(res: dict) -> str:
+    gr = res.get("grid")
+    if not gr:
+        return "Parameters were not optimised."
+    rows = "; ".join(", ".join(f"{k}={v}" for k, v in r.items() if k in gr["best"])
+                     + f" → train Sharpe {r['train_sharpe']:.2f}" for r in gr["rows"])
+    best = ", ".join(f"{k}={v}" for k, v in gr["best"].items())
+    return (f"Only a small sensitivity grid over the ranges stated in the episode was tried, chosen "
+            f"on the train window only (max Sharpe): {rows}. Chosen: {best}. The test window was "
+            f"never used to choose.")
 
 
 def skill_md_group(g: dict, res: dict) -> str:
@@ -1150,7 +1396,7 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
 ### Caveats
 - **Survivorship bias:** today's S&P 500 members, which flatters long strategies historically.
 - Rules were extracted by an LLM from auto-captions / Whisper transcripts; quotes may contain
-  transcription errors. Parameters were not optimised.
+  transcription errors. {_grid_note(res)}
 
 ## Instructions for the assistant
 1. Treat the Parameters block as the source of truth and restate the rules first.
@@ -1185,6 +1431,12 @@ def publish_group(g: dict, res: dict) -> int | None:
     metrics["test"] = {k: res["test"][k] for k in ("period_start", "period_end", "annualised_pct",
                                                    "spy_annualised_pct", "sharpe", "max_drawdown_pct",
                                                    "trades")}
+    from engine.backtest.templates import RuleParams
+    _p = RuleParams.from_dict(res["spec_params"]) if g["template"] != "breakout" else spec_params({})
+    _p.slippage_bps = float(res["spec_params"].get("slippage_bps", 10))
+    metrics["audit_input"] = _audit_input_fields(g, _p, res["train"], res["test"])
+    metrics["engine_stamp"] = res.get("engine_stamp") or _stamp(g["template"])
+    metrics["trade_level_audit"] = {"status": (res.get("trade_level_audit") or {}).get("status")}
     metrics.update({"universe": res["universe"], "template": g["template"],
                     "episodes": [{"episode": e["episode_number"], "title": e["title"],
                                   "url": e["page_url"]} for e in eps]})
@@ -1195,10 +1447,12 @@ def publish_group(g: dict, res: dict) -> int | None:
         uid = s.execute(text("SELECT user_id FROM alpatrade.users WHERE lower(email)=lower(:e)"),
                         {"e": OWNER_EMAIL}).scalar()
         # the pilot row (seed_key cwt-<episode slug>) is re-keyed to the merged strategy key
-        for e in eps:
+        olds = [f"cwt-{e['slug']}"[:96] for e in eps] + [
+            f"cwt-{m['spec']['legacy_key']}"[:96] for m in g["members"] if m["spec"].get("legacy_key")]
+        for old in olds:
             s.execute(text("UPDATE alpatrade.user_strategies SET seed_key = :new WHERE seed_key = :old "
                            "AND NOT EXISTS (SELECT 1 FROM alpatrade.user_strategies WHERE seed_key = :new)"),
-                      {"new": key, "old": f"cwt-{e['slug']}"[:96]})
+                      {"new": key, "old": old})
         args = {"uid": str(uid), "name": fm["title"][:160], "author": g["trader"][:60],
                 "desc": fm.get("description", "")[:2000], "md": md, "key": key,
                 "url": eps[0]["page_url"], "m": json.dumps(metrics, default=str)}

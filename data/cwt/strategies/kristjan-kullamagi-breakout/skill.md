@@ -137,6 +137,8 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
     "min_price": 5.0,
     "market_filter": true,
     "slippage_bps": 10.0,
+    "include_taf_fees": true,
+    "include_cat_fees": true,
     "universe": "sp500_current",
     "timeframe": "1d"
   },

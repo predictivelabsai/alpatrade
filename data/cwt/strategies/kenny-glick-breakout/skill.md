@@ -67,7 +67,7 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
 | Metric | Strategy | SPY |
 |---|---|---|
 | Annualised return (CAGR) | -6.3% | +15.2% |
-| Total return | -50.0% | +356.2% |
+| Total return | -50.1% | +356.2% |
 | Sharpe (daily, N-1) | -1.38 | 0.90 |
 | Max drawdown | -50.2% | -33.8% |
 | Alpha vs SPY (annualised, CAGR − SPY CAGR) | -21.4% | |
@@ -78,9 +78,9 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
 | Metric | Strategy | SPY |
 |---|---|---|
 | Annualised return (CAGR) | -6.3% | +17.4% |
-| Total return | -32.1% | +161.2% |
+| Total return | -32.2% | +161.2% |
 | Sharpe (daily, N-1) | -1.35 | 1.00 |
-| Max drawdown | -33.2% | -33.8% |
+| Max drawdown | -33.3% | -33.8% |
 | Alpha vs SPY (annualised, CAGR − SPY CAGR) | -23.6% | |
 | CAPM alpha (ann.) / beta | -7.9% / 0.09 | |
 | Trades / win rate | 884 / 28.7% | |
@@ -130,6 +130,8 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
     "min_price": 5.0,
     "market_filter": true,
     "slippage_bps": 10.0,
+    "include_taf_fees": true,
+    "include_cat_fees": true,
     "universe": "sp500_current",
     "timeframe": "1d"
   },

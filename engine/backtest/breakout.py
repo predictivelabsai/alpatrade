@@ -49,6 +49,8 @@ class BreakoutParams:
     min_price: float = 5.0
     market_filter: bool = True
     slippage_bps: float = 10.0
+    include_taf_fees: bool = True
+    include_cat_fees: bool = True
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -67,6 +69,7 @@ class _Pos:
     realized: float = 0.0
     fees: float = 0.0
     checked: bool = False
+    legs: list = None  # [(date, shares, net proceeds)] per exit leg (partials), for the audit
 
 
 def _features(df: pd.DataFrame, p: BreakoutParams) -> pd.DataFrame:
@@ -103,9 +106,12 @@ def run(bars: Dict[str, pd.DataFrame], spy: pd.DataFrame, start, end, params: Br
         nonlocal cash
         sh = pos.shares * frac
         fill = fr.sell(px)
-        fee = sh * px * fr.pct
-        cash += sh * fill
-        pos.realized += sh * fill
+        from engine.backtest.templates import reg_fee
+        rf = reg_fee(sh, "sell", p)
+        fee = sh * px * fr.pct + rf
+        cash += sh * fill - rf
+        pos.realized += sh * fill - rf
+        pos.legs = (pos.legs or []) + [(str(d.date()), sh, sh * fill - rf)]
         pos.fees += fee
         pos.shares -= sh
         if pos.shares <= 1e-9:
@@ -113,7 +119,8 @@ def run(bars: Dict[str, pd.DataFrame], spy: pd.DataFrame, start, end, params: Br
             trips.append({"symbol": pos.sym, "entry_date": str(pos.entry_date.date()),
                           "exit_date": str(d.date()), "entry_px": round(pos.entry_px, 4),
                           "exit_px": round(px, 4), "days": pos.days, "pnl": pnl,
-                          "ret": pnl / pos.cost, "fees": pos.fees, "exit": why})
+                          "ret": pnl / pos.cost, "fees": pos.fees, "exit": why,
+                          "legs": pos.legs})
             open_pos.pop(pos.sym, None)
 
     for d in days:
@@ -136,8 +143,8 @@ def run(bars: Dict[str, pd.DataFrame], spy: pd.DataFrame, start, end, params: Br
             if sym in open_pos and pos.partial_done and b["c"] < sma:
                 close_out(pos, float(b["c"]), d, why=f"close<SMA{p.trail_ma}")
         # 2) new entries (buy-stop at the prior consolidation high)
-        equity_open = cash + sum(o.shares * float(bars[o.sym].at[d, "o"]) if d in bars[o.sym].index
-                                 else 0 for o in open_pos.values())
+        from engine.backtest.templates import _open_mark  # open of d, else last close before d
+        equity_open = cash + sum(o.shares * _open_mark(bars[o.sym], d) for o in open_pos.values())
         if not p.market_filter or mkt_ok.get(d, False):
             cands = []
             for sym, f in feats.items():
@@ -157,10 +164,11 @@ def run(bars: Dict[str, pd.DataFrame], spy: pd.DataFrame, start, end, params: Br
                             equity_open * p.max_pos_pct, cash)
                 if value < 100:
                     continue
-                sh = value / fill
-                cash -= value
-                open_pos[sym] = _Pos(sym, d, fill, sh, stop=0.0, cost=value,
-                                     fees=sh * px * fr.pct)
+                from engine.backtest.templates import _buy_cost
+                sh, value, bf = _buy_cost(value, fill, cash, p)
+                cash -= value + bf
+                open_pos[sym] = _Pos(sym, d, fill, sh, stop=0.0, cost=value + bf,
+                                     fees=sh * px * fr.pct + bf)
                 # same-day check happens on the close pass below
             for sym in [s for s, o in open_pos.items() if o.entry_date == d]:
                 pos = open_pos[sym]

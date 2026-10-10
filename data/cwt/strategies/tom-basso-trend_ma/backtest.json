@@ -2,7 +2,78 @@
   "key": "tom-basso-trend_ma",
   "template": "trend_ma",
   "members_hash": "271-tom-basso-the-sweet-balance-between-risk-and-reward",
-  "engine_rev": 2,
+  "engine_rev": 3,
+  "engine_stamp": {
+    "engine": "cwt_trend_ma",
+    "engine_version": "0.35.0",
+    "git_sha": "d64f6bfd0eb9"
+  },
+  "trade_level_audit": {
+    "status": "warn",
+    "checks": [
+      {
+        "name": "engine_version",
+        "status": "pass",
+        "reason": "cwt_trend_ma v0.35.0"
+      },
+      {
+        "name": "reconciliation",
+        "status": "pass",
+        "reason": "\u03a3 trade P&L $139,145.30 reconciles with the equity change"
+      },
+      {
+        "name": "same_bar_exits",
+        "status": "warn",
+        "reason": "not verifiable: no capital_after per trade"
+      },
+      {
+        "name": "cash",
+        "status": "pass",
+        "reason": "cash never below $-0.00"
+      },
+      {
+        "name": "tp_sl_same_bar",
+        "status": "pass",
+        "reason": "stop-first; 0 ambiguous bar(s) booked as stops"
+      },
+      {
+        "name": "costs",
+        "status": "pass",
+        "reason": "slippage 10 bps and fees recorded"
+      },
+      {
+        "name": "params",
+        "status": "pass",
+        "reason": "labelled research (not presented as the live strategy)"
+      },
+      {
+        "name": "lookahead",
+        "status": "warn",
+        "reason": "fill rule next_open; signal times not recorded"
+      },
+      {
+        "name": "universe",
+        "status": "warn",
+        "reason": "universe chosen on 2026-10-10, after the backtest start 2016-01-04 (hindsight / survivorship bias)"
+      },
+      {
+        "name": "plausibility",
+        "status": "pass",
+        "reason": "within plausibility gates"
+      },
+      {
+        "name": "min_trades",
+        "status": "pass",
+        "reason": "2025 trades"
+      },
+      {
+        "name": "oos_degradation",
+        "status": "warn",
+        "reason": "no in-sample / out-of-sample split reported"
+      }
+    ],
+    "audited_at": "2026-10-10T04:04:37Z"
+  },
   "universe": "S&P 500 current members (503 with data)",
   "data": "Alpaca SIP daily bars, adjustment=all (splits+dividends)",
   "spec_params": {
@@ -19,6 +90,13 @@
     "top_n": 10,
     "rebalance_days": 21,
     "hold_buffer": 2.0,
+    "ret_min": 0.04,
+    "vol_mult": 2.0,
+    "cons_days": 20,
+    "cons_max": 0.25,
+    "high_days": 252,
+    "donchian_days": 20,
+    "risk_pct": 0.0,
     "trend_ma": 200,
     "trail_ma": 0,
     "target": 0.0,
@@ -29,32 +107,35 @@
     "max_positions": 30,
     "min_price": 5.0,
     "market_filter": true,
-    "slippage_bps": 10.0
+    "slippage_bps": 10.0,
+    "include_taf_fees": true,
+    "include_cat_fees": true
   },
+  "grid": null,
   "full": {
     "period_start": "2016-01-04",
     "period_end": "2026-10-09",
     "trading_days": 2708,
-    "total_return_pct": 139.4961,
-    "annualised_pct": 8.4667,
-    "sharpe": 0.6944,
-    "max_drawdown_pct": -19.994,
+    "total_return_pct": 139.1453,
+    "annualised_pct": 8.452,
+    "sharpe": 0.6932,
+    "max_drawdown_pct": -20.0113,
     "spy_return_pct": 356.1841,
     "spy_annualised_pct": 15.1696,
     "spy_sharpe": 0.8977,
     "spy_max_drawdown_pct": -33.7939,
-    "alpha_pct": -216.688,
-    "alpha_annualised_pct": -6.7029,
-    "capm_alpha_ann_pct": 2.148,
-    "beta": 0.4355,
+    "alpha_pct": -217.0388,
+    "alpha_annualised_pct": -6.7177,
+    "capm_alpha_ann_pct": 2.1307,
+    "beta": 0.4358,
     "trades": 2025,
-    "win_rate_pct": 34.5679,
-    "profit_factor": 1.5049,
-    "avg_win_pct": 13.6786,
-    "avg_loss_pct": -4.728,
+    "win_rate_pct": 34.5185,
+    "profit_factor": 1.5036,
+    "avg_win_pct": 13.6976,
+    "avg_loss_pct": -4.725,
     "avg_days_held": 31.2558,
     "exposure_pct": 97.5258,
-    "fees_paid": 17530.7087,
+    "fees_paid": 17569.8769,
     "params": {
       "template": "trend_ma",
       "dip": 0.05,
@@ -69,6 +150,13 @@
       "top_n": 10,
       "rebalance_days": 21,
       "hold_buffer": 2.0,
+      "ret_min": 0.04,
+      "vol_mult": 2.0,
+      "cons_days": 20,
+      "cons_max": 0.25,
+      "high_days": 252,
+      "donchian_days": 20,
+      "risk_pct": 0.0,
       "trend_ma": 200,
       "trail_ma": 0,
       "target": 0.0,
@@ -79,32 +167,34 @@
       "max_positions": 30,
       "min_price": 5.0,
       "market_filter": true,
-      "slippage_bps": 10.0
+      "slippage_bps": 10.0,
+      "include_taf_fees": true,
+      "include_cat_fees": true
     }
   },
   "train": {
     "period_start": "2016-01-04",
     "period_end": "2021-12-31",
     "trading_days": 1511,
-    "total_return_pct": 57.0532,
-    "annualised_pct": 7.8192,
-    "sharpe": 0.7264,
-    "max_drawdown_pct": -19.994,
+    "total_return_pct": 57.0035,
+    "annualised_pct": 7.8135,
+    "sharpe": 0.7251,
+    "max_drawdown_pct": -20.0113,
     "spy_return_pct": 161.173,
     "spy_annualised_pct": 17.3638,
     "spy_sharpe": 1.0006,
     "spy_max_drawdown_pct": -33.7939,
-    "alpha_pct": -104.1197,
-    "alpha_annualised_pct": -9.5446,
-    "capm_alpha_ann_pct": 1.1203,
-    "beta": 0.401,
+    "alpha_pct": -104.1694,
+    "alpha_annualised_pct": -9.5503,
+    "capm_alpha_ann_pct": 1.1058,
+    "beta": 0.4017,
     "trades": 1068,
     "win_rate_pct": 34.6442,
-    "profit_factor": 1.4379,
-    "avg_win_pct": 12.2807,
-    "avg_loss_pct": -4.4315,
+    "profit_factor": 1.437,
+    "avg_win_pct": 12.28,
+    "avg_loss_pct": -4.4321,
     "avg_days_held": 33.4242,
-    "fees_paid": 7608.5935,
+    "fees_paid": 7638.6297,
     "params": {
       "template": "trend_ma",
       "dip": 0.05,
@@ -119,6 +209,13 @@
       "top_n": 10,
       "rebalance_days": 21,
       "hold_buffer": 2.0,
+      "ret_min": 0.04,
+      "vol_mult": 2.0,
+      "cons_days": 20,
+      "cons_max": 0.25,
+      "high_days": 252,
+      "donchian_days": 20,
+      "risk_pct": 0.0,
       "trend_ma": 200,
       "trail_ma": 0,
       "target": 0.0,
@@ -129,32 +226,34 @@
       "max_positions": 30,
       "min_price": 5.0,
       "market_filter": true,
-      "slippage_bps": 10.0
+      "slippage_bps": 10.0,
+      "include_taf_fees": true,
+      "include_cat_fees": true
     }
   },
   "test": {
     "period_start": "2022-01-03",
     "period_end": "2026-10-09",
     "trading_days": 1197,
-    "total_return_pct": 52.9934,
-    "annualised_pct": 9.365,
-    "sharpe": 0.6809,
-    "max_drawdown_pct": -16.5514,
+    "total_return_pct": 52.8184,
+    "annualised_pct": 9.3387,
+    "sharpe": 0.6796,
+    "max_drawdown_pct": -16.5787,
     "spy_return_pct": 73.6623,
     "spy_annualised_pct": 12.3219,
     "spy_sharpe": 0.7588,
     "spy_max_drawdown_pct": -24.4965,
-    "alpha_pct": -20.6689,
-    "alpha_annualised_pct": -2.9568,
-    "capm_alpha_ann_pct": 3.7407,
-    "beta": 0.4808,
+    "alpha_pct": -20.8439,
+    "alpha_annualised_pct": -2.9832,
+    "capm_alpha_ann_pct": 3.7182,
+    "beta": 0.4806,
     "trades": 957,
-    "win_rate_pct": 34.4828,
-    "profit_factor": 1.5496,
-    "avg_win_pct": 15.2459,
-    "avg_loss_pct": -5.0581,
+    "win_rate_pct": 34.3783,
+    "profit_factor": 1.548,
+    "avg_win_pct": 15.2918,
+    "avg_loss_pct": -5.0505,
     "avg_days_held": 28.8359,
-    "fees_paid": 9922.1151,
+    "fees_paid": 9931.2472,
     "params": {
       "template": "trend_ma",
       "dip": 0.05,
@@ -169,6 +268,13 @@
       "top_n": 10,
       "rebalance_days": 21,
       "hold_buffer": 2.0,
+      "ret_min": 0.04,
+      "vol_mult": 2.0,
+      "cons_days": 20,
+      "cons_max": 0.25,
+      "high_days": 252,
+      "donchian_days": 20,
+      "risk_pct": 0.0,
       "trend_ma": 200,
       "trail_ma": 0,
       "target": 0.0,
@@ -179,7 +285,9 @@
       "max_positions": 30,
       "min_price": 5.0,
       "market_filter": true,
-      "slippage_bps": 10.0
+      "slippage_bps": 10.0,
+      "include_taf_fees": true,
+      "include_cat_fees": true
     }
   }
 }

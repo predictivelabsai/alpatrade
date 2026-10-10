@@ -1,5 +1,34 @@
 # Change Log
 
+## 2026-10-10 — v0.35.0: CWT method templates for Marsten Parker, John Walsh, Mark Ritchie II
+
+- **Three new backtest templates** in `engine/backtest/templates.py` (no look-ahead, 10 bps per
+  side, cash only):
+  - `volume_spike` (Parker): close-to-close gain ≥ `ret_min` on volume ≥ `vol_mult` × the prior
+    50-day average, out of a non-extended 20-day base; buy the next open; +5% target / −7% stop
+    bracket; time stop after `max_hold` sessions.
+  - `donchian` (Walsh): closing 52-week high in a stock above its close a year ago; buy the next
+    open; trailing stop = lowest low of the prior 20/40 sessions (only raised); risk-based sizing.
+  - `trend_template` (Ritchie, Minervini-style): trend template on the prior close, buy-stop at
+    the prior 20-day high, 5%/8% stop, exit on a close below SMA50, 1% risk sizing.
+  - New `risk_pct` sizing (risk ÷ stop distance, capped by `pos_pct` and cash).
+- **`METHOD_OVERRIDES` in `scripts/cwt_pipeline.py`**: hand-reviewed rules with transcript
+  timestamps replace the LLM's breakout mapping for ep. 281, 74 and 290; `legacy_key` re-keys
+  the existing Leaderboard rows so their ids are kept (7, 28, 33). Optional train-only
+  sensitivity grid (max train Sharpe; the test window is never used to choose), written into
+  each skill.md.
+- **Fill realism parity with v0.33.6 / audit gate (all CWT templates + breakout):** stop checked
+  before target, gapped stops/targets fill at the open, 10 bps slippage per side, and new FINRA
+  TAF + CAT fees (`include_taf_fees` / `include_cat_fees`, default on, `utils.fees`). Sizing
+  equity is now marked at the OPEN of the decision day (was the same day's close: a small
+  same-bar look-ahead in `templates.run` / rotation). Every published CWT backtest was re-run
+  (ENGINE_REV bump); figures moved by ≤ 0.6 pp CAGR except the three re-mapped strategies.
+- Each backtest records `engine_stamp` (`cwt_<template>` + version + sha), a trade-level
+  `utils.backtest_audit` result (reconciliation, cash replay incl. partial-exit legs,
+  stop-first, costs) and `audit_input` (slippage, fees, stop-first, next-open, research label,
+  universe as-of date, IS/OOS returns) in `backtest_metrics`.
+- Tests: bracket/timing and volume condition, Donchian stop only rising, no-look-ahead and P&L
+  reconciliation for the three templates, override mapping.
 ## 2026-10-10 — v0.34.1: live-rules BTD re-run with fees + engine stamp (audit gate)
 
 - `scripts/btd_live_rules_wf.py` now runs with FINRA TAF + CAT fees on by default

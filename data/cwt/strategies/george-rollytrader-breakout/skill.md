@@ -93,9 +93,9 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
 ### Test 2022-01-03 → 2026-10-09 (out-of-sample, same rules)
 | Metric | Strategy | SPY |
 |---|---|---|
-| Annualised return (CAGR) | -9.3% | +12.3% |
+| Annualised return (CAGR) | -9.4% | +12.3% |
 | Total return | -37.3% | +73.7% |
-| Sharpe (daily, N-1) | -1.00 | 0.76 |
+| Sharpe (daily, N-1) | -1.01 | 0.76 |
 | Max drawdown | -38.9% | -24.5% |
 | Alpha vs SPY (annualised, CAGR − SPY CAGR) | -21.7% | |
 | CAPM alpha (ann.) / beta | -11.5% / 0.16 | |
@@ -135,6 +135,8 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
     "min_price": 5.0,
     "market_filter": true,
     "slippage_bps": 10.0,
+    "include_taf_fees": true,
+    "include_cat_fees": true,
     "universe": "sp500_current",
     "timeframe": "1d"
   },

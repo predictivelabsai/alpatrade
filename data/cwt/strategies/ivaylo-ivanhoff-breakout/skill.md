@@ -66,35 +66,35 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
 ### Full period 2016-01-04 → 2026-10-09
 | Metric | Strategy | SPY |
 |---|---|---|
-| Annualised return (CAGR) | -7.1% | +15.2% |
-| Total return | -54.9% | +356.2% |
+| Annualised return (CAGR) | -7.2% | +15.2% |
+| Total return | -55.0% | +356.2% |
 | Sharpe (daily, N-1) | -0.21 | 0.90 |
 | Max drawdown | -79.7% | -33.8% |
 | Alpha vs SPY (annualised, CAGR − SPY CAGR) | -22.3% | |
 | CAPM alpha (ann.) / beta | -12.2% / 0.47 | |
-| Trades / win rate | 2640 / 27.2% | |
+| Trades / win rate | 2640 / 27.1% | |
 
 ### Train 2016-01-04 → 2021-12-31
 | Metric | Strategy | SPY |
 |---|---|---|
 | Annualised return (CAGR) | -17.0% | +17.4% |
-| Total return | -67.3% | +161.2% |
-| Sharpe (daily, N-1) | -0.83 | 1.00 |
-| Max drawdown | -67.8% | -33.8% |
+| Total return | -67.4% | +161.2% |
+| Sharpe (daily, N-1) | -0.84 | 1.00 |
+| Max drawdown | -67.9% | -33.8% |
 | Alpha vs SPY (annualised, CAGR − SPY CAGR) | -34.4% | |
-| CAPM alpha (ann.) / beta | -23.5% / 0.39 | |
+| CAPM alpha (ann.) / beta | -23.6% / 0.39 | |
 | Trades / win rate | 1589 / 26.2% | |
 
 ### Test 2022-01-03 → 2026-10-09 (out-of-sample, same rules)
 | Metric | Strategy | SPY |
 |---|---|---|
 | Annualised return (CAGR) | +7.0% | +12.3% |
-| Total return | +37.9% | +73.7% |
+| Total return | +37.8% | +73.7% |
 | Sharpe (daily, N-1) | 0.39 | 0.76 |
 | Max drawdown | -37.9% | -24.5% |
 | Alpha vs SPY (annualised, CAGR − SPY CAGR) | -5.3% | |
 | CAPM alpha (ann.) / beta | +2.6% / 0.58 | |
-| Trades / win rate | 1051 / 28.5% | |
+| Trades / win rate | 1051 / 28.4% | |
 
 ### Caveats
 - **Survivorship bias:** today's S&P 500 members, which flatters long strategies historically.
@@ -130,6 +130,8 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
     "min_price": 5.0,
     "market_filter": true,
     "slippage_bps": 10.0,
+    "include_taf_fees": true,
+    "include_cat_fees": true,
     "universe": "sp500_current",
     "timeframe": "1d"
   },

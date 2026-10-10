@@ -1,6 +1,7 @@
 """Chat With Traders pipeline + backtest strategies on the Leaderboard — DB-free tests."""
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -255,3 +256,113 @@ def test_classification_override_stan_gluzman_intraday():
         pytest.skip("episode artefacts not present")
     s = cwt.load_spec(ep)
     assert s["category"] == "intraday_only" and not s["testable"] and s["_override"]
+
+
+def _flat(n=320, px=50.0, seed=0):
+    import numpy as np
+    idx = pd.bdate_range("2020-01-01", periods=n)
+    r = np.random.default_rng(seed).normal(0, 0.003, n)
+    c = px * np.exp(np.cumsum(r))
+    return pd.DataFrame({"o": c, "h": c * 1.004, "l": c * 0.996, "c": c, "v": 1e6}, index=idx)
+
+
+def test_volume_spike_template_bracket_and_timing():
+    """Parker: signal on day t (gain >= ret_min on vol >= mult x 50d avg) -> buy the open of t+1,
+    exit at +5% target / -7% stop / time stop; nothing before the signal is known."""
+    from engine.backtest import templates as T
+    df = _flat()
+    k = 280
+    df.iloc[k, df.columns.get_loc("c")] = df["c"].iloc[k - 1] * 1.06
+    df.iloc[k, df.columns.get_loc("h")] = df["c"].iloc[k] * 1.001
+    df.iloc[k, df.columns.get_loc("v")] = 4e6
+    nxt = df.index[k + 1]
+    base = df["c"].iloc[k]
+    df.loc[df.index[k + 1:], ["o", "h", "l", "c"]] = base
+    df.loc[df.index[k + 2], "h"] = base * 1.06            # target day
+    p = T.RuleParams.from_dict({"template": "volume_spike", "ret_min": 0.04, "vol_mult": 2,
+                                "target": 0.05, "stop": 0.07, "max_hold": 4, "trend_ma": 0,
+                                "market_filter": False, "pos_pct": 0.1})
+    r = T.run({"A": df}, df, "2020-06-01", str(df.index[-1].date()), p, capital=10_000)
+    assert len(r["trips"]) == 1
+    t = r["trips"][0]
+    assert t["entry_date"] == str(nxt.date()) and t["exit"] == "target"
+    assert t["exit_px"] == pytest.approx(base * 1.05)
+    # without the volume the same price spike is no signal
+    df2 = df.copy(); df2["v"] = 1e6
+    assert T.run({"A": df2}, df2, "2020-06-01", str(df.index[-1].date()), p, capital=10_000)["trades"] == 0
+    # time stop when neither side is hit
+    df3 = df.copy(); df3.loc[df.index[k + 2], "h"] = base
+    t3 = T.run({"A": df3}, df3, "2020-06-01", str(df.index[-1].date()), p, capital=10_000)["trips"][0]
+    assert t3["exit"] == "time" and t3["days"] == 4
+
+
+def test_donchian_and_trend_template_no_look_ahead_and_reconcile():
+    from engine.backtest import templates as T
+    for tpl, extra in (("donchian", {"high_days": 60, "donchian_days": 10, "risk_pct": 0.02, "pos_pct": 0.25}),
+                       ("trend_template", {"ref_days": 10, "stop": 0.05, "trail_ma": 20, "risk_pct": 0.01,
+                                           "pos_pct": 0.2}),
+                       ("volume_spike", {"ret_min": 0.01, "vol_mult": 1.0, "cons_max": 1.0,
+                                         "target": 0.05, "stop": 0.07, "max_hold": 3})):
+        p = T.RuleParams.from_dict({"template": tpl, "market_filter": False, "trend_ma": 0, **extra})
+        a = {s: _bars(n=400, seed=i) for i, s in enumerate("ABCD")}
+        b = {s: _bars(n=400, seed=i, jump_at=300) for i, s in enumerate("ABCD")}
+        spy = _bars(seed=99)
+        ra = T.run(a, spy.reindex(a["A"].index).ffill(), "2020-03-01", "2021-07-01", p, capital=10_000)
+        rb = T.run(b, spy.reindex(b["A"].index).ffill(), "2020-03-01", "2021-07-01", p, capital=10_000)
+        k = a["A"].index[298]
+        assert ra["equity"].loc[:k].equals(rb["equity"].loc[:k]), tpl
+        assert sum(t["pnl"] for t in ra["trips"]) == pytest.approx(ra["equity"].iloc[-1] - 10_000, rel=1e-6, abs=1e-6), tpl
+
+
+def test_donchian_trailing_stop_only_rises_and_risk_sizing():
+    from engine.backtest import templates as T
+    import numpy as np
+    df = _flat(n=400)
+    up = np.linspace(1, 1.5, 100)
+    df.iloc[260:360, :4] = (df.iloc[259, 3] * up)[:, None] * np.array([1, 1.004, 0.996, 1])
+    df.iloc[360:, :4] = df.iloc[359, 3] * 0.8
+    p = T.RuleParams.from_dict({"template": "donchian", "high_days": 252, "donchian_days": 20,
+                                "risk_pct": 0.02, "pos_pct": 0.5, "trend_ma": 0, "market_filter": False})
+    r = T.run({"A": df}, df, "2020-06-01", str(df.index[-1].date()), p, capital=10_000)
+    t = r["trips"][0]
+    assert t["exit"] == "stop" and t["exit_px"] > t["entry_px"]   # trailed up into profit
+    # risk sizing: 2% of equity / stop distance, under the 50% cap
+    assert t["pnl"] > 0
+
+
+def test_method_overrides_map_parker_walsh_ritchie():
+    for n, tpl in (("281", "volume_spike"), ("74", "donchian"), ("290", "trend_template")):
+        o = cwt.METHOD_OVERRIDES[n]
+        assert o["template"] == tpl and o["legacy_key"].endswith("-breakout")
+        for sec in ("setup", "entry", "stop", "exits", "sizing"):
+            assert all(re.match(r"^\[\d\d:\d\d:\d\d\]$", r["timestamp"]) for r in o[sec])
+        g = {"template": tpl, "members": [{"spec": {**o, "_method_override": True}}]}
+        p = cwt.group_params(g)
+        assert p.template == tpl
+    p = cwt.group_params({"template": "volume_spike",
+                          "members": [{"spec": {**cwt.METHOD_OVERRIDES["281"], "_method_override": True}}]})
+    assert (p.target, p.stop, p.max_hold, p.vol_mult) == (0.05, 0.07, 4, 2.0)
+
+
+def test_fill_realism_stop_first_gap_open_and_open_marks():
+    """v0.33.6 parity: ambiguous bar -> stop first; a stop gapped through fills at the open;
+    sizing equity is marked at the open of the decision day, never its close."""
+    from engine.backtest import templates as T
+    df = _flat()
+    k = 280
+    df.iloc[k, df.columns.get_loc("c")] = df["c"].iloc[k - 1] * 1.06
+    df.iloc[k, df.columns.get_loc("h")] = df["c"].iloc[k] * 1.001
+    df.iloc[k, df.columns.get_loc("v")] = 4e6
+    base = df["c"].iloc[k]
+    df.loc[df.index[k + 1:], ["o", "h", "l", "c"]] = base
+    p = T.RuleParams.from_dict({"template": "volume_spike", "ret_min": 0.04, "vol_mult": 2, "target": 0.05,
+                                "stop": 0.07, "max_hold": 4, "trend_ma": 0, "market_filter": False})
+    both = df.copy(); both.loc[df.index[k + 2], ["h", "l"]] = [base * 1.06, base * 0.90]
+    t = T.run({"A": both}, both, "2020-06-01", str(df.index[-1].date()), p, capital=10_000)["trips"][0]
+    assert t["exit"] == "stop" and t["exit_px"] == pytest.approx(base * 0.93)
+    gap = df.copy(); gap.loc[df.index[k + 2], ["o", "h", "l", "c"]] = [base * 0.85, base * 0.86, base * 0.84, base * 0.85]
+    t = T.run({"A": gap}, gap, "2020-06-01", str(df.index[-1].date()), p, capital=10_000)["trips"][0]
+    assert t["exit"] == "stop" and t["exit_px"] == pytest.approx(base * 0.85)
+    d = df.index[k + 3]
+    j = df.copy(); j.loc[d, "c"] = base * 3
+    assert T._open_mark(j, d) == pytest.approx(base) and T._open_mark(j, pd.Timestamp("2030-01-01")) == pytest.approx(base)

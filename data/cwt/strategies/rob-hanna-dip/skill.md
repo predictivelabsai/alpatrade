@@ -61,7 +61,7 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
 | Metric | Strategy | SPY |
 |---|---|---|
 | Annualised return (CAGR) | +16.3% | +15.2% |
-| Total return | +408.8% | +356.2% |
+| Total return | +407.7% | +356.2% |
 | Sharpe (daily, N-1) | 0.67 | 0.90 |
 | Max drawdown | -41.7% | -33.8% |
 | Alpha vs SPY (annualised, CAGR − SPY CAGR) | +1.2% | |
@@ -72,10 +72,10 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
 | Metric | Strategy | SPY |
 |---|---|---|
 | Annualised return (CAGR) | +13.6% | +17.4% |
-| Total return | +115.0% | +161.2% |
-| Sharpe (daily, N-1) | 0.64 | 1.00 |
-| Max drawdown | -37.3% | -33.8% |
-| Alpha vs SPY (annualised, CAGR − SPY CAGR) | -3.7% | |
+| Total return | +114.7% | +161.2% |
+| Sharpe (daily, N-1) | 0.63 | 1.00 |
+| Max drawdown | -37.4% | -33.8% |
+| Alpha vs SPY (annualised, CAGR − SPY CAGR) | -3.8% | |
 | CAPM alpha (ann.) / beta | +3.4% / 0.71 | |
 | Trades / win rate | 2380 / 53.4% | |
 
@@ -83,7 +83,7 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
 | Metric | Strategy | SPY |
 |---|---|---|
 | Annualised return (CAGR) | +19.5% | +12.3% |
-| Total return | +132.8% | +73.7% |
+| Total return | +132.6% | +73.7% |
 | Sharpe (daily, N-1) | 0.70 | 0.76 |
 | Max drawdown | -32.1% | -24.5% |
 | Alpha vs SPY (annualised, CAGR − SPY CAGR) | +7.1% | |
@@ -123,6 +123,13 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
     "top_n": 10,
     "rebalance_days": 21,
     "hold_buffer": 2.0,
+    "ret_min": 0.04,
+    "vol_mult": 2.0,
+    "cons_days": 20,
+    "cons_max": 0.25,
+    "high_days": 252,
+    "donchian_days": 20,
+    "risk_pct": 0.0,
     "trend_ma": 200,
     "trail_ma": 0,
     "target": 0.0,
@@ -134,6 +141,8 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
     "min_price": 5.0,
     "market_filter": true,
     "slippage_bps": 10.0,
+    "include_taf_fees": true,
+    "include_cat_fees": true,
     "universe": "sp500_current",
     "timeframe": "1d"
   },

@@ -65,34 +65,34 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
 | Metric | Strategy | SPY |
 |---|---|---|
 | Annualised return (CAGR) | +8.5% | +15.2% |
-| Total return | +139.5% | +356.2% |
+| Total return | +139.1% | +356.2% |
 | Sharpe (daily, N-1) | 0.69 | 0.90 |
 | Max drawdown | -20.0% | -33.8% |
 | Alpha vs SPY (annualised, CAGR − SPY CAGR) | -6.7% | |
 | CAPM alpha (ann.) / beta | +2.1% / 0.44 | |
-| Trades / win rate | 2025 / 34.6% | |
+| Trades / win rate | 2025 / 34.5% | |
 
 ### Train 2016-01-04 → 2021-12-31
 | Metric | Strategy | SPY |
 |---|---|---|
 | Annualised return (CAGR) | +7.8% | +17.4% |
-| Total return | +57.1% | +161.2% |
+| Total return | +57.0% | +161.2% |
 | Sharpe (daily, N-1) | 0.73 | 1.00 |
 | Max drawdown | -20.0% | -33.8% |
-| Alpha vs SPY (annualised, CAGR − SPY CAGR) | -9.5% | |
+| Alpha vs SPY (annualised, CAGR − SPY CAGR) | -9.6% | |
 | CAPM alpha (ann.) / beta | +1.1% / 0.40 | |
 | Trades / win rate | 1068 / 34.6% | |
 
 ### Test 2022-01-03 → 2026-10-09 (out-of-sample, same rules)
 | Metric | Strategy | SPY |
 |---|---|---|
-| Annualised return (CAGR) | +9.4% | +12.3% |
-| Total return | +53.0% | +73.7% |
+| Annualised return (CAGR) | +9.3% | +12.3% |
+| Total return | +52.8% | +73.7% |
 | Sharpe (daily, N-1) | 0.68 | 0.76 |
 | Max drawdown | -16.6% | -24.5% |
 | Alpha vs SPY (annualised, CAGR − SPY CAGR) | -3.0% | |
 | CAPM alpha (ann.) / beta | +3.7% / 0.48 | |
-| Trades / win rate | 957 / 34.5% | |
+| Trades / win rate | 957 / 34.4% | |
 
 ### Caveats
 - **Survivorship bias:** today's S&P 500 members, which flatters long strategies historically.
@@ -127,6 +127,13 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
     "top_n": 10,
     "rebalance_days": 21,
     "hold_buffer": 2.0,
+    "ret_min": 0.04,
+    "vol_mult": 2.0,
+    "cons_days": 20,
+    "cons_max": 0.25,
+    "high_days": 252,
+    "donchian_days": 20,
+    "risk_pct": 0.0,
     "trend_ma": 200,
     "trail_ma": 0,
     "target": 0.0,
@@ -138,6 +145,8 @@ close (gap entries use the day's open). Train / test are slices of the full-peri
     "min_price": 5.0,
     "market_filter": true,
     "slippage_bps": 10.0,
+    "include_taf_fees": true,
+    "include_cat_fees": true,
     "universe": "sp500_current",
     "timeframe": "1d"
   },

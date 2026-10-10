@@ -2,7 +2,78 @@
   "key": "vincent-bruzzese-relative_strength",
   "template": "relative_strength",
   "members_hash": "312-vincent-bruzzese-aka-hari-seldon",
-  "engine_rev": 2,
+  "engine_rev": 3,
+  "engine_stamp": {
+    "engine": "cwt_relative_strength",
+    "engine_version": "0.35.0",
+    "git_sha": "24a70e7b3475"
+  },
+  "trade_level_audit": {
+    "status": "warn",
+    "checks": [
+      {
+        "name": "engine_version",
+        "status": "pass",
+        "reason": "cwt_relative_strength v0.35.0"
+      },
+      {
+        "name": "reconciliation",
+        "status": "pass",
+        "reason": "\u03a3 trade P&L $552,419.60 reconciles with the equity change"
+      },
+      {
+        "name": "same_bar_exits",
+        "status": "warn",
+        "reason": "not verifiable: no capital_after per trade"
+      },
+      {
+        "name": "cash",
+        "status": "pass",
+        "reason": "cash never below $-0.00"
+      },
+      {
+        "name": "tp_sl_same_bar",
+        "status": "pass",
+        "reason": "stop-first; 0 ambiguous bar(s) booked as stops"
+      },
+      {
+        "name": "costs",
+        "status": "pass",
+        "reason": "slippage 10 bps and fees recorded"
+      },
+      {
+        "name": "params",
+        "status": "pass",
+        "reason": "labelled research (not presented as the live strategy)"
+      },
+      {
+        "name": "lookahead",
+        "status": "warn",
+        "reason": "fill rule next_open; signal times not recorded"
+      },
+      {
+        "name": "universe",
+        "status": "warn",
+        "reason": "universe chosen on 2026-10-10, after the backtest start 2016-01-04 (hindsight / survivorship bias)"
+      },
+      {
+        "name": "plausibility",
+        "status": "pass",
+        "reason": "within plausibility gates"
+      },
+      {
+        "name": "min_trades",
+        "status": "pass",
+        "reason": "1703 trades"
+      },
+      {
+        "name": "oos_degradation",
+        "status": "warn",
+        "reason": "no in-sample / out-of-sample split reported"
+      }
+    ],
+    "audited_at": "2026-10-10T04:28:01Z"
+  },
   "universe": "S&P 500 current members (503 with data)",
   "data": "Alpaca SIP daily bars, adjustment=all (splits+dividends)",
   "spec_params": {
@@ -19,6 +90,13 @@
     "top_n": 10,
     "rebalance_days": 5,
     "hold_buffer": 2.0,
+    "ret_min": 0.04,
+    "vol_mult": 2.0,
+    "cons_days": 20,
+    "cons_max": 0.25,
+    "high_days": 252,
+    "donchian_days": 20,
+    "risk_pct": 0.0,
     "trend_ma": 50,
     "trail_ma": 0,
     "target": 0.0,
@@ -29,32 +107,35 @@
     "max_positions": 10,
     "min_price": 5.0,
     "market_filter": true,
-    "slippage_bps": 10.0
+    "slippage_bps": 10.0,
+    "include_taf_fees": true,
+    "include_cat_fees": true
   },
+  "grid": null,
   "full": {
     "period_start": "2016-01-04",
     "period_end": "2026-10-09",
     "trading_days": 2708,
-    "total_return_pct": 555.7139,
-    "annualised_pct": 19.1246,
-    "sharpe": 0.7982,
-    "max_drawdown_pct": -40.3134,
+    "total_return_pct": 552.4196,
+    "annualised_pct": 19.0688,
+    "sharpe": 0.7959,
+    "max_drawdown_pct": -40.5182,
     "spy_return_pct": 356.1841,
     "spy_annualised_pct": 15.1696,
     "spy_sharpe": 0.8977,
     "spy_max_drawdown_pct": -33.7939,
-    "alpha_pct": 199.5298,
-    "alpha_annualised_pct": 3.955,
-    "capm_alpha_ann_pct": 11.724,
-    "beta": 0.5903,
+    "alpha_pct": 196.2355,
+    "alpha_annualised_pct": 3.8991,
+    "capm_alpha_ann_pct": 11.6784,
+    "beta": 0.5906,
     "trades": 1703,
-    "win_rate_pct": 47.9742,
-    "profit_factor": 1.5148,
-    "avg_win_pct": 9.1558,
-    "avg_loss_pct": -5.5222,
-    "avg_days_held": 12.3018,
+    "win_rate_pct": 47.8567,
+    "profit_factor": 1.5119,
+    "avg_win_pct": 9.1696,
+    "avg_loss_pct": -5.5375,
+    "avg_days_held": 12.2989,
     "exposure_pct": 77.4742,
-    "fees_paid": 64632.5183,
+    "fees_paid": 64635.7238,
     "params": {
       "template": "relative_strength",
       "dip": 0.05,
@@ -69,6 +150,13 @@
       "top_n": 10,
       "rebalance_days": 5,
       "hold_buffer": 2.0,
+      "ret_min": 0.04,
+      "vol_mult": 2.0,
+      "cons_days": 20,
+      "cons_max": 0.25,
+      "high_days": 252,
+      "donchian_days": 20,
+      "risk_pct": 0.0,
       "trend_ma": 50,
       "trail_ma": 0,
       "target": 0.0,
@@ -79,32 +167,34 @@
       "max_positions": 10,
       "min_price": 5.0,
       "market_filter": true,
-      "slippage_bps": 10.0
+      "slippage_bps": 10.0,
+      "include_taf_fees": true,
+      "include_cat_fees": true
     }
   },
   "train": {
     "period_start": "2016-01-04",
     "period_end": "2021-12-31",
     "trading_days": 1511,
-    "total_return_pct": 43.8236,
-    "annualised_pct": 6.2484,
-    "sharpe": 0.3939,
-    "max_drawdown_pct": -40.3134,
+    "total_return_pct": 43.0246,
+    "annualised_pct": 6.1497,
+    "sharpe": 0.3894,
+    "max_drawdown_pct": -40.5182,
     "spy_return_pct": 161.173,
     "spy_annualised_pct": 17.3638,
     "spy_sharpe": 1.0006,
     "spy_max_drawdown_pct": -33.7939,
-    "alpha_pct": -117.3494,
-    "alpha_annualised_pct": -11.1154,
-    "capm_alpha_ann_pct": -0.621,
+    "alpha_pct": -118.1483,
+    "alpha_annualised_pct": -11.214,
+    "capm_alpha_ann_pct": -0.7127,
     "beta": 0.5078,
-    "trades": 972,
-    "win_rate_pct": 49.0741,
-    "profit_factor": 1.1377,
-    "avg_win_pct": 6.3455,
-    "avg_loss_pct": -5.0941,
-    "avg_days_held": 12.037,
-    "fees_paid": 23810.1501,
+    "trades": 973,
+    "win_rate_pct": 49.0236,
+    "profit_factor": 1.1351,
+    "avg_win_pct": 6.3448,
+    "avg_loss_pct": -5.1256,
+    "avg_days_held": 12.0298,
+    "fees_paid": 23844.5017,
     "params": {
       "template": "relative_strength",
       "dip": 0.05,
@@ -119,6 +209,13 @@
       "top_n": 10,
       "rebalance_days": 5,
       "hold_buffer": 2.0,
+      "ret_min": 0.04,
+      "vol_mult": 2.0,
+      "cons_days": 20,
+      "cons_max": 0.25,
+      "high_days": 252,
+      "donchian_days": 20,
+      "risk_pct": 0.0,
       "trend_ma": 50,
       "trail_ma": 0,
       "target": 0.0,
@@ -129,32 +226,34 @@
       "max_positions": 10,
       "min_price": 5.0,
       "market_filter": true,
-      "slippage_bps": 10.0
+      "slippage_bps": 10.0,
+      "include_taf_fees": true,
+      "include_cat_fees": true
     }
   },
   "test": {
     "period_start": "2022-01-03",
     "period_end": "2026-10-09",
     "trading_days": 1197,
-    "total_return_pct": 354.0893,
-    "annualised_pct": 37.5136,
-    "sharpe": 1.1669,
-    "max_drawdown_pct": -32.3305,
+    "total_return_pct": 354.3149,
+    "annualised_pct": 37.5279,
+    "sharpe": 1.1663,
+    "max_drawdown_pct": -32.3271,
     "spy_return_pct": 73.6623,
     "spy_annualised_pct": 12.3219,
     "spy_sharpe": 0.7588,
     "spy_max_drawdown_pct": -24.4965,
-    "alpha_pct": 280.427,
-    "alpha_annualised_pct": 25.1917,
-    "capm_alpha_ann_pct": 27.7141,
-    "beta": 0.6987,
-    "trades": 731,
-    "win_rate_pct": 46.5116,
-    "profit_factor": 1.6703,
-    "avg_win_pct": 13.0985,
-    "avg_loss_pct": -6.0641,
-    "avg_days_held": 12.6539,
-    "fees_paid": 40822.3682,
+    "alpha_pct": 280.6525,
+    "alpha_annualised_pct": 25.2061,
+    "capm_alpha_ann_pct": 27.7271,
+    "beta": 0.6994,
+    "trades": 730,
+    "win_rate_pct": 46.3014,
+    "profit_factor": 1.6672,
+    "avg_win_pct": 13.1561,
+    "avg_loss_pct": -6.0586,
+    "avg_days_held": 12.6575,
+    "fees_paid": 40791.2221,
     "params": {
       "template": "relative_strength",
       "dip": 0.05,
@@ -169,6 +268,13 @@
       "top_n": 10,
       "rebalance_days": 5,
       "hold_buffer": 2.0,
+      "ret_min": 0.04,
+      "vol_mult": 2.0,
+      "cons_days": 20,
+      "cons_max": 0.25,
+      "high_days": 252,
+      "donchian_days": 20,
+      "risk_pct": 0.0,
       "trend_ma": 50,
       "trail_ma": 0,
       "target": 0.0,
@@ -179,7 +285,9 @@
       "max_positions": 10,
       "min_price": 5.0,
       "market_filter": true,
-      "slippage_bps": 10.0
+      "slippage_bps": 10.0,
+      "include_taf_fees": true,
+      "include_cat_fees": true
     }
   }
 }

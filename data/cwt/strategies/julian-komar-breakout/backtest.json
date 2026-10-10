@@ -2,7 +2,78 @@
   "key": "julian-komar-breakout",
   "template": "breakout",
   "members_hash": "305-when-story-fundamentals-and-technicals-align-w-julian-komar",
-  "engine_rev": 2,
+  "engine_rev": 4,
+  "engine_stamp": {
+    "engine": "cwt_breakout",
+    "engine_version": "0.35.0",
+    "git_sha": "24a70e7b3475"
+  },
+  "trade_level_audit": {
+    "status": "warn",
+    "checks": [
+      {
+        "name": "engine_version",
+        "status": "pass",
+        "reason": "cwt_breakout v0.35.0"
+      },
+      {
+        "name": "reconciliation",
+        "status": "pass",
+        "reason": "\u03a3 trade P&L $-12,486.28 reconciles with the equity change"
+      },
+      {
+        "name": "same_bar_exits",
+        "status": "warn",
+        "reason": "not verifiable: no capital_after per trade"
+      },
+      {
+        "name": "cash",
+        "status": "pass",
+        "reason": "cash never below $-0.00"
+      },
+      {
+        "name": "tp_sl_same_bar",
+        "status": "pass",
+        "reason": "stop-first; 0 ambiguous bar(s) booked as stops"
+      },
+      {
+        "name": "costs",
+        "status": "pass",
+        "reason": "slippage 10 bps and fees recorded"
+      },
+      {
+        "name": "params",
+        "status": "pass",
+        "reason": "labelled research (not presented as the live strategy)"
+      },
+      {
+        "name": "lookahead",
+        "status": "warn",
+        "reason": "fill rule next_open; signal times not recorded"
+      },
+      {
+        "name": "universe",
+        "status": "warn",
+        "reason": "universe chosen on 2026-10-10, after the backtest start 2016-01-04 (hindsight / survivorship bias)"
+      },
+      {
+        "name": "plausibility",
+        "status": "pass",
+        "reason": "within plausibility gates"
+      },
+      {
+        "name": "min_trades",
+        "status": "pass",
+        "reason": "641 trades"
+      },
+      {
+        "name": "oos_degradation",
+        "status": "warn",
+        "reason": "no in-sample / out-of-sample split reported"
+      }
+    ],
+    "audited_at": "2026-10-10T04:28:23Z"
+  },
   "universe": "S&P 500 current members (503 with data)",
   "data": "Alpaca SIP daily bars, adjustment=all (splits+dividends)",
   "spec_params": {
@@ -19,32 +90,35 @@
     "max_positions": 10,
     "min_price": 5.0,
     "market_filter": true,
-    "slippage_bps": 10.0
+    "slippage_bps": 10.0,
+    "include_taf_fees": true,
+    "include_cat_fees": true
   },
+  "grid": null,
   "full": {
     "period_start": "2016-01-04",
     "period_end": "2026-10-09",
     "trading_days": 2708,
-    "total_return_pct": -12.4555,
-    "annualised_pct": -1.2303,
-    "sharpe": -0.1023,
-    "max_drawdown_pct": -24.6257,
+    "total_return_pct": -12.4863,
+    "annualised_pct": -1.2335,
+    "sharpe": -0.1027,
+    "max_drawdown_pct": -24.6309,
     "spy_return_pct": 356.1841,
     "spy_annualised_pct": 15.1696,
     "spy_sharpe": 0.8977,
     "spy_max_drawdown_pct": -33.7939,
-    "alpha_pct": -368.6396,
-    "alpha_annualised_pct": -16.3999,
-    "capm_alpha_ann_pct": -2.0995,
+    "alpha_pct": -368.6704,
+    "alpha_annualised_pct": -16.4031,
+    "capm_alpha_ann_pct": -2.1028,
     "beta": 0.0784,
     "trades": 500,
     "win_rate_pct": 26.6,
-    "profit_factor": 0.908,
-    "avg_win_pct": 6.8662,
-    "avg_loss_pct": -2.6375,
+    "profit_factor": 0.9077,
+    "avg_win_pct": 6.8656,
+    "avg_loss_pct": -2.6379,
     "avg_days_held": 5.43,
     "exposure_pct": 40.325,
-    "fees_paid": 13843.1828,
+    "fees_paid": 13874.3709,
     "params": {
       "mom_days": 63,
       "mom_min": 0.5,
@@ -59,32 +133,34 @@
       "max_positions": 10,
       "min_price": 5.0,
       "market_filter": true,
-      "slippage_bps": 10.0
+      "slippage_bps": 10.0,
+      "include_taf_fees": true,
+      "include_cat_fees": true
     }
   },
   "train": {
     "period_start": "2016-01-04",
     "period_end": "2021-12-31",
     "trading_days": 1511,
-    "total_return_pct": 4.2478,
-    "annualised_pct": 0.6962,
-    "sharpe": 0.1271,
-    "max_drawdown_pct": -11.2212,
+    "total_return_pct": 4.2221,
+    "annualised_pct": 0.6921,
+    "sharpe": 0.1265,
+    "max_drawdown_pct": -11.2226,
     "spy_return_pct": 161.173,
     "spy_annualised_pct": 17.3638,
     "spy_sharpe": 1.0006,
     "spy_max_drawdown_pct": -33.7939,
-    "alpha_pct": -156.9252,
-    "alpha_annualised_pct": -16.6675,
-    "capm_alpha_ann_pct": -0.2994,
+    "alpha_pct": -156.9508,
+    "alpha_annualised_pct": -16.6717,
+    "capm_alpha_ann_pct": -0.3036,
     "beta": 0.0745,
     "trades": 259,
     "win_rate_pct": 27.027,
-    "profit_factor": 1.0641,
-    "avg_win_pct": 7.0497,
-    "avg_loss_pct": -2.4469,
+    "profit_factor": 1.0637,
+    "avg_win_pct": 7.0488,
+    "avg_loss_pct": -2.4476,
     "avg_days_held": 5.8958,
-    "fees_paid": 7345.4886,
+    "fees_paid": 7368.9089,
     "params": {
       "mom_days": 63,
       "mom_min": 0.5,
@@ -99,32 +175,34 @@
       "max_positions": 10,
       "min_price": 5.0,
       "market_filter": true,
-      "slippage_bps": 10.0
+      "slippage_bps": 10.0,
+      "include_taf_fees": true,
+      "include_cat_fees": true
     }
   },
   "test": {
     "period_start": "2022-01-03",
     "period_end": "2026-10-09",
     "trading_days": 1197,
-    "total_return_pct": -16.0227,
-    "annualised_pct": -3.6095,
-    "sharpe": -0.353,
-    "max_drawdown_pct": -20.1363,
+    "total_return_pct": -16.0315,
+    "annualised_pct": -3.6117,
+    "sharpe": -0.3532,
+    "max_drawdown_pct": -20.1404,
     "spy_return_pct": 73.6623,
     "spy_annualised_pct": 12.3219,
     "spy_sharpe": 0.7588,
     "spy_max_drawdown_pct": -24.4965,
-    "alpha_pct": -89.685,
-    "alpha_annualised_pct": -15.9314,
-    "capm_alpha_ann_pct": -4.3434,
+    "alpha_pct": -89.6939,
+    "alpha_annualised_pct": -15.9335,
+    "capm_alpha_ann_pct": -4.3456,
     "beta": 0.0832,
     "trades": 241,
     "win_rate_pct": 26.1411,
-    "profit_factor": 0.7582,
-    "avg_win_pct": 6.6624,
-    "avg_loss_pct": -2.8398,
+    "profit_factor": 0.7581,
+    "avg_win_pct": 6.662,
+    "avg_loss_pct": -2.8401,
     "avg_days_held": 4.9295,
-    "fees_paid": 6497.6943,
+    "fees_paid": 6505.462,
     "params": {
       "mom_days": 63,
       "mom_min": 0.5,
@@ -139,7 +217,9 @@
       "max_positions": 10,
       "min_price": 5.0,
       "market_filter": true,
-      "slippage_bps": 10.0
+      "slippage_bps": 10.0,
+      "include_taf_fees": true,
+      "include_cat_fees": true
     }
   }
 }
