@@ -63,3 +63,32 @@ def test_live_panel_labels_and_rows():
     assert "Excess vs SPY" in h and "+3.45%" in h
     assert "deposits and withdrawals are excluded" in h and "are included." not in h.split("pre-existing")[0][-5:]
     assert "dash-live-equity-chart" in h
+
+
+def test_three_charts_from_same_series():
+    from engine.reporting.perf_chart import risk_series
+    s = _series()
+    r = risk_series(s)
+    assert len(r["drawdown_pct"]) == len(s["dates"]) == len(r["daily_return_pct"])
+    # deposit day: daily return is the TWR step, not +71%
+    assert abs(r["daily_return_pct"][-1] - ((4819.61 - 2000) / 2808.58 - 1) * 100) < 1e-3
+    assert max(r["daily_return_pct"]) < 5 and min(r["drawdown_pct"]) <= 0
+    assert all(v <= 0 for v in r["spy_drawdown_pct"] if v is not None)
+    assert abs(r["spy_daily_return_pct"][-1] - (778.57 / 774.30 - 1) * 100) < 1e-3
+    h = chart_html("z", s)
+    assert "id='z-dd'" in h and "id='z-dr'" in h and "SPY drawdown %" in h and "SPY daily %" in h
+    assert "id='z-dr'" not in chart_html("z", s, daily=False)
+
+
+def test_all_surfaces_render_three_charts():
+    from engine.web.ph_leaderboard import detail_html
+    from engine.web.ph_live_account import _curves_section
+    from engine.web.ph_pnl import _live_spy_panel, _paper_chart
+    s = _series()
+    pages = [detail_html({"id": 1}, {"is_backtest": False}, {"series": s, "trades": []}),
+             _curves_section({"series": s}),
+             _live_spy_panel({"linked": True, "perf": {"started": "2026-09-24"}, "curves": {"series": s}}),
+             _paper_chart({"performance": s}, "MTD")]
+    for h in pages:
+        assert h.count("data-perf-chart='1'") == 1 and "-dd'" in h and "-dr'" in h
+        assert "Plotly.newPlot('lb-dd-" not in h  # old leaderboard-only JS is gone

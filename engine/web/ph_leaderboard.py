@@ -518,14 +518,9 @@ def detail_html(s: dict, m: dict, det: Optional[dict]) -> str:
              f"<span class='muted' style='font-weight:400;font-size:.78rem'>(base 100"
              f"{', deposit-adjusted time-weighted' if not bt else ', backtest'})</span></h2>"]
     if ser.get("dates"):
-        payload = json.dumps({"s": ser, "trades": det.get("trades") or [], "bt": bt}).replace("</", "<\\/")
         from engine.reporting.perf_chart import chart_html
         parts.append(chart_html(f"lb-eq-{sid}", ser, label="Strategy (backtest)" if bt else "Account (TWR)",
-                                trades=det.get("trades") or [])
-                     + f"<h2>Drawdown</h2><div id='lb-dd-{sid}' class='chart small'></div>"
-                     + ("" if bt else f"<h2>Daily returns</h2><div id='lb-dr-{sid}' class='chart small'></div>")
-                     + f"<script type='application/json' id='lb-det-{sid}'>{payload}</script>"
-                     + _PLOTLY + _DETAIL_JS.replace("__SID__", str(sid)))
+                                trades=det.get("trades") or [], daily=not bt) + _PLOTLY)
         if det.get("cash_flows_ok") is False:
             parts.append("<p class='lb-note'>Deposit/withdrawal history unavailable: the curve may include transfers.</p>")
     else:
@@ -551,12 +546,7 @@ def detail_html(s: dict, m: dict, det: Optional[dict]) -> str:
     return "".join(parts)
 
 
-_DETAIL_JS = """<script>(function(){var n=document.getElementById('lb-det-__SID__');if(!n||!window.Plotly)return;
-var d=JSON.parse(n.textContent),s=d.s,L={margin:{l:40,r:10,t:10,b:30},paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
-legend:{orientation:'h'},xaxis:{type:'date'}},C={displayModeBar:false,responsive:true};
-Plotly.newPlot('lb-dd-__SID__',[{x:s.dates,y:s.drawdown_pct,fill:'tozeroy',name:'Drawdown %',line:{color:'#b43b35'}}],L,C);
-if(document.getElementById('lb-dr-__SID__'))Plotly.newPlot('lb-dr-__SID__',[{x:s.dates,y:s.daily_return_pct,type:'bar',name:'Daily return %',
- marker:{color:s.daily_return_pct.map(function(v){return v>=0?'#147a4b':'#b43b35'})}}],L,C);})();</script>"""
+
 
 
 def strategy_html(s: dict, m: dict, user: Optional[dict], msg: str = "", det: Optional[dict] = None) -> str:

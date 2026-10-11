@@ -1,5 +1,20 @@
 # Change Log
 
+## 2026-10-11 — v0.36.2: three shared performance charts (equity vs SPY, drawdown, daily returns)
+
+- `engine/reporting/perf_chart.chart_html` now renders all three strategy-page charts from the
+  same deposit-adjusted daily TWR series: equity vs SPY (base 100, trade markers), drawdown %
+  (account filled, SPY drawdown line) and daily returns % (account bars, SPY daily line);
+  `risk_series()` computes drawdown / daily returns for account and SPY on the same dates.
+  Same layout and colours as before; the MTD/YTD shading applies to all three on /dashboard.
+- Used everywhere through that one function: /dashboard (live: since inception, period shaded;
+  paper: selected period), /live/account, /strategies/<id>#details and the Leaderboard detail.
+  The Leaderboard-only drawdown/daily JS (`_DETAIL_JS`) is deleted; backtests omit daily returns
+  as before. Element ids: `<id>`, `<id>-dd`, `<id>-dr`.
+- Leaderboard live headline stays simple annualised (×252 / trading days); compounded in the tooltip.
+- Tests: three charts from one series (deposit day is a TWR step, not a jump), all four surfaces
+  render the three charts via the shared function. Mobile checked at 375 / 414 px.
+
 ## 2026-10-11 — v0.36.1: live dashboard deposit-adjusted (TWR) returns, one shared performance chart
 
 - **Verified against Alpaca (account 885504372) and the runner DB** (snapshot 2026-10-11):

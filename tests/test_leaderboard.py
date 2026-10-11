@@ -390,10 +390,10 @@ def test_detail_html_backtest_has_plotly_charts_params_and_skill():
     det = backtest_detail(s)
     assert det["series"]["dates"] and det["config"]["params"]["symbols"][0] == "TSM"
     html = lb.detail_html(s, {"is_backtest": True}, det)
-    for want in ("id='details'", "lb-eq-17", "lb-dd-17", "plotly", "Parameters", "Strategy prompt",
+    for want in ("id='details'", "lb-eq-17", "lb-eq-17-dd", "plotly", "Parameters", "Strategy prompt",
                  "SKILL.md", "lbCopyRaw(17)"):
         assert want in html, want
-    assert "id='lb-dr-17'" not in html       # no daily returns for a fold-level backtest curve
+    assert "id='lb-eq-17-dr'" not in html       # no daily returns for a fold-level backtest curve
     none = lb.detail_html({**s, "backtest_metrics": {}}, {"is_backtest": True}, {"series": {}})
     assert "No equity curve stored" in none
 

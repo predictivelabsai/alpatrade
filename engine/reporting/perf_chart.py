@@ -156,20 +156,57 @@ if(bx.length)tr.push({x:bx,y:by,text:bt,mode:'markers',name:'Buys',marker:{symbo
 if(sx.length)tr.push({x:sx,y:sy,text:st,mode:'markers',name:'Sells',marker:{symbol:'triangle-down',color:'#b43b35',size:9},hoverinfo:'text+x'});
 if(d.hl&&d.hl[0])L.shapes=[{type:'rect',xref:'x',yref:'paper',x0:d.hl[0],x1:d.hl[1],y0:0,y1:1,
  fillcolor:'rgba(31,93,67,.07)',line:{width:0},layer:'below'}];
-Plotly.newPlot('__ID__',tr,L,C);}
+Plotly.newPlot('__ID__',tr,L,C);
+var hasS=s.spy_drawdown_pct&&s.spy_drawdown_pct.some(function(v){return v!=null});
+var dd=document.getElementById('__ID__-dd');if(dd){var t=[{x:s.dates,y:s.drawdown_pct,fill:'tozeroy',name:'Drawdown %',line:{color:'#b43b35'}}];
+ if(hasS)t.push({x:s.dates,y:s.spy_drawdown_pct,name:'SPY drawdown %',line:{color:'#7A867E'}});Plotly.newPlot(dd,t,L,C);}
+var dr=document.getElementById('__ID__-dr');if(dr){var t2=[{x:s.dates,y:s.daily_return_pct,type:'bar',name:'Daily return %',
+ marker:{color:s.daily_return_pct.map(function(v){return v>=0?'#147a4b':'#b43b35'})}}];
+ if(hasS)t2.push({x:s.dates,y:s.spy_daily_return_pct,name:'SPY daily %',mode:'lines+markers',line:{color:'#7A867E',width:1},marker:{size:4}});
+ Plotly.newPlot(dr,t2,L,C);}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();</script>"""
+
+
+def risk_series(series: dict) -> dict:
+    """Drawdown % and daily return % for the account (from the TWR index) and SPY (from its
+    index), all on the same dates: the inputs of the drawdown and daily-returns charts."""
+    def dd_daily(idx):
+        dd, dr, peak, prev = [], [], None, 100.0
+        for v in idx or []:
+            if v is None:
+                dd.append(None); dr.append(None)
+                continue
+            peak = v if peak is None else max(peak, v)
+            dd.append(round((v / peak - 1) * 100, 4))
+            dr.append(round((v / prev - 1) * 100, 4) if prev else None)
+            prev = v
+        return dd, dr
+    _, a_dr = dd_daily(series.get("index"))
+    s_dd, s_dr = dd_daily(series.get("spy_index"))
+    peak, a_dd = 100.0, []  # account drawdown counts the inception baseline (100) as a peak
+    for v in series.get("index") or []:
+        if v is None:
+            a_dd.append(None)
+            continue
+        peak = max(peak, v)
+        a_dd.append(round((v / peak - 1) * 100, 4))
+    return {"drawdown_pct": a_dd, "daily_return_pct": a_dr,
+            "spy_drawdown_pct": s_dd, "spy_daily_return_pct": s_dr}
 
 
 def chart_html(el_id: str, series: dict, *, label: str = "Account (TWR)",
                trades: Optional[list] = None, highlight: Optional[tuple] = None,
-               css_class: str = "chart", note: str = "",
+               css_class: str = "chart", note: str = "", daily: bool = True,
                ytitle: str = "Index (100 = start)") -> str:
-    """Shared chart block: account TWR index vs SPY (base 100), dates on x, optional shaded
-    period (``highlight`` = (iso start, iso end)) and trade markers. Requires Plotly on the page
-    (it waits for it). Returns '' when the series is empty."""
+    """Shared chart block (the strategy-page charts): 1) account TWR index vs SPY (base 100)
+    with trade markers, 2) drawdown % vs SPY drawdown, 3) daily returns % (bars) vs SPY daily
+    — all from the same deposit-adjusted daily series, dates on x, optional shaded period
+    (``highlight`` = (iso start, iso end)). ``daily=False`` omits chart 3 (backtests). Requires
+    Plotly on the page (it waits for it). Returns '' when the series is empty."""
     if not series or not series.get("dates"):
         return ""
     s = {k: series.get(k) for k in ("dates", "index", "spy_index")}
+    s.update(risk_series(s))
     if highlight:  # never widen the x-axis beyond the data (e.g. YTD before inception)
         lo, hi = max(str(highlight[0]), s["dates"][0]), min(str(highlight[1]), s["dates"][-1])
         highlight = (lo, hi) if lo <= hi else None
@@ -179,9 +216,13 @@ def chart_html(el_id: str, series: dict, *, label: str = "Account (TWR)",
     safe = "".join(ch for ch in el_id if ch.isalnum() or ch in "-_")
     foot = (f"<p class='note pc-note' style='font-size:.72rem;color:var(--ink-dim);margin:.35rem 0 0'>"
             f"{note}</p>") if note else ""
-    return (f"<div id='{safe}' class='{css_class} perf-chart' data-perf-chart='1'></div>"
-            f"<script type='application/json' id='pc-data-{safe}'>{payload}</script>"
-            + _JS.replace("__ID__", safe) + foot)
+    h3 = "style='font-size:.85rem;margin:.9rem 0 .3rem'"
+    small = f"class='{css_class} small perf-chart-sub' style='height:200px;width:100%'"
+    return (f"<div class='perf-charts'><div id='{safe}' class='{css_class} perf-chart' data-perf-chart='1'></div>"
+            f"<h3 class='pc-h' {h3}>Drawdown</h3><div id='{safe}-dd' {small}></div>"
+            + (f"<h3 class='pc-h' {h3}>Daily returns</h3><div id='{safe}-dr' {small}></div>" if daily else "")
+            + f"<script type='application/json' id='pc-data-{safe}'>{payload}</script>"
+            + _JS.replace("__ID__", safe) + foot + "</div>")
 
 
 def series_from_curves(curves: dict) -> dict:
@@ -195,4 +236,4 @@ def series_from_curves(curves: dict) -> dict:
             "spy_index": c.get("spy_idx") or [], "start_date": c.get("start_date") or c["dates"][0]}
 
 
-__all__ = ["series_from_curves", "performance_series", "period_returns", "spy_closes", "ffill_spy", "chart_html"]
+__all__ = ["risk_series", "series_from_curves", "performance_series", "period_returns", "spy_closes", "ffill_spy", "chart_html"]
