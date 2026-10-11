@@ -36,7 +36,8 @@ def test_metrics_from_live_run_snapshot():
     # 11 sessions < 63 (~90 calendar days): not annualised
     # <90d rule reverted: always annualised, compounded on the TWR, with a short-period hint
     r = m["return_pct"] / 100
-    assert m["annualised_pct"] == pytest.approx(((1 + r) ** (252 / 11) - 1) * 100)
+    assert m["annualised_pct"] == pytest.approx(r * 252 / 11 * 100)  # simple (standing rule)
+    assert m["annualised_compound_pct"] == pytest.approx(((1 + r) ** (252 / 11) - 1) * 100)
     assert m["annualised_short"] is True and "Short period" in perf.annualised_tip(m)
     assert m["annualised_short"] is True
 

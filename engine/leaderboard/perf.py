@@ -13,9 +13,10 @@ These are the same numbers as ``/dashboard`` and the daily LIVE email:
                     Without flow data it falls back to equity / start_equity − 1.
 * SPY return      = SPY / start_SPY − 1          (same period)
 * alpha           = return − SPY return
-* annualised      = (1+r)^(252/d) − 1 on the time-weighted return r (compounded; always shown,
-                    with a "short period" hint in the tooltip below 63 trading days)
-* simple          = r × 252 / d (shown in the tooltip)
+* annualised      = simple r × 252 / d on the time-weighted return r (Julian's standing rule;
+                    same as the dashboard and the daily LIVE email; "short period" hint below
+                    63 trading days)
+* compounded      = (1+r)^(252/d) − 1 (tooltip only, indicative)
 * trading days    = NYSE sessions from the start date to the snapshot date, inclusive
                     (``trading_days_between``, same as the dashboard's since-start KPI)
 
@@ -117,8 +118,8 @@ def metrics_from_run(run: Optional[dict], today: Optional[date] = None,
             net_deposits=dep, cash_flows_ok=flows is not None,
             annualised_short=days < 63,
             return_pct=ret, spy_return_pct=spy_ret, alpha_pct=ret - spy_ret,
-            annualised_pct=ann["compound_pct"], annualised_simple_pct=ann["simple_pct"],
-            annualised_compound_pct=None,
+            annualised_pct=ann["simple_pct"], annualised_simple_pct=ann["simple_pct"],
+            annualised_compound_pct=ann["compound_pct"],
             equity=equity,
         )
         break
@@ -296,9 +297,10 @@ def annualised_tip(m: dict) -> str:
         return "No live track record available for this strategy yet."
     short = (f" Short period: only {m['trading_days']} trading days, so the annualised figure "
              "is very sensitive and says little about the future." if m.get("annualised_short") else "")
-    return (f"Compounded (1+r)^(252/d)−1 on the time-weighted return r = {pct(m['return_pct'])} "
+    return (f"Simple r × 252 / d on the time-weighted return r = {pct(m['return_pct'])} "
             f"(deposits/withdrawals excluded) over {m['trading_days']} trading days = "
-            f"{pct(m['annualised_pct'])}; simple r × 252 / d = {pct(m.get('annualised_simple_pct'))}."
+            f"{pct(m['annualised_pct'])}; compounded (1+r)^(252/d)−1 = "
+            f"{pct(m.get('annualised_compound_pct'))} (indicative only)."
             f"{short} Live account, session close {fmt_day(m['as_of'])}.")
 
 

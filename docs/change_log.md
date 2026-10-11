@@ -1,5 +1,37 @@
 # Change Log
 
+## 2026-10-11 — v0.36.1: live dashboard deposit-adjusted (TWR) returns, one shared performance chart
+
+- **Verified against Alpaca (account 885504372) and the runner DB** (snapshot 2026-10-11):
+  equity $4,819.61, cash $3,320.02, buying power $17,473.88, unrealized $6.60 (BNBX hidden),
+  3 open positions, MTD P&L $74.25 (= 4,819.61 − Sep 30 close 2,745.36 − $2,000 CSD on Oct 9),
+  since inception +$94.02, SPY $767.29 → $778.57 (+1.47%), runner P&L +$86.33 (realised
+  $79.73 + open $6.60, 12 closed) — all correct.
+- **Fixed MTD/YTD return**: was P&L / (base + deposits) = +1.56% (diluted by the deposit); now the
+  time-weighted return, +2.70% MTD (each day net of that day's cash flows). Same for paper and
+  "All accounts". Since-start annualised KPI now uses the TWR as well (was the diluted ratio).
+- **Annualised return**: Julian's standing rule — simple r × 252 / trading days since strategy
+  start, compounded only in the tooltip — everywhere: dashboard (was "n/a (<90d)", now +72.44%
+  over 12 sessions), daily LIVE email, and the Leaderboard live rows (were compounded).
+  `annualize()` no longer suppresses short periods; below 63 sessions the tooltip carries a
+  short-period hint.
+- **Live account vs SPY panel** (/dashboard and /live/account): "since start" → "since inception",
+  "Live run started" → "Inception"; new MTD / YTD / since-inception table (account, SPY, excess vs
+  SPY) on the same TWR chain; footnote rewritten (deposits/withdrawals are excluded).
+- **One shared chart**: `engine/reporting/perf_chart.py` (`performance_series`, `period_returns`,
+  `chart_html`) holds the strategy-page (/strategies/<id>#details) equity-vs-SPY chart code,
+  extracted verbatim, now used by the strategy page/Leaderboard detail, /dashboard (live: since
+  inception with the MTD/YTD period shaded; paper: the selected period) and /live/account.
+  `live_perf.equity_curves` and the daily email PNG use the same TWR index, so the $2,000 deposit
+  no longer shows as a jump. Old dashboard / live-account Plotly chart code removed;
+  `leaderboard.detail.index_series` delegates to the shared function.
+- Note: the runner's `results.daily` SPY snapshots differ from official SPY closes by up to ~$2.6
+  on some days (e.g. Sep 30 764.90 vs close 762.63). The dashboard uses market-data closes; the
+  strategy page SPY line still uses the runner snapshots (runner not changed).
+- Tests: tests/test_perf_chart.py (deposit day has no jump, MTD/YTD rows, labels, shared chart on
+  the strategy page); updated annualise / leaderboard / live-account tests. Mobile checked at
+  375 / 414 px (no horizontal overflow).
+
 ## 2026-10-11 — news enrichment: own $20/day budget, backlog throughput 150 rows / 15 min
 
 - Approved by Julian: news enrichment (summaries/tags, every article, no ticker filter) gets

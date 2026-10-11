@@ -13,7 +13,10 @@ TRADING_DAYS_PER_YEAR = 252
 # Don't annualise short records: compounding e.g. 15 days gives absurd figures. 63 NYSE
 # sessions ~ 90 calendar days; below that the annualised values are None and
 # ``short_period`` is True (rendered "n/a (<90d)").
-MIN_ANNUALISE_TRADING_DAYS = 63
+MIN_ANNUALISE_TRADING_DAYS = 63  # short-period hint threshold only (tooltip)
+# Julian's standing rule: always show simple ×252/d from the first session (compounded only in the
+# tooltip), on the dashboard, the LIVE email and the Leaderboard alike.
+DEFAULT_MIN_DAYS = 1
 
 
 def _easter(y: int) -> date:
@@ -83,7 +86,7 @@ def trading_days_between(start: date, end: date) -> int:
 
 
 def annualize(return_pct: Optional[float], trading_days: int,
-              min_days: int = MIN_ANNUALISE_TRADING_DAYS) -> dict:
+              min_days: int = DEFAULT_MIN_DAYS) -> dict:
     """Return {'simple_pct','compound_pct','days','short_period'}; values None when
     d < ``min_days`` (default 63 sessions ~ 90 calendar days)."""
     out = {"simple_pct": None, "compound_pct": None, "days": int(trading_days or 0),
@@ -93,6 +96,7 @@ def annualize(return_pct: Optional[float], trading_days: int,
     if trading_days < max(1, int(min_days or 1)):
         out["short_period"] = True
         return out
+    out["short_period"] = trading_days < MIN_ANNUALISE_TRADING_DAYS
     r = float(return_pct) / 100.0
     out["simple_pct"] = r * TRADING_DAYS_PER_YEAR / trading_days * 100
     try:
@@ -106,7 +110,7 @@ def annualize(return_pct: Optional[float], trading_days: int,
 def fmt_ann(a: dict) -> str:
     v = a.get("simple_pct")
     if v is None:
-        return "n/a (<90d)" if a.get("short_period") else "—"
+        return "—"
     return f"{v:+.2f}%"
 
 
@@ -120,6 +124,8 @@ def tooltip(a: dict) -> str:
     c = a.get("compound_pct")
     cs = "—" if c is None else f"{c:+.2f}%"
     since = f" since {a['start_date']}" if a.get("start_date") else ""
+    hint = (" Short period: fewer than 63 trading days, so the figure extrapolates heavily."
+            if a.get("short_period") else "")
     return (f"Simple: return × 252 / days = {a['simple_pct']:+.2f}% "
             f"({a['days']} trading days{since}); compounded (1+r)^(252/d)−1 = {cs} "
-            "(indicative only: we don't reinvest gains immediately)")
+            "(indicative only: we don't reinvest gains immediately)." + hint)

@@ -178,6 +178,41 @@ def _deposits_since(user_id: str, selected: dict, start) -> float:
         return 0.0
 
 
+def _since_start_twr(user_id: str, selected: dict, start, start_eq: float,
+                     equity: float):
+    """Time-weighted since-start return % (same chain as the email / Leaderboard / chart);
+    None when history or cash flows are unavailable."""
+    from zoneinfo import ZoneInfo
+    from engine.reporting.cash_flows import twr_pct
+    acct = str(selected.get("account_id") or "")
+    et = ZoneInfo("America/New_York")
+    today = datetime.now(et).date()
+    try:
+        if is_live_dashboard_id(acct):
+            from engine.brokers.alpaca_live_readonly import LiveReadOnlyClient
+            from engine.live_accounts import get_live_account_credentials
+            from engine.reporting.live_perf import daily_equity_points
+            creds = get_live_account_credentials(user_id, acct[len(LIVE_ACCOUNT_PREFIX):])
+            client = LiveReadOnlyClient(creds["api_key"], creds["secret_key"],
+                                        expected_account_number=creds["account_number"])
+            pts = daily_equity_points(client, start, today)
+        else:
+            client, _env = _client(user_id, acct)
+            h = _history(client, datetime.combine(start, time.min, tzinfo=timezone.utc),
+                         datetime.now(timezone.utc))
+            by = {datetime.fromisoformat(t).astimezone(et).date(): e
+                  for t, e in zip(h["timestamps"], h["equity"]) if e and e > 0}
+            pts = sorted(by.items())
+        rows = fetch_flows(client, start - timedelta(days=1))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("since-start TWR failed: %s", type(exc).__name__)
+        return None
+    if rows is None:
+        return None
+    seg = [(d, e) for d, e in pts if start < d < today] + ([(today, float(equity))] if today > start else [])
+    return twr_pct(start, start_eq, seg, rows)[0]
+
+
 def since_start_annualized(user_id: str, selected: dict, now: datetime | None = None) -> dict:
     """Annualised return normalised since the strategy start.
 
@@ -214,6 +249,9 @@ def since_start_annualized(user_id: str, selected: dict, now: datetime | None = 
     equity = _number(selected.get("equity"))
     dep = _deposits_since(user_id, selected, start) if start and start_eq else 0.0
     ret = adjusted_pnl(equity, start_eq, dep)[1] if start_eq and equity else None
+    if start and start_eq and equity:
+        twr = _since_start_twr(user_id, selected, start, start_eq, equity)
+        ret = ret if twr is None else twr
     now = now or datetime.now(timezone.utc)
     end_dt = now.astimezone(ZoneInfo("America/New_York"))
     end_et = end_dt.date()
@@ -289,7 +327,8 @@ def _history(client: AlpacaAPI, start: datetime, end: datetime) -> dict[str, lis
     }
 
 
-def _period_deposits(client: Any, history: dict, start: datetime, end: datetime) -> tuple[float, bool]:
+def _period_deposits(client: Any, history: dict, start: datetime, end: datetime,
+                     with_rows: bool = False):
     """Net deposits booked after the baseline point's ET date through ``end`` (P&L excludes them)."""
     from zoneinfo import ZoneInfo
     et = ZoneInfo("America/New_York")
@@ -303,10 +342,64 @@ def _period_deposits(client: Any, history: dict, start: datetime, end: datetime)
     since = (base_day or start.astimezone(et).date()) - timedelta(days=1)
     rows = fetch_flows(client, since)
     if rows is None:
-        return 0.0, False
+        return (0.0, False, None) if with_rows else (0.0, False)
     through = end.astimezone(et).date()
     after = base_day if base_day is not None else through - timedelta(days=1)
-    return net_flows(rows, after, through), True
+    dep = net_flows(rows, after, through)
+    return (dep, True, rows) if with_rows else (dep, True)
+
+
+def period_series(history: dict, rows: list | None, equity: float, end: datetime) -> dict:
+    """Deposit-adjusted TWR series for the period (shared perf_chart): daily ET session
+    closes from ``history`` (first point = baseline), today's point = current ``equity``.
+    SPY is attached later for the selected account only (``attach_spy``)."""
+    from zoneinfo import ZoneInfo
+    from engine.reporting.perf_chart import performance_series
+    et = ZoneInfo("America/New_York")
+    by_day: dict = {}
+    for stamp, e in zip(history.get("timestamps") or [], history.get("equity") or []):
+        try:
+            d = datetime.fromisoformat(stamp).astimezone(et).date()
+        except (TypeError, ValueError):
+            continue
+        if e and float(e) > 0:
+            by_day[d] = float(e)
+    today = end.astimezone(et).date()
+    if equity and by_day and today > max(by_day):
+        by_day[today] = float(equity)
+    elif equity and by_day:
+        by_day[max(by_day)] = float(equity) if max(by_day) == today else by_day[max(by_day)]
+    if len(by_day) < 1:
+        return {}
+    days = sorted(by_day)
+    return performance_series(days, [by_day[d] for d in days], [None] * len(days), rows)
+
+
+def attach_spy(series: dict, start_spy: float | None = None) -> dict:
+    """Add the SPY index (base 100 at the series' first date) to a performance series."""
+    from datetime import date as _date
+    from engine.reporting.perf_chart import ffill_spy, spy_closes
+    if not series or not series.get("dates"):
+        return series or {}
+    d0, d1 = _date.fromisoformat(series["dates"][0]), _date.fromisoformat(series["dates"][-1])
+    spy = ffill_spy(series["dates"], spy_closes(d0, d1))
+    base = start_spy or next((x for x in spy if x), None)
+    return {**series, "spy": spy,
+            "spy_index": [round(x / base * 100, 4) if x and base else None for x in spy]}
+
+
+def _twr_period(history: dict, rows: list | None, equity: float, end: datetime,
+                fallback_pct):
+    """(series, period %): time-weighted period return from the shared series; the simple
+    net-of-deposits ratio when flows are unknown."""
+    try:
+        series = period_series(history, rows, equity, end)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("period series failed: %s", type(exc).__name__)
+        series = {}
+    if rows is None or not series.get("index"):
+        return series, fallback_pct
+    return series, series["index"][-1] - 100.0
 
 
 def _one_account(user_id: str, account: dict, period: str) -> dict[str, Any]:
@@ -336,8 +429,9 @@ def _one_account(user_id: str, account: dict, period: str) -> dict[str, Any]:
     )
     equity = _number(live.get("equity"))
     baseline = history["equity"][0] if history["equity"] else _number(live.get("last_equity"))
-    deposits, flows_ok = _period_deposits(client, history, start, end)
+    deposits, flows_ok, flow_rows = _period_deposits(client, history, start, end, with_rows=True)
     period_pnl, period_pct = adjusted_pnl(equity, baseline, deposits)
+    series, period_pct = _twr_period(history, flow_rows, equity, end, period_pct)
     return {
         "account_id": account["account_id"],
         "account_name": account["account_name"],
@@ -349,6 +443,7 @@ def _one_account(user_id: str, account: dict, period: str) -> dict[str, Any]:
         "period_pnl": period_pnl or 0.0,
         "period_pct": period_pct or 0.0,
         "net_deposits": deposits, "cash_flows_ok": flows_ok,
+        "flow_rows": flow_rows, "performance": series,
         "unrealized_pnl": sum(row["pnl"] for row in contributors),
         "history": history,
         "contributors": contributors,
@@ -418,8 +513,9 @@ def _one_live_account(user_id: str, account: dict, period: str) -> dict[str, Any
     )
     equity = _number(live.get("equity"))
     baseline = history["equity"][0] if history["equity"] else _number(live.get("last_equity"))
-    deposits, flows_ok = _period_deposits(client, history, start, end)
+    deposits, flows_ok, flow_rows = _period_deposits(client, history, start, end, with_rows=True)
     period_pnl, period_pct = adjusted_pnl(equity, baseline, deposits)
+    series, period_pct = _twr_period(history, flow_rows, equity, end, period_pct)
     return {
         "account_id": account["account_id"],
         "account_name": account["account_name"],
@@ -431,6 +527,7 @@ def _one_live_account(user_id: str, account: dict, period: str) -> dict[str, Any
         "period_pnl": period_pnl or 0.0,
         "period_pct": period_pct or 0.0,
         "net_deposits": deposits, "cash_flows_ok": flows_ok,
+        "flow_rows": flow_rows, "performance": series,
         "unrealized_pnl": sum(row["pnl"] for row in contributors),
         "history": history,
         "contributors": contributors,
@@ -458,6 +555,11 @@ def _aggregate(accounts: list[dict[str, Any]], period: str) -> dict[str, Any]:
             })
             item["pnl"] += row["pnl"]
             item["market_value"] += row["market_value"]
+    rows_all = None if any(a.get("flow_rows") is None for a in accounts) else [
+        r for a in accounts for r in (a.get("flow_rows") or [])]
+    agg_hist = {"timestamps": timestamps, "equity": equity_series}
+    period_pct = period_pnl / (baseline + max(0.0, deposits)) * 100 if baseline else 0
+    series, period_pct = _twr_period(agg_hist, rows_all, equity, datetime.now(timezone.utc), period_pct)
     return {
         "account_id": "all",
         "account_name": "All accounts",
@@ -468,8 +570,8 @@ def _aggregate(accounts: list[dict[str, Any]], period: str) -> dict[str, Any]:
         "cash": sum(a["cash"] for a in accounts),
         "buying_power": sum(a["buying_power"] for a in accounts),
         "period_pnl": period_pnl,
-        "period_pct": period_pnl / (baseline + max(0.0, deposits)) * 100 if baseline else 0,
-        "net_deposits": deposits,
+        "period_pct": period_pct,
+        "net_deposits": deposits, "flow_rows": rows_all, "performance": series,
         "cash_flows_ok": all(a.get("cash_flows_ok", True) for a in accounts),
         "unrealized_pnl": sum(a["unrealized_pnl"] for a in accounts),
         "history": {"timestamps": timestamps, "equity": equity_series, "pnl": [], "pnl_pct": []},
@@ -530,6 +632,11 @@ def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[st
         loaded, key=lambda row: (bool(row["history"]["equity"]), row["equity"])
     )
     live_selected = is_live_dashboard_id(selected["account_id"])
+    if not live_selected and selected.get("performance"):
+        try:  # the live view uses the since-inception curve from /live/account's loader
+            selected["performance"] = attach_spy(selected["performance"])
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("SPY for dashboard chart failed: %s", type(exc).__name__)
     ranking_account = (
         None if selected["account_id"] == "all" or live_selected
         else selected["account_id"]

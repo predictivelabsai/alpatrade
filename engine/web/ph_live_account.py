@@ -57,7 +57,8 @@ _CSS = """
 .la a.refresh{font-size:.78rem;color:var(--accent);text-decoration:none;margin-left:.6rem}
 .la-perf{background:var(--bg-elev);border:1px solid var(--line);border-radius:.65rem;padding:1rem 1.1rem;margin:1rem 0}
 .la-perf table{width:auto;border-collapse:collapse;font-size:.84rem;font-variant-numeric:tabular-nums}
-.la-perf td{padding:.22rem .9rem .22rem 0;border:0;white-space:nowrap}
+.la-perf td{padding:.22rem .9rem .22rem 0;border:0;white-space:normal}
+.la-perf .period-table td,.la-perf .period-table th{white-space:nowrap;padding:.22rem .7rem .22rem 0}
 .la-perf td.k{color:var(--ink-muted)}
 .la-perf .note{font-size:.72rem;color:var(--ink-dim);margin:.45rem 0 0}
 .la-chart{background:var(--bg-elev);border:1px solid var(--line);border-radius:.65rem;padding:.6rem .7rem 1rem;margin:1rem 0}
@@ -76,30 +77,7 @@ document.querySelectorAll('.la time[datetime]').forEach(function(t){
 </script>
 """
 
-_EQUITY_CHART_JS = """
-<script>
-(function(){
-  var el=document.getElementById('live-equity-chart');
-  var raw=document.getElementById('live-equity-data');
-  if(!el||!raw||!window.Plotly)return;
-  var d; try{d=JSON.parse(raw.textContent);}catch(e){return;}
-  if(!d||!d.dates||!d.dates.length)return;
-  var base={paper_bgcolor:'#fff',plot_bgcolor:'#f7f6f1',font:{family:'Inter,system-ui',color:'#2d352f'},
-    margin:{t:28,r:18,b:42,l:48},legend:{orientation:'h',y:1.12,x:0},
-    xaxis:{showgrid:false},yaxis:{title:'Index (100 = start)',zeroline:false}};
-  var traces=[];
-  if(d.account_idx&&d.account_idx.some(function(v){return v!=null;}))
-    traces.push({x:d.dates,y:d.account_idx,name:'Live account',type:'scatter',mode:'lines',
-      line:{color:'#1f5d43',width:2.6},
-      hovertemplate:'%{x}<br>Account %{y:.2f}<extra></extra>'});
-  if(d.spy_idx&&d.spy_idx.some(function(v){return v!=null;}))
-    traces.push({x:d.dates,y:d.spy_idx,name:'SPY',type:'scatter',mode:'lines',
-      line:{color:'#7a867e',width:2},
-      hovertemplate:'%{x}<br>SPY %{y:.2f}<extra></extra>'});
-  if(traces.length) Plotly.newPlot(el,traces,base,{responsive:true,displayModeBar:false});
-})();
-</script>
-"""
+
 
 
 def _e(v) -> str:
@@ -222,25 +200,40 @@ def _pct(v) -> str:
     return f"{x:+.2f}%"
 
 
-def _perf_section(perf: dict) -> str:
-    if not perf:
-        return ("<div class='la-perf'><h2 style='margin:0 0 .5rem'>Performance since live start vs SPY</h2>"
-                "<p class='muted' style='margin:0'>No live runner run is recorded for this account yet.</p></div>")
+def _started_label(perf: dict) -> str:
     started = perf.get("started")
     if hasattr(started, "strftime"):
-        started_s = started.strftime("%b %d, %Y")
-    else:
-        started_s = _e(str(started or "—")[:10])
+        return started.strftime("%b %d, %Y")
+    try:
+        from datetime import date as _date
+        return _date.fromisoformat(str(started)[:10]).strftime("%b %d, %Y")
+    except (TypeError, ValueError):
+        return _e(str(started or "—")[:10])
+
+
+PERF_FOOTNOTE = ("Account return is time-weighted from the equity when the runner started "
+                 "(inception): deposits and withdrawals are excluded (each day is measured net "
+                 "of that day's cash flows), pre-existing holdings are included. MTD / YTD start "
+                 "from the last session close before the period (or inception, if later); SPY is "
+                 "measured over the same dates.")
+
+
+def perf_rows(perf: dict, curves: dict | None = None, today=None) -> list[tuple[str, str]]:
+    """Shared 'Live account vs SPY' rows (/live/account and /dashboard): inception, account /
+    SPY / excess since inception, MTD and YTD (same deposit-adjusted TWR as the chart)."""
+    from engine.reporting.perf_chart import period_returns, series_from_curves
+    if not perf:
+        return []
     ex = perf.get("excess_pct")
     rows = [
-        ("Live run started", f"{started_s} · start equity {_money(perf.get('start_equity'))}"),
-        ("Account since start",
+        ("Inception", f"{_started_label(perf)} · start equity {_money(perf.get('start_equity'))}"),
+        ("Account since inception",
          f"<b class='{_cls(perf.get('account_pnl'))}'>{_money(perf.get('account_pnl'), True)} "
          f"({_pct(perf.get('account_return_pct'))})</b>"),
-        ("SPY since start",
+        ("SPY since inception",
          f"{_pct(perf.get('spy_return_pct'))} <span class='muted'>"
          f"({_money(perf.get('spy_start'))} → {_money(perf.get('spy'))})</span>"),
-        ("Excess vs SPY", f"<b class='{_cls(ex)}'>{_pct(ex)}</b>"),
+        ("Excess vs SPY since inception", f"<b class='{_cls(ex)}'>{_pct(ex)}</b>"),
     ]
     if perf.get("strategy_pnl") is not None:
         rows.append((
@@ -249,28 +242,57 @@ def _perf_section(perf: dict) -> str:
             f"{_money(perf.get('strategy_realized') or 0, True)} · open "
             f"{_money(perf.get('strategy_unrealized'), True)}"
             f" · {int(_num(perf.get('closed_trades')) or 0)} closed</span>"))
-    body = "".join(f"<tr><td class='k'>{k}</td><td>{v}</td></tr>" for k, v in rows)
-    return (f"<div class='la-perf'><h2 style='margin:0 0 .5rem'>Performance since live start vs SPY</h2>"
-            f"<table>{body}</table>"
-            "<p class='note'>Account return is equity vs the equity when the runner started; "
-            "deposits/withdrawals and pre-existing holdings are included.</p></div>")
+    return rows
+
+
+def period_table(perf: dict, curves: dict | None = None, today=None) -> str:
+    """MTD / YTD / since-inception table: account return, SPY return, excess vs SPY, all on
+    the chart's deposit-adjusted TWR chain (inception row = the since-inception figures)."""
+    from engine.reporting.perf_chart import period_returns, series_from_curves
+    pr = period_returns(series_from_curves(curves), today)
+    rows = []
+    for key, lab in (("mtd", "MTD"), ("ytd", "YTD")):
+        x = pr.get(key)
+        if x:
+            note = ("<br><span class='muted' style='font-size:.7rem'>from inception</span>"
+                    if x.get("clipped") else "")
+            rows.append((key, lab + note, x.get("account_pct"), x.get("spy_pct"), x.get("excess_pct")))
+    if perf:
+        rows.append(("inception", "Since inception", perf.get("account_return_pct"),
+                     perf.get("spy_return_pct"), perf.get("excess_pct")))
+    if not rows:
+        return ""
+    body = "".join(
+        f"<tr data-period='{k}'><td class='k'>{lab}</td><td class='num {_cls(a)}'><b>{_pct(a)}</b></td>"
+        f"<td class='num'>{_pct(sp)}</td><td class='num {_cls(ex)}'><b>{_pct(ex)}</b></td></tr>"
+        for k, lab, a, sp, ex in rows)
+    return ("<table class='period-table'><thead><tr><th></th><th class='num'>Account</th>"
+            "<th class='num'>SPY</th><th class='num' title='Excess vs SPY'>Excess vs SPY</th></tr></thead>"
+            f"<tbody>{body}</tbody></table>")
+
+
+def _perf_section(perf: dict, curves: dict | None = None) -> str:
+    if not perf:
+        return ("<div class='la-perf'><h2 style='margin:0 0 .5rem'>Performance since inception vs SPY</h2>"
+                "<p class='muted' style='margin:0'>No live runner run is recorded for this account yet.</p></div>")
+    body = "".join(f"<tr><td class='k'>{k}</td><td>{v}</td></tr>" for k, v in perf_rows(perf, curves))
+    return (f"<div class='la-perf'><h2 style='margin:0 0 .5rem'>Performance since inception vs SPY</h2>"
+            f"<div class='la-tblwrap' style='border:0'><table>{body}</table></div>"
+            f"<div class='la-tblwrap' style='border:0;margin-top:.6rem'>{period_table(perf, curves)}</div>"
+            f"<p class='note'>{PERF_FOOTNOTE}</p></div>")
+
+
+CHART_NOTE = ("Deposit-adjusted performance: account = time-weighted return index (deposits / "
+              "withdrawals removed), SPY = ETF close; both 100 at inception.")
 
 
 def _curves_section(curves: dict) -> str:
-    import json
-    if not curves or not curves.get("dates"):
+    from engine.reporting.perf_chart import chart_html, series_from_curves
+    html_ = chart_html("live-equity-chart", series_from_curves(curves),
+                       label="Live account (TWR)", note=CHART_NOTE)
+    if not html_:
         return ""
-    payload = json.dumps({
-        "dates": curves.get("dates") or [],
-        "account_idx": curves.get("account_idx") or [],
-        "spy_idx": curves.get("spy_idx") or [],
-    })
-    return (f"<div class='la-chart'><h2>Equity curve vs SPY</h2>"
-            f"<div id='live-equity-chart' class='chart'></div>"
-            f"<script type='application/json' id='live-equity-data'>{payload}</script>"
-            "<p class='muted' style='margin:.35rem 0 0;font-size:.72rem'>"
-            "Both series indexed to 100 at the live runner start. Account = broker equity; "
-            "SPY = ETF close.</p></div>")
+    return f"<div class='la-chart'><h2>Performance vs SPY</h2>{html_}</div>"
 
 
 def load_view(user_id: str) -> dict:
@@ -344,7 +366,7 @@ def load_view(user_id: str) -> dict:
                 pts = None
         out["perf"] = performance_since_start(equity, run, day=today, runner_open=runner_open,
                                               net_deposits=dep, points=pts, flows=flows)
-        out["curves"] = equity_curves(client, run, end=today) or {}
+        out["curves"] = equity_curves(client, run, end=today, flows=flows) or {}
         out["run_id"] = run.get("run_id")
     except Exception as exc:  # noqa: BLE001
         logger.warning("live perf/curves failed: %s", type(exc).__name__)
@@ -369,7 +391,7 @@ def render(view: dict) -> str:
     else:
         s = view.get("summary") or {}
         body = (_kpis(s)
-                + _perf_section(view.get("perf") or {})
+                + _perf_section(view.get("perf") or {}, view.get("curves") or {})
                 + _curves_section(view.get("curves") or {})
                 + f"<h2>Positions ({len(view.get('positions') or [])})</h2>"
                 + _positions_table(view.get("positions") or [])
@@ -382,7 +404,7 @@ def render(view: dict) -> str:
             "Runner-tracked strategy trades and performance are under "
             "<a href='/live'>Live runs</a>; per-strategy cash allocations under "
             "<a href='/live/allocations'>Strategy allocations</a>.</p>")
-    return f"<div class='la'>{_head(sub, badge)}{body}{foot}</div>{_LOCAL_TIME_JS}{_EQUITY_CHART_JS}"
+    return f"<div class='la'>{_head(sub, badge)}{body}{foot}</div>{_LOCAL_TIME_JS}"
 
 
 def register(app, rt):

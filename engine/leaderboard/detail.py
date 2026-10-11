@@ -30,34 +30,10 @@ def _num(v) -> Optional[float]:
 
 def index_series(dates: list, equity: list, spy: list, flows: Optional[list] = None,
                  start_equity: Optional[float] = None, start_spy: Optional[float] = None) -> dict:
-    """Pure: base-100 TWR index (flows removed day by day), SPY index, drawdown %, daily returns %."""
-    from datetime import date as _date
-    from engine.reporting.cash_flows import net_flows
-
-    def d(x):
-        return x if isinstance(x, _date) else _date.fromisoformat(str(x)[:10])
-    pts = [(d(a), _num(e), _num(s)) for a, e, s in zip(dates, equity, spy) if _num(e)]
-    if not pts:
-        return {}
-    base_eq = _num(start_equity) or pts[0][1]
-    base_spy = _num(start_spy) or next((s for _, _, s in pts if s), None)
-    idx, rets, dd, sidx = [], [], [], []
-    level, prev_eq, prev_day, peak = 100.0, base_eq, None, 100.0
-    for i, (day, e, s) in enumerate(pts):
-        if i == 0 and start_equity is None:
-            r = 0.0
-        else:
-            f = net_flows(flows or [], prev_day, day) if prev_day else 0.0
-            r = (e - f) / prev_eq - 1 if prev_eq else 0.0
-        level *= 1 + r
-        peak = max(peak, level)
-        idx.append(round(level, 4)); rets.append(round(r * 100, 4))
-        dd.append(round((level / peak - 1) * 100, 4))
-        sidx.append(round(s / base_spy * 100, 4) if s and base_spy else None)
-        prev_eq, prev_day = e, day
-    return {"dates": [p[0].isoformat() for p in pts], "index": idx, "spy_index": sidx,
-            "drawdown_pct": dd, "daily_return_pct": rets,
-            "max_drawdown_pct": min(dd) if dd else None}
+    """Base-100 TWR index vs SPY; the shared implementation lives in
+    engine/reporting/perf_chart.performance_series (also used by /dashboard and /live/account)."""
+    from engine.reporting.perf_chart import performance_series
+    return performance_series(dates, equity, spy, flows, start_equity, start_spy)
 
 
 def _strategy_config(slug: str) -> Optional[dict]:

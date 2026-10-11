@@ -621,7 +621,7 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
     if run.get("run_id"):
         try:
             from engine.reporting.live_perf import equity_curves
-            curves = equity_curves(client, run, end=day) or {}
+            curves = equity_curves(client, run, end=day, flows=flows) or {}
         except Exception:  # noqa: BLE001
             curves = {}
 

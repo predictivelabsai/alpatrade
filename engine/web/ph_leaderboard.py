@@ -208,8 +208,7 @@ def _user(session) -> Optional[dict]:
 # ── fragments ───────────────────────────────────────────────────────────────
 def _annualised_cell(m: dict, label: bool = True) -> str:
     v = m.get("annualised_pct")
-    sub = (f"<span class='lb-sub'>compounded {lperf.pct(m.get('annualised_compound_pct'))}</span>"
-           if m.get("annualised_compound_pct") is not None else "")
+    sub = ("<span class='lb-sub'>simple, ×252/trading days</span>" if v is not None else "")
     if m.get("is_backtest") and v is not None:
         sub = "<span class='lb-sub'>simple, ×252/trading days</span>"
     sub_m = sub.replace("class='lb-sub'", "class='lb-sub m'")
@@ -520,8 +519,10 @@ def detail_html(s: dict, m: dict, det: Optional[dict]) -> str:
              f"{', deposit-adjusted time-weighted' if not bt else ', backtest'})</span></h2>"]
     if ser.get("dates"):
         payload = json.dumps({"s": ser, "trades": det.get("trades") or [], "bt": bt}).replace("</", "<\\/")
-        parts.append(f"<div id='lb-eq-{sid}' class='chart'></div><h2>Drawdown</h2>"
-                     f"<div id='lb-dd-{sid}' class='chart small'></div>"
+        from engine.reporting.perf_chart import chart_html
+        parts.append(chart_html(f"lb-eq-{sid}", ser, label="Strategy (backtest)" if bt else "Account (TWR)",
+                                trades=det.get("trades") or [])
+                     + f"<h2>Drawdown</h2><div id='lb-dd-{sid}' class='chart small'></div>"
                      + ("" if bt else f"<h2>Daily returns</h2><div id='lb-dr-{sid}' class='chart small'></div>")
                      + f"<script type='application/json' id='lb-det-{sid}'>{payload}</script>"
                      + _PLOTLY + _DETAIL_JS.replace("__SID__", str(sid)))
@@ -553,14 +554,6 @@ def detail_html(s: dict, m: dict, det: Optional[dict]) -> str:
 _DETAIL_JS = """<script>(function(){var n=document.getElementById('lb-det-__SID__');if(!n||!window.Plotly)return;
 var d=JSON.parse(n.textContent),s=d.s,L={margin:{l:40,r:10,t:10,b:30},paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
 legend:{orientation:'h'},xaxis:{type:'date'}},C={displayModeBar:false,responsive:true};
-var tr=[{x:s.dates,y:s.index,name:d.bt?'Strategy (backtest)':'Account (TWR)',line:{color:'#1F5D43',width:2}}];
-if(s.spy_index&&s.spy_index.some(function(v){return v!=null}))tr.push({x:s.dates,y:s.spy_index,name:'SPY',line:{color:'#7A867E'}});
-var pos={};s.dates.forEach(function(x,i){pos[x]=s.index[i]});var bx=[],by=[],bt=[],sx=[],sy=[],st=[];
-(d.trades||[]).forEach(function(t){if(t.entry&&pos[t.entry]!=null){bx.push(t.entry);by.push(pos[t.entry]);bt.push('Buy '+t.symbol)}
- if(t.exit&&pos[t.exit]!=null){sx.push(t.exit);sy.push(pos[t.exit]);st.push('Sell '+t.symbol+(t.pnl!=null?' '+t.pnl.toFixed(2):''))}});
-if(bx.length)tr.push({x:bx,y:by,text:bt,mode:'markers',name:'Buys',marker:{symbol:'triangle-up',color:'#147a4b',size:9},hoverinfo:'text+x'});
-if(sx.length)tr.push({x:sx,y:sy,text:st,mode:'markers',name:'Sells',marker:{symbol:'triangle-down',color:'#b43b35',size:9},hoverinfo:'text+x'});
-Plotly.newPlot('lb-eq-__SID__',tr,L,C);
 Plotly.newPlot('lb-dd-__SID__',[{x:s.dates,y:s.drawdown_pct,fill:'tozeroy',name:'Drawdown %',line:{color:'#b43b35'}}],L,C);
 if(document.getElementById('lb-dr-__SID__'))Plotly.newPlot('lb-dr-__SID__',[{x:s.dates,y:s.daily_return_pct,type:'bar',name:'Daily return %',
  marker:{color:s.daily_return_pct.map(function(v){return v>=0?'#147a4b':'#b43b35'})}}],L,C);})();</script>"""

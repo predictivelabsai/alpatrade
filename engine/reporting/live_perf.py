@@ -183,11 +183,14 @@ def equity_curves(
     *,
     end: date | None = None,
     spy_series: dict[str, float] | None = None,
+    flows: list | None = None,
 ) -> dict[str, Any]:
     """Daily account equity + SPY from live-start through ``end``.
 
-    Returns ``{dates, account, spy, account_idx, spy_idx, start_equity, start_spy}``
-    with index-100 series when baselines exist. Empty dict on failure / no run.
+    Returns ``{dates, account, spy, account_idx, spy_idx, series, start_equity, start_spy}``.
+    ``account_idx`` is the deposit-adjusted time-weighted index (base 100 = start equity),
+    built by the shared engine/reporting/perf_chart.performance_series with ``flows``
+    (cash_flows.flow_rows), so a deposit never shows as a jump. Empty dict on failure / no run.
     """
     cfg = (run or {}).get("config") or {}
     if not (run or {}).get("run_id"):
@@ -243,23 +246,19 @@ def equity_curves(
             last = spy_map[d]
         spy.append(last)
 
-    # Prefer runner baselines when present; else first point
-    base_eq = start_eq or (account[0] if account else None)
-    base_spy = start_spy or next((s for s in spy if s), None)
-    account_idx = [
-        (v / base_eq * 100.0) if base_eq else None for v in account
-    ]
-    spy_idx = [
-        (v / base_spy * 100.0) if (base_spy and v) else None for v in spy
-    ]
+    from engine.reporting.perf_chart import performance_series
+    series = performance_series(dates, account, spy, flows, start_eq, start_spy,
+                                start_date=start_d if start_eq else None)
     return {
-        "dates": dates,
+        "dates": series.get("dates") or dates,
         "account": account,
         "spy": spy,
-        "account_idx": account_idx,
-        "spy_idx": spy_idx,
-        "start_equity": base_eq,
-        "start_spy": base_spy,
+        "account_idx": series.get("index") or [],
+        "spy_idx": series.get("spy_index") or [],
+        "series": series,
+        "flows_ok": flows is not None,
+        "start_equity": start_eq or (account[0] if account else None),
+        "start_spy": start_spy or next((x for x in spy if x), None),
         "start_date": start_d.isoformat(),
         "end_date": end.isoformat(),
     }

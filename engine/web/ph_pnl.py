@@ -48,9 +48,17 @@ _CSS = """
 /* ---- Live account vs SPY (linked live broker) ---- */
 .live-spy{background:#fff;border:1px solid var(--line);border-radius:.65rem;padding:1rem 1.1rem;margin:0 0 .8rem}
 .live-spy h2{font-size:.95rem;margin:0 0 .55rem}
-.live-spy .live-spy-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:.9rem;align-items:start}
+.live-spy .live-spy-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:.9rem;align-items:start}
+.live-spy .live-spy-grid>div{min-width:0}
+.live-spy .tblx{overflow-x:auto;margin-top:.55rem}
+.live-spy .period-table th{font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-dim);text-align:right;padding:.2rem .7rem .2rem 0;font-weight:600}
+.live-spy .period-table td.num{text-align:right;padding-right:.7rem}
+
 .live-spy table{width:auto;border-collapse:collapse;font-size:.84rem;font-variant-numeric:tabular-nums}
-.live-spy td{padding:.22rem .9rem .22rem 0;border:0;white-space:nowrap}
+.live-spy td{padding:.22rem .9rem .22rem 0;border:0;white-space:normal;vertical-align:top}
+.live-spy .period-table td{white-space:nowrap}
+.live-spy .period-table td.k{white-space:normal}
+@media(max-width:420px){.live-spy .period-table th,.live-spy .period-table td.num{padding-right:.45rem}.live-spy .period-table th{letter-spacing:.02em}}
 .live-spy td.k{color:var(--ink-muted)}
 .live-spy .note{font-size:.72rem;color:var(--ink-dim);margin:.45rem 0 0}
 .live-spy .chart{height:300px;min-height:260px}
@@ -119,13 +127,6 @@ _JS = """
  const d=window.__PNL_DASH__; if(!d||!window.Plotly)return;
  const base={paper_bgcolor:'#fff',plot_bgcolor:'#f7f6f1',font:{family:'Inter,system-ui',color:'#2d352f'},
  margin:{t:12,r:15,b:42,l:62},showlegend:false};
- // Empty accounts render no chart elements (and history may be null); skip
- // plotting rather than crash, but keep the plots for accounts with points.
- if(d.history && document.getElementById('equity-chart'))
- Plotly.newPlot(document.getElementById('equity-chart'),[{x:d.history.timestamps,y:d.history.equity,type:'scatter',
- mode:'lines',line:{color:'#1f5d43',width:3},fill:'tozeroy',fillcolor:'rgba(31,93,67,.08)',
- hovertemplate:'%{x}<br>$%{y:,.2f}<extra></extra>'}],{...base,yaxis:{tickprefix:'$'}},
- {responsive:true,displayModeBar:false});
  const c=d.contributors||[];
  if(document.getElementById('contrib-chart'))
  Plotly.newPlot(document.getElementById('contrib-chart'),[{x:c.slice(0,10).map(x=>x.symbol),y:c.slice(0,10).map(x=>x.pnl),
@@ -136,20 +137,6 @@ _JS = """
   document.querySelectorAll('.rank-table').forEach(x=>x.hidden=x.dataset.kind!==kind);
   document.querySelectorAll('.rank-tabs button').forEach(x=>x.classList.toggle('active',x.dataset.kind===kind));
  };
- const lv=d.live_curves; const el=document.getElementById('dash-live-equity-chart');
- if(lv&&el&&lv.dates&&lv.dates.length){
-  const lbase={paper_bgcolor:'#fff',plot_bgcolor:'#f7f6f1',font:{family:'Inter,system-ui',color:'#2d352f'},
-   margin:{t:28,r:18,b:42,l:48},legend:{orientation:'h',y:1.12,x:0},
-   xaxis:{showgrid:false},yaxis:{title:'Index (100 = start)',zeroline:false}};
-  const traces=[];
-  if(lv.account_idx&&lv.account_idx.some(v=>v!=null))
-   traces.push({x:lv.dates,y:lv.account_idx,name:'Live account',type:'scatter',mode:'lines',
-    line:{color:'#1f5d43',width:2.6},hovertemplate:'%{x}<br>Account %{y:.2f}<extra></extra>'});
-  if(lv.spy_idx&&lv.spy_idx.some(v=>v!=null))
-   traces.push({x:lv.dates,y:lv.spy_idx,name:'SPY',type:'scatter',mode:'lines',
-    line:{color:'#7a867e',width:2},hovertemplate:'%{x}<br>SPY %{y:.2f}<extra></extra>'});
-  if(traces.length) Plotly.newPlot(el,traces,lbase,{responsive:true,displayModeBar:false});
- }
 })();
 """
 
@@ -179,8 +166,18 @@ def _cls_live(v) -> str:
     return "" if x == 0 else ("pos" if x > 0 else "neg")
 
 
-def _live_spy_panel(live: dict) -> str:
-    """Render Live vs SPY summary + Plotly chart (live mode only)."""
+def _period_highlight(period: str) -> tuple[str, str]:
+    from datetime import date as _date
+    t = _date.today()
+    start = t.replace(month=1, day=1) if normalize_period(period) == "ytd" else t.replace(day=1)
+    return start.isoformat(), t.isoformat()
+
+
+def _live_spy_panel(live: dict, period: str = "mtd") -> str:
+    """Live vs SPY rows (shared with /live/account) + the shared strategy-page chart,
+    since inception with the selected MTD/YTD period shaded."""
+    from engine.reporting.perf_chart import chart_html, series_from_curves
+    from engine.web.ph_live_account import CHART_NOTE, PERF_FOOTNOTE, perf_rows, period_table
     if not live or not live.get("linked"):
         return ""
     if live.get("error") and not live.get("perf") and not live.get("curves"):
@@ -193,56 +190,33 @@ def _live_spy_panel(live: dict) -> str:
     perf = live.get("perf") or {}
     curves = live.get("curves") or {}
     acct = html.escape(str(live.get("account_number") or ""))
-    started = perf.get("started")
-    if hasattr(started, "strftime"):
-        started_s = started.strftime("%b %d, %Y")
-    else:
-        started_s = html.escape(str(started or "—")[:10])
-    ex = perf.get("excess_pct")
-    rows = []
-    if perf:
-        rows = [
-            ("Live run started",
-             f"{started_s} · start equity {_money_live(perf.get('start_equity'))}"),
-            ("Account since start",
-             f"<b class='{_cls_live(perf.get('account_pnl'))}'>"
-             f"{_money_live(perf.get('account_pnl'), True)} "
-             f"({_pct_live(perf.get('account_return_pct'))})</b>"),
-            ("SPY since start",
-             f"{_pct_live(perf.get('spy_return_pct'))} "
-             f"<span class='muted'>({_money_live(perf.get('spy_start'))} → "
-             f"{_money_live(perf.get('spy'))})</span>"),
-            ("Excess vs SPY",
-             f"<b class='{_cls_live(ex)}'>{_pct_live(ex)}</b>"),
-        ]
-        if perf.get("strategy_pnl") is not None:
-            rows.append((
-                "Runner strategy P&amp;L",
-                f"{_money_live(perf.get('strategy_pnl'), True)} "
-                f"<span class='muted'>· {int(float(perf.get('closed_trades') or 0))} closed</span>",
-            ))
+    rows = perf_rows(perf, curves)
     table = ("<table>" + "".join(
         f"<tr><td class='k'>{k}</td><td>{v}</td></tr>" for k, v in rows
     ) + "</table>") if rows else "<p class='muted'>No live runner run recorded yet.</p>"
-    if curves.get("dates"):
-        chart = (
-            "<div id='dash-live-equity-chart' class='chart'></div>"
-            "<p class='note'>Both series indexed to 100 at live runner start. "
-            "Account = broker equity; SPY = ETF close.</p>"
-        )
-    else:
+    chart = chart_html("dash-live-equity-chart", series_from_curves(curves),
+                       label="Account (TWR)", highlight=_period_highlight(period),
+                       note=CHART_NOTE + f" Shaded: {period_label(period)}.")
+    if not chart:
         chart = "<p class='muted'>Equity curve unavailable right now.</p>"
     return f"""
       <section class="live-spy" aria-label="Live account vs SPY">
         <h2>Live account vs SPY <span class="badge">LIVE</span>
           <a class="more" href="/live/account">Account {acct} →</a></h2>
         <div class="live-spy-grid">
-          <div>{table}<p class="note">Account return is equity vs the equity when the
-            runner started; deposits/withdrawals and pre-existing holdings are included.</p></div>
+          <div>{table}<div class="tblx">{period_table(perf, curves)}</div><p class="note">{PERF_FOOTNOTE}</p></div>
           <div>{chart}</div>
         </div>
       </section>
     """
+
+
+def _paper_chart(data: dict, plab: str) -> str:
+    from engine.reporting.perf_chart import chart_html, series_from_curves
+    c = chart_html("equity-chart", data.get("performance") or {}, label="Account (TWR)",
+                   note=f"{plab}: deposit-adjusted time-weighted return vs SPY, both 100 at the "
+                        "period start.")
+    return c or "<p class='muted'>No equity history for this period yet.</p>"
 
 
 def _money(value: float) -> str:
@@ -268,7 +242,7 @@ def _ann_metric(data: dict, plab: str) -> str:
     tone = "" if v is None else ("positive" if v >= 0 else "negative")
     tip = html.escape(tooltip(a))
     days = f" · {a.get('days', 0)}d" if v is not None else ""
-    basis = "since start" if a.get("basis") == "since_start" else plab
+    basis = "since inception" if a.get("basis") == "since_start" else plab
     return (f"<div class='metric' title='{tip}'><div class='label'>Annualised return "
             f"({basis}{days}) <span style='cursor:help'>ⓘ</span></div>"
             f"<div class='value {tone}'>{fmt_ann(a)}</div></div>")
@@ -664,7 +638,7 @@ def _render_live(data: dict, selected_id: str | None) -> str:
        {_ann_metric(data, plab)}
        {_metric('Open positions', str(len(data.get('positions') or live.get('positions') or [])))}
       </div>"""
-    spy = _live_spy_panel(live)
+    spy = _live_spy_panel(live, period)
     positions = data.get("positions") or live.get("positions") or []
     footnote = ("BNBX (zombie OTC) is held at the broker but hidden here."
                 if live.get("had_bnbx") else "")
@@ -732,7 +706,7 @@ def _render_paper(data: dict, selected_id: str | None) -> str:
        {_metric('Cash', _money(data['cash']))}{_deposits_metric(data, plab)}{_metric('Buying power', _money(data['buying_power']))}
        {_metric('Accounts', str(len(data['accounts'])))}{_ann_metric(data, plab)}
       </div>
-      <div class="panel-grid"><section class="panel"><h2>Equity curve</h2><div id="equity-chart" class="chart"></div></section>
+      <div class="panel-grid"><section class="panel"><h2>Performance vs SPY</h2>{_paper_chart(data, plab)}</section>
        <section class="panel"><h2>Daily trading advisor</h2>{advisor_html}</section></div>
       <div class="panel-grid"><section class="panel"><h2>P&amp;L contributors</h2><div id="contrib-chart" class="chart"></div></section>
        <section class="panel"><div class="panel-head"><h2>Strategy rankings</h2>
@@ -800,15 +774,7 @@ def register(app, rt):
                 data["live"] = {}
         else:
             data["live"] = {}
-        live_curves = (data.get("live") or {}).get("curves") or {}
-        serializable = {
-            k: data.get(k) for k in ("history", "contributors")
-        }
-        serializable["live_curves"] = {
-            "dates": live_curves.get("dates") or [],
-            "account_idx": live_curves.get("account_idx") or [],
-            "spy_idx": live_curves.get("spy_idx") or [],
-        }
+        serializable = {"contributors": data.get("contributors")}
         try:
             from engine.auth import get_user_by_id
             user = get_user_by_id(str(user_id))
