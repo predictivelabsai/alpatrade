@@ -782,6 +782,7 @@ def register(app, rt):
             user = None
         body = Div(
             NotStr(_render(data, selected)),
+            NotStr(my_strategies_panel(uid)),
             NotStr(f"<script>window.__PNL_DASH__={json.dumps(serializable, default=str)};{_JS}</script>"),
             cls="dash",
         )
@@ -794,3 +795,30 @@ def register(app, rt):
         return RedirectResponse("/dashboard", status_code=303)
 
     return ["/dashboard", "/pnl"]
+
+
+def my_strategies_panel(uid: str) -> str:
+    """Dashboard card: the user's own strategies with status + Activate/Pause/Deactivate (no chat)."""
+    import html as _h
+    try:
+        from engine.leaderboard import store
+        from engine.leaderboard.activate import ACT_CSS, controls_html, statuses
+        rows = [r for r in store.list_for_user(uid) if r.get("kind") != "live"]
+        st = statuses(uid)
+    except Exception:  # noqa: BLE001
+        return ""
+    if not rows:
+        body = ("<p class='ms-empty'>No strategies yet. Clone one from the <a href='/leaderboard'>Leaderboard</a> "
+                "and activate it here.</p>")
+    else:
+        body = "".join(
+            f"<div class='ms-row'><a class='ms-name' href='/strategies/{int(r['id'])}'>{_h.escape(r['name'])}</a>"
+            + controls_html(int(r["id"]), st.get(int(r["id"])), back="/dashboard#my-strategies") + "</div>"
+            for r in rows)
+    return (f"<style>{ACT_CSS}.ms-card{{margin:1rem 0;padding:1rem;border:1px solid var(--line);border-radius:.7rem;"
+            "background:var(--bg-elev)}.ms-card h2{font-size:1rem;margin:0 0 .4rem}.ms-row{padding:.55rem 0;"
+            "border-top:1px solid var(--line)}.ms-name{font-weight:650;font-size:.86rem}.ms-empty{font-size:.84rem}</style>"
+            "<section class='ms-card' id='my-strategies'><h2>My strategies</h2>"
+            "<p style='font-size:.76rem;color:var(--ink-muted);margin:0 0 .3rem'>Paper uses your Alpaca paper keys; "
+            "Live trades your own live account, cash only, after you confirm. Pause stops new buys; exits continue.</p>"
+            f"{body}<p style='margin:.5rem 0 0;font-size:.78rem'><a href='/strategies'>All my strategies →</a></p></section>")

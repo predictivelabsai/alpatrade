@@ -1,5 +1,13 @@
 # Change Log
 
+## v0.39.0 — 2026-10-11 — Activation points everywhere; user live trading on
+
+- **User live trading enabled** (`USER_LIVE_TRADING_ENABLED=1` on HP, Mac.home, box). A confirmed Activate Live starts the user's own per-user process within one supervisor poll (≤60s), no operator step. All guards unchanged: typed LIVE confirmation, cash only, allocation cap at order time, own `u`+hex prefix, Julian's accounts refused, per-user Pause/Deactivate, global flag as emergency stop.
+- **Activate Paper / Activate Live… on every Leaderboard row** (signed in; signed out the button goes through sign-in + clone) and **on every strategy page**. Activating a strategy you don't own clones it first, so it always appears under My strategies.
+- **My strategies and a new dashboard "My strategies" card** show status badges (Paper running/starting/stopped, Live starting/running/paused · $allocation) with Activate Paper, Activate Live…, Stop paper, Pause/Resume live, Deactivate live — no chat needed.
+- New routes: `POST /strategies/{id}/paper/stop`, `POST /strategies/{id}/live/{pause|resume|deactivate}`; activate routes clone-first and honour a safe local `back` URL. Paper re-activation after a stop gets a fresh job (dedupe key per minute).
+- Tests: `tests/test_activation_points.py`. Mobile checked at 375/414 (no horizontal overflow).
+
 ## 2026-10-11 — v0.38.1: user live runner loads ENCRYPTION_KEY from the runner .env
 
 - `UserRunner` exports `ENCRYPTION_KEY` from the repo `.env` into the process env (engine.auth reads

@@ -63,6 +63,7 @@ LB_CSS = """
 .lb-det .chart.small{height:200px}.lb-det table{border-collapse:collapse;font-size:.82rem}
 .lb-det td,.lb-det th{padding:.25rem .7rem .25rem 0;text-align:left;border-bottom:1px solid var(--line)}
 .lb-det pre{white-space:pre-wrap;font-size:.78rem;background:var(--bg-elev);border:1px solid var(--line);padding:.7rem;border-radius:.5rem;max-height:420px;overflow:auto}
+.lb-btn.act-sm{min-height:0;padding:.3rem .6rem;font-size:.74rem}.lb-btn.act-paper{background:#1F5D43;color:#fff;border-color:#1F5D43}.lb-btn.act-live{color:#b43b35;border-color:#b43b35}
 .lb-btn{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;border:1px solid var(--line-br);background:var(--bg-elev);
  color:var(--ink);border-radius:2rem;padding:.42rem .9rem;font-size:.8rem;font-weight:550;cursor:pointer;text-decoration:none;
  font-family:inherit;line-height:1.2;min-height:36px}
@@ -381,9 +382,22 @@ def _row(rank: int, s: dict, m: dict, user: Optional[dict]) -> str:
             f"<div class='lb-cell'>{_annualised_cell(m)}</div>"
             f"<div class='lb-cell'>{_running_cell(m)}</div>"
             f"<div class='lb-cell'>{_alpha_cell(m)}</div>"
-            + _actions(s, user)
+            + _actions(s, user).replace("</div>", (_row_activate(s, user) + "</div>"), 1)
             + _json_script(f"lb-md-{sid}", copy_text(s))
             + "</div>")
+
+
+def _row_activate(s: dict, user: Optional[dict]) -> str:
+    """Small Activate Paper / Activate Live on a Leaderboard row (clones first if needed)."""
+    sid = int(s["id"])
+    if not user:
+        return (f"<a class='lb-btn act-sm' href='{clone_href(sid)}' rel='nofollow' "
+                "title='Sign in, clone and activate on your own account'>Activate…</a>")
+    return (f"<form method='post' action='/strategies/{sid}/activate/paper'><input type='hidden' name='back' "
+            f"value='/leaderboard#strategy-{sid}'><button class='lb-btn act-sm act-paper' type='submit' "
+            "title='Clone (if needed) and paper-trade on your own Alpaca paper account'>Activate Paper</button></form>"
+            f"<a class='lb-btn act-sm act-live' href='/strategies/{sid}/activate/live' "
+            "title='Real money: confirm on the next page'>Activate Live…</a>")
 
 
 _METHOD_NOTE = (
@@ -579,6 +593,13 @@ def strategy_html(s: dict, m: dict, user: Optional[dict], msg: str = "", det: Op
                      f"<button type='button' class='lb-btn' onclick='lbChat({_e(json.dumps(chat_prompt(s)))})'>"
                      "Backtest in AlpaTrade chat</button></div>")
     owner_bar += paper_html(s, user)
+    if user and not (own and s.get("kind") == "live"):
+        from engine.leaderboard.activate import ACT_CSS, controls_html, statuses
+        st = statuses(str(user["user_id"])).get(sid) if own else None
+        owner_bar += (f"<style>{ACT_CSS}</style><div class='act-wrap' style='margin:.5rem 0'>"
+                      + controls_html(sid, st, back=f"/strategies/{sid}") +
+                      ("" if own else "<div class='lb-note' style='font-size:.75rem'>Activating makes your own "
+                       "copy under My strategies.</div>") + "</div>")
     flash = f"<div class='flash'>{_e(msg)}</div>" if msg else ""
     return (f"<div class='lb'>{flash}<a href='/leaderboard' style='font-size:.82rem'>← Leaderboard</a>"
             f"<h1>{_e(s['name'])}{badges}</h1>"
@@ -634,7 +655,10 @@ def _strategy_backtest_html(s: dict, m: dict, user: Optional[dict], badges: str,
             + f"<p class='lb-note'>{_METHOD_NOTE}</p></div>{LB_JS}")
 
 
-def my_strategies_html(rows: list[tuple[dict, dict]], msg: str = "", error: str = "") -> str:
+def my_strategies_html(rows: list[tuple[dict, dict]], msg: str = "", error: str = "",
+                       statuses: Optional[dict] = None) -> str:
+    from engine.leaderboard.activate import ACT_CSS, controls_html
+    statuses = statuses or {}
     flash = (f"<div class='flash err'>{_e(error)}</div>" if error else "") + \
             (f"<div class='flash'>{_e(msg)}</div>" if msg else "")
     items = []
@@ -645,7 +669,9 @@ def my_strategies_html(rows: list[tuple[dict, dict]], msg: str = "", error: str 
             f"<div class='lb-row' id='my-strategy-{sid}'><div class='lb-rank'>{'●' if pub else '○'}</div>"
             f"<div class='lb-name'><a href='/strategies/{sid}'>{_e(s['name'])}</a>"
             + ("<span class='lb-badge pub'>Public</span>" if pub else "<span class='lb-badge'>Private</span>")
-            + f"<div class='lb-desc'>{_e(s.get('description'))}</div></div>"
+            + f"<div class='lb-desc'>{_e(s.get('description'))}</div>"
+            + (controls_html(sid, statuses.get(sid), back="/strategies") if s.get("kind") != "live" else "")
+            + "</div>"
             f"<div class='lb-cell'><span class='lb-l'>Shown as</span>{_e(s['author'])}</div>"
             f"<div class='lb-cell'>{_annualised_cell(m)}</div>"
             f"<div class='lb-cell'>{_running_cell(m)}</div>"
@@ -671,7 +697,7 @@ def my_strategies_html(rows: list[tuple[dict, dict]], msg: str = "", error: str 
             "strategies linked to your own live AlpaTrade run.</p>"
             "<div class='lb-actions' style='margin:0 0 1rem'><a class='lb-btn primary' "
             "href='/strategies/new'>＋ New strategy</a><a class='lb-btn' href='/leaderboard'>Leaderboard</a></div>"
-            f"<div class='lb-list'>{head}{body}</div></div>{LB_JS}")
+            f"<div class='lb-list'>{head}{body}</div></div><style>{ACT_CSS}</style>{LB_JS}")
 
 
 def form_html(action: str, s: Optional[dict] = None, error: str = "",
@@ -786,8 +812,9 @@ def register(app, rt):
         if not user:
             return RedirectResponse("/signin", status_code=303)
         rows = [(s, lperf.strategy_metrics(s)) for s in store.list_for_user(str(user["user_id"]))]
+        from engine.leaderboard.activate import statuses
         return _render(user, "My strategies · AlpaTrade", "strategies",
-                       my_strategies_html(rows, msg=msg, error=error))
+                       my_strategies_html(rows, msg=msg, error=error, statuses=statuses(str(user["user_id"]))))
 
     @rt("/strategies/new", methods=["GET"])
     def strategy_new_get(session):
@@ -910,21 +937,59 @@ def register(app, rt):
         return _do_clone(session, sid)
 
     # ── Activate Paper / Activate Live (engine/leaderboard/activate.py) ──────────
+    def _back(form, default: str) -> str:
+        b = str((form or {}).get("back") or "")
+        return b if b.startswith("/") and not b.startswith("//") else default
+
+    def _with_msg(url: str, m: str) -> str:
+        from urllib.parse import quote_plus
+        base, _, frag = url.partition("#")
+        return f"{base}{'&' if '?' in base else '?'}msg={quote_plus(m)}" + (f"#{frag}" if frag else "")
+
     @app.post("/strategies/{sid}/activate/paper")
-    async def strategy_activate_paper(session, sid: int):
+    async def strategy_activate_paper(session, request, sid: int):
         from urllib.parse import quote_plus
         user = _user(session)
         if not user:
             return RedirectResponse(f"/signin?next=/strategies/{sid}", status_code=303)
+        form = await request.form()
         from engine.leaderboard import activate
+        own = activate.own_or_clone(sid, user)
+        if not own:
+            return _not_found()
         try:
-            res = activate.activate_paper(sid, str(user["user_id"]))
+            res = activate.activate_paper(own, str(user["user_id"]))
         except Exception as exc:  # noqa: BLE001
             log.warning("activate paper failed: %s", type(exc).__name__)
             res = {"ok": False, "message": "Could not queue paper trading, please try again."}
         if res.get("needs_keys"):
             return RedirectResponse(f"/settings?msg={quote_plus(res['message'])}#integrations", status_code=303)
-        return RedirectResponse(f"/strategies/{sid}?msg={quote_plus(res['message'])}", status_code=303)
+        return RedirectResponse(_with_msg(_back(form, f"/strategies/{own}"), res["message"]), status_code=303)
+
+    @app.post("/strategies/{sid}/paper/stop")
+    async def strategy_paper_stop(session, request, sid: int):
+        user = _user(session)
+        if not user:
+            return RedirectResponse("/signin", status_code=303)
+        form = await request.form()
+        from engine.leaderboard import activate
+        ok = activate.stop_paper(str(user["user_id"]), sid)
+        return RedirectResponse(_with_msg(_back(form, f"/strategies/{sid}"),
+                                          "Paper trading stopped." if ok else "No paper run to stop."), status_code=303)
+
+    @app.post("/strategies/{sid}/live/{action}")
+    async def strategy_live_action(session, request, sid: int, action: str):
+        user = _user(session)
+        if not user:
+            return RedirectResponse("/signin", status_code=303)
+        form = await request.form()
+        from engine.leaderboard import activate
+        aid = activate.live_id(str(user["user_id"]), sid)
+        ok = bool(aid) and activate.set_status(str(user["user_id"]), aid, action)
+        m = ({"pause": "Live strategy paused (no new buys; exits continue).", "resume": "Live strategy resumed.",
+              "deactivate": "Live strategy deactivated."}.get(action, "Unknown action.") if ok
+             else "Could not change that live strategy.")
+        return RedirectResponse(_with_msg(_back(form, f"/strategies/{sid}"), m), status_code=303)
 
     def _live_page(user, sid: int, plan: dict, allocation: str = "") -> HTMLResponse:
         s = plan.get("strategy") or {"name": f"#{sid}"}
@@ -970,6 +1035,11 @@ def register(app, rt):
         if not user:
             return RedirectResponse(f"/signin?next=/strategies/{sid}/activate/live", status_code=303)
         from engine.leaderboard import activate
+        own = activate.own_or_clone(sid, user)
+        if not own:
+            return _not_found()
+        if own != sid:
+            return RedirectResponse(f"/strategies/{own}/activate/live", status_code=303)
         plan = activate.live_plan(sid, str(user["user_id"]), None)
         if not plan.get("strategy"):
             return _not_found()

@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import time
 from typing import Any, Callable, Optional
 
 log = logging.getLogger("leaderboard.activate")
@@ -73,6 +74,14 @@ def paper_params(params: dict) -> dict:
     if p.get("pos_frac") is not None:
         out["position_size"] = float(p["pos_frac"])
     return out
+
+
+def own_or_clone(strategy_id: int, user: dict) -> Optional[int]:
+    """The user's own strategy id for ``strategy_id``: itself if owned, else their clone (created
+    on first use and listed under My strategies). None if not visible."""
+    from engine.leaderboard import clone_bt
+    res = clone_bt.clone_strategy(int(strategy_id), user)
+    return int(res[0]) if res else None
 
 
 def _owned(strategy_id: int, user_id: str) -> tuple[Optional[dict], Optional[dict]]:
@@ -152,7 +161,7 @@ def activate_paper(strategy_id: int, user_id: str,
         from engine.autonomy import queue
         enqueue = queue.enqueue
     job_id = enqueue(kind="deepagent_paper", config=config, user_id=str(user_id), account_id=acct,
-                     dedupe_key=f"activate-paper:{int(strategy_id)}:{acct}")
+                     dedupe_key=f"activate-paper:{int(strategy_id)}:{acct}:{int(time.time() // 60)}")
     _record(user_id, strategy_id, "paper", acct, "queued", job_id=str(job_id), confirmed=True)
     return {"ok": True, "job_id": str(job_id),
             "message": f"Paper trading queued for strategy #{int(strategy_id)} on your Alpaca paper account "
@@ -305,3 +314,134 @@ def buttons_html(strategy_id: int) -> str:
 
 __all__ = ["activate_paper", "activate_live", "live_plan", "buttons_html", "cid_prefix",
            "paper_params", "activation_status"]
+
+
+# ── status + controls shown on My strategies, strategy pages, the dashboard ──────────────
+PAPER_LIVE_STATES = ("queued", "running")
+
+
+def statuses(user_id: str) -> dict:
+    """{strategy_id: {"paper": "running"|"starting"|"ended"|None, "live": status|None, ...}}."""
+    out: dict = {}
+    try:
+        ensure_schema()
+        from sqlalchemy import text
+        with _pool().get_session() as s:
+            rows = s.execute(text("""
+                SELECT a.user_strategy_id, a.mode, a.status, a.job_id, a.allocation_usd, a.cid_prefix,
+                       r.status AS job_status
+                FROM alpatrade.user_strategy_activations a
+                LEFT JOIN alpatrade.autonomy_runs r ON a.mode = 'paper' AND r.run_id::text = a.job_id
+                WHERE a.user_id = CAST(:u AS UUID)"""), {"u": str(user_id)}).mappings().all()
+    except Exception as exc:  # noqa: BLE001
+        log.warning("activation statuses failed: %s", type(exc).__name__)
+        return out
+    for r in rows:
+        d = out.setdefault(int(r["user_strategy_id"]), {"paper": None, "live": None})
+        if r["mode"] == "paper":
+            if r["status"] == "deactivated":
+                d["paper"] = "ended"
+            else:
+                js = r["job_status"]
+                d["paper"] = ("starting" if js == "queued" else "running" if js == "running"
+                              else "ended" if js else "starting")
+            d["paper_job"] = r["job_id"]
+        else:
+            d["live"] = r["status"]
+            d["allocation"] = float(r["allocation_usd"]) if r["allocation_usd"] is not None else None
+            d["prefix"] = r["cid_prefix"]
+    return out
+
+
+def stop_paper(user_id: str, strategy_id: int) -> bool:
+    ensure_schema()
+    from sqlalchemy import text
+    with _pool().get_session() as s:
+        job = s.execute(text("SELECT job_id FROM alpatrade.user_strategy_activations WHERE user_id = CAST(:u AS UUID) "
+                             "AND user_strategy_id = :i AND mode = 'paper'"),
+                        {"u": str(user_id), "i": int(strategy_id)}).scalar()
+        if job is None:
+            return False
+        s.execute(text("UPDATE alpatrade.user_strategy_activations SET status = 'deactivated', updated_at = NOW() "
+                       "WHERE user_id = CAST(:u AS UUID) AND user_strategy_id = :i AND mode = 'paper'"),
+                  {"u": str(user_id), "i": int(strategy_id)})
+    try:
+        from engine.autonomy import queue
+        queue.cancel(str(job), str(user_id))
+    except Exception as exc:  # noqa: BLE001
+        log.warning("paper cancel failed: %s", type(exc).__name__)
+    return True
+
+
+def live_id(user_id: str, strategy_id: int) -> Optional[int]:
+    ensure_schema()
+    from sqlalchemy import text
+    with _pool().get_session() as s:
+        v = s.execute(text("SELECT id FROM alpatrade.user_strategy_activations WHERE user_id = CAST(:u AS UUID) "
+                           "AND user_strategy_id = :i AND mode = 'live'"),
+                      {"u": str(user_id), "i": int(strategy_id)}).scalar()
+    return int(v) if v else None
+
+
+_PAPER_LBL = {"running": "Paper running", "starting": "Paper starting", "ended": "Paper stopped"}
+_LIVE_LBL = {"pending_runner": "Live starting", "active": "Live running", "paused": "Live paused",
+             "deactivated": "Live off"}
+
+
+def status_badges(st: Optional[dict]) -> str:
+    st = st or {}
+    out = []
+    if st.get("paper"):
+        cls = "on" if st["paper"] in ("running", "starting") else ""
+        out.append(f"<span class='act-badge paper {cls}'>{_PAPER_LBL[st['paper']]}</span>")
+    if st.get("live"):
+        cls = {"active": "on", "pending_runner": "on", "paused": "warn"}.get(st["live"], "")
+        alloc = f" · ${st['allocation']:,.0f}" if st.get("allocation") and st["live"] != "deactivated" else ""
+        out.append(f"<span class='act-badge live {cls}'>{_LIVE_LBL.get(st['live'], st['live'])}{alloc}</span>")
+    return "".join(out)
+
+
+ACT_CSS = """
+.act-badge{display:inline-block;font-size:.68rem;font-weight:650;padding:.12rem .45rem;border-radius:999px;
+  margin:.15rem .3rem .15rem 0;background:#eef0ec;color:#5b6157;white-space:nowrap}
+.act-badge.on{background:#e3f4ea;color:#147a4b}.act-badge.live.on{background:#fdeceb;color:#b43b35}
+.act-badge.warn{background:#fff6e0;color:#8a6410}
+.act-ctl{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center;margin:.35rem 0 0}
+.act-ctl form{margin:0;display:inline}
+.act-ctl .ab{display:inline-flex;align-items:center;min-height:2rem;padding:.25rem .65rem;border-radius:.4rem;
+  font-size:.76rem;font-weight:650;cursor:pointer;text-decoration:none;border:1px solid var(--line-br,#d6d9d2);
+  background:var(--bg-elev,#fff);color:var(--ink,#1d211b);white-space:nowrap}
+.act-ctl .ab.paper{background:#1F5D43;color:#fff;border-color:#1F5D43}
+.act-ctl .ab.live{color:#b43b35;border-color:#b43b35}
+.act-ctl .ab.stop{color:#9b302b}
+@media(max-width:640px){.act-ctl .ab{min-height:2.5rem;font-size:.8rem}}
+"""
+
+
+def controls_html(sid: int, st: Optional[dict] = None, *, back: str = "", badges: bool = True) -> str:
+    """Activate Paper / Activate Live / Pause / Resume / Deactivate (+ status) for one strategy.
+    Works for a strategy the user doesn't own: the routes clone it first."""
+    import html as _h
+    sid = int(sid)
+    st = st or {}
+    b = f"<input type='hidden' name='back' value='{_h.escape(back)}'>" if back else ""
+
+    def post(path, label, cls):
+        return (f"<form method='post' action='/strategies/{sid}/{path}'>{b}"
+                f"<button type='submit' class='ab {cls}'>{label}</button></form>")
+    out = []
+    if st.get("paper") in ("running", "starting"):
+        out.append(post("paper/stop", "Stop paper", "stop"))
+    else:
+        out.append(post("activate/paper", "Activate Paper", "paper"))
+    live = st.get("live")
+    if live in ("pending_runner", "active"):
+        out.append(post("live/pause", "Pause live", ""))
+        out.append(post("live/deactivate", "Deactivate live", "stop"))
+    elif live == "paused":
+        out.append(post("live/resume", "Resume live", ""))
+        out.append(post("live/deactivate", "Deactivate live", "stop"))
+    else:
+        out.append(f"<a class='ab live' href='/strategies/{sid}/activate/live'>Activate Live…</a>")
+    return ("<div class='act-ctl' data-strategy='" + str(sid) + "'>"
+            + (status_badges(st) if badges else "") + "".join(out) + "</div>")
