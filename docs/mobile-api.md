@@ -143,3 +143,42 @@ Market helpers: `GET /news`, `GET /price`, `GET /movers`, `GET /profile`.
   (or fetch the live spec at `https://api.alpatrade.chat/openapi.json`).
 - SSE needs a client that streams the response body (Flutter: `http` `Client().send`, not `Dio` for the stream). Disable response buffering (the server already sets `X-Accel-Buffering: no`).
 - Paper trading is simulated; results differ from live. This is not investment advice.
+
+## Research (mobile 1.1.0 / API 0.36.0)
+
+The new screens are under **More**. Deploy the updated sister-repo API before
+using them against the production base URL. Local builds can target a local API
+using `--dart-define=API_BASE_URL=http://127.0.0.1:5055` and `adb reverse tcp:5055 tcp:5055`.
+
+| Method | Path | Authentication / result |
+|---|---|---|
+| GET | `/v2/leaderboard?q=&kind=live|backtest&limit=100` | Public; `strategies`, `total`; global ranks retained when filtering |
+| GET | `/v2/strategies` | Bearer; your strategy library |
+| GET | `/v2/strategies/{id}` | Public or owner-only; private entries return 404 to others |
+| POST / PUT | `/v2/strategies[/{id}]` | Bearer; name, description, skill_md, author_name, is_public |
+| DELETE | `/v2/strategies/{id}` | Owner only |
+| POST | `/v2/strategies/{id}/clone` | Bearer; returns id and created; reuses the existing clone |
+| GET | `/v2/hedge-funds` | Bearer; 13F screener rows, period and available periods |
+| GET | `/v2/hedge-funds/performance?method=quarter_end|follow_filing` | Bearer; funds, labels, benchmark, computed_at |
+| GET | `/v2/hedge-funds/activists?ticker=` | Bearer; filings |
+| GET | `/v2/ipos` | Bearer; listed IPOs |
+| GET | `/v2/ipos/pipeline` | Bearer; upcoming/private pipeline |
+| GET | `/v2/advisor/reports` | Bearer; existing tenant-scoped daily advisor reports |
+
+Screener filters: `q`, `period`, `min_aum`, `pos`, `rtype`, `holds`, `perf_only`,
+`sort`, `limit`. Leaderboard metrics are percentage points; 13F return values are
+fractions (0.125 renders as 12.5%). Missing metrics remain unavailable, never zero.
+Cloning does not place orders or start a backtest. API strategy CRUD is available
+for other clients; mobile currently browses and clones strategies.
+
+Strategy backtests: `POST /v2/strategies/{id}/backtest` returns HTTP 202 with
+`job_id`; poll `GET /v2/strategy-backtests/{job_id}` for `state`, `message`,
+`markdown`, and `strategy_id`. Both routes require the owner. Jobs currently use
+the existing in-process clone-backtest worker; restarting the API loses job
+status, while completed strategy metrics remain in the database.
+
+Android integration smoke test:
+`flutter test integration_test/research_smoke_test.dart -d emulator-5554 --dart-define-from-file=/path/to/local-test-defines.json`.
+The private define file supplies `API_BASE_URL` and `LOCAL_TEST_TOKEN` for a
+short-lived synthetic identity. The test reads research only; no orders, strategy
+writes or backtests are executed. HTTP is enabled only in the debug manifest.

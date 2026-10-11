@@ -24,6 +24,55 @@ class MoreScreen extends ConsumerWidget {
             child: Column(
               children: [
                 _MoreTile(
+                  icon: Icons.emoji_events_outlined,
+                  title: 'Leaderboard',
+                  subtitle: 'Live and backtested strategies',
+                  onTap: () => context.push('/more/leaderboard'),
+                ),
+                const _TileDivider(),
+                _MoreTile(
+                  icon: Icons.bookmarks_outlined,
+                  title: 'My strategies',
+                  subtitle: 'Your private strategy library',
+                  onTap: () => context.push('/more/my-strategies'),
+                ),
+                const _TileDivider(),
+                _MoreTile(
+                  icon: Icons.account_balance_outlined,
+                  title: 'Hedge funds',
+                  subtitle: 'Search institutional 13F portfolios',
+                  onTap: () => context.push('/more/hedge-funds'),
+                ),
+                const _TileDivider(),
+                _MoreTile(
+                  icon: Icons.insights_outlined,
+                  title: 'Fund performance',
+                  subtitle: '13F estimates compared with SPY',
+                  onTap: () => context.push('/more/fund-performance'),
+                ),
+                const _TileDivider(),
+                _MoreTile(
+                  icon: Icons.description_outlined,
+                  title: 'Activist filings',
+                  subtitle: 'Recent institutional disclosures',
+                  onTap: () => context.push('/more/activists'),
+                ),
+                const _TileDivider(),
+                _MoreTile(
+                  icon: Icons.rocket_launch_outlined,
+                  title: 'IPOs',
+                  subtitle: 'New listings and upcoming offerings',
+                  onTap: () => context.push('/more/ipos'),
+                ),
+                const _TileDivider(),
+                _MoreTile(
+                  icon: Icons.lightbulb_outline,
+                  title: 'Daily advisor',
+                  subtitle: 'Your latest paper-account reviews',
+                  onTap: () => context.push('/more/advisor'),
+                ),
+                const _TileDivider(),
+                _MoreTile(
                   icon: Icons.article_outlined,
                   title: 'Market news',
                   subtitle: 'Latest headlines by symbol',

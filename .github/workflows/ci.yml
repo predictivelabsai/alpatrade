@@ -127,9 +127,11 @@ jobs:
             gh release upload "$TAG" alpatrade-latest.apk "alpatrade-v$VERSION.apk" --clobber
           else
             gh release create "$TAG" alpatrade-latest.apk "alpatrade-v$VERSION.apk" \
+              --target "${{ github.sha }}" --latest \
               --title "AlpaTrade $TAG" \
               --notes "Signed release build. Stable download: alpatrade-latest.apk"
           fi
+          gh release edit "$TAG" --latest
 
       - name: Distribute to Firebase App Distribution
         if: github.ref == 'refs/heads/main'

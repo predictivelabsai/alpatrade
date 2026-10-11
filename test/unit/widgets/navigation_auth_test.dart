@@ -41,6 +41,12 @@ void main() {
 
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Settings'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
     expect(find.text('Settings'), findsOneWidget);

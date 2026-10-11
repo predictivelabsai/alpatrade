@@ -1,3 +1,4 @@
+import 'package:alpatrade/screens/research_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -93,6 +94,79 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) =>
                 const NoTransitionPage(child: MoreScreen()),
             routes: [
+              GoRoute(
+                path: 'leaderboard',
+                builder: (context, state) => const ResearchScreen(
+                  section: 'leaderboard',
+                  title: 'Leaderboard',
+                ),
+              ),
+              GoRoute(
+                path: 'leaderboard/:id',
+                builder: (context, state) => ResearchStrategyScreen(
+                  id: int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
+                ),
+              ),
+              GoRoute(
+                path: 'my-strategies',
+                builder: (context, state) => const AuthGate(
+                  title: 'My strategies',
+                  returnTo: '/more/my-strategies',
+                  child: ResearchScreen(
+                    section: 'strategies',
+                    title: 'My strategies',
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: 'hedge-funds',
+                builder: (context, state) => const AuthGate(
+                  title: 'Hedge funds',
+                  returnTo: '/more/hedge-funds',
+                  child: ResearchScreen(section: 'funds', title: 'Hedge funds'),
+                ),
+              ),
+              GoRoute(
+                path: 'fund-performance',
+                builder: (context, state) => const AuthGate(
+                  title: 'Fund performance',
+                  returnTo: '/more/fund-performance',
+                  child: ResearchScreen(
+                    section: 'performance',
+                    title: 'Fund performance',
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: 'activists',
+                builder: (context, state) => const AuthGate(
+                  title: 'Activist filings',
+                  returnTo: '/more/activists',
+                  child: ResearchScreen(
+                    section: 'activists',
+                    title: 'Activist filings',
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: 'ipos',
+                builder: (context, state) => const AuthGate(
+                  title: 'IPOs',
+                  returnTo: '/more/ipos',
+                  child: ResearchScreen(section: 'ipos', title: 'IPOs'),
+                ),
+              ),
+              GoRoute(
+                path: 'advisor',
+                builder: (context, state) => const AuthGate(
+                  title: 'Daily advisor',
+                  returnTo: '/more/advisor',
+                  child: ResearchScreen(
+                    section: 'advisor',
+                    title: 'Daily advisor',
+                  ),
+                ),
+              ),
               GoRoute(
                 path: 'news',
                 builder: (context, state) => const NewsScreen(),
