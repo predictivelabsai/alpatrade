@@ -54,7 +54,7 @@ python -m news_scheduler.worker --mode backfill
 
 It enriches `pending_enrichment`/`retryable` rows newest first (including rows
 CityTicker's news_worker stores un-enriched), at most `NEWS_BACKFILL_MAX_PER_DAY`
-(default 400, ~$0.50/day) rows per UTC day, skips a row tried in the last 24 h,
+(compose default 800, ~$1/day) rows per UTC day, skips a row tried in the last 24 h,
 backs off exponentially after a failed cycle and pauses
 `NEWS_BACKFILL_FAILURE_PAUSE_SECONDS` after `NEWS_BACKFILL_MAX_CONSECUTIVE_FAILURES`
 failed cycles. xAI calls are the small plain enricher calls, subject to

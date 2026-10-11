@@ -1,5 +1,12 @@
 # Change Log
 
+## 2026-10-11 — news-backfill daily limit 400 → 800 rows
+
+- Approved by Julian: `NEWS_BACKFILL_MAX_PER_DAY` default in the `news-backfill` compose
+  service raised to 800 (~$1/day at ~$0.0012/row) because CityTicker's news_worker adds
+  un-enriched rows faster than 400/day. The $3/day `PLATFORM_LLM_DAILY_BUDGET_USD` stop, back-off,
+  failure pause and 24 h row cooldown are unchanged.
+
 ## 2026-10-11 — v0.36.0: mobile research API and Android download
 
 - Added REST leaderboard search, visibility-scoped strategy detail and owner-scoped CRUD/cloning and background backtest launch/status using the existing leaderboard services.
