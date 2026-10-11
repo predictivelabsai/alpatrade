@@ -909,5 +909,93 @@ def register(app, rt):
         # Signed-out Clone links and the post-sign-in ?next land here; idempotent per user.
         return _do_clone(session, sid)
 
+    # ── Activate Paper / Activate Live (engine/leaderboard/activate.py) ──────────
+    @app.post("/strategies/{sid}/activate/paper")
+    async def strategy_activate_paper(session, sid: int):
+        from urllib.parse import quote_plus
+        user = _user(session)
+        if not user:
+            return RedirectResponse(f"/signin?next=/strategies/{sid}", status_code=303)
+        from engine.leaderboard import activate
+        try:
+            res = activate.activate_paper(sid, str(user["user_id"]))
+        except Exception as exc:  # noqa: BLE001
+            log.warning("activate paper failed: %s", type(exc).__name__)
+            res = {"ok": False, "message": "Could not queue paper trading, please try again."}
+        if res.get("needs_keys"):
+            return RedirectResponse(f"/settings?msg={quote_plus(res['message'])}#integrations", status_code=303)
+        return RedirectResponse(f"/strategies/{sid}?msg={quote_plus(res['message'])}", status_code=303)
+
+    def _live_page(user, sid: int, plan: dict, allocation: str = "") -> HTMLResponse:
+        s = plan.get("strategy") or {"name": f"#{sid}"}
+        errs = "".join(f"<li>{_e(x)}</li>" for x in plan.get("errors") or [])
+        if plan.get("needs_keys"):
+            body = ("<p>Activate Live trades <b>real money</b> on your own Alpaca live account. "
+                    "No live account is connected yet.</p>"
+                    "<p><a class='lb-btn' href='/settings#integrations'>Connect live keys in Settings &gt; "
+                    "Integrations</a></p>")
+        else:
+            def _amt(o):
+                v = o.get("allocation_usd")
+                return "rest of account" if v is None else f"${float(v):,.2f}"
+            others = "".join(f"<li><code>{_e(o['cid_prefix'])}</code> {_e(o['strategy_name'])} · {_amt(o)}</li>"
+                             for o in plan.get("others") or [])
+            cash = plan.get("cash")
+            body = (f"<div class='lb-warn' style='border:1px solid #b43b35;background:#fff3f1;padding:.8rem 1rem;"
+                    "border-radius:.5rem'><b>Real money.</b> This activates the strategy on your Alpaca LIVE "
+                    f"account <b>{_e(plan.get('account_number'))}</b>. It trades <b>cash only</b> (never margin), "
+                    "only up to the allocation below, with its own order tag "
+                    f"<code>{_e(plan.get('cid_prefix'))}-…</code>. Universe: {_e(', '.join(plan.get('universe') or []) or '—')}.</div>"
+                    f"<p class='lb-note'>Equity ${float(plan.get('equity') or 0):,.2f} · free cash "
+                    f"${float(cash or 0):,.2f}.</p>"
+                    + (f"<p class='lb-note'>Other sleeves on this account:</p><ul>{others}</ul>" if others else "")
+                    + (f"<ul class='err' style='color:#9b302b'>{errs}</ul>" if errs else "")
+                    + f"<form method='post' action='/strategies/{sid}/activate/live' class='lb-form'>"
+                    "<label>Allocation (USD, cash only)<br><input name='allocation' type='number' min='1' step='0.01' "
+                    f"required value='{_e(allocation)}' inputmode='decimal' style='width:12rem'></label>"
+                    "<label style='display:block;margin:.7rem 0'>Type <b>LIVE</b> to confirm real-money trading<br>"
+                    "<input name='confirm' required autocomplete='off' style='width:8rem'></label>"
+                    "<button class='lb-btn' type='submit' style='background:#b43b35;color:#fff;border-color:#b43b35'>"
+                    "Confirm Activate Live</button> "
+                    f"<a class='lb-btn' href='/strategies/{sid}'>Cancel</a></form>")
+            if errs and plan.get("needs_keys") is None and not plan.get("account_number"):
+                body = f"<ul class='err' style='color:#9b302b'>{errs}</ul>"
+        inner = (f"<div class='lb'><a href='/strategies/{sid}' style='font-size:.82rem'>← Strategy</a>"
+                 f"<h1>Activate Live · {_e(s.get('name'))}</h1>{body}</div>")
+        return _render(user, "Activate Live · AlpaTrade", "leaderboard", inner)
+
+    @rt("/strategies/{sid}/activate/live", methods=["GET"])
+    def strategy_activate_live_get(session, sid: int):
+        user = _user(session)
+        if not user:
+            return RedirectResponse(f"/signin?next=/strategies/{sid}/activate/live", status_code=303)
+        from engine.leaderboard import activate
+        plan = activate.live_plan(sid, str(user["user_id"]), None)
+        if not plan.get("strategy"):
+            return _not_found()
+        plan["errors"] = [e for e in plan.get("errors") or [] if not e.startswith("Enter a dollar")]
+        return _live_page(user, sid, plan)
+
+    @app.post("/strategies/{sid}/activate/live")
+    async def strategy_activate_live_post(session, request, sid: int):
+        from urllib.parse import quote_plus
+        user = _user(session)
+        if not user:
+            return RedirectResponse(f"/signin?next=/strategies/{sid}/activate/live", status_code=303)
+        form = await request.form()
+        raw = str(form.get("allocation") or "").replace(",", "").lstrip("$").strip()
+        try:
+            alloc = float(raw) if raw else None
+        except ValueError:
+            alloc = None
+        from engine.leaderboard import activate
+        res = activate.activate_live(sid, str(user["user_id"]), alloc, str(form.get("confirm") or ""))
+        if not res.get("strategy"):
+            return _not_found()
+        if res.get("ok"):
+            return RedirectResponse(f"/strategies/{sid}?msg={quote_plus(res['message'])}", status_code=303)
+        return _live_page(user, sid, res, raw)
+
     return ["/leaderboard", "/leaderboard.json", "/strategies", "/strategies/new",
-            "/strategies/{sid}", "/strategies/{sid}/skill.md", "/strategies/{sid}/edit"]
+            "/strategies/{sid}", "/strategies/{sid}/skill.md", "/strategies/{sid}/edit",
+            "/strategies/{sid}/activate/live"]

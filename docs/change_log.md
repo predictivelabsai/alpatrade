@@ -1,5 +1,32 @@
 # Change Log
 
+## 2026-10-11 — v0.37.0: live keys in Settings > Integrations for every user; Activate Paper / Activate Live
+
+- **Why live keys could not be saved:** Settings only had a paper-key form, and
+  `store_alpaca_keys` refuses `AK…` live keys (by design: `user_accounts` feeds every paper path),
+  so pasting live keys there crashed the POST (unhandled `ValueError`, HTTP 500). Live accounts
+  could only be linked by an operator with `scripts/link_live_account.py`. No admin gate; nothing
+  in the DB blocked it.
+- **Settings > Integrations** (`/settings#integrations`): separate *Alpaca paper* and *Alpaca live
+  (real money)* cards for any signed-in user, each listing the connected accounts (name/number,
+  key hint, date). Live keys are checked with one read-only `GET /v2/account` on
+  `api.alpaca.markets` (`engine.live_accounts.validate_live_keys`), then stored Fernet-encrypted
+  in `alpatrade.user_live_broker_accounts` (same encryption as paper keys). Paper keys are now
+  validated against `paper-api.alpaca.markets` before saving, and wrong-type keys get a clear
+  message instead of a 500. Live accounts can be disconnected (keys wiped).
+- **Activate Paper / Activate Live** buttons after every clone/backtest result in chat
+  (`clone_bt.result_markdown`, used by `/backtest-strategy` and `backtest_my_strategy`).
+  Paper queues one `deepagent_paper` job (one week) on the user's own paper account with the
+  strategy's BTD params; without paper keys it sends the user to Settings > Integrations.
+  Live opens a confirmation page (real money, cash only, dollar allocation, type LIVE), validated
+  with the sleeve rules (`validate_allocations`: allocation ≤ free cash and, with the account's
+  other sleeves, ≤ equity; unique `u<6hex>` client_order_id prefix; universe disjoint from the
+  account's active sleeves, e.g. a Mag-7 clone is refused on the account where the runner's Mag-7
+  primary trades). It is recorded as `pending_runner` in the new
+  `alpatrade.user_strategy_activations` (sql/49); it never writes `strategy_configs` /
+  `strategy_allocations` and never places orders. The shared live runner does not trade per-user
+  accounts yet; that needs an operator decision.
+
 ## 2026-10-11 — v0.36.2: three shared performance charts (equity vs SPY, drawdown, daily returns)
 
 - `engine/reporting/perf_chart.chart_html` now renders all three strategy-page charts from the

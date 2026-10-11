@@ -91,7 +91,8 @@ def paper_status(template: str, user_id: str) -> dict:
         return {"mode": "simulated", "label": f"Paper trading isn't available for the {template} template yet "
                 "— backtests work; paper bots currently run buy-the-dip strategies only.", "keys": None}
     if has_paper_keys(user_id):
-        return {"mode": "paper", "label": "Paper — active on your Alpaca paper account (never live).", "keys": True}
+        return {"mode": "paper", "label": "Paper keys connected — press Activate Paper to start it on your "
+                "Alpaca paper account.", "keys": True}
     return {"mode": "simulated", "label": "Paper (simulated) — connect Alpaca paper keys to start trading.",
             "keys": False}
 
@@ -328,6 +329,11 @@ def _f(v, fmt="{:+.1f}%"):
     return "—" if v is None else fmt.format(v)
 
 
+def _activate_buttons(sid: int) -> str:
+    from engine.leaderboard.activate import buttons_html
+    return buttons_html(sid)
+
+
 def result_markdown(s: dict, bm: dict, cfg: dict, status: dict) -> str:
     sid = int(s["id"])
     chart = {"type": "strategy_vs_spy", "title": f"{s['name']} vs SPY (backtest, base 100)",
@@ -350,8 +356,8 @@ def result_markdown(s: dict, bm: dict, cfg: dict, status: dict) -> str:
             f"**{_f(bm.get('alpha_pct'))}** (annualised {_f(bm.get('alpha_annualised_pct'))})\n\n{table}{audit}\n\n"
             f"Universe: {bm.get('universe')}. Params: `{p[:600]}`\n\n"
             f"**Status:** {status['label']}"
-            + ("" if status.get("keys") is not False else " [Connect Alpaca paper keys](/settings)")
-            + f"\n\n[Open the strategy page](/strategies/{sid}) · Ask me to change a parameter and rerun, e.g. "
+            + ("" if status.get("keys") is not False else " [Connect Alpaca paper keys](/settings#integrations)")
+            + f"\n\n{_activate_buttons(sid)}\n\n[Open the strategy page](/strategies/{sid}) · Ask me to change a parameter and rerun, e.g. "
             f"*\"change the stop to 2% and rerun strategy #{sid}\"*. Hypothetical backtest, not investment advice.\n\n"
             f"__CHART_DATA__{json.dumps(chart, default=str)}__END_CHART__")
 

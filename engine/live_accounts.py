@@ -102,3 +102,64 @@ def get_live_account_credentials(user_id: str,
         "api_key": decrypt_key(_b(row["api_key_enc"])),
         "secret_key": decrypt_key(_b(row["secret_key_enc"])),
     }
+
+
+PAPER_BASE_URL = "https://paper-api.alpaca.markets"
+
+
+class KeyValidationError(ValueError):
+    """User-facing reason a key pair was refused (never contains key material)."""
+
+
+def validate_live_keys(api_key: str, secret_key: str, http=None) -> dict:
+    """Check a LIVE key pair with ONE read-only GET /v2/account on api.alpaca.markets.
+    Returns {account_number, status, equity, cash}; raises KeyValidationError."""
+    from engine.brokers.alpaca_live_readonly import LiveReadOnlyClient, LiveReadOnlyError
+    api_key, secret_key = (api_key or "").strip(), (secret_key or "").strip()
+    if not api_key or not secret_key:
+        raise KeyValidationError("Both the live API key and secret are required.")
+    if api_key.upper().startswith("PK"):
+        raise KeyValidationError("These are PAPER keys (they start with PK). Save them under Paper.")
+    try:
+        acct = LiveReadOnlyClient(api_key, secret_key, http=http).get_account()
+    except LiveReadOnlyError as exc:
+        msg = str(exc)
+        if "unauthorized" in msg.lower():
+            msg = "Alpaca rejected these live keys (unauthorized). Check the key and secret, or regenerate them."
+        raise KeyValidationError(msg) from None
+    number = str(acct.get("account_number") or "").strip()
+    if not number:
+        raise KeyValidationError("Alpaca did not return an account number for these keys.")
+    return {"account_number": number, "status": acct.get("status"),
+            "equity": acct.get("equity"), "cash": acct.get("cash")}
+
+
+def validate_paper_keys(api_key: str, secret_key: str, http=None) -> dict:
+    """Check a PAPER key pair with ONE read-only GET /v2/account on paper-api.alpaca.markets."""
+    import requests
+    api_key, secret_key = (api_key or "").strip(), (secret_key or "").strip()
+    if not api_key or not secret_key:
+        raise KeyValidationError("Both the paper API key and secret are required.")
+    if api_key.upper().startswith("AK"):
+        raise KeyValidationError("These are LIVE keys (they start with AK). Save them under Live.")
+    try:
+        r = (http or requests).get(PAPER_BASE_URL + "/v2/account", timeout=15,
+                                   headers={"APCA-API-KEY-ID": api_key, "APCA-API-SECRET-KEY": secret_key})
+    except Exception as exc:  # noqa: BLE001
+        raise KeyValidationError(f"Alpaca paper API unreachable ({type(exc).__name__}).") from None
+    if r.status_code in (401, 403):
+        raise KeyValidationError("Alpaca rejected these paper keys (unauthorized). Check the key and secret.")
+    if r.status_code != 200:
+        raise KeyValidationError(f"Alpaca paper API returned HTTP {r.status_code}.")
+    a = r.json() or {}
+    return {"account_number": str(a.get("account_number") or ""), "status": a.get("status")}
+
+
+def deactivate_live_account(user_id: str, account_number: str) -> None:
+    """Unlink (soft-delete) one of the user's own live links; keys are wiped."""
+    from sqlalchemy import text
+    with _pool().get_session() as session:
+        session.execute(text(f"""
+            UPDATE {TABLE} SET is_active = FALSE, api_key_enc = :z, secret_key_enc = :z, updated_at = NOW()
+            WHERE user_id = :uid AND account_number = :acct
+        """), {"uid": user_id, "acct": str(account_number), "z": encrypt_key("revoked")})

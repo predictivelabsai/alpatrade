@@ -21,6 +21,8 @@ Feature-module contract: :func:`register(app, rt)` attaches the routes.
 """
 from __future__ import annotations
 
+import html
+
 from fasthtml.common import (
     A, Button, Code, Div, Form, H2, H3, Input, Label, NotStr, Option, P, Select,
     Span, Style,
@@ -28,6 +30,9 @@ from fasthtml.common import (
 from starlette.responses import RedirectResponse
 
 from engine.web.ph_layout import page
+
+import logging
+logger = logging.getLogger(__name__)
 from engine.config import (
     get_settings, MODEL_PROVIDERS, MODEL_NAMES, MARKET_DATA_PROVIDERS,
     SEARCH_PROVIDERS, AGENT_FRAMEWORKS,
@@ -57,6 +62,12 @@ _SETTINGS_CSS = """
 .settings .s-status.no{color:#b0653f}
 .settings .s-notice{border-radius:.5rem;padding:.6rem .8rem;margin-bottom:1rem;font-size:.82rem}
 .settings .s-notice.ok{background:var(--accent-dim);color:var(--accent-deep)}
+.settings .s-notice.err{background:#fff0ee;color:#9b302b}
+.settings .s-section{font-size:1.05rem;margin:1.6rem 0 .6rem}
+.settings .s-tblwrap{overflow-x:auto;margin:.3rem 0 .8rem}
+.settings .s-accts{border-collapse:collapse;font-size:.8rem;width:100%}
+.settings .s-accts th,.settings .s-accts td{text-align:left;padding:.35rem .6rem .35rem 0;border-bottom:1px solid var(--line);white-space:nowrap}
+.settings .s-accts th{font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-dim)}
 .settings .s-readonly{font-size:.9rem;color:var(--ink)}
 .settings .s-secret{display:flex;gap:.4rem;align-items:center}
 .settings .s-secret input{flex:1}
@@ -164,6 +175,70 @@ def _report_card(user_id: str, has_paper: bool, has_live: bool):
     )
 
 
+def _connected_table(rows: list[tuple[str, str, str]]) -> str:
+    if not rows:
+        return "<p class='s-hint'>No account connected yet.</p>"
+    body = "".join(f"<tr><td>{html.escape(a)}</td><td><code>{html.escape(b)}</code></td>"
+                   f"<td>{html.escape(c)}</td></tr>" for a, b, c in rows)
+    return ("<div class='s-tblwrap'><table class='s-accts'><thead><tr><th>Account</th><th>Key</th>"
+            f"<th>Connected</th></tr></thead><tbody>{body}</tbody></table></div>")
+
+
+def _paper_card(accounts: list, account_id: str, key_status):
+    rows = [(a.get("account_name") or "Paper", a.get("api_key_hint") or "****",
+             str(a.get("created_at") or "")[:10]) for a in accounts or []]
+    return Div(
+        H3("Alpaca paper"),
+        P(NotStr("Status: "), key_status, cls="s-hint"),
+        NotStr(_connected_table(rows)),
+        Form(
+            Input(name="account_id", type="hidden", value=account_id),
+            Div(Label("ALPACA_PAPER_API_KEY", fr="paper-key"),
+                Input(id="paper-key", name="api_key", type="password", autocomplete="off",
+                      placeholder="PK…", required=True), cls="s-row"),
+            Div(Label("ALPACA_PAPER_SECRET_KEY", fr="paper-secret"),
+                Input(id="paper-secret", name="secret_key", type="password", autocomplete="off",
+                      placeholder="••••••••", required=True), cls="s-row"),
+            P("Checked read-only against Alpaca's paper API before saving, then Fernet-encrypted "
+              "at rest; never sent back to the browser.", cls="s-hint"),
+            Button("Save paper keys", type="submit", cls="s-btn"),
+            method="post", action="/settings/keys",
+        ),
+        id="paper-keys", cls="s-card",
+    )
+
+
+def _live_card(links: list):
+    rows = [(f"{l.get('label') or 'Alpaca live'} · {l.get('account_number')}", l.get("api_key_hint") or "",
+             str(l.get("updated_at") or "")[:10]) for l in links or []]
+    status = (Span(f"Connected · {len(links)} account{'s' if len(links) != 1 else ''}", cls="s-status ok")
+              if links else Span("Not connected", cls="s-status no"))
+    unlink = [Form(Input(name="account_number", type="hidden", value=str(l.get("account_number"))),
+                   Button(f"Disconnect {l.get('account_number')}", type="submit", cls="s-btn s-danger"),
+                   method="post", action="/settings/live-keys/remove") for l in links or []]
+    return Div(
+        H3("Alpaca live (real money)"),
+        P(NotStr("Status: "), status, cls="s-hint"),
+        NotStr(_connected_table(rows)),
+        Form(
+            Div(Label("ALPACA_LIVE_API_KEY", fr="live-key"),
+                Input(id="live-key", name="api_key", type="password", autocomplete="off",
+                      placeholder="AK…", required=True), cls="s-row"),
+            Div(Label("ALPACA_LIVE_SECRET_KEY", fr="live-secret"),
+                Input(id="live-secret", name="secret_key", type="password", autocomplete="off",
+                      placeholder="••••••••", required=True), cls="s-row"),
+            P("Validated with one read-only request to Alpaca's live API (account details only), then "
+              "Fernet-encrypted at rest exactly like paper keys. Saving keys never trades: a live "
+              "strategy only runs after you press Activate Live and confirm it (cash only).",
+              cls="s-hint"),
+            Button("Save live keys", type="submit", cls="s-btn"),
+            method="post", action="/settings/live-keys",
+        ),
+        *unlink,
+        id="live-keys", cls="s-card",
+    )
+
+
 def _settings_page(user, msg: str = ""):
     if not user:
         return RedirectResponse("/signin", status_code=303)
@@ -183,7 +258,18 @@ def _settings_page(user, msg: str = ""):
         key_status = Span("Not connected — add your Alpaca paper keys below to trade",
                           cls="s-status no")
 
-    notice = [Div("Saved.", cls="s-notice ok")] if msg == "saved" else []
+    if msg == "saved":
+        notice = [Div("Saved.", cls="s-notice ok")]
+    elif msg:
+        bad = msg.lower().startswith(("could not", "alpaca", "these are", "both", "error", "add your"))
+        notice = [Div(msg[:300], cls=f"s-notice {'err' if bad else 'ok'}")]
+    else:
+        notice = []
+    try:
+        from engine.live_accounts import list_live_accounts
+        live_links = list_live_accounts(user["user_id"])
+    except Exception:  # noqa: BLE001
+        live_links = []
 
     account_id = accounts[0]["account_id"] if accounts else ""
 
@@ -256,25 +342,10 @@ function toggleSecret(id, button) {
             cls="s-card",
         ),
 
-        # --- Alpaca keys (BYOK) -------------------------------------------
-        Div(
-            H3("Alpaca API keys (Paper)"),
-            P(NotStr("Status: "), key_status, cls="s-hint"),
-            Form(
-                Input(name="account_id", type="hidden", value=account_id),
-                Div(Label("ALPACA_PAPER_API_KEY"),
-                    Input(name="api_key", type="password", autocomplete="off",
-                          placeholder="PK…", required=True), cls="s-row"),
-                Div(Label("ALPACA_PAPER_SECRET_KEY"),
-                    Input(name="secret_key", type="password", autocomplete="off",
-                          placeholder="••••••••", required=True), cls="s-row"),
-                P("Keys are Fernet-encrypted at rest and never leave your account. "
-                  "Paper trading only — enter your paper keys.", cls="s-hint"),
-                Button("Save keys", type="submit", cls="s-btn"),
-                method="post", action="/settings/keys",
-            ),
-            cls="s-card",
-        ),
+        # --- Integrations: Alpaca paper + live ---------------------------
+        NotStr("<h2 id='integrations' class='s-section'>Integrations</h2>"),
+        _paper_card(accounts, account_id, key_status),
+        _live_card(live_links),
 
         # --- Email reports ------------------------------------------------
         _report_card(user["user_id"], has_paper=bool(accounts),
@@ -331,6 +402,7 @@ def register(app, rt):
 
     @app.post("/settings/keys")
     async def settings_keys(session, request):
+        from urllib.parse import quote_plus
         user = _user(session)
         if not user:
             return RedirectResponse("/signin", status_code=303)
@@ -338,17 +410,58 @@ def register(app, rt):
         api_key = (form.get("api_key") or "").strip()
         secret_key = (form.get("secret_key") or "").strip()
         account_id = (form.get("account_id") or "").strip() or None
-        if api_key and secret_key:
+        from engine.live_accounts import KeyValidationError, validate_paper_keys
+        try:
+            validate_paper_keys(api_key, secret_key)
             from engine.auth import store_alpaca_keys
             store_alpaca_keys(user["user_id"], api_key, secret_key,
                               account_name="Default Account", account_id=account_id)
-            try:
-                from engine.web.onboarding import record_event
-                record_event(user["user_id"], "keys_connected",
-                             {"account_id": account_id})
-            except Exception:  # noqa: BLE001
-                pass
-        return RedirectResponse("/settings?msg=saved", status_code=303)
+        except (KeyValidationError, ValueError) as exc:
+            return RedirectResponse(f"/settings?msg={quote_plus(str(exc))}#integrations", status_code=303)
+        try:
+            from engine.web.onboarding import record_event
+            record_event(user["user_id"], "keys_connected", {"account_id": account_id})
+        except Exception:  # noqa: BLE001
+            pass
+        return RedirectResponse(f"/settings?msg={quote_plus('Paper keys verified and saved.')}#integrations",
+                                status_code=303)
+
+    @app.post("/settings/live-keys")
+    async def settings_live_keys(session, request):
+        """Any signed-in user may link their own LIVE account: validated read-only, encrypted."""
+        from urllib.parse import quote_plus
+        user = _user(session)
+        if not user:
+            return RedirectResponse("/signin", status_code=303)
+        form = await request.form()
+        from engine.live_accounts import KeyValidationError, store_live_account, validate_live_keys
+        try:
+            info = validate_live_keys(form.get("api_key") or "", form.get("secret_key") or "")
+            store_live_account(str(user["user_id"]), info["account_number"],
+                               (form.get("api_key") or "").strip(), (form.get("secret_key") or "").strip())
+        except KeyValidationError as exc:
+            return RedirectResponse(f"/settings?msg={quote_plus(str(exc))}#integrations", status_code=303)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("live key save failed: %s", type(exc).__name__)
+            return RedirectResponse("/settings?msg=Could+not+save+the+live+keys%2C+please+try+again.#integrations",
+                                    status_code=303)
+        try:
+            from engine.web.onboarding import record_event
+            record_event(user["user_id"], "live_keys_connected", {"account_number": info["account_number"]})
+        except Exception:  # noqa: BLE001
+            pass
+        ok = f"Live account {info['account_number']} verified and connected (read-only until you activate a strategy)."
+        return RedirectResponse(f"/settings?msg={quote_plus(ok)}#integrations", status_code=303)
+
+    @app.post("/settings/live-keys/remove")
+    async def settings_live_keys_remove(session, request):
+        user = _user(session)
+        if not user:
+            return RedirectResponse("/signin", status_code=303)
+        form = await request.form()
+        from engine.live_accounts import deactivate_live_account
+        deactivate_live_account(str(user["user_id"]), str(form.get("account_number") or ""))
+        return RedirectResponse("/settings?msg=Live+account+disconnected.#integrations", status_code=303)
 
     @app.post("/settings/preferences")
     async def settings_prefs(session, request):

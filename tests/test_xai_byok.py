@@ -139,7 +139,7 @@ def test_settings_xai_key_is_never_rendered(monkeypatch):
     assert 'name="provider_key"' in html
     assert "PROVIDER_KEY (xAI)" in html
     assert "Save provider key" in html
-    assert html.index("PROVIDER_KEY (xAI)") < html.index("Alpaca API keys (Paper)")
+    assert html.index("PROVIDER_KEY (xAI)") < html.index("Alpaca paper")
     assert "toggleSecret" in html
     assert "never sent back to the browser" in html
 

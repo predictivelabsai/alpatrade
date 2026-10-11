@@ -186,7 +186,11 @@ def test_live_link_table_is_only_used_by_the_readonly_view():
                # writes only alpatrade.strategy_allocations, never orders
                "engine/web/ph_strategy_allocations.py", "tests/test_strategy_allocation.py",
                # Leaderboard: owner's GET-only link for deposit/withdrawal activities only
-               "engine/leaderboard/perf.py", "tests/test_cash_flows.py"}
+               "engine/leaderboard/perf.py", "tests/test_cash_flows.py",
+               # Activate Live: GET-only balance read + validation; records a pending request,
+               # never writes runner config, never orders
+               "engine/leaderboard/activate.py", "tests/test_activate.py",
+               "tests/test_settings_integrations.py"}
     pat = re.compile(r"user_live_broker_accounts|engine\.live_accounts|get_live_account_credentials"
                      r"|alpaca_live_readonly")
     hits = set()

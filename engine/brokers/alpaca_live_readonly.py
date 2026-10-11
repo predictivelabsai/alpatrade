@@ -133,7 +133,7 @@ class LiveReadOnlyClient:
         if status == 401 or status == 403:
             raise LiveReadOnlyError(
                 "Alpaca rejected the linked live keys (unauthorized). They were probably "
-                "regenerated; re-link them with scripts/link_live_account.py.")
+                "regenerated; save the new keys in Settings > Integrations.")
         if status != 200:
             raise LiveReadOnlyError(f"Alpaca live API returned HTTP {status} for {path}.")
         try:
