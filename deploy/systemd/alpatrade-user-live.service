@@ -1,0 +1,24 @@
+# HP primary: per-USER live runners (one child process per user live activation).
+# Separate unit from alpatrade-btd-scheduler.service (Julian's Mag-7/Semi-7): starting, stopping
+# or crashing this unit never touches the operator scheduler. Children act only on the instance
+# holding the operator lease, so BTD_ROLE/BTD_INSTANCE come from the same repo .env.
+# Kill switch: USER_LIVE_TRADING_ENABLED=1 in the repo .env (set 0 -> all children stop within 60 s).
+#   cp deploy/systemd/alpatrade-user-live.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now alpatrade-user-live.service
+[Unit]
+Description=AlpaTrade per-user live runners (supervisor; one process per user strategy)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/dev/plai/alpatrade
+ExecStart=%h/dev/plai/alpatrade/.venv/bin/python scripts/user_live_supervisor.py --live
+Restart=always
+RestartSec=30
+KillSignal=SIGTERM
+TimeoutStopSec=330
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

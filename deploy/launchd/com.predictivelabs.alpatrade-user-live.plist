@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Mac backup instance of the live Mag-7 BTD runner (docs/strategy_methodology.md).
+  launchd only STARTS and KEEPS ALIVE the long-running in-memory event scheduler
+  (KeepAlive + RunAtLoad); there is no StartCalendarInterval — all event timing (09:31 open,
+  15:45-15:55 entries, ~15:58 close, 3-min lease heartbeats, holidays/early closes from the
+  Alpaca calendar) lives in scripts/user_live_supervisor.py. Params: each user's own alpatrade.user_strategy_configs. Kill switch USER_LIVE_TRADING_ENABLED.
+  Install:  sed "s#/Users/juliankaljuvee#$HOME#g" deploy/launchd/com.predictivelabs.alpatrade-user-live.plist \
+              > ~/Library/LaunchAgents/com.predictivelabs.alpatrade-user-live.plist
+            launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.predictivelabs.alpatrade-user-live.plist
+  Reload config: launchctl kill HUP gui/$(id -u)/com.predictivelabs.alpatrade-user-live
+  Off:      launchctl bootout gui/$(id -u)/com.predictivelabs.alpatrade-user-live
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.predictivelabs.alpatrade-user-live</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/juliankaljuvee/dev/plai/alpatrade/.venv/bin/python</string>
+        <string>/Users/juliankaljuvee/dev/plai/alpatrade/scripts/user_live_supervisor.py</string>
+        <string>--live</string>
+    </array>
+    <key>WorkingDirectory</key><string>/Users/juliankaljuvee/dev/plai/alpatrade</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>BTD_ROLE</key><string>backup</string>
+        <key>BTD_INSTANCE</key><string>mac</string>
+        <key>PYTHONUNBUFFERED</key><string>1</string>
+        <key>PATH</key><string>/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
+    </dict>
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key><true/>
+    <key>ThrottleInterval</key><integer>15</integer>
+    <key>ExitTimeOut</key><integer>300</integer>
+    <key>ProcessType</key><string>Background</string>
+    <key>StandardOutPath</key><string>/Users/juliankaljuvee/.alpatrade-live/logs/user-live.out.log</string>
+    <key>StandardErrorPath</key><string>/Users/juliankaljuvee/.alpatrade-live/logs/user-live.err.log</string>
+</dict>
+</plist>
