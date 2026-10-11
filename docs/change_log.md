@@ -1,5 +1,15 @@
 # Change Log
 
+## Unreleased — 2026-10-11 — Chat-assisted "connect alpaca" (feature-flagged, off by default)
+
+- **`connect alpaca` (or `/alpaca-connect`, add `live` for live too) in /app chat** walks the user through: warning that regenerating keys invalidates the old ones → Alpaca login email → Alpaca password (masked) → server-side headless Playwright login to app.alpaca.markets → authenticator 2FA code (masked) → regenerate the paper (and optionally live) key pair → validate with the existing read-only `GET /v2/account` (`validate_paper_keys` / `validate_live_keys`) → save via the existing encrypted paths (`store_alpaca_keys` as "Alpaca Paper (auto-connect)", `store_live_account`) → run the existing Settings **Check**. `cancel` aborts at any step.
+- Secret hygiene: flow messages are intercepted in `/app/chat` before persistence, so the password and 2FA code never reach the chat transcript, in-memory history, DB or logs; they are held on an in-memory session only until used and then wiped; no screenshots/HTML dumps. Timeouts per browser step (30s), 2FA wait (180s) and session TTL (300s); clear errors for bad password, bad/expired code, captcha/bot-check, unreachable Alpaca, changed UI.
+- Feature flag `ALPACA_CONNECT_ENABLED` (default off). Chromium is opt-in in `Dockerfile.agui` via `--build-arg ALPACA_CONNECT_BROWSER=1`.
+- `scripts/alpaca_connect_e2e.py`: real end-to-end driver; password from env/getpass, 2FA code read from `--otp-file` (polled every 0.2s) or stdin so a relayed code is used immediately.
+- Tests: `tests/test_alpaca_connect.py` (fake browser: full flow, live, bad password/code, OTP timeout, cancel, TTL, wipe, nothing logged/persisted, key extraction).
+- `tests/test_live_account.py` allowlist: `engine/alpaca_connect.py` added (writes only the user's own new live pair via `validate_live_keys` + `store_live_account`, like Settings; never reads stored credentials, never orders).
+- Note: from the box (datacenter IP) app.alpaca.markets did not load within 45s headless; from the HP (residential) the login page loads normally. Prod (Coolify) may be blocked — the safer long-term path is Alpaca OAuth.
+
 ## v0.40.1 — 2026-10-11 — Fix since-activation P&L query
 
 - `activation_metrics` read `positions.unrealized_pl`; the column is `unrealized_pnl`. The query failed, so pages fell back to backtest figures. Verified on the prod DB: Kairi's strategy #39 now reads live, +0.00%, $670 allocation, 0 fills.

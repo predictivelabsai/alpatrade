@@ -195,7 +195,12 @@ def test_live_link_table_is_only_used_by_the_readonly_view():
                # link to trade that user's own account (utils/user_live_runner.py)
                "utils/user_live_runner.py", "tests/test_user_live_runner.py",
                # Settings Check: one read-only GET /v2/account per saved key
-               "engine/key_check.py"}
+               "engine/key_check.py",
+               # Assisted "connect alpaca" (ALPACA_CONNECT_ENABLED): saves the signed-in user's OWN
+               # freshly regenerated live pair only via validate_live_keys (one GET /v2/account) +
+               # store_live_account, the same helpers Settings uses; never reads stored credentials,
+               # never orders
+               "engine/alpaca_connect.py"}
     pat = re.compile(r"user_live_broker_accounts|engine\.live_accounts|get_live_account_credentials"
                      r"|alpaca_live_readonly")
     hits = set()
