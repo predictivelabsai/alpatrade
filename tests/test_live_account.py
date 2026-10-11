@@ -193,7 +193,9 @@ def test_live_link_table_is_only_used_by_the_readonly_view():
                "tests/test_settings_integrations.py",
                # Per-user live runner (Julian-approved): decrypts ONLY the activating user's own
                # link to trade that user's own account (utils/user_live_runner.py)
-               "utils/user_live_runner.py", "tests/test_user_live_runner.py"}
+               "utils/user_live_runner.py", "tests/test_user_live_runner.py",
+               # Settings Check: one read-only GET /v2/account per saved key
+               "engine/key_check.py"}
     pat = re.compile(r"user_live_broker_accounts|engine\.live_accounts|get_live_account_credentials"
                      r"|alpaca_live_readonly")
     hits = set()

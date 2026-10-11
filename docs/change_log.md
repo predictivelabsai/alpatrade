@@ -1,5 +1,12 @@
 # Change Log
 
+## v0.39.1 — 2026-10-11 — Settings: Check saved Alpaca keys
+
+- **Check button** next to every saved paper and live key in Settings > Integrations. It decrypts the stored pair and makes ONE read-only `GET /v2/account` on the matching endpoint (paper → paper-api.alpaca.markets, live → api.alpaca.markets) and shows the result inline: OK with account number and status, or Alpaca's exact HTTP status and message. Also flags problems on our side: decrypt failure, whitespace/newlines in the stored key or secret, wrong environment (AK saved as paper / PK as live), and live keys that belong to a different account number.
+- `last_checked_at` and `last_check_result` stored on `user_accounts` and `user_live_broker_accounts` (`sql/50_key_check_columns.sql`, applied idempotently) and shown under the button.
+- Diagnosis of poder.kairi76's earlier paper 401: decrypts fine; the key is PK-prefixed, 26 chars, the secret is 44 chars, with no whitespace or non-printable characters; the call went to paper-api. Alpaca returns `401 unauthorized.` on paper, on live and with key/secret swapped, so the cause is on Alpaca's side (the pair is not valid there, e.g. regenerated or reset), not on ours.
+- Tests: `tests/test_key_check.py`. Mobile 375/414: the accounts table stacks and doesn't overflow.
+
 ## v0.39.0 — 2026-10-11 — Activation points everywhere; user live trading on
 
 - **User live trading enabled** (`USER_LIVE_TRADING_ENABLED=1` on HP, Mac.home, box). A confirmed Activate Live starts the user's own per-user process within one supervisor poll (≤60s), no operator step. All guards unchanged: typed LIVE confirmation, cash only, allocation cap at order time, own `u`+hex prefix, Julian's accounts refused, per-user Pause/Deactivate, global flag as emergency stop.

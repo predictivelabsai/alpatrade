@@ -33,6 +33,7 @@ from engine.web.ph_layout import page
 
 import logging
 logger = logging.getLogger(__name__)
+from typing import Optional
 from engine.config import (
     get_settings, MODEL_PROVIDERS, MODEL_NAMES, MARKET_DATA_PROVIDERS,
     SEARCH_PROVIDERS, AGENT_FRAMEWORKS,
@@ -175,18 +176,40 @@ def _report_card(user_id: str, has_paper: bool, has_live: bool):
     )
 
 
-def _connected_table(rows: list[tuple[str, str, str]]) -> str:
+def _check_cell(mode: str, ref: str, last: Optional[dict]) -> str:
+    """Check button + last read-only check result for one saved key."""
+    res = ""
+    if last:
+        at = last["at"]
+        when = at.strftime("%Y-%m-%d %H:%M UTC") if hasattr(at, "strftime") else str(at)[:16]
+        res = (f"<div class='s-chk {'ok' if last.get('ok') else 'bad'}'>{'✓' if last.get('ok') else '✗'} "
+               f"{html.escape(str(last.get('text') or ''))}<br><small>checked {html.escape(when)}</small></div>")
+    return (f"<form method='post' action='/settings/keys/check' style='margin:0'>"
+            f"<input type='hidden' name='mode' value='{mode}'><input type='hidden' name='ref' value='{html.escape(ref)}'>"
+            f"<button type='submit' class='s-btn s-chkbtn'>Check</button></form>{res}")
+
+
+def _connected_table(rows: list) -> str:
     if not rows:
         return "<p class='s-hint'>No account connected yet.</p>"
-    body = "".join(f"<tr><td>{html.escape(a)}</td><td><code>{html.escape(b)}</code></td>"
-                   f"<td>{html.escape(c)}</td></tr>" for a, b, c in rows)
-    return ("<div class='s-tblwrap'><table class='s-accts'><thead><tr><th>Account</th><th>Key</th>"
-            f"<th>Connected</th></tr></thead><tbody>{body}</tbody></table></div>")
+    body = "".join(f"<tr><td>{html.escape(r[0])}</td><td><code>{html.escape(r[1])}</code></td>"
+                   f"<td>{html.escape(r[2])}</td>" + (f"<td>{r[3]}</td>" if len(r) > 3 else "") + "</tr>"
+                   for r in rows)
+    chk = "<th>Check</th>" if any(len(r) > 3 for r in rows) else ""
+    return ("<style>.s-chk{font-size:.74rem;margin-top:.3rem;max-width:22rem;overflow-wrap:anywhere}"
+            ".s-chk.ok{color:#147a4b}.s-chk.bad{color:#b43b35}.s-chkbtn{min-height:2rem;padding:.2rem .7rem;font-size:.78rem}"
+            "@media(max-width:640px){.s-accts td{display:block;border:0;padding:.15rem 0}.s-accts thead{display:none}"
+            ".s-accts tr{display:block;padding:.5rem 0;border-bottom:1px solid var(--line)}}</style>"
+            "<div class='s-tblwrap'><table class='s-accts'><thead><tr><th>Account</th><th>Key</th>"
+            f"<th>Connected</th>{chk}</tr></thead><tbody>{body}</tbody></table></div>")
 
 
-def _paper_card(accounts: list, account_id: str, key_status):
+def _paper_card(accounts: list, account_id: str, key_status, checks: Optional[dict] = None):
+    checks = checks or {}
     rows = [(a.get("account_name") or "Paper", a.get("api_key_hint") or "****",
-             str(a.get("created_at") or "")[:10]) for a in accounts or []]
+             str(a.get("created_at") or "")[:10],
+             _check_cell("paper", str(a.get("account_id")), checks.get(("paper", str(a.get("account_id"))))))
+            for a in accounts or []]
     return Div(
         H3("Alpaca paper"),
         P(NotStr("Status: "), key_status, cls="s-hint"),
@@ -208,9 +231,12 @@ def _paper_card(accounts: list, account_id: str, key_status):
     )
 
 
-def _live_card(links: list):
+def _live_card(links: list, checks: Optional[dict] = None):
+    checks = checks or {}
     rows = [(f"{l.get('label') or 'Alpaca live'} · {l.get('account_number')}", l.get("api_key_hint") or "",
-             str(l.get("updated_at") or "")[:10]) for l in links or []]
+             str(l.get("updated_at") or "")[:10],
+             _check_cell("live", str(l.get("account_number")), checks.get(("live", str(l.get("account_number"))))))
+            for l in links or []]
     status = (Span(f"Connected · {len(links)} account{'s' if len(links) != 1 else ''}", cls="s-status ok")
               if links else Span("Not connected", cls="s-status no"))
     unlink = [Form(Input(name="account_number", type="hidden", value=str(l.get("account_number"))),
@@ -297,6 +323,11 @@ def _settings_page(user, msg: str = ""):
     except Exception:  # noqa: BLE001
         live_links = []
     try:
+        from engine.key_check import last_results
+        key_checks = last_results(user["user_id"])
+    except Exception:  # noqa: BLE001
+        key_checks = {}
+    try:
         from engine.leaderboard.activate import list_live
         live_strats = list_live(str(user["user_id"]))
     except Exception:  # noqa: BLE001
@@ -375,8 +406,8 @@ function toggleSecret(id, button) {
 
         # --- Integrations: Alpaca paper + live ---------------------------
         NotStr("<h2 id='integrations' class='s-section'>Integrations</h2>"),
-        _paper_card(accounts, account_id, key_status),
-        _live_card(live_links),
+        _paper_card(accounts, account_id, key_status, key_checks),
+        _live_card(live_links, key_checks),
         _live_strategies_card(live_strats),
 
         # --- Email reports ------------------------------------------------
@@ -457,6 +488,25 @@ def register(app, rt):
             pass
         return RedirectResponse(f"/settings?msg={quote_plus('Paper keys verified and saved.')}#integrations",
                                 status_code=303)
+
+    @app.post("/settings/keys/check")
+    async def settings_keys_check(session, request):
+        from urllib.parse import quote_plus
+        user = _user(session)
+        if not user:
+            return RedirectResponse("/signin", status_code=303)
+        form = await request.form()
+        mode, ref = str(form.get("mode") or ""), str(form.get("ref") or "").strip()
+        if mode not in ("paper", "live") or not ref:
+            return RedirectResponse("/settings#integrations", status_code=303)
+        from engine import key_check
+        try:
+            res = key_check.check(mode, str(user["user_id"]), ref)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("key check failed: %s", type(exc).__name__)
+            res = {"ok": False, "text": "Check failed, please try again."}
+        m = f"{mode.title()} key check: {res['text']}"
+        return RedirectResponse(f"/settings?msg={quote_plus(m)}#integrations", status_code=303)
 
     @app.post("/settings/live-keys")
     async def settings_live_keys(session, request):
