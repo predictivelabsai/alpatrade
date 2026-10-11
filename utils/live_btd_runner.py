@@ -231,6 +231,10 @@ class Runner:
             self.log.warning("strategy allocations unavailable (%s) -> primary strategy only, whole account", exc)
         return primary, extra
 
+    def recorder(self):
+        """Hook: the trade/run recorder for this pass (UserRunner records paper fills as 'paper')."""
+        return LiveRecorder(self.db_url, self.user_email, log=self.log)
+
     def entry_gate(self) -> Optional[str]:
         """Reason to disable NEW entries this pass (exits still run), or None."""
         return None
@@ -428,7 +432,7 @@ class Runner:
             market_ok = clock["is_open"] or (a.ignore_hours and not EXECUTE)
 
             # ---------------- recording (best-effort, never affects trading) ----------------
-            rec = LiveRecorder(self.db_url, self.user_email, log=log) if EXECUTE and not DEGRADED else None
+            rec = self.recorder() if EXECUTE and not DEGRADED else None
             R = state.setdefault("rec", {}) if EXECUTE else {}
             R.setdefault("pending", [])
 

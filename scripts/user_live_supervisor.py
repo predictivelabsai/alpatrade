@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Keeps exactly one scripts/user_live_scheduler.py child per runnable user live activation.
+"""Keeps exactly one scripts/user_live_scheduler.py child per runnable user activation (live AND paper).
+State lives only in Postgres (alpatrade.user_strategy_activations), so a supervisor/app restart
+re-creates every child on its next poll.
 
   python scripts/user_live_supervisor.py            # dry-run children (no orders)
   python scripts/user_live_supervisor.py --live     # children trade the users' own accounts
@@ -35,8 +37,9 @@ def wanted(db_url, operator_account):
     eng = create_engine(db_url, pool_pre_ping=True, connect_args={"connect_timeout": 5})
     try:
         with eng.connect() as c:
-            rows = c.execute(text("SELECT id, account_ref, cid_prefix, status FROM alpatrade.user_strategy_activations "
-                                  "WHERE mode = 'live' AND status = ANY(:st)"), {"st": list(RUNNABLE)}).fetchall()
+            rows = c.execute(text("SELECT id, account_ref, cid_prefix, status, mode FROM alpatrade.user_strategy_activations "
+                                  "WHERE mode IN ('live', 'paper') AND cid_prefix IS NOT NULL AND status = ANY(:st)"),
+                             {"st": list(RUNNABLE)}).fetchall()
     finally:
         eng.dispose()
     return {int(r[0]): r for r in rows if str(r[1]) != str(operator_account or "")}
@@ -92,7 +95,8 @@ while True:
                 if a.once:
                     log.info("would start: %s (account %s prefix %s status %s)", " ".join(cmd[1:]), r[1], r[2], r[3])
                     continue
-                log.info("starting activation %s (account %s, prefix %s, %s)", aid, r[1], r[2], "LIVE" if a.live else "dry-run")
+                log.info("starting activation %s (account %s, prefix %s, %s)", aid, r[1], r[2],
+                         ("PAPER" if r[4] == "paper" else "LIVE") if a.live else "dry-run")
                 children[aid] = subprocess.Popen(cmd, cwd=REPO, start_new_session=True)
     except Exception as exc:  # noqa: BLE001 -- never die; children keep running
         log.error("reconcile failed: %s", type(exc).__name__)

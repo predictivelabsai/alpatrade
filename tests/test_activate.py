@@ -35,14 +35,13 @@ def test_paper_needs_keys(owned, monkeypatch):
     assert not r["ok"] and r["needs_keys"] and "Settings > Integrations" in r["message"]
 
 
-def test_paper_queues_paper_job_on_own_account(owned, monkeypatch):
+def test_paper_activation_is_a_runner_activation_not_an_llm_job(owned, monkeypatch):
     monkeypatch.setattr(act, "_paper_account", lambda uid: "acct-1")
-    calls = []
-    r = act.activate_paper(39, UID, enqueue=lambda **k: calls.append(k) or "job-1")
-    assert r["ok"] and calls[0]["kind"] == "deepagent_paper" and calls[0]["account_id"] == "acct-1"
-    p = calls[0]["config"]["approved_best_config"]["params"]
-    assert p["dip_threshold"] == 0.03 and p["stop_loss_threshold"] == 0.015 and p["hold_days"] == 3
-    assert owned[0][0][2] == "paper"
+    r = act.activate_paper(39, UID, enqueue=lambda **k: pytest.fail("no LLM paper job any more"))
+    assert r["ok"] and "within a minute" in r["message"]
+    row = owned[0]
+    assert row[0][2] == "paper" and row[0][3] == "acct-1" and row[0][4] == "active"
+    assert row[1]["prefix"] == act.cid_prefix(UID, 39) and row[1]["allocation"] == act.PAPER_ALLOCATION_USD
 
 
 def _live(monkeypatch, alloc, confirm="LIVE", runner_here=False, cash=1000.0):

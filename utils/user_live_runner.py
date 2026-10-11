@@ -95,6 +95,7 @@ class Activation:
     params: Dict[str, Any]
     execution: Dict[str, Any]
     name: str
+    mode: str = "live"
 
 
 def load_activation(engine, activation_id: int) -> Optional[Activation]:
@@ -102,17 +103,17 @@ def load_activation(engine, activation_id: int) -> Optional[Activation]:
     with engine.connect() as c:
         r = c.execute(text("""
             SELECT a.id, a.user_id::text AS user_id, u.email, a.user_strategy_id, a.account_ref, a.cid_prefix,
-                   a.allocation_usd, a.status, c.params, c.execution, s.name
+                   a.allocation_usd, a.status, c.params, c.execution, s.name, a.mode
             FROM alpatrade.user_strategy_activations a
             JOIN alpatrade.users u ON u.user_id = a.user_id
             JOIN alpatrade.user_strategy_configs c ON c.user_strategy_id = a.user_strategy_id AND c.user_id = a.user_id
             JOIN alpatrade.user_strategies s ON s.id = a.user_strategy_id AND s.user_id = a.user_id
-            WHERE a.id = :i AND a.mode = 'live'"""), {"i": int(activation_id)}).mappings().first()
+            WHERE a.id = :i AND a.mode IN ('live', 'paper')"""), {"i": int(activation_id)}).mappings().first()
     if not r:
         return None
     return Activation(int(r["id"]), r["user_id"], r["email"], int(r["user_strategy_id"]), str(r["account_ref"]),
                       str(r["cid_prefix"]), float(r["allocation_usd"]), str(r["status"]), dict(r["params"] or {}),
-                      dict(r["execution"] or {}), str(r["name"] or ""))
+                      dict(r["execution"] or {}), str(r["name"] or ""), str(r["mode"]))
 
 
 def load_status(engine, activation_id: int) -> Optional[str]:
@@ -135,18 +136,33 @@ def trading_credentials(engine, user_id: str, account_number: str) -> Optional[d
     return {"api_key": decrypt_key(bytes(r[0])), "secret_key": decrypt_key(bytes(r[1]))}
 
 
-def paper_credentials(engine, user_id: str) -> Optional[dict]:
-    """The user's own PAPER keys (alpatrade.user_accounts) for paper-mode testing of this runner."""
+def paper_credentials(engine, user_id: str, account_id: Optional[str] = None) -> Optional[dict]:
+    """The user's own PAPER keys (alpatrade.user_accounts): the activation's paper account when
+    given, else the user's first active one (dry-run testing)."""
     from sqlalchemy import text
     from engine.auth import decrypt_key
     with engine.connect() as c:
         r = c.execute(text("""SELECT alpaca_api_key_enc, alpaca_secret_key_enc FROM alpatrade.user_accounts
                               WHERE user_id = CAST(:u AS UUID) AND is_active AND alpaca_api_key_enc IS NOT NULL
-                              ORDER BY created_at LIMIT 1"""), {"u": str(user_id)}).first()
+                                AND (CAST(:a AS TEXT) IS NULL OR account_id::text = :a)
+                              ORDER BY created_at LIMIT 1"""), {"u": str(user_id), "a": account_id}).first()
     if not r:
         return None
     k = lambda v: decrypt_key(v.encode() if isinstance(v, str) else bytes(v))  # noqa: E731
     return {"api_key": k(r[0]), "secret_key": k(r[1])}
+
+
+class PaperRecorder:
+    """LiveRecorder that writes runs/trades as mode/trade_type 'paper' (user paper activations),
+    so paper fills never appear in live reports."""
+
+    def __new__(cls, *a, **k):
+        from utils.live_btd_store import LiveRecorder
+
+        class _P(LiveRecorder):
+            def _exec(self, sql, params):
+                return super()._exec(sql.replace("'live'", "'paper'"), params)
+        return _P(*a, **k)
 
 
 def config_version(act: Activation) -> int:
@@ -217,9 +233,13 @@ class UserRunner(Runner):
         if act.account_number == str(self.operator_account or ""):
             raise PassStop("user activations never run on the operator account (its sleeves are managed by "
                            "/live/allocations)")
-        self.paper = bool(paper)
+        self.paper = bool(paper) or act.mode == "paper"
+        if act.mode == "live" and paper and self.execute:
+            raise PassStop("a live activation never trades paper keys with --live")
+        paper = self.paper
         if creds_fn is None:
-            creds_fn = ((lambda: paper_credentials(self._eng, act.user_id)) if paper else
+            creds_fn = ((lambda: paper_credentials(self._eng, act.user_id,
+                                                   act.account_number if act.mode == "paper" else None)) if paper else
                         (lambda: trading_credentials(self._eng, act.user_id, act.account_number)))
         creds = creds_fn()
         if not creds:
@@ -252,6 +272,11 @@ class UserRunner(Runner):
         cfg = user_config(act)
         self.log_config(cfg, "loaded")
         return cfg
+
+    def recorder(self):
+        if self.paper:
+            return PaperRecorder(self.db_url, self.user_email, log=self.log)
+        return super().recorder()
 
     def load_sleeves(self, account_number, primary_name):
         return None, []                                # never the operator's allocations table

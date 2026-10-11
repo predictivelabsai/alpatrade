@@ -29,6 +29,8 @@ import json
 import logging
 import threading
 import time
+
+import numpy as np
 from datetime import date, datetime
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
@@ -236,6 +238,10 @@ def backtest_metrics(strategy: dict) -> dict:
 def strategy_metrics(strategy: dict, today: Optional[date] = None) -> dict:
     """Live metrics for one strategy row (cached briefly); EMPTY when not linked/unavailable.
     Backtest strategies (``kind='backtest'``) return their stored backtest figures instead."""
+    if strategy.get("kind") != "live" and strategy.get("user_id") and strategy.get("id") is not None:
+        am = activation_metrics(strategy, today)
+        if am is not None:
+            return am
     if strategy.get("kind") == "backtest":
         bm = strategy.get("backtest_metrics") if isinstance(strategy.get("backtest_metrics"), dict) else {}
         live_slug = bm.get("live_slug")
@@ -268,6 +274,100 @@ def strategy_metrics(strategy: dict, today: Optional[date] = None) -> dict:
     return dict(m)
 
 
+def _activation_row(user_id: str, sid: int):
+    """The strategy's current activation (live preferred over paper), or None. Read-only."""
+    from sqlalchemy import text
+    from engine.auth import _get_pool
+    with _get_pool().get_session() as s:
+        try:
+            return s.execute(text("""
+                SELECT mode, status, cid_prefix, allocation_usd, confirmed_at
+                FROM alpatrade.user_strategy_activations
+                WHERE user_id = CAST(:u AS UUID) AND user_strategy_id = :i AND status <> 'deactivated'
+                  AND cid_prefix IS NOT NULL AND confirmed_at IS NOT NULL
+                ORDER BY (mode = 'live') DESC LIMIT 1"""), {"u": str(user_id), "i": int(sid)}).mappings().first()
+        except Exception:  # noqa: BLE001 -- table not created yet
+            return None
+
+
+def _activation_pnl(user_id: str, prefix: str, mode: str, since) -> dict:
+    """Realized + unrealized P&L of THIS activation's own runs (its prefix, since activation)."""
+    from sqlalchemy import text
+    from engine.auth import _get_pool
+    with _get_pool().get_session() as s:
+        r = s.execute(text("""
+            WITH rr AS (SELECT run_id FROM alpatrade.runs WHERE user_id = CAST(:u AS UUID) AND mode = :m
+                          AND config->>'cid_prefix' = :p AND started_at >= :since - INTERVAL '5 minutes')
+            SELECT (SELECT COALESCE(SUM(pnl), 0) FROM alpatrade.trades t JOIN rr USING (run_id)
+                     WHERE t.trade_type = :m AND t.exit_price IS NOT NULL),
+                   (SELECT COUNT(*) FROM alpatrade.trades t JOIN rr USING (run_id)
+                     WHERE t.trade_type = :m AND t.entry_price IS NOT NULL),
+                   (SELECT COALESCE(SUM(unrealized_pl), 0) FROM alpatrade.positions p JOIN rr USING (run_id)
+                     WHERE p.status = 'open')"""),
+                      {"u": str(user_id), "m": mode, "p": prefix, "since": since}).first()
+    return {"realized": float(r[0] or 0), "fills": int(r[1] or 0), "unrealized": float(r[2] or 0)}
+
+
+def activation_metrics(strategy: dict, today: Optional[date] = None, *, row_fn=None, pnl_fn=None,
+                       spy_fn=None) -> Optional[dict]:
+    """Since-activation figures for an activated user strategy, or None when not activated.
+
+    Measured only from the activation timestamp against its allocation, using this activation's own
+    fills/positions (its client_order_id prefix); the account's other holdings and history are
+    excluded. 0.00% until the strategy's first fill or a price move of its own positions."""
+    uid, sid = str(strategy.get("user_id")), int(strategy["id"])
+    key = ("act", uid, sid)
+    now = time.monotonic()
+    if row_fn is None and today is None:
+        with _lock:
+            hit = _cache.get(key)
+            if hit and now - hit[0] < _CACHE_TTL_S:
+                return None if hit[1] is None else dict(hit[1])
+    try:
+        row = (row_fn or _activation_row)(uid, sid)
+        if not row:
+            m = None
+        else:
+            since = row["confirmed_at"]
+            alloc = float(row["allocation_usd"] or 0) or 1.0
+            pnl = (pnl_fn or _activation_pnl)(uid, row["cid_prefix"], row["mode"], since)
+            total = pnl["realized"] + pnl["unrealized"]
+            ret = round(total / alloc * 100.0, 4)
+            start = since.date() if hasattr(since, "date") else since
+            end = today or date.today()
+            td = max(int(np.busday_count(start, end)) if end > start else 0, 0)
+            ann = round(ret * 252 / td, 4) if td >= 1 and ret else 0.0
+            spy = alpha = None
+            if pnl["fills"]:
+                closes = (spy_fn or _spy_since)(start, end)
+                if closes:
+                    spy = closes
+                    alpha = round(ret - spy, 4)
+            m = {**EMPTY, "has_data": True, "is_activation": True, "activation_mode": row["mode"],
+                 "activation_status": row["status"], "start_date": start, "as_of": end,
+                 "days_running": (end - start).days, "trading_days": td, "return_pct": ret,
+                 "annualised_pct": ann, "annualised_simple_pct": ann, "spy_return_pct": spy,
+                 "alpha_pct": alpha, "start_equity": alloc, "equity": alloc + total,
+                 "pnl_usd": round(total, 2), "fills": pnl["fills"]}
+    except Exception as exc:  # noqa: BLE001
+        log.warning("activation metrics failed: %s", type(exc).__name__)
+        return None
+    if row_fn is None and today is None:
+        with _lock:
+            _cache[key] = (now, m)
+    return None if m is None else dict(m)
+
+
+def _spy_since(start: date, end: date) -> Optional[float]:
+    from engine.reporting.perf_chart import spy_closes
+    c = spy_closes(start, end)
+    if not c:
+        return None
+    ks = sorted(c)
+    base = [k for k in ks if k <= start.isoformat()] or ks
+    return round((c[ks[-1]] / c[base[-1]] - 1) * 100.0, 4)
+
+
 def clear_cache() -> None:
     with _lock:
         _cache.clear()
@@ -284,6 +384,11 @@ def fmt_day(v) -> str:
 
 
 def annualised_tip(m: dict) -> str:
+    if m.get("is_activation"):
+        return (f"Since you activated it ({m.get('activation_mode')}) on {fmt_day(m['start_date'])}: "
+                f"P&L ${m.get('pnl_usd', 0):,.2f} on a ${m['start_equity']:,.0f} allocation = {pct(m['return_pct'])}; "
+                f"simple ×252/{m['trading_days']} trading days = {pct(m['annualised_pct'])}. Only this "
+                "strategy's own fills and positions count; the account's other holdings are excluded.")
     if m.get("is_backtest"):
         if m.get("annualised_pct") is None:
             return "No backtest figures stored for this strategy."
@@ -305,6 +410,10 @@ def annualised_tip(m: dict) -> str:
 
 
 def alpha_tip(m: dict) -> str:
+    if m.get("is_activation"):
+        if m.get("alpha_pct") is None:
+            return "No fills since activation yet, so no alpha vs SPY."
+        return (f"Since activation: strategy {pct(m['return_pct'])} vs SPY {pct(m['spy_return_pct'])}.")
     if m.get("is_backtest"):
         if m.get("alpha_pct") is None:
             return "No backtest figures stored for this strategy."

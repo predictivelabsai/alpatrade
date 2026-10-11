@@ -28,7 +28,8 @@ import time
 from typing import Any, Callable, Optional
 
 log = logging.getLogger("leaderboard.activate")
-PAPER_DURATION_S = 604800          # one week per activation (the worker's maximum)
+PAPER_DURATION_S = 604800          # legacy: one week per LLM paper job (no longer used)
+PAPER_ALLOCATION_USD = 10000.0     # paper sleeve cap; cash is still checked at order time
 _schema_ok = False
 
 
@@ -48,7 +49,25 @@ def ensure_schema() -> None:
     sql = (Path(__file__).resolve().parents[2] / "sql" / "49_user_strategy_activations.sql").read_text()
     with _pool().get_session() as s:
         s.execute(text(sql))
+        _migrate_legacy_paper(s)
     _schema_ok = True
+
+
+def _migrate_legacy_paper(s) -> None:
+    """Paper activations used to queue an LLM 'deepagent_paper' job (that loop is paused in prod,
+    so they never ran). They now run as per-user runner processes like live ones: give each a
+    prefix + allocation, make it runnable, and cancel the old queued job. Idempotent."""
+    from sqlalchemy import text
+    rows = s.execute(text("SELECT id, user_id::text, user_strategy_id, status, job_id FROM "
+                          "alpatrade.user_strategy_activations WHERE mode = 'paper' AND cid_prefix IS NULL")).all()
+    for aid, uid, sid, st, job in rows:
+        s.execute(text("UPDATE alpatrade.user_strategy_activations SET cid_prefix = :p, "
+                       "allocation_usd = COALESCE(allocation_usd, :v), "
+                       "status = CASE WHEN status = 'queued' THEN 'active' ELSE status END, updated_at = NOW() "
+                       "WHERE id = :i"), {"p": cid_prefix(uid, sid), "v": PAPER_ALLOCATION_USD, "i": aid})
+        if job:
+            s.execute(text("UPDATE alpatrade.autonomy_runs SET status = 'cancelled', updated_at = NOW() "
+                           "WHERE run_id::text = :j AND status = 'queued'"), {"j": str(job)})
 
 
 def cid_prefix(user_id: str, strategy_id: int) -> str:
@@ -150,22 +169,19 @@ def activate_paper(strategy_id: int, user_id: str,
     if not acct:
         return {"ok": False, "needs_keys": True,
                 "message": "Add your Alpaca paper keys in Settings > Integrations first."}
-    params = paper_params(cfg.get("params") or {})
-    config = {"strategy": "buy_the_dip", "duration_seconds": PAPER_DURATION_S,
-              "approved_best_config": {"params": params}, "source_user_strategy_id": int(strategy_id),
-              "email_notifications": False}
-    syms = (cfg.get("params") or {}).get("symbols") or []
-    if syms:
-        config["symbols"] = [str(x).upper()[:10] for x in syms][:25]
-    if enqueue is None:
-        from engine.autonomy import queue
-        enqueue = queue.enqueue
-    job_id = enqueue(kind="deepagent_paper", config=config, user_id=str(user_id), account_id=acct,
-                     dedupe_key=f"activate-paper:{int(strategy_id)}:{acct}:{int(time.time() // 60)}")
-    _record(user_id, strategy_id, "paper", acct, "queued", job_id=str(job_id), confirmed=True)
-    return {"ok": True, "job_id": str(job_id),
-            "message": f"Paper trading queued for strategy #{int(strategy_id)} on your Alpaca paper account "
-                       "(runs for a week; paper money only)."}
+    try:
+        from utils.user_live_runner import user_params
+        user_params((cfg.get("params") or {}))      # same validation the runner applies
+    except ValueError as exc:
+        return {"ok": False, "message": f"This strategy can't run yet: {exc}"}
+    except ImportError:
+        pass
+    _record(user_id, strategy_id, "paper", acct, "active", prefix=cid_prefix(user_id, strategy_id),
+            allocation=PAPER_ALLOCATION_USD, confirmed=True)
+    return {"ok": True,
+            "message": f"Paper trading started for strategy #{int(strategy_id)} on your Alpaca paper account "
+                       f"(paper money, up to ${PAPER_ALLOCATION_USD:,.0f}; runs until you stop it). Its own "
+                       "process starts within a minute and trades at US market hours (ET)."}
 
 
 # ── live ────────────────────────────────────────────────────────────────────
@@ -180,6 +196,7 @@ def runner_trades_account(account_number: str) -> bool:
     with _pool().get_session() as s:
         return bool(s.execute(text("SELECT 1 FROM alpatrade.runs WHERE mode = 'live' "
                                    "AND config->>'account_number' = :a "
+                                   "AND COALESCE(strategy_slug, '') NOT LIKE 'user:%' "   # per-user runner runs
                                    "AND COALESCE((config->>'test')::boolean, FALSE) = FALSE LIMIT 1"),
                               {"a": str(account_number)}).scalar())
 
@@ -339,13 +356,8 @@ def statuses(user_id: str) -> dict:
     for r in rows:
         d = out.setdefault(int(r["user_strategy_id"]), {"paper": None, "live": None})
         if r["mode"] == "paper":
-            if r["status"] == "deactivated":
-                d["paper"] = "ended"
-            else:
-                js = r["job_status"]
-                d["paper"] = ("starting" if js == "queued" else "running" if js == "running"
-                              else "ended" if js else "starting")
-            d["paper_job"] = r["job_id"]
+            d["paper"] = {"active": "running", "pending_runner": "starting", "paused": "paused",
+                          "queued": "starting"}.get(r["status"], "ended")
         else:
             d["live"] = r["status"]
             d["allocation"] = float(r["allocation_usd"]) if r["allocation_usd"] is not None else None
@@ -354,23 +366,15 @@ def statuses(user_id: str) -> dict:
 
 
 def stop_paper(user_id: str, strategy_id: int) -> bool:
+    """Stop the user's paper activation (the supervisor stops its process on the next poll)."""
     ensure_schema()
     from sqlalchemy import text
     with _pool().get_session() as s:
-        job = s.execute(text("SELECT job_id FROM alpatrade.user_strategy_activations WHERE user_id = CAST(:u AS UUID) "
-                             "AND user_strategy_id = :i AND mode = 'paper'"),
-                        {"u": str(user_id), "i": int(strategy_id)}).scalar()
-        if job is None:
-            return False
-        s.execute(text("UPDATE alpatrade.user_strategy_activations SET status = 'deactivated', updated_at = NOW() "
-                       "WHERE user_id = CAST(:u AS UUID) AND user_strategy_id = :i AND mode = 'paper'"),
-                  {"u": str(user_id), "i": int(strategy_id)})
-    try:
-        from engine.autonomy import queue
-        queue.cancel(str(job), str(user_id))
-    except Exception as exc:  # noqa: BLE001
-        log.warning("paper cancel failed: %s", type(exc).__name__)
-    return True
+        n = s.execute(text("UPDATE alpatrade.user_strategy_activations SET status = 'deactivated', updated_at = NOW() "
+                           "WHERE user_id = CAST(:u AS UUID) AND user_strategy_id = :i AND mode = 'paper' "
+                           "AND status <> 'deactivated'"),
+                      {"u": str(user_id), "i": int(strategy_id)}).rowcount
+    return bool(n)
 
 
 def live_id(user_id: str, strategy_id: int) -> Optional[int]:
@@ -383,7 +387,8 @@ def live_id(user_id: str, strategy_id: int) -> Optional[int]:
     return int(v) if v else None
 
 
-_PAPER_LBL = {"running": "Paper running", "starting": "Paper starting", "ended": "Paper stopped"}
+_PAPER_LBL = {"running": "Paper running", "starting": "Paper starting", "paused": "Paper paused",
+              "ended": "Paper stopped"}
 _LIVE_LBL = {"pending_runner": "Live starting", "active": "Live running", "paused": "Live paused",
              "deactivated": "Live off"}
 
@@ -430,7 +435,7 @@ def controls_html(sid: int, st: Optional[dict] = None, *, back: str = "", badges
         return (f"<form method='post' action='/strategies/{sid}/{path}'>{b}"
                 f"<button type='submit' class='ab {cls}'>{label}</button></form>")
     out = []
-    if st.get("paper") in ("running", "starting"):
+    if st.get("paper") in ("running", "starting", "paused"):
         out.append(post("paper/stop", "Stop paper", "stop"))
     else:
         out.append(post("activate/paper", "Activate Paper", "paper"))

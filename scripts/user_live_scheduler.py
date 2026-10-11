@@ -4,6 +4,7 @@
   python scripts/user_live_scheduler.py --activation-id 7            # dry run: same events, no orders
   python scripts/user_live_scheduler.py --activation-id 7 --live     # trades the USER's live account
   python scripts/user_live_scheduler.py --activation-id 7 --paper    # dry run against the user's PAPER keys
+  (a mode='paper' activation always uses the user's paper account; with --live it places PAPER orders)
   python scripts/user_live_scheduler.py --activation-id 7 --event entry --ignore-hours   # one dry pass
 
 Started by scripts/user_live_supervisor.py (one child per activation); never by the operator

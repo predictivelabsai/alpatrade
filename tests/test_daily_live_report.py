@@ -449,3 +449,24 @@ def test_s7btd_fill_attributed_to_semi7_not_mag7():
     assert out["buy_the_dip_semi7_minhold_live"]["realized"] == 5.0
     assert out["buy_the_dip_mag7_minhold_live"]["fills"] == 1
     assert isinstance(sl[1]["sleeve"], Sleeve)
+
+
+def test_user_account_report_uses_only_the_users_own_activations(monkeypatch):
+    import scripts.daily_live_report as dlr
+
+    class S:
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def execute(self, *a, **k):
+            class R:
+                def all(self_inner):
+                    return [("ua43796", 670, "pending_runner", "My clone", {"symbols": ["aapl"]})]
+            return R()
+
+    class P:
+        def get_session(self): return S()
+    monkeypatch.setattr(dlr, "_pool", lambda: P())
+    out = dlr.user_sleeves("u1", "822120655")
+    assert [o["sleeve"].cid_prefix for o in out] == ["ua43796"] and out[0]["display"] == "My clone"
+    assert out[0]["symbols"] == ["AAPL"] and out[0]["sleeve"].allocation_usd == 670
+    assert all(o["name"] != "btd" for o in out)

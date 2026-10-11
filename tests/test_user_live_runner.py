@@ -153,3 +153,18 @@ def test_encryption_key_from_dotenv_reaches_engine_auth(monkeypatch):
     monkeypatch.delenv("ENCRYPTION_KEY", raising=False)
     _runner(monkeypatch, env={"ENCRYPTION_KEY": "k" * 44})
     assert os.environ["ENCRYPTION_KEY"] == "k" * 44
+
+
+def test_paper_recorder_writes_paper_not_live(monkeypatch):
+    from utils import user_live_runner as ulr
+    from utils.live_btd_store import LiveRecorder
+    seen = []
+    monkeypatch.setattr(LiveRecorder, "_exec", lambda self, sql, params: seen.append(sql))
+    rec = ulr.PaperRecorder(None, "x@y")
+    rec._exec("INSERT ... VALUES (:r, 'live', :s) WHERE trade_type = 'live'", {})
+    assert seen == ["INSERT ... VALUES (:r, 'paper', :s) WHERE trade_type = 'paper'"]
+
+
+def test_operator_runner_recorder_default_unchanged():
+    from utils import live_btd_runner as lbr
+    assert "LiveRecorder(self.db_url, self.user_email" in __import__("inspect").getsource(lbr.Runner.recorder)

@@ -797,6 +797,25 @@ def register(app, rt):
     return ["/dashboard", "/pnl"]
 
 
+def _since_activation(r: dict) -> str:
+    try:
+        from engine.leaderboard import perf as lperf
+        m = lperf.strategy_metrics(r)
+    except Exception:  # noqa: BLE001
+        return ""
+    if not m.get("is_activation"):
+        return ""
+    v = m["return_pct"]
+    color = "#147a4b" if v > 0 else "#b43b35" if v < 0 else "var(--ink-muted)"
+    return (f" <span style='font-size:.78rem;color:{color};font-weight:650' title='{_h_attr(lperf.annualised_tip(m))}'>"
+            f"{lperf.pct(v)} since activation (${m.get('pnl_usd', 0):,.2f})</span>")
+
+
+def _h_attr(t: str) -> str:
+    import html as _h
+    return _h.escape(t, quote=True)
+
+
 def my_strategies_panel(uid: str) -> str:
     """Dashboard card: the user's own strategies with status + Activate/Pause/Deactivate (no chat)."""
     import html as _h
@@ -813,6 +832,7 @@ def my_strategies_panel(uid: str) -> str:
     else:
         body = "".join(
             f"<div class='ms-row'><a class='ms-name' href='/strategies/{int(r['id'])}'>{_h.escape(r['name'])}</a>"
+            + _since_activation(r)
             + controls_html(int(r["id"]), st.get(int(r["id"])), back="/dashboard#my-strategies") + "</div>"
             for r in rows)
     return (f"<style>{ACT_CSS}.ms-card{{margin:1rem 0;padding:1rem;border:1px solid var(--line);border-radius:.7rem;"

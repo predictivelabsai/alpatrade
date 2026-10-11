@@ -301,6 +301,38 @@ def strategy_sleeves(account_number: str | None) -> list[dict]:
     return out
 
 
+def user_sleeves(user_id: str, account_number: str | None) -> list[dict] | None:
+    """The user's OWN activated strategies on this account (per-user runner, prefix ``u…``), or
+    None when the account has none (then it is reported with :func:`strategy_sleeves`, the
+    operator layout). Never includes the operator's strategies or parameters."""
+    from utils.strategy_allocation import Sleeve
+    try:
+        from sqlalchemy import text
+        with _pool().get_session() as session:
+            rows = session.execute(text("""
+                SELECT a.cid_prefix, a.allocation_usd, a.status, s.name, c.params
+                FROM alpatrade.user_strategy_activations a
+                JOIN alpatrade.user_strategies s ON s.id = a.user_strategy_id AND s.user_id = a.user_id
+                LEFT JOIN alpatrade.user_strategy_configs c ON c.user_strategy_id = a.user_strategy_id
+                                                          AND c.user_id = a.user_id
+                WHERE a.user_id = CAST(:u AS UUID) AND a.mode = 'live' AND a.account_ref = :acct
+                  AND a.status <> 'deactivated' AND a.cid_prefix IS NOT NULL
+                ORDER BY a.id"""), {"u": str(user_id), "acct": str(account_number or "")}).all()
+    except Exception as exc:  # noqa: BLE001
+        log.warning("user activations unavailable: %s", type(exc).__name__)
+        return None
+    if not rows:
+        return None
+    out = []
+    for prefix, alloc, status, name, params in rows:
+        params = params if isinstance(params, dict) else json.loads(params or "{}")
+        out.append({"name": f"user:{prefix}", "display": name or prefix,
+                    "sleeve": Sleeve(f"user:{prefix}", prefix, None if alloc is None else float(alloc)),
+                    "symbols": [str(x).upper() for x in params.get("symbols") or []],
+                    "active": status in ("pending_runner", "active"), "status": status})
+    return out
+
+
 def strategy_breakdown(sleeves: list[dict], equity: float, positions: list[dict],
                        orders: list[dict]) -> list[dict]:
     """Per-strategy sleeve, open positions (by universe; sleeves are disjoint) and this
@@ -535,8 +567,9 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
     cids = {str(o.get("id")): str(o.get("client_order_id") or "") for o in closed}
 
     run = live_run(target["user_id"], target.get("account_number"))
-    sleeves = strategy_sleeves(target.get("account_number"))
-    if sleeves and not sleeves[0]["symbols"]:
+    own = user_sleeves(target["user_id"], target.get("account_number"))
+    sleeves = own if own is not None else strategy_sleeves(target.get("account_number"))
+    if own is None and sleeves and not sleeves[0]["symbols"]:
         sleeves[0]["symbols"] = list((run.get("config") or {}).get("symbols") or [])
     rtrades = runner_trades(run.get("run_id"))
     by_cid = {str(t.get("order_id") or ""): t for t in rtrades}
@@ -649,6 +682,7 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
         "positions": positions, "ignored_positions": ignored_positions, "open_orders": open_orders, "fills": orders,
         "run": run, "perf": perf, "annualized": annualized, "curves": curves, "runner_open": runner_open, "runner_actions": actions,
         "runner_heartbeat": hb, "signals": signals, "strategies": strategies, "warnings": warnings,
+        "runner_title": (", ".join(x["display"] for x in own) if own is not None else None),
         "db_ok": _db_ok(), "account_ok": True,
     }
 
@@ -986,7 +1020,7 @@ def render(d: dict) -> str:
   {_ignored_note(d)}
   <h3>Open orders ({len(d.get('open_orders') or [])})</h3>
   {_orders_table(d.get('open_orders') or [])}
-  <h3>Live runner (Mag-7 buy-the-dip)</h3>
+  <h3>Live runner ({_e(d.get('runner_title') or 'Mag-7 buy-the-dip')})</h3>
   {_runner_block(d)}
   <p style="color:{MUTED};font-size:12px;margin-top:1rem">Live trading — real money. This report
   is read-only (it cannot place, cancel or close anything). Realised P&amp;L is the runner's
