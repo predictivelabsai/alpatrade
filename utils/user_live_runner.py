@@ -202,6 +202,9 @@ class UserRunner(Runner):
         self.env = {k: v for k, v in base_env.items() if not k.startswith("ALPACA_LIVE_API")
                     and not k.startswith("ALPACA_LIVE_SECRET")}           # never the operator's keys
         self.db_url = base_env.get("DATABASE_URL")
+        if base_env.get("ENCRYPTION_KEY") and not os.environ.get("ENCRYPTION_KEY"):
+            # engine.auth reads the Fernet key from os.environ; systemd/launchd only have it in .env
+            os.environ["ENCRYPTION_KEY"] = base_env["ENCRYPTION_KEY"]
         self._eng = engine or (make_engine(self.db_url) if self.db_url else None)
         if self._eng is None:
             raise PassStop("DATABASE_URL not set")

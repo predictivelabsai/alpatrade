@@ -1,5 +1,11 @@
 # Change Log
 
+## 2026-10-11 — v0.38.1: user live runner loads ENCRYPTION_KEY from the runner .env
+
+- `UserRunner` exports `ENCRYPTION_KEY` from the repo `.env` into the process env (engine.auth reads
+  `os.environ`), so per-user processes under systemd/launchd can decrypt the user's keys. Runner key =
+  the prod web key (same SHA-256 as Coolify; all stored key rows decrypt).
+
 ## 2026-10-11 — v0.38.0: per-user live runner (one process per user strategy) + kill switches
 
 Julian approved: a confirmed Activate Live request trades the user's OWN live account with the

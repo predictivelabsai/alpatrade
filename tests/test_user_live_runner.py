@@ -146,3 +146,10 @@ def test_supervisor_and_scheduler_scripts_exist_and_are_separate():
     op = (root / "scripts/live_btd_scheduler.py").read_text()
     assert "user_live_scheduler.py" in sup and "USER_LIVE" not in op and "user_live" not in op
     assert "operator_account" in sup or "ALPACA_LIVE_ACCOUNT" in sup
+
+
+def test_encryption_key_from_dotenv_reaches_engine_auth(monkeypatch):
+    import os
+    monkeypatch.delenv("ENCRYPTION_KEY", raising=False)
+    _runner(monkeypatch, env={"ENCRYPTION_KEY": "k" * 44})
+    assert os.environ["ENCRYPTION_KEY"] == "k" * 44
