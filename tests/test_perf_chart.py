@@ -37,7 +37,7 @@ def test_mtd_ytd_inception_rows():
 
 def test_chart_html_is_strategy_page_chart():
     h = chart_html("x1", _series(), highlight=("2026-10-01", "2026-10-11"))
-    assert "xaxis:{type:'date'}" in h and "#1F5D43" in h and "Plotly.newPlot('x1'" in h
+    assert "xaxis:{type:'date'" in h and "#1F5D43" in h and "Plotly.newPlot('x1'" in h
     assert '"hl": ["2026-10-01", "2026-10-09"]' in h
     assert chart_html("x2", {}) == ""
     ytd = chart_html("x3", _series(), highlight=("2026-01-01", "2026-10-11"))

@@ -11,6 +11,7 @@
   paper: selected period), /live/account, /strategies/<id>#details and the Leaderboard detail.
   The Leaderboard-only drawdown/daily JS (`_DETAIL_JS`) is deleted; backtests omit daily returns
   as before. Element ids: `<id>`, `<id>-dd`, `<id>-dr`.
+- X-axis ticks are 'dd Mon' (no second year line), so legends no longer overlap the axis labels.
 - Leaderboard live headline stays simple annualised (×252 / trading days); compounded in the tooltip.
 - Tests: three charts from one series (deposit day is a TWR step, not a jump), all four surfaces
   render the three charts via the shared function. Mobile checked at 375 / 414 px.

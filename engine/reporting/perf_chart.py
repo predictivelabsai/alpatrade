@@ -146,7 +146,7 @@ def ffill_spy(dates: list[str], spy_map: dict[str, float], first: Optional[float
 _JS = """<script>(function(){function go(){var n=document.getElementById('pc-data-__ID__');if(!n)return;
 if(!window.Plotly)return setTimeout(go,150);
 var d=JSON.parse(n.textContent),s=d.s,L={margin:{l:40,r:10,t:10,b:30},paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
-legend:{orientation:'h'},xaxis:{type:'date'}},C={displayModeBar:false,responsive:true};
+legend:{orientation:'h'},xaxis:{type:'date',tickformat:'%d %b'}},C={displayModeBar:false,responsive:true};
 var tr=[{x:s.dates,y:s.index,name:d.label,line:{color:'#1F5D43',width:2}}];
 if(s.spy_index&&s.spy_index.some(function(v){return v!=null}))tr.push({x:s.dates,y:s.spy_index,name:'SPY',line:{color:'#7A867E'}});
 var pos={};s.dates.forEach(function(x,i){pos[x]=s.index[i]});var bx=[],by=[],bt=[],sx=[],sy=[],st=[];
