@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.40.1 — 2026-10-11 — Fix since-activation P&L query
+
+- `activation_metrics` read `positions.unrealized_pl`; the column is `unrealized_pnl`. The query failed, so pages fell back to backtest figures. Verified on the prod DB: Kairi's strategy #39 now reads live, +0.00%, $670 allocation, 0 fills.
+
 ## v0.40.0 — 2026-10-11 — Per-user daily reports, 0% at activation, durable paper activations
 
 - **Daily live report for each user, scoped to their own strategies.** The report already went to every owner of an active live link (their own account, their own email, honouring `report_live_daily`, default on). A user's account was still laid out as the operator's: a "Mag-7 BTD · btd- · rest of account" sleeve and a "Live runner (Mag-7 buy-the-dip)" heading. Now the Strategies table and runner heading come from the user's own live activations (their clone's name, universe, `u…` prefix and allocation, `user_sleeves()`). The operator account is unchanged. Times are ET, returns are deposit-adjusted TWR, and the chart is the same.

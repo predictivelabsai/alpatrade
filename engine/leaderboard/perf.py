@@ -302,7 +302,7 @@ def _activation_pnl(user_id: str, prefix: str, mode: str, since) -> dict:
                      WHERE t.trade_type = :m AND t.exit_price IS NOT NULL),
                    (SELECT COUNT(*) FROM alpatrade.trades t JOIN rr USING (run_id)
                      WHERE t.trade_type = :m AND t.entry_price IS NOT NULL),
-                   (SELECT COALESCE(SUM(unrealized_pl), 0) FROM alpatrade.positions p JOIN rr USING (run_id)
+                   (SELECT COALESCE(SUM(unrealized_pnl), 0) FROM alpatrade.positions p JOIN rr USING (run_id)
                      WHERE p.status = 'open')"""),
                       {"u": str(user_id), "m": mode, "p": prefix, "since": since}).first()
     return {"realized": float(r[0] or 0), "fills": int(r[1] or 0), "unrealized": float(r[2] or 0)}
