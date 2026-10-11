@@ -276,7 +276,7 @@ def test_news_enricher_uses_current_model_no_reasoning_and_logs_usage(monkeypatc
     monkeypatch.setenv("XAI_MODEL", "grok-4-1-fast-reasoning")
     monkeypatch.delenv("XAI_REASONING_EFFORT", raising=False)
     client = _fake_xai_client('{"company": "A", "event": "earnings"}')
-    with patch("engine.ai.llm_usage.enforce_daily_budget") as budget, \
+    with patch("engine.ai.llm_usage.enforce_news_budget") as budget, \
          patch("engine.ai.llm_usage.record_usage") as record:
         enricher = XAIEnricher(client=client, account_usage=True)
         out = enricher.metadata({"title": "T", "content": "C"})
@@ -284,7 +284,7 @@ def test_news_enricher_uses_current_model_no_reasoning_and_logs_usage(monkeypatc
     kwargs = client.chat.completions.create.call_args.kwargs
     assert kwargs["model"] == "grok-4.3"
     assert kwargs["reasoning_effort"] == "none"
-    budget.assert_called_once_with(funding_source="platform")
+    budget.assert_called_once_with()  # news has its own daily cap (2026-10-11)
     rk = record.call_args.kwargs
     assert rk["agent"] == "news" and rk["job_id"] == "news-metadata"
     assert rk["usage"].input_tokens == 300
@@ -294,7 +294,7 @@ def test_news_enricher_budget_exhaustion_skips_provider_call():
     from engine.ai.llm_usage import DailyBudgetExceeded
     from news_scheduler.xai import XAIEnricher
     client = _fake_xai_client("x")
-    with patch("engine.ai.llm_usage.enforce_daily_budget",
+    with patch("engine.ai.llm_usage.enforce_news_budget",
                side_effect=DailyBudgetExceeded("cap")):
         with pytest.raises(DailyBudgetExceeded):
             XAIEnricher(client=client, account_usage=True).reason({"title_en": "T"})

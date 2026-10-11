@@ -14,6 +14,11 @@ from sqlalchemy import text
 from engine.db.pool import get_pool
 
 PLATFORM_DAILY_BUDGET_USD = Decimal(os.getenv("PLATFORM_LLM_DAILY_BUDGET_USD", "3"))
+# News enrichment (summaries/tags, agent "news") has its own daily budget and is
+# excluded from the shared platform total, so it can neither exceed its own cap
+# nor eat the $3 that chat/autonomy/premarket share (2026-10-11).
+NEWS_AGENT = "news"
+NEWS_DAILY_BUDGET_USD = Decimal(os.getenv("NEWS_LLM_DAILY_BUDGET_USD", "20"))
 # Deployment may override prices without a release. Values are USD / 1M tokens.
 DEFAULT_INPUT_USD_PER_M = Decimal(os.getenv("LLM_INPUT_USD_PER_MILLION", "1.25"))
 DEFAULT_OUTPUT_USD_PER_M = Decimal(os.getenv("LLM_OUTPUT_USD_PER_MILLION", "2.50"))
@@ -87,9 +92,37 @@ def daily_platform_cost(user_id: str | None = None) -> Decimal:
             SELECT COALESCE(SUM(estimated_cost_usd), 0)
             FROM alpatrade.llm_usage_logging
             WHERE funding_source = 'platform' AND status = 'completed'
+              AND agent_framework IS DISTINCT FROM 'news'
               AND created_at >= date_trunc('day', NOW()) {owner}
         """), params).scalar()
     return Decimal(str(value or 0))
+
+
+def daily_news_cost() -> Decimal:
+    """Today's platform-funded news-enrichment spend (agent ``news``)."""
+    with get_pool().get_session() as session:
+        value = session.execute(text("""
+            SELECT COALESCE(SUM(estimated_cost_usd), 0)
+            FROM alpatrade.llm_usage_logging
+            WHERE funding_source = 'platform' AND status = 'completed'
+              AND agent_framework = 'news'
+              AND created_at >= date_trunc('day', NOW())
+        """)).scalar()
+    return Decimal(str(value or 0))
+
+
+def enforce_news_budget() -> None:
+    """Stop news enrichment once NEWS_LLM_DAILY_BUDGET_USD is spent today.
+
+    Fails closed (unlike the chat allowance) because the news workers are
+    unattended loops: no readable spend counter, no call."""
+    try:
+        spent = daily_news_cost()
+    except Exception as exc:
+        raise DailyBudgetExceeded("news budget counter unavailable") from exc
+    if spent >= NEWS_DAILY_BUDGET_USD:
+        raise DailyBudgetExceeded(
+            f"The ${NEWS_DAILY_BUDGET_USD:.2f} daily news-enrichment budget is reached.")
 
 
 def enforce_daily_budget(*, funding_source: str) -> None:

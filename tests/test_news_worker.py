@@ -572,3 +572,42 @@ def test_backlog_guard_backs_off_and_pauses_after_consecutive_failures():
     assert not guard.paused() and guard.sleep_seconds() == 60
     guard.record(True); guard.record(False)
     assert guard.failures == 0
+
+
+def test_news_budget_is_separate_from_shared_platform_budget(monkeypatch):
+    from decimal import Decimal
+    from engine.ai import llm_usage
+    monkeypatch.setattr(llm_usage, "NEWS_DAILY_BUDGET_USD", Decimal("20"))
+    monkeypatch.setattr(llm_usage, "daily_news_cost", lambda: Decimal("19.99"))
+    llm_usage.enforce_news_budget()  # under $20: allowed even though > $3
+    monkeypatch.setattr(llm_usage, "daily_news_cost", lambda: Decimal("20.00"))
+    with pytest.raises(llm_usage.DailyBudgetExceeded):
+        llm_usage.enforce_news_budget()
+
+
+def test_news_budget_fails_closed_when_counter_unavailable(monkeypatch):
+    from engine.ai import llm_usage
+    def broken(): raise RuntimeError("db down")
+    monkeypatch.setattr(llm_usage, "daily_news_cost", broken)
+    with pytest.raises(llm_usage.DailyBudgetExceeded):
+        llm_usage.enforce_news_budget()
+
+
+def test_shared_platform_total_excludes_news_spend():
+    import inspect
+    from engine.ai import llm_usage
+    assert "IS DISTINCT FROM 'news'" in inspect.getsource(llm_usage.daily_platform_cost)
+
+
+def test_enricher_uses_news_budget(monkeypatch):
+    from news_scheduler.xai import XAIEnricher
+    calls = []
+    monkeypatch.setattr("engine.ai.llm_usage.enforce_news_budget", lambda: calls.append("news"))
+    monkeypatch.setattr("engine.ai.llm_usage.enforce_daily_budget",
+                        lambda **k: calls.append("platform"))
+    monkeypatch.setattr("engine.ai.llm_usage.record_usage", lambda **k: None)
+    client = MagicMock()
+    client.chat.completions.create.return_value.choices = [MagicMock(message=MagicMock(content="ok"))]
+    client.chat.completions.create.return_value.usage = None
+    XAIEnricher(client=client, model="grok-4.3", account_usage=True).reason({})
+    assert calls == ["news"]

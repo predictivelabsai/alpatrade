@@ -42,8 +42,8 @@ class XAIEnricher:
 
     def _complete(self, stage: str, *, max_tokens: int, messages: list[dict]) -> str:
         if self.account_usage:
-            from engine.ai.llm_usage import enforce_daily_budget
-            enforce_daily_budget(funding_source="platform")
+            from engine.ai.llm_usage import enforce_news_budget
+            enforce_news_budget()  # own $20/day cap, separate from the shared $3
         kwargs: dict[str, Any] = {"model": self.model, "temperature": 0,
                                   "max_tokens": max_tokens, "messages": messages}
         if self.reasoning_effort:

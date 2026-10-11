@@ -1,5 +1,18 @@
 # Change Log
 
+## 2026-10-11 — news enrichment: own $20/day budget, backlog throughput 150 rows / 15 min
+
+- Approved by Julian: news enrichment (summaries/tags, every article, no ticker filter) gets
+  its **own** daily budget `NEWS_LLM_DAILY_BUDGET_USD` (default $20) via
+  `enforce_news_budget()`, which fails closed. The $3 `PLATFORM_LLM_DAILY_BUDGET_USD` was a
+  shared platform-wide cap (chat, autonomy reason, premarket, news); it is unchanged for
+  those callers, and news spend (agent "news") is now excluded from that shared total, so
+  $20 of news can't exhaust it and news no longer competes with chat for the $3.
+- `news-backfill`: `NEWS_BACKFILL_BATCH_SIZE` 20 → 150 (every 15 min, max ~14.4k rows/day),
+  `NEWS_BACKFILL_MAX_PER_DAY` 800 → 12000 (~$15/day at ~$0.00125/row). Calls stay serial
+  (~20 req/min, well under xAI limits). Newest-first, back-off, pause after 3 failed cycles
+  and the 24 h row cooldown are unchanged. Set in docker-compose.yaml and the Coolify env.
+
 ## 2026-10-11 — news-backfill daily limit 400 → 800 rows
 
 - Approved by Julian: `NEWS_BACKFILL_MAX_PER_DAY` default in the `news-backfill` compose
