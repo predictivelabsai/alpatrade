@@ -190,7 +190,10 @@ def test_live_link_table_is_only_used_by_the_readonly_view():
                # Activate Live: GET-only balance read + validation; records a pending request,
                # never writes runner config, never orders
                "engine/leaderboard/activate.py", "tests/test_activate.py",
-               "tests/test_settings_integrations.py"}
+               "tests/test_settings_integrations.py",
+               # Per-user live runner (Julian-approved): decrypts ONLY the activating user's own
+               # link to trade that user's own account (utils/user_live_runner.py)
+               "utils/user_live_runner.py", "tests/test_user_live_runner.py"}
     pat = re.compile(r"user_live_broker_accounts|engine\.live_accounts|get_live_account_credentials"
                      r"|alpaca_live_readonly")
     hits = set()

@@ -239,6 +239,32 @@ def _live_card(links: list):
     )
 
 
+def _live_strategies_card(rows: list):
+    if not rows:
+        return Div()
+    from engine.leaderboard.activate import STATUS_LABEL
+    items = []
+    for r in rows:
+        st = r.get("status")
+        btns = []
+        for act, label, show in (("pause", "Pause", st in ("pending_runner", "active")),
+                                 ("resume", "Resume", st == "paused"),
+                                 ("deactivate", "Deactivate", st != "deactivated")):
+            if show:
+                btns.append(Form(Button(label, type="submit", cls="s-btn" + (" s-danger" if act == "deactivate" else "")),
+                                 method="post", action=f"/settings/live-strategies/{int(r['id'])}/{act}",
+                                 style="display:inline-block;margin:.3rem .4rem 0 0"))
+        items.append(Div(
+            NotStr(f"<b>{html.escape(str(r.get('name') or ''))}</b> · account {html.escape(str(r.get('account_ref')))} · "
+                   f"${float(r.get('allocation_usd') or 0):,.2f} cash only · orders <code>{html.escape(str(r.get('cid_prefix')))}-…</code>"
+                   f"<br><span class='s-hint'>{html.escape(STATUS_LABEL.get(st, str(st)))}</span>"),
+            *btns, style="padding:.6rem 0;border-bottom:1px solid var(--line)"))
+    return Div(H3("Live strategies"),
+               P("Each runs in its own process on your own account. Pause stops new buys (open positions keep "
+                 "their exits); Deactivate stops the strategy.", cls="s-hint"),
+               *items, id="live-strategies", cls="s-card")
+
+
 def _settings_page(user, msg: str = ""):
     if not user:
         return RedirectResponse("/signin", status_code=303)
@@ -270,6 +296,11 @@ def _settings_page(user, msg: str = ""):
         live_links = list_live_accounts(user["user_id"])
     except Exception:  # noqa: BLE001
         live_links = []
+    try:
+        from engine.leaderboard.activate import list_live
+        live_strats = list_live(str(user["user_id"]))
+    except Exception:  # noqa: BLE001
+        live_strats = []
 
     account_id = accounts[0]["account_id"] if accounts else ""
 
@@ -346,6 +377,7 @@ function toggleSecret(id, button) {
         NotStr("<h2 id='integrations' class='s-section'>Integrations</h2>"),
         _paper_card(accounts, account_id, key_status),
         _live_card(live_links),
+        _live_strategies_card(live_strats),
 
         # --- Email reports ------------------------------------------------
         _report_card(user["user_id"], has_paper=bool(accounts),
@@ -452,6 +484,18 @@ def register(app, rt):
             pass
         ok = f"Live account {info['account_number']} verified and connected (read-only until you activate a strategy)."
         return RedirectResponse(f"/settings?msg={quote_plus(ok)}#integrations", status_code=303)
+
+    @app.post("/settings/live-strategies/{aid}/{action}")
+    async def settings_live_strategy(session, aid: int, action: str):
+        from urllib.parse import quote_plus
+        user = _user(session)
+        if not user:
+            return RedirectResponse("/signin", status_code=303)
+        from engine.leaderboard.activate import set_status
+        ok = set_status(str(user["user_id"]), aid, action)
+        m = {"pause": "Live strategy paused.", "resume": "Live strategy resumed.",
+             "deactivate": "Live strategy deactivated."}.get(action, "Unknown action.") if ok else "Could not change that strategy."
+        return RedirectResponse(f"/settings?msg={quote_plus(m)}#live-strategies", status_code=303)
 
     @app.post("/settings/live-keys/remove")
     async def settings_live_keys_remove(session, request):

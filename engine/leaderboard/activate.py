@@ -14,8 +14,11 @@ dollar allocation. The request is validated with the multi-strategy sleeve rules
 the account's existing sleeves, a unique client_order_id prefix ``u<6 hex>`` (never ``btd`` /
 ``s7btd``), and a universe disjoint from the account's other active sleeves. It is stored as
 ``pending_runner``: this module never writes alpatrade.strategy_configs or
-alpatrade.strategy_allocations (the live runner's config) and never places orders. The shared
-runner only trades the operator's account today; per-user live sleeves need an operator switch.
+alpatrade.strategy_allocations (the operator runner's config) and never places orders. A
+dedicated per-activation process (utils/user_live_runner.py, started by
+scripts/user_live_supervisor.py) trades it on the user's own account while
+USER_LIVE_TRADING_ENABLED=1. Users pause (no new entries, exits continue), resume or deactivate
+(process stopped) from Settings > Integrations.
 """
 from __future__ import annotations
 
@@ -244,9 +247,47 @@ def activate_live(strategy_id: int, user_id: str, allocation: Optional[float], c
             prefix=plan["cid_prefix"], allocation=round(float(allocation), 2), confirmed=True)
     plan["message"] = (f"Live activation recorded for strategy #{int(strategy_id)}: ${float(allocation):,.2f} "
                        f"cash only on account {plan['account_number']}, orders tagged "
-                       f"{plan['cid_prefix']}-…. It starts trading once per-user live sleeves are enabled "
-                       "on the shared runner; nothing has been ordered.")
+                       f"{plan['cid_prefix']}-…. Your own live runner picks it up at the next trading session "
+                       "(entries 15:45-15:55 ET); nothing has been ordered yet. Pause or deactivate it any time in "
+                       "Settings > Integrations.")
     return plan
+
+
+STATUS_LABEL = {"pending_runner": "Waiting for the next session", "active": "Running",
+                "paused": "Paused (no new entries; exits continue)", "deactivated": "Deactivated"}
+ACTIONS = {"pause": ("paused", ("pending_runner", "active")), "resume": ("active", ("paused",)),
+           "deactivate": ("deactivated", ("pending_runner", "active", "paused"))}
+
+
+def list_live(user_id: str) -> list[dict]:
+    try:
+        ensure_schema()
+        from sqlalchemy import text
+        with _pool().get_session() as s:
+            rows = s.execute(text("""SELECT a.id, a.user_strategy_id, a.account_ref, a.cid_prefix, a.allocation_usd,
+                       a.status, a.updated_at, us.name FROM alpatrade.user_strategy_activations a
+                       JOIN alpatrade.user_strategies us ON us.id = a.user_strategy_id
+                       WHERE a.user_id = CAST(:u AS UUID) AND a.mode = 'live' ORDER BY a.id"""),
+                             {"u": str(user_id)}).mappings().all()
+        return [dict(r) for r in rows]
+    except Exception as exc:  # noqa: BLE001
+        log.warning("list live activations failed: %s", type(exc).__name__)
+        return []
+
+
+def set_status(user_id: str, activation_id: int, action: str) -> bool:
+    """Per-user kill switch: pause / resume / deactivate ONE of the user's own activations."""
+    if action not in ACTIONS:
+        return False
+    new, allowed = ACTIONS[action]
+    ensure_schema()
+    from sqlalchemy import text
+    with _pool().get_session() as s:
+        n = s.execute(text("""UPDATE alpatrade.user_strategy_activations SET status = :n, updated_at = NOW()
+                              WHERE id = :i AND user_id = CAST(:u AS UUID) AND mode = 'live'
+                                AND status = ANY(:ok)"""),
+                      {"n": new, "i": int(activation_id), "u": str(user_id), "ok": list(allowed)}).rowcount
+    return bool(n)
 
 
 def buttons_html(strategy_id: int) -> str:

@@ -217,6 +217,28 @@ class Runner:
         out = [(sl, resolve_config(sl.strategy_name, {}, engine=eng)) for sl in load_sleeves(eng, account_number, primary_name)]
         return pa, out
 
+    # ------------------------------------------------------------------ hooks
+    # Defaults reproduce the operator runner exactly; utils/user_live_runner.UserRunner
+    # overrides them for one user's own strategy on that user's own account.
+    def plan_sleeves(self, acct, cfg):
+        """(primary Sleeve, [(Sleeve, ConfigResult)]) for this pass."""
+        primary = Sleeve(cfg.name or self.strategy, PRIMARY_PREFIX, None, True)
+        extra = []
+        try:
+            primary.allocation_usd, extra = self.load_sleeves(acct.get("account_number") or self.account_no,
+                                                              primary.strategy_name)
+        except Exception as exc:  # noqa: BLE001
+            self.log.warning("strategy allocations unavailable (%s) -> primary strategy only, whole account", exc)
+        return primary, extra
+
+    def entry_gate(self) -> Optional[str]:
+        """Reason to disable NEW entries this pass (exits still run), or None."""
+        return None
+
+    def pre_order(self, body) -> None:
+        """Last check right before an order is submitted; raise PassStop to abort the pass."""
+        return None
+
     # ------------------------------------------------------------------ HTTP
     def get(self, url, **params):
         r = requests.get(url, headers=self.headers, params=params, timeout=20); r.raise_for_status(); return r.json()
@@ -354,6 +376,11 @@ class Runner:
             log.warning("strategy config not loaded from the DB (%s) -> %s", cfg.error,
                         "entries disabled this pass" if EXECUTE else "a live pass would disable entries")
 
+        gate = self.entry_gate()
+        if gate:
+            ALLOW_ENTRIES = False
+            log.warning("entries disabled this pass: %s", gate)
+
         def lease_ok():
             if not EXECUTE or DEGRADED: return True
             if time.monotonic() < DEADLINE: return True
@@ -366,6 +393,7 @@ class Runner:
                              "cache_instance": self.instance})
 
         def submit(body):
+            self.pre_order(body)
             r = self.post_order(body); res.orders.append(body); return r
 
         acct_state = state
@@ -683,12 +711,7 @@ class Runner:
                     log.warning("record: performance failed: %s", exc)
 
 
-        primary = Sleeve(cfg.name or self.strategy, PRIMARY_PREFIX, None, True)
-        extra = []
-        try:
-            primary.allocation_usd, extra = self.load_sleeves(acct.get("account_number") or self.account_no, primary.strategy_name)
-        except Exception as exc:  # noqa: BLE001
-            log.warning("strategy allocations unavailable (%s) -> primary strategy only, whole account", exc)
+        primary, extra = self.plan_sleeves(acct, cfg)
         sleeves = [primary] + [sl for sl, _ in extra]
         strategy_pass(acct_state, cfg, primary, sleeves)
         for sl, scfg in extra:

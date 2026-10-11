@@ -163,3 +163,9 @@ def deactivate_live_account(user_id: str, account_number: str) -> None:
             UPDATE {TABLE} SET is_active = FALSE, api_key_enc = :z, secret_key_enc = :z, updated_at = NOW()
             WHERE user_id = :uid AND account_number = :acct
         """), {"uid": user_id, "acct": str(account_number), "z": encrypt_key("revoked")})
+        try:   # its live strategies stop too (the user runner also refuses without an active link)
+            session.execute(text("""UPDATE alpatrade.user_strategy_activations SET status = 'deactivated',
+                                    updated_at = NOW() WHERE user_id = CAST(:uid AS UUID) AND account_ref = :acct
+                                    AND mode = 'live'"""), {"uid": user_id, "acct": str(account_number)})
+        except Exception:  # noqa: BLE001 -- table may not exist yet
+            pass

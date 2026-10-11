@@ -1,5 +1,32 @@
 # Change Log
 
+## 2026-10-11 — v0.38.0: per-user live runner (one process per user strategy) + kill switches
+
+Julian approved: a confirmed Activate Live request trades the user's OWN live account with the
+user's OWN strategy. Web side deploys now; the runner side (new scripts) is NOT started on the
+HP / Mac.home / box until Julian approves the runner rollout.
+
+- `utils/user_live_runner.UserRunner`: one process per activation
+  (`scripts/user_live_scheduler.py --activation-id N`), kept alive by its own service
+  `scripts/user_live_supervisor.py` (one child per runnable activation, crash backoff). Own
+  config (only `user_strategy_configs.params`; required universe/dip/TP/SL/hold/pos_frac, never
+  `strategy_configs`, `strategy_allocations` or `DEFAULT_PARAMS`), own decrypted keys, own
+  `u<6hex>` client_order_id prefix, own state dir/log/flock (`$BTD_STATE_DIR/users/<prefix>/`)
+  and own lease key `user-btd:<account>:<prefix>`. Refuses the operator account.
+- Order-time guards (`pre_order`): kill switches re-read, own prefix only, buy notional ≤
+  allocation, keys verified to belong to the activated account; sizing as a fixed sleeve:
+  min(account cash / non-marginable BP − pending buys, allocation − own exposure − own pending);
+  no order when cash is short; never margin.
+- Single order placer: same primary > backup > tertiary lease protocol per activation, and a
+  user process only acts on the instance that currently holds the operator lease.
+- Kill switches: `USER_LIVE_TRADING_ENABLED=1` required (supervisor stops all children; running
+  passes stop submitting); per-user Pause (no new entries, exits continue) / Resume / Deactivate
+  in Settings > Integrations > Live strategies; disconnecting live keys deactivates them.
+- Operator runner: three no-op hooks (`plan_sleeves`, `entry_gate`, `pre_order`) whose defaults
+  are byte-for-byte the previous behaviour; Julian's Mag-7 (`btd`) / Semi-7 (`s7btd`) unchanged.
+- Fills go to `alpatrade.runs` / `trades` / `positions` / `pnl_summary` via the same
+  `LiveRecorder`, attributed to the user (`user_id`) and account (`runs.config.account_number`).
+
 ## 2026-10-11 — v0.37.0: live keys in Settings > Integrations for every user; Activate Paper / Activate Live
 
 - **Why live keys could not be saved:** Settings only had a paper-key form, and
