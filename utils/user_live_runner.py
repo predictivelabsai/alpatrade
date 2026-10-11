@@ -288,7 +288,12 @@ class UserRunner(Runner):
 
     def verify_account(self) -> str:
         """The keys must belong to the activation's account (live mode); returns the account number."""
-        got = str(self.get(f"{self.base}/v2/account").get("account_number") or "")
+        try:
+            got = str(self.get(f"{self.base}/v2/account").get("account_number") or "")
+        except Exception as exc:  # noqa: BLE001 -- never echo headers
+            code = getattr(getattr(exc, "response", None), "status_code", None)
+            raise PassStop(f"Alpaca rejected the user's keys (HTTP {code})" if code in (401, 403)
+                           else f"Alpaca account check failed ({type(exc).__name__})") from None
         if not self.paper and got != self.act.account_number:
             raise PassStop("the user's keys do not belong to the activated account")
         self._verified = got

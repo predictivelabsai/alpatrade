@@ -6,6 +6,11 @@ import utils.user_live_runner as ulr
 from utils.live_btd_runner import PassStop, Runner, build_parser
 from utils.live_btd_config import DEFAULT_PARAMS
 
+@pytest.fixture(autouse=True)
+def _state_dir(tmp_path, monkeypatch):
+    monkeypatch.setenv("BTD_STATE_DIR", str(tmp_path))     # never the real ~/.alpatrade-live
+
+
 PARAMS = {"symbols": ["XOM", "CVX"], "dip": 2.5, "tp": 6, "sl": 2, "min_hold": 2, "max_hold": 4, "pos_frac": 0.5}
 
 
@@ -45,7 +50,7 @@ def test_user_keys_prefix_allocation_and_no_operator_keys(monkeypatch):
     assert (sl.cid_prefix, sl.allocation_usd, sl.is_primary, extra) == ("u466196", 400.0, False, [])
     assert r.load_sleeves("885504372", "x") == (None, [])
     assert r.store("USER123").inner.runner_key == "user-btd:USER123:u466196"
-    assert "/users/u466196" in r.here and r.load_config().source == "user_strategy_configs"
+    assert "/users/u466196" in r.here and ".alpatrade-live" not in r.here and r.load_config().source == "user_strategy_configs"
 
 
 def test_never_runs_on_the_operator_account(monkeypatch):

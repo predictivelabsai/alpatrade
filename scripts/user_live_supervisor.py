@@ -73,6 +73,7 @@ while True:
             log.info("%s is off -> no user live runners", FLAG)
         else:
             want = wanted(e["DATABASE_URL"], e.get("ALPACA_LIVE_ACCOUNT"))
+            log.info("%d runnable user live activation(s): %s", len(want), sorted(want))
             for aid in list(children):
                 if aid not in want:
                     stop(aid, "deactivated")
