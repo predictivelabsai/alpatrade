@@ -769,7 +769,8 @@ def _curves_block(d: dict) -> str:
         f'border:1px solid #E4E1D7;border-radius:6px;background:#fff">'
         f"</div>"
         f'<p style="font-size:11px;color:{MUTED};margin:.1rem 0 .4rem">Indexed to 100 at '
-        "the live runner start. Account line is broker equity; SPY is the ETF close.</p>"
+        "inception. Account line is the deposit-adjusted time-weighted return (deposits / "
+        "withdrawals removed); SPY is the ETF close.</p>"
     )
 
 

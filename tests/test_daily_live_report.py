@@ -111,7 +111,7 @@ def db(monkeypatch):
         {"symbol": "AMZN", "close": 220, "high20": 225, "dip": 2.2, "status": "near"}])
     monkeypatch.setattr(
         "engine.reporting.live_perf.equity_curves",
-        lambda client, run, end=None, spy_series=None: {
+        lambda client, run, end=None, spy_series=None, flows=None: {
             "dates": ["2026-09-24", "2026-09-25"],
             "account": [10000.0, 10150.0],
             "spy": [600.0, 612.0],
