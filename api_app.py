@@ -474,6 +474,11 @@ async def openapi_document(request: Request):
     return JSONResponse(app.openapi(), headers={"Vary": "Accept"})
 
 
+from engine.research_api import research_router
+
+app.include_router(research_router(require_tenant_user, get_current_user))
+
+
 @app.get("/", response_model=ApiInfoResponse, tags=["meta"])
 async def api_info():
     """Human- and machine-readable API discovery document."""

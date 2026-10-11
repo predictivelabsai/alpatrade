@@ -1,5 +1,12 @@
 # Change Log
 
+## 2026-10-11 — v0.36.0: mobile research API and Android download
+
+- Added REST leaderboard search, visibility-scoped strategy detail and owner-scoped CRUD/cloning and background backtest launch/status using the existing leaderboard services.
+- Added authenticated 13F screening, estimated fund performance, activist filings, IPO listings and pipeline endpoints.
+- Added DB-free access-control and contract tests to CI. Validated 79 focused tests and 104 full regression tests; Android emulator integration passed for mobile 1.1.0.
+- Deployment: API and mobile must be released together; no new schema is introduced (existing leaderboard / 13F migrations are required). Release uses the existing CI/CD pipeline. The landing download now points to the mobile repository’s stable latest APK asset.
+
 ## 2026-10-11 — news worker: GlobeNewswire 403, fair publisher mix, guarded enrichment backlog
 
 - **GlobeNewswire returned nothing since Fri 9 Oct ~16:37 EEST:** `www.globenewswire.com/RssFeed/*`

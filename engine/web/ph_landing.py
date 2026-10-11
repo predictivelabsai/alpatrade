@@ -42,35 +42,18 @@ HF_IMG_ALT = ("Screenshot of the AlpaTrade Hedge Funds page: 13F-implied estimat
               "for well-known hedge funds compared with SPY, and a screener over 13F filers' "
               "holdings with filters for quarter, AUM and positions.")
 
-# Android APK — published as a GitHub release asset (binary kept out of the repo/image).
-# /download/android resolves the LATEST release's .apk dynamically, so the website link
-# never needs changing when a new versioned/signed build is released.
-_APK_RELEASES_API = "https://api.github.com/repos/predictivelabsai/alpatrade/releases/latest"
-_APK_FALLBACK = "https://github.com/predictivelabsai/alpatrade/releases/latest"
-_apk_cache = {"url": None, "at": 0.0}
-_APK_TTL = 300  # seconds
+# The mobile pipeline publishes this asset on each release and marks it latest.
+# GitHub resolves the stable URL, so the landing needs no version-specific edits.
+_APK_DOWNLOAD_URL = (
+    "https://github.com/predictivelabsai/alpatrade-mobile/"
+    "releases/latest/download/alpatrade-latest.apk"
+)
 
 
 def latest_apk_url() -> str:
-    """Return the newest release's .apk download URL (cached ~5 min). Falls back to the
-    releases page if the API is unreachable or no .apk asset is found."""
-    import time as _t
-    import requests
-    now = _t.time()
-    if _apk_cache["url"] and (now - _apk_cache["at"]) < _APK_TTL:
-        return _apk_cache["url"]
-    url = _APK_FALLBACK
-    try:
-        r = requests.get(_APK_RELEASES_API, timeout=8,
-                         headers={"Accept": "application/vnd.github+json"})
-        assets = r.json().get("assets", []) if r.ok else []
-        apk = next((a for a in assets if a.get("name", "").lower().endswith(".apk")), None)
-        if apk and apk.get("browser_download_url"):
-            url = apk["browser_download_url"]
-    except Exception:  # noqa: BLE001
-        pass
-    _apk_cache.update(url=url, at=now)
-    return url
+    """Canonical signed Android download, maintained by the mobile release pipeline."""
+    return _APK_DOWNLOAD_URL
+
 
 _GOOGLE_SVG = (
     '<svg width="17" height="17" viewBox="0 0 18 18" style="display:inline-block;'

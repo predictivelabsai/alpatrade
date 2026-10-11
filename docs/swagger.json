@@ -11,7 +11,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "0.19.0"
+    "version": "0.36.0"
   },
   "servers": [
     {
@@ -20,6 +20,839 @@
     }
   ],
   "paths": {
+    "/v2/leaderboard": {
+      "get": {
+        "tags": [
+          "research"
+        ],
+        "summary": "Leaderboard",
+        "operationId": "leaderboard_v2_leaderboard_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 160,
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "",
+                "live",
+                "backtest"
+              ],
+              "type": "string",
+              "default": "",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrategyList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/v2/strategies": {
+      "get": {
+        "tags": [
+          "research"
+        ],
+        "summary": "Mine",
+        "operationId": "mine_v2_strategies_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrategyList"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "research"
+        ],
+        "summary": "Create",
+        "operationId": "create_v2_strategies_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StrategyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrategyId"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ]
+      }
+    },
+    "/v2/strategies/{sid}": {
+      "get": {
+        "tags": [
+          "research"
+        ],
+        "summary": "Strategy",
+        "operationId": "strategy_v2_strategies__sid__get",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrategyView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "research"
+        ],
+        "summary": "Update",
+        "operationId": "update_v2_strategies__sid__put",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Sid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StrategyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "research"
+        ],
+        "summary": "Delete",
+        "operationId": "delete_v2_strategies__sid__delete",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/strategies/{sid}/clone": {
+      "post": {
+        "tags": [
+          "research"
+        ],
+        "summary": "Clone",
+        "operationId": "clone_v2_strategies__sid__clone_post",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloneResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/strategies/{sid}/backtest": {
+      "post": {
+        "tags": [
+          "research"
+        ],
+        "summary": "Backtest",
+        "operationId": "backtest_v2_strategies__sid__backtest_post",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BacktestJob"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/strategy-backtests/{job_id}": {
+      "get": {
+        "tags": [
+          "research"
+        ],
+        "summary": "Backtest Status",
+        "operationId": "backtest_status_v2_strategy_backtests__job_id__get",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BacktestStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/hedge-funds": {
+      "get": {
+        "tags": [
+          "research"
+        ],
+        "summary": "Funds",
+        "operationId": "funds_v2_hedge_funds_get",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 160,
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Period"
+            }
+          },
+          {
+            "name": "min_aum",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "",
+                "100m",
+                "1b",
+                "10b",
+                "100b",
+                "lt100m"
+              ],
+              "type": "string",
+              "default": "",
+              "title": "Min Aum"
+            }
+          },
+          {
+            "name": "pos",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "",
+                "concentrated",
+                "focused",
+                "diversified",
+                "broad"
+              ],
+              "type": "string",
+              "default": "",
+              "title": "Pos"
+            }
+          },
+          {
+            "name": "rtype",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "holdings",
+                "holdings_only",
+                "combination",
+                "notice",
+                "any"
+              ],
+              "type": "string",
+              "default": "holdings",
+              "title": "Rtype"
+            }
+          },
+          {
+            "name": "holds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 16,
+              "default": "",
+              "title": "Holds"
+            }
+          },
+          {
+            "name": "perf_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Perf Only"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "aum",
+                "positions",
+                "name",
+                "filed",
+                "ttm"
+              ],
+              "type": "string",
+              "default": "aum",
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FundScreen"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/hedge-funds/performance": {
+      "get": {
+        "tags": [
+          "research"
+        ],
+        "summary": "Performance",
+        "operationId": "performance_v2_hedge_funds_performance_get",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "method",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "quarter_end",
+                "follow_filing"
+              ],
+              "type": "string",
+              "default": "quarter_end",
+              "title": "Method"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FundPerformance"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/hedge-funds/activists": {
+      "get": {
+        "tags": [
+          "research"
+        ],
+        "summary": "Activists",
+        "operationId": "activists_v2_hedge_funds_activists_get",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 16,
+              "default": "",
+              "title": "Ticker"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 25,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/ipos": {
+      "get": {
+        "tags": [
+          "research"
+        ],
+        "summary": "Ipos",
+        "operationId": "ipos_v2_ipos_get",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 300,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/ipos/pipeline": {
+      "get": {
+        "tags": [
+          "research"
+        ],
+        "summary": "Pipeline",
+        "operationId": "pipeline_v2_ipos_pipeline_get",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ServiceApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "tags": [
@@ -991,7 +1824,7 @@
           "data"
         ],
         "summary": "V2 Pnl",
-        "description": "P&L breakdown for a specific run — per-symbol and daily.",
+        "description": "P&L breakdown for a specific run \u2014 per-symbol and daily.",
         "operationId": "v2_pnl_v2_pnl__run_id__get",
         "security": [
           {
@@ -1220,7 +2053,7 @@
           "agent-invocation"
         ],
         "summary": "Invoke Backtest Agent",
-        "description": "Run a parameterized backtest. Synchronous — may take minutes.\n\n### Agent skills\n\n- Strategy parameter sweeps\n- Historical performance analysis\n- Risk and drawdown metrics\n- Best-configuration selection\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `read_only`",
+        "description": "Run a parameterized backtest. Synchronous \u2014 may take minutes.\n\n### Agent skills\n\n- Strategy parameter sweeps\n- Historical performance analysis\n- Risk and drawdown metrics\n- Best-configuration selection\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `read_only`",
         "operationId": "v2_backtest_v2_backtest_post",
         "requestBody": {
           "content": {
@@ -2297,7 +3130,7 @@
           "agent-invocation"
         ],
         "summary": "Invoke Five-Agent Orchestrator",
-        "description": "Run full cycle: backtest -> validate -> paper -> validate. Synchronous — long-running.\n\n### Agent skills\n\n- Multi-agent workflow coordination\n- Backtest-to-paper promotion\n- Phase status aggregation\n- End-to-end run reporting\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `orchestration`",
+        "description": "Run full cycle: backtest -> validate -> paper -> validate. Synchronous \u2014 long-running.\n\n### Agent skills\n\n- Multi-agent workflow coordination\n- Backtest-to-paper promotion\n- Phase status aggregation\n- End-to-end run reporting\n\n**Execution:** `synchronous`  \n**Access:** `authenticated`  \n**Safety:** `orchestration`",
         "operationId": "v2_full_v2_full_post",
         "requestBody": {
           "content": {
@@ -3635,7 +4468,7 @@
           "agent-invocation"
         ],
         "summary": "Stream DeepAgent Assistant (SSE)",
-        "description": "Streaming chat for the mobile app — the SAME router as the web chat.\n\nAuth: optional `Authorization: Bearer <JWT>`. Authenticated users may use\ncaller-owned portfolio and paper-action tools. Anonymous callers receive\npublic market/research tools only and never use server broker credentials.\n\nBody (JSON or form-encoded): `msg` (or `message`), `thread_id` (or `sid`).\n\nResponse: `text/event-stream` with named SSE events —\n  session · agent_route · token · tool_start · tool_end · error · done\n(`data:` is JSON). This matches the web chat event contract.\n\n### Agent skills\n\n- Token-by-token conversational responses\n- Agent routing events\n- Tool execution events\n- Conversation-thread continuity\n\n**Execution:** `streaming`  \n**Access:** `public`  \n**Safety:** `paper_only`",
+        "description": "Streaming chat for the mobile app \u2014 the SAME router as the web chat.\n\nAuth: optional `Authorization: Bearer <JWT>`. Authenticated users may use\ncaller-owned portfolio and paper-action tools. Anonymous callers receive\npublic market/research tools only and never use server broker credentials.\n\nBody (JSON or form-encoded): `msg` (or `message`), `thread_id` (or `sid`).\n\nResponse: `text/event-stream` with named SSE events \u2014\n  session \u00b7 agent_route \u00b7 token \u00b7 tool_start \u00b7 tool_end \u00b7 error \u00b7 done\n(`data:` is JSON). This matches the web chat event contract.\n\n### Agent skills\n\n- Token-by-token conversational responses\n- Agent routing events\n- Tool execution events\n- Conversation-thread continuity\n\n**Execution:** `streaming`  \n**Access:** `public`  \n**Safety:** `paper_only`",
         "operationId": "v2_chat_v2_chat_post",
         "requestBody": {
           "content": {
@@ -3680,7 +4513,7 @@
         },
         "responses": {
           "200": {
-            "description": "Server-Sent Events stream. Each event is `event: <type>` + `data: <json>`. Types: session · agent_route · token · tool_start · tool_end · error · done. `token.text` chunks concatenate into the assistant reply (markdown).",
+            "description": "Server-Sent Events stream. Each event is `event: <type>` + `data: <json>`. Types: session \u00b7 agent_route \u00b7 token \u00b7 tool_start \u00b7 tool_end \u00b7 error \u00b7 done. `token.text` chunks concatenate into the assistant reply (markdown).",
             "content": {
               "application/json": {
                 "schema": {}
@@ -4537,6 +5370,19 @@
         ],
         "title": "AutonomyScoutResponse"
       },
+      "BacktestJob": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id"
+        ],
+        "title": "BacktestJob"
+      },
       "BacktestRequest": {
         "properties": {
           "account_id": {
@@ -4672,6 +5518,51 @@
         ],
         "title": "BacktestResponse"
       },
+      "BacktestStatus": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "running",
+              "done",
+              "error"
+            ],
+            "title": "State"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "markdown": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Markdown"
+          },
+          "strategy_id": {
+            "type": "integer",
+            "title": "Strategy Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state",
+          "strategy_id"
+        ],
+        "title": "BacktestStatus"
+      },
       "BestConfig": {
         "properties": {
           "sharpe_ratio": {
@@ -4766,6 +5657,24 @@
         },
         "type": "object",
         "title": "BestConfig"
+      },
+      "CloneResult": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created"
+        ],
+        "title": "CloneResult"
       },
       "CmdRequest": {
         "properties": {
@@ -5208,6 +6117,97 @@
           "status"
         ],
         "title": "FullCycleResponse"
+      },
+      "FundPerformance": {
+        "properties": {
+          "funds": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Funds"
+          },
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Labels"
+          },
+          "spy": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Spy"
+          },
+          "computed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Computed At"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "quarter_end",
+              "follow_filing"
+            ],
+            "title": "Method"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "funds",
+          "labels",
+          "method",
+          "note"
+        ],
+        "title": "FundPerformance"
+      },
+      "FundScreen": {
+        "properties": {
+          "rows": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "periods": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Periods"
+          },
+          "holds_unmapped": {
+            "type": "boolean",
+            "title": "Holds Unmapped",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "rows",
+          "period",
+          "periods"
+        ],
+        "title": "FundScreen"
       },
       "HTTPValidationError": {
         "properties": {
@@ -6813,6 +7813,211 @@
         ],
         "title": "StopResponse"
       },
+      "StrategyId": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "StrategyId"
+      },
+      "StrategyInput": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Description",
+            "default": ""
+          },
+          "skill_md": {
+            "type": "string",
+            "maxLength": 60000,
+            "title": "Skill Md",
+            "default": ""
+          },
+          "author_name": {
+            "type": "string",
+            "maxLength": 60,
+            "title": "Author Name",
+            "default": ""
+          },
+          "is_public": {
+            "type": "boolean",
+            "title": "Is Public",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "StrategyInput"
+      },
+      "StrategyList": {
+        "properties": {
+          "strategies": {
+            "items": {
+              "$ref": "#/components/schemas/StrategyView"
+            },
+            "type": "array",
+            "title": "Strategies"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "strategies"
+        ],
+        "title": "StrategyList"
+      },
+      "StrategyView": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "skill_md": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skill Md"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "is_public": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Public"
+          },
+          "cloned_from_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cloned From Id"
+          },
+          "author": {
+            "type": "string",
+            "title": "Author"
+          },
+          "metrics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metrics"
+          },
+          "methodology": {
+            "type": "string",
+            "title": "Methodology"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "is_owner": {
+            "type": "boolean",
+            "title": "Is Owner",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "author",
+          "metrics",
+          "methodology"
+        ],
+        "title": "StrategyView"
+      },
       "TopStrategyItem": {
         "properties": {
           "strategy_slug": {
@@ -7264,7 +8469,7 @@
     },
     {
       "name": "agents",
-      "description": "Agent lifecycle — status and cancellation",
+      "description": "Agent lifecycle \u2014 status and cancellation",
       "x-displayName": "Agent lifecycle"
     },
     {
@@ -7284,7 +8489,7 @@
     },
     {
       "name": "market",
-      "description": "Market data — news, prices, profiles, movers",
+      "description": "Market data \u2014 news, prices, profiles, movers",
       "x-displayName": "Market data"
     },
     {
