@@ -109,6 +109,33 @@ services:
       - EODHD_API_KEY=${EODHD_API_KEY:-}
     restart: unless-stopped
 
+  # Guarded enrichment backlog (pending_enrichment/retryable rows, newest first),
+  # incl. rows CityTicker's news_worker stores un-enriched. Cost guards: daily row
+  # limit (fails closed), back-off + pause after consecutive failed cycles, the
+  # platform daily LLM budget and llm_usage_logging (agent "news"). ~$0.0013/row.
+  news-backfill:
+    build:
+      context: .
+      dockerfile: Dockerfile.agui
+    command: ["python", "-m", "news_scheduler.worker", "--mode", "backfill"]
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - DB_POOL_SIZE=2
+      - DB_MAX_OVERFLOW=1
+      - DB_APPLICATION_NAME=alpatrade-news-backfill
+      - XAI_API_KEY=${XAI_API_KEY}
+      - XAI_MODEL=${XAI_MODEL:-grok-4.3}
+      - XAI_REASONING_EFFORT=${XAI_REASONING_EFFORT:-none}
+      - PLATFORM_LLM_DAILY_BUDGET_USD=${PLATFORM_LLM_DAILY_BUDGET_USD:-3}
+      - NEWS_MODEL_STORAGE_PATH=${NEWS_MODEL_STORAGE_PATH:-}
+      - NEWS_WORKER_BATCH_SIZE=${NEWS_BACKFILL_BATCH_SIZE:-20}
+      - NEWS_WORKER_INTERVAL_SECONDS=${NEWS_BACKFILL_INTERVAL_SECONDS:-900}
+      - NEWS_BACKFILL_MAX_PER_DAY=${NEWS_BACKFILL_MAX_PER_DAY:-400}
+      - NEWS_BACKFILL_MAX_CONSECUTIVE_FAILURES=${NEWS_BACKFILL_MAX_CONSECUTIVE_FAILURES:-3}
+      - NEWS_BACKFILL_FAILURE_PAUSE_SECONDS=${NEWS_BACKFILL_FAILURE_PAUSE_SECONDS:-21600}
+      - EODHD_API_KEY=${EODHD_API_KEY:-}
+    restart: unless-stopped
+
   # Durable executor for scoped Hermes backtest and paper jobs. This is an
   # AlpaTrade service, not the Hermes model container; it owns DB/broker access
   # and derives every job's user_id from the API's validated delegation.

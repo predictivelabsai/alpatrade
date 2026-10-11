@@ -1,3 +1,5 @@
+import itertools
+from collections import Counter
 from contextlib import contextmanager
 from unittest.mock import MagicMock
 
@@ -311,7 +313,7 @@ def test_backfill_retains_partial_result_and_advances_to_later_rows():
         ({"title": "First"}, ["company"], ["metadata:RuntimeError"]),
         ({**VALID, "title": "Second"}, [], []),
     ]
-    worker = Worker("backfill", 10, 60, 0, 1, repository=repo,
+    worker = Worker("full-backfill", 10, 60, 0, 1, repository=repo,
                     pipeline=pipeline, publishers=MagicMock())
     assert worker._backfill_cycle() is True
     assert pipeline.enrich_best_effort.call_count == 2
@@ -320,7 +322,7 @@ def test_backfill_retains_partial_result_and_advances_to_later_rows():
 
 def test_durable_checkpoint_resume_uses_saved_cursor():
     repo = FakeRepo()
-    worker = Worker("backfill", 10, 1, 0, 2, repository=repo, pipeline=MagicMock(), publishers=MagicMock())
+    worker = Worker("full-backfill", 10, 1, 0, 2, repository=repo, pipeline=MagicMock(), publishers=MagicMock())
     assert worker._backfill_cycle() is False
     assert repo.state["last_processed_news_id"] == 4
 
@@ -415,3 +417,158 @@ def test_monitoring_status_calculates_completion(monkeypatch):
     monkeypatch.setattr(monitoring, "DatabasePool", lambda: pool)
     row = monitoring.news_worker_snapshot()[0]
     assert row["mode"] == "backfill" and row["completion_percentage"] == 75.0
+
+
+# --- 2026-10-11: GNW host, publisher fairness, CityTicker dedupe, guarded backlog ---
+
+def test_globenewswire_feeds_use_rss_host_not_www():
+    from news_scheduler.publishers import gnw_rss_url
+    feeds = [url for _, _, url in finespresso_feed_inventory() if "globenewswire" in url]
+    assert len(feeds) > 250
+    assert all(url.startswith("https://rss.globenewswire.com/RssFeed/") for url in feeds)
+    assert gnw_rss_url("https://www.globenewswire.com/RssFeed/country/Estonia/x") == \
+        "https://rss.globenewswire.com/RssFeed/country/Estonia/x"
+    assert gnw_rss_url("https://rss.globenewswire.com/RssFeed/a") == "https://rss.globenewswire.com/RssFeed/a"
+    assert gnw_rss_url("https://www.prnewswire.com/rss/x") == "https://www.prnewswire.com/rss/x"
+
+
+def test_configured_feed_override_is_rewritten_to_rss_host():
+    publishers = FinespressoPublishers("https://www.globenewswire.com/RssFeed/subject/x")
+    assert publishers.feeds[0][2] == "https://rss.globenewswire.com/RssFeed/subject/x"
+
+
+def _groups(**rows):
+    return lambda: [(name, iter([{"publisher": name, "link": f"{name}{i}"} for i in range(n)]))
+                    for name, n in rows.items()]
+
+
+def test_collect_quota_gives_each_publisher_a_fair_share_of_the_cap():
+    publishers = FinespressoPublishers("https://example.test/feed")
+    publishers.groups = _groups(prnewswire=100, gnw=100, omx=100, baltics=1)
+    rows = list(itertools.islice(publishers.collect(batch_size=25), 25))
+    mix = Counter(r["publisher"] for r in rows)
+    assert mix["baltics"] == 1
+    assert max(mix.values()) - min(v for k, v in mix.items() if k != "baltics") <= 1
+    assert mix["prnewswire"] <= 8
+
+
+def test_collect_releases_unused_quota_after_every_job_had_its_share():
+    publishers = FinespressoPublishers("https://example.test/feed")
+    publishers.groups = _groups(prnewswire=40, quiet=1)
+    rows = list(itertools.islice(publishers.collect(batch_size=10), 10))
+    assert Counter(r["publisher"] for r in rows) == {"prnewswire": 9, "quiet": 1}
+
+
+def test_collect_skips_stored_links_inside_a_jobs_turn():
+    publishers = FinespressoPublishers("https://example.test/feed")
+    publishers.groups = _groups(prnewswire=10, gnw=10)
+    stored = {f"gnw{i}" for i in range(8)}
+    rows = list(itertools.islice(
+        publishers.collect(is_new=lambda p, l: l not in stored, batch_size=4), 4))
+    assert [r["link"] for r in rows] == ["prnewswire0", "gnw8", "prnewswire1", "gnw9"]
+
+
+def test_realtime_cycle_passes_dedupe_and_cap_to_collect():
+    repo = RealtimeRepo()
+    repo.article_exists = lambda publisher, link: link == "old"
+    publishers = MagicMock()
+    publishers.collect.return_value = []
+    Worker("realtime", 25, 60, 0, 1, repository=repo, pipeline=MagicMock(),
+           publishers=publishers)._realtime_cycle()
+    kwargs = publishers.collect.call_args.kwargs
+    assert kwargs["batch_size"] == 25
+    assert kwargs["is_new"]("p", "old") is False and kwargs["is_new"]("p", "new") is True
+
+
+class _Conn:
+    def __init__(self, log): self.log = log
+    def execute(self, stmt, params=None):
+        self.log.append((str(stmt), params))
+        result = MagicMock(); result.scalar.return_value = 7
+        return result
+
+
+class _Engine:
+    def __init__(self): self.log = []
+    @contextmanager
+    def begin(self): yield _Conn(self.log)
+
+
+def test_insert_uses_cityticker_publisher_link_dedupe_and_lock():
+    engine = _Engine()
+    assert NewsRepository(engine).insert_pending({"publisher": "omx", "link": "https://x/1",
+                                                   "title": "t"}) == 7
+    lock_sql, lock_params = engine.log[0]
+    assert "pg_advisory_xact_lock(hashtext(:k))" in lock_sql
+    assert lock_params == {"k": "omx|https://x/1"}  # CityTicker: f"{publisher}|{link}"
+    insert_sql = " ".join(engine.log[1][0].split())
+    assert "WHERE NOT EXISTS ( SELECT 1 FROM public.news WHERE link=:link AND publisher=:publisher)" in insert_sql
+
+
+def test_insert_without_link_or_publisher_is_skipped():
+    engine = _Engine()
+    assert NewsRepository(engine).insert_pending({"publisher": "omx", "link": ""}) is None
+    assert engine.log == []
+
+
+class BacklogRepo(RealtimeRepo):
+    def __init__(self, rows, used=0):
+        super().__init__()
+        self.rows, self.used, self.events, self.limits = rows, used, [], []
+    def backlog(self, job, limit, shard, count):
+        self.limits.append(limit); return self.rows[:limit]
+    def backlog_remaining(self): return len(self.rows)
+    def attempts_today(self, job): return self.used
+    def record_event(self, job, shard, name, status, **kw): self.events.append(name)
+
+
+def test_backlog_respects_daily_limit_and_records_progress(monkeypatch):
+    monkeypatch.setenv("NEWS_BACKFILL_MAX_PER_DAY", "10")
+    repo = BacklogRepo([{"id": i, "publisher": "p"} for i in range(30, 0, -1)], used=7)
+    pipeline = MagicMock(); pipeline.enrich_best_effort.return_value = (dict(VALID), [], [])
+    worker = Worker("backfill", 25, 60, 0, 1, repository=repo, pipeline=pipeline, publishers=MagicMock())
+    assert worker._backlog_cycle() is True
+    assert repo.limits == [3] and pipeline.enrich_best_effort.call_count == 3
+    assert worker._cycle_failed is False
+    assert repo.state["last_successful_cycle"] is not None
+    assert repo.events.count("backfill_enriched") == 3
+
+
+def test_backlog_daily_limit_reached_makes_no_ai_calls(monkeypatch):
+    monkeypatch.setenv("NEWS_BACKFILL_MAX_PER_DAY", "5")
+    repo = BacklogRepo([{"id": 1}], used=5)
+    pipeline = MagicMock()
+    Worker("backfill", 25, 60, 0, 1, repository=repo, pipeline=pipeline,
+           publishers=MagicMock())._backlog_cycle()
+    pipeline.enrich_best_effort.assert_not_called()
+
+
+def test_backlog_daily_limit_fails_closed_when_counter_unavailable():
+    from news_scheduler.worker import BacklogGuard
+    def broken(): raise RuntimeError("db down")
+    assert BacklogGuard(base_seconds=60, daily_limit=100).allowance(broken) == 0
+
+
+def test_backlog_stops_cycle_when_platform_budget_is_exhausted():
+    repo = BacklogRepo([{"id": 3}, {"id": 2}, {"id": 1}])
+    pipeline = MagicMock()
+    pipeline.enrich_best_effort.return_value = ({}, ["company"], ["metadata:DailyBudgetExceeded"])
+    worker = Worker("backfill", 25, 60, 0, 1, repository=repo, pipeline=pipeline, publishers=MagicMock())
+    worker._backlog_cycle()
+    assert pipeline.enrich_best_effort.call_count == 1 and worker._cycle_failed is True
+
+
+def test_backlog_guard_backs_off_and_pauses_after_consecutive_failures():
+    from news_scheduler.worker import BacklogGuard
+    now = [0.0]
+    guard = BacklogGuard(base_seconds=60, max_failures=3, pause_seconds=3600,
+                         max_backoff=1000, daily_limit=10, clock=lambda: now[0])
+    assert guard.sleep_seconds() == 60
+    assert guard.record(True) is False and guard.sleep_seconds() == 60
+    assert guard.record(True) is False and guard.sleep_seconds() == 120
+    assert guard.record(True) is True and guard.paused()
+    assert guard.sleep_seconds() == 3600
+    now[0] = 3601
+    assert not guard.paused() and guard.sleep_seconds() == 60
+    guard.record(True); guard.record(False)
+    assert guard.failures == 0

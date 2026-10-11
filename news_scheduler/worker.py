@@ -37,6 +37,67 @@ def _safe_error(exc: Exception) -> str:
     return f"{type(exc).__name__}: operation failed; see sanitized structured logs"
 
 
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.getenv(name, str(default)))
+    except ValueError:
+        return default
+
+
+class BacklogGuard:
+    """Cost guards for the enrichment backlog, mirroring the 2026-09-28 autonomy
+    LoopGuard: exponential back-off after a failed cycle, a pause after
+    ``max_failures`` consecutive failed cycles, and a daily row limit that fails
+    closed when the counter is unavailable."""
+
+    def __init__(self, *, base_seconds: int, max_failures: int | None = None,
+                 pause_seconds: int | None = None, max_backoff: int | None = None,
+                 daily_limit: int | None = None, clock=time.monotonic):
+        self.base_seconds = max(1, base_seconds)
+        self.max_failures = max(1, max_failures if max_failures is not None
+                                else _env_int("NEWS_BACKFILL_MAX_CONSECUTIVE_FAILURES", 3))
+        self.pause_seconds = (pause_seconds if pause_seconds is not None
+                              else _env_int("NEWS_BACKFILL_FAILURE_PAUSE_SECONDS", 6 * 3600))
+        self.max_backoff = max(self.base_seconds, max_backoff if max_backoff is not None
+                               else _env_int("NEWS_BACKFILL_MAX_BACKOFF_SECONDS", 4 * 3600))
+        self.daily_limit = (daily_limit if daily_limit is not None
+                            else _env_int("NEWS_BACKFILL_MAX_PER_DAY", 400))
+        self.clock = clock
+        self.failures = 0
+        self.paused_until = 0.0
+
+    def paused(self) -> bool:
+        return self.clock() < self.paused_until
+
+    def record(self, failed: bool) -> bool:
+        """Returns True when this failure tripped the pause."""
+        if not failed:
+            self.failures = 0
+            return False
+        self.failures += 1
+        if self.failures >= self.max_failures:
+            self.paused_until = self.clock() + self.pause_seconds
+            self.failures = 0
+            return True
+        return False
+
+    def sleep_seconds(self) -> int:
+        if self.paused():
+            return int(max(1, self.paused_until - self.clock()))
+        if not self.failures:
+            return self.base_seconds
+        return int(min(self.base_seconds * (2 ** (self.failures - 1)), self.max_backoff))
+
+    def allowance(self, used_today) -> int:
+        if self.daily_limit <= 0:
+            return 0
+        try:
+            return max(0, self.daily_limit - int(used_today()))
+        except Exception as exc:  # noqa: BLE001 — fail closed
+            _event(logging.WARNING, "backfill_daily_limit_check_failed", error_type=type(exc).__name__)
+            return 0
+
+
 class Worker:
     def __init__(self, mode: str, batch_size: int, interval: int, shard_index: int, shard_count: int,
                  repository=None, pipeline=None, publishers=None):
@@ -50,6 +111,7 @@ class Worker:
         self.repo = repository or NewsRepository(pool.engine)
         self.pipeline = pipeline or NewsPipeline(ModelRegistry(pool.engine), XAIEnricher())
         self.publishers = publishers or RSSPublishers()
+        self.guard = BacklogGuard(base_seconds=interval) if mode == "backfill" else None
 
     def _record(self, event_name: str, status: str, **values) -> None:
         try:
@@ -70,6 +132,8 @@ class Worker:
 
     def _backfill_cycle(self) -> bool:
         state = self.repo.checkpoint(self.job_name, self.shard_index, self.shard_count)
+        # "full-backfill" is the original id-ascending scan of every incomplete row
+        # (~239k legacy rows, ~$300 of xAI): opt-in only, never the default.
         targeted = self.mode == "company-backfill"
         fetch = self.repo.incomplete_company_type if targeted else self.repo.incomplete
         count_remaining = (self.repo.remaining_company_type if targeted
@@ -123,13 +187,75 @@ class Worker:
                 last_error=None, status="running", last_successful_cycle=datetime.now(timezone.utc))
         return True
 
+    def _backlog_cycle(self) -> bool:
+        """Guarded enrichment of pending/retryable rows, newest first.
+
+        Returns True while the backlog has work. Sets ``self._cycle_failed`` for
+        the guard: a cycle fails when rows were tried and none became complete.
+        """
+        self._cycle_failed = False
+        guard = self.guard
+        state = self.repo.checkpoint(self.job_name, self.shard_index, self.shard_count)
+        allowance = guard.allowance(lambda: self.repo.attempts_today(self.job_name))
+        if allowance <= 0:
+            _event(logging.INFO, "backfill_daily_limit_reached", daily_limit=guard.daily_limit)
+            self.repo.update_checkpoint(self.job_name, self.shard_index, self.shard_count,
+                                        status="running", last_error=None)
+            return True
+        rows = self._retry(lambda: self.repo.backlog(
+            self.job_name, min(self.batch_size, allowance), self.shard_index, self.shard_count))
+        processed, failed = int(state["processed_count"] or 0), int(state["failed_count"] or 0)
+        completed = tried = 0
+        last_id = state.get("last_processed_news_id")
+        for row in rows:
+            if STOP.is_set():
+                break
+            candidate_id = int(row["id"])
+            tried += 1
+            try:
+                enriched, missing, issues = self.pipeline.enrich_best_effort(row)
+                self._retry(lambda: self.repo.update_partial(candidate_id, enriched, missing))
+                processed += 1
+                last_id = candidate_id
+                if missing:
+                    failed += 1
+                    self._record("backfill_retryable", "retryable", news_id=candidate_id,
+                                 publisher=row.get("publisher"), details={
+                                     "missing_fields": missing, "issue_types": issues})
+                    if any(str(i).endswith("DailyBudgetExceeded") for i in issues):
+                        _event(logging.WARNING, "backfill_budget_exhausted")
+                        break
+                else:
+                    completed += 1
+                    self._record("backfill_enriched", "completed", news_id=candidate_id,
+                                 publisher=row.get("publisher"))
+            except Exception as exc:  # noqa: BLE001 — counted, row cools down 24h
+                failed += 1
+                self._record("backfill_failed", "error", news_id=candidate_id,
+                             publisher=row.get("publisher"), details={"error_type": type(exc).__name__})
+        self._cycle_failed = tried > 0 and completed == 0
+        remaining = self.repo.backlog_remaining()
+        self.repo.update_checkpoint(self.job_name, self.shard_index, self.shard_count,
+            last_processed_news_id=last_id, processed_count=processed, failed_count=failed,
+            status="running", last_successful_cycle=datetime.now(timezone.utc), last_error=None)
+        _event(logging.INFO, "backfill_cycle_completed", tried=tried, enriched=completed,
+               remaining=remaining, allowance=allowance)
+        self._record("backfill_cycle_completed", "completed", details={
+            "tried": tried, "enriched": completed, "remaining": remaining})
+        return True
+
     def _realtime_cycle(self) -> bool:
         state = self.repo.checkpoint(self.job_name, self.shard_index, self.shard_count)
         processed, failed, inserted = int(state["processed_count"] or 0), int(state["failed_count"] or 0), None
         attempted = 0
         completed_this_cycle = partial_this_cycle = 0
         publisher_counts: dict[str, dict[str, int]] = {}
-        for article in self._retry(self.publishers.collect):
+        # Fair share per publisher job inside the batch cap; already-stored links are
+        # skipped inside each job's turn (the same publisher+link check CityTicker uses).
+        exists_fn = getattr(self.repo, "article_exists", None)
+        is_new = (lambda p, l: not exists_fn(p, l)) if exists_fn else None
+        for article in self._retry(lambda: self.publishers.collect(
+                is_new=is_new, batch_size=self.batch_size)):
             exists = getattr(self.repo, "article_exists", lambda *_: False)
             if exists(str(article.get("publisher") or ""), str(article.get("link") or "")):
                 continue
@@ -211,9 +337,21 @@ class Worker:
                          "shard_count": self.shard_count})
             try:
                 while not STOP.is_set():
+                    if self.guard is not None and self.guard.paused():
+                        STOP.wait(min(self.guard.sleep_seconds(), 300))
+                        continue
                     try:
-                        has_more = (self._realtime_cycle() if self.mode == "realtime"
-                                    else self._backfill_cycle())
+                        if self.mode == "realtime":
+                            has_more = self._realtime_cycle()
+                        elif self.mode == "backfill":
+                            has_more = self._backlog_cycle()
+                            if self.guard.record(self._cycle_failed):
+                                msg = (f"news backfill PAUSED for {self.guard.pause_seconds}s after "
+                                       f"{self.guard.max_failures} consecutive failed cycles")
+                                _event(logging.ERROR, "backfill_paused", message=msg)
+                                self._record("backfill_paused", "error", details={"message": msg})
+                        else:
+                            has_more = self._backfill_cycle()
                     except Exception as exc:
                         # A failed cycle is observable but never terminates the
                         # continuously scheduled worker.
@@ -226,10 +364,12 @@ class Worker:
                         except Exception:
                             pass
                         _event(logging.ERROR, "cycle_failed", error_type=type(exc).__name__)
+                        if self.guard is not None:
+                            self.guard.record(True)
                         has_more = True
                     if self.mode != "realtime" and not has_more:
                         break
-                    STOP.wait(self.interval)
+                    STOP.wait(self.guard.sleep_seconds() if self.guard is not None else self.interval)
             except Exception as exc:
                 self.repo.update_checkpoint(self.job_name, self.shard_index, self.shard_count,
                                             status="error", last_error=_safe_error(exc))
@@ -244,7 +384,7 @@ class Worker:
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("realtime", "backfill", "company-backfill"),
+    parser.add_argument("--mode", choices=("realtime", "backfill", "full-backfill", "company-backfill"),
                         default=os.getenv("NEWS_WORKER_MODE", "realtime"))
     parser.add_argument("--batch-size", type=int, default=int(os.getenv("NEWS_WORKER_BATCH_SIZE", "25")))
     parser.add_argument("--interval", type=int, default=int(os.getenv("NEWS_WORKER_INTERVAL_SECONDS", "3600")))

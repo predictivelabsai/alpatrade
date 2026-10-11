@@ -13,8 +13,12 @@ remain retryable instead of being guessed.
 
 Realtime collection preserves the seven Finespresso publisher jobs: Baltics,
 Euronext, OMX, GlobeNewswire sector, GlobeNewswire country, GlobeNewswire industry,
-and PR Newswire. They are interleaved fairly inside the configured batch ceiling, so
-a high-volume source cannot prevent later sources from running. A failure in one
+and PR Newswire. Each job gets an equal quota of the batch ceiling
+(ceil(batch/7)); already-stored links are skipped inside a job's own turn, and quota a
+quiet job leaves unused is released only after every job had its share. GlobeNewswire
+feeds are read from `rss.globenewswire.com` (the www host returns 403 to servers since
+9 Oct 2026). Dedupe is publisher+link under `pg_advisory_xact_lock(hashtext(publisher|link))`,
+identical to CityTicker's news_worker, so the two redundant writers never duplicate. A failure in one
 publisher is logged by publisher name and does not block the remaining jobs.
 
 ## Database setup
@@ -42,10 +46,25 @@ Use `Dockerfile.agui` and this command:
 python -m news_scheduler.worker --mode realtime
 ```
 
-For a bounded, resumable historical worker use:
+The `news-backfill` compose service runs the guarded enrichment backlog:
 
 ```bash
-python -m news_scheduler.worker --mode backfill --batch-size 25 --shard-index 0 --shard-count 1
+python -m news_scheduler.worker --mode backfill
+```
+
+It enriches `pending_enrichment`/`retryable` rows newest first (including rows
+CityTicker's news_worker stores un-enriched), at most `NEWS_BACKFILL_MAX_PER_DAY`
+(default 400, ~$0.50/day) rows per UTC day, skips a row tried in the last 24 h,
+backs off exponentially after a failed cycle and pauses
+`NEWS_BACKFILL_FAILURE_PAUSE_SECONDS` after `NEWS_BACKFILL_MAX_CONSECUTIVE_FAILURES`
+failed cycles. xAI calls are the small plain enricher calls, subject to
+`PLATFORM_LLM_DAILY_BUDGET_USD` and logged in `alpatrade.llm_usage_logging`.
+
+The original id-ascending scan of every incomplete historical row (~239k legacy
+rows, ~$300) is opt-in only:
+
+```bash
+python -m news_scheduler.worker --mode full-backfill --batch-size 25 --shard-index 0 --shard-count 1
 ```
 
 Multiple backfill services may use distinct shard indexes with the same shard count.

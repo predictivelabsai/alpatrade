@@ -1,5 +1,33 @@
 # Change Log
 
+## 2026-10-11 — news worker: GlobeNewswire 403, fair publisher mix, guarded enrichment backlog
+
+- **GlobeNewswire returned nothing since Fri 9 Oct ~16:37 EEST:** `www.globenewswire.com/RssFeed/*`
+  now answers server clients with 403 (verified with curl from the HP; last GNW row in
+  public.news 9 Oct 13:16 UTC). All 262 GNW feeds in `news_scheduler/config` now use
+  `rss.globenewswire.com` (same paths, 200 + items); `gnw_rss_url()` also rewrites
+  `NEWS_PUBLISHER_FEEDS` overrides. Same rewrite CityTicker's news_worker uses.
+- **PR Newswire crowded out other publishers (e.g. 16/25 items, no GNW):** round-robin
+  counted *yielded* items, and a GNW turn usually yielded an already-stored link that the
+  worker then skipped. `collect(is_new=, batch_size=)` now skips stored links inside the
+  job's own turn and gives each of the 7 jobs ceil(batch/7) items; unused quota is released
+  only after every job had its share.
+- **Dedupe check was a 1.2 s seq scan per article** (no index on public.news link):
+  `sql/48_news_dedupe_index.sql` adds a hash index on link (now 0.03 ms) plus backlog/event
+  indexes (applied CONCURRENTLY). Inserts take CityTicker's exact
+  `pg_advisory_xact_lock(hashtext('publisher|link'))` before the NOT EXISTS (publisher, link)
+  guard, so the two redundant writers can't race into duplicates.
+- **Enrichment backfill stopped since 22 Sep:** `news-backfill` was never a deployed
+  service (a manual run, killed; record stuck at "running"), and its id-ascending scan
+  would walk ~239k legacy rows (~$300). Mode `backfill` now enriches
+  pending_enrichment/retryable rows newest first with the 2026-09-28 cost guards
+  (`BacklogGuard`): back-off after failed cycles, pause after 3 consecutive failures,
+  daily limit 400 rows (fails closed), 24 h per-row cooldown, stops on
+  DailyBudgetExceeded; calls stay the small plain enricher calls with usage logging. New
+  compose service `news-backfill`. Old scan kept as opt-in `--mode full-backfill`.
+- Backlog at fix time: ~1,045 rows (967 retryable + 78 pending) ≈ $1.30 at the measured
+  $0.00126/row (grok-4.3, 2 calls/row); ~3 days at 400/day. Tests in tests/test_news_worker.py.
+
 ## 2026-10-10 — audit verdicts no longer shown publicly
 
 - Removed the public "Audit: passed / warnings / failed" badge (and its #audit link) from the

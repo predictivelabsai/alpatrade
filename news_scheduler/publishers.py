@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
+import re
 from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,6 +26,14 @@ _EURONEXT = "https://live.euronext.com/en/listview/company-press-releases/404/al
 _EURONEXT_ROOT = "https://live.euronext.com"
 _OMX = "https://api.news.eu.nasdaq.com/news/query.action"
 LOGGER = logging.getLogger("alpatrade.news_worker")
+_GNW_WWW_RSS = re.compile(r"^https?://(?:www\.)?globenewswire\.com/RssFeed/", re.I)
+
+
+def gnw_rss_url(url: str) -> str:
+    """GlobeNewswire's www host answers server clients with 403 since Fri 9 Oct 2026
+    (~16:37 EEST); the official rss host serves the same feed paths. Idempotent, and
+    the same rewrite CityTicker's news_worker applies."""
+    return _GNW_WWW_RSS.sub("https://rss.globenewswire.com/RssFeed/", url or "")
 
 
 def _content(link: str, *, improved: bool = False) -> str:
@@ -46,7 +56,7 @@ def _named_urls(path: Path) -> list[tuple[str, str]]:
         if not raw or raw.startswith("#"):
             continue
         name, url = raw.split(": ", 1) if ": " in raw else (path.stem, raw)
-        rows.append((name.strip(), url.strip()))
+        rows.append((name.strip(), gnw_rss_url(url.strip())))
     return rows
 
 
@@ -55,7 +65,7 @@ def finespresso_feed_inventory() -> list[tuple[str, str, str]]:
     feeds: list[tuple[str, str, str]] = [("baltics", "", _BALTICS)]
     feeds.extend(("prnewswire", name, url) for name, url in _named_urls(_CONFIG / "prnewswire_rss_urls.txt"))
     countries = json.loads((_CONFIG / "gnw_countries.json").read_text(encoding="utf-8"))
-    feeds.extend((f"globenewswire_country_{code}", code, value["rss_url"])
+    feeds.extend((f"globenewswire_country_{code}", code, gnw_rss_url(value["rss_url"]))
                  for code, value in countries.items())
     feeds.extend(("globenewswire_sector", name, url)
                  for name, url in _named_urls(_CONFIG / "gnw_subject_rss_urls.txt"))
@@ -69,7 +79,7 @@ class FinespressoPublishers:
 
     def __init__(self, feeds: str | None = None):
         raw = feeds if feeds is not None else os.getenv("NEWS_PUBLISHER_FEEDS", "")
-        self.feeds = ([('configured_rss', '', item.strip()) for item in raw.split(',') if item.strip()]
+        self.feeds = ([('configured_rss', '', gnw_rss_url(item.strip())) for item in raw.split(',') if item.strip()]
                       if raw.strip() else finespresso_feed_inventory())
 
     @staticmethod
@@ -175,15 +185,36 @@ class FinespressoPublishers:
             ("prnewswire", self._rss(by_name.get("prnewswire", []))),
         ]
 
-    def collect(self) -> Iterable[dict]:
-        # Round-robin is the bounded equivalent of the original seven-task
-        # scheduler: every healthy publisher gets a turn before any busy one
-        # (notably PR Newswire) can consume the whole XAI budget.
-        active = deque((name, iter(rows)) for name, rows in self.groups())
-        while active:
+    def collect(self, is_new=None, batch_size: int | None = None) -> Iterable[dict]:
+        """Fair round-robin over the publisher jobs.
+
+        ``is_new(publisher, link)`` lets a job skip already-stored articles inside
+        its own turn, so a turn is one *new* article per job (before, a GNW job
+        spent its turn on a duplicate while PR Newswire's turn was a new item, so
+        PR Newswire won ~2/3 of the 25-item cap). With ``batch_size`` each job
+        gets an equal quota (ceil(batch/jobs)); quota left unused by quiet jobs
+        is released to busy ones only after every job had its share.
+        """
+        groups = self.groups()
+        quota = math.ceil(batch_size / max(1, len(groups))) if batch_size else None
+        active = deque((name, iter(rows)) for name, rows in groups)
+        parked: deque = deque()
+        counts: dict[str, int] = {}
+        while active or parked:
+            if not active:
+                # Every job used its quota or is exhausted: release the leftovers.
+                active, parked, quota = parked, deque(), None
+                LOGGER.info(json.dumps({"event": "publisher_quota_released"}))
             name, rows = active.popleft()
+            if quota is not None and counts.get(name, 0) >= quota:
+                parked.append((name, rows))
+                continue
             try:
-                article = next(rows)
+                while True:
+                    article = next(rows)
+                    if is_new is None or is_new(str(article.get("publisher") or ""),
+                                                str(article.get("link") or "")):
+                        break
             except StopIteration:
                 LOGGER.info(json.dumps({"event": "publisher_completed", "publisher": name}))
                 continue
@@ -191,6 +222,7 @@ class FinespressoPublishers:
                 LOGGER.error(json.dumps({"event": "publisher_failed", "publisher": name,
                                          "error_type": type(exc).__name__}))
                 continue
+            counts[name] = counts.get(name, 0) + 1
             yield article
             active.append((name, rows))
 

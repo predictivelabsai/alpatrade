@@ -158,10 +158,26 @@ class NewsRepository:
         values["predicted_move"] = finite_move(row.get("predicted_move"))
         return values
 
+    @staticmethod
+    def dedupe_key(publisher: str | None, link: str | None) -> str:
+        """Same advisory-lock key as CityTicker's news_worker (``publisher|link``)."""
+        return f"{publisher or ''}|{link or ''}"
+
     def insert_pending(self, row: dict[str, Any]) -> int | None:
-        """Persist a unique raw article before optional enrichment can fail."""
+        """Persist a unique raw article before optional enrichment can fail.
+
+        public.news has no unique index on (publisher, link). CityTicker's
+        news_worker writes the same table with the same NOT EXISTS guard under
+        ``pg_advisory_xact_lock(hashtext(publisher|link))``; taking the identical
+        lock here serialises the two workers on one article, so they can never
+        both insert it.
+        """
         values = self._values(row)
+        if not values.get("link") or not values.get("publisher"):
+            return None
         with self.engine.begin() as conn:
+            conn.execute(text("SELECT pg_advisory_xact_lock(hashtext(:k))"),
+                         {"k": self.dedupe_key(values["publisher"], values["link"])})
             result = conn.execute(text("""
                 INSERT INTO public.news(title, content, link, publisher, published_date,
                     ticker, yf_ticker, event, company, company_type, language, title_en, content_en,
@@ -192,6 +208,38 @@ class NewsRepository:
                     reason=COALESCE(:reason,reason), status=:status
                 WHERE id=:id
             """), values)
+
+    # --- guarded enrichment backlog (mode "backfill") ---------------------------
+    _BACKLOG_SQL = """FROM public.news n
+        WHERE n.status IN ('pending_enrichment','retryable') AND mod(n.id,:count)=:shard
+          AND NOT EXISTS (SELECT 1 FROM alpatrade.news_worker_events ev
+                          WHERE ev.news_id=n.id AND ev.job_name=:job
+                            AND ev.created_at > NOW() - make_interval(hours => :cooldown))"""
+
+    def backlog(self, job_name: str, limit: int, shard_index: int = 0, shard_count: int = 1,
+                cooldown_hours: int = 24) -> list[dict]:
+        """Newest pending/retryable rows first; a row tried in the last
+        ``cooldown_hours`` is skipped so a permanently failing row can't eat the
+        daily budget."""
+        with self.engine.connect() as conn:
+            rows = conn.execute(text(f"SELECT n.* {self._BACKLOG_SQL} ORDER BY n.id DESC LIMIT :limit"), {
+                "job": job_name, "limit": limit, "count": shard_count, "shard": shard_index,
+                "cooldown": cooldown_hours}).mappings().all()
+        return [dict(row) for row in rows]
+
+    def backlog_remaining(self) -> int:
+        with self.engine.connect() as conn:
+            return int(conn.execute(text(
+                "SELECT count(*) FROM public.news WHERE status IN ('pending_enrichment','retryable')"
+            )).scalar() or 0)
+
+    def attempts_today(self, job_name: str) -> int:
+        """Rows this job tried since 00:00 UTC (the daily run limit's counter)."""
+        with self.engine.connect() as conn:
+            return int(conn.execute(text("""SELECT count(*) FROM alpatrade.news_worker_events
+                WHERE job_name=:job AND event_name IN ('backfill_enriched','backfill_retryable','backfill_failed')
+                  AND created_at >= date_trunc('day', NOW() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'"""),
+                {"job": job_name}).scalar() or 0)
 
     def status(self) -> list[dict]:
         with self.engine.connect() as conn:
