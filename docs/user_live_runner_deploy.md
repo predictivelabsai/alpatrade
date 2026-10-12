@@ -1,3 +1,31 @@
+# Live runners: server primary (Coolify), since 2026-10-12
+
+| Role | Where | How |
+|---|---|---|
+| primary | Coolify server, app `alpatrade-live-runners` (compose `docker-compose.runner.yaml`) | containers `btd-scheduler` + `user-live`, `restart: unless-stopped`, `BTD_ROLE=primary`, `BTD_INSTANCE=server` |
+| backup | Mac.home | launchd `com.predictivelabs.alpatrade-btd` + `com.predictivelabs.alpatrade-user-live` (`BTD_ROLE=backup`) |
+| tertiary | agent box | `loop.sh` / `user-live.sh` via `ensure.sh` (`BTD_ROLE=tertiary`) |
+| (none) | HP | `alpatrade-btd-scheduler` + `alpatrade-user-live` **disabled** (`systemctl --user disable --now`) |
+
+Env vars live only in Coolify (names: `DATABASE_URL`, `ENCRYPTION_KEY`, `ALPACA_LIVE_API_KEY`, `ALPACA_LIVE_SECRET_KEY`,
+`ALPACA_LIVE_BASE_URL`, `ALPACA_LIVE_ACCOUNT`, `BTD_ROLE`, `BTD_INSTANCE`, `BTD_USER_EMAIL`, `USER_LIVE_TRADING_ENABLED`).
+Web deploys (app `nnjuws8sa09rthx7j7xservt`) never restart the runners, and runner deploys never touch the web app.
+
+Cut-over / redeploy rules: only outside 09:20-16:10 ET on trading days (heartbeats run 09:00-16:05 ET),
+never within 10 min of an event (09:31 open, 15:45-15:58 entry/close, 16:03 post). The lease (FOR UPDATE on
+`alpatrade.live_runner_state`) allows only one order-placing instance, even if two claim the same role.
+
+Cut-over steps (HP -> server):
+1. Deploy the app with `BTD_ROLE=backup` and check the logs (`btd scheduler started [server/backup]`, supervisor up).
+2. After 16:05 ET: set `BTD_ROLE=primary`, redeploy, `systemctl --user disable --now alpatrade-btd-scheduler alpatrade-user-live` on HP.
+3. Verify in the `btd-scheduler` container: `python scripts/live_btd_minhold.py --event heartbeat --live --any-time`
+   (lease renew only, no Alpaca orders) -> `lease_holder='server'` on every `live_runner_state` row the server owns.
+4. Next session: the 09:00 ET heartbeat and the 09:31 open event show `[server/primary] ... act=True`.
+
+Rollback: re-enable HP units (`systemctl --user enable --now ...`) and stop the Coolify app; the HP primary takes the lease when the server's lease expires (8 min).
+
+---
+
 # Per-user live runner: deploy runbook (NOT yet applied to HP / Mac.home / box)
 
 Code: `utils/user_live_runner.py`, `scripts/user_live_scheduler.py`, `scripts/user_live_supervisor.py`,
