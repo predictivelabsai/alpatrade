@@ -34,7 +34,10 @@ def env():
 
 def wanted(db_url, operator_account):
     from sqlalchemy import create_engine, text
-    eng = create_engine(db_url, pool_pre_ping=True, connect_args={"connect_timeout": 5})
+    from sqlalchemy.pool import NullPool
+    eng = create_engine(db_url, poolclass=NullPool,
+                        connect_args={"connect_timeout": 5, "application_name": "alpatrade-user-supervisor",
+                                      "options": "-c statement_timeout=10000 -c idle_in_transaction_session_timeout=60000"})
     try:
         with eng.connect() as c:
             rows = c.execute(text("SELECT id, account_ref, cid_prefix, status, mode FROM alpatrade.user_strategy_activations "

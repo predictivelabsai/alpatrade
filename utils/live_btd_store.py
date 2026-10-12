@@ -61,10 +61,11 @@ class LiveRecorder:
         if self._engine is None:
             try:
                 from sqlalchemy import create_engine
+                from sqlalchemy.pool import NullPool  # sparse writes: no idle pooled connection
                 self._engine = create_engine(
-                    database_url, pool_pre_ping=True, pool_size=1, max_overflow=0,
+                    database_url, poolclass=NullPool,
                     connect_args={"connect_timeout": 5, "application_name": "alpatrade-live-btd",
-                                  "options": "-c statement_timeout=10000"})
+                                  "options": "-c statement_timeout=10000 -c idle_in_transaction_session_timeout=60000"})
             except Exception as exc:  # noqa: BLE001
                 self.log.warning("DB engine init failed (%s); recording disabled", exc)
                 self.enabled = False
