@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
+import time
 from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,6 +26,59 @@ _EURONEXT = "https://live.euronext.com/en/listview/company-press-releases/404/al
 _EURONEXT_ROOT = "https://live.euronext.com"
 _OMX = "https://api.news.eu.nasdaq.com/news/query.action"
 LOGGER = logging.getLogger("alpatrade.news_worker")
+
+# GlobeNewswire's www host started answering every non-browser client with an Akamai
+# 403 on Fri 9 Oct 2026 (~13:37 UTC); its official RSS host still serves the same feeds.
+_GNW_WWW_RSS = re.compile(r"^https?://(?:www\.)?globenewswire\.com/RssFeed/", re.I)
+_GNW_RSS_ROOT = "https://rss.globenewswire.com/RssFeed/"
+FEED_HEADERS = {
+    "User-Agent": os.getenv("NEWS_FEED_USER_AGENT",
+                            "AlpaTrade-NewsWorker/1.0 (+https://alpatrade.ai; RSS reader)"),
+    "Accept": "application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.5",
+    "Accept-Language": "en",
+}
+_BLOCK_BASE_SECONDS = float(os.getenv("NEWS_FEED_BLOCK_BACKOFF_SECONDS", "900"))
+_BLOCK_MAX_SECONDS = 6 * 3600.0
+_BLOCKED: dict[str, tuple[float, int]] = {}   # host -> (retry_after_monotonic, strikes)
+# Drained by the worker into alpatrade.news_worker_events (publisher_feed_blocked).
+FEED_ALERTS: list[dict] = []
+
+
+def gnw_rss_url(url: str) -> str:
+    """Rewrite GlobeNewswire www RSS URLs to the RSS host (idempotent)."""
+    return _GNW_WWW_RSS.sub(_GNW_RSS_ROOT, url or "")
+
+
+def _host(url: str) -> str:
+    return (re.match(r"^https?://([^/]+)", url or "") or [None, ""])[1].lower()
+
+
+def fetch_feed(url: str, publisher: str = "", *, get=None, now=None):
+    """Fetch an RSS feed with real headers; on 403/429 back off the whole host
+    (exponential, capped) and raise an alert instead of silently parsing an error page."""
+    get = get or requests.get
+    now = now if now is not None else time.monotonic()
+    host = _host(url)
+    until, strikes = _BLOCKED.get(host, (0.0, 0))
+    if until > now:
+        return feedparser.parse(b"")
+    response = get(url, headers=FEED_HEADERS, timeout=30)
+    status = int(getattr(response, "status_code", 200) or 200)
+    if status in (403, 429):
+        strikes += 1
+        wait = min(_BLOCK_MAX_SECONDS, _BLOCK_BASE_SECONDS * 2 ** (strikes - 1))
+        _BLOCKED[host] = (now + wait, strikes)
+        alert = {"event": "publisher_feed_blocked", "publisher": publisher, "host": host,
+                 "status": status, "backoff_seconds": int(wait), "strikes": strikes}
+        FEED_ALERTS.append(alert)
+        LOGGER.error(json.dumps(alert))
+        return feedparser.parse(b"")
+    _BLOCKED.pop(host, None)
+    if status >= 400:
+        LOGGER.warning(json.dumps({"event": "publisher_feed_http_error", "publisher": publisher,
+                                   "host": host, "status": status}))
+        return feedparser.parse(b"")
+    return feedparser.parse(response.content)
 
 
 def _content(link: str, *, improved: bool = False) -> str:
@@ -54,12 +109,14 @@ def finespresso_feed_inventory() -> list[tuple[str, str, str]]:
     """Load the same checked-in publisher inventory used by finespresso-admin."""
     feeds: list[tuple[str, str, str]] = [("baltics", "", _BALTICS)]
     feeds.extend(("prnewswire", name, url) for name, url in _named_urls(_CONFIG / "prnewswire_rss_urls.txt"))
+    feeds.extend(("prnewswire_uk", name, url)
+                 for name, url in _named_urls(_CONFIG / "prnewswire_uk_rss_urls.txt"))
     countries = json.loads((_CONFIG / "gnw_countries.json").read_text(encoding="utf-8"))
-    feeds.extend((f"globenewswire_country_{code}", code, value["rss_url"])
+    feeds.extend((f"globenewswire_country_{code}", code, gnw_rss_url(value["rss_url"]))
                  for code, value in countries.items())
-    feeds.extend(("globenewswire_sector", name, url)
+    feeds.extend(("globenewswire_sector", name, gnw_rss_url(url))
                  for name, url in _named_urls(_CONFIG / "gnw_subject_rss_urls.txt"))
-    feeds.extend(("globenewswire_industry", name, url)
+    feeds.extend(("globenewswire_industry", name, gnw_rss_url(url))
                  for name, url in _named_urls(_CONFIG / "gnw_industry_rss_urls.txt"))
     return feeds
 
@@ -80,7 +137,7 @@ class FinespressoPublishers:
                                 if publisher in {"globenewswire_sector",
                                                  "globenewswire_industry"}
                                 else publisher)
-            parsed = feedparser.parse(url)
+            parsed = fetch_feed(url, publisher)
             if getattr(parsed, "bozo_exception", None):
                 LOGGER.warning(json.dumps({"event": "publisher_feed_warning",
                                            "publisher": publisher,
@@ -100,7 +157,16 @@ class FinespressoPublishers:
                     "company": item.get("issuer") or "",
                     "ticker": "", "yf_ticker": "", "event": topic,
                     "language": item.get("dc_language") or "",
+                    **(_uk_ticker(item) if publisher in {"prnewswire_uk", "globenewswire_country_uk"} else {}),
                 }
+
+    @staticmethod
+    def _rns_nsm() -> Iterable[dict]:
+        """FCA NSM public archive headlines (noise-filtered) as ``rns_nsm``."""
+        from news_scheduler import uk_nsm
+        hours = int(os.getenv("NEWS_NSM_LOOKBACK_HOURS", "26"))
+        records = uk_nsm.fetch_records(hours, headers=FEED_HEADERS)
+        yield from uk_nsm.rows(records, content=_content)
 
     @staticmethod
     def _euronext() -> Iterable[dict]:
@@ -173,15 +239,23 @@ class FinespressoPublishers:
                 if name.startswith("globenewswire_country_") for feed in rows])),
             ("globenewswire_industry", self._rss(by_name.get("globenewswire_industry", []))),
             ("prnewswire", self._rss(by_name.get("prnewswire", []))),
+            ("prnewswire_uk", self._rss(by_name.get("prnewswire_uk", []))),
+            ("rns_nsm", self._rns_nsm()),
         ]
 
-    def collect(self) -> Iterable[dict]:
+    def collect(self, allow=None) -> Iterable[dict]:
+        """Round-robin over publisher jobs. ``allow(job) -> bool`` is the worker's
+        per-publisher quota: a job that has used its share is dropped from the
+        rotation *before* its next article (and its content fetch) is pulled."""
         # Round-robin is the bounded equivalent of the original seven-task
         # scheduler: every healthy publisher gets a turn before any busy one
         # (notably PR Newswire) can consume the whole XAI budget.
         active = deque((name, iter(rows)) for name, rows in self.groups())
         while active:
             name, rows = active.popleft()
+            if allow is not None and not allow(name):
+                LOGGER.info(json.dumps({"event": "publisher_quota_reached", "publisher": name}))
+                continue
             try:
                 article = next(rows)
             except StopIteration:
@@ -193,6 +267,19 @@ class FinespressoPublishers:
                 continue
             yield article
             active.append((name, rows))
+
+
+_LSE_TICKER = re.compile(r"\((?:LSE|LON|AIM|London Stock Exchange)\s*:\s*([A-Z0-9]{1,5}(?:\.[A-Z])?)\)")
+
+
+def _uk_ticker(item) -> dict:
+    """``(LSE: VOD)`` in a UK release -> ticker VOD / yf_ticker VOD.L (dot -> dash)."""
+    from news_scheduler.uk_nsm import tidm_to_yahoo
+    text = f"{item.get('title') or ''} {item.get('summary') or ''}"
+    m = _LSE_TICKER.search(text)
+    if not m:
+        return {}
+    return {"ticker": m.group(1), "yf_ticker": tidm_to_yahoo(m.group(1)) or ""}
 
 
 # Backward-compatible import for the first PR revision.

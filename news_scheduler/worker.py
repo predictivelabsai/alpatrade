@@ -123,13 +123,41 @@ class Worker:
                 last_error=None, status="running", last_successful_cycle=datetime.now(timezone.utc))
         return True
 
+    def publisher_quota(self, job: str) -> int:
+        """Max articles one publisher job may take per cycle, so a busy source (PR
+        Newswire) can't use the whole batch. NEWS_WORKER_PUBLISHER_QUOTAS overrides,
+        e.g. ``prnewswire=6,rns_nsm=8,default=5``; default = ceil(35% of batch), >= 2."""
+        raw = os.getenv("NEWS_WORKER_PUBLISHER_QUOTAS", "")
+        table = {}
+        for part in raw.split(","):
+            name, _, value = part.partition("=")
+            if name.strip() and value.strip().isdigit():
+                table[name.strip()] = int(value.strip())
+        default = table.get("default", max(2, -(-self.batch_size * 35 // 100)))
+        return max(1, table.get(job, default))
+
+    def _drain_feed_alerts(self) -> None:
+        from news_scheduler import publishers as pubs
+        alerts = list(getattr(pubs, "FEED_ALERTS", []))
+        if not alerts:
+            return
+        pubs.FEED_ALERTS.clear()
+        for alert in alerts:
+            self._record("publisher_feed_blocked", "error", publisher=alert.get("publisher"),
+                         details={k: v for k, v in alert.items() if k not in ("event", "publisher")})
+
     def _realtime_cycle(self) -> bool:
         state = self.repo.checkpoint(self.job_name, self.shard_index, self.shard_count)
         processed, failed, inserted = int(state["processed_count"] or 0), int(state["failed_count"] or 0), None
         attempted = 0
         completed_this_cycle = partial_this_cycle = 0
         publisher_counts: dict[str, dict[str, int]] = {}
-        for article in self._retry(self.publishers.collect):
+        used: dict[str, int] = {}
+
+        def allow(job: str) -> bool:
+            return used.get(job, 0) < self.publisher_quota(job)
+
+        for article in self._retry(lambda: self.publishers.collect(allow=allow)):
             exists = getattr(self.repo, "article_exists", lambda *_: False)
             if exists(str(article.get("publisher") or ""), str(article.get("link") or "")):
                 continue
@@ -138,8 +166,11 @@ class Worker:
             # Sep 2026 insert failure otherwise walked all ~3,400 feed items per cycle.
             if attempted >= self.batch_size:
                 break
-            attempted += 1
             publisher_job = str(article.get("publisher_job") or article.get("publisher") or "unknown")
+            if not allow(publisher_job):  # quota also enforced here for non-quota-aware sources
+                continue
+            used[publisher_job] = used.get(publisher_job, 0) + 1
+            attempted += 1
             publisher_stats = publisher_counts.setdefault(
                 publisher_job, {"attempted": 0, "enriched": 0, "partial": 0, "failed": 0})
             publisher_stats["attempted"] += 1
@@ -185,6 +216,7 @@ class Worker:
                 self._record("article_retryable", "error", publisher=article.get("publisher"),
                              details={"error_type": type(exc).__name__})
                 continue
+        self._drain_feed_alerts()
         self.repo.update_checkpoint(self.job_name, self.shard_index, self.shard_count,
             last_inserted_news_id=inserted, processed_count=processed, failed_count=failed,
             status="running", last_successful_cycle=datetime.now(timezone.utc), last_error=None)

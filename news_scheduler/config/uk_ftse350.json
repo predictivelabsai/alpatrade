@@ -1,0 +1,2452 @@
+[
+ {
+  "tidm": "III",
+  "yf_symbol": "III.L",
+  "name": "3i",
+  "sector": "Financial services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "ABDN",
+  "yf_symbol": "ABDN.L",
+  "name": "Aberdeen Group",
+  "sector": "Financial Services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "ADM",
+  "yf_symbol": "ADM.L",
+  "name": "Admiral Group",
+  "sector": "Insurance",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "AAF",
+  "yf_symbol": "AAF.L",
+  "name": "Airtel Africa",
+  "sector": "Telecommunications services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "ALW",
+  "yf_symbol": "ALW.L",
+  "name": "Alliance Witan",
+  "sector": "Investment Trusts",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "AAL",
+  "yf_symbol": "AAL.L",
+  "name": "Anglo American plc",
+  "sector": "Mining",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "ANTO",
+  "yf_symbol": "ANTO.L",
+  "name": "Antofagasta plc",
+  "sector": "Mining",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "ABF",
+  "yf_symbol": "ABF.L",
+  "name": "Associated British Foods",
+  "sector": "Food & tobacco",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "AZN",
+  "yf_symbol": "AZN.L",
+  "name": "AstraZeneca",
+  "sector": "Pharmaceuticals & biotechnology",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "AUTO",
+  "yf_symbol": "AUTO.L",
+  "name": "Autotrader Group",
+  "sector": "Media",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "AV",
+  "yf_symbol": "AV.L",
+  "name": "Aviva",
+  "sector": "Life insurance",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "BAB",
+  "yf_symbol": "BAB.L",
+  "name": "Babcock International",
+  "sector": "Aerospace & defence",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "BA",
+  "yf_symbol": "BA.L",
+  "name": "BAE Systems",
+  "sector": "Aerospace & defence",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "BBY",
+  "yf_symbol": "BBY.L",
+  "name": "Balfour Beatty",
+  "sector": "Construction & Materials",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "BARC",
+  "yf_symbol": "BARC.L",
+  "name": "Barclays",
+  "sector": "Banks",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "BTRW",
+  "yf_symbol": "BTRW.L",
+  "name": "Barratt Redrow",
+  "sector": "Household goods & home construction",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "BP",
+  "yf_symbol": "BP.L",
+  "name": "BP",
+  "sector": "Oil & gas producers",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "BATS",
+  "yf_symbol": "BATS.L",
+  "name": "British American Tobacco",
+  "sector": "Tobacco",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "BLND",
+  "yf_symbol": "BLND.L",
+  "name": "British Land",
+  "sector": "Real estate",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "BT.A",
+  "yf_symbol": "BT-A.L",
+  "name": "BT Group",
+  "sector": "Telecommunications services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "BNZL",
+  "yf_symbol": "BNZL.L",
+  "name": "Bunzl",
+  "sector": "Support services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "BRBY",
+  "yf_symbol": "BRBY.L",
+  "name": "Burberry Group",
+  "sector": "Personal goods",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "CNA",
+  "yf_symbol": "CNA.L",
+  "name": "Centrica",
+  "sector": "Multiline utilities",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "CCEP",
+  "yf_symbol": "CCEP.L",
+  "name": "Coca-Cola Europacific Partners",
+  "sector": "Beverages",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "CCH",
+  "yf_symbol": "CCH.L",
+  "name": "Coca-Cola HBC",
+  "sector": "Beverages",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "CPG",
+  "yf_symbol": "CPG.L",
+  "name": "Compass Group",
+  "sector": "Support services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "CCC",
+  "yf_symbol": "CCC.L",
+  "name": "Computacenter",
+  "sector": "Software & Computer Services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "CTEC",
+  "yf_symbol": "CTEC.L",
+  "name": "Convatec",
+  "sector": "Health care equipment & supplies",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "CRDA",
+  "yf_symbol": "CRDA.L",
+  "name": "Croda International",
+  "sector": "Chemicals",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "DCC",
+  "yf_symbol": "DCC.L",
+  "name": "DCC Energy",
+  "sector": "Support services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "DGE",
+  "yf_symbol": "DGE.L",
+  "name": "Diageo",
+  "sector": "Beverages",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "DPLM",
+  "yf_symbol": "DPLM.L",
+  "name": "Diploma",
+  "sector": "Industrial Support services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "EZJ",
+  "yf_symbol": "EZJ.L",
+  "name": "EasyJet",
+  "sector": "Travel and Leisure",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "EDV",
+  "yf_symbol": "EDV.L",
+  "name": "Endeavour Mining",
+  "sector": "Mining",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "EXPN",
+  "yf_symbol": "EXPN.L",
+  "name": "Experian",
+  "sector": "Support services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "FCIT",
+  "yf_symbol": "FCIT.L",
+  "name": "F & C Investment Trust",
+  "sector": "Collective investments",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "FRES",
+  "yf_symbol": "FRES.L",
+  "name": "Fresnillo plc",
+  "sector": "Mining",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "GAW",
+  "yf_symbol": "GAW.L",
+  "name": "Games Workshop",
+  "sector": "Leisure Goods",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "GLEN",
+  "yf_symbol": "GLEN.L",
+  "name": "Glencore",
+  "sector": "Mining",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "GSK",
+  "yf_symbol": "GSK.L",
+  "name": "GSK plc",
+  "sector": "Pharmaceuticals & biotechnology",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "HLN",
+  "yf_symbol": "HLN.L",
+  "name": "Haleon",
+  "sector": "Pharmaceuticals & biotechnology",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "HLMA",
+  "yf_symbol": "HLMA.L",
+  "name": "Halma plc",
+  "sector": "Electronic equipment & parts",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "HSX",
+  "yf_symbol": "HSX.L",
+  "name": "Hiscox",
+  "sector": "Non-life Insurance",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "HWDN",
+  "yf_symbol": "HWDN.L",
+  "name": "Howdens Joinery",
+  "sector": "Homebuilding & construction supplies",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "HSBA",
+  "yf_symbol": "HSBA.L",
+  "name": "HSBC",
+  "sector": "Banks",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "ICG",
+  "yf_symbol": "ICG.L",
+  "name": "ICG",
+  "sector": "Financial services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "IGG",
+  "yf_symbol": "IGG.L",
+  "name": "IG Group",
+  "sector": "Financial services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "IHG",
+  "yf_symbol": "IHG.L",
+  "name": "IHG Hotels & Resorts",
+  "sector": "Travel & leisure",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "IMI",
+  "yf_symbol": "IMI.L",
+  "name": "IMI",
+  "sector": "Industrial engineering",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "IMB",
+  "yf_symbol": "IMB.L",
+  "name": "Imperial Brands",
+  "sector": "Tobacco",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "INF",
+  "yf_symbol": "INF.L",
+  "name": "Informa",
+  "sector": "Media",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "IAG",
+  "yf_symbol": "IAG.L",
+  "name": "International Airlines Group",
+  "sector": "Travel & leisure",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "ITRK",
+  "yf_symbol": "ITRK.L",
+  "name": "Intertek",
+  "sector": "Support services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "INVP",
+  "yf_symbol": "INVP.L",
+  "name": "Investec",
+  "sector": "Financial Services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "ITH",
+  "yf_symbol": "ITH.L",
+  "name": "Ithaca Energy",
+  "sector": "Oil & Gas Producers",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "JD",
+  "yf_symbol": "JD.L",
+  "name": "JD Sports",
+  "sector": "General retailers",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "BGEO",
+  "yf_symbol": "BGEO.L",
+  "name": "Lion Finance Group",
+  "sector": "Banking Services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "KGF",
+  "yf_symbol": "KGF.L",
+  "name": "Kingfisher plc",
+  "sector": "Retailers",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "LAND",
+  "yf_symbol": "LAND.L",
+  "name": "Land Securities",
+  "sector": "Real estate investment trusts",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "LGEN",
+  "yf_symbol": "LGEN.L",
+  "name": "Legal & General",
+  "sector": "Life insurance",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "LLOY",
+  "yf_symbol": "LLOY.L",
+  "name": "Lloyds Banking Group",
+  "sector": "Banks",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "LMP",
+  "yf_symbol": "LMP.L",
+  "name": "LondonMetric Property",
+  "sector": "Real Estate Investment Trusts",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "LSEG",
+  "yf_symbol": "LSEG.L",
+  "name": "London Stock Exchange Group",
+  "sector": "Financial services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "MNG",
+  "yf_symbol": "MNG.L",
+  "name": "M&G",
+  "sector": "Financial services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "MKS",
+  "yf_symbol": "MKS.L",
+  "name": "Marks & Spencer",
+  "sector": "Food & drug retailing",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "MRO",
+  "yf_symbol": "MRO.L",
+  "name": "Melrose Industries",
+  "sector": "Aerospace & defence",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "MTLN",
+  "yf_symbol": "MTLN.L",
+  "name": "Metlen Energy & Metals",
+  "sector": "Multiline utilities",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "NG",
+  "yf_symbol": "NG.L",
+  "name": "National Grid plc",
+  "sector": "Multiline utilities",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "NWG",
+  "yf_symbol": "NWG.L",
+  "name": "NatWest Group",
+  "sector": "Banks",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "NXT",
+  "yf_symbol": "NXT.L",
+  "name": "Next plc",
+  "sector": "General retailers",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "PSON",
+  "yf_symbol": "PSON.L",
+  "name": "Pearson plc",
+  "sector": "Media",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "PSH",
+  "yf_symbol": "PSH.L",
+  "name": "Pershing Square Holdings",
+  "sector": "Financial services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "PCT",
+  "yf_symbol": "PCT.L",
+  "name": "Polar Capital Technology Trust",
+  "sector": "Investment trusts",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "PRU",
+  "yf_symbol": "PRU.L",
+  "name": "Prudential plc",
+  "sector": "Life insurance",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "RKT",
+  "yf_symbol": "RKT.L",
+  "name": "Reckitt",
+  "sector": "Household goods & home construction",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "REL",
+  "yf_symbol": "REL.L",
+  "name": "RELX",
+  "sector": "Media",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "RTO",
+  "yf_symbol": "RTO.L",
+  "name": "Rentokil Initial",
+  "sector": "Support services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "RIO",
+  "yf_symbol": "RIO.L",
+  "name": "Rio Tinto",
+  "sector": "Mining",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "RR",
+  "yf_symbol": "RR.L",
+  "name": "Rolls-Royce Holdings",
+  "sector": "Aerospace & defence",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "SGE",
+  "yf_symbol": "SGE.L",
+  "name": "Sage Group",
+  "sector": "Software & computer services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "SBRY",
+  "yf_symbol": "SBRY.L",
+  "name": "Sainsbury's",
+  "sector": "Food & drug retailing",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "SMT",
+  "yf_symbol": "SMT.L",
+  "name": "Scottish Mortgage Investment Trust",
+  "sector": "Collective investments",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "SGRO",
+  "yf_symbol": "SGRO.L",
+  "name": "Segro",
+  "sector": "Real estate investment trusts",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "SVT",
+  "yf_symbol": "SVT.L",
+  "name": "Severn Trent",
+  "sector": "Multiline utilities",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "SHEL",
+  "yf_symbol": "SHEL.L",
+  "name": "Shell plc",
+  "sector": "Oil & gas producers",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "SMIN",
+  "yf_symbol": "SMIN.L",
+  "name": "Smiths Group",
+  "sector": "General industrials",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "SN",
+  "yf_symbol": "SN.L",
+  "name": "Smith & Nephew",
+  "sector": "Health care equipment & supplies",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "SPX",
+  "yf_symbol": "SPX.L",
+  "name": "Spirax Group",
+  "sector": "Industrial engineering",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "SSE",
+  "yf_symbol": "SSE.L",
+  "name": "SSE plc",
+  "sector": "Electrical utilities & independent power producers",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "STAN",
+  "yf_symbol": "STAN.L",
+  "name": "Standard Chartered",
+  "sector": "Banks",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "SDLF",
+  "yf_symbol": "SDLF.L",
+  "name": "Standard Life",
+  "sector": "Life insurance",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "STJ",
+  "yf_symbol": "STJ.L",
+  "name": "St. James's Place",
+  "sector": "Financial services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "TSCO",
+  "yf_symbol": "TSCO.L",
+  "name": "Tesco",
+  "sector": "Food & drug retailing",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "BBOX",
+  "yf_symbol": "BBOX.L",
+  "name": "Tritax Big Box REIT",
+  "sector": "Real Estate Investment Trusts",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "ULVR",
+  "yf_symbol": "ULVR.L",
+  "name": "Unilever",
+  "sector": "Personal goods",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "UU",
+  "yf_symbol": "UU.L",
+  "name": "United Utilities",
+  "sector": "Multiline utilities",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "VOD",
+  "yf_symbol": "VOD.L",
+  "name": "Vodafone Group",
+  "sector": "Mobile telecommunications",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "WEIR",
+  "yf_symbol": "WEIR.L",
+  "name": "Weir",
+  "sector": "Industrial goods and services",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "WTB",
+  "yf_symbol": "WTB.L",
+  "name": "Whitbread",
+  "sector": "Retail hospitality",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "WPP",
+  "yf_symbol": "WPP.L",
+  "name": "WPP",
+  "sector": "Media",
+  "index": "FTSE100"
+ },
+ {
+  "tidm": "3IN",
+  "yf_symbol": "3IN.L",
+  "name": "3i Infrastructure",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "FOUR",
+  "yf_symbol": "FOUR.L",
+  "name": "4imprint",
+  "sector": "Media",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "AAS",
+  "yf_symbol": "AAS.L",
+  "name": "Aberdeen Asia Focus",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ASL",
+  "yf_symbol": "ASL.L",
+  "name": "Aberforth Smaller Companies Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "AEP",
+  "yf_symbol": "AEP.L",
+  "name": "AEP Plantations",
+  "sector": "Food Producers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ALFA",
+  "yf_symbol": "ALFA.L",
+  "name": "Alfa Financial Software",
+  "sector": "Software and Computer Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ATT",
+  "yf_symbol": "ATT.L",
+  "name": "Allianz Technology Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "AMRQ",
+  "yf_symbol": "AMRQ.L",
+  "name": "Amaroq",
+  "sector": "Industrial Metals and Mining",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "AO",
+  "yf_symbol": "AO.L",
+  "name": "AO World",
+  "sector": "Retail",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "APN",
+  "yf_symbol": "APN.L",
+  "name": "Applied Nutrition",
+  "sector": "Food Producers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ASHM",
+  "yf_symbol": "ASHM.L",
+  "name": "Ashmore Group",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "AIE",
+  "yf_symbol": "AIE.L",
+  "name": "Ashoka India Equity Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ASC",
+  "yf_symbol": "ASC.L",
+  "name": "ASOS",
+  "sector": "Retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ATYM",
+  "yf_symbol": "ATYM.L",
+  "name": "Atalaya Mining",
+  "sector": "Industrial Metals and Mining",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ATG",
+  "yf_symbol": "ATG.L",
+  "name": "Auction Technology Group",
+  "sector": "Software and Computer Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "AGT",
+  "yf_symbol": "AGT.L",
+  "name": "AVI Global Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "AVON",
+  "yf_symbol": "AVON.L",
+  "name": "Avon Technologies",
+  "sector": "Industrial Goods and Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BME",
+  "yf_symbol": "BME.L",
+  "name": "B&M",
+  "sector": "Retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BGFD",
+  "yf_symbol": "BGFD.L",
+  "name": "Baillie Gifford Japan Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "USA",
+  "yf_symbol": "USA.L",
+  "name": "Baillie Gifford US Growth Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BCG",
+  "yf_symbol": "BCG.L",
+  "name": "Baltic Classifieds",
+  "sector": "Consumer Digital Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BNKR",
+  "yf_symbol": "BNKR.L",
+  "name": "Bankers Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BAG",
+  "yf_symbol": "BAG.L",
+  "name": "A.G. Barr",
+  "sector": "Beverages",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "AJB",
+  "yf_symbol": "AJB.L",
+  "name": "AJ Bell",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BWY",
+  "yf_symbol": "BWY.L",
+  "name": "Bellway",
+  "sector": "Home Construction",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BKG",
+  "yf_symbol": "BKG.L",
+  "name": "Berkeley Group Holdings",
+  "sector": "Household goods & home construction",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BHMG",
+  "yf_symbol": "BHMG.L",
+  "name": "BH Macro",
+  "sector": "Hedge Funds",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BYG",
+  "yf_symbol": "BYG.L",
+  "name": "Big Yellow Group",
+  "sector": "Real Estate Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BPCR",
+  "yf_symbol": "BPCR.L",
+  "name": "Biopharma Credit",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BRGE",
+  "yf_symbol": "BRGE.L",
+  "name": "BlackRock Greater Europe Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BRSC",
+  "yf_symbol": "BRSC.L",
+  "name": "BlackRock Smaller Companies Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BRWM",
+  "yf_symbol": "BRWM.L",
+  "name": "BlackRock World Mining Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BMY",
+  "yf_symbol": "BMY.L",
+  "name": "Bloomsbury Publishing",
+  "sector": "Media",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BOY",
+  "yf_symbol": "BOY.L",
+  "name": "Bodycote",
+  "sector": "Industrial Engineering",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BREE",
+  "yf_symbol": "BREE.L",
+  "name": "Breedon Group",
+  "sector": "Construction & Materials",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BPT",
+  "yf_symbol": "BPT.L",
+  "name": "Bridgepoint Group",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BUT",
+  "yf_symbol": "BUT.L",
+  "name": "Brunner Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BYIT",
+  "yf_symbol": "BYIT.L",
+  "name": "Bytes Technology Group",
+  "sector": "Aerospace & Defence",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "CLDN",
+  "yf_symbol": "CLDN.L",
+  "name": "Caledonia Investments",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "CGT",
+  "yf_symbol": "CGT.L",
+  "name": "Capital Gearing Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "CWR",
+  "yf_symbol": "CWR.L",
+  "name": "Ceres Power",
+  "sector": "Alternative Energy",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "CHG",
+  "yf_symbol": "CHG.L",
+  "name": "Chemring Group",
+  "sector": "Aerospace & Defence",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "CSN",
+  "yf_symbol": "CSN.L",
+  "name": "Chesnara",
+  "sector": "Life Insurance",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "CTY",
+  "yf_symbol": "CTY.L",
+  "name": "City of London Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "CKN",
+  "yf_symbol": "CKN.L",
+  "name": "Clarkson",
+  "sector": "Industrial Transportation",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "CBG",
+  "yf_symbol": "CBG.L",
+  "name": "Close Brothers Group",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "CMCX",
+  "yf_symbol": "CMCX.L",
+  "name": "CMC Markets",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "COA",
+  "yf_symbol": "COA.L",
+  "name": "Coats Group",
+  "sector": "Consumer Staples",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "CORD",
+  "yf_symbol": "CORD.L",
+  "name": "Cordiant Digital Infrastructure",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "COST",
+  "yf_symbol": "COST.L",
+  "name": "Costain Group",
+  "sector": "Engineering and Construction",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "CWK",
+  "yf_symbol": "CWK.L",
+  "name": "Cranswick",
+  "sector": "Food Producers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "CURY",
+  "yf_symbol": "CURY.L",
+  "name": "Currys",
+  "sector": "Retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "CVSG",
+  "yf_symbol": "CVSG.L",
+  "name": "CVS Group",
+  "sector": "Health Care",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "DLN",
+  "yf_symbol": "DLN.L",
+  "name": "Derwent London",
+  "sector": "Real Estate Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "DSCV",
+  "yf_symbol": "DSCV.L",
+  "name": "discoverIE",
+  "sector": "Support Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "DOM",
+  "yf_symbol": "DOM.L",
+  "name": "Domino's Pizza",
+  "sector": "Travel & Leisure",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "DRX",
+  "yf_symbol": "DRX.L",
+  "name": "Drax Group",
+  "sector": "Electricity",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "DOCS",
+  "yf_symbol": "DOCS.L",
+  "name": "Dr. Martens",
+  "sector": "Retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "DNLM",
+  "yf_symbol": "DNLM.L",
+  "name": "Dunelm Group",
+  "sector": "Retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "EDIN",
+  "yf_symbol": "EDIN.L",
+  "name": "Edinburgh Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "EWI",
+  "yf_symbol": "EWI.L",
+  "name": "Edinburgh Worldwide Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ELM",
+  "yf_symbol": "ELM.L",
+  "name": "Elementis",
+  "sector": "Chemicals",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ENOG",
+  "yf_symbol": "ENOG.L",
+  "name": "Energean",
+  "sector": "Oil & Gas Producers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ENT",
+  "yf_symbol": "ENT.L",
+  "name": "Entain",
+  "sector": "Travel & leisure",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ESCT",
+  "yf_symbol": "ESCT.L",
+  "name": "European Smaller Companies Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "EWG",
+  "yf_symbol": "EWG.L",
+  "name": "Eurowag",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "FCSS",
+  "yf_symbol": "FCSS.L",
+  "name": "Fidelity China Special Situations",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "FEML",
+  "yf_symbol": "FEML.L",
+  "name": "Fidelity Emerging Markets",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "FEV",
+  "yf_symbol": "FEV.L",
+  "name": "Fidelity European Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "FSV",
+  "yf_symbol": "FSV.L",
+  "name": "Fidelity Special Values",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "FGT",
+  "yf_symbol": "FGT.L",
+  "name": "Finsbury Growth & Income Trust",
+  "sector": "Equity Investments",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "FGP",
+  "yf_symbol": "FGP.L",
+  "name": "FirstGroup",
+  "sector": "Travel & Leisure",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "FGEN",
+  "yf_symbol": "FGEN.L",
+  "name": "Foresight Environmental Infrastructure",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "FSG",
+  "yf_symbol": "FSG.L",
+  "name": "Foresight Group",
+  "sector": "Investment Banking and Brokerage Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "FRAS",
+  "yf_symbol": "FRAS.L",
+  "name": "Frasers Group",
+  "sector": "Retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "FCH",
+  "yf_symbol": "FCH.L",
+  "name": "Funding Circle",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "GFRD",
+  "yf_symbol": "GFRD.L",
+  "name": "Galliford Try",
+  "sector": "Construction",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "GAMA",
+  "yf_symbol": "GAMA.L",
+  "name": "Gamma Communications",
+  "sector": "Telecommunications",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "GCP",
+  "yf_symbol": "GCP.L",
+  "name": "GCP Infrastructure Investments",
+  "sector": "General Financial",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "GEN",
+  "yf_symbol": "GEN.L",
+  "name": "Genuit Group",
+  "sector": "Construction & Materials",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "GNS",
+  "yf_symbol": "GNS.L",
+  "name": "Genus",
+  "sector": "Pharmaceuticals & Biotechnology",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "DATA",
+  "yf_symbol": "DATA.L",
+  "name": "GlobalData",
+  "sector": "Industrial Goods and Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "GSCT",
+  "yf_symbol": "GSCT.L",
+  "name": "Global Smaller Companies Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "GDWN",
+  "yf_symbol": "GDWN.L",
+  "name": "Goodwin",
+  "sector": "General Industrials",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "GFTU",
+  "yf_symbol": "GFTU.L",
+  "name": "Grafton Group",
+  "sector": "Support Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "GRI",
+  "yf_symbol": "GRI.L",
+  "name": "Grainger",
+  "sector": "Real Estate Investment & Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "GPE",
+  "yf_symbol": "GPE.L",
+  "name": "Great Portland Estates",
+  "sector": "Real Estate Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "UKW",
+  "yf_symbol": "UKW.L",
+  "name": "Greencoat UK Wind",
+  "sector": "Gas, Water & Multiutilities",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "GNC",
+  "yf_symbol": "GNC.L",
+  "name": "Greencore",
+  "sector": "Food, Beverage and Tobacco",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "GRG",
+  "yf_symbol": "GRG.L",
+  "name": "Greggs",
+  "sector": "Food & Drug Retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HFD",
+  "yf_symbol": "HFD.L",
+  "name": "Halfords",
+  "sector": "Retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HMSO",
+  "yf_symbol": "HMSO.L",
+  "name": "Hammerson",
+  "sector": "Real Estate Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HANA",
+  "yf_symbol": "HANA.L",
+  "name": "Hansa Investment Company",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HBR",
+  "yf_symbol": "HBR.L",
+  "name": "Harbour Energy",
+  "sector": "Oil & Gas Producers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HVPE",
+  "yf_symbol": "HVPE.L",
+  "name": "HarbourVest Global Private Equity",
+  "sector": "Equity Investments",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HWG",
+  "yf_symbol": "HWG.L",
+  "name": "Harworth Group",
+  "sector": "Real Estate",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HAS",
+  "yf_symbol": "HAS.L",
+  "name": "Hays",
+  "sector": "Support Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HTWS",
+  "yf_symbol": "HTWS.L",
+  "name": "Helios Towers",
+  "sector": "Telecomms",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HFEL",
+  "yf_symbol": "HFEL.L",
+  "name": "Henderson Far East Income",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HSL",
+  "yf_symbol": "HSL.L",
+  "name": "Henderson Smaller Companies Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HRI",
+  "yf_symbol": "HRI.L",
+  "name": "Herald Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HGT",
+  "yf_symbol": "HGT.L",
+  "name": "Hg Capital Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HICL",
+  "yf_symbol": "HICL.L",
+  "name": "HICL Infrastructure Company",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HIK",
+  "yf_symbol": "HIK.L",
+  "name": "Hikma Pharmaceuticals",
+  "sector": "Pharmaceuticals and Biotechnology",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HILS",
+  "yf_symbol": "HILS.L",
+  "name": "Hill & Smith",
+  "sector": "Industrial Engineering",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HFG",
+  "yf_symbol": "HFG.L",
+  "name": "Hilton Food Group",
+  "sector": "Food Producers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HOC",
+  "yf_symbol": "HOC.L",
+  "name": "Hochschild Mining",
+  "sector": "Basic Resources",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "BOWL",
+  "yf_symbol": "BOWL.L",
+  "name": "Hollywood Bowl Group",
+  "sector": "Travel and leisure",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "HTG",
+  "yf_symbol": "HTG.L",
+  "name": "Hunting",
+  "sector": "Oil, Gas and Coal",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ICGT",
+  "yf_symbol": "ICGT.L",
+  "name": "ICG Enterprise Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "INCH",
+  "yf_symbol": "INCH.L",
+  "name": "Inchcape",
+  "sector": "Retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "IHP",
+  "yf_symbol": "IHP.L",
+  "name": "IntegraFin Holdings",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "INPP",
+  "yf_symbol": "INPP.L",
+  "name": "International Public Partnerships",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "IWG",
+  "yf_symbol": "IWG.L",
+  "name": "International Workplace Group",
+  "sector": "Support Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "IAD",
+  "yf_symbol": "IAD.L",
+  "name": "Invesco Asia Dragon Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "IPO",
+  "yf_symbol": "IPO.L",
+  "name": "IP Group",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ITV",
+  "yf_symbol": "ITV.L",
+  "name": "ITV",
+  "sector": "Media",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "JMAT",
+  "yf_symbol": "JMAT.L",
+  "name": "Johnson Matthey",
+  "sector": "Chemicals",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "JSG",
+  "yf_symbol": "JSG.L",
+  "name": "Johnson Service Group",
+  "sector": "Industrial Support Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "JAM",
+  "yf_symbol": "JAM.L",
+  "name": "JPMorgan American Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "JCH",
+  "yf_symbol": "JCH.L",
+  "name": "JPMorgan Claverhouse Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "JEMI",
+  "yf_symbol": "JEMI.L",
+  "name": "JPMorgan Emerging Markets Dividend Income",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "JMGI",
+  "yf_symbol": "JMGI.L",
+  "name": "JPMorgan Emerging Markets Growth & Income",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "JEDT",
+  "yf_symbol": "JEDT.L",
+  "name": "JPMorgan European Discovery",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "JEGI",
+  "yf_symbol": "JEGI.L",
+  "name": "JPMorgan European Growth & Income",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "JGGI",
+  "yf_symbol": "JGGI.L",
+  "name": "JPMorgan Global Growth & Income",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "JFJ",
+  "yf_symbol": "JFJ.L",
+  "name": "JPMorgan Japanese Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "JUP",
+  "yf_symbol": "JUP.L",
+  "name": "Jupiter Fund Management",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "KNOS",
+  "yf_symbol": "KNOS.L",
+  "name": "Kainos",
+  "sector": "Software & Computer Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "KLR",
+  "yf_symbol": "KLR.L",
+  "name": "Keller Group",
+  "sector": "Construction & Materials",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "KIE",
+  "yf_symbol": "KIE.L",
+  "name": "Kier Group",
+  "sector": "Construction & Materials",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "LRE",
+  "yf_symbol": "LRE.L",
+  "name": "Lancashire Holdings",
+  "sector": "Nonlife Insurance",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "LWDB",
+  "yf_symbol": "LWDB.L",
+  "name": "Law Debenture",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "EMG",
+  "yf_symbol": "EMG.L",
+  "name": "Man Group",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MEGP",
+  "yf_symbol": "MEGP.L",
+  "name": "ME Group International",
+  "sector": "Leisure Goods",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MRC",
+  "yf_symbol": "MRC.L",
+  "name": "Mercantile Investment Trust",
+  "sector": "Collective Investments",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MRCH",
+  "yf_symbol": "MRCH.L",
+  "name": "Merchants Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MNO",
+  "yf_symbol": "MNO.L",
+  "name": "Meridian Mining",
+  "sector": "Industrial Metals and Mining",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MTRO",
+  "yf_symbol": "MTRO.L",
+  "name": "Metro Bank",
+  "sector": "Banks",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PAGE",
+  "yf_symbol": "PAGE.L",
+  "name": "Michael Page",
+  "sector": "Support Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MAB",
+  "yf_symbol": "MAB.L",
+  "name": "Mitchells & Butlers",
+  "sector": "Travel & Leisure",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MTO",
+  "yf_symbol": "MTO.L",
+  "name": "Mitie",
+  "sector": "Support Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "GROW",
+  "yf_symbol": "GROW.L",
+  "name": "Molten Ventures",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MNDI",
+  "yf_symbol": "MNDI.L",
+  "name": "Mondi",
+  "sector": "Containers & packaging",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MNKS",
+  "yf_symbol": "MNKS.L",
+  "name": "Monks Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MONY",
+  "yf_symbol": "MONY.L",
+  "name": "MONY Group",
+  "sector": "Media",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MOON",
+  "yf_symbol": "MOON.L",
+  "name": "Moonpig",
+  "sector": "Retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MGAM",
+  "yf_symbol": "MGAM.L",
+  "name": "Morgan Advanced Materials",
+  "sector": "Electronic & Electrical Equipment",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MGNS",
+  "yf_symbol": "MGNS.L",
+  "name": "Morgan Sindall Group",
+  "sector": "Construction & Materials",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MUT",
+  "yf_symbol": "MUT.L",
+  "name": "Murray Income Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MYI",
+  "yf_symbol": "MYI.L",
+  "name": "Murray International Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "NCC",
+  "yf_symbol": "NCC.L",
+  "name": "NCC Group",
+  "sector": "Software and Computer Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "NBPE",
+  "yf_symbol": "NBPE.L",
+  "name": "Neuberger Private Equity Partners",
+  "sector": "Collective Investments",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "N91",
+  "yf_symbol": "N91.L",
+  "name": "Ninety One",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "NAIT",
+  "yf_symbol": "NAIT.L",
+  "name": "North American Income Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "NAS",
+  "yf_symbol": "NAS.L",
+  "name": "North Atlantic Smaller Companies Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "OCI",
+  "yf_symbol": "OCI.L",
+  "name": "Oakley Capital Investments",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "OCDO",
+  "yf_symbol": "OCDO.L",
+  "name": "Ocado Group",
+  "sector": "Food & drug retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "OSB",
+  "yf_symbol": "OSB.L",
+  "name": "OSB Group",
+  "sector": "Banks",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "OXB",
+  "yf_symbol": "OXB.L",
+  "name": "Oxford Biomedica",
+  "sector": "Pharmaceuticals and Biotechnology",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "OXIG",
+  "yf_symbol": "OXIG.L",
+  "name": "Oxford Instruments",
+  "sector": "Electronic & Electrical Equipment",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ONT",
+  "yf_symbol": "ONT.L",
+  "name": "Oxford Nanopore Technologies",
+  "sector": "Health Care",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PHI",
+  "yf_symbol": "PHI.L",
+  "name": "Pacific Horizon Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PAF",
+  "yf_symbol": "PAF.L",
+  "name": "Pan African Resources",
+  "sector": "Precious Metals and Mining",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PINT",
+  "yf_symbol": "PINT.L",
+  "name": "Pantheon Infrastructure",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PIN",
+  "yf_symbol": "PIN.L",
+  "name": "Pantheon International",
+  "sector": "Equity Investments",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PAG",
+  "yf_symbol": "PAG.L",
+  "name": "Paragon Banking Group",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PEY",
+  "yf_symbol": "PEY.L",
+  "name": "Partners Group Private Equity",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PPET",
+  "yf_symbol": "PPET.L",
+  "name": "Patria Private Equity Trust",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PNN",
+  "yf_symbol": "PNN.L",
+  "name": "Pennon Group",
+  "sector": "Gas, Water & Multiutilities",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PSN",
+  "yf_symbol": "PSN.L",
+  "name": "Persimmon",
+  "sector": "Household goods & home construction",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PNL",
+  "yf_symbol": "PNL.L",
+  "name": "Personal Assets Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PETS",
+  "yf_symbol": "PETS.L",
+  "name": "Pets at Home",
+  "sector": "Retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PTEC",
+  "yf_symbol": "PTEC.L",
+  "name": "Playtech",
+  "sector": "Software & Computer Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PLUS",
+  "yf_symbol": "PLUS.L",
+  "name": "Plus500",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PCGH",
+  "yf_symbol": "PCGH.L",
+  "name": "Polar Capital Global Healthcare Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "POLN",
+  "yf_symbol": "POLN.L",
+  "name": "Pollen Street Group",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PPH",
+  "yf_symbol": "PPH.L",
+  "name": "PPHE Hotel Group",
+  "sector": "Travel and Leisure",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PFD",
+  "yf_symbol": "PFD.L",
+  "name": "Premier Foods",
+  "sector": "Food & Drug Retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PHP",
+  "yf_symbol": "PHP.L",
+  "name": "Primary Health Properties",
+  "sector": "Real Estate Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "PRN",
+  "yf_symbol": "PRN.L",
+  "name": "Princes Group",
+  "sector": "Food and drink",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "QQ",
+  "yf_symbol": "QQ.L",
+  "name": "Qinetiq",
+  "sector": "Aerospace & Defence",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "QLT",
+  "yf_symbol": "QLT.L",
+  "name": "Quilter",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "RNK",
+  "yf_symbol": "RNK.L",
+  "name": "Rank Group",
+  "sector": "Travel and Leisure",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "RPI",
+  "yf_symbol": "RPI.L",
+  "name": "Raspberry Pi Holdings",
+  "sector": "Technology",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "RAT",
+  "yf_symbol": "RAT.L",
+  "name": "Rathbones",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "RSW",
+  "yf_symbol": "RSW.L",
+  "name": "Renishaw",
+  "sector": "Electronic & Electrical Equipment",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "RHIM",
+  "yf_symbol": "RHIM.L",
+  "name": "RHI Magnesita",
+  "sector": "Support Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "RMV",
+  "yf_symbol": "RMV.L",
+  "name": "Rightmove",
+  "sector": "Media",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "RCP",
+  "yf_symbol": "RCP.L",
+  "name": "RIT Capital Partners",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ROSE",
+  "yf_symbol": "ROSE.L",
+  "name": "Rosebank Industries",
+  "sector": "Industrial Goods and Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ROR",
+  "yf_symbol": "ROR.L",
+  "name": "Rotork",
+  "sector": "Industrial Engineering",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "RS1",
+  "yf_symbol": "RS1.L",
+  "name": "RS Group",
+  "sector": "Industrials",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "RTW",
+  "yf_symbol": "RTW.L",
+  "name": "RTW Biotech Opportunities",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "RICA",
+  "yf_symbol": "RICA.L",
+  "name": "Ruffer Investment Company",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SAFE",
+  "yf_symbol": "SAFE.L",
+  "name": "Safestore",
+  "sector": "Real Estate Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SAGA",
+  "yf_symbol": "SAGA.L",
+  "name": "Saga",
+  "sector": "Travel and Leisure",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SVS",
+  "yf_symbol": "SVS.L",
+  "name": "Savills",
+  "sector": "Real Estate Investment & Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "MNTN",
+  "yf_symbol": "MNTN.L",
+  "name": "Schiehallion Fund",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ATR",
+  "yf_symbol": "ATR.L",
+  "name": "Schroder Asian Total Return Investment Company",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SDP",
+  "yf_symbol": "SDP.L",
+  "name": "Schroder AsiaPacific Fund",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SOI",
+  "yf_symbol": "SOI.L",
+  "name": "Schroder Oriental Income Fund",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SAIN",
+  "yf_symbol": "SAIN.L",
+  "name": "Scottish American Investment Company",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SEIT",
+  "yf_symbol": "SEIT.L",
+  "name": "SDCL Efficiency Income Trust",
+  "sector": "Energy",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SEQI",
+  "yf_symbol": "SEQI.L",
+  "name": "Sequoia Economic Infrastructure Income Fund",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SSIT",
+  "yf_symbol": "SSIT.L",
+  "name": "Seraphim Space Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SRP",
+  "yf_symbol": "SRP.L",
+  "name": "Serco",
+  "sector": "Support Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SHC",
+  "yf_symbol": "SHC.L",
+  "name": "Shaftesbury Capital",
+  "sector": "Real Estate Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SHAW",
+  "yf_symbol": "SHAW.L",
+  "name": "Shawbrook Bank",
+  "sector": "Banking",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SRE",
+  "yf_symbol": "SRE.L",
+  "name": "Sirius Real Estate",
+  "sector": "Real Estate",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SCT",
+  "yf_symbol": "SCT.L",
+  "name": "Softcat",
+  "sector": "Software & Computer Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SPI",
+  "yf_symbol": "SPI.L",
+  "name": "Spire Healthcare",
+  "sector": "Health Care Equipment & Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SSPG",
+  "yf_symbol": "SSPG.L",
+  "name": "SSP Group",
+  "sector": "Retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SUPR",
+  "yf_symbol": "SUPR.L",
+  "name": "Supermarket Income REIT",
+  "sector": "Real Estate Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SYNC",
+  "yf_symbol": "SYNC.L",
+  "name": "Syncona",
+  "sector": "Pharmaceuticals & Biotechnology",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "THRL",
+  "yf_symbol": "THRL.L",
+  "name": "Target Healthcare REIT",
+  "sector": "Real Estate Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "TATE",
+  "yf_symbol": "TATE.L",
+  "name": "Tate & Lyle",
+  "sector": "Food Producers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "TW",
+  "yf_symbol": "TW.L",
+  "name": "Taylor Wimpey",
+  "sector": "Household goods & home construction",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "TBCG",
+  "yf_symbol": "TBCG.L",
+  "name": "TBC Bank",
+  "sector": "Banks",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "TEP",
+  "yf_symbol": "TEP.L",
+  "name": "Telecom Plus",
+  "sector": "Telecomms",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "TMPL",
+  "yf_symbol": "TMPL.L",
+  "name": "Temple Bar Investment Trust",
+  "sector": "Collective Investments",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "TEM",
+  "yf_symbol": "TEM.L",
+  "name": "Templeton Emerging Markets Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "TRIG",
+  "yf_symbol": "TRIG.L",
+  "name": "The Renewables Infrastructure Group",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "THG",
+  "yf_symbol": "THG.L",
+  "name": "THG",
+  "sector": "Personal Products",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "TCAP",
+  "yf_symbol": "TCAP.L",
+  "name": "TP ICAP",
+  "sector": "Support Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "TRN",
+  "yf_symbol": "TRN.L",
+  "name": "Trainline",
+  "sector": "Industrial Transportation",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "TPK",
+  "yf_symbol": "TPK.L",
+  "name": "Travis Perkins",
+  "sector": "Support Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "TRY",
+  "yf_symbol": "TRY.L",
+  "name": "TR Property Investment Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "TRST",
+  "yf_symbol": "TRST.L",
+  "name": "Trustpilot",
+  "sector": "Technology",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "TFIF",
+  "yf_symbol": "TFIF.L",
+  "name": "Twentyfour Income Fund",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "UTG",
+  "yf_symbol": "UTG.L",
+  "name": "Unite Group",
+  "sector": "Real estate investment trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "UEM",
+  "yf_symbol": "UEM.L",
+  "name": "Utilico Emerging Markets",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "VSVS",
+  "yf_symbol": "VSVS.L",
+  "name": "Vesuvius",
+  "sector": "General Industrials",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "VCT",
+  "yf_symbol": "VCT.L",
+  "name": "Victrex",
+  "sector": "Chemicals",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "VEIL",
+  "yf_symbol": "VEIL.L",
+  "name": "Vietnam Enterprise Investments",
+  "sector": "General Financial",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "VOF",
+  "yf_symbol": "VOF.L",
+  "name": "VinaCapital Vietnam Opportunity Fund",
+  "sector": "General Financial",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "VTY",
+  "yf_symbol": "VTY.L",
+  "name": "Vistry Group",
+  "sector": "Home Construction",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "VLX",
+  "yf_symbol": "VLX.L",
+  "name": "Volex",
+  "sector": "Industrial Goods and Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "FAN",
+  "yf_symbol": "FAN.L",
+  "name": "Volution Group",
+  "sector": "Construction & Materials",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "WOSG",
+  "yf_symbol": "WOSG.L",
+  "name": "Watches of Switzerland",
+  "sector": "Personal Goods",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "JDW",
+  "yf_symbol": "JDW.L",
+  "name": "Wetherspoons",
+  "sector": "Travel & Leisure",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "SMWH",
+  "yf_symbol": "SMWH.L",
+  "name": "WHSmith",
+  "sector": "Retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "WIX",
+  "yf_symbol": "WIX.L",
+  "name": "Wickes",
+  "sector": "Retailers",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "WIZZ",
+  "yf_symbol": "WIZZ.L",
+  "name": "Wizz Air",
+  "sector": "Travel & Leisure",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "WKP",
+  "yf_symbol": "WKP.L",
+  "name": "Workspace Group",
+  "sector": "Real Estate Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "WWH",
+  "yf_symbol": "WWH.L",
+  "name": "Worldwide Healthcare Trust",
+  "sector": "Investment Trusts",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "XPP",
+  "yf_symbol": "XPP.L",
+  "name": "XP Power",
+  "sector": "Industrial Goods and Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "XPS",
+  "yf_symbol": "XPS.L",
+  "name": "XPS Pensions",
+  "sector": "Financial Services",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "YNGA",
+  "yf_symbol": "YNGA.L",
+  "name": "Young's",
+  "sector": "Travel and Leisure",
+  "index": "FTSE250"
+ },
+ {
+  "tidm": "ZIG",
+  "yf_symbol": "ZIG.L",
+  "name": "Zigup",
+  "sector": "Support Services",
+  "index": "FTSE250"
+ }
+]

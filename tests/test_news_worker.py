@@ -164,6 +164,7 @@ def test_finespresso_scheduler_exposes_all_original_publisher_jobs(monkeypatch):
     assert [name for name, _ in publishers.groups()] == [
         "baltics", "euronext", "omx", "globenewswire_sector",
         "globenewswire_country", "globenewswire_industry", "prnewswire",
+        "prnewswire_uk", "rns_nsm",
     ]
 
 

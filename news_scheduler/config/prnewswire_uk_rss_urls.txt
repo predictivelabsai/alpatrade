@@ -1,0 +1,3 @@
+# PR Newswire UK public RSS (stored as publisher prnewswire_uk)
+all: https://www.prnewswire.co.uk/rss/news-releases-list.rss
+financial_services: https://www.prnewswire.co.uk/rss/financial-services-latest-news/financial-services-latest-news-list.rss
