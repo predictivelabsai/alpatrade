@@ -11,6 +11,7 @@ test-results/
 reports/
 screenshots/
 docs/
+!docs/user_guide/alpatrade_user_guide.pdf
 *.md
 !requirements.txt
 .pytest_cache/

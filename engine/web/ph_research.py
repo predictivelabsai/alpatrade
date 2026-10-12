@@ -140,12 +140,13 @@ function rowHtml(x){let ai=x.ai||{};
  `<div class="n-meta">${(x.tickers||[]).map(t=>`<span class="n-chip" title="${esc((x.sector_map||{})[t]||'')}">${esc(t)}</span>`).join('')}`+
  ((ai.sectors||[]).map(imp).join(''))+(ai.thesis?`<div class="n-thesis">${esc(ai.thesis)}</div>`:'')+`</div></div>`}
 function plotBoard(secs){let el=document.getElementById('n-impact');if(!el)return;
- let cells=(secs||[]).slice(0,12);
- if(cells.length&&('up'in cells[0])){
+ let cells=Array.isArray(secs)?secs.slice(0,12):[];
+ if(cells.length&&cells[0]&&('up'in cells[0])){
   Plotly.newPlot(el,[{type:'bar',orientation:'h',y:cells.map(c=>c.sector),x:cells.map(c=>c.up),name:'Bullish',marker:{color:'#1F5D43'}},
    {type:'bar',orientation:'h',y:cells.map(c=>c.sector),x:cells.map(c=>-c.down),name:'Bearish',marker:{color:'#B4472F'}}],
    {barmode:'relative',margin:{l:150,r:20,t:15,b:35},paper_bgcolor:'#fff',plot_bgcolor:'#F7F6F1',legend:{orientation:'h'}},{responsive:true,displayModeBar:false});
  }else{
+  if(Array.isArray(secs))secs={};
   let names=Object.keys(secs||{}).sort((a,b)=>secs[b]-secs[a]).slice(0,10);
   Plotly.newPlot(el,[{type:'bar',orientation:'h',y:names,x:names.map(n=>secs[n]),marker:{color:'#1F5D43'}}],
    {margin:{l:150,r:20,t:15,b:35},paper_bgcolor:'#fff',plot_bgcolor:'#F7F6F1',xaxis:{title:'Headlines mentioning sector'}},{responsive:true,displayModeBar:false});
