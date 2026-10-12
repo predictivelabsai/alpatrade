@@ -110,3 +110,20 @@ Required `.env` keys: `ALPACA_PAPER_API_KEY`, `ALPACA_PAPER_SECRET_KEY`,
 - `coolify-deploy` — trigger/inspect Coolify deploys via API token (never the account password).
 - `linkedin-post` — post to LinkedIn via OAuth token (no password/2FA entered).
 - `alpaca-trading-backtest` — deterministic historical backtest via the Alpaca CLI skill.
+
+## Stack
+
+- Docker
+- FastAPI
+- Python
+
+## Builders
+
+codex: yes
+muse: no
+
+## Do not touch
+
+- Never read or commit secrets, credentials or local environment files.
+- Never deploy or push without explicit authorisation.
+- Do not modify unrelated application code.
