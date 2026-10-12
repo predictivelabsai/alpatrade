@@ -235,10 +235,12 @@ def _deposits_metric(data: dict, plab: str) -> str:
 
 
 def _ann_metric(data: dict, plab: str) -> str:
-    """Annualised-return KPI (simple ×252/d) with compounded value in tooltip."""
+    """Annualised-return KPI (CAGR; "n/a (<60d)" with the total in the tooltip)."""
     from engine.reporting.annualize import fmt_ann, tooltip
     a = data.get("annualized") or {}
-    v = a.get("simple_pct")
+    v = a.get("annualised_pct")
+    if v is None:
+        v = a.get("return_pct") if a.get("short_period") else None
     tone = "" if v is None else ("positive" if v >= 0 else "negative")
     tip = html.escape(tooltip(a))
     days = f" · {a.get('days', 0)}d" if v is not None else ""

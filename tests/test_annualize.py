@@ -11,13 +11,15 @@ def test_simple_and_compound():
     assert abs(a["simple_pct"] - 12.0) < 1e-9
 
 
-def test_short_periods_are_annualised_simple_with_hint():
-    # Julian's standing rule: simple x252/d from day one; compounded only in the tooltip.
+def test_short_periods_are_not_annualised():
+    # v0.42.0: headline = CAGR, only from 60 trading days; before that n/a + total.
     a = annualize(3.4495, 12)
-    assert abs(a["simple_pct"] - 3.4495 * 252 / 12) < 1e-9 and a["short_period"]
-    assert fmt_ann(a) == "+72.44%" and "n/a" not in fmt_ann(a)
-    assert "Short period" in tooltip(a) and "compounded" in tooltip(a)
-    assert annualize(5.0, 63)["short_period"] is False
+    assert a["annualised_pct"] is None and a["short_period"]
+    assert fmt_ann(a) == "n/a (<60d)"
+    assert "Not annualised" in tooltip(a)
+    b = annualize(5.0, 63)
+    assert b["short_period"] is False
+    assert abs(b["annualised_pct"] - (1.05 ** (252 / 63) - 1) * 100) < 1e-9
 
 
 def test_guard_zero_days():
@@ -60,9 +62,11 @@ def test_since_start_annualized_uses_run_start(monkeypatch):
 
 def test_ann_metric_label_since_start():
     from engine.web.ph_pnl import _ann_metric
-    h = _ann_metric({"annualized": {"simple_pct": 86.8, "compound_pct": 134.0, "days": 9,
-                                    "basis": "since_start", "start_date": "2026-09-24"}}, "MTD")
-    assert "since inception · 9d" in h and "reinvest" in h
+    h = _ann_metric({"annualized": {**annualize(3.1, 9), "basis": "since_start",
+                                    "start_date": "2026-09-24"}}, "MTD")
+    assert "since inception · 9d" in h and "n/a" in h
+    h = _ann_metric({"annualized": {**annualize(10.98, 164), "basis": "since_start"}}, "MTD")
+    assert "+17.3" in h
 
 
 def test_email_headline_since_start():
@@ -70,6 +74,7 @@ def test_email_headline_since_start():
     spec = importlib.util.spec_from_file_location(
         "dlr", pathlib.Path(__file__).parents[1] / "scripts" / "daily_live_report.py")
     m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
-    h = m._ann_block({"annualized": {"since_start": {"return_pct": 3.1, "simple_pct": 86.8,
-                                                     "compound_pct": 134.0, "days": 9}}})
-    assert "Annualised return (since start · 9d)" in h
+    h = m._ann_block({"annualized": {"since_start": {**annualize(10.98, 164)}}})
+    assert "Annualised return (since start · 164d)" in h and "CAGR" in h
+    short = m._ann_block({"annualized": {"since_start": {**annualize(3.1, 9)}}})
+    assert "Annualised return (since start" not in short

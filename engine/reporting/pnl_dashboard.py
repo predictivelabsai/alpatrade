@@ -1,6 +1,8 @@
 """Account-scoped portfolio dashboard data and persisted advisor reports."""
 from __future__ import annotations
 
+from pathlib import Path
+
 import logging
 from collections import defaultdict
 from datetime import datetime, time, timedelta, timezone
@@ -107,6 +109,44 @@ def period_annualized(period: str, period_pct, now: datetime | None = None) -> d
     if end_dt.hour < 16:  # today's session not closed yet (ET) — count completed days only
         end_et -= timedelta(days=1)
     return annualize(period_pct, trading_days_between(start.date(), end_et))
+
+
+_INDEX_SQL = Path(__file__).resolve().parents[2] / "sql" / "52_runs_dashboard_index.sql"
+_index_done = False
+_rank_cache: dict = {}
+_RANK_TTL = 300.0
+
+
+def ensure_dashboard_index() -> None:
+    """Apply sql/52 once per process (idempotent CREATE INDEX IF NOT EXISTS)."""
+    global _index_done
+    if _index_done:
+        return
+    _index_done = True
+    try:
+        from sqlalchemy import text
+        from engine.db.pool import DatabasePool
+        with DatabasePool().get_session() as session:
+            session.execute(text(_INDEX_SQL.read_text()))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("dashboard index migration skipped: %s", type(exc).__name__)
+
+
+def cached_rankings(reporter, trade_type: str, user_id: str, account_id) -> list:
+    """top_strategies is a GROUP BY over backtest_summaries (1.5M rows): cache 5 min."""
+    import time
+    key = (trade_type, str(user_id), str(account_id))
+    hit = _rank_cache.get(key)
+    if hit and time.time() - hit[0] < _RANK_TTL:
+        return hit[1]
+    try:
+        val = reporter.top_strategies(trade_type=trade_type, limit=8, user_id=user_id,
+                                      account_id=account_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("rankings failed: %s", type(exc).__name__)
+        return hit[1] if hit else []
+    _rank_cache[key] = (time.time(), val)
+    return val
 
 
 def _strategy_run(user_id: str, mode: str, tag_key: str, tag_val: str | None) -> dict:
@@ -252,13 +292,35 @@ def since_start_annualized(user_id: str, selected: dict, now: datetime | None = 
     if start and start_eq and equity:
         twr = _since_start_twr(user_id, selected, start, start_eq, equity)
         ret = ret if twr is None else twr
+    if live and run.get("run_id"):
+        # Live: same single source as /live, /live/account and /leaderboard.
+        try:
+            from engine.metrics import check_consistency, live_return_for_user
+            canon = live_return_for_user(user_id, run)
+            if canon.get("has_data") and canon.get("return_pct") is not None:
+                check_consistency("dashboard:live_since_start",
+                                  {"canonical": canon["return_pct"], "dashboard_intraday": ret},
+                                  tol=1.0)
+                ret = canon["return_pct"]
+                days = int(canon.get("trading_days") or 0)
+                from engine.metrics import guard
+                out = annualize(ret, days)
+                out["annualised_pct"] = guard("dashboard:live", ret, out.get("annualised_pct"), days)
+                return {**out, "return_pct": ret, "basis": "since_start",
+                        "start_date": start.isoformat() if start else None,
+                        "as_of": canon.get("as_of")}
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("canonical live return failed: %s", type(exc).__name__)
     now = now or datetime.now(timezone.utc)
     end_dt = now.astimezone(ZoneInfo("America/New_York"))
     end_et = end_dt.date()
     if end_dt.hour < 16:
         end_et -= timedelta(days=1)
     days = trading_days_between(start, end_et) if start else 0
-    return {**annualize(ret, days), "return_pct": ret, "basis": "since_start",
+    from engine.metrics import guard
+    out = annualize(ret, days)
+    out["annualised_pct"] = guard("dashboard:since_start", ret, out.get("annualised_pct"), days)
+    return {**out, "return_pct": ret, "basis": "since_start",
             "start_date": start.isoformat() if start else None}
 
 def _friendly_error(raw: str) -> str:
@@ -590,6 +652,7 @@ def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[st
     ``all`` still aggregates paper only so live money is never mixed in.
     """
     period = normalize_period(period)
+    ensure_dashboard_index()
     paper, live = _catalog(user_id)
     accounts = paper + live  # dropdown catalog
     if not accounts:
@@ -605,14 +668,19 @@ def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[st
         return _one_account(user_id, account, period)
 
     def _attempt(req: str | None) -> None:
-        for account in accounts:
-            # "All accounts" = all paper; live stays a separate selection.
-            if req == "all" and account.get("kind") == "live":
-                continue
-            if req not in (None, "all") and account["account_id"] != req:
-                continue
+        from concurrent.futures import ThreadPoolExecutor
+        todo = [a for a in accounts
+                # "All accounts" = all paper; live stays a separate selection.
+                if not (req == "all" and a.get("kind") == "live")
+                and not (req not in (None, "all") and a["account_id"] != req)]
+        if not todo:
+            return
+        # Broker HTTP per account runs in parallel (was sequential, ~5 s).
+        with ThreadPoolExecutor(max_workers=min(6, len(todo))) as ex:
+            futs = [(a, ex.submit(_load_one, a)) for a in todo]
+        for account, fut in futs:
             try:
-                loaded.append(_load_one(account))
+                loaded.append(fut.result())
             except Exception as exc:  # noqa: BLE001
                 errors[account["account_id"]] = {
                     "account_id": account["account_id"], "message": str(exc),
@@ -642,6 +710,13 @@ def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[st
         else selected["account_id"]
     )
     reporter = ReportAgent()
+    from concurrent.futures import ThreadPoolExecutor
+    _pool = ThreadPoolExecutor(max_workers=3)
+    _f_ann = _pool.submit(since_start_annualized, user_id, selected)
+    _f_paper = None if live_selected else _pool.submit(
+        cached_rankings, reporter, "paper", user_id, ranking_account)
+    _f_bt = None if live_selected else _pool.submit(
+        cached_rankings, reporter, "backtest", user_id, ranking_account)
     advisor_history: list[dict[str, Any]] = []
     latest_advisors: list[dict[str, Any]] = []
     if not live_selected:
@@ -664,13 +739,14 @@ def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[st
             # The dashboard remains available before migration 19 is applied.
             logger.warning("Daily advisor reports unavailable: %s", type(exc).__name__)
     try:
-        annualized = since_start_annualized(user_id, selected)
-        if annualized.get("simple_pct") is None and selected["account_id"] == "all":
+        annualized = _f_ann.result()
+        if annualized.get("return_pct") is None and selected["account_id"] == "all":
             annualized = {**period_annualized(period, selected.get("period_pct")),
                           "basis": period}
     except Exception:  # noqa: BLE001
-        annualized = {"simple_pct": None, "compound_pct": None, "days": 0}
-    return {
+        annualized = {"simple_pct": None, "compound_pct": None, "annualised_pct": None,
+                      "return_pct": None, "days": 0}
+    out = {
         **selected,
         "annualized": annualized,
         "needs_account": False,
@@ -678,15 +754,15 @@ def dashboard_data(user_id: str, account_id: str | None, period: str) -> dict[st
         "has_live": bool(live),
         "errors": list(errors.values()),
         "period": period,
-        "paper_rankings": [] if live_selected else reporter.top_strategies(
-            trade_type="paper", limit=8, user_id=user_id, account_id=ranking_account),
-        "backtest_rankings": [] if live_selected else reporter.top_strategies(
-            trade_type="backtest", limit=8, user_id=user_id, account_id=ranking_account),
+        "paper_rankings": _f_paper.result() if _f_paper else [],
+        "backtest_rankings": _f_bt.result() if _f_bt else [],
         "advisor_report": latest_advisors[0] if latest_advisors else None,
         "advisor_reports": latest_advisors,
         "advisor_history": advisor_history,
         "as_of": datetime.now(timezone.utc).isoformat(),
     }
+    _pool.shutdown(wait=False)
+    return out
 
 
 def commentary(user_id: str, data: dict[str, Any]) -> str:

@@ -366,6 +366,10 @@ def load_view(user_id: str) -> dict:
                 pts = None
         out["perf"] = performance_since_start(equity, run, day=today, runner_open=runner_open,
                                               net_deposits=dep, points=pts, flows=flows)
+        if run.get("run_id"):
+            from engine.metrics import apply_canonical_since_inception, live_strategy_return
+            out["perf"] = apply_canonical_since_inception(
+                out["perf"], live_strategy_return(run, flows, today), "live_account")
         out["curves"] = equity_curves(client, run, end=today, flows=flows) or {}
         out["run_id"] = run.get("run_id")
     except Exception as exc:  # noqa: BLE001

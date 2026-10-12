@@ -63,6 +63,9 @@ jobs:
       - name: News worker unit tests
         run: python -m pytest tests/test_news_worker.py -q
 
+      - name: Metrics consistency guard (one definition across pages, SPY CAGR, bounds)
+        run: python -m pytest tests/test_metrics_consistency.py -q
+
       - name: Unit tests
         timeout-minutes: 5
         env:

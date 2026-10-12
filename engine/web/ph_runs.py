@@ -70,7 +70,7 @@ _CSS = """
 _LIMIT = 25
 
 _RUN_SQL = """
-    SELECT r.run_id, r.mode, r.strategy, r.strategy_slug, r.status,
+    SELECT r.run_id, r.user_id, r.mode, r.strategy, r.strategy_slug, r.status,
            r.started_at, r.completed_at, r.config AS run_config, r.results AS run_results,
            s.params, s.total_return, s.sharpe_ratio
     FROM alpatrade.runs r
@@ -122,6 +122,22 @@ def _list_runs(mode: str, user_id: str) -> list[dict]:
                     fb = _best_from_results(str(row["run_id"]))
                     if fb:
                         row["params"] = fb
+                for k in ("total_return", "sharpe_ratio"):
+                    if row.get(k) is not None:
+                        try:
+                            row[k] = float(row[k])
+                        except (TypeError, ValueError):
+                            row[k] = None
+                if mode == "backtest" and (row.get("total_return") is None
+                                           or row.get("sharpe_ratio") is None):
+                    # No is_best summary row (orchestrator path): use results.best_config.
+                    from engine.metrics import backtest_figures
+                    best = _as_dict(_as_dict(row.get("run_results")).get("best_config"))
+                    fig = backtest_figures(best)
+                    if row.get("total_return") is None:
+                        row["total_return"] = fig["total_return"]
+                    if row.get("sharpe_ratio") is None:
+                        row["sharpe_ratio"] = fig["sharpe_ratio"]
                 out.append(row)
         return out
     except Exception:  # noqa: BLE001
@@ -215,9 +231,23 @@ def _pct(v) -> str:
     return f"<span class='{cls}'>{v:+.2f}%</span>"
 
 
-def _live_row(r: dict) -> str:
+def _live_row(r: dict, user_id: str | None = None) -> str:
     cfg = _as_dict(r.get("run_config"))
-    latest = _as_dict(_as_dict(r.get("run_results")).get("latest"))
+    latest = dict(_as_dict(_as_dict(r.get("run_results")).get("latest")))
+    if user_id:  # single source of truth (engine.metrics) — same figure as /leaderboard
+        try:
+            from engine.metrics import check_consistency, live_return_for_user
+            canon = live_return_for_user(user_id, {
+                "run_id": r.get("run_id"), "config": cfg,
+                "results": _as_dict(r.get("run_results")), "started_at": r.get("started_at")})
+            if canon.get("has_data") and canon.get("return_pct") is not None:
+                check_consistency("live:runner_vs_canonical",
+                                  {"canonical": canon["return_pct"],
+                                   "runner_latest": latest.get("strategy_return_pct")}, tol=1.0)
+                latest["strategy_return_pct"] = canon["return_pct"]
+                latest["spy_return_pct"] = canon.get("spy_return_pct", latest.get("spy_return_pct"))
+        except Exception:  # noqa: BLE001 — fall back to the runner snapshot
+            pass
     status = html.escape(str(r.get("status") or "unknown"))
     started = str(r.get("started_at") or "")[:16].replace("T", " ")
     params = (f"dip {cfg.get('dip_threshold')}% / TP {cfg.get('take_profit')}% / "
@@ -287,7 +317,7 @@ def _render(mode: str, rows: list[dict]) -> str:
             f"{len(rows)} backtest runs for your login.</p>"
         )
     elif mode == "live":
-        rows_html = "".join(_live_row(r) for r in rows)
+        rows_html = "".join(_live_row(r, str(r.get('user_id') or '') or None) for r in rows)
         body = (
             "<div class='runs-tblwrap'><table><thead><tr>"
             "<th>Strategy</th><th>Account</th><th>P&amp;L</th><th>Return</th><th>SPY</th>"
@@ -295,7 +325,7 @@ def _render(mode: str, rows: list[dict]) -> str:
             "<th>Status</th><th>Run</th>"
             "</tr></thead><tbody>" + rows_html + "</tbody></table></div>"
             "<p class='muted' style='font-size:.72rem'>Latest "
-            f"{len(rows)} live runs for your login. Return = runner P&amp;L / equity at start.</p>"
+            f"{len(rows)} live runs for your login. Return = deposit-adjusted time-weighted return since start, as of the last completed session (same as Leaderboard and Live account).</p>"
         )
     else:
         rows_html = "".join(_paper_row(r) for r in rows)
