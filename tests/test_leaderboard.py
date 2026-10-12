@@ -33,13 +33,10 @@ def test_metrics_from_live_run_snapshot():
     assert m["return_pct"] == pytest.approx((2809.13 / 2725.59 - 1) * 100)
     assert m["spy_return_pct"] == pytest.approx((774.30 / 767.29 - 1) * 100)
     assert m["alpha_pct"] == pytest.approx(m["return_pct"] - m["spy_return_pct"])
-    # 11 sessions < 63 (~90 calendar days): not annualised
-    # <90d rule reverted: always annualised, compounded on the TWR, with a short-period hint
-    r = m["return_pct"] / 100
-    assert m["annualised_pct"] == pytest.approx(r * 252 / 11 * 100)  # simple (standing rule)
-    assert m["annualised_compound_pct"] == pytest.approx(((1 + r) ** (252 / 11) - 1) * 100)
-    assert m["annualised_short"] is True and "Short period" in perf.annualised_tip(m)
-    assert m["annualised_short"] is True
+    # v0.42.0: annualised = CAGR, only from 60 trading days; 11 sessions -> n/a + total
+    assert m["annualised_pct"] is None
+    assert m["annualised_short"] is True and "Not annualised" in perf.annualised_tip(m)
+    assert perf.ann_display(m) == "n/a (<60d)"
 
 
 def test_metrics_never_invent_numbers():
@@ -355,7 +352,7 @@ def test_backtest_entry_switches_to_live_when_live_record_exists(monkeypatch):
     monkeypatch.setattr(perf, "metrics_from_run", lambda *a, **k: {**perf.EMPTY, "has_data": False}, raising=False)
     monkeypatch.setattr(perf, "_live_run", lambda uid, slug: None)
     m = real(dict(row))
-    assert m["is_backtest"] and m["annualised_pct"] is not None
+    assert m["is_backtest"] and m["return_pct"] is not None  # ~40 sessions: CAGR n/a (<60d)
     live = {**perf.EMPTY, "has_data": True, "annualised_pct": 12.0}
     calls = {}
 

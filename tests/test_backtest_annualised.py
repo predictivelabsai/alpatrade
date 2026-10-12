@@ -1,5 +1,5 @@
-"""Backtest leaderboard rows: headline annualised = SIMPLE total × 252 / trading days,
-alpha = simple strategy − simple SPY over the same days, CAGR only in the tooltip."""
+"""Backtest leaderboard rows (v0.42.0): headline annualised = CAGR (≥60 days, bounded),
+alpha = CAGR − SPY CAGR over the same days."""
 import pytest
 
 from engine.leaderboard import perf
@@ -13,33 +13,34 @@ def _row(tot, spy, days, start="2026-02-11", end="2026-10-09", cagr=9999.0):
         "annualised_pct": cagr, "spy_annualised_pct": cagr, "alpha_annualised_pct": cagr}}
 
 
-def test_short_window_uses_simple_not_cagr():
-    # Semi 7 shape: +550.8% over 167 sessions; CAGR would be ~+1,600%
+def test_short_window_cagr_out_of_bounds_shows_total():
+    # Semi 7 shape: +550.8% over 167 sessions -> CAGR ~+1,600%/yr exceeds the 1000% bound
     m = perf.backtest_metrics(_row(550.8, 13.4, 167))
-    assert m["annualised_pct"] == pytest.approx(550.8 * 252 / 167)          # ~831%
-    assert m["spy_annualised_pct"] == pytest.approx(13.4 * 252 / 167)
-    assert m["alpha_pct"] == pytest.approx((550.8 - 13.4) * 252 / 167)
-    assert m["annualised_cagr_pct"] > 1500                                   # tooltip only
-    assert m["annualised_pct"] < m["annualised_cagr_pct"]
+    assert m["annualised_pct"] is None and m["annualised_out_of_bounds"]
+    assert m["annualised_cagr_pct"] > 1500
+    assert perf.ann_display(m) == "n/a (>1000%/yr)"
+    assert "sanity bound" in perf.annualised_tip(m)
 
 
 def test_stored_cagr_ignored():
     m = perf.backtest_metrics(_row(10.0, 5.0, 126))
-    assert m["annualised_pct"] == pytest.approx(20.0)
-    assert m["alpha_pct"] == pytest.approx(10.0)
+    assert m["annualised_pct"] == pytest.approx((1.10 ** 2 - 1) * 100)
+    assert m["alpha_pct"] == pytest.approx((1.10 ** 2 - 1.05 ** 2) * 100)
 
 
 def test_long_window_and_negative():
     m = perf.backtest_metrics(_row(555.7, 356.2, 2708, "2016-01-04"))
-    assert m["annualised_pct"] == pytest.approx(555.7 * 252 / 2708)
-    assert m["annualised_cagr_pct"] == pytest.approx((6.557 ** (252 / 2708) - 1) * 100)
+    assert m["annualised_pct"] == pytest.approx((6.557 ** (252 / 2708) - 1) * 100)
+    assert 13 <= m["spy_annualised_pct"] <= 16       # SPY-like CAGR, not simple ~33%
     neg = perf.backtest_metrics(_row(-79.1, 356.2, 2708, "2016-01-04"))
-    assert neg["annualised_pct"] == pytest.approx(-79.1 * 252 / 2708)
+    assert neg["annualised_pct"] == pytest.approx((0.209 ** (252 / 2708) - 1) * 100)
+    assert neg["annualised_pct"] < 0
 
 
 def test_days_from_dates_when_missing():
     m = perf.backtest_metrics(_row(10.0, 5.0, None, "2026-01-02", "2026-03-31"))
-    assert m["trading_days"] > 55 and m["annualised_pct"] == pytest.approx(10.0 * 252 / m["trading_days"])
+    assert m["trading_days"] > 55
+    assert m["annualised_pct"] == pytest.approx((1.10 ** (252 / m["trading_days"]) - 1) * 100)
 
 
 def test_no_total_no_data():
@@ -48,13 +49,12 @@ def test_no_total_no_data():
 
 def test_tooltips_and_labels():
     from engine.web import ph_leaderboard as lb
-    m = perf.backtest_metrics(_row(550.8, 13.4, 167))
+    m = perf.backtest_metrics(_row(55.0, 13.4, 167))
     tip = perf.annualised_tip(m)
-    assert "× 252 / 167" in tip and "CAGR" in tip
-    assert "simple" in perf.alpha_tip(m)
-    cell = lb._alpha_cell(m)
-    assert "simple, ×252/trading days" in cell and "CAGR" not in cell.split("data-tip")[0]
-    assert "simple, ×252/trading days" in lb._annualised_cell(m)
+    assert "CAGR" in tip and "167 trading days" in tip
+    assert "CAGR" in perf.alpha_tip(m)
+    assert "CAGR ·" in lb._alpha_cell(m) and "simple" not in lb._alpha_cell(m)
+    assert "CAGR" in lb._annualised_cell(m)
 
 
 def test_simple_from_cagr_roundtrip():

@@ -809,14 +809,14 @@ def _curves_block(d: dict) -> str:
 
 
 def _ann_block(d: dict) -> str:
-    """Annualised return table: MTD / YTD / since start (simple ×252/d + compounded)."""
+    """Annualised return table: MTD / YTD / since start (CAGR, n/a under 60 trading days)."""
     a = d.get("annualized") or {}
     rows = ""
     for key, label in (("since_start", "Since start"), ("mtd", "MTD"), ("ytd", "YTD")):
         x = a.get(key)
         if not x:
             continue
-        simp, comp = x.get("simple_pct"), x.get("compound_pct")
+        simp, comp = x.get("annualised_pct"), x.get("compound_pct")
         rows += (f"<tr><td>{label}</td><td {_R}>{_pct(x.get('return_pct'))}</td>"
                  f"<td {_R}>{x.get('days', 0)}</td>"
                  f"<td {_R}><b style='color:{_col(simp)}'>{_pct(simp)}</b></td>"
@@ -825,19 +825,18 @@ def _ann_block(d: dict) -> str:
         return ""
     ss = a.get("since_start") or {}
     head = ""
-    if ss.get("simple_pct") is not None:
+    if ss.get("annualised_pct") is not None:
         head = (f"<p style='font-size:15px;margin:14px 0 2px'>"
                 f"<b>Annualised return (since start · {ss.get('days', 0)}d): "
-                f"<span style='color:{_col(ss['simple_pct'])}'>{_pct(ss['simple_pct'])}</span></b>"
-                f" <span style='font-size:12px;color:{MUTED}'>simple ×252/d on "
-                f"{_pct(ss.get('return_pct'))}; compounded {_pct(ss.get('compound_pct'))} "
-                "(indicative only — we don't reinvest immediately)</span></p>")
+                f"<span style='color:{_col(ss['annualised_pct'])}'>{_pct(ss['annualised_pct'])}</span></b>"
+                f" <span style='font-size:12px;color:{MUTED}'>CAGR on a total of "
+                f"{_pct(ss.get('return_pct'))} (indicative only)</span></p>")
     return (head + "<h3 style='font-size:13px;margin:10px 0 4px;color:#666'>Annualised by period</h3>"
             f"<table {_TABLE}><thead><tr {_TH}><th>Period</th><th>Return</th><th>Trading days</th>"
-            "<th>Annualised (simple)</th><th>Compounded</th></tr></thead><tbody>"
+            "<th>Annualised (CAGR)</th><th>Compounded (all d)</th></tr></thead><tbody>"
             f"{rows}</tbody></table>"
-            f"<p style='font-size:11px;color:{MUTED};margin:.2rem 0'>Simple: return × 252 / days; "
-            "compounded: (1+r)^(252/d)−1 is indicative only (gains aren't reinvested immediately). Short windows extrapolate aggressively.</p>")
+            f"<p style='font-size:11px;color:{MUTED};margin:.2rem 0'>Annualised = CAGR (1+r)^(252/d)−1, "
+            "shown only from 60 trading days (n/a before). Compounded (all d) shows the same formula for any window; short windows extrapolate aggressively.</p>")
 
 
 def _perf_block(d: dict) -> str:
@@ -1062,8 +1061,8 @@ def plain_summary(d: dict) -> str:
         lines.append(f"  since start: acct {_pct(p.get('account_return_pct'))} vs SPY "
                      f"{_pct(p.get('spy_return_pct'))}")
     for k, x in (d.get("annualized") or {}).items():
-        lines.append(f"  annualised {k}: {_pct(x.get('simple_pct'))} simple, "
-                     f"{_pct(x.get('compound_pct'))} compounded ({x.get('days')}d, "
+        lines.append(f"  annualised {k}: {_pct(x.get('annualised_pct'))} CAGR "
+                     f"({x.get('days')}d, "
                      f"return {_pct(x.get('return_pct'))})")
     lines += [f"  WARNING: {w}" for w in d.get("warnings") or []]
     return "\n".join(lines)

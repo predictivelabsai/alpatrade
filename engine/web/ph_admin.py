@@ -102,4 +102,16 @@ def register(app, rt):
         return page("admin", Style(_CSS), Div(NotStr(render(snapshot())), cls="adm"),
                     user=user, title="Admin · AlpaTrade", right_news=False)
 
-    return ["/admin"]
+    @rt("/admin/metrics", methods=["GET"])
+    def admin_metrics_get(session):
+        """Runtime metrics guard: recent METRICS_MISMATCH records in this web process."""
+        from starlette.responses import JSONResponse
+        user = _user(session)
+        from engine.rbac import is_admin
+        if not user or not is_admin(user):
+            return JSONResponse({"error": "forbidden"}, status_code=403)
+        from engine.metrics import recent_mismatches
+        mm = recent_mismatches()
+        return JSONResponse({"mismatches": mm[-50:], "count": len(mm)})
+
+    return ["/admin", "/admin/metrics"]

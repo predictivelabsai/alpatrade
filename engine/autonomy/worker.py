@@ -226,6 +226,12 @@ def loop(worker_id: str = "worker-1") -> None:
         start_scheduler()
     except Exception as e:  # noqa: BLE001
         log.warning("daily advisor scheduler failed to start: %s", e)
+    # Stale-run reaper: running runs with no heartbeat -> stopped/failed (never live).
+    try:
+        from engine.runs_reaper import start as start_reaper
+        start_reaper()
+    except Exception as e:  # noqa: BLE001
+        log.warning("runs reaper failed to start: %s", e)
     threading.Thread(
         target=_advisor_loop,
         args=(f"{worker_id}-advisor",),

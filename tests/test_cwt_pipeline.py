@@ -37,9 +37,10 @@ def _bt(**kw):
 def test_backtest_metrics_come_from_stored_json_not_live_run():
     m = perf.strategy_metrics(_bt())
     assert m["is_backtest"] and m["has_data"]
-    # simple ×252/trading days (v0.33.4): -17.4% × 252 / 2708; alpha = simple − SPY simple
-    assert abs(m["annualised_pct"] - (-17.4 * 252 / 2708)) < 1e-9
-    assert abs(m["alpha_pct"] - (-17.4 - 356.2) * 252 / 2708) < 1e-9
+    # v0.42.0: CAGR over 2708 trading days; alpha = CAGR − SPY CAGR
+    cagr = lambda t: ((1 + t / 100) ** (252 / 2708) - 1) * 100
+    assert abs(m["annualised_pct"] - cagr(-17.4)) < 1e-9
+    assert abs(m["alpha_pct"] - (cagr(-17.4) - cagr(356.2))) < 1e-9
     assert abs(m["alpha_total_pct"] - (-373.6)) < 1e-9
     assert m["start_date"] == "2016-01-04" and m["as_of"] == "2026-10-09"
     empty = perf.strategy_metrics(_bt(backtest_metrics=None))
@@ -61,7 +62,7 @@ def test_leaderboard_row_shows_backtest_badge_period_and_source():
     assert "lb-badge bt" in html and ">Backtest<" in html
     assert "href='https://chatwithtraders.com/episode/212-kristjan-kullamagi'" in html
     assert "Kristjan Kullamägi" in html and "4 Jan 2016 – 9 Oct 2026" in html
-    assert "Backtest period" in html and perf.pct(-17.4 * 252 / 2708) in html
+    assert "Backtest period" in html and perf.pct(((1 - 0.174) ** (252 / 2708) - 1) * 100) in html
 
 
 def test_strategy_page_backtest_kpis_and_disclaimer():
