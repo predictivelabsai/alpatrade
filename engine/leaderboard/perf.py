@@ -302,14 +302,20 @@ def _activation_pnl(user_id: str, prefix: str, mode: str, since) -> dict:
     from engine.auth import _get_pool
     with _get_pool().get_session() as s:
         r = s.execute(text("""
-            WITH rr AS (SELECT run_id FROM alpatrade.runs WHERE user_id = CAST(:u AS UUID) AND mode = :m
+            WITH rr AS (SELECT run_id, config FROM alpatrade.runs WHERE user_id = CAST(:u AS UUID) AND mode = :m
                           AND config->>'cid_prefix' = :p AND started_at >= :since - INTERVAL '5 minutes')
             SELECT (SELECT COALESCE(SUM(pnl), 0) FROM alpatrade.trades t JOIN rr USING (run_id)
                      WHERE t.trade_type = :m AND t.exit_price IS NOT NULL),
                    (SELECT COUNT(*) FROM alpatrade.trades t JOIN rr USING (run_id)
                      WHERE t.trade_type = :m AND t.entry_price IS NOT NULL),
                    (SELECT COALESCE(SUM(unrealized_pnl), 0) FROM alpatrade.positions p JOIN rr USING (run_id)
-                     WHERE p.status = 'open')"""),
+                     WHERE p.status = 'open'
+                       -- excluded junk securities (sql/53, engine/reporting/exclusions.py)
+                       AND NOT EXISTS (SELECT 1 FROM alpatrade.excluded_securities x
+                             WHERE upper(x.symbol) = upper(p.symbol)
+                               AND (x.scope = 'global' OR upper(x.account_ref) IN (
+                                    upper(COALESCE(rr.config->>'account_number', '')),
+                                    upper(COALESCE(rr.config->>'account_id', ''))))))"""),
                       {"u": str(user_id), "m": mode, "p": prefix, "since": since}).first()
     return {"realized": float(r[0] or 0), "fills": int(r[1] or 0), "unrealized": float(r[2] or 0)}
 

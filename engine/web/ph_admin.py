@@ -20,7 +20,10 @@ _CSS = """
 .adm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
 .adm table{border-collapse:collapse;width:100%;font-size:.83rem;background:#fff;border:1px solid var(--line)}
 .adm th,.adm td{padding:.45rem .6rem;border-bottom:1px solid var(--line);text-align:left}.adm td.n{text-align:right}
-@media(max-width:600px){.adm{padding:0 .7rem 2rem}.adm-kpis{grid-template-columns:repeat(2,1fr)}}
+.adm-ex{overflow-x:auto}.adm-ex form{display:inline}.adm-ex .add{display:flex;flex-wrap:wrap;gap:.4rem;margin:.6rem 0}
+.adm-ex .add input{padding:.35rem .5rem;border:1px solid var(--line);border-radius:.4rem;font-size:.83rem;min-width:0;flex:1 1 140px}
+.adm-ex button{padding:.35rem .7rem;border:1px solid var(--line);border-radius:.4rem;background:#fff;cursor:pointer;font-size:.8rem}
+@media(max-width:600px){.adm{padding:0 .7rem 2rem}.adm-kpis{grid-template-columns:repeat(2,1fr)}.adm-ex .add input,.adm-ex .add button{flex:1 1 100%}}
 """
 
 
@@ -85,6 +88,36 @@ def render(m: dict, now: datetime | None = None) -> str:
             f"<div class='adm-kpis'>{k}</div><div class='adm-grid'>{grid}</div>")
 
 
+def render_exclusions(rules: list[dict], msg: str = "") -> str:
+    """Excluded-securities admin panel (engine/reporting/exclusions.py)."""
+    from engine.reporting.exclusions import dust_threshold
+    e = html.escape
+    rows = "".join(
+        f"<tr><td><b>{e(str(r.get('symbol')))}</b></td><td>{e(str(r.get('scope')))}</td>"
+        f"<td>{e(str(r.get('account_ref') or '—'))}</td><td>{e(str(r.get('reason') or ''))}</td>"
+        f"<td>{'auto' if r.get('auto') else 'manual'}</td>"
+        f"<td>{e(str(r.get('created_at') or '')[:16])}</td><td>"
+        + (f"<form method='post' action='/admin/exclusions/delete'><input type='hidden' name='id' value='{int(r['id'])}'>"
+           f"<button type='submit' onclick=\"return confirm('Remove exclusion?')\">Remove</button></form>"
+           if r.get("id") is not None else "")
+        + "</td></tr>" for r in rules) or "<tr><td colspan='7'>None</td></tr>"
+    dust = dust_threshold()
+    note = (f"Auto rule: positions whose Alpaca asset is inactive or not tradable are excluded "
+            f"(asset status cached, refreshed daily). Dust threshold: "
+            f"{'$' + format(dust, ',.2f') if dust else 'off'} (env EXCLUSION_DUST_USD).")
+    flash = f"<p class='sub'><b>{e(msg)}</b></p>" if msg else ""
+    return (f"<div class='adm-ex' id='exclusions'><h2>Excluded securities</h2>{flash}"
+            "<p class='sub'>Excluded positions are hidden from position tables and their market value / "
+            f"unrealised P&amp;L leave equity-based P&amp;L on every page and email. {e(note)}</p>"
+            "<form class='add' method='post' action='/admin/exclusions/add'>"
+            "<input name='symbol' placeholder='Symbol (e.g. CDTX)' required maxlength='20'>"
+            "<input name='account_ref' placeholder='Account (blank = global)' maxlength='64'>"
+            "<input name='reason' placeholder='Reason' maxlength='300'>"
+            "<button type='submit'>Add exclusion</button></form>"
+            "<table><thead><tr><th>Symbol</th><th>Scope</th><th>Account</th><th>Reason</th><th>Type</th>"
+            f"<th>Added</th><th></th></tr></thead><tbody>{rows}</tbody></table></div>")
+
+
 def register(app, rt):
     entry = ("Admin", "/admin", "admin")
     if entry not in ph_layout.MONITORING_PAGES:
@@ -99,8 +132,47 @@ def register(app, rt):
         if not is_admin(user):
             return RedirectResponse("/dashboard", status_code=303)
         from engine.admin_analytics import snapshot
-        return page("admin", Style(_CSS), Div(NotStr(render(snapshot())), cls="adm"),
+        from engine.reporting.exclusions import list_rules
+        body = render(snapshot()) + render_exclusions(list_rules(force=True), session.pop("adm_msg", "") or "")
+        return page("admin", Style(_CSS), Div(NotStr(body), cls="adm"),
                     user=user, title="Admin · AlpaTrade", right_news=False)
+
+    def _admin_or_none(session):
+        user = _user(session)
+        from engine.rbac import is_admin
+        return user if user and is_admin(user) else None
+
+    @rt("/admin/exclusions/add", methods=["POST"])
+    async def admin_exclusion_add(session, request):
+        if not _admin_or_none(session):
+            return RedirectResponse("/dashboard", status_code=303)
+        import re
+        form = dict(await request.form())
+        sym = str(form.get("symbol") or "").strip().upper()
+        ref = str(form.get("account_ref") or "").strip()
+        if not re.fullmatch(r"[A-Z0-9./-]{1,20}", sym) or (ref and not re.fullmatch(r"[A-Za-z0-9:_-]{1,64}", ref)):
+            session["adm_msg"] = "Invalid symbol or account."
+        else:
+            from engine.reporting.exclusions import add_rule
+            try:
+                add_rule(sym, ref or None, str(form.get("reason") or ""))
+                session["adm_msg"] = f"Excluded {sym}" + (f" for {ref}" if ref else " globally") + "."
+            except Exception as exc:  # noqa: BLE001
+                session["adm_msg"] = f"Could not add exclusion ({type(exc).__name__})."
+        return RedirectResponse("/admin#exclusions", status_code=303)
+
+    @rt("/admin/exclusions/delete", methods=["POST"])
+    async def admin_exclusion_delete(session, request):
+        if not _admin_or_none(session):
+            return RedirectResponse("/dashboard", status_code=303)
+        form = dict(await request.form())
+        try:
+            from engine.reporting.exclusions import remove_rule
+            remove_rule(int(form.get("id")))
+            session["adm_msg"] = "Exclusion removed."
+        except Exception as exc:  # noqa: BLE001
+            session["adm_msg"] = f"Could not remove exclusion ({type(exc).__name__})."
+        return RedirectResponse("/admin#exclusions", status_code=303)
 
     @rt("/admin/metrics", methods=["GET"])
     def admin_metrics_get(session):
@@ -114,4 +186,4 @@ def register(app, rt):
         mm = recent_mismatches()
         return JSONResponse({"mismatches": mm[-50:], "count": len(mm)})
 
-    return ["/admin", "/admin/metrics"]
+    return ["/admin", "/admin/metrics", "/admin/exclusions/add", "/admin/exclusions/delete"]

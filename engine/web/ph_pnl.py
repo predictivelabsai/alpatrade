@@ -358,8 +358,13 @@ def _paper_runs_panel(runs: list[dict]) -> str:
     )
 
 
+def _ex_note(data: dict) -> str:
+    from engine.reporting.exclusions import footnote as _ex_footnote
+    return html.escape(_ex_footnote(data.get("excluded") or []))
+
+
 def _positions_full(positions: list[dict], footnote: str = "") -> str:
-    """Full open-positions table (paper or live), BNBX already filtered upstream."""
+    """Full open-positions table (paper or live), excluded securities already filtered upstream."""
     if not positions:
         return ("<section class='panel pos-full'><h2>Open positions</h2>"
                 "<p class='muted'>No open positions.</p></section>")
@@ -642,8 +647,9 @@ def _render_live(data: dict, selected_id: str | None) -> str:
       </div>"""
     spy = _live_spy_panel(live, period)
     positions = data.get("positions") or live.get("positions") or []
-    footnote = ("BNBX (zombie OTC) is held at the broker but hidden here."
-                if live.get("had_bnbx") else "")
+    from engine.reporting.exclusions import footnote as _ex_footnote
+    footnote = html.escape(live.get("excluded_note") or _ex_footnote(
+        live.get("excluded") or data.get("excluded") or []))
     orders = live.get("orders") or []
     return (head + metrics + spy
             + _positions_full(positions, footnote)
@@ -716,7 +722,7 @@ def _render_paper(data: dict, selected_id: str | None) -> str:
        <button data-kind="backtest" onclick="showRanks('backtest')">Backtest</button></span></div>
        {_rank_table(data.get('paper_rankings') or [], 'paper')}{_rank_table(data.get('backtest_rankings') or [], 'backtest')}</section></div>
       {_paper_runs_panel(data.get('paper_runs') or [])}
-      {_positions_full(data.get('positions') or [])}
+      {_positions_full(data.get('positions') or [], _ex_note(data))}
       <section class="panel" style="margin-top:.8rem"><h2>Top open-position contributors</h2>
        <table class="contributors"><thead><tr><th>Symbol</th><th>P&amp;L</th><th>Market value</th></tr></thead><tbody>{rows}</tbody></table></section>
     """

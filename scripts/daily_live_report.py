@@ -48,8 +48,9 @@ ET = ZoneInfo("America/New_York")
 REPORT_KIND = "daily_live"
 GREEN, RED, MUTED = "#1F5D43", "#b0653f", "#7A867E"
 NEAR_SIGNAL_FRACTION = 2 / 3  # a dip >= 2/3 of the threshold is shown as "near"
-# Zombie / untradable leftovers excluded from report tables & open UPL (still on broker).
-IGNORED_POSITION_SYMBOLS = frozenset({"BNBX"})
+# Junk / untradable securities are excluded via engine/reporting/exclusions.py
+# (alpatrade.excluded_securities + auto asset-status rule); kept for back-compat only.
+IGNORED_POSITION_SYMBOLS = frozenset()
 
 
 # --------------------------------------------------------------------------- utils
@@ -527,10 +528,11 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
 
     acct = client.get_account()
     positions = client.get_positions()
-    ignored_positions = [p for p in positions
-                         if str(p.get("symbol") or "").upper() in IGNORED_POSITION_SYMBOLS]
-    positions = [p for p in positions
-                 if str(p.get("symbol") or "").upper() not in IGNORED_POSITION_SYMBOLS]
+    from engine.reporting.exclusions import excluded_value, split_positions
+    positions, ignored_positions = split_positions(
+        positions, (target.get("account_number"), acct.get("account_number")))
+    ex_mv = excluded_value(ignored_positions)
+    ex_syms = {str(p.get("symbol") or "").upper() for p in ignored_positions}
     open_orders = client.get_open_orders()
     equity, last_equity = _f(acct.get("equity")), _f(acct.get("last_equity"))
     backdated = now.date() != day
@@ -544,6 +546,8 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
     else:
         equity_day = equity
     last_equity = last_equity or equity_day
+    # Excluded MV leaves every equity point (same shift both ends: day P&L unchanged).
+    equity, equity_day, last_equity = equity - ex_mv, equity_day - ex_mv, last_equity - ex_mv
     # Deposits / withdrawals are not P&L (engine/reporting/cash_flows.py).
     from engine.reporting.cash_flows import adjusted_pnl, fetch_flows, net_flows
     flows = fetch_flows(client, date(day.year, 1, 1) - timedelta(days=400))
@@ -598,7 +602,7 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
         et = _ts(t.get("entry_time"))
         xt = _ts(t.get("exit_time"))
         if t.get("exit_price") is None and _f(t.get("shares")) > 0 and et:
-            if str(t.get("symbol") or "").upper() in IGNORED_POSITION_SYMBOLS:
+            if str(t.get("symbol") or "").upper() in ex_syms:
                 continue
             ed = et.astimezone(ET).date()
             p = pos_by_sym.get(t.get("symbol")) or {}
@@ -625,6 +629,10 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
     # Performance since the live run started vs SPY.
     perf = {}
     start_eq, start_spy = _fn(cfg.get("start_equity")), _fn(cfg.get("start_spy"))
+    if start_eq is not None and ex_mv:
+        start_eq -= ex_mv
+    perf_run = ({**run, "config": {**cfg, "start_equity": start_eq}}
+                if ex_mv and start_eq is not None else run)
     latest = (run.get("results") or {}).get("latest") or {}
     if run.get("run_id"):
         spy = spy_close(day, run)
@@ -636,9 +644,11 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
             from engine.reporting.live_perf import daily_equity_points, since_start_return
             try:
                 pts = daily_equity_points(client, started_d, day)
+                if ex_mv and pts:
+                    pts = [(dd, e - ex_mv) for dd, e in pts]
             except Exception:  # noqa: BLE001
                 pts = None
-            acct_ret = since_start_return(run, day, equity_day, pts, flows, fallback=acct_ret)
+            acct_ret = since_start_return(perf_run, day, equity_day, pts, flows, fallback=acct_ret)
         spy_ret = (spy / start_spy - 1) * 100 if spy and start_spy else None
         perf = {"started": cfg.get("started") or run.get("started_at"),
                 "start_equity": start_eq, "equity": equity_day, "account_return_pct": acct_ret,
@@ -660,7 +670,8 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
 
     try:
         from engine.reporting.live_perf import period_annualized
-        annualized = period_annualized(client, day, equity_day, perf, run, flows=flows or [])
+        annualized = period_annualized(client, day, equity_day, perf, run, flows=flows or [],
+                                       excluded_value=ex_mv)
     except Exception:  # noqa: BLE001
         annualized = {}
 
@@ -679,7 +690,7 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
         "cash": _f(acct.get("cash")),
         "buying_power": _f(acct.get("buying_power")),
         "long_market_value": _f(acct.get("long_market_value")),
-        "positions": positions, "ignored_positions": ignored_positions, "open_orders": open_orders, "fills": orders,
+        "positions": positions, "ignored_positions": ignored_positions, "excluded_value": ex_mv, "open_orders": open_orders, "fills": orders,
         "run": run, "perf": perf, "annualized": annualized, "curves": curves, "runner_open": runner_open, "runner_actions": actions,
         "runner_heartbeat": hb, "signals": signals, "strategies": strategies, "warnings": warnings,
         "runner_title": (", ".join(x["display"] for x in own) if own is not None else None),
@@ -725,14 +736,13 @@ def _ignored_note(d: dict) -> str:
         )
     return (
         f"<p style='font-size:11px;color:{MUTED};margin:.2rem 0 .4rem'>Excluded from this "
-        f"report (zombie / untradable on Alpaca): {'; '.join(bits)}. Still held at the broker; "
+        f"report and its P&amp;L (junk / untradable): {'; '.join(bits)}. Still held at the broker; "
         "not sized by the Mag-7 runner.</p>"
     )
 
 
 def _positions_table(positions: list[dict]) -> str:
-    positions = [p for p in (positions or [])
-                 if str(p.get("symbol") or "").upper() not in IGNORED_POSITION_SYMBOLS]
+    positions = list(positions or [])  # already filtered in gather (exclusions.py)
     rows = ""
     for p in sorted(positions, key=lambda x: _f(x.get("market_value")), reverse=True):
         pl = _f(p.get("unrealized_pl"))
@@ -888,7 +898,8 @@ def _runner_block(d: dict) -> str:
             f"<div style='font-size:12px;color:#415046'>{params}</div></div>")
     rows = ""
     for r in d.get("runner_open") or []:
-        if str(r.get("symbol") or "").upper() in IGNORED_POSITION_SYMBOLS:
+        if str(r.get("symbol") or "").upper() in {str(p.get("symbol") or "").upper()
+                                                   for p in d.get("ignored_positions") or []}:
             continue
         rows += (f"<tr><td><b>{_e(r['symbol'])}</b></td><td>{r['entry_date']:%a %b %d}</td>"
                  f"<td {_R}>{_qty(r['qty'])}</td><td {_R}>{_money(r['entry_price'])}</td>"

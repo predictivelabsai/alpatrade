@@ -280,7 +280,8 @@ def test_page_renders_summary_positions_orders_without_controls(monkeypatch):
                                                                   "email": "o@x",
                                                                   "email_verified_at": 1})
     html = to_xml(_routes()[("/live/account", "GET")](session={"user_id": "owner"}))
-    assert "885504372" in html and "$10,500.50" in html and "+$100.50" in html
+    # BNBX market value ($4.50) is excluded from equity; day P&L is unchanged.
+    assert "885504372" in html and "$10,496.00" in html and "+$100.50" in html
     assert "$1,200.25" in html and "$2,400.50" in html
     assert 'id="live-positions"' in html or "id='live-positions'" in html
     assert "AFRM" in html and "BNBX" in html and "$744.00" in html and "+3.16%" in html
