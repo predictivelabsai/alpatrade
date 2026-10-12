@@ -467,7 +467,7 @@ def test_live_view_shows_spy_curve_and_dropdown():
         "live": {
             "linked": True,
             "account_number": "885504372",
-            "had_bnbx": True,
+            "excluded": [{"symbol": "BNBX", "market_value": "1.2"}],
             "orders": [],
             "perf": {
                 "started": "2026-09-01",

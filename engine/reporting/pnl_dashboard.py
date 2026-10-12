@@ -471,14 +471,17 @@ def _one_account(user_id: str, account: dict, period: str) -> dict[str, Any]:
     positions = client.get_positions()
     if not isinstance(positions, list):
         positions = []
-    positions = [p for p in positions
-                 if str(p.get("symbol") or "").upper() not in {"BNBX"}]
+    from engine.reporting.exclusions import adjust_history, excluded_value, split_positions
+    positions, excluded = split_positions(
+        positions, (account.get("account_number"), live.get("account_number"), account.get("account_id")))
+    ex_mv = excluded_value(excluded)
     try:
         history = _history(client, start, end)
     except Exception as exc:  # noqa: BLE001
         logger.warning("Portfolio history unavailable for %s: %s", account["account_id"], exc)
         history = {"timestamps": [end.isoformat()], "equity": [_number(live.get("equity"))],
                    "pnl": [], "pnl_pct": []}
+    history["equity"] = adjust_history(history["equity"], ex_mv)
     contributors = sorted(
         ({
             "symbol": p.get("symbol", "?"),
@@ -489,8 +492,9 @@ def _one_account(user_id: str, account: dict, period: str) -> dict[str, Any]:
         key=lambda row: row["pnl"],
         reverse=True,
     )
-    equity = _number(live.get("equity"))
-    baseline = history["equity"][0] if history["equity"] else _number(live.get("last_equity"))
+    equity = _number(live.get("equity")) - ex_mv
+    baseline = (history["equity"][0] if history["equity"]
+                else _number(live.get("last_equity")) - ex_mv)
     deposits, flows_ok, flow_rows = _period_deposits(client, history, start, end, with_rows=True)
     period_pnl, period_pct = adjusted_pnl(equity, baseline, deposits)
     series, period_pct = _twr_period(history, flow_rows, equity, end, period_pct)
@@ -499,7 +503,7 @@ def _one_account(user_id: str, account: dict, period: str) -> dict[str, Any]:
         "account_name": account["account_name"],
         "environment": environment,
         "equity": equity,
-        "portfolio_value": _number(live.get("portfolio_value")),
+        "portfolio_value": _number(live.get("portfolio_value")) - ex_mv,
         "cash": _number(live.get("cash")),
         "buying_power": _number(live.get("buying_power")),
         "period_pnl": period_pnl or 0.0,
@@ -510,6 +514,7 @@ def _one_account(user_id: str, account: dict, period: str) -> dict[str, Any]:
         "history": history,
         "contributors": contributors,
         "positions": positions,
+        "excluded": excluded, "excluded_value": ex_mv,
     }
 
 
@@ -536,8 +541,10 @@ def _one_live_account(user_id: str, account: dict, period: str) -> dict[str, Any
     positions = snap.get("positions") or []
     if not isinstance(positions, list):
         positions = []
-    positions = [p for p in positions
-                 if str(p.get("symbol") or "").upper() not in {"BNBX"}]
+    from engine.reporting.exclusions import adjust_history, excluded_value, split_positions
+    positions, excluded = split_positions(
+        positions, (account.get("account_number"), live.get("account_number"), account.get("account_id")))
+    ex_mv = excluded_value(excluded)
     try:
         hist_raw = client.get_portfolio_history(
             start.date().isoformat(),
@@ -563,6 +570,7 @@ def _one_live_account(user_id: str, account: dict, period: str) -> dict[str, Any
             "equity": [_number(live.get("equity"))],
             "pnl": [], "pnl_pct": [],
         }
+    history["equity"] = adjust_history(history["equity"], ex_mv)
     contributors = sorted(
         ({
             "symbol": p.get("symbol", "?"),
@@ -573,8 +581,9 @@ def _one_live_account(user_id: str, account: dict, period: str) -> dict[str, Any
         key=lambda row: row["pnl"],
         reverse=True,
     )
-    equity = _number(live.get("equity"))
-    baseline = history["equity"][0] if history["equity"] else _number(live.get("last_equity"))
+    equity = _number(live.get("equity")) - ex_mv
+    baseline = (history["equity"][0] if history["equity"]
+                else _number(live.get("last_equity")) - ex_mv)
     deposits, flows_ok, flow_rows = _period_deposits(client, history, start, end, with_rows=True)
     period_pnl, period_pct = adjusted_pnl(equity, baseline, deposits)
     series, period_pct = _twr_period(history, flow_rows, equity, end, period_pct)
@@ -594,6 +603,7 @@ def _one_live_account(user_id: str, account: dict, period: str) -> dict[str, Any
         "history": history,
         "contributors": contributors,
         "positions": positions,
+        "excluded": excluded, "excluded_value": ex_mv,
     }
 
 
@@ -639,6 +649,8 @@ def _aggregate(accounts: list[dict[str, Any]], period: str) -> dict[str, Any]:
         "history": {"timestamps": timestamps, "equity": equity_series, "pnl": [], "pnl_pct": []},
         "contributors": sorted(contributors.values(), key=lambda row: row["pnl"], reverse=True),
         "positions": [],
+        "excluded": [p for a in accounts for p in (a.get("excluded") or [])],
+        "excluded_value": sum(a.get("excluded_value") or 0.0 for a in accounts),
         "period": period,
     }
 

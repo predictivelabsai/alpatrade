@@ -467,7 +467,7 @@ __all__ = [
 
 def period_annualized(client, day: date, equity_day: float,
                       perf: Optional[dict] = None, run: Optional[dict] = None,
-                      flows: Optional[list] = None) -> dict:
+                      flows: Optional[list] = None, excluded_value: float = 0.0) -> dict:
     """MTD / YTD (and since-start) return + annualised (simple ×252/d, compounded).
 
     Baseline matches /dashboard: first portfolio-history equity inside the window.
@@ -481,6 +481,8 @@ def period_annualized(client, day: date, equity_day: float,
     out: dict[str, Any] = {}
     try:
         pts = daily_equity_points(client, date(day.year, 1, 1), day)
+        if excluded_value:  # same shift as equity_day (engine/reporting/exclusions.py)
+            pts = [(d, e - excluded_value) for d, e in pts]
     except Exception as exc:  # noqa: BLE001
         log.warning("period_annualized history failed: %s", type(exc).__name__)
         pts = []

@@ -126,10 +126,10 @@ def _kpis(s: dict) -> str:
         for lbl, val, sub, cls in cards) + "</div>"
 
 
-def _filter_zombie_positions(positions: list[dict]) -> list[dict]:
-    """Drop BNBX and other untradable leftovers from the live UI."""
-    return [p for p in (positions or [])
-            if str(p.get("symbol") or "").upper() not in {"BNBX"}]
+def _filter_zombie_positions(positions: list[dict], account_refs=()) -> list[dict]:
+    """Drop excluded securities (engine/reporting/exclusions.py) from the live UI."""
+    from engine.reporting.exclusions import split_positions
+    return split_positions(positions or [], account_refs)[0]
 
 
 def _positions_table(positions: list[dict]) -> str:
@@ -323,16 +323,18 @@ def load_view(user_id: str) -> dict:
         logger.warning("live account snapshot failed: %s", type(exc).__name__)
         out["error"] = "Could not read the live account right now."
         return out
-    had_bnbx = any(str(p.get("symbol") or "").upper() == "BNBX"
-                   for p in (snap.get("positions") or []))
+    from engine.reporting.exclusions import (adjust_account, adjust_history, excluded_value,
+                                             footnote as _ex_footnote, split_positions)
+    kept_positions, excluded = split_positions(snap.get("positions") or [], (creds["account_number"],))
+    ex_mv = excluded_value(excluded)
     from datetime import datetime as _dt, timedelta as _td
     from zoneinfo import ZoneInfo as _Z
     from engine.reporting.cash_flows import adjust_day, fetch_flows, net_flows
     _today = _dt.now(_Z("America/New_York")).date()
     flows = fetch_flows(client, _today.replace(month=1, day=1) - _td(days=400))
-    out.update(summary=adjust_day(summarize_account(snap["account"]), flows, _today),
-               positions=_filter_zombie_positions(snap["positions"]), orders=snap["orders"],
-               had_bnbx=had_bnbx)
+    out.update(summary=adjust_day(summarize_account(adjust_account(snap["account"], ex_mv)), flows, _today),
+               positions=kept_positions, orders=snap["orders"],
+               excluded=excluded, excluded_value=ex_mv, excluded_note=_ex_footnote(excluded))
     # Performance vs SPY + equity curves (best-effort; never blocks the page).
     try:
         from datetime import datetime
@@ -362,9 +364,16 @@ def load_view(user_id: str) -> dict:
             from engine.reporting.live_perf import daily_equity_points
             try:
                 pts = daily_equity_points(client, started, today)
+                if ex_mv and pts:
+                    pts = [(d, e - ex_mv) for d, e in pts]
             except Exception:  # noqa: BLE001
                 pts = None
-        out["perf"] = performance_since_start(equity, run, day=today, runner_open=runner_open,
+        perf_run = run
+        _cfg = (run or {}).get("config") or {}
+        if ex_mv and _cfg.get("start_equity") not in (None, ""):
+            # Same shift on the baseline as on every later point: no fake jump.
+            perf_run = {**run, "config": {**_cfg, "start_equity": float(_cfg["start_equity"]) - ex_mv}}
+        out["perf"] = performance_since_start(equity, perf_run, day=today, runner_open=runner_open,
                                               net_deposits=dep, points=pts, flows=flows)
         if run.get("run_id"):
             from engine.metrics import apply_canonical_since_inception, live_strategy_return
@@ -399,7 +408,7 @@ def render(view: dict) -> str:
                 + _curves_section(view.get("curves") or {})
                 + f"<h2>Positions ({len(view.get('positions') or [])})</h2>"
                 + _positions_table(view.get("positions") or [])
-                + ('<p class="muted" style="font-size:.8rem">BNBX (zombie OTC) is held at the broker but hidden here.</p>' if view.get("had_bnbx") else "")
+                + (f'<p class="muted ex-note" style="font-size:.8rem">{_e(view.get("excluded_note"))}</p>' if view.get("excluded_note") else "")
                 + f"<h2>Open orders ({len(view.get('orders') or [])})</h2>"
                 + _orders_table(view.get("orders") or []))
     foot = ("<p class='ro'>Read-only: this page only reads your account from Alpaca "
