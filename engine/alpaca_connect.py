@@ -149,13 +149,29 @@ class AlpacaBrowser:
         self.shots = screenshot_dir
         self._pw = sync_playwright().start()
         self._browser = self._pw.chromium.launch(headless=headless)
-        self.page = self._browser.new_page()
+        # E2E screenshots use a taller window so the API-keys panel fits (production: default).
+        self.page = (self._browser.new_page(viewport={"width": 1366, "height": 1000}) if screenshot_dir
+                     else self._browser.new_page())
         self.page.set_default_timeout(STEP_TIMEOUT_MS)
 
     def shot(self, name: str, secrets: tuple = ()) -> None:
         """E2E-only masked screenshot (no-op in production: shots is None)."""
         if self.shots:
             masked_screenshot(self.page, os.path.join(self.shots, name + ".png"), secrets)
+
+    def show_keys_panel(self) -> None:
+        """E2E-only: scroll Alpaca's API-keys panel (Key / Secret) into view before the masked shot."""
+        if not self.shots:
+            return
+        try:
+            self.page.evaluate("""() => {
+              const leaf = [...document.querySelectorAll('body *')].filter(e => !e.children.length);
+              const t = leaf.find(e => /^secret$/i.test((e.textContent || '').trim()))
+                     || leaf.find(e => /^api keys$/i.test((e.textContent || '').trim()));
+              if (t) t.scrollIntoView({block: 'center'}); }""")
+            self.page.wait_for_timeout(800)
+        except Exception:  # noqa: BLE001
+            pass
 
     def close(self):
         for f in (self._browser.close, self._pw.stop):
@@ -249,6 +265,7 @@ class AlpacaBrowser:
             texts += p.locator("input").evaluate_all("els => els.map(e => e.value || '')")
             pair = extract_pair(texts, live)
             if pair:
+                self.show_keys_panel()
                 self.shot(f"03-alpaca-{'live' if live else 'paper'}-keys-regenerated", pair)
                 return pair
             time.sleep(0.5)

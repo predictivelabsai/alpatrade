@@ -93,8 +93,10 @@ def app_shots(o, which: str) -> None:
                 def send(t, wait="#chat-input"):
                     pg.fill("#chat-input", t); pg.keyboard.press("Enter"); pg.wait_for_timeout(3500)
                 send("connect alpaca")
+                pg.wait_for_selector("text=Heads up", timeout=30000)
                 ac.masked_screenshot(pg, os.path.join(o.screenshots, "00a-chat-connect-warning.png"), hide)
                 send(o.alpaca_email)
+                pg.wait_for_selector("text=Alpaca password", timeout=30000)
                 pg.fill("#chat-input", "not-a-real-password")  # shows the masked input box only
                 ac.masked_screenshot(pg, os.path.join(o.screenshots, "00b-chat-password-prompt-masked.png"),
                                      hide + ("not-a-real-password",))

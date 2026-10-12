@@ -9,6 +9,8 @@
 - `scripts/alpaca_connect_e2e.py`: real end-to-end driver; password from env/getpass, 2FA code read from `--otp-file` (polled every 0.2s) or stdin so a relayed code is used immediately.
 - Tests: `tests/test_alpaca_connect.py` (fake browser: full flow, live, bad password/code, OTP timeout, cancel, TTL, wipe, nothing logged/persisted, key extraction).
 - `tests/test_live_account.py` allowlist: `engine/alpaca_connect.py` added (writes only the user's own new live pair via `validate_live_keys` + `store_live_account`, like Settings; never reads stored credentials, never orders).
+- **User guide** `docs/user_guide/alpatrade_user_guide.{md,pptx,pdf}` (20 pages, text left / screenshot right, MMG-guide layout; rebuild with `python docs/user_guide/render_user_guide.py`). Part 1: sign in, `connect alpaca`, clone Mag-7 BTD, backtest, activate; Part 2: every other menu. Screenshots in `docs/user_guide/screenshots/`, secrets masked.
+- E2E `--screenshots`: taller window and the Alpaca API-keys panel scrolled into view before the masked 03 shot; chat shots wait for the replies.
 - Note: from the box (datacenter IP) app.alpaca.markets did not load within 45s headless; from the HP (residential) the login page loads normally. Prod (Coolify) may be blocked — the safer long-term path is Alpaca OAuth.
 
 ## v0.40.1 — 2026-10-11 — Fix since-activation P&L query
