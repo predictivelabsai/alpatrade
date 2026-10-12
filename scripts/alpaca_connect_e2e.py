@@ -49,6 +49,9 @@ def main():
     a.add_argument("--otp-wait", type=int, default=600)
     a.add_argument("--live", action="store_true")
     a.add_argument("--headed", action="store_true")
+    a.add_argument("--screenshots", help="TEST ONLY: dir for masked, verified user-guide screenshots")
+    a.add_argument("--app-url", default="http://localhost:5077",
+                   help="local AlpaTrade (ALPATRADE_DEV_LOGIN=1, ALPACA_CONNECT_ENABLED=1) for chat/Settings shots")
     o = a.parse_args()
     from engine.auth import get_user_by_email
     u = get_user_by_email(o.alpatrade_user)
@@ -56,7 +59,9 @@ def main():
         raise SystemExit("[e2e] AlpaTrade user not found")
     uid = str(u["user_id"])
     pw = os.environ.pop("ALPACA_LOGIN_PASSWORD", "") or getpass.getpass("Alpaca password: ")
-    factory = lambda: ac.AlpacaBrowser(headless=not o.headed)  # noqa: E731
+    factory = lambda: ac.AlpacaBrowser(headless=not o.headed, screenshot_dir=o.screenshots)  # noqa: E731
+    if o.screenshots:
+        app_shots(o, "chat")
     say = lambda r: print("[bot]", r.replace("\n", " ")[:300], flush=True)  # noqa: E731
     r, _, _ = ac.step(uid, "connect alpaca live" if o.live else "connect alpaca", factory); say(r)
     r, f, _ = ac.step(uid, o.alpaca_email, factory); say(r)
@@ -68,7 +73,41 @@ def main():
         code = read_otp(o.otp_file, o.otp_wait)
         ac.step(uid, code, factory); code = ""
         r, f = ac.poll(uid, 180); say(r)
+    if o.screenshots:
+        app_shots(o, "settings")
     sys.exit(0 if r.startswith("Done") else 1)
+
+
+def app_shots(o, which: str) -> None:
+    """Masked screenshots of the AlpaTrade side (chat prompts; Settings Check result)."""
+    from playwright.sync_api import sync_playwright
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch(headless=True)
+            pg = b.new_page(viewport={"width": 1280, "height": 900})
+            pg.goto(f"{o.app_url}/dev/login?email={o.alpatrade_user}&next=/app?new=1", timeout=30000)
+            hide = (o.alpaca_email, o.alpatrade_user)
+            if which == "chat":
+                pg.wait_for_selector("#chat-input", timeout=30000)
+
+                def send(t, wait="#chat-input"):
+                    pg.fill("#chat-input", t); pg.keyboard.press("Enter"); pg.wait_for_timeout(3500)
+                send("connect alpaca")
+                ac.masked_screenshot(pg, os.path.join(o.screenshots, "00a-chat-connect-warning.png"), hide)
+                send(o.alpaca_email)
+                pg.fill("#chat-input", "not-a-real-password")  # shows the masked input box only
+                ac.masked_screenshot(pg, os.path.join(o.screenshots, "00b-chat-password-prompt-masked.png"),
+                                     hide + ("not-a-real-password",))
+                pg.fill("#chat-input", ""); send("cancel")  # never submit the dummy
+            else:
+                pg.goto(f"{o.app_url}/settings", timeout=30000)
+                btns = pg.locator("button.s-chkbtn")
+                if btns.count():
+                    btns.last.click(); pg.wait_for_timeout(5000)
+                ac.masked_screenshot(pg, os.path.join(o.screenshots, "05-settings-check-result.png"), hide)
+            b.close()
+    except Exception as exc:  # noqa: BLE001
+        print(f"[e2e] app screenshots ({which}) skipped: {type(exc).__name__}: {str(exc)[:120]}", flush=True)
 
 
 if __name__ == "__main__":

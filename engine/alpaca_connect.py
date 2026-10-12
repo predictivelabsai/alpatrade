@@ -13,7 +13,9 @@ Security:
   * The Alpaca password and 2FA code are never logged, never written to the chat
     transcript or DB; they live on the session object only until used, then wiped.
   * Every step has a timeout; sessions expire after SESSION_TTL seconds.
-  * No screenshots/HTML dumps are taken (they could contain the secret).
+  * Production takes no screenshots/HTML dumps. Only the E2E script can pass a
+    screenshot_dir (user-guide evidence); every shot is masked first and verified
+    (DOM + OCR) to contain no password / key / secret, else it is deleted.
 """
 from __future__ import annotations
 
@@ -142,12 +144,18 @@ def extract_pair(texts: list[str], live: bool) -> Optional[tuple[str, str]]:
 class AlpacaBrowser:
     """Thin wrapper so tests can substitute a fake driver."""
 
-    def __init__(self, headless: bool = True):
+    def __init__(self, headless: bool = True, screenshot_dir: Optional[str] = None):
         from playwright.sync_api import sync_playwright
+        self.shots = screenshot_dir
         self._pw = sync_playwright().start()
         self._browser = self._pw.chromium.launch(headless=headless)
         self.page = self._browser.new_page()
         self.page.set_default_timeout(STEP_TIMEOUT_MS)
+
+    def shot(self, name: str, secrets: tuple = ()) -> None:
+        """E2E-only masked screenshot (no-op in production: shots is None)."""
+        if self.shots:
+            masked_screenshot(self.page, os.path.join(self.shots, name + ".png"), secrets)
 
     def close(self):
         for f in (self._browser.close, self._pw.stop):
@@ -172,11 +180,13 @@ class AlpacaBrowser:
             raise ConnectError("Alpaca's login page didn't load as expected (possibly blocked or changed).")
         e.fill(email)
         p.locator("input[name=password], input[type=password]").first.fill(password)
+        self.shot("01-alpaca-login", (password, email))
         p.get_by_role("button", name=re.compile("continue|log ?in|sign ?in", re.I)).first.click()
         deadline = time.monotonic() + STEP_TIMEOUT_MS / 1000
         while time.monotonic() < deadline:
             body = (p.inner_text("body") or "").lower()
             if _otp_inputs(p):
+                self.shot("02-alpaca-2fa-prompt", (password, email))
                 return "otp"
             if "dashboard" in p.url:
                 return "ok"
@@ -239,9 +249,51 @@ class AlpacaBrowser:
             texts += p.locator("input").evaluate_all("els => els.map(e => e.value || '')")
             pair = extract_pair(texts, live)
             if pair:
+                self.shot(f"03-alpaca-{'live' if live else 'paper'}-keys-regenerated", pair)
                 return pair
             time.sleep(0.5)
         raise ConnectError("Alpaca didn't show a new key/secret pair (UI may have changed).")
+
+
+_MASK_JS = r"""(secrets) => {
+  const re = /\b(PK|AK)[A-Z0-9]{14,30}\b|\b(?=[A-Za-z0-9\/+]*\d)(?=[A-Za-z0-9\/+]*[a-z])[A-Za-z0-9\/+]{36,48}\b/g;
+  const mask = t => { secrets.forEach(s => { if (s) t = t.split(s).join('••••••••'); });
+                      return t.replace(re, '•••• masked ••••'); };
+  document.querySelectorAll('input, textarea').forEach(i => {
+    if (i.type === 'password' || /code|otp|token|key|secret/i.test(i.name + i.id + i.placeholder) || secrets.some(s => s && i.value.includes(s)))
+      { i.style.color = 'transparent'; i.style.textShadow = '0 0 0 #888'; i.style.webkitTextSecurity = 'disc'; }
+    if (i.type !== 'password' && i.value) { const m = mask(i.value); if (m !== i.value) i.value = m; }
+  });
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
+  while ((n = w.nextNode())) { const m = mask(n.nodeValue); if (m !== n.nodeValue) n.nodeValue = m; }
+}"""
+
+
+def masked_screenshot(page, path: str, secrets=()) -> bool:
+    """Mask secrets in the live DOM, screenshot, then verify (DOM text + OCR). Deletes the
+    image and returns False if any secret could still be visible. E2E use only."""
+    import subprocess
+    secrets = [x for x in secrets if x]
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    page.evaluate(_MASK_JS, secrets)
+    dom = page.inner_text("body") + " ".join(page.locator("input:not([type=password])").evaluate_all(
+        "els => els.map(e => e.value || '')"))
+    ok = not any(x in dom for x in secrets) and not PAPER_KEY.search(dom) and not LIVE_KEY.search(dom)
+    if ok:
+        page.screenshot(path=path, full_page=True)
+        try:
+            ocr = subprocess.run(["tesseract", path, "-"], capture_output=True, text=True, timeout=60).stdout
+            flat = re.sub(r"\s+", "", ocr)
+            ok = (not any(x in flat or x[:10] in flat for x in secrets if len(x) >= 10)
+                  and not any(x in ocr for x in secrets) and not PAPER_KEY.search(flat)
+                  and not LIVE_KEY.search(flat))
+        except FileNotFoundError:
+            pass  # DOM check still applies
+    if not ok and os.path.exists(path):
+        os.remove(path)
+    print(f"[e2e] screenshot {os.path.basename(path)}: {'saved (masked, verified)' if ok else 'DROPPED (secret visible)'}",
+          flush=True)
+    return ok
 
 
 def _otp_inputs(page) -> list:
