@@ -8,6 +8,7 @@
 - **TypeSafe jev judge (`LLM_JUDGE_PROVIDER=typesafe`, default `grok`).** New `engine/ai/judge.py` falls back to Grok on any error. Switched to jev: the `/research/news` sector-impact analysis and the autonomy promote ranking note. The full inventory and reasoning are in `docs/llm_judge_jev.md`. Benchmark on 10 live headlines: jev 0.73 s vs Grok 29.1 s, top sector agreement 8/10, ~97% cheaper per call.
 - **Fix: `/research/news` "(secs || []).slice is not a function".** `plotBoard` was handed the `sector_counts` object; it now accepts the object or the AI board array.
 - **Fix: on phones (≤960 px) News starts minimised** so it no longer covers the dashboard/chat on first load. Desktop is unchanged.
+- **Deploy:** `docker-compose.yaml` passes `LLM_JUDGE_PROVIDER` (default `grok`) and `TYPESAFE_API_KEY` to the api, agui, autonomy, news and hermes-jobs services (not the isolated hermes gateway).
 - **Review:** `docs/reviews/trade_menu_review.md`, prioritised findings for every Trade page (no large changes made).
 - Tests: `tests/test_referrals.py`, `tests/test_rbac_admin.py`, `tests/test_judge.py` (20 new). The full suite matches `origin/main` (the same 53 pre-existing failures, none new). Screenshots: `screenshots/referrals_admin/{invite,admin}_{mobile,desktop}.png` (390 px / 1366 px, no horizontal overflow).
 
