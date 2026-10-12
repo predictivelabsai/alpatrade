@@ -128,9 +128,32 @@ def _with_next(path: str, target) -> str:
     return f"{path}?next={quote(n, safe='/')}" if n else path
 
 
-def _session_login(session, user: dict) -> None:
-    """Persist the login. Only the id is stored; the record is re-fetched."""
+def _session_login(session, user: dict, method: str = "password", request=None) -> None:
+    """Persist the login. Only the id is stored; the record is re-fetched.
+
+    Also records the login (``alpatrade.user_logins``) for admin analytics;
+    tracking never blocks sign-in.
+    """
     session["user_id"] = user["user_id"]
+    try:
+        from engine.rbac import record_login
+        ip = ua = ""
+        if request is not None:
+            ip = (request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+                  or (request.client.host if request.client else ""))
+            ua = request.headers.get("user-agent", "")
+        record_login(str(user["user_id"]), method, ip, ua)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _attribute_referral(session, user: dict) -> None:
+    """Link a fresh signup to its referrer (``?ref=CODE`` kept in the session)."""
+    try:
+        from engine.referrals import link_signup
+        link_signup(str(user["user_id"]), user.get("email", ""), session.pop("ref", "") or "")
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def _send_verification_email(user: dict, request) -> None:
@@ -370,12 +393,15 @@ def register(app, rt):
             user = None
         if not user:
             return _signin_page(email=email, error="Invalid email or password.", next_=nxt)
-        _session_login(session, user)
+        _session_login(session, user, "password", request)
         return RedirectResponse(_after_auth(nxt), status_code=303)
 
     # ---- register ---------------------------------------------------------
     @rt("/register", methods=["GET"])
-    def register_get(session, error: str = "", next: str = ""):
+    def register_get(session, error: str = "", next: str = "", ref: str = ""):
+        from engine.referrals import clean_code
+        if clean_code(ref):
+            session["ref"] = clean_code(ref)
         if current_user(session):
             return RedirectResponse(_after_auth(next), status_code=303)
         return _register_page(error=error, next_=next)
@@ -400,7 +426,8 @@ def register(app, rt):
             return _register_page(email=email, error="Could not create account. Please try again.", next_=nxt)
         if not user:
             return _register_page(email=email, error="Could not create account. Please try again.", next_=nxt)
-        _session_login(session, user)
+        _session_login(session, user, "register", request)
+        _attribute_referral(session, user)
         try:
             from engine.web.onboarding import record_event
             record_event(user["user_id"], "registered")
@@ -423,7 +450,7 @@ def register(app, rt):
             return RedirectResponse(
                 "/dashboard?msg=Verification+link+is+invalid+or+expired",
                 status_code=303)
-        _session_login(session, {"user_id": user_id})
+        _session_login(session, {"user_id": user_id}, "verify")
         return RedirectResponse(
             "/dashboard?msg=Email+verified.+Thanks!", status_code=303)
 
@@ -554,9 +581,11 @@ def register(app, rt):
                     link_google_id(email, google_id)
                 elif not user:
                     user = create_user(email=email, google_id=google_id, display_name=name)
+                    if user:
+                        _attribute_referral(session, user)
             if not user:
                 return RedirectResponse("/signin?error=Could+not+create+account", status_code=303)
-            _session_login(session, user)
+            _session_login(session, user, "google", request)
             try:
                 from engine.web.onboarding import record_event
                 record_event(user["user_id"], "registered")

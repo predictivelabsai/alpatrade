@@ -74,6 +74,8 @@ from engine.web import ph_advisor  # noqa: E402
 from engine.web import ph_logging  # noqa: E402
 from engine.web import ph_news_scheduler  # noqa: E402
 from engine.web import ph_leaderboard  # noqa: E402
+from engine.web import ph_admin  # noqa: E402
+from engine.web import ph_referrals  # noqa: E402
 
 ph_landing.register(app, rt)
 ph_auth.register(app, rt)
@@ -99,6 +101,8 @@ ph_monitoring.register(app, rt)
 ph_data_health.register(app, rt)
 ph_logging.register(app, rt)
 ph_news_scheduler.register(app, rt)
+ph_admin.register(app, rt)  # /admin (admin role, server-side)
+ph_referrals.register(app, rt)  # /invite
 ph_leaderboard.register(app, rt)  # public /leaderboard + /strategies
 ph_reports.register(app, rt)  # public /r/{id} — last, unlisted
 

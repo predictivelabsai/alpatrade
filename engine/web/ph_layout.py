@@ -112,6 +112,8 @@ _ICONS = {
     # Admin
     "settings": '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
     "guide": '<circle cx="12" cy="12" r="9"/><path d="M9.2 9a3 3 0 0 1 5.6 1c0 2-3 2.5-3 4"/><line x1="12" y1="17" x2="12" y2="17.01"/>',
+    "invite": '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>',
+    "admin": '<path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><polyline points="9 12 11 14 15 10"/>',
     "logging": '<path d="M4 4h16v16H4z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>',
     # Section headers
     "sec-explore": '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
@@ -173,6 +175,10 @@ function setNewsPane(open){var p=document.getElementById('right-pane');
   p.classList.toggle('open',open);if(a)a.classList.toggle('pane-closed',!open);
   if(b){b.classList.toggle('active',open);b.setAttribute('aria-expanded',String(open));}}
 function toggleNewsPane(){setNewsPane();}
+// Phones: a page that opens News by default (dashboard, chat) would be covered by the
+// full-width News overlay; start it minimised there (toggle still opens it).
+document.addEventListener('DOMContentLoaded',function(){if(window.matchMedia('(max-width: 960px)').matches){
+  var p=document.getElementById('right-pane');if(p&&p.classList.contains('open'))setNewsPane(false);}});
 function toggleLeftPane(){var p=document.getElementById('left-pane');
   var o=document.getElementById('left-overlay');
   if(p)p.classList.toggle('open');if(o)o.classList.toggle('visible');}
@@ -396,8 +402,13 @@ def _RESEARCH_EXTRA(active):
     return [_page_link(lbl, href, key, active) for lbl, href, key in RESEARCH_PAGES]
 
 
-def _MONITORING_EXTRA(active):
-    return [_page_link(lbl, href, key, active) for lbl, href, key in MONITORING_PAGES]
+_ADMIN_ONLY_PAGES = {"/admin"}
+
+
+def _MONITORING_EXTRA(active, user: Optional[dict] = None):
+    admin = bool(user and user.get("is_admin"))
+    return [_page_link(lbl, href, key, active) for lbl, href, key in MONITORING_PAGES
+            if admin or href not in _ADMIN_ONLY_PAGES]
 
 
 def _left_pane(active: Optional[str], user: Optional[dict]):
@@ -466,7 +477,7 @@ def _left_pane(active: Optional[str], user: Optional[dict]):
             _nav_section(
                 "Account",
                 Div(
-                    *_MONITORING_EXTRA(active),
+                    *_MONITORING_EXTRA(active, user),
                     _page_link("Logging", "/admin/logging", "logging", active),
                     _page_link("Settings", "/settings", "settings", active),
                     _page_link("Help & shortcuts", "/guide", "guide", active),
