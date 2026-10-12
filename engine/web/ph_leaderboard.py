@@ -144,7 +144,7 @@ LB_CSS = """
 }
 """
 
-LB_JS = """
+LB_JS_BASE = """
 <script>
 (function(){
 var AI={grok:{q:'https://grok.com/?q=',home:'https://grok.com/',name:'Grok'}};
@@ -181,6 +181,9 @@ document.querySelectorAll('[data-md-render]').forEach(function(el){if(!window.ma
 })();
 </script>
 """
+
+from engine.web.ph_grokbot import assets as _gb_assets  # noqa: E402
+LB_JS = LB_JS_BASE + _gb_assets()
 
 _SIGNIN_MSG = "Sign in (or create a free account) to clone strategies into AlpaTrade."
 
@@ -345,6 +348,8 @@ def _actions(s: dict, user: Optional[dict], *, wide_view: bool = False) -> str:
             f"<button type='button' class='lb-btn ai' onclick='lbCopy({sid},\"grok\")'>{GROK_SVG}Open in Grok</button>",
             f"<button type='button' class='lb-btn ai cp' onclick='lbCopyClip({sid})' title='Copy the full SKILL.md'>"
             f"{COPY_SVG}Copy to clipboard</button>"]
+    from engine.web.ph_grokbot import button as gb_button
+    out.append(gb_button(s, user))
     if wide_view:
         out.append(f"<a class='lb-btn wide' href='/strategies/{sid}/skill.md'>Download .md</a>")
     return "<div class='lb-actions'>" + "".join(out) + "</div>"

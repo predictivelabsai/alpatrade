@@ -104,6 +104,8 @@ ph_news_scheduler.register(app, rt)
 ph_admin.register(app, rt)  # /admin (admin role, server-side)
 ph_referrals.register(app, rt)  # /invite
 ph_leaderboard.register(app, rt)  # public /leaderboard + /strategies
+from engine.web import ph_grokbot  # noqa: E402
+ph_grokbot.register(app, rt)  # public /templates + Grok Bot template JSON
 ph_reports.register(app, rt)  # public /r/{id} — last, unlisted
 
 # --- verticals: per-asset-class surfaces (Phase 1b) ---------------------------
