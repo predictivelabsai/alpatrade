@@ -11,16 +11,23 @@ Env vars live only in Coolify (names: `DATABASE_URL`, `ENCRYPTION_KEY`, `ALPACA_
 `ALPACA_LIVE_BASE_URL`, `ALPACA_LIVE_ACCOUNT`, `BTD_ROLE`, `BTD_INSTANCE`, `BTD_USER_EMAIL`, `USER_LIVE_TRADING_ENABLED`).
 Web deploys (app `nnjuws8sa09rthx7j7xservt`) never restart the runners, and runner deploys never touch the web app.
 
-Cut-over / redeploy rules: only outside 09:20-16:10 ET on trading days (heartbeats run 09:00-16:05 ET),
-never within 10 min of an event (09:31 open, 15:45-15:58 entry/close, 16:03 post). The lease (FOR UPDATE on
-`alpatrade.live_runner_state`) allows only one order-placing instance, even if two claim the same role.
+Cut-over / redeploy rules: trading is 24/5, so there is no idle window. Use a zero-gap handover and stay
+10 min clear of every scheduled event (09:31 open, 15:45-15:58 entry/close, 16:03 post; heartbeats every 3 min
+09:00-16:05 ET). The lease (FOR UPDATE on `alpatrade.live_runner_state`) allows only one order-placing instance,
+even if two instances claim the same role.
 
-Cut-over steps (HP -> server):
-1. Deploy the app with `BTD_ROLE=backup` and check the logs (`btd scheduler started [server/backup]`, supervisor up).
-2. After 16:05 ET: set `BTD_ROLE=primary`, redeploy, `systemctl --user disable --now alpatrade-btd-scheduler alpatrade-user-live` on HP.
-3. Verify in the `btd-scheduler` container: `python scripts/live_btd_minhold.py --event heartbeat --live --any-time`
-   (lease renew only, no Alpaca orders) -> `lease_holder='server'` on every `live_runner_state` row the server owns.
-4. Next session: the 09:00 ET heartbeat and the 09:31 open event show `[server/primary] ... act=True`.
+Zero-gap handover (HP -> server):
+1. Deploy the app as standby (`BTD_ROLE=tertiary` or `backup`). Check the logs (`btd scheduler started
+   [server/...] live=True`, the supervisor is up) and a dry heartbeat
+   (`python scripts/live_btd_minhold.py --event heartbeat --any-time`, peek only).
+2. Set `BTD_ROLE=primary`, `BTD_INSTANCE=server` and redeploy. A second primary cannot act while
+   `hp`'s lease is live ("lease held by hp").
+3. `systemctl --user disable --now alpatrade-btd-scheduler alpatrade-user-live` on HP (SIGTERM: in-flight passes finish).
+4. Hand over in one transaction: expire only `hp`'s lease rows
+   (`UPDATE alpatrade.live_runner_state SET lease_expires_at = now() WHERE lease_holder = 'hp'`), then run
+   `python scripts/live_btd_minhold.py --event heartbeat --live --any-time` in the `btd-scheduler` container
+   (lease renew only, no orders). Every row now shows `lease_holder='server'`. The gap is seconds.
+5. Next session: the 09:00 ET heartbeats and the 09:31 open show `[server/primary] ... act=True`.
 
 Rollback: re-enable HP units (`systemctl --user enable --now ...`) and stop the Coolify app; the HP primary takes the lease when the server's lease expires (8 min).
 
