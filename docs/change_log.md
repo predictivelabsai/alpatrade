@@ -1,5 +1,13 @@
 # Change Log
 
+## v0.44.0 — 2026-10-12 — Clone to Grok Bot (strategy templates)
+
+- **"Clone to Grok Bot" on every Leaderboard strategy** (next to Open in Grok / Copy to clipboard / Clone strategy) and on the new public **`/templates`** page, modelled on skillsdojo.com/templates. A small modal lists what you get and offers **Open in Grok Bot** (when a share id exists), **Copy setup prompt** (otherwise), **Copy template link** and **Download JSON**. Works signed out; set `GROKBOT_CLONE_REQUIRES_LOGIN=1` to put it behind sign-in (default off).
+- **Template JSON** at `/templates/grokbot/<slug>.json` (public, `Cache-Control: max-age=300`, CORS `*`), format `alpatrade.grokbot-template/v1` (`engine/leaderboard/grokbot.py`): bot name "AlpaTrade <strategy>", instructions (Alpaca keys only via the bot's secure secret request, verify `GET /v2/account`, typed `CONFIRM LIVE TRADING …` before live, cash only, PDT 3-day min hold), one skill = the strategy `skill_md` (rules + Parameters JSON), secrets, routines in ET (entry 15:45–15:55, exits 09:31, close window 15:50, daily P&L digest 16:15) calling Alpaca REST from the bot's box, and the Predictive Labs Ltd research-only disclaimer.
+- **Share links.** SkillsDojo cards are plain `https://x.ai/bot/<shareId>` links, and a share id can only be created inside the Grok Bot app. Once created from a template, map it with `GROKBOT_SHARE_IDS` (`slug=id,…` or JSON); the modal then shows "Open in Grok Bot".
+- **Anonymous click analytics.** `alpatrade.grokbot_template_clicks` (`sql/54_grokbot_template_clicks.sql`, created on first use): per strategy / action / day counts, no user or IP. Admin JSON at `/admin/grokbot-clicks`.
+- Tests: `tests/test_grokbot_templates.py`.
+
 ## v0.43.0 — 2026-10-12 — Excluded ("junk") securities filter
 
 - **One exclusion rule set for every P&L / position report.** New table `alpatrade.excluded_securities` (`sql/53_excluded_securities.sql`: symbol, scope `global` | `account` + `account_ref`, reason, auto, created_at) and one helper, `engine/reporting/exclusions.py`. It replaces the hard-coded BNBX filters in `pnl_dashboard.py`, `ph_live_account.py`, `ph_pnl.py` and `scripts/daily_live_report.py`. Seeded with **BNBX** (global, leftover dust) and **CDTX** (account `PA3QUCXV3HJJ`, Kairi paper, not tradable / inactive on Alpaca).

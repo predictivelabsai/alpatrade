@@ -372,7 +372,7 @@ def test_cards_have_view_more_and_ai_logo_buttons_including_grok():
     html = lb._actions(s, None) if hasattr(lb, "_actions") else ""
     assert "/strategies/5#details" in html and "View more" in html
     assert "Open in Grok" in html and "Copy to clipboard" in html and "lbCopyClip(5)" in html
-    assert "ChatGPT" not in html and "Claude" not in html and html.count("<svg") == 2
+    assert "ChatGPT" not in html and "Claude" not in html and html.count("<svg") == 3 and "Clone to Grok Bot" in html
     assert "paste into Claude or ChatGPT" in lb.LB_JS and "chatgpt.com" not in lb.LB_JS
     assert "grok.com/?q=" in lb.LB_JS
 
