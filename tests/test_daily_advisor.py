@@ -241,6 +241,7 @@ def test_fixed_paper_service_can_bind_runs_and_trades_to_an_owned_account(monkey
     from scripts import run_paper_strategy
 
     observed = {}
+    monkeypatch.setenv("PAPER_STRATEGY_ENABLED", "1")
     monkeypatch.setenv("PAPER_USER_ID", USER_ID)
     monkeypatch.setenv("PAPER_ACCOUNT_ID", ACCOUNT_ID)
     monkeypatch.setenv("PAPER_DURATION_SECONDS", "0")

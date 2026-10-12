@@ -322,6 +322,7 @@ services:
       dockerfile: Dockerfile.agui
     command: ["python", "scripts/run_paper_strategy.py"]
     environment:
+      - PAPER_STRATEGY_ENABLED=${PAPER_STRATEGY_ENABLED:-0}
       - PAPER_DIP=${PAPER_DIP:-7}
       - PAPER_TP=${PAPER_TP:-6}
       - PAPER_SL=${PAPER_SL:-10}

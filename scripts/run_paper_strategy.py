@@ -37,7 +37,24 @@ def _env_f(k, d):
         return float(d)
 
 
+def enabled() -> bool:
+    """Off unless PAPER_STRATEGY_ENABLED is truthy (paused 2026-10-12 at Julian's request)."""
+    return os.getenv("PAPER_STRATEGY_ENABLED", "0").strip().lower() in ("1", "true", "yes", "on")
+
+
+def idle_forever() -> int:
+    """Disabled: register no run and place no orders, but stay up so the compose
+    healthcheck passes and `restart: unless-stopped` doesn't loop (each restart used
+    to leave another orphaned 'running' paper run)."""
+    import time
+    print("paper-strategy disabled (PAPER_STRATEGY_ENABLED is not set); idling, no runs, no orders.")
+    while True:
+        time.sleep(3600)
+
+
 def main() -> int:
+    if not enabled():
+        return idle_forever()
     user_id = os.getenv("PAPER_USER_ID", "").strip() or None
     account_id = os.getenv("PAPER_ACCOUNT_ID", "").strip() or None
     if bool(user_id) != bool(account_id):

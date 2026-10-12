@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.41.1 — 2026-10-12 — Paper-strategy service paused
+
+- The prod `paper-strategy` compose service (`scripts/run_paper_strategy.py`, the fixed BTD paper runner on Julian's paper account) is **off by default**: unless `PAPER_STRATEGY_ENABLED=1` it registers no run, places no orders and idles. Idling keeps the healthcheck happy, so `restart: unless-stopped` doesn't loop; every restart used to leave another orphaned `running` paper run. Paper only; live is untouched.
+- Tests: `tests/test_run_paper_strategy_flag.py`.
+
 ## v0.41.0 — 2026-10-12 — Referrals, admin + RBAC, TypeSafe jev judge, Trade menu review
 
 - **Referrals (`/invite`).** Each signed-in user gets a stable 8-character referral code and can invite up to 5 friends (lifetime; failed sends don't count). Invites are deduped per (referrer, email). Registered emails and the user's own address are skipped. A recipient gets at most one invite per 24 h across all referrers. The form is limited to 3 submissions per 10 min. Sent and accepted invites are tracked in a table (times shown in ET · UK · Tallinn). `/register?ref=CODE` keeps the code in the session; on signup (password or Google) the new user gets `referred_by` and matching invites flip to `accepted`. An invited email that signs up without the link is still attributed. Email: an HTML cover letter with the key features, a Join button with the referral link and code, a linked YouTube thumbnail (https://youtu.be/rfbsMxSUGh4) and the user guide PDF attached (`docs/user_guide/alpatrade_user_guide.pdf`, copied from `feat/alpaca-assisted-connect`, re-included in the Docker build context), sent via Postmark (`POSTMARK_API_KEY`, `FROM_EMAIL`). One test invite was sent to kaljuvee@gmail.com only (code `TEST2026`, not a real code).
