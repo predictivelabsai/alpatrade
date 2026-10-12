@@ -22,7 +22,9 @@ load_dotenv()
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 # Create SQLAlchemy engine and session
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, pool_size=2, max_overflow=1, pool_recycle=300, pool_pre_ping=True,
+                       connect_args={"application_name": os.getenv("DB_APPLICATION_NAME", "alpatrade-news-legacy")[:63],
+                                     "options": "-c idle_in_transaction_session_timeout=60000"})
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 

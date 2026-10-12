@@ -297,10 +297,12 @@ class RunnerStateStore:
         self._schema_ok = False
         if self._engine is None and database_url:
             from sqlalchemy import create_engine
+            from sqlalchemy.pool import NullPool  # one short transaction per heartbeat/event: no idle conns
             self._engine = create_engine(
-                database_url, pool_pre_ping=True, pool_size=1, max_overflow=0,
+                database_url, poolclass=NullPool,
                 connect_args={"connect_timeout": 5, "application_name": f"alpatrade-live-btd-{self.instance}"[:63],
-                              "options": "-c statement_timeout=15000 -c lock_timeout=5000"})
+                              "options": "-c statement_timeout=15000 -c lock_timeout=5000"
+                                         " -c idle_in_transaction_session_timeout=60000"})
 
     @property
     def configured(self) -> bool:
