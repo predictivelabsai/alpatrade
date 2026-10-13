@@ -1,5 +1,12 @@
 # Change Log
 
+## v0.44.1 — 2026-10-13 — Active strategies and leaderboard returns
+
+- My strategies lists only the signed-in user's current paper or live activations, including the original live strategy linked to a running live run. Drafts and stopped strategies remain saved and accessible by their direct links.
+- The public Leaderboard shows simple annualised return from the first trading day, including short records. It excludes strategies with negative annualised returns while retaining them in the database for backtesting. The JSON feed uses the same selection.
+- My strategies marks active live strategies with a light green Live label. The signed-in header displays the beta version and release date.
+- Tests: targeted leaderboard, activation, and route checks.
+
 ## v0.44.0 — 2026-10-12 — Clone to Grok Bot (strategy templates)
 
 - **"Clone to Grok Bot" on every Leaderboard strategy** (next to Open in Grok / Copy to clipboard / Clone strategy) and on the new public **`/templates`** page, modelled on skillsdojo.com/templates. A small modal lists what you get and offers **Open in Grok Bot** (when a share id exists), **Copy setup prompt** (otherwise), **Copy template link** and **Download JSON**. Works signed out; set `GROKBOT_CLONE_REQUIRES_LOGIN=1` to put it behind sign-in (default off).

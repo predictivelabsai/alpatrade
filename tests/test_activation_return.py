@@ -18,7 +18,7 @@ def _m(pnl, today=date(2026, 10, 12), spy=lambda a, b: pytest.fail("no SPY befor
 
 def test_zero_at_activation_even_if_account_and_spy_moved():
     m = _m({"realized": 0.0, "unrealized": 0.0, "fills": 0})
-    assert m["return_pct"] == 0.0 and m["annualised_pct"] is None and m["alpha_pct"] is None  # <60d: not annualised (v0.42.0)
+    assert m["return_pct"] == 0.0 and m["annualised_pct"] == 0.0 and m["alpha_pct"] is None
     assert m["start_equity"] == 670 and m["is_activation"] and m["start_date"] == date(2026, 10, 11)
     assert perf.pct(m["return_pct"]) in ("+0.00%", "0.00%")
 
@@ -26,7 +26,7 @@ def test_zero_at_activation_even_if_account_and_spy_moved():
 def test_own_fills_only_vs_allocation():
     m = _m({"realized": 3.35, "unrealized": 3.35, "fills": 1}, today=date(2026, 10, 16), spy=lambda a, b: 0.5)
     assert m["return_pct"] == pytest.approx(1.0) and m["alpha_pct"] == pytest.approx(0.5)
-    assert m["trading_days"] == 4 and m["annualised_pct"] is None  # <60d (v0.42.0)
+    assert m["trading_days"] == 4 and m["annualised_pct"] == pytest.approx(63.0)
 
 
 def test_not_activated_falls_back_to_backtest(monkeypatch):

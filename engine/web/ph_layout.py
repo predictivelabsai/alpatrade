@@ -61,6 +61,9 @@ TILE_MARK = (
     '<polygon points="16,12.6 19.4,16 16,19.4 12.6,16" fill="#fff"/></svg>'
 )
 
+APP_VERSION = "0.44.1"
+RELEASE_DATE = "13 Oct 2026"
+
 # Small inline mic glyph for the voice button.
 _MIC_SVG = (
     '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" '
@@ -310,6 +313,7 @@ def _brand(user: Optional[dict] = None):
         Span(NotStr(TILE_MARK), cls="brand-mark"),
         Span("AlpaTrade", cls="brand-name"),
         Span("beta", cls="brand-badge"),
+        Span(f"v{APP_VERSION} · {RELEASE_DATE}", cls="brand-version"),
         href=href, cls="brand-link",
     )
 

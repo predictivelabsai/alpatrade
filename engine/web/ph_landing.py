@@ -25,7 +25,7 @@ from fasthtml.common import (
 from starlette.responses import RedirectResponse
 
 from engine.agents.catalog import AGENT_CATALOG_ENTRIES
-from engine.web.ph_layout import head, TILE_MARK
+from engine.web.ph_layout import head, TILE_MARK, APP_VERSION, RELEASE_DATE
 
 SITE_NAME = "AlpaTrade"
 SITE_TAGLINE = "Backtest, paper-trade and prove the P&L — one AI trading desk on Alpaca."
@@ -86,6 +86,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 .lp-brand .mark .tile-mark { width: 1.5rem; height: 1.5rem; }
 .lp-brand .badge { font-size: .58rem; font-weight: 600; color: var(--accent); background: var(--accent-dim);
   padding: .12rem .4rem; border-radius: 4px; letter-spacing: .08em; text-transform: uppercase; }
+.lp-brand .version { font-size: .58rem; color: var(--ink-dim); font-family: var(--font-mono); white-space: nowrap; }
 .lp-nav-links { display: flex; align-items: center; gap: 1.75rem; }
 .lp-nav-link { font-size: .85rem; color: var(--ink-muted); }
 .lp-nav-link:hover, .lp-nav-link.active { color: var(--ink); }
@@ -377,6 +378,7 @@ def _btn(label, href, variant="primary", *, arrow=False, sm=False, google=False)
 
 def _brand():
     return A(Span(NotStr(TILE_MARK), cls="mark"), Span(SITE_NAME), Span("beta", cls="badge"),
+             Span(f"v{APP_VERSION} · {RELEASE_DATE}", cls="version"),
              href="/", cls="lp-brand")
 
 

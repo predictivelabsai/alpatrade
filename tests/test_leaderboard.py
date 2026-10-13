@@ -33,10 +33,9 @@ def test_metrics_from_live_run_snapshot():
     assert m["return_pct"] == pytest.approx((2809.13 / 2725.59 - 1) * 100)
     assert m["spy_return_pct"] == pytest.approx((774.30 / 767.29 - 1) * 100)
     assert m["alpha_pct"] == pytest.approx(m["return_pct"] - m["spy_return_pct"])
-    # v0.42.0: annualised = CAGR, only from 60 trading days; 11 sessions -> n/a + total
-    assert m["annualised_pct"] is None
-    assert m["annualised_short"] is True and "Not annualised" in perf.annualised_tip(m)
-    assert perf.ann_display(m) == "n/a (<60d)"
+    assert m["annualised_pct"] == pytest.approx(m["return_pct"] * 252 / 11)
+    assert m["annualised_short"] is True and "Simple annualised" in perf.annualised_tip(m)
+    assert perf.ann_display(m) == perf.pct(m["annualised_pct"])
 
 
 def test_metrics_never_invent_numbers():
@@ -52,6 +51,49 @@ def test_metrics_never_invent_numbers():
 def test_rank_puts_strategies_without_data_last():
     rows = [{"annualised_pct": None}, {"annualised_pct": 10.0}, {"annualised_pct": 50.0}]
     assert [r["annualised_pct"] for r in sorted(rows, key=perf.rank_key)] == [50.0, 10.0, None]
+
+
+def test_public_rows_hide_negative_annualised_but_keep_zero_and_unknown(monkeypatch):
+    from engine.web import ph_leaderboard as lb
+    strategies = [_strategy(id=i) for i in (1, 2, 3)]
+    values = {1: -1.0, 2: 0.0, 3: None}
+    monkeypatch.setattr(store, "list_public", lambda: strategies)
+    monkeypatch.setattr(lb.lperf, "strategy_metrics", lambda s: {"annualised_pct": values[s["id"]]})
+    assert [s["id"] for s, _ in lb.public_rows()] == [2, 3]
+
+
+def test_activated_query_scopes_owner_and_current_states(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(store, "_rows", lambda sql, params: captured.update(sql=sql, params=params) or [])
+    assert store.list_activated_for_user("owner-1") == []
+    assert captured["params"] == {"uid": "owner-1"}
+    assert "s.user_id = CAST(:uid AS UUID)" in captured["sql"]
+    assert "a.user_id = s.user_id AND a.user_strategy_id = s.id" in captured["sql"]
+    assert "r.user_id = s.user_id" in captured["sql"] and "r.status = 'running'" in captured["sql"]
+    assert "'deactivated'" not in captured["sql"]
+
+
+def test_my_strategies_route_uses_activated_owner_query(monkeypatch):
+    from engine.web import ph_leaderboard as lb
+    from engine.leaderboard import activate
+    routes = {}
+
+    class FakeApp:
+        def post(self, path):
+            return lambda fn: fn
+
+    def rt(path, methods=None):
+        return lambda fn: routes.setdefault(path, fn)
+
+    lb.register(FakeApp(), rt)
+    owner = {"user_id": "owner-1", "email": "owner@example.com"}
+    calls = []
+    monkeypatch.setattr(lb, "_user", lambda session: owner)
+    monkeypatch.setattr(store, "list_activated_for_user", lambda uid: calls.append(uid) or [])
+    monkeypatch.setattr(activate, "statuses", lambda uid: {})
+    monkeypatch.setattr(lb, "_render", lambda user, title, active, inner: inner)
+    html = routes["/strategies"]({})
+    assert calls == ["owner-1"] and "No active paper or live strategies" in html
 
 
 def test_seed_skill_params_match_live_config_v2():
@@ -107,7 +149,7 @@ def test_leaderboard_html_has_fields_actions_and_mobile_hooks():
                                                    dict(perf.EMPTY))], None)
     assert "Mag-7 &lt;BTD&gt;" in html and "<BTD>" not in html.split("<script")[0]
     assert "Julian Kaljuvee" in html and "Buys dips" in html
-    assert "n/a (&lt;90d)" not in html and perf.pct(m["annualised_pct"]) in html
+    assert "n/a" not in html and perf.pct(m["annualised_pct"]) in html
     assert perf.pct(m["alpha_pct"]) in html
     assert "Since 24 Sep 2026" in html and "15 days running" in html
     assert "Open in Grok" in html and "Copy to clipboard" in html and "Copy for ChatGPT" not in html
