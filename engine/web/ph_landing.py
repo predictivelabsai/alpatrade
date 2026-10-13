@@ -19,7 +19,7 @@ Pricing: AlpaTrade is free for everyone for now, so there is no public Pricing p
 from __future__ import annotations
 
 from fasthtml.common import (
-    Code, Em, Details, Summary, Ol, Li,
+    Code, Em, Details, Summary, Ol, Li, Pre, Ul,
     A, Button, Div, Footer, H1, H2, H3, Img, Main, Nav, NotStr, P, Picture, Section, Source, Span, Strong, Style, Script,
 )
 from starlette.responses import RedirectResponse
@@ -29,6 +29,7 @@ from engine.web.ph_layout import head, TILE_MARK, APP_VERSION, RELEASE_DATE
 
 SITE_NAME = "AlpaTrade"
 SITE_TAGLINE = "Backtest, paper-trade and prove the P&L — one AI trading desk on Alpaca."
+MCP_ENDPOINT = "https://alpatrade.chat/mcp"
 
 # Public teaser for the signed-in /hedge-funds page: a real screenshot of that page
 # (static assets, regenerated with scripts/hedge_funds_snapshot.py). The CTA links to
@@ -231,6 +232,32 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 .dev-meta a { margin-left: auto; color: var(--accent); }
 .dev-contracts { margin-top: 1.5rem; color: var(--ink-muted); font-size: .8rem; line-height: 1.7; }
 .dev-contracts a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.dev-mcp{background:var(--bg);}
+.dev-mcp-hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(240px,.65fr);gap:2.5rem;align-items:center}
+.dev-mcp-hero h1{max-width:15ch}
+.dev-mcp-url{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin:1.5rem 0 1rem;
+  padding:.85rem 1rem;border:1px solid var(--line);border-radius:.7rem;background:var(--bg-elev)}
+.dev-mcp-url code{font-size:clamp(.78rem,1.8vw,1rem);font-weight:650;overflow-wrap:anywhere}
+.dev-mcp-copy{border:1px solid var(--line);border-radius:2rem;padding:.35rem .8rem;background:var(--bg);
+  color:var(--accent);font:inherit;font-size:.78rem;cursor:pointer;min-height:36px}
+.dev-mcp-counts{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem}
+.dev-mcp-counts div{border:1px solid var(--line);border-radius:.65rem;padding:1rem;background:var(--bg-elev)}
+.dev-mcp-counts strong{display:block;color:var(--accent);font-size:1.5rem}
+.dev-mcp-counts span{display:block;color:var(--ink-muted);font-size:.76rem}
+.dev-mcp-tabs{display:flex;flex-wrap:wrap;gap:.4rem;margin:1.2rem 0 0}
+.dev-mcp-tab{border:1px solid var(--line);border-radius:2rem;padding:.5rem 1rem;background:var(--bg-elev);
+  color:var(--ink);font:inherit;font-size:.85rem;cursor:pointer;min-height:42px}
+.dev-mcp-tab[aria-selected=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.dev-mcp-panel{border:1px solid var(--line);border-radius:.75rem;padding:1.3rem;background:var(--bg-elev)}
+.dev-mcp-panel[hidden]{display:none}
+.dev-mcp-panel p{color:var(--ink-muted);line-height:1.6;margin:.1rem 0 1rem}
+.dev-mcp-panel pre{background:var(--ink);color:var(--bg);border-radius:.5rem;padding:1rem;
+  overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.82rem;line-height:1.5}
+.dev-mcp-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem;margin-top:1.2rem}
+.dev-mcp-tool{border:1px solid var(--line);border-radius:.7rem;padding:1rem;background:var(--bg-elev)}
+.dev-mcp-tool code{color:var(--accent);font-weight:700}.dev-mcp-tool p{margin:.55rem 0 0;color:var(--ink-muted);font-size:.85rem;line-height:1.5}
+.dev-mcp-note{font-size:.83rem;color:var(--ink-muted);line-height:1.6;margin-top:1.2rem}
+@media(max-width:760px){.dev-mcp-hero{grid-template-columns:1fr}.dev-mcp-tools{grid-template-columns:1fr}}
 
 /* hedge funds teaser */
 .lp-hf { scroll-margin-top: 4.5rem; }
@@ -713,6 +740,71 @@ def platform_page():
     )
 
 
+def _mcp_section():
+    """Connection guide for the public, read-only MCP transport."""
+    tools = (
+        ("list_public_strategies", "Search public strategies with live or clearly marked backtest figures."),
+        ("get_public_strategy", "Read one public strategy's return, period, author and source link."),
+        ("get_public_strategy_skill", "Fetch the public Markdown strategy skill for your agent."),
+        ("list_agent_interfaces", "Discover the agent catalogue and its authenticated API endpoints."),
+    )
+    panels = (
+        ("claude", "Claude Code", "Run this command in your terminal:",
+         f"claude mcp add --transport http alpatrade {MCP_ENDPOINT}"),
+        ("cursor", "Cursor", "Add this server in Cursor Settings → MCP, or save it in ~/.cursor/mcp.json:",
+         '{\n  "mcpServers": {\n    "alpatrade": { "url": "https://alpatrade.chat/mcp" }\n  }\n}'),
+        ("http", "HTTP client", "Use the URL in any streamable HTTP MCP client. To inspect tools with curl:",
+         "curl -sS https://alpatrade.chat/mcp \\\n"
+         "  -H 'Accept: application/json, text/event-stream' \\\n"
+         "  -H 'Content-Type: application/json' \\\n"
+         "  -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}'"),
+    )
+    script = """function devMcpTab(key){
+      document.querySelectorAll('.dev-mcp-tab').forEach(function(b){
+        var on=b.dataset.mcpTab===key;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;});
+      document.querySelectorAll('.dev-mcp-panel').forEach(function(p){p.hidden=p.id!=='dev-mcp-'+key;});
+    }
+    function devMcpCopy(button){navigator.clipboard.writeText(button.dataset.copy).then(function(){
+      button.textContent='Copied';setTimeout(function(){button.textContent='Copy URL';},1800);
+    });}"""
+    return Section(
+        Div(
+            Div(Span("MCP server", cls="lp-eyebrow"),
+                H1("Connect AlpaTrade to your AI client.", cls="lp-h1"),
+                P("A public Model Context Protocol server for AlpaTrade strategies and agent "
+                  "discovery. Connect once, then ask your client to search strategies, inspect "
+                  "performance and read published strategy skills.", cls="lp-lede"),
+                Div(Code(MCP_ENDPOINT), Button("Copy URL", type="button", cls="dev-mcp-copy",
+                                              data_copy=MCP_ENDPOINT, onclick="devMcpCopy(this)"),
+                    cls="dev-mcp-url"),
+                P("Streamable HTTP · no sign-in · read-only public data", cls="dev-mcp-note")),
+            Div(Div(Strong("4"), Span("read-only tools")),
+                Div(Strong("0"), Span("API keys needed")),
+                Div(Strong("1"), Span("HTTPS endpoint")),
+                Div(Strong("API"), Span("authenticated actions below")),
+                cls="dev-mcp-counts"),
+            cls="dev-mcp-hero"),
+        Div(Span("Works with", cls="lp-eyebrow"),
+            P("Claude Code · Cursor · any client that supports MCP over streamable HTTP",
+              cls="dev-mcp-note")),
+        H2("Connect your client.", cls="lp-h2", style="margin-top:2rem"),
+        Div(*[Button(label, type="button", role="tab", aria_controls=f"dev-mcp-{key}",
+                     aria_selected="true" if i == 0 else "false", tabindex=0 if i == 0 else -1,
+                     data_mcp_tab=key, onclick=f"devMcpTab('{key}')", cls="dev-mcp-tab")
+              for i, (key, label, _, _) in enumerate(panels)],
+            role="tablist", aria_label="MCP clients", cls="dev-mcp-tabs"),
+        *[Div(P(description), Pre(Code(command)), id=f"dev-mcp-{key}",
+              role="tabpanel", hidden=i != 0, cls="dev-mcp-panel")
+          for i, (key, _, description, command) in enumerate(panels)],
+        H2("What the MCP tools can read.", cls="lp-h2", style="margin-top:2.5rem"),
+        Div(*[Div(Code(name), P(description), cls="dev-mcp-tool") for name, description in tools],
+            cls="dev-mcp-tools"),
+        P("Results link to their public AlpaTrade source. Annualised return is the simple "
+          "period return × 252 / trading days; backtests are hypothetical. Private account "
+          "data and trading actions require the authenticated API below.", cls="dev-mcp-note"),
+        Script(NotStr(script)), id="mcp", cls="lp-section lp-bordered dev-mcp")
+
+
 def developers_page():
     docs = [
         ("Agent reference", "Browse agent skills, request schemas, responses, and safety boundaries.",
@@ -787,7 +879,7 @@ def developers_page():
 
     hero = Section(
         Span("Developers", cls="lp-eyebrow"),
-        H1("Build on the AlpaTrade agent desk.", cls="lp-h1"),
+        H2("Build on the AlpaTrade agent desk.", cls="lp-h1"),
         P("Call the primary LangChain DeepAgent, research analysts, backtester, validator, "
           "paper trader, reconciler, reporter, and durable autonomy pipeline through typed APIs.",
           cls="lp-lede"),
@@ -845,7 +937,8 @@ def developers_page():
     )
     return _shell(
         "Developers — AlpaTrade API",
-        Section(hero, cls="lp-hero"),
+        _mcp_section(),
+        Section(hero, id="api-docs", cls="lp-hero"),
         _cli_section(),
         catalogue,
         contracts,

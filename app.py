@@ -119,6 +119,11 @@ from engine.voice import register_voice_routes  # noqa: E402
 
 register_voice_routes(app)
 
+# Public read-only MCP transport; mounted after all app routes at the exact /mcp path.
+from engine.mcp_server import mount_mcp  # noqa: E402
+
+mount_mcp(app)
+
 # Browsers always probe /favicon.ico; FastHTML's static glob serves it from the
 # repo root, so the compiled icon lives at ./favicon.ico (head() links the SVG).
 

@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.45.0 — 2026-10-13 — Public MCP server
+
+- Added a streamable HTTP MCP endpoint at `https://alpatrade.chat/mcp` in the existing web container. Four public read-only tools list visible strategies, return a strategy summary or published skill, and expose the agent catalogue. Private strategies and negative-return entries are excluded.
+- Developers now leads with the MCP connection guide, endpoint, client commands and tool descriptions. The existing CLI and authenticated API documentation follow it.
+- Tested the MCP protocol with a local client harness and HTTP transport, plus the existing web routes. Deployment uses the normal CI and Coolify pipeline.
+
 ## v0.44.1 — 2026-10-13 — Active strategies and leaderboard returns
 
 - My strategies lists only the signed-in user's current paper or live activations, including the original live strategy linked to a running live run. Drafts and stopped strategies remain saved and accessible by their direct links.
