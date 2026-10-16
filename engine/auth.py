@@ -77,6 +77,11 @@ def create_user(
     """
     from sqlalchemy import text
 
+    # Tests must never create real accounts outside the dedicated test domain
+    # (auto-deleted by engine.web.antibot.purge_stale_accounts).
+    if os.getenv("PYTEST_CURRENT_TEST") and not (email or "").lower().strip().endswith(
+            "@alpatrade-test.invalid"):
+        raise RuntimeError("tests may only create users @alpatrade-test.invalid")
     pw_hash = hash_password(password) if password else None
     pool = _get_pool()
     with pool.get_session() as session:

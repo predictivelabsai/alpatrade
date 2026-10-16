@@ -119,6 +119,20 @@ from engine.voice import register_voice_routes  # noqa: E402
 
 register_voice_routes(app)
 
+# Lightweight liveness probe for the container healthcheck (no DB, no render).
+from starlette.responses import PlainTextResponse  # noqa: E402
+
+
+@rt("/healthz")
+def healthz():
+    return PlainTextResponse("ok")
+
+
+# Daily cleanup of stale unverified / test-domain accounts (engine/web/antibot.py).
+from engine.web import antibot as _antibot  # noqa: E402
+
+_antibot.start_cleanup_scheduler()
+
 # Public read-only MCP transport; mounted after all app routes at the exact /mcp path.
 from engine.mcp_server import mount_mcp  # noqa: E402
 
