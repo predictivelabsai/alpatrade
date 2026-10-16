@@ -691,7 +691,7 @@ class TestAuthDB(unittest.TestCase):
     def test_create_and_lookup_user(self):
         from utils.auth import create_user, get_user_by_email
         import uuid
-        email = f"regression-{uuid.uuid4().hex[:8]}@test.local"
+        email = f"regression-{uuid.uuid4().hex[:8]}@alpatrade-test.invalid"
         user = create_user(email, "TestPass123!", display_name="Regression Test")
         self.assertIsNotNone(user)
         self.assertEqual(user["email"], email)

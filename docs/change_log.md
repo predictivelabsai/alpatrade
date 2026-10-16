@@ -1,5 +1,16 @@
 # Change Log
 
+## v0.48.0 — 2026-10-16 — Anti-bot signup guard
+
+- **Email verification before login.** Password signups no longer get a session at signup. They see a "Check your inbox" screen with a resend button (`POST /verify/resend-email`, same answer whether or not the account exists). Password login for an unverified account shows the same screen. The `/verify` link signs the user in. Google sign-in is unchanged and still marks the email as verified.
+- **Cloudflare Turnstile** on `/register`, `/signin`, `/forgot` and the resend form, verified server-side (`engine/web/antibot.py`). Turns on automatically when `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` are set. `TURNSTILE_ENABLED=0` forces it off.
+- **Honeypot + minimum time-to-submit.** Hidden `website` field and an HMAC-signed render timestamp. Submissions under 3 s or over 2 h old are rejected.
+- **Per-IP signup limits.** 3 accounts per hour and 10 per day per client IP (first `x-forwarded-for` hop; `SIGNUP_LIMIT_PER_HOUR` / `SIGNUP_LIMIT_PER_DAY`). Every attempt is logged with IP, user agent and outcome in `alpatrade.signup_attempts` (`sql/55_signup_guard.sql`, created on first use). If more than 20 accounts are created in a UTC day, one alert goes to `SIGNUP_ALERT_TO` (fallback `TO_EMAIL`).
+- **Stale-account cleanup.** A daemon thread in the web app runs every 6 h behind a Postgres advisory lock (`ACCOUNT_CLEANUP_ENABLED=0` disables it). It deletes password accounts left unverified for 7 days, and test-domain accounts (`alpatrade-test.invalid`, `example.com`, `test.local`, …) older than 1 day. It never touches admins or accounts with broker keys, activations, runs or trades.
+- **Tests can't create prod users.** Under pytest, `create_user` only accepts `@alpatrade-test.invalid` addresses. `tests/conftest.py` provides `test_email()` and honours `ALPATRADE_TEST_DATABASE_URL`. The regression suite uses the test domain.
+- **Healthcheck.** New `/healthz` (no DB, no render). The web container healthcheck uses it with a 5 s timeout instead of rendering the landing page.
+- Context: on 2026-10-16, 65 bot and test accounts were purged. Tests: `tests/test_antibot_signup.py`. Mobile check of `/register`, `/signin` and `/forgot` at 390 px.
+
 ## v0.47.2 — 2026-10-16 — Admin running: last live trade from runner state
 
 - `/admin/running` showed Julian's last live trade as Oct 9 because it read only `alpatrade.trades` for the primary run_id. The rows there stop on 10-09, while sleeve and recent fills were missing. "Last trade" is now the later of the trades table and the live runner state (`last_entry` / position `entry_date`, primary + sleeves).

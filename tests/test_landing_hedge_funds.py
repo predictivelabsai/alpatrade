@@ -58,6 +58,8 @@ def client(monkeypatch):
                         lambda e, p: users["u1"] if (e, p) == ("a@b.c", "pw-123456") else None)
     monkeypatch.setattr(ph_hedgefunds, "_user", lambda s: users.get((s or {}).get("user_id")))
     monkeypatch.setattr(ph_hedgefunds, "_page", lambda user, **kw: "HF-PAGE-OK")
+    from engine.web import antibot
+    monkeypatch.setattr(antibot, "check_form", lambda form, ip="", now=None: "")
     return TestClient(app_module.app)
 
 
