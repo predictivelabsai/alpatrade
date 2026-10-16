@@ -1,5 +1,6 @@
 # Change Log
 
+- Compose: `news-worker`/`news-backfill` get a process healthcheck; they inherited the agui :5003 probe and kept the Coolify web app `unhealthy`.
 - Heartbeat code_version falls back to SOURCE_COMMIT / pyproject version (e.g. `v0.50.0`) in containers without .git.
 
 ## v0.50.0 — 2026-10-16 — One rules module for backtest, paper and live + parity gate
