@@ -376,7 +376,26 @@ def run_job(strategy_id: int, user_id: str, overrides: Optional[dict] = None,
         cfg = get_config(strategy_id, user_id)
     if overrides:
         cfg["params"] = {**cfg["params"], **overrides}
-        upsert_config(strategy_id, user_id, cfg["template"], cfg["params"], cfg["execution"], cfg["mode"])
+        # v0.51.0: an edit never changes a LIVE activation directly. Record it as a draft param
+        # version; the config row (what un-versioned runners read) only changes when no live
+        # activation is running -- otherwise apply it from the Parameters page (walk-forward + LIVE).
+        live_running = False
+        try:
+            from engine.leaderboard.activate import activation_status
+            live_running = (activation_status(user_id, strategy_id).get("live") or {}).get("status") in (
+                "pending_runner", "active", "paused")
+        except Exception:  # noqa: BLE001
+            pass
+        if cfg["template"] == BTD:
+            try:
+                from engine.leaderboard import params as sparams
+                from utils.btd_rules import PARAM_SPEC
+                sparams.create_version(strategy_id, user_id, {k: v for k, v in overrides.items() if k in PARAM_SPEC},
+                                       source="chat", note="backtest rerun with changed parameters")
+            except Exception as exc:  # noqa: BLE001
+                log.info("param version not recorded: %s", exc)
+        if not live_running:
+            upsert_config(strategy_id, user_id, cfg["template"], cfg["params"], cfg["execution"], cfg["mode"])
     bm = compute(cfg["template"], cfg["params"], progress=progress)
     try:   # the audit gate still runs and its verdict is stored (scripts/audit_backtest.py)
         from engine.leaderboard.audit_gate import audit_strategy

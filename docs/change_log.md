@@ -1,5 +1,32 @@
 # Change Log
 
+## v0.51.0 — 2026-10-16 — Editable strategy parameters, versions and walk-forward (UI + chat)
+
+- **New rule keys in `utils/btd_rules.py`, read the same way by the backtester, paper and live runners.**
+  - `stop_mode` `pct` | `atr` | `stdev`. ATR mode: stop = `stop_k` × ATR(14). Stdev mode: stop = `stop_k` × the 20-day stdev of returns. Target = `tp_mult` × the stop distance (0 keeps the fixed `tp` %). The stop % and target % are fixed at entry from completed daily bars (no look-ahead) and stored with the position (`tp_pct`/`sl_pct`).
+  - `stop_timing` `always` | `exit_day`. With `exit_day` there is no stop until the min-hold is met.
+  - `vol_filter` `off` | `atr` | `spy_atr`, with `vol_max` (ATR(14) % of price). `atr` skips any symbol above the limit. `spy_atr` blocks all new buys while SPY is above it.
+  - `regime_filter` `""` | `SPY` | `SMH` | `SPY,SMH`. `regime_mode` is `low5` (prior 5-day low, as before) or `sma` (`regime_sma` days).
+  - `max_exposure_pct`: an exposure cap as % of equity or sleeve, next to the existing `$` cap.
+  - `PARAM_SPEC` holds groups, defaults, ranges and help text. `validate_params` checks them server-side and reports every error at once. `diff_params` lists what changed.
+  - Defaults equal the old behaviour, so existing configs trade exactly as before. Missing data fails closed (no entry).
+- **Parity gate extended.** Seven new scenarios (ATR stop + target multiple, stdev stop, exit-day timing, ATR vol filter, % cap, ATR + whole/fraction, SPY-ATR filter + SMA regime) run each key through the backtester and the real live `Runner` against the mocked Alpaca. Trades, qty, prices and equity must be identical. The backtester now also models a first stop rejected because the price is already below it (single market sell at the open, as the runner does).
+- **Versioned params (`sql/56_strategy_param_versions.sql`).** Every edit inserts a new draft version (`alpatrade.strategy_param_versions`) with its diff, source (ui/chat/api) and note. Version 1 is a baseline snapshot of the current config. Activations get a `params_version_id`. The user runner loads `COALESCE(version.params, config.params)`, and falls back to the config row if the migration hasn't run.
+- **Safety.** Editing never changes a running activation.
+  - *Apply to paper* takes effect immediately. The config row is updated only when no live activation runs another version.
+  - *Apply to live* requires a completed walk-forward run of that version, the live sleeve universe check, and a typed **LIVE** confirmation (same UX as Activate Live).
+  - Edits and applies are logged to `alpatrade.activation_events` (`params_edit_<id>`, `params_apply_<id>_<mode>`).
+  - The chat "rerun with changed params" path records a draft version and no longer rewrites the config of a strategy that is running live.
+- **Walk-forward on the parity backtester (`engine/leaderboard/walkforward.py`).**
+  - Windows: rolling 3-year fit / 1-year test folds (test years 2016 → now) plus the 2016–2022 and 2023+ segments.
+  - Each window starts at $10k. Shown per window: return, Sharpe and max DD vs SPY and vs the current live version (or the baseline). The out-of-sample curve chains the test years.
+  - Runs as a background job (`alpatrade.strategy_wf_runs`) with streamed per-fold progress. Results are cached by (params, live params, data date), and bars are cached on disk per day.
+  - The backtester's per-day lookups are now O(1), so a full 11-fold run takes about 5 s instead of about 55 s.
+- **Parameters page `/strategies/{id}/params`** (owner, buy-the-dip). The grouped form (Universe, Entry, Sizing, Holding, Stop & target, Filters) shows defaults and help text, and dependent fields appear only when they apply. Below it: the version history with diffs, walk-forward status and the Apply to paper / Apply to live… actions. A walk-forward panel shows the live-updating fold table and the equity chart. The layout is mobile friendly (one column below 640px, 16px inputs, scrollable tables). Strategy pages get a **Parameters** button. Admins see every version at `/admin/strategy-params`.
+- **Chat.** New strategy-lab tools: `list_my_strategies`, `get_strategy_params`, `propose_strategy_params` and `run_strategy_walkforward`. The agent maps requests like "widen semis stop to 2x ATR" or "turn on SPY regime filter" to keys, validates them and shows a diff table with a one-time code. The change is saved only when the user sends `/confirm-params <code>`, which the chat handles itself, not the model (single use, valid 1 hour, owner only). It then becomes a new draft version.
+- Tests: `tests/test_strategy_params.py` (validation, version flow, paper/live gate, walk-forward + cache, chat confirmation, form) and `tests/test_strategy_params_postgres.py` (SQL repo, migration, runner reads the applied version) are added to CI.
+- Example walk-forward (Semi-7: live rules vs ATR 2× stop / 3× target + SPY,SMH regime): `docs/strategy_params_wf_example.md`.
+
 ## v0.50.0 — 2026-10-16 — One rules module for backtest, paper and live + parity gate
 
 - **Decision (Julian, 10-16): always-on stops kept for both sleeves** (Mag-7 `btd`, Semi-7 `s7btd`; SL 1.5% / TP 8%), and the **regime filter is ON for both sleeves** (`regime_filter=SPY,SMH` in `alpatrade.strategy_configs`, applied after deploy), so backtest, paper and live read the same config. Kairi's user runner gets the same rule via its own params.

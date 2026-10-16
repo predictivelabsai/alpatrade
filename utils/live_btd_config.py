@@ -33,6 +33,9 @@ DEFAULT_PARAMS: Dict[str, Any] = {
     # v0.49.0 risk overlay, OFF by default: "SPY,SMH" = no new dip buys while any of these trades
     # below its prior 5-session low (scripts/btd_risk_overlay_wf.py; enable via live_btd_config set)
     "regime_filter": "",
+    # v0.51.0 user-editable rule keys (utils/btd_rules.PARAM_SPEC); these defaults = old behaviour
+    "stop_mode": "pct", "stop_k": 2.0, "tp_mult": 0.0, "stop_timing": "always",
+    "vol_filter": "off", "vol_max": 4.0, "regime_mode": "low5", "regime_sma": 200, "max_exposure_pct": 0.0,
 }
 
 DEFAULT_EXECUTION: Dict[str, Any] = {
@@ -44,7 +47,11 @@ DEFAULT_EXECUTION: Dict[str, Any] = {
 
 _TYPES = {"dip": float, "tp": float, "sl": float, "min_hold": int, "max_hold": int,
           "pos_frac": float, "max_exposure": float, "ref": str, "feed": str,
-          "entry_window": str, "close_window": str, "regime_filter": str}
+          "entry_window": str, "close_window": str, "regime_filter": str,
+          "stop_mode": str, "stop_k": float, "tp_mult": float, "stop_timing": str, "vol_filter": str,
+          "vol_max": float, "regime_mode": str, "regime_sma": int, "max_exposure_pct": float}
+_CHOICES = {"stop_mode": ("pct", "atr", "stdev"), "stop_timing": ("always", "exit_day"),
+            "vol_filter": ("off", "atr", "spy_atr"), "regime_mode": ("low5", "sma")}
 
 
 class ConfigError(ValueError):
@@ -77,6 +84,12 @@ def coerce_params(raw: Dict[str, Any]) -> Dict[str, Any]:
                 raise ConfigError(f"{k}={v!r}: {exc}") from exc
     if "ref" in out and out["ref"] not in ("prev_close", "high20"):
         raise ConfigError(f"ref must be prev_close or high20, got {out['ref']!r}")
+    for k, ok in _CHOICES.items():
+        if k in out and out[k] not in ok:
+            raise ConfigError(f"{k} must be one of {', '.join(ok)}, got {out[k]!r}")
+    for k in ("stop_k", "tp_mult", "vol_max", "max_exposure_pct", "regime_sma"):
+        if k in out and out[k] < 0:
+            raise ConfigError(f"{k} must be >= 0")
     for k in ("entry_window", "close_window"):
         if k in out:
             _window(out[k])

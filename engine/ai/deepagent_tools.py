@@ -770,6 +770,101 @@ def backtest_my_strategy(strategy_id: int, param_overrides: dict | None = None,
 
 
 @tool
+def list_my_strategies(runtime: ToolRuntime[DeepAgentContext] = None) -> list[dict]:
+    """List the caller's own strategies (My strategies): id, name, template and symbols. Use it to
+    find which #id the user means ("my semis strategy") before reading or changing parameters."""
+    context = _require_tenant(runtime)
+    from engine.leaderboard import clone_bt, store
+    out = []
+    for s in store.list_for_user(str(context.user_id))[:50]:
+        cfg = clone_bt.get_config(int(s["id"]), str(context.user_id)) or {}
+        out.append({"id": int(s["id"]), "name": s.get("name"), "template": cfg.get("template"),
+                    "symbols": (cfg.get("params") or {}).get("symbols")})
+    return out
+
+
+@tool
+def get_strategy_params(strategy_id: int, runtime: ToolRuntime[DeepAgentContext] = None) -> dict:
+    """Read the editable parameters of one of the caller's buy-the-dip strategies: the latest
+    version, which version runs live / on paper, and every editable key with its range and help.
+    Keys: symbols, dip (%), ref, pos_frac (0-1), max_exposure_pct, max_exposure ($), min_hold, max_hold
+    (days), stop_mode (pct|atr|stdev), sl/tp (%), stop_k (x ATR(14) or x 20d stdev), tp_mult (x stop),
+    stop_timing (always|exit_day), vol_filter (off|atr|spy_atr), vol_max (ATR %), regime_filter
+    ("" | SPY | SMH | SPY,SMH), regime_mode (low5|sma), regime_sma (days)."""
+    context = _require_tenant(runtime)
+    from engine.leaderboard import params as sp
+    from utils.btd_rules import PARAM_SPEC
+    try:
+        ov = sp.overview(int(strategy_id), str(context.user_id))
+    except sp.ParamsError as exc:
+        return {"error": str(exc)}
+    lt, lv, pv = ov["latest"], ov.get("live_version"), ov.get("paper_version")
+    return {"strategy_id": int(strategy_id), "name": ov["strategy"].get("name"),
+            "latest_version": lt["version"], "params": lt["params"],
+            "live_version": lv["version"] if lv else None, "paper_version": pv["version"] if pv else None,
+            "editable": {k: {kk: (vv if kk != "type" else getattr(vv, "__name__", vv)) for kk, vv in v.items()}
+                         for k, v in PARAM_SPEC.items()},
+            "page": f"/strategies/{int(strategy_id)}/params"}
+
+
+@tool
+def propose_strategy_params(strategy_id: int, changes: dict, note: str = "",
+                            runtime: ToolRuntime[DeepAgentContext] = None) -> str:
+    """PROPOSE a parameter change for one of the caller's buy-the-dip strategies. Map the user's
+    words to keys, e.g. "widen the stop to 2x ATR" -> {"stop_mode": "atr", "stop_k": 2.0};
+    "turn on the SPY regime filter" -> {"regime_filter": "SPY"}; "skip entries when ATR is above 4%"
+    -> {"vol_filter": "atr", "vol_max": 4}; "200-day SMA regime on SPY and SMH" ->
+    {"regime_filter": "SPY,SMH", "regime_mode": "sma", "regime_sma": 200}. Validates server-side and
+    returns a diff table plus a confirmation code. NOTHING is saved until the user sends
+    "/confirm-params <code>" themselves: show the diff and that exact line to the user, and never say
+    the change is saved. Saving creates a draft version; it never changes a live strategy."""
+    context = _require_tenant(runtime)
+    from engine.leaderboard import params as sp
+    try:
+        res = sp.create_proposal(int(strategy_id), str(context.user_id), dict(changes or {}), note)
+    except sp.ParamsError as exc:
+        return str(exc)
+    if not res["ok"]:
+        return "Not valid: " + "; ".join(f"{k}: {v}" for k, v in res["errors"].items())
+    return (f"Proposed change to strategy #{int(strategy_id)} (on top of v{res['base_version']}):\n\n{res['diff_md']}\n\n"
+            f"To save it as a new draft version, the user must reply exactly: `/confirm-params {res['code']}` "
+            "(valid 1 hour). Nothing changes until then, and live trading never changes without a walk-forward run "
+            "and a typed LIVE confirmation on the Parameters page.")
+
+
+@tool
+def run_strategy_walkforward(strategy_id: int, version: int | None = None,
+                             runtime: ToolRuntime[DeepAgentContext] = None) -> str:
+    """Walk-forward backtest of a param version (default: the latest) of the caller's strategy on the
+    parity backtester (same rules as paper/live): rolling 3y fit / 1y test folds plus 2016-2022 and
+    2023+, vs SPY and vs the current live version. Waits up to ~2 minutes, else returns a link that
+    streams the results. Never places orders."""
+    context = _require_tenant(runtime)
+    import time as _t
+    from engine.leaderboard import params as sp
+    uid = str(context.user_id)
+    try:
+        vs = sp.ensure_baseline(int(strategy_id), uid)
+        vid = next((v["id"] for v in vs if v["version"] == int(version)), None) if version else None
+        if version and not vid:
+            return f"Strategy #{int(strategy_id)} has no v{int(version)}."
+        r = sp.start_wf(int(strategy_id), uid, vid)
+    except sp.ParamsError as exc:
+        return str(exc)
+    link = f"/strategies/{int(strategy_id)}/params?wf={r['run_id']}"
+    t0 = _t.monotonic()
+    run = sp.wf_status(r["run_id"], uid)
+    while run and run["status"] == "running" and _t.monotonic() - t0 < 120:
+        _t.sleep(2)
+        run = sp.wf_status(r["run_id"], uid)
+    if not run or run["status"] == "running":
+        return f"Walk-forward is running; results stream at [{link}]({link})."
+    if run["status"] == "error":
+        return f"Walk-forward failed: {run.get('error')}"
+    return sp.wf_summary_md(run["result"] or {}, r["version"]["version"]) + f"\n\n[Chart and folds]({link})"
+
+
+@tool
 def queue_advisor_backtest(
     report_id: str,
     recommendation_id: str,
@@ -1124,7 +1219,7 @@ PORTFOLIO_TOOLS = (
 )
 
 STRATEGY_TOOLS = (
-    backtest_my_strategy, queue_backtest, queue_advisor_backtest, validate_run, compare_strategy_results,
+    backtest_my_strategy, list_my_strategies, get_strategy_params, propose_strategy_params, run_strategy_walkforward, queue_backtest, queue_advisor_backtest, validate_run, compare_strategy_results,
     get_recent_runs, get_run_report, get_job_status, get_job_events, get_job_results,
 )
 

@@ -104,6 +104,8 @@ ph_news_scheduler.register(app, rt)
 ph_admin.register(app, rt)  # /admin (admin role, server-side)
 ph_referrals.register(app, rt)  # /invite
 ph_leaderboard.register(app, rt)  # public /leaderboard + /strategies
+from engine.web import ph_strategy_params  # noqa: E402
+ph_strategy_params.register(app, rt)  # /strategies/{id}/params: versioned params + walk-forward (v0.51.0)
 from engine.web import ph_grokbot  # noqa: E402
 ph_grokbot.register(app, rt)  # public /templates + Grok Bot template JSON
 ph_reports.register(app, rt)  # public /r/{id} — last, unlisted

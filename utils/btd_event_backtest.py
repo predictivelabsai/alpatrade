@@ -21,6 +21,7 @@ Input bars: {sym: [{"t": "YYYY-MM-DD", "o", "h", "l", "c"}, ...]} (sorted, split
 """
 from __future__ import annotations
 
+import bisect
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, Callable, Dict, List, Optional
@@ -62,7 +63,8 @@ def run(bars: Dict[str, List[Dict[str, Any]]], P: Dict[str, Any], start: str, en
         price_at_entry: Optional[Callable[[str, str], Optional[float]]] = None,
         halt_daily: float = 0.0, halt_weekly: float = 0.0,
         initial_positions: Optional[Dict[str, Dict[str, Any]]] = None,
-        initial_cash: Optional[float] = None) -> Result:
+        initial_cash: Optional[float] = None,
+        vol_bars: Optional[List[Dict[str, Any]]] = None) -> Result:
     """Replay [start, end]. ``halt_daily`` / ``halt_weekly`` are RESEARCH overlays (fractions,
     0 = off): not live rules, only used by scripts/btd_risk_overlay_wf.py."""
     syms = list(P["symbols"])
@@ -70,12 +72,20 @@ def run(bars: Dict[str, List[Dict[str, Any]]], P: Dict[str, Any], start: str, en
     days = sorted({d for s in syms for d in by[s] if start <= d <= end})
     hist = {s: sorted(by[s]) for s in syms}
     rb = {k: [dict(b, t=_d(b["t"])) for b in v] for k, v in (regime_bars or {}).items()}
+    vb = [dict(b, t=_d(b["t"])) for b in (vol_bars if vol_bars is not None else rb.get("SPY", []))]
+    # O(1) per-day lookups (walk-forward runs replay a decade): index of each date, recent windows only
+    pos_of = {s: {k: i for i, k in enumerate(hist[s])} for s in syms}
+    rb_dates = {k: [b["t"] for b in v] for k, v in rb.items()}
+    rb_close = {k: {b["t"]: float(b["c"]) for b in v} for k, v in rb.items()}
+    vb_dates = [b["t"] for b in vb]
+    need = max(R.REGIME_LOOKBACK, int(P.get("regime_sma") or 0)) + 5
     cash = float(capital if initial_cash is None else initial_cash)
     pos: Dict[str, Dict[str, Any]] = {}
     for s0, p0 in (initial_positions or {}).items():      # {sym: {qty, avg, entry}} (daily parity replay)
-        tp0, sl0 = R.exit_prices(float(p0["avg"]), P["tp"], P["sl"])
+        tpp0, slp0 = R.pos_pcts(P, p0)
+        tp0, sl0 = R.exit_prices(float(p0["avg"]), tpp0, slp0)
         pos[s0] = {"qty": float(p0["qty"]), "avg": float(p0["avg"]), "entry": str(p0["entry"]), "tp": tp0,
-                   "sl": sl0, "oco": False}
+                   "sl": sl0, "oco": False, "tp_pct": tpp0, "sl_pct": slp0}
     last_entry: Dict[str, str] = {}
     res = Result()
     open_tr: Dict[str, Trade] = {s0: Trade(s0, p0["entry"], p0["qty"], p0["avg"], p0["qty"] * p0["avg"])
@@ -106,18 +116,25 @@ def run(bars: Dict[str, List[Dict[str, Any]]], P: Dict[str, Any], start: str, en
         # 09:30 open print: resting stops gapped through
         for s in list(pos):
             b = bar.get(s)
-            if not b or s in exempt or not R.stop_active(date.fromisoformat(pos[s]["entry"]), today):
+            if not b or s in exempt or not R.stop_live(date.fromisoformat(pos[s]["entry"]), today, P):
                 continue
             f = R.stop_fill_at_open(pos[s]["sl"], float(b["o"]))
             if f is not None:
-                sell(s, pos[s]["qty"], R.slip_sell(f, slippage_bps), d, "SL_gap", split=True)
+                # The broker rejects a stop above the last price: when the FIRST stop session's
+                # previous close was already below the stop, nothing rests overnight and the runner
+                # sells the whole position with one market order at the open (one order's fees).
+                i0 = pos_of[s][d]
+                pd = hist[s][i0 - 1] if i0 > 0 else None
+                first = pd is not None and not R.stop_live(date.fromisoformat(pos[s]["entry"]), date.fromisoformat(pd), P)
+                rested = not (first and float(by[s][pd]["c"]) <= pos[s]["sl"])
+                sell(s, pos[s]["qty"], R.slip_sell(f, slippage_bps), d, "SL_gap" if rested else "SL_open", split=rested)
         # 09:31 open event: exit-eligible -> market if beyond TP/SL, else OCO on whole shares
         for s in list(pos):
             b = bar.get(s); p = pos[s]
             p["oco"] = False
             if not b or s in exempt or not R.exit_eligible(date.fromisoformat(p["entry"]), today, P["min_hold"]):
                 continue
-            act = R.open_exit_action((float(b["o"]) / p["avg"] - 1) * 100, P)
+            act = R.open_exit_action((float(b["o"]) / p["avg"] - 1) * 100, {"tp": p["tp_pct"], "sl": p["sl_pct"]})
             if act:
                 sell(s, p["qty"], R.slip_sell(float(b["o"]), slippage_bps), d, f"{act.upper()}_open")
             elif R.split_qty(p["qty"])[0] >= 1:
@@ -125,7 +142,7 @@ def run(bars: Dict[str, List[Dict[str, Any]]], P: Dict[str, Any], start: str, en
         # intraday: stops first (conservative), then TP limit on whole shares
         for s in list(pos):
             b = bar.get(s); p = pos[s]
-            if not b or s in exempt or not R.stop_active(date.fromisoformat(p["entry"]), today):
+            if not b or s in exempt or not R.stop_live(date.fromisoformat(p["entry"]), today, P):
                 continue
             f = R.stop_fill_intraday(p["sl"], float(b["l"]))
             if f is not None:
@@ -140,8 +157,15 @@ def run(bars: Dict[str, List[Dict[str, Any]]], P: Dict[str, Any], start: str, en
         block = None
         rsyms = R.regime_symbols(P)
         if rsyms:
-            last = {x: next((float(b["c"]) for b in rb.get(x, []) if b["t"] == d), 0.0) for x in rsyms}
-            block = R.regime_block(rb, last, today)
+            last = {x: rb_close.get(x, {}).get(d, 0.0) for x in rsyms}
+            win = {}
+            for x in rsyms:
+                j = bisect.bisect_left(rb_dates.get(x, []), d)
+                win[x] = rb.get(x, [])[max(0, j - need):j]
+            block = R.regime_check(P, win, last, today)
+        if not block:
+            j = bisect.bisect_left(vb_dates, d)
+            block = R.vol_market_block(P, vb[max(0, j - 40):j], today)
         mv = sum(p["qty"] * (px_e.get(s) or p["avg"]) for s, p in pos.items())
         equity = cash + mv
         if not block and (halt_daily or halt_weekly) and res.equity:
@@ -159,20 +183,25 @@ def run(bars: Dict[str, List[Dict[str, Any]]], P: Dict[str, Any], start: str, en
                 b = bar.get(s); px = px_e.get(s)
                 if not b or not px:
                     continue
-                i = hist[s].index(d)
+                i = pos_of[s][d]
                 prev_close = float(by[s][hist[s][i - 1]]["c"]) if i > 0 else 0.0
                 highs = [float(by[s][k]["h"]) for k in hist[s][max(0, i - R.HIGH_LOOKBACK + 1):i + 1]]
                 sig, dip, ref, _ = R.dip_signal(px, prev_close, highs, P)
                 if not sig or s in pos or last_entry.get(s) == d:
                     continue
-                if R.entry_block(target, exposure, avail, P):
+                recent = [by[s][k] for k in hist[s][max(0, i - 40):i]]     # completed bars before today
+                if R.vol_symbol_block(P, recent, today):
+                    continue
+                pcts = R.position_exit_pcts(P, recent, px, today)
+                if pcts is None or R.entry_block(target, exposure, avail, P, base_value=equity):
                     continue
                 fill = R.slip_buy(px, slippage_bps)
                 qty = round(target / fill, 9)
                 cash -= target + (R.buy_fees(qty) if fees else 0.0)
                 avail -= target; exposure += target
-                tp, sl = R.exit_prices(fill, P["tp"], P["sl"])
-                pos[s] = {"qty": qty, "avg": fill, "entry": d, "tp": tp, "sl": sl, "oco": False}
+                tp, sl = R.exit_prices(fill, *pcts)
+                pos[s] = {"qty": qty, "avg": fill, "entry": d, "tp": tp, "sl": sl, "oco": False,
+                          "tp_pct": pcts[0], "sl_pct": pcts[1]}
                 open_tr[s] = Trade(s, d, qty, fill, target, pnl=-(R.buy_fees(qty) if fees else 0.0))
                 last_entry[s] = d
         # 15:58 close event: max-hold time exit

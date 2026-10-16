@@ -372,8 +372,10 @@ def paper_html(s: dict, user: Optional[dict]) -> str:
         log.warning("paper status failed: %s", type(exc).__name__)
         return ""
     link = (" <a href='/settings'>Connect Alpaca paper keys →</a>" if st.get("keys") is False else "")
+    params_link = (f" <a class='lb-btn act-sm' href='/strategies/{int(s['id'])}/params' style='margin-left:.4rem'>"
+                   "Parameters</a>" if clone_bt.paper_supported(cfg["template"]) else "")
     return (f"<div class='flash lb-paper'><b>Template:</b> <code>{_e(cfg['template'])}</code> · "
-            f"<b>Mode:</b> {_e(cfg['mode'])} · live trading off. {_e(st['label'])}{link}</div>")
+            f"<b>Mode:</b> {_e(cfg['mode'])} · live trading off. {_e(st['label'])}{link}{params_link}</div>")
 
 
 def _row(rank: int, s: dict, m: dict, user: Optional[dict]) -> str:
@@ -764,6 +766,12 @@ def _render(user, title: str, active: str, inner: str):
                     right_news=False)
     from engine.web.ph_landing import _shell
     return _shell(title, Style(LB_CSS), Section(NotStr(inner)), active=active)
+
+
+def _with_msg_url(url: str, m: str) -> str:
+    from urllib.parse import quote_plus
+    base, _, frag = url.partition("#")
+    return f"{base}{'&' if '?' in base else '?'}msg={quote_plus(m)}" + (f"#{frag}" if frag else "")
 
 
 def _bool(v) -> bool:
