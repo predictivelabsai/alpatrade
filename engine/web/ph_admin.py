@@ -23,6 +23,11 @@ _CSS = """
 .adm-ex{overflow-x:auto}.adm-ex form{display:inline}.adm-ex .add{display:flex;flex-wrap:wrap;gap:.4rem;margin:.6rem 0}
 .adm-ex .add input{padding:.35rem .5rem;border:1px solid var(--line);border-radius:.4rem;font-size:.83rem;min-width:0;flex:1 1 140px}
 .adm-ex button{padding:.35rem .7rem;border:1px solid var(--line);border-radius:.4rem;background:#fff;cursor:pointer;font-size:.8rem}
+.adm{min-width:0;box-sizing:border-box}.adm-tw{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.adm-tw table{min-width:720px}
+.adm .pill{display:inline-block;padding:.08rem .45rem;border-radius:999px;font-size:.72rem;font-weight:650;background:#eef0ec}
+.adm .pill.running{background:#e3f4ea;color:#147a4b}.adm .pill.paused,.adm .pill.pending_runner{background:#fff6e0;color:#8a6410}
+.adm .pill.live{background:#fdeceb;color:#b43b35}.adm .tog{font-size:.82rem;margin:0 0 .5rem}
+.adm-nav{margin:.2rem 0 1rem;font-size:.85rem}.adm-nav a{margin-right:.8rem}
 @media(max-width:600px){.adm{padding:0 .7rem 2rem}.adm-kpis{grid-template-columns:repeat(2,1fr)}.adm-ex .add input,.adm-ex .add button{flex:1 1 100%}}
 """
 
@@ -118,6 +123,78 @@ def render_exclusions(rules: list[dict], msg: str = "") -> str:
             f"<th>Added</th><th></th></tr></thead><tbody>{rows}</tbody></table></div>")
 
 
+def _ts(x):
+    if x is None:
+        return "—"
+    try:
+        return x.astimezone(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %H:%M ET")
+    except Exception:  # noqa: BLE001
+        return html.escape(str(x)[:16])
+
+
+def _money(x):
+    if isinstance(x, str):
+        return html.escape(x)
+    try:
+        return "—" if x is None else f"${float(x):,.0f}"
+    except (TypeError, ValueError):
+        return "—"
+
+
+def render_running(data: dict, act: dict, show_all: bool, now: datetime | None = None) -> str:
+    e = lambda x: html.escape(str(x if x is not None else "—"))  # noqa: E731
+    rows = data.get("rows") or []
+    if data.get("error"):
+        body = "<tr><td colspan='10'>Unavailable</td></tr>"
+    elif not rows:
+        body = "<tr><td colspan='10'>None</td></tr>"
+    else:
+        body = "".join(
+            f"<tr><td><b>{e(r['name'] or r['email'])}</b><br><small>{e(r['email'])}</small></td>"
+            f"<td>{e(r['strategy'])}{' <small>(#' + str(r['id']) + ')</small>' if r['id'] else ''}</td>"
+            f"<td><span class='pill {'live' if r['mode'] == 'live' else ''}'>{e(r['mode'])}</span></td>"
+            f"<td>{e(r['account'])}<br><small>{e(r['prefix'])}</small></td><td class='n'>{_money(r['allocation'])}</td>"
+            f"<td><span class='pill {e(r['status']).split(' ')[0]}'>{e(r['status'])}</span>"
+            + (f"<br><small>db: {e(r['db_status'])}</small>" if r['db_status'] not in (r['status'], 'system') else "")
+            + f"</td><td><small>{e(r['runner'])}</small></td>"
+            f"<td>{_ts(r['last_trade'])}<br><small>{r['trades']} trades</small></td><td>{_ts(r['created'])}</td></tr>"
+            for r in rows)
+    tog = ("<a href='/admin/running'>Show active only</a>" if show_all
+           else "<a href='/admin/running?all=1'>Show all (incl. deactivated / stopped)</a>")
+    users = act.get("users")
+    if users is None:
+        ub = "<tr><td colspan='10'>Unavailable</td></tr>"
+    else:
+        ub = "".join(
+            f"<tr><td><b>{e(u['display_name'] or '')}</b><br><small>{e(u['email'])}</small></td><td>{e(u['role'])}</td>"
+            f"<td>{_ts(u['created_at'])}</td><td>{_ts(u['last_login_at'])}</td>"
+            f"<td class='n'>{u['logins_7d']}</td><td class='n'>{u['logins_30d']}</td>"
+            f"<td>{'yes' if u['has_keys'] else 'no'}</td><td class='n'>{u['strategies']} / {u['clones']}</td>"
+            f"<td class='n'>{u['activations']} ({u['active_activations']} active)</td></tr>" for u in users) \
+            or "<tr><td colspan='9'>None</td></tr>"
+    ev = act.get("events")
+    eb = ("<tr><td colspan='4'>Unavailable</td></tr>" if ev is None else "".join(
+        f"<tr><td>{_ts(x['at'])}</td><td>{e(x['email'])}</td><td><span class='pill'>{e(x['kind'])}</span></td>"
+        f"<td>{e(x['detail'])}</td></tr>" for x in ev) or "<tr><td colspan='4'>None</td></tr>")
+    return (
+        "<h1>Admin · running strategies &amp; user activity</h1>"
+        "<p class='adm-nav'><a href='/admin'>&larr; Analytics</a><a href='#running'>Running</a>"
+        "<a href='#users'>Users</a><a href='#events'>Events</a></p>"
+        f"<p class='sub'>Generated {stamp(now)}. Status 'running' = the runner heartbeat shows the instance holding "
+        "the lease and acting within the last 96h (runners idle outside market hours). 'db:' shows the stored "
+        "activation status when it differs. System rows are operator runners (btd-scheduler).</p>"
+        f"<h2 id='running'>Running strategies ({len(rows)})</h2><p class='tog'>{tog}</p>"
+        "<div class='adm-tw'><table><thead><tr><th>User</th><th>Strategy</th><th>Mode</th><th>Account</th>"
+        "<th>Allocation</th><th>Status</th><th>Runner heartbeat</th><th>Last trade</th><th>Created</th></tr></thead>"
+        f"<tbody>{body}</tbody></table></div>"
+        f"<h2 id='users'>User activity ({len(users or [])})</h2>"
+        "<div class='adm-tw'><table><thead><tr><th>User</th><th>Role</th><th>Signed up</th><th>Last login</th>"
+        "<th>Logins 7d</th><th>Logins 30d</th><th>Broker keys</th><th>Strategies / clones</th><th>Activations</th>"
+        f"</tr></thead><tbody>{ub}</tbody></table></div>"
+        "<h2 id='events'>Recent events</h2><div class='adm-tw'><table><thead><tr><th>When</th><th>User</th>"
+        f"<th>Event</th><th>Detail</th></tr></thead><tbody>{eb}</tbody></table></div>")
+
+
 def register(app, rt):
     entry = ("Admin", "/admin", "admin")
     if entry not in ph_layout.MONITORING_PAGES:
@@ -133,9 +210,25 @@ def register(app, rt):
             return RedirectResponse("/dashboard", status_code=303)
         from engine.admin_analytics import snapshot
         from engine.reporting.exclusions import list_rules
-        body = render(snapshot()) + render_exclusions(list_rules(force=True), session.pop("adm_msg", "") or "")
+        body = ("<p class='adm-nav'><a href='/admin/running'><b>Running strategies &amp; user activity &rarr;</b></a></p>"
+                + render(snapshot()) + render_exclusions(list_rules(force=True), session.pop("adm_msg", "") or ""))
         return page("admin", Style(_CSS), Div(NotStr(body), cls="adm"),
                     user=user, title="Admin · AlpaTrade", right_news=False)
+
+    @rt("/admin/running", methods=["GET"])
+    def admin_running_get(session, request):
+        user = _user(session)
+        if not user:
+            return RedirectResponse("/signin?next=/admin/running", status_code=303)
+        from engine.rbac import is_admin
+        if not is_admin(user):
+            from starlette.responses import HTMLResponse
+            return HTMLResponse("Forbidden: admin only", status_code=403)
+        from engine import admin_running
+        show_all = request.query_params.get("all") == "1"
+        body = render_running(admin_running.running(include_all=show_all), admin_running.activity(), show_all)
+        return page("admin", Style(_CSS), Div(NotStr(body), cls="adm"),
+                    user=user, title="Admin · Running · AlpaTrade", right_news=False)
 
     def _admin_or_none(session):
         user = _user(session)
