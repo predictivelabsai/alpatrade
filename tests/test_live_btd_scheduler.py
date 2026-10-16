@@ -130,10 +130,10 @@ class FakeCal:
         return [c for c in self.cal if start <= c["date"] <= end]
 
 
-def make(cal, **kw):
+def make(cal, protect=False, **kw):
     r = FakeRunner(**kw)
     cache = ConfigCache(lambda: cfg(), lambda: 1, log_fn=lambda c, w: None)
-    return r, Scheduler(r, cache, FakeCal(cal), heartbeat_min=3, poll_s=5, event_timeout_s=30)
+    return r, Scheduler(r, cache, FakeCal(cal), heartbeat_min=3, poll_s=5, event_timeout_s=30, protect_checks=protect)
 
 
 def walk(sch, start, end, step=5):

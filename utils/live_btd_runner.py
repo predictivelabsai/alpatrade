@@ -35,8 +35,9 @@ from dotenv import dotenv_values
 
 from utils.live_btd_config import (DEFAULT_PARAMS, DEFAULT_STRATEGY, ConfigResult, exit_order,
                                    ext_exit_action, resolve as resolve_config)
-from utils.live_btd_exits import (cids, exit_eligible, fallback_full_stop, order_fill, own_open_exits,
-                                  plan_broker_exits)
+from utils.live_btd_exits import (cids, exit_eligible, fallback_full_stop, is_stop_only, open_sells, order_fill,
+                                  own_open_exits, plan_broker_exits, plan_protective_stops, protective_stop_cid,
+                                  stop_rejected_below)
 from utils.live_btd_state import (LeaseResult, RunnerStateStore, adopt_runner_position, alpaca_symbol_busy,
                                   degraded_policy, merge_dirty_cache, normalize_state)
 from utils.live_btd_store import STRATEGY_NAME, STRATEGY_SLUG, LiveRecorder
@@ -242,6 +243,21 @@ class Runner:
     def pre_order(self, body) -> None:
         """Last check right before an order is submitted; raise PassStop to abort the pass."""
         return None
+
+    def alert(self, subject: str, lines: List[str]) -> None:
+        """Operator alert (email to BTD_ALERT_EMAIL, default kaljuvee@gmail.com, via utils.email_util /
+        Postmark). Best-effort: never raises, always logged."""
+        self.log.error("ALERT %s: %s", subject, " | ".join(lines))
+        if getattr(self, "paper", False):
+            return                                      # paper runners: log only, no email
+        try:
+            import html as _h
+            from utils.email_util import send_email_to
+            to = os.environ.get("BTD_ALERT_EMAIL") or "kaljuvee@gmail.com"
+            body = "<p>" + "<br>".join(_h.escape(x) for x in lines) + "</p>"
+            send_email_to(to, f"[AlpaTrade runner] {subject}", body)
+        except Exception as exc:  # noqa: BLE001
+            self.log.warning("alert email failed: %s", exc)
 
     # ------------------------------------------------------------------ HTTP
     def get(self, url, **params):
@@ -576,6 +592,66 @@ class Runner:
                 if sym not in state["positions"] and sym not in other_held:
                     log.info("%s: pre-existing/untracked position -> ignored by runner (blocks new entry)", sym)
 
+            # ---------------- PROTECT: every held position has a working stop (v0.47.0) ----------------
+            def protect(open_orders_now, phase):
+                if not (EXECUTE and not DEGRADED): return
+                try:
+                    sess_day = today if clock.get("is_open") else datetime.fromisoformat(clock["next_open"]).astimezone(ET).date()
+                    pre_open = (not clock.get("is_open")) and sess_day == today
+                    plans = plan_protective_stops(state["positions"], positions, open_orders_now, today=today,
+                                                  session_day=sess_day, market_open=bool(clock.get("is_open")),
+                                                  sl_pct=P["sl"], prefix=PFX,
+                                                  expect_live_stops=bool(clock.get("is_open")) or pre_open)
+                except Exception as exc:  # noqa: BLE001
+                    log.error("protect: planning failed: %s", exc); return
+                problems = []
+                for pl in plans:
+                    sym = pl["sym"]
+                    if pl["overdue"]:
+                        problems.append(f"{sym}: open position had NO working stop ({phase})")
+                    if pl["skip"]:
+                        log.info("protect: %s -> %s", sym, pl["skip"])
+                        if pl["body"] is None: problems.append(f"{sym}: cannot place stop ({pl['skip']})")
+                        continue
+                    if not lease_ok(): break
+                    fpos, foo = fresh_sell_check(sym)
+                    if fpos is None or open_sells(foo, sym):
+                        continue
+                    body = dict(pl["body"]); body["qty"] = str(fpos.get("qty_available") or body["qty"])
+                    for attempt in range(1, 6):
+                        body["client_order_id"] = protective_stop_cid(sym, sess_day, PFX, attempt)
+                        try:
+                            r = submit(body)
+                        except requests.HTTPError as exc:
+                            txt = getattr(exc.response, "text", str(exc))
+                            if stop_rejected_below(txt):
+                                meta = state["positions"].get(sym) or {}
+                                entry_d = date.fromisoformat(meta.get("entry_date") or today.isoformat())
+                                if clock.get("is_open") and entry_d < today:
+                                    mcid = cids(sym, today, PFX)["market"]
+                                    log.warning("protect: %s already below stop %.2f -> market sell %s", sym, pl["sl"], mcid)
+                                    submit({"symbol": sym, "qty": body["qty"], "side": "sell", "type": "market",
+                                            "time_in_force": "day", "client_order_id": mcid})
+                                    track(mcid, sym, f"SL {pl['sl']:.2f} breached (protective)", meta)
+                                    problems.append(f"{sym}: below stop {pl['sl']:.2f} -> market sell submitted")
+                                else:
+                                    problems.append(f"{sym}: price below stop {pl['sl']:.2f}, stop rejected; "
+                                                    "will sell at the open if still below")
+                            else:
+                                problems.append(f"{sym}: stop rejected: {txt[:200]}")
+                            break
+                        if r == {}:      # duplicate client_order_id (used earlier this session) -> next id
+                            continue
+                        log.warning("protect: %s placed stop %s qty=%s @ %.2f (%s)", sym, body["client_order_id"],
+                                    body["qty"], pl["sl"], phase)
+                        track(body["client_order_id"], sym, "SL protective stop", state["positions"].get(sym) or {})
+                        if pl["overdue"]:
+                            problems.append(f"{sym}: stop re-placed qty={body['qty']} @ {pl['sl']:.2f}")
+                        break
+                    persist()
+                if problems:
+                    self.alert(f"{sleeve.strategy_name} {self.account_no}: stop check", problems)
+
             # ---------------- OPEN: broker-side TP/SL after the min-hold ----------------
             if "open" in events:
                 for sym, meta in list(state["positions"].items()):
@@ -592,8 +668,21 @@ class Runner:
                     if not market_ok:
                         log.info("%s: market closed -> broker exits wait for the open", sym); continue
                     mine = own_open_exits(open_orders, sym, PFX)
-                    if mine:
+                    if mine and not all(is_stop_only(o) for o in mine):
                         log.info("%s: broker exits already open %s -> nothing to do", sym, [o["client_order_id"] for o in mine]); continue
+                    if mine:   # only protective stop(s): swap for the TP/SL plan (cancel first, no qty conflict)
+                        if not EXECUTE:
+                            log.info("%s: protective stop open -> a live pass would swap it for the TP/SL plan", sym); continue
+                        for o in mine:
+                            log.info("%s: cancelling protective stop %s before the TP/SL exits", sym, o["client_order_id"])
+                            try: self.broker_call("DELETE", f"/v2/orders/{o['id']}")
+                            except Exception as exc: log.warning("%s: cancel failed: %s", sym, exc)  # noqa: BLE001
+                        for _ in range(10):
+                            _, foo = fresh_sell_check(sym)
+                            if not open_sells(foo, sym): break
+                            time.sleep(1)
+                        pos = (fresh_sell_check(sym)[0]) or pos
+                        open_orders = [o for o in open_orders if o not in mine]
                     if any(o["symbol"] == sym and o["side"] == "sell" for o in open_orders):
                         log.warning("%s: a foreign open sell order exists -> no runner exits (would double)", sym); continue
                     entry_px = float(pos.get("avg_entry_price") or 0)
@@ -671,6 +760,17 @@ class Runner:
                         track(xcid, sym, reason, meta, {"ext": {"base_cid": xcid, "submitted_at": now.isoformat(),
                                                                "reprices": 0}} if session == "extended" else None)
                         persist()
+
+            # protective-stop check on every event (open, close, post, protect), fresh broker view
+            if EXECUTE and not DEGRADED:
+                try:
+                    positions.clear(); positions.update({x["symbol"]: x for x in get(f"{base}/v2/positions")})
+                    protect(get(f"{base}/v2/orders", status="open", limit=500), "+".join(events))
+                except PassStop:
+                    raise
+                except Exception as exc:  # noqa: BLE001
+                    log.error("protect: check failed: %s", exc)
+                    self.alert(f"{sleeve.strategy_name} {self.account_no}: stop check failed", [str(exc)])
 
             # ---------------- ENTRY ----------------
             if "entry" in events:

@@ -53,7 +53,7 @@ class Sleeve:
 
     def exit_prefixes(self) -> tuple:
         p = self.cid_prefix
-        return (f"{p}tp-", f"{p}sl-", f"{p}x-")
+        return (f"{p}tp-", f"{p}sl-", f"{p}x-", f"{p}ps-")
 
     def exit_cids(self, sym: str, entry_date: str) -> Dict[str, str]:
         d = entry_date.replace("-", "")

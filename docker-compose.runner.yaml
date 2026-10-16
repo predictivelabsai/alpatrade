@@ -12,6 +12,10 @@ x-runner-env: &runner-env
   BTD_INSTANCE: ${BTD_INSTANCE:-server}
   BTD_USER_EMAIL: ${BTD_USER_EMAIL:-kaljuvee@gmail.com}
   USER_LIVE_TRADING_ENABLED: ${USER_LIVE_TRADING_ENABLED:-0}
+  POSTMARK_API_KEY: ${POSTMARK_API_KEY:-}
+  FROM_EMAIL: ${FROM_EMAIL:-}
+  BTD_ALERT_EMAIL: ${BTD_ALERT_EMAIL:-kaljuvee@gmail.com}
+  BTD_PROTECT_CHECKS: ${BTD_PROTECT_CHECKS:-1}
   BTD_STATE_DIR: /data/alpatrade-live
   TZ: America/New_York
   PYTHONUNBUFFERED: "1"
