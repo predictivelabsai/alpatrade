@@ -9,6 +9,7 @@ E.g. `btd-3dp-05sl-1tp-1d-1m` = buy_the_dip with 3% dip, 0.5% SL, 1% TP, 1-day h
 _PREFIXES = {
     "buy_the_dip": "btd",
     "momentum": "mom",
+    "valuation": "val",
     "vix": "vix",
     "box_wedge": "bwg",
 }
@@ -69,6 +70,15 @@ def build_slug(strategy: str, params: dict, lookback: str = "") -> str:
         if "stop_loss" in params:
             tokens.append(f"{_fmt_pct(params['stop_loss'])}sl")
 
+    elif strategy == "valuation":
+        tokens.extend([
+            str(params.get("mode", "low_pe")),
+            f"{int(params.get('top_n', 3))}n",
+            str(params.get("rebalance", "monthly")),
+            # Explicit ratio preserves fractional stop values without ambiguity.
+            f"{float(params.get('stop_loss') or 0)}sr",
+        ])
+
     elif strategy == "vix":
         if "vix_threshold" in params:
             tokens.append(f"{_fmt_pct(params['vix_threshold'])}t")
@@ -85,3 +95,25 @@ def build_slug(strategy: str, params: dict, lookback: str = "") -> str:
         tokens.append(lookback)
 
     return "-".join(tokens)
+
+
+def parse_slug(slug: str) -> dict:
+    """Decode a valuation slug to strategy, exact ratio params and lookback.
+
+    Older strategy slugs have no decoder and ambiguous percentage tokens;
+    this decoder deliberately accepts only the reversible valuation format.
+    """
+    import re
+    match = re.fullmatch(
+        r"val-(low_pe|high_pe|below_median|peg_under_1)-(\d+)n-"
+        r"(monthly|quarterly)-(\d+(?:\.\d+)?(?:e[+-]?\d+)?)sr(?:-(\d+[dmyw]))?", slug,
+    )
+    if not match:
+        raise ValueError(f"Invalid valuation slug: {slug}")
+    mode, count, frequency, stop, lookback = match.groups()
+    if int(count) < 1 or not 0 <= float(stop) < 1:
+        raise ValueError(f"Invalid valuation slug: {slug}")
+    return {"strategy": "valuation", "params": {
+        "mode": mode, "top_n": int(count), "rebalance": frequency,
+        "stop_loss": float(stop),
+    }, "lookback": lookback or ""}

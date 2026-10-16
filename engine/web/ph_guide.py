@@ -148,6 +148,7 @@ def _guide_toc():
                 Li(A("Momentum", href="#s-mom")),
                 Li(A("VIX Fear Index", href="#s-vix")),
                 Li(A("Box-Wedge", href="#s-bwg")),
+                Li(A("Valuation (backtest only)", href="#s-val")),
             ),
             Li(A("Options & Flags", href="#options")),
             Ul(
@@ -566,6 +567,29 @@ def _guide_slugs():
                 Tr(Td(Code("{type}")), Td("Hold type (e.g. on = overnight)")),
             ),
         ),
+
+        H3("Valuation (backtest only)", id="s-val"),
+        P("Prefix: ", Code("val")),
+        Pre(Code("agent:backtest symbols:AAPL,MSFT,GOOGL,AMZN,NVDA,META,AVGO,TSLA,AMD,INTC "
+                 "strategy:valuation mode:low_pe lookback:12m")),
+        P("Modes: low_pe selects the top_n lowest positive P/E names; high_pe selects "
+          "the top_n highest; below_median selects every name below the universe median; "
+          "peg_under_1 selects positive PEG below 1. PEG uses trailing YoY TTM EPS "
+          "growth in percentage points, not forward forecasts."),
+        P("Uses equal allocations, rebalance:monthly or rebalance:quarterly, and optional "
+          "stop_loss:0.05 (a 5% close-based stop, 0 disables it). Rebalance signals are "
+          "formed at the first available close of each period and filled at the next open. "
+          "Stops also fill at the next open; the last open liquidates the basket. "
+          "All fills include configured slippage and optional TAF/CAT fees."),
+        P("Requires EODHD_API_KEY with fundamentals access. Quarterly actual EPS only "
+          "becomes available the day after reportDate, never at fiscal period end. "
+          "Non-positive TTM EPS is excluded. Responses are cached for 24 hours under data/. "
+          "No current snapshot P/E fallback is used. EODHD history may include revisions, "
+          "restatements or split-basis changes: publication lag alone does not provide "
+          "historical revision vintages. Check price/EPS split and currency consistency "
+          "before relying on results. A fixed symbol list also carries survivorship bias. "
+          "Missing daily sessions fail explicitly. SPY is a price-return benchmark; "
+          "dividends and taxes are not modelled."),
 
         H3("Box-Wedge", id="s-bwg"),
         P("Prefix: ", Code("bwg")),

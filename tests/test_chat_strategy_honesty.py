@@ -26,13 +26,16 @@ def harness(monkeypatch):
 
 
 def test_prompt_lists_real_strategies_and_capability_limits(harness):
-    from utils.paper_strategies import STRATEGY_NAMES, PARAM_SCHEMA
+    from utils.paper_strategies import STRATEGY_NAMES, PARAM_SCHEMA, VALUATION_MODES
 
-    assert set(STRATEGY_NAMES) == set(PARAM_SCHEMA) == {
+    assert set(STRATEGY_NAMES) == {
         "buy_the_dip", "momentum", "vix", "box_wedge",
     }
-    supported = f"The only supported backtest strategies are: {', '.join(STRATEGY_NAMES)}."
+    assert set(PARAM_SCHEMA) == set(STRATEGY_NAMES) | {"valuation"}
+    supported = f"The only supported backtest strategies are: {', '.join(PARAM_SCHEMA)}."
     assert supported in harness.SYSTEM_PROMPT
+    assert "Valuation is backtest only" in harness.SYSTEM_PROMPT
+    assert all(mode in harness.SYSTEM_PROMPT for mode in VALUATION_MODES)
     assert "Never invent strategy names" in harness.SYSTEM_PROMPT
     assert "cannot create, write or save strategy code or files" in harness.SYSTEM_PROMPT
     assert "say plainly that it is not supported" in harness.SYSTEM_PROMPT
@@ -103,10 +106,12 @@ def test_chat_tool_guard_rejects_sync_and_async_calls(tool):
 
 
 def test_all_command_paste_executes_in_order_with_headings(monkeypatch, harness):
+    from utils.paper_strategies import PARAM_SCHEMA, VALUATION_MODES
+
     calls = []
-    commands = [f"agent:backtest strategy:{name}" for name in (
-        "buy_the_dip", "momentum", "vix", "box_wedge",
-    )]
+    commands = [f"agent:backtest strategy:{name}" for name in PARAM_SCHEMA]
+    commands += [f"agent:backtest strategy:valuation mode:{mode}"
+                 for mode in VALUATION_MODES]
 
     async def process(cp, command):
         calls.append((cp.user_id, command))
@@ -232,7 +237,7 @@ def test_duplicate_keys_return_clear_error_without_execution(monkeypatch, comman
 def test_kv_parser_rejects_duplicates_and_keeps_unique_values():
     cp = CommandProcessor(SimpleNamespace())
     with pytest.raises(ValueError, match="Duplicate parameter 'strategy'"):
-        cp._parse_kv_params(["strategy:momentum", "Strategy:vix"])
+        cp._parse_kv_params(["strategy:momentum", "Strategy:vix"], reject_duplicates=True)
     assert cp._parse_kv_params(["strategy:momentum", "lookback:3m", "AAPL"]) == {
         "strategy": "momentum", "lookback": "3m", "_positional": "AAPL",
     }
@@ -281,3 +286,15 @@ def test_legacy_agui_paste_runs_each_command_and_appends_each_chart(monkeypatch,
     output = thread._messages[-1]["content"]
     assert "## Command 1:" in output and "## Command 2:" in output
     assert output.count("__CHART_DATA__") == 2
+
+
+def test_alpha_runs_keeps_last_duplicate_value(monkeypatch):
+    from engine.research import alpha_agents
+
+    calls = []
+    monkeypatch.setattr(alpha_agents, "recent_runs_markdown",
+                        lambda uid, limit: calls.append(limit) or "Recent runs")
+    cp = CommandProcessor(SimpleNamespace())
+    output = asyncio.run(cp.process_command("alpha:runs limit:5 limit:10"))
+    assert output == "Recent runs"
+    assert calls == [10]

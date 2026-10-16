@@ -89,6 +89,9 @@ class PaperTradeAgent:
         # Use orchestrator's run_id if provided so trades FK to the runs table
         if run_id:
             self.session_id = run_id
+        if canonical_strategy(request.get("strategy")) == "valuation":
+            return {"error": "Valuation is backtest only; paper trading is not supported.",
+                    "session_id": self.session_id}
         # Load defaults from parameters.yaml
         yaml_params = load_parameters()
         yaml_general = yaml_params.get("general", {})

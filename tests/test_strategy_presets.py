@@ -12,8 +12,8 @@ from engine.web import onboarding
 # Tokens _agent_backtest consumes (tui/command_processor.py); anything else
 # in a preset command would be silently ignored by the dispatcher.
 _VALID_KEYS = {"strategy", "symbols", "lookback", "capital", "hours",
-               "intraday_exit", "pdt", "_positional"}
-_VALID_STRATEGIES = {"buy_the_dip", "momentum", "vix", "box_wedge"}
+               "intraday_exit", "pdt", "_positional", "mode", "top_n", "rebalance"}
+_VALID_STRATEGIES = {"buy_the_dip", "momentum", "vix", "box_wedge", "valuation"}
 _TICKER_TOKENS = {"strategy", "symbols", "lookback", "capital", "hours",
                   "intraday_exit", "pdt"}  # keys whose value is never a ticker
 
@@ -63,7 +63,7 @@ def test_parse_kv_params_matches_command_processor():
     assert _parse(" ".join(parts[1:])) == expected
 
 
-def test_preset_covers_all_four_strategies():
+def test_preset_covers_all_strategies():
     strategies = {p["strategy"] for p in onboarding.STRATEGY_PRESETS}
     assert strategies == _VALID_STRATEGIES
 

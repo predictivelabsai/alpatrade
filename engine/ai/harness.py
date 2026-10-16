@@ -28,7 +28,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.tools import StructuredTool
 from langgraph.prebuilt import create_react_agent
 
-from utils.paper_strategies import STRATEGY_NAMES
+from utils.paper_strategies import PARAM_SCHEMA, VALUATION_MODES
 
 SYSTEM_PROMPT = (
     "You are AlpaTrade, an AI trading assistant. "
@@ -42,7 +42,8 @@ SYSTEM_PROMPT = (
     "'paper trade this strategy'), do NOT ask for more parameters or pretend to run it; reply with the "
     "exact CLI command they should type, e.g. `agent:backtest symbols:AAPL lookback:3m` (or "
     "`agent:paper duration:7d` for paper trading, `agent:full lookback:1m duration:1m` for the full cycle). "
-    f"The only supported backtest strategies are: {', '.join(STRATEGY_NAMES)}. "
+    f"The only supported backtest strategies are: {', '.join(PARAM_SCHEMA)}. "
+    f"Valuation is backtest only, with mode: choices {', '.join(VALUATION_MODES)}. "
     "Never invent strategy names. You cannot create, write or save strategy code or files. "
     "If a user asks for an unsupported strategy, say plainly that it is not supported "
     "and suggest the closest supported strategy, explaining its limitations. "

@@ -231,6 +231,7 @@ def autorun_url(command: str, draft: bool = False) -> str:
 # ---------------------------------------------------------------------------
 
 PARAM_LABELS = {
+    "mode": "mode", "top_n": "top N", "rebalance": "rebalance",
     "dip_threshold": "dip", "take_profit": "TP",
     "take_profit_threshold": "TP", "stop_loss": "SL",
     "stop_loss_threshold": "SL", "hold_days": "hold",
@@ -254,6 +255,7 @@ PARAM_KINDS = {
     "scale_out_1_5r_pct": "percent", "scale_out_3r_pct": "percent",
     "hold_days": "days", "lookback_period": "days",
     "box_lookback": "days", "wedge_lookback": "days",
+    "top_n": "points", "mode": "text", "rebalance": "text",
     "vix_threshold": "points",
     "contraction_threshold": "ratio", "position_size": "ratio",
     "capital_per_trade": "dollars", "hold_overnight": "bool",
@@ -298,6 +300,13 @@ def format_params(params: dict) -> str:
 _PRESET = Dict[str, str]  # name/strategy/blurb/command keys
 
 STRATEGY_PRESETS: tuple = (
+    {
+        "name": "Valuation · low P/E",
+        "strategy": "valuation",
+        "blurb": "Equally weights the lowest positive P/E names using published quarterly EPS. Backtest only.",
+        "command": "agent:backtest strategy:valuation mode:low_pe top_n:3 rebalance:monthly "
+                   "symbols:AAPL,MSFT,GOOGL,AMZN,NVDA,META,AVGO,TSLA,AMD,INTC lookback:12m",
+    },
     {
         "name": "Dip · mega-cap tech",
         "strategy": "buy_the_dip",

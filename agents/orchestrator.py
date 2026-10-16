@@ -161,6 +161,7 @@ class Orchestrator:
             "initial_capital": config.get("initial_capital", 10000),
             "data_source": config.get("data_source", "yfinance"),
             "variations": config.get("variations"),
+            "params": config.get("params") or {},
             "run_id": self.run_id,
             "extended_hours": config.get("extended_hours", True),
             "intraday_exit": config.get("intraday_exit", False),
