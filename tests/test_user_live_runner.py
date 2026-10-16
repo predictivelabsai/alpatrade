@@ -168,3 +168,10 @@ def test_paper_recorder_writes_paper_not_live(monkeypatch):
 def test_operator_runner_recorder_default_unchanged():
     from utils import live_btd_runner as lbr
     assert "LiveRecorder(self.db_url, self.user_email" in __import__("inspect").getsource(lbr.Runner.recorder)
+
+
+def test_user_params_regime_filter_passthrough():
+    from utils.user_live_runner import user_params
+    base = {"symbols": "AAPL", "dip": 3, "tp": 8, "sl": 1.5, "max_hold": 5, "pos_frac": 0.2}
+    assert user_params(base)["regime_filter"] == ""
+    assert user_params({**base, "regime_filter": "SPY,SMH"})["regime_filter"] == "SPY,SMH"

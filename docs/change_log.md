@@ -1,5 +1,6 @@
 # Change Log
 
+- User runners pass `regime_filter` from the user's own params (was dropped).
 - Compose: `news-worker`/`news-backfill` get a process healthcheck; they inherited the agui :5003 probe and kept the Coolify web app `unhealthy`.
 - Heartbeat code_version falls back to SOURCE_COMMIT / pyproject version (e.g. `v0.50.0`) in containers without .git.
 
