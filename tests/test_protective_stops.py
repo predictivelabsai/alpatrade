@@ -105,3 +105,70 @@ def test_stop_exemptions_expire_after_until():
     assert set(stop_exemptions(spec, date(2026, 10, 19))) == {"AMD", "INTC"}
     assert stop_exemptions(spec, date(2026, 10, 20)) == {}
     assert stop_exemptions(None, FRI) == {}
+
+
+# ---------------------------------------------------------------- v0.49.0
+from utils.live_btd_exits import protective_stop_bodies, uncovered_qty, below_stop, tif_rejected  # noqa: E402
+
+
+def test_whole_shares_get_gtc_stop_and_fraction_day_stop():
+    b = protective_stop_bodies("NVDA", "1.720669928", 214.19, FRI)
+    assert [x["time_in_force"] for x in b] == ["gtc", "day"]
+    assert b[0]["qty"] == "1" and b[0]["client_order_id"] == "btdps-NVDA-20261016g"
+    assert b[1]["qty"] == "0.720669928" and b[1]["client_order_id"] == "btdps-NVDA-20261016"
+    assert all(x["type"] == "stop" and x["stop_price"] == "214.19" and x["side"] == "sell" for x in b)
+    assert [x["client_order_id"] for x in protective_stop_bodies("NVDA", "3", 1.0, FRI, "s7btd", 2)] == \
+        ["s7btdps-NVDA-20261016g-2"]
+    only_frac = protective_stop_bodies("AMD", "0.4", 1.0, FRI)
+    assert len(only_frac) == 1 and only_frac[0]["time_in_force"] == "day"
+
+
+def test_gtc_whole_stop_open_fraction_expired_plans_only_the_fraction():
+    tracked = {"NVDA": {"entry_date": "2026-10-14"}}
+    p = pos("NVDA", "1.72", "200", avail="0.72")
+    oo = [{"symbol": "NVDA", "side": "sell", "type": "stop", "qty": "1", "time_in_force": "gtc",
+           "client_order_id": "btdps-NVDA-20261015g"}]
+    plans = plan_protective_stops(tracked, {"NVDA": p}, oo, today=FRI, session_day=FRI, market_open=True, sl_pct=1.5)
+    assert len(plans) == 1 and plans[0]["body"]["qty"] == "0.72"
+    assert [x["time_in_force"] for x in plans[0]["bodies"]] == ["day"]
+
+
+def test_uncovered_qty_conservative():
+    assert uncovered_qty({"qty": "2.5", "qty_available": "2.5"}, []) == 2.5
+    assert uncovered_qty({"qty": "2.5", "qty_available": "2.5"}, [{"qty": "2"}]) == 0.5
+    assert uncovered_qty({"qty": "2.5", "qty_available": "0.5"}, [{"qty": "2"}]) == 0.5
+    assert uncovered_qty({"qty": "2.5", "qty_available": "2.5"}, [{"side": "sell"}]) == 0.0   # unknown qty
+    assert uncovered_qty({"qty": "1", "qty_available": "0"}, []) == 0.0
+
+
+def test_below_stop_and_tif_reject():
+    assert below_stop({"current_price": "98.0"}, 98.5) and below_stop({"current_price": "98.5"}, 98.5)
+    assert not below_stop({"current_price": "99"}, 98.5) and not below_stop({}, 98.5)
+    assert tif_rejected('{"message":"fractional orders must be DAY orders","code":42210000} time_in_force')
+    assert not tif_rejected("stop price must be less than current price")
+
+
+def test_sell_below_stop_cancels_own_stop_then_market_sells_full_qty():
+    import logging
+    from utils.live_btd_runner import Runner
+    calls, subs, tracked = [], [], []
+    st = {"open": True}
+    me = SimpleNamespace(log=logging.getLogger("t"), broker_call=lambda m, u, *a: (calls.append((m, u)), st.update(open=False)))
+    oo = [{"id": "o1", "symbol": "MU", "side": "sell", "qty": "2", "client_order_id": "s7btdps-MU-20261016g"}]
+    fresh = lambda s: ({"qty": "2.3", "qty_available": "2.3"}, oo if st["open"] else [])
+    out = Runner._sell_below_stop(me, "MU", 98.5, {"entry_date": "2026-10-15"}, FRI, "s7btd", oo, fresh,
+                                  subs.append, lambda *a: tracked.append(a), "open")
+    assert calls == [("DELETE", "/v2/orders/o1")]
+    assert subs == [{"symbol": "MU", "qty": "2.3", "side": "sell", "type": "market", "time_in_force": "day",
+                     "client_order_id": "s7btdx-MU-20261016"}]
+    assert "market sell submitted" in out[0] and tracked
+
+
+def test_sell_below_stop_never_doubles_when_position_gone():
+    import logging
+    from utils.live_btd_runner import Runner
+    subs = []
+    me = SimpleNamespace(log=logging.getLogger("t"), broker_call=lambda *a: None)
+    out = Runner._sell_below_stop(me, "MU", 98.5, {}, FRI, "btd", [], lambda s: (None, []), subs.append,
+                                  lambda *a: None, "open")
+    assert subs == [] and "gone" in out[0]

@@ -37,6 +37,7 @@ from utils.live_btd_config import (DEFAULT_PARAMS, DEFAULT_STRATEGY, ConfigResul
                                    ext_exit_action, resolve as resolve_config)
 from utils.live_btd_exits import (cids, exit_eligible, fallback_full_stop, is_stop_only, open_sells, order_fill,
                                   own_open_exits, plan_broker_exits, plan_protective_stops, protective_stop_cid,
+                                  protective_stop_bodies, below_stop, tif_rejected,
                                   stop_exemptions, stop_rejected_below)
 from utils.live_btd_state import (LeaseResult, RunnerStateStore, adopt_runner_position, alpaca_symbol_busy,
                                   degraded_policy, merge_dirty_cache, normalize_state)
@@ -48,7 +49,21 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENV_PATH = os.path.join(REPO, ".env")
 DATA_URL = "https://data.alpaca.markets"
 EVENTS = ("open", "entry", "close", "post")
-PKEYS = ("symbols", "dip", "tp", "sl", "min_hold", "max_hold", "pos_frac", "max_exposure", "ref", "feed",
+def regime_block(bars: Dict[str, List[Dict[str, Any]]], last: Dict[str, float], today: date,
+                 lookback: int = 5) -> Optional[str]:
+    """v0.49.0: reason to skip new entries when any index trades below its prior N-session low
+    (completed daily bars before ``today``), else None. Missing data -> block (fail closed)."""
+    for sym, px in last.items():
+        prior = [b for b in bars.get(sym, []) if str(b.get("t", ""))[:10] < today.isoformat()][-lookback:]
+        if len(prior) < lookback or not px:
+            return f"{sym}: no data for the {lookback}-day-low regime check (fail closed)"
+        low = min(float(b["l"]) for b in prior)
+        if float(px) < low:
+            return f"{sym} {float(px):.2f} < {lookback}-day low {low:.2f}"
+    return None
+
+
+PKEYS = ("symbols", "dip", "tp", "sl", "min_hold", "max_hold", "pos_frac", "max_exposure", "ref", "feed", "regime_filter",
          "entry_window", "close_window")
 CACHE_META = ("acted_last", "db_dirty", "cache_written_at", "cache_instance", "db_version")
 OPEN_ST = ("new", "accepted", "pending_new", "partially_filled", "held", "accepted_for_bidding",
@@ -243,6 +258,31 @@ class Runner:
     def pre_order(self, body) -> None:
         """Last check right before an order is submitted; raise PassStop to abort the pass."""
         return None
+
+    def _sell_below_stop(self, sym, sl, meta, today, pfx, open_orders_now, fresh_sell_check, submit, track, phase):
+        """v0.49.0: position (bought on an earlier day) trades at/under its stop while the market is
+        open -> cancel our own resting exits for it, then market-sell the full qty. Never for
+        BTD_STOP_EXEMPT symbols (filtered by the caller)."""
+        log = self.log
+        for o in own_open_exits(open_orders_now, sym, pfx):
+            try: self.broker_call("DELETE", f"/v2/orders/{o['id']}")
+            except Exception as exc: log.warning("%s: cancel before below-stop sell failed: %s", sym, exc)  # noqa: BLE001
+        fpos, foo = None, []
+        for _ in range(10):
+            fpos, foo = fresh_sell_check(sym)
+            if fpos is None or not open_sells(foo, sym): break
+            time.sleep(1)
+        if fpos is None:
+            return [f"{sym}: position gone before below-stop sell (stop filled)"]
+        if open_sells(foo, sym):
+            return [f"{sym}: below stop {sl:.2f} but a sell is still open -> not doubling"]
+        mcid = cids(sym, today, pfx)["market"]
+        qty = fpos.get("qty_available") or fpos.get("qty")
+        log.warning("protect: %s at/below stop %.2f (%s) -> market sell %s qty=%s", sym, sl, phase, mcid, qty)
+        submit({"symbol": sym, "qty": str(qty), "side": "sell", "type": "market",
+                "time_in_force": "day", "client_order_id": mcid})
+        track(mcid, sym, f"SL {sl:.2f} breached (protective)", meta)
+        return [f"{sym}: at/below stop {sl:.2f} -> market sell submitted ({phase})"]
 
     def alert(self, subject: str, lines: List[str]) -> None:
         """Operator alert (email to BTD_ALERT_EMAIL, default kaljuvee@gmail.com, via utils.email_util /
@@ -618,41 +658,80 @@ class Runner:
                         if pl["body"] is None: problems.append(f"{sym}: cannot place stop ({pl['skip']})")
                         continue
                     if not lease_ok(): break
+                    meta = state["positions"].get(sym) or {}
+                    entry_d = date.fromisoformat(meta.get("entry_date") or today.isoformat())
+                    # v0.49.0: open below the stop (gap-down / stop never triggered) -> market sell now
+                    if clock.get("is_open") and entry_d < today and below_stop(positions.get(sym) or {}, pl["sl"]):
+                        problems += self._sell_below_stop(sym, pl["sl"], meta, today, PFX, open_orders_now,
+                                                          fresh_sell_check, submit, track, phase)
+                        persist(); continue
                     fpos, foo = fresh_sell_check(sym)
-                    if fpos is None or open_sells(foo, sym):
-                        continue
-                    body = dict(pl["body"]); body["qty"] = str(fpos.get("qty_available") or body["qty"])
+                    if fpos is None: continue
+                    from utils.live_btd_exits import uncovered_qty
+                    q = uncovered_qty(fpos, open_sells(foo, sym))
+                    if q <= 0: continue
+                    placed = []
                     for attempt in range(1, 6):
-                        body["client_order_id"] = protective_stop_cid(sym, sess_day, PFX, attempt)
-                        try:
-                            r = submit(body)
-                        except requests.HTTPError as exc:
-                            txt = getattr(exc.response, "text", str(exc))
-                            if stop_rejected_below(txt):
-                                meta = state["positions"].get(sym) or {}
-                                entry_d = date.fromisoformat(meta.get("entry_date") or today.isoformat())
-                                if clock.get("is_open") and entry_d < today:
-                                    mcid = cids(sym, today, PFX)["market"]
-                                    log.warning("protect: %s already below stop %.2f -> market sell %s", sym, pl["sl"], mcid)
-                                    submit({"symbol": sym, "qty": body["qty"], "side": "sell", "type": "market",
-                                            "time_in_force": "day", "client_order_id": mcid})
-                                    track(mcid, sym, f"SL {pl['sl']:.2f} breached (protective)", meta)
-                                    problems.append(f"{sym}: below stop {pl['sl']:.2f} -> market sell submitted")
+                        bodies = protective_stop_bodies(sym, q, pl["sl"], sess_day, PFX, attempt)
+                        bodies = [x for x in bodies if x["qty"] not in [y["qty"] for y in placed]] if placed else bodies
+                        dup = stop_all = False
+                        for body in bodies:
+                            try:
+                                r = submit(body)
+                            except requests.HTTPError as exc:
+                                txt = getattr(exc.response, "text", str(exc))
+                                if body.get("time_in_force") == "gtc" and tif_rejected(txt):
+                                    log.warning("protect: %s GTC stop rejected (%s) -> DAY", sym, txt[:120])
+                                    body = dict(body, time_in_force="day")
+                                    try:
+                                        r = submit(body)
+                                    except requests.HTTPError as exc2:
+                                        txt = getattr(exc2.response, "text", str(exc2)); r = None
+                                    if r is not None:
+                                        txt = None
+                                if txt is None:
+                                    pass
+                                elif stop_rejected_below(txt):
+                                    if clock.get("is_open") and entry_d < today:
+                                        problems += self._sell_below_stop(sym, pl["sl"], meta, today, PFX,
+                                                                          open_orders_now, fresh_sell_check,
+                                                                          submit, track, phase)
+                                    else:
+                                        problems.append(f"{sym}: price below stop {pl['sl']:.2f}, stop rejected; "
+                                                        "will sell at the open if still below")
+                                    stop_all = True; break
                                 else:
-                                    problems.append(f"{sym}: price below stop {pl['sl']:.2f}, stop rejected; "
-                                                    "will sell at the open if still below")
-                            else:
-                                problems.append(f"{sym}: stop rejected: {txt[:200]}")
-                            break
-                        if r == {}:      # duplicate client_order_id (used earlier this session) -> next id
-                            continue
-                        log.warning("protect: %s placed stop %s qty=%s @ %.2f (%s)", sym, body["client_order_id"],
-                                    body["qty"], pl["sl"], phase)
-                        track(body["client_order_id"], sym, "SL protective stop", state["positions"].get(sym) or {})
-                        if pl["overdue"]:
-                            problems.append(f"{sym}: stop re-placed qty={body['qty']} @ {pl['sl']:.2f}")
-                        break
+                                    problems.append(f"{sym}: stop rejected: {txt[:200]}"); continue
+                            if r == {}:   # duplicate client_order_id (used earlier this session) -> next id
+                                dup = True; continue
+                            placed.append(body)
+                            log.warning("protect: %s placed %s stop %s qty=%s @ %.2f (%s)", sym,
+                                        body["time_in_force"].upper(), body["client_order_id"], body["qty"],
+                                        pl["sl"], phase)
+                            track(body["client_order_id"], sym, "SL protective stop", meta)
+                            if pl["overdue"]:
+                                problems.append(f"{sym}: stop re-placed qty={body['qty']} @ {pl['sl']:.2f}")
+                        if stop_all or not dup: break
                     persist()
+                # v0.49.0: verify -- anything still without a working stop (not exempt / not same-day) -> alert
+                try:
+                    oo2 = get(f"{base}/v2/orders", status="open", limit=500)
+                    pos2 = {p["symbol"]: p for p in get(f"{base}/v2/positions")}
+                    for o in oo2:   # orphan own protective stop on a symbol we no longer hold -> cancel
+                        cid0 = str(o.get("client_order_id") or "")
+                        if o.get("side") == "sell" and cid0.startswith(f"{PFX}ps-") and o.get("symbol") not in pos2 \
+                                and lease_ok():
+                            log.warning("protect: orphan stop %s (no position) -> cancel", cid0)
+                            self.broker_call("DELETE", f"/v2/orders/{o['id']}")
+                    left = plan_protective_stops(state["positions"], pos2, oo2, today=today, session_day=sess_day,
+                                                 market_open=bool(clock.get("is_open")), sl_pct=P["sl"], prefix=PFX,
+                                                 expect_live_stops=True)
+                    for pl in left:
+                        if pl["sym"] in exempt or pl["skip"]: continue
+                        problems.append(f"UNPROTECTED after {phase}: {pl['sym']} uncovered qty "
+                                        f"{(pl['body'] or {}).get('qty')} (stop {pl['sl']})")
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("protect: verify failed: %s", exc)
                 if problems:
                     self.alert(f"{sleeve.strategy_name} {self.account_no}: stop check", problems)
 
@@ -848,6 +927,20 @@ class Runner:
         snaps = get(f"{DATA_URL}/v2/stocks/snapshots", symbols=",".join(syms), feed=P["feed"])
         bars = get(f"{DATA_URL}/v2/stocks/bars", symbols=",".join(syms), timeframe="1Day",
                    start=(today - timedelta(days=40)).isoformat(), feed=P["feed"], limit=1000, adjustment="split")["bars"]
+        rf = [x.strip().upper() for x in str(P.get("regime_filter") or "").split(",") if x.strip()]
+        if rf:
+            try:
+                rs = get(f"{DATA_URL}/v2/stocks/snapshots", symbols=",".join(rf), feed=P["feed"])
+                rb = get(f"{DATA_URL}/v2/stocks/bars", symbols=",".join(rf), timeframe="1Day",
+                         start=(today - timedelta(days=15)).isoformat(), feed=P["feed"], limit=1000,
+                         adjustment="split")["bars"]
+                why = regime_block(rb, {x: float(((rs.get(x) or {}).get("latestTrade") or {}).get("p") or 0)
+                                        for x in rf}, today)
+            except Exception as exc:  # noqa: BLE001
+                why = f"regime data error ({exc}) -> fail closed"
+            if why:
+                log.info("regime filter: %s -> no new entries this pass", why)
+                return
         pending_buy_val = sum(float(o.get("notional") or 0) or float(o.get("qty") or 0) * float(o.get("limit_price") or 0)
                               for o in open_orders if o["side"] == "buy")
         exposure = sum(abs(float(p["market_value"])) for p in positions.values())

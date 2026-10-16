@@ -140,10 +140,10 @@ def plan_protective_stops(tracked: Dict[str, Dict[str, Any]], positions: Dict[st
     out = []
     for sym, meta in sorted(tracked.items()):
         pos = positions.get(sym)
-        if not pos or open_sells(open_orders, sym):
+        if not pos:
             continue
-        qty = pos.get("qty_available") or pos.get("qty")
-        if not qty or float(qty) <= 0:
+        qty = uncovered_qty(pos, open_sells(open_orders, sym))
+        if qty <= 0:
             continue
         entry_px = float(pos.get("avg_entry_price") or 0)
         if entry_px <= 0:
@@ -156,9 +156,58 @@ def plan_protective_stops(tracked: Dict[str, Dict[str, Any]], positions: Dict[st
         # after the close the DAY stops have simply expired and are re-placed for the next session
         live = market_open if expect_live_stops is None else expect_live_stops
         overdue = bool(live and entry_d < today and not skip)
-        body = stop_order(sym, qty, sl, protective_stop_cid(sym, session_day, prefix))
-        out.append({"sym": sym, "body": body, "sl": sl, "overdue": overdue, "skip": skip})
+        qs = f"{qty:.9f}".rstrip("0").rstrip(".")
+        body = stop_order(sym, qs, sl, protective_stop_cid(sym, session_day, prefix))
+        out.append({"sym": sym, "body": body, "sl": sl, "overdue": overdue, "skip": skip,
+                    "bodies": protective_stop_bodies(sym, qty, sl, session_day, prefix)})
     return out
+
+
+def uncovered_qty(pos: Dict[str, Any], sells: List[Dict[str, Any]]) -> float:
+    """Shares of a position not yet covered by an open sell (v0.49.0). Alpaca's qty_available
+    already excludes shares held for open sells; a sell order without a qty counts as covering
+    the whole position (conservative: never stack a second sell on unknown coverage)."""
+    total = float(pos.get("qty") or 0)
+    avail = float(pos.get("qty_available") if pos.get("qty_available") not in (None, "") else total)
+    if sells:
+        if any(not o.get("qty") for o in sells):
+            return 0.0
+        covered = sum(float(o.get("qty") or 0) - float(o.get("filled_qty") or 0) for o in sells)
+        avail = min(avail, total - covered)
+    return round(avail, 9) if avail > 1e-9 else 0.0
+
+
+def protective_stop_bodies(sym: str, qty: Any, sl: float, session_day: date, prefix: str = "btd",
+                           attempt: int = 1) -> List[Dict[str, Any]]:
+    """v0.49.0: whole shares -> ONE GTC stop (survives a runner outage / the overnight session
+    boundary; Alpaca only rejects GTC for fractional qty); fractional remainder -> DAY stop,
+    re-placed every session as before. Client ids: ``<prefix>ps-SYM-YYYYMMDD[g][-n]``."""
+    whole, frac = split_qty(qty)
+    cid = protective_stop_cid(sym, session_day, prefix, attempt)
+    out: List[Dict[str, Any]] = []
+    if whole >= 1:
+        gcid = f"{prefix}ps-{sym}-{session_day:%Y%m%d}g" + ("" if attempt <= 1 else f"-{attempt}")
+        b = stop_order(sym, str(whole), sl, gcid)
+        b["time_in_force"] = "gtc"
+        out.append(b)
+    if frac:
+        out.append(stop_order(sym, f"{frac:.9f}".rstrip("0").rstrip("."), sl, cid))
+    return out
+
+
+def below_stop(pos: Dict[str, Any], sl: Optional[float]) -> bool:
+    """Last price at/under the stop level (gap-down open or a stop that never triggered)."""
+    try:
+        px = float(pos.get("current_price") or 0)
+    except (TypeError, ValueError):
+        return False
+    return bool(sl) and 0 < px <= float(sl)
+
+
+def tif_rejected(exc_text: str) -> bool:
+    """Alpaca 422 for a time_in_force it won't take on this order (fallback: DAY)."""
+    t = (exc_text or "").lower()
+    return "time_in_force" in t or "time in force" in t or "gtc" in t
 
 
 def stop_rejected_below(exc_text: str) -> bool:
