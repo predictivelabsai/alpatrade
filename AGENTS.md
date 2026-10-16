@@ -21,25 +21,38 @@ implemented by `engine/ai/deepagents.py`; `/v2/chat` and
 
 ## Commands
 
-```bash
-uv sync --all-extras                 # install (extras: web, agents, agui, e2e, all)
-uv run python cli.py                 # interactive CLI
-uv run python app.py                 # web UI
-python -m compileall -q app.py api.py engine verticals tui utils agents   # fast syntax check (matches CI)
-python -m pytest tests/regression_suite.py -v            # full suite — requires DB + .env + Alpaca/XAI
-python -m pytest tests/regression_suite.py::TestStrategySlug -v   # single class
-python -m pytest tests/test_index_options.py tests/test_ui_navigation.py tests/test_premarket.py tests/test_research.py tests/test_chat_chart_transport.py tests/test_objective.py tests/test_refit.py tests/test_regime.py tests/test_vol_sizing.py tests/test_promotion.py tests/test_agent_framework_default.py tests/test_scout_reasoning.py tests/test_backtest_reasoning.py tests/test_daily_advisor.py tests/test_web_advisor_page.py tests/test_pnl_dashboard.py tests/test_autonomy_worker.py -q   # DB-free unit tests (CI default)
-python -m engine.autonomy.worker                          # worker + advisor scheduler (full autonomy needs AUTONOMY_ENABLED=true)
-python -m engine.backtest.runner --symbols AAPL --start 2024-01-01 --end 2024-06-30  # methodology backtest → backtest-results/
-python run_migration.py sql/NN_name.sql                  # apply a migration (no tracking table; idempotent)
-python scripts/coolify_deploy.py deploy --name agui      # deploy to prod (needs COOLIFY_* in .env)
-scripts/verify_no_secrets.sh                            # pre-commit gate — run before pushing
+Run these commands from the **repository root**, with an already provisioned Python
+installation/environment. `uv run` can synchronise dependencies; use it only when installation
+is authorised. These are reference commands, not a checklist to execute during onboarding.
+
+```powershell
+uv sync --all-extras                 # installation only; extras declared in pyproject.toml
+uv run python cli.py                 # interactive CLI; may load .env and contact services
+uv run python app.py                 # long-running web UI, local default port 5001
+python -m compileall -q app.py api.py engine verticals tui utils agents   # CI syntax check; writes bytecode
+python -m pytest tests/regression_suite.py -vv --durations=20   # CI regression command; DB/provider access
+python -m pytest tests/regression_suite.py::TestStrategySlug -v   # class exists; module imports still need dependencies
+python -m pytest tests/test_llm_usage.py -q             # separate CI unit-test step
+python -m pytest tests/test_news_worker.py -q           # separate CI unit-test step
+python -m pytest tests/test_activity_logging.py tests/test_alpha_research.py tests/test_ipo.py tests/test_index_options.py tests/test_ui_navigation.py tests/test_premarket.py tests/test_research.py tests/test_chat_chart_transport.py tests/test_chat_persistence.py tests/test_objective.py tests/test_refit.py tests/test_regime.py tests/test_vol_sizing.py tests/test_promotion.py tests/test_short_exits.py tests/test_agent_framework_default.py tests/test_hermes_runtime.py tests/test_hermes_access.py tests/test_hermes_jobs.py tests/test_hermes_backtest_quality.py tests/test_hermes_backtest_results.py tests/test_hermes_data_qa.py tests/test_scout_reasoning.py tests/test_backtest_reasoning.py tests/test_mobile_api_contract.py tests/test_deepagents_api.py tests/test_chat_routing.py tests/test_chat_alpaca_keys.py tests/test_news_panel.py tests/test_daily_advisor.py tests/test_pnl_dashboard.py tests/test_autonomy_worker.py tests/test_run_recovery.py tests/test_daily_pnl_tenant_report.py tests/test_email_util.py tests/test_report_analytics.py tests/test_voice_alpaca_keys.py tests/test_key_fallback.py tests/test_equities_routes.py tests/test_state_isolation.py tests/test_email_verification.py tests/test_paper_strategies.py tests/test_paper_signals.py tests/test_shareable_reports.py tests/test_strategy_presets.py tests/test_web_advisor_page.py tests/test_xai_byok.py -q   # main CI Unit tests step
+python -m engine.autonomy.worker                       # persistent worker and advisor scheduler
+python -m engine.backtest.runner --symbols AAPL --start 2024-01-01 --end 2024-06-30   # loads .env, fetches data, writes backtest-results/
+python run_migration.py sql/23_daily_advisor.sql         # example existing migration; changes the configured DB
+python scripts/coolify_deploy.py deploy --name agui     # deployment; explicit authorisation required
 ```
 
 CI (`.github/workflows/ci.yml`) uses **pip**, not uv: `pip install -e ".[all]"` plus
-`authlib pytest`. The regression suite step only runs when the `DATABASE_URL` repo secret is set;
-otherwise CI runs only the explicit DB-free unit-test list above (mirrors the "Unit tests" step in
-ci.yml). Add new DB-free tests to that explicit list if they should run in CI.
+`authlib pytest pytest-asyncio`. `all` includes web/agents/agui; `uv sync --all-extras`
+also includes `e2e`. The regression suite step only runs when the `DATABASE_URL` repo secret
+is set. The three unit-test commands above match CI; the main Unit tests step uses an
+`XAI_API_KEY` placeholder for client construction. DB-free does not mean import-side-effect-free.
+Add new DB-free tests to the explicit CI lists if they should run there.
+
+`scripts/verify_no_secrets.sh` is the existing pre-commit/pre-push gate and defaults to scanning
+staged files. Its Bash shebang, arrays, `grep` and process substitution require a Bash-compatible
+environment such as Git Bash/Linux; the bare script path is **not a native PowerShell command**.
+Keep the gate before pushing; do not execute shell scripts through PowerShell as though they were
+PowerShell scripts. Verification status and source references: [docs/onboard-verification.md](docs/onboard-verification.md).
 
 ## Parallel agent sessions
 
@@ -96,6 +109,26 @@ Multiple agents work this repo concurrently, each in its own worktree + branch:
 - **Version bumps**: for major features/releases, bump `pyproject.toml` **and** `uv.lock`, and
   update `docs/change_log.md` in the same commit (date, version, user-visible changes, tests, deploy notes).
 - Trading changes default to **paper mode**; flag any path capable of live orders explicitly.
+- Use British English and no em dashes in new copy. Finish tasks with what changed,
+  how it was tested and open questions. Never commit secrets or push to `main`/`master`.
+- Put shared provider-neutral logic in `engine/`, asset surfaces in `verticals/`, and CLI
+  dispatch in `tui/command_processor.py`. Import relocated modules through `engine.*`:
+  `utils/auth.py` aliases `engine.auth` via `sys.modules`, rather than defining a second API.
+- FastHTML features expose `register(app, rt)` and are wired in `app.py`; use
+  `engine.web.ph_layout.page` for the shared shell. Equities registration additionally takes
+  `ph_auth.current_user`. Follow `engine/web/ph_advisor.py` for request-session handling and
+  escaping dynamic values before using `NotStr` HTML.
+- Use `engine.db.pool.DatabasePool().get_session()` and parameterised SQLAlchemy `text()`
+  queries in the `alpatrade` schema. The context manager commits on success, rolls back on
+  failure and closes the session. Follow `engine/autonomy/store.py` for bound `:uid`/`:aid`
+  parameters and caller-scoped lookups; never interpolate identifiers supplied by users into SQL.
+- Authenticate tenant API routes with `api_app.require_tenant_user`, derive the caller from
+  that dependency and check account ownership. Preserve `user_id` and `account_id` scoping
+  across queries, jobs and reports; see `get_run_for_user` and `sql/23_daily_advisor.sql`.
+- Keep unit tests isolated with fakes/monkeypatches as in `tests/test_web_advisor_page.py`.
+  Add their targets to `.github/workflows/ci.yml`; do not assume pytest discovery covers CI.
+- Preserve methodology backtest reproducibility and disclosures from
+  `engine/backtest/artifacts.py`, and `next_open` as the default execution assumption.
 
 ## Secrets
 
@@ -110,3 +143,37 @@ Required `.env` keys: `ALPACA_PAPER_API_KEY`, `ALPACA_PAPER_SECRET_KEY`,
 - `coolify-deploy` — trigger/inspect Coolify deploys via API token (never the account password).
 - `linkedin-post` — post to LinkedIn via OAuth token (no password/2FA entered).
 - `alpaca-trading-backtest` — deterministic historical backtest via the Alpaca CLI skill.
+
+## Stack
+
+- Docker
+- FastAPI
+- Python
+
+## Builders
+
+codex: yes
+muse: no
+
+## Do not touch
+
+- Never read or commit secrets, credentials or local environment files.
+- Never deploy or push without explicit authorisation.
+- Do not modify unrelated application code.
+- Do not replace `main.py`/`app.py` or the production `api_app.py` contract with retired
+  `web_app.py`; preserve the `/v2/deepagents` endpoint and compatibility transports.
+- Do not remove `utils/*` compatibility aliases during unrelated work or move the
+  grid-search backtester into `engine.backtest`: the two engines have different contracts.
+- Do not bypass tenant/account ownership checks or substitute platform broker keys for a
+  caller's required linked account. Preserve the explicit-approval behaviour of the read-only
+  advisor surface (`engine/web/ph_advisor.py`).
+- Do not enable live trading by changing the `AlpacaAPI(paper=True)` default, remove the
+  `AUTONOMY_ENABLED` gate, or launch the worker as a smoke test: scheduled advisor jobs can
+  still run when full autonomy is disabled (`engine/autonomy/worker.py`).
+- Do not run `run_migration.py`, modify shared database data, or invoke Coolify/notification/
+  publishing scripts as verification. Database migrations and operational actions require
+  their own explicitly authorised task.
+- Do not edit generated/runtime artefacts under `data/`, `backtest-results/`, `reports/`,
+  `test-results/` or `eval-results/` as source code; these paths are ignored in `.gitignore`.
+- Keep `codex: yes` and `muse: no`; never enable Muse. Keep changes within the authorised
+  scope and list unrelated findings as follow-ups.

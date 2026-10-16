@@ -25,11 +25,24 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # Sized for a shared Postgres (max_connections=100) hosting several apps.
-POOL_SIZE = int(os.getenv("DB_POOL_SIZE", "5"))
-MAX_OVERFLOW = int(os.getenv("DB_MAX_OVERFLOW", "5"))
-POOL_RECYCLE = int(os.getenv("DB_POOL_RECYCLE", "1800"))  # drop conns older than 30m
+POOL_SIZE = int(os.getenv("DB_POOL_SIZE", "2"))
+MAX_OVERFLOW = int(os.getenv("DB_MAX_OVERFLOW", "2"))
+POOL_RECYCLE = int(os.getenv("DB_POOL_RECYCLE", "300"))  # drop conns older than 5m
 POOL_TIMEOUT = int(os.getenv("DB_POOL_TIMEOUT", "10"))    # fail fast instead of hanging
 APPLICATION_NAME = os.getenv("DB_APPLICATION_NAME", "alpatrade")
+# Server-side guard: a session left "idle in transaction" is killed after this (ms; 0 = off).
+IDLE_TX_TIMEOUT_MS = int(os.getenv("DB_IDLE_IN_TX_TIMEOUT_MS", "60000"))
+
+
+def connect_args(application_name: str = None, **extra) -> dict:
+    """psycopg2 connect args shared by every AlpaTrade engine (application_name + idle-tx guard)."""
+    opts = extra.pop("options", "")
+    if IDLE_TX_TIMEOUT_MS > 0:
+        opts = (opts + f" -c idle_in_transaction_session_timeout={IDLE_TX_TIMEOUT_MS}").strip()
+    args = {"application_name": (application_name or APPLICATION_NAME)[:63], **extra}
+    if opts:
+        args["options"] = opts
+    return args
 
 
 def normalize_driver(url: str) -> str:
@@ -91,7 +104,7 @@ class DatabasePool:
             pool_recycle=POOL_RECYCLE,
             pool_timeout=POOL_TIMEOUT,
             pool_pre_ping=True,
-            connect_args={"application_name": APPLICATION_NAME},
+            connect_args=connect_args(),
         )
         self._session_factory = sessionmaker(bind=self.engine)
         logger.info(

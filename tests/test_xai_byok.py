@@ -48,6 +48,96 @@ def test_query_gate_uses_byok_without_touching_database(monkeypatch):
     assert auth.platform_slot is False
 
 
+def test_query_gate_owner_bypasses_allowance_and_budget(monkeypatch):
+    from engine.ai import llm_usage, query_gate
+
+    monkeypatch.setattr(query_gate, "is_admin_user", lambda _uid: True)
+    monkeypatch.setattr("engine.db.pool.get_pool", lambda: pytest.fail("DB used"))
+    monkeypatch.setattr(
+        llm_usage, "enforce_daily_budget",
+        lambda **_kwargs: pytest.fail("Budget enforced"),
+    )
+    auth = query_gate.authorize_query("user-1", has_byok=False)
+    assert auth.funding_source == "owner"
+    assert auth.owner is True
+    assert auth.platform_slot is False
+    assert auth.platform_queries_used == 0
+    assert query_gate.usage_warning(auth) is None
+    query_gate.refund_query("user-1", auth)
+    monkeypatch.setattr(
+        query_gate, "is_admin_user", lambda _uid: pytest.fail("Admin lookup used")
+    )
+    assert query_gate.authorize_query("user-1", has_byok=True).funding_source == "byok"
+
+
+@pytest.mark.parametrize("select_row, used", [(None, 0), ((4,), 4)])
+def test_owner_usage_status_and_render(monkeypatch, select_row, used):
+    from engine.ai import query_gate
+
+    session = _Session(select_row=select_row)
+    monkeypatch.setattr(query_gate, "FREE_PLATFORM_QUERY_LIMIT", 0)
+    monkeypatch.setattr(query_gate, "is_admin_user", lambda _uid: True)
+    monkeypatch.setattr("engine.db.pool.get_pool", lambda: _Pool(session))
+    monkeypatch.setattr("engine.ai.llm_usage.daily_platform_cost", lambda *args: 1)
+    status = query_gate.get_usage_status("user-1", has_byok=False)
+    assert status["funding_source"] == "owner"
+    assert status["platform_queries_used"] == used
+    assert status["platform_query_limit"] is None
+    assert status["platform_queries_remaining"] is None
+    assert status["percent_used"] is None
+    assert len(session.calls) == 1
+    assert "SELECT platform_queries_used" in session.calls[0][0]
+    rendered = query_gate.render_usage_status(status)
+    assert "Platform owner account" in rendered
+    assert f"{used} / unlimited" in rendered
+    assert "remaining" not in rendered
+    assert "Your estimated AI cost today" in rendered
+    assert "Platform estimated spend today" in rendered
+
+
+@pytest.mark.parametrize("row, expected", [
+    ((True,), True), ((False,), False), ((None,), False), (None, False),
+])
+def test_is_admin_user_checks_bound_user(monkeypatch, row, expected):
+    from engine.ai import query_gate
+
+    class AdminSession(_Session):
+        def execute(self, statement, params):
+            self.calls.append((str(statement), params))
+            return _Result(row)
+
+    session = AdminSession()
+    monkeypatch.setattr("engine.db.pool.get_pool", lambda: _Pool(session))
+    assert query_gate.is_admin_user("user-1") is expected
+    sql, params = session.calls[0]
+    assert "SELECT is_admin" in sql
+    assert "FROM alpatrade.users" in sql
+    assert "user_id = CAST(:uid AS UUID)" in sql
+    assert params == {"uid": "user-1"}
+
+
+@pytest.mark.parametrize("failure_point", ["pool", "session", "query"])
+def test_is_admin_user_fails_closed(monkeypatch, failure_point):
+    from engine.ai import query_gate
+
+    def fail():
+        raise RuntimeError("Database unavailable")
+
+    class FailingPool:
+        get_session = staticmethod(fail)
+
+    class FailingSession:
+        def execute(self, statement, params):
+            fail()
+
+    pool = _Pool(FailingSession()) if failure_point == "query" else FailingPool()
+    monkeypatch.setattr(
+        "engine.db.pool.get_pool",
+        fail if failure_point == "pool" else lambda: pool,
+    )
+    assert query_gate.is_admin_user("user-1") is False
+
+
 def test_query_gate_atomically_reserves_platform_allowance(monkeypatch):
     from engine.ai import query_gate
 

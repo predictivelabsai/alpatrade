@@ -1,0 +1,16 @@
+# Live trading runners (Julian's Mag-7 BTD scheduler + per-user live supervisor).
+# Separate Coolify app from the web stack; see docs/user_live_runner_deploy.md.
+FROM python:3.13-slim
+
+# tzdata: the runners schedule in America/New_York (the HP lacked US/Eastern zone data).
+RUN apt-get update && apt-get install -y --no-install-recommends tzdata ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir tzdata
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+
+ENV PYTHONUNBUFFERED=1 BTD_STATE_DIR=/data/alpatrade-live HOME=/data
+CMD ["python", "scripts/live_btd_scheduler.py", "--live"]

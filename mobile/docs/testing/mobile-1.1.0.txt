@@ -1,0 +1,50 @@
+AlpaTrade mobile 1.1.0+9 / API 0.36.0 — local validation, 2026-10-10
+
+Backend baseline: sister repo pulled main to 84b8e7d.
+State at initial validation: local changes, before publication.
+
+Implemented:
+- Public leaderboard with global ranking, search and live/backtest filter.
+- Owner-scoped strategy CRUD API, cloning, backtest launch and job status.
+- Mobile strategy library/detail, cloning and owner-only backtest progress.
+- Authenticated 13F screener, fund-performance methods, activist filings,
+  IPO listings/pipeline, and existing daily advisor reports.
+- OpenAPI snapshots regenerated in both repositories.
+
+Validation:
+- flutter analyze: no issues.
+- flutter test: 48 tests passed.
+- Backend research/mobile contracts + leaderboard/clone/hedge-fund tests: 79 passed.
+- Backend full regression_suite.py: 104 passed.
+- Final schema/access-control contract run: 17 passed.
+- Android API 36 x86_64 emulator integration: passed against real local API;
+  navigated leaderboard -> strategy detail -> hedge funds -> fund performance.
+- Real data reads: 18 leaderboard strategies, 52 performance funds,
+  73 filing periods, activist filings, IPO listings and pipeline returned HTTP 200.
+- No real orders or strategy backtests were launched during mobile smoke testing.
+
+Release artifact: build/releases/alpatrade-1.1.0.apk (also alpatrade-latest.apk)
+Package: chat.alpatrade.app; versionName 1.1.0; versionCode 9.
+SHA-256: 2babbd9e8257649e5e7deeac9b0fbee54e1ee5bb31c713ad912504bbe2c62511
+Signer SHA-256: ca1b1d49badb9f3299f8864dea2827354dee4da6a1303f7e2c60bbfa44fd181e
+Release base URL: https://api.alpatrade.chat.
+The new backend routes must be deployed before production research screens work.
+
+Local testing:
+- API on http://127.0.0.1:5055; adb reverse tcp:5055 tcp:5055.
+- Debug-only manifest allows HTTP; release uses HTTPS.
+- Emulator 37.1.11 required LD_PRELOAD=/lib/x86_64-linux-gnu/libc.so.6
+  to avoid recursion in the bundled libandroid-webrtc pthread_create.
+- Run flutter build with pub resolution after an integration test; --no-pub
+  can retain the integration-test plugin's generated Android registration.
+- Existing nonfatal record_android Kotlin and Cupertino-font warnings remain.
+
+Limitations:
+- No physical handset was connected; device tests used the Android emulator.
+- Backtest job progress is in-memory, matching the existing backend service;
+  completed metrics persist but job status does not survive an API restart.
+- Strategy edits/deletion are API-only; mobile exposes browsing/cloning/backtests.
+
+Manual testing build: build/releases/alpatrade-1.1.0-local-debug.apk.
+Installed and launched on emulator-5554 against localhost:5055.
+Screenshots: mobile-1.1.0-more.png and mobile-1.1.0-leaderboard.png.

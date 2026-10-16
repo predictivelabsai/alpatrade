@@ -295,7 +295,7 @@ def list_live(user_id: str) -> list[dict]:
                        JOIN alpatrade.user_strategies us ON us.id = a.user_strategy_id
                        WHERE a.user_id = CAST(:u AS UUID) AND a.mode = 'live' ORDER BY a.id"""),
                              {"u": str(user_id)}).mappings().all()
-        return [dict(r) for r in rows]
+        return [{**dict(r), "status": _confirmed_live(r)} for r in rows]
     except Exception as exc:  # noqa: BLE001
         log.warning("list live activations failed: %s", type(exc).__name__)
         return []
@@ -346,7 +346,7 @@ def statuses(user_id: str) -> dict:
         with _pool().get_session() as s:
             rows = s.execute(text("""
                 SELECT a.user_strategy_id, a.mode, a.status, a.job_id, a.allocation_usd, a.cid_prefix,
-                       r.status AS job_status
+                       a.account_ref, r.status AS job_status
                 FROM alpatrade.user_strategy_activations a
                 LEFT JOIN alpatrade.autonomy_runs r ON a.mode = 'paper' AND r.run_id::text = a.job_id
                 WHERE a.user_id = CAST(:u AS UUID)"""), {"u": str(user_id)}).mappings().all()
@@ -359,10 +359,29 @@ def statuses(user_id: str) -> dict:
             d["paper"] = {"active": "running", "pending_runner": "starting", "paused": "paused",
                           "queued": "starting"}.get(r["status"], "ended")
         else:
-            d["live"] = r["status"]
+            d["live"] = _confirmed_live(r)
             d["allocation"] = float(r["allocation_usd"]) if r["allocation_usd"] is not None else None
             d["prefix"] = r["cid_prefix"]
     return out
+
+
+def _confirmed_live(r) -> str:
+    """'pending_runner' reads as 'active' once the runner heartbeat shows it acting (display only)."""
+    if r["status"] != "pending_runner":
+        return r["status"]
+    try:
+        from engine.admin_running import heartbeats_for, runner_alive, runner_key
+        key = runner_key("live", r["account_ref"], r["cid_prefix"])
+        from sqlalchemy import text
+
+        def ex(sql, params):
+            with _pool().get_session() as s:
+                return [dict(x) for x in s.execute(text(sql), params).mappings().all()]
+        if key and runner_alive(heartbeats_for(ex, [key]).get(key)):
+            return "active"
+    except Exception as exc:  # noqa: BLE001
+        log.debug("runner heartbeat lookup failed: %s", type(exc).__name__)
+    return r["status"]
 
 
 def stop_paper(user_id: str, strategy_id: int) -> bool:

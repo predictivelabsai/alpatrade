@@ -74,6 +74,8 @@ from engine.web import ph_advisor  # noqa: E402
 from engine.web import ph_logging  # noqa: E402
 from engine.web import ph_news_scheduler  # noqa: E402
 from engine.web import ph_leaderboard  # noqa: E402
+from engine.web import ph_admin  # noqa: E402
+from engine.web import ph_referrals  # noqa: E402
 
 ph_landing.register(app, rt)
 ph_auth.register(app, rt)
@@ -99,7 +101,11 @@ ph_monitoring.register(app, rt)
 ph_data_health.register(app, rt)
 ph_logging.register(app, rt)
 ph_news_scheduler.register(app, rt)
+ph_admin.register(app, rt)  # /admin (admin role, server-side)
+ph_referrals.register(app, rt)  # /invite
 ph_leaderboard.register(app, rt)  # public /leaderboard + /strategies
+from engine.web import ph_grokbot  # noqa: E402
+ph_grokbot.register(app, rt)  # public /templates + Grok Bot template JSON
 ph_reports.register(app, rt)  # public /r/{id} — last, unlisted
 
 # --- verticals: per-asset-class surfaces (Phase 1b) ---------------------------
@@ -112,6 +118,25 @@ ph_advisor.register(app, rt)
 from engine.voice import register_voice_routes  # noqa: E402
 
 register_voice_routes(app)
+
+# Lightweight liveness probe for the container healthcheck (no DB, no render).
+from starlette.responses import PlainTextResponse  # noqa: E402
+
+
+@rt("/healthz")
+def healthz():
+    return PlainTextResponse("ok")
+
+
+# Daily cleanup of stale unverified / test-domain accounts (engine/web/antibot.py).
+from engine.web import antibot as _antibot  # noqa: E402
+
+_antibot.start_cleanup_scheduler()
+
+# Public read-only MCP transport; mounted after all app routes at the exact /mcp path.
+from engine.mcp_server import mount_mcp  # noqa: E402
+
+mount_mcp(app)
 
 # Browsers always probe /favicon.ico; FastHTML's static glob serves it from the
 # repo root, so the compiled icon lives at ./favicon.ico (head() links the SVG).

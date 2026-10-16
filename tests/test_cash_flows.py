@@ -100,9 +100,10 @@ def test_leaderboard_time_weighted_excludes_deposit():
     assert m["return_pct"] == pytest.approx(expect)
     assert m["return_pct"] < 4
     assert m["alpha_pct"] == pytest.approx(m["return_pct"] - (775.00 / 767.29 - 1) * 100)
-    assert m["annualised_pct"] is not None and m["annualised_short"]  # 12 sessions < 63: hint only
+    assert m["annualised_pct"] == pytest.approx(m["return_pct"] * 252 / m["trading_days"])
+    assert m["annualised_short"]
     assert m["net_deposits"] == 2000
-    assert "Short period" in perf.annualised_tip(m)
+    assert "Simple annualised" in perf.annualised_tip(m)
     assert perf.rank_key(m)[1] == 0  # still ranked as a live strategy with figures
 
 

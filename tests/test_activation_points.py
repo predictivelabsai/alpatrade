@@ -32,6 +32,20 @@ def test_my_strategies_lists_clone_with_controls():
     assert "/strategies/39/activate/live" in h and "value='/strategies'" in h
 
 
+def test_my_strategies_live_label_follows_activation_status():
+    rows = [({"id": 39, "name": "Live strategy", "author": "k", "kind": "backtest"}, {}),
+            ({"id": 40, "name": "Paper strategy", "author": "k", "kind": "backtest"}, {})]
+    html = lb.my_strategies_html(rows, statuses={39: {"live": "active"}, 40: {"paper": "running"}})
+    assert html.count("<span class='lb-badge my-live'>Live</span>") == 1
+    assert "background:#e3f4ea" in lb.LB_CSS
+
+
+def test_legacy_running_live_strategy_has_label():
+    rows = [({"id": 1, "name": "Original live", "author": "k", "kind": "live",
+              "live_strategy_slug": "original"}, {})]
+    assert "<span class='lb-badge my-live'>Live</span>" in lb.my_strategies_html(rows)
+
+
 def test_dashboard_panel(monkeypatch):
     from engine.leaderboard import store
     from engine.web import ph_pnl

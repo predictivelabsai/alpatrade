@@ -1,0 +1,58 @@
+# AlpaTrade LIVE trading runners on the Coolify server (primary lease holder).
+# Deployed as its own Coolify application (NOT part of docker-compose.yaml / the web app),
+# so web deploys never restart live trading and vice versa. All values come from Coolify env.
+x-runner-env: &runner-env
+  DATABASE_URL: ${DATABASE_URL}
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+  ALPACA_LIVE_API_KEY: ${ALPACA_LIVE_API_KEY}
+  ALPACA_LIVE_SECRET_KEY: ${ALPACA_LIVE_SECRET_KEY}
+  ALPACA_LIVE_BASE_URL: ${ALPACA_LIVE_BASE_URL:-https://api.alpaca.markets}
+  ALPACA_LIVE_ACCOUNT: ${ALPACA_LIVE_ACCOUNT}
+  BTD_ROLE: ${BTD_ROLE:-backup}
+  BTD_INSTANCE: ${BTD_INSTANCE:-server}
+  BTD_USER_EMAIL: ${BTD_USER_EMAIL:-kaljuvee@gmail.com}
+  USER_LIVE_TRADING_ENABLED: ${USER_LIVE_TRADING_ENABLED:-0}
+  POSTMARK_API_KEY: ${POSTMARK_API_KEY:-}
+  FROM_EMAIL: ${FROM_EMAIL:-}
+  BTD_ALERT_EMAIL: ${BTD_ALERT_EMAIL:-kaljuvee@gmail.com}
+  BTD_PROTECT_CHECKS: ${BTD_PROTECT_CHECKS:-1}
+  BTD_STOP_EXEMPT: ${BTD_STOP_EXEMPT:-}
+  BTD_STATE_DIR: /data/alpatrade-live
+  TZ: America/New_York
+  PYTHONUNBUFFERED: "1"
+
+services:
+  btd-scheduler:
+    build: {context: ., dockerfile: Dockerfile.runner}
+    command: ["python", "scripts/live_btd_scheduler.py", "--live"]
+    environment:
+      <<: *runner-env
+      DB_APPLICATION_NAME: alpatrade-runner-btd
+    volumes: ["runner-data:/data"]
+    stop_grace_period: 300s   # let an in-flight event pass finish (<= 240 s watchdog)
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "from pathlib import Path; assert b'live_btd_scheduler' in Path('/proc/1/cmdline').read_bytes()"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  user-live:
+    build: {context: ., dockerfile: Dockerfile.runner}
+    command: ["python", "scripts/user_live_supervisor.py", "--live"]
+    environment:
+      <<: *runner-env
+      DB_APPLICATION_NAME: alpatrade-runner-user
+    volumes: ["runner-data:/data"]
+    stop_grace_period: 330s
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "from pathlib import Path; assert b'user_live_supervisor' in Path('/proc/1/cmdline').read_bytes()"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  runner-data:

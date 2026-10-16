@@ -21,11 +21,30 @@ class QueryAuthorization:
     funding_source: str
     platform_slot: bool = False
     platform_queries_used: int = 0
-    platform_query_limit: int = FREE_PLATFORM_QUERY_LIMIT
+    platform_query_limit: int | None = FREE_PLATFORM_QUERY_LIMIT
+    owner: bool = False
+
+
+def is_admin_user(user_id: str) -> bool:
+    """Check owner access, failing closed when the database is unavailable."""
+    if not user_id:
+        return False
+    try:
+        from engine.db.pool import get_pool
+        with get_pool().get_session() as session:
+            row = session.execute(text("""
+                SELECT is_admin
+                FROM alpatrade.users
+                WHERE user_id = CAST(:uid AS UUID)
+            """), {"uid": user_id}).fetchone()
+        return row is not None and row[0] is True
+    except Exception:
+        return False
 
 
 def get_usage_status(user_id: str, *, has_byok: bool) -> dict[str, object]:
     """Return the user's starter-query status without consuming a query."""
+    owner = not has_byok and is_admin_user(user_id)
     used = 0
     if user_id:
         from engine.db.pool import get_pool
@@ -47,11 +66,11 @@ def get_usage_status(user_id: str, *, has_byok: bool) -> dict[str, object]:
         daily_cost = user_daily_cost = Decimal("0")
         daily_budget = Decimal("5")
     return {
-        "funding_source": "byok" if has_byok else "platform",
+        "funding_source": "byok" if has_byok else "owner" if owner else "platform",
         "platform_queries_used": used,
-        "platform_query_limit": limit,
-        "platform_queries_remaining": max(limit - used, 0),
-        "percent_used": round((used / limit) * 100) if limit else 100,
+        "platform_query_limit": None if owner else limit,
+        "platform_queries_remaining": None if owner else max(limit - used, 0),
+        "percent_used": None if owner else round((used / limit) * 100) if limit else 100,
         "platform_daily_cost": daily_cost,
         "user_daily_cost": user_daily_cost,
         "platform_daily_budget": daily_budget,
@@ -60,7 +79,8 @@ def get_usage_status(user_id: str, *, has_byok: bool) -> dict[str, object]:
 
 def usage_warning(authorization: QueryAuthorization | None) -> str | None:
     """Build a warning after a platform-funded response reaches 90% usage."""
-    if not authorization or authorization.funding_source != "platform":
+    if (not authorization or authorization.owner
+            or authorization.funding_source != "platform"):
         return None
     limit = authorization.platform_query_limit
     used = authorization.platform_queries_used
@@ -82,15 +102,26 @@ def usage_warning(authorization: QueryAuthorization | None) -> str | None:
 def render_usage_status(status: dict[str, object]) -> str:
     """Render concise, transparent usage help for the deterministic command."""
     used = int(status["platform_queries_used"])
-    limit = int(status["platform_query_limit"])
-    remaining = int(status["platform_queries_remaining"])
-    percent = int(status["percent_used"])
+    owner = status["funding_source"] == "owner"
+    if owner and status["platform_query_limit"] is None:
+        queries = f"- **Platform queries used:** {used} / unlimited\n\n"
+    else:
+        limit = int(status["platform_query_limit"])
+        remaining = int(status["platform_queries_remaining"])
+        percent = int(status["percent_used"])
+        queries = (
+            f"- **Platform queries used:** {used} / {limit} ({percent}%)\n"
+            f"- **Platform queries remaining:** {remaining}\n\n"
+        )
     byok = status["funding_source"] == "byok"
     funding = (
+        "Platform owner account" if owner else
         "Your xAI API key for DeepAgents/LangGraph"
         if byok else "Platform starter allowance"
     )
     note = (
+        "Free-form Hermes, DeepAgents, and LangGraph questions have unlimited platform funding."
+        if owner else
         "Your starter allowance is paused for DeepAgents/LangGraph; free-form "
         "Hermes still uses it because the sidecar cannot receive your saved key."
         if byok else
@@ -99,8 +130,7 @@ def render_usage_status(status: dict[str, object]) -> str:
     return (
         "## AI usage\n\n"
         f"- **Current funding:** {funding}\n"
-        f"- **Platform queries used:** {used} / {limit} ({percent}%)\n"
-        f"- **Platform queries remaining:** {remaining}\n\n"
+        f"{queries}"
         f"- **Your estimated AI cost today:** ${status.get('user_daily_cost', 0):.4f}\n"
         f"- **Platform estimated spend today:** ${status.get('platform_daily_cost', 0):.4f} / "
         f"${status.get('platform_daily_budget', 5):.2f}\n\n"
@@ -114,6 +144,8 @@ def authorize_query(user_id: str, *, has_byok: bool, session=None) -> QueryAutho
     """Use BYOK or atomically reserve one of the user's platform-funded calls."""
     if has_byok:
         return QueryAuthorization("byok")
+    if is_admin_user(user_id):
+        return QueryAuthorization("owner", platform_query_limit=None, owner=True)
     if not user_id:
         raise QueryLimitExceeded("Sign in and add your xAI API key in Settings.")
     from engine.ai.llm_usage import enforce_daily_budget

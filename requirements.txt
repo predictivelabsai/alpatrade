@@ -18,6 +18,7 @@ langchain-openai
 langgraph
 langchain-core
 deepagents>=0.6.12,<0.7  # pluggable AGENT_FRAMEWORK=deepagents (planning + subagents on LangGraph)
+mcp>=1.20,<2  # streamable HTTP server mounted in the web container at /mcp
 langgraph-checkpoint-postgres>=3.0,<4
 pyyaml
 textual

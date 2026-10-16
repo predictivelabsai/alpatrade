@@ -37,9 +37,9 @@ def _bt(**kw):
 def test_backtest_metrics_come_from_stored_json_not_live_run():
     m = perf.strategy_metrics(_bt())
     assert m["is_backtest"] and m["has_data"]
-    # simple ×252/trading days (v0.33.4): -17.4% × 252 / 2708; alpha = simple − SPY simple
-    assert abs(m["annualised_pct"] - (-17.4 * 252 / 2708)) < 1e-9
-    assert abs(m["alpha_pct"] - (-17.4 - 356.2) * 252 / 2708) < 1e-9
+    simple = lambda t: t * 252 / 2708
+    assert abs(m["annualised_pct"] - simple(-17.4)) < 1e-9
+    assert abs(m["alpha_pct"] - (simple(-17.4) - simple(356.2))) < 1e-9
     assert abs(m["alpha_total_pct"] - (-373.6)) < 1e-9
     assert m["start_date"] == "2016-01-04" and m["as_of"] == "2026-10-09"
     empty = perf.strategy_metrics(_bt(backtest_metrics=None))
