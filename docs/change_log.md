@@ -1,11 +1,11 @@
 # Change Log
 
+## v0.50.0 — 2026-10-16 — One rules module for backtest, paper and live + parity gate
+
+- **Decision (Julian, 10-16): always-on stops kept for both sleeves** (Mag-7 `btd`, Semi-7 `s7btd`; SL 1.5% / TP 8%), and the **regime filter is ON for both sleeves** (`regime_filter=SPY,SMH` in `alpatrade.strategy_configs`, applied after deploy), so backtest, paper and live read the same config. Kairi's user runner gets the same rule via its own params.
 - User runners pass `regime_filter` from the user's own params (was dropped).
 - Compose: `news-worker`/`news-backfill` get a process healthcheck; they inherited the agui :5003 probe and kept the Coolify web app `unhealthy`.
 - Heartbeat code_version falls back to SOURCE_COMMIT / pyproject version (e.g. `v0.50.0`) in containers without .git.
-
-## v0.50.0 — 2026-10-16 — One rules module for backtest, paper and live + parity gate
-
 - **`utils/btd_rules.py` is the single source of truth** for buy-the-dip decisions: dip signal (20-day high / prev close), sizing (equity or sleeve × `pos_frac`), cash-only and `max_exposure` checks, regime filter, stop/target prices, stop timing (from the session after the buy, also during the min-hold), target eligibility (min-hold), max-hold time exit, at-open TP/SL, `BTD_STOP_EXEMPT`, plus the shared market model (10 bps slippage, gap fills at the open, TAF + CAT). All of these read the same `alpatrade.strategy_configs` params. `live_btd_runner` (entries, close event, regime filter), `live_btd_exits` (prices, split, eligibility, open action) and the new backtester all call it. Live behaviour is unchanged; the parity test proves it.
 - **Parity backtester `utils/btd_event_backtest.py`.** Replays the runner's schedule: 09:30 open print (resting stops gap-fill at the open), 09:31 open event (at-open TP/SL market, otherwise OCO on whole shares), intraday stops first then target on whole shares, 15:45 entry at fractional dollar size, 15:58 time exit, post-close stops (GTC whole + DAY fraction, so a same-day buy is unprotected until the close), fees per broker order. The daily close stands in for the 15:45 price when no intraday bar is given.
 - **Paper = the live runner on paper keys.** `utils/btd_paper_runner.PaperRunner` subclasses `Runner` with the paper base URL, its own lease (`btd-paper:<account>`) and a recorder that writes `paper`. `scripts/run_paper_strategy.py` (`PAPER_STRATEGY_ENABLED` service, still off) now runs it on the strategy config `PAPER_STRATEGY_CONFIG`, default the live Mag-7 row. `PaperTradeAgent` delegates `buy_the_dip` to it; `BTD_LEGACY_PAPER_AGENT=1` restores the old polling loop. User paper activations such as Kairi's activation 5 already used `UserRunner(paper=True)`, the same `Runner`.
@@ -127,6 +127,12 @@
 - **Deploy:** `docker-compose.yaml` passes `LLM_JUDGE_PROVIDER` (default `grok`) and `TYPESAFE_API_KEY` to the api, agui, autonomy, news and hermes-jobs services (not the isolated hermes gateway).
 - **Review:** `docs/reviews/trade_menu_review.md`, prioritised findings for every Trade page (no large changes made).
 - Tests: `tests/test_referrals.py`, `tests/test_rbac_admin.py`, `tests/test_judge.py` (20 new). The full suite matches `origin/main` (the same 53 pre-existing failures, none new). Screenshots: `screenshots/referrals_admin/{invite,admin}_{mobile,desktop}.png` (390 px / 1366 px, no horizontal overflow).
+
+## Unreleased - 2026-10-12 - Docs cleanup
+
+- Docs reviewed against the current code. Moved to `docs/archive/` (git mv, history kept): the AG-UI plan and readme (`ag_ui.py` no longer exists), `improvement_plan.md`, `eval_results.md`, the July autonomy benchmarks and the July backtest / walk-forward / min-hold summaries (.md + .pdf). Links in `strategy_methodology.md` and `autonomous-agent-team-plan.md` updated.
+- Semi-7 walk-forward and live-rules reports stay in `docs/`, because `engine/leaderboard/semi7.py` and `scripts/seed_semi7_backtest.py` read them there.
+- New `docs/README.md` index. No code changes.
 
 ## v0.40.1 — 2026-10-11 — Fix since-activation P&L query
 

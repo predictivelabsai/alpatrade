@@ -217,7 +217,7 @@ strategy config was not loaded from the DB.
 - Benchmark: SPY buy-and-hold.
 - Scripts: `scripts/scratch/btd_daily_trigger_wf.py` and `btd_adaptive_tp_wf.py` on the HP
   (research only, not committed); the earlier 8×(60d/30d) walk-forward is in
-  `docs/walk_forward_btd_20260720T105423.md`.
+  `docs/archive/walk_forward_btd_20260720T105423.md`.
 
 **Baseline vs daily-drop triggers** (OOS, 0 bps slippage):
 

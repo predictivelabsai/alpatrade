@@ -16,3 +16,6 @@ docs/
 !requirements.txt
 .pytest_cache/
 .mypy_cache/
+
+# Flutter mobile app (built separately, not part of the server image)
+mobile/
