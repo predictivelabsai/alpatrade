@@ -1,53 +1,49 @@
 #!/usr/bin/env python3
-"""Risk-overlay comparison on the EXACT live buy_the_dip rules (same engine/costs as
-scripts/btd_live_rules_wf.py: dip 3% vs 20d high, TP 8%, SL 1.5% with gap fills at the open,
-3-day min=max hold, 1/7 per position, 10 bps/side, FINRA TAF + CAT).
+"""Risk-overlay walk-forward on the PARITY backtester (v0.50.0: utils/btd_event_backtest, the
+same rules module and event schedule as the live runner — stops during the min-hold, gap fills,
+fractional dollar sizing at the 15:45 entry, whole/fraction stop split, DAY-stop expiry,
+same-day-buy stop timing, 10 bps/side + TAF + CAT).
 
-Variants: base | cap60 (gross exposure <= 60% of sleeve equity) | regime (no entries when SPY or
-SMH closes below its prior 5-day low) | cap60+regime | halt (no entries after a -2% day or a
--4% drawdown vs the last-5-day high).  Mag-7 and Semi-7 run as separate $10k sleeves; "both" is
-the summed $20k account.  Periods: long 2016-01-04 -> end, in-sample 2016-2022, out-of-sample
-2023-01-01 -> end, last 6 months, plus the 8 x 30-day folds.
+Variants: base | cap60 (max_exposure = $6,000 per $10k sleeve) | regime (regime_filter SPY,SMH) |
+cap60+regime | halt_d2_w4 (research overlay, not a live rule).  Mag-7 and Semi-7 are separate
+$10k sleeves; "both" = the summed account.
 
     python scripts/btd_risk_overlay_wf.py   -> docs/btd_risk_overlay_wf_<ts>.{json,md}
 """
 from __future__ import annotations
 import json, math, sys
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]; sys.path.insert(0, str(ROOT))
-import utils.buy_the_dip as btd  # noqa: E402
-from scripts.btd_live_rules_wf import BASKETS, LIVE, FOLDS, FEES, CAP, spy_close  # noqa: E402
+from utils import btd_event_backtest as BT  # noqa: E402
+from utils.live_btd_config import DEFAULT_PARAMS  # noqa: E402
 
-END = datetime.now().date().isoformat()
+BASKETS = {"semi7": ["TSM", "AVGO", "MU", "AMD", "ASML", "INTC", "AMAT"],
+           "mag7": ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"]}
+LIVE = {**DEFAULT_PARAMS, "dip": 3.0, "tp": 8.0, "sl": 1.5, "min_hold": 3, "max_hold": 3, "pos_frac": 0.142857}
+FOLDS = [("2026-02-11", "2026-03-13"), ("2026-03-13", "2026-04-12"), ("2026-04-12", "2026-05-12"),
+         ("2026-05-12", "2026-06-11"), ("2026-06-11", "2026-07-11"), ("2026-07-11", "2026-08-10"),
+         ("2026-08-10", "2026-09-09"), ("2026-09-09", "2026-10-09")]
+END = date.today().isoformat()
 PERIODS = {"long_2016": ("2016-01-04", END), "is_2016_2022": ("2016-01-04", "2022-12-31"),
            "oos_2023+": ("2023-01-01", END), "last_6m": ("2026-04-16", END)}
+CAP = 10_000.0
 
 
-def regime_blocked():
+def load():
     import yfinance as yf
-    out = set()
-    for t in ("SPY", "SMH"):
-        df = yf.download(t, start="2015-11-01", auto_adjust=True, progress=False)
-        c, l = df["Close"].squeeze(), df["Low"].squeeze()
-        low5 = l.rolling(5).min().shift(1)
-        out |= {d.date().isoformat() for d in c.index[(c < low5).values]}
+    out = {}
+    for s in sum(BASKETS.values(), []) + ["SPY", "SMH"]:
+        df = yf.download(s, start="2015-10-01", auto_adjust=True, progress=False)
+        df.columns = [c[0] if isinstance(c, tuple) else c for c in df.columns]
+        out[s] = [{"t": d.date().isoformat(), "o": float(r.Open), "h": float(r.High), "l": float(r.Low),
+                   "c": float(r.Close)} for d, r in df.dropna().iterrows()]
     return out
 
 
-def variants(blk):
-    return {"base": {}, "cap60": {"max_exposure_frac": 0.60}, "regime": {"entry_blocked": blk},
-            "cap60+regime": {"max_exposure_frac": 0.60, "entry_blocked": blk},
-            "halt_d2_w4": {"daily_loss_halt": 0.02, "weekly_dd_halt": 0.04}}
-
-
-def curve(syms, a, b, kw):
-    r = btd.backtest_buy_the_dip(syms, datetime.fromisoformat(a), datetime.fromisoformat(b),
-                                 initial_capital=CAP, data_source="yfinance", **LIVE, **FEES, **kw)
-    if r is None:
-        return {}, 0
-    t, m, e = r
-    return {str(ts)[:10]: float(v) for ts, v in zip(e["timestamp"], e["equity"])}, len(t)
+VARIANTS = {"base": ({}, {}), "cap60": ({"max_exposure": 6000.0}, {}), "regime": ({"regime_filter": "SPY,SMH"}, {}),
+            "cap60+regime": ({"max_exposure": 6000.0, "regime_filter": "SPY,SMH"}, {}),
+            "halt_d2_w4": ({}, {"halt_daily": 0.02, "halt_weekly": 0.04})}
 
 
 def stats(eq):
@@ -55,44 +51,39 @@ def stats(eq):
     n = len(r); mu = sum(r)/n if n else 0; sd = math.sqrt(sum((x-mu)**2 for x in r)/(n-1)) if n > 1 else 0
     pk, mdd = eq[0], 0.0
     for x in eq: pk = max(pk, x); mdd = min(mdd, x/pk - 1)
-    yrs = max(n, 1) / 252
-    tot = eq[-1]/eq[0] - 1
+    tot = eq[-1]/eq[0] - 1; yrs = max(n, 1)/252
     return {"total_pct": tot*100, "cagr_pct": ((1+tot)**(1/yrs)-1)*100 if tot > -1 else -100,
             "sharpe": mu/sd*math.sqrt(252) if sd else None, "max_dd_pct": mdd*100}
 
 
-def combine(cs, start_cap):
-    days = sorted(set().union(*[c.keys() for c in cs]))
-    last = [start_cap]*len(cs); out = []
-    for d in days:
-        for i, c in enumerate(cs):
-            if d in c: last[i] = c[d]
-        out.append(sum(last))
-    return [start_cap*len(cs)] + out
-
-
-def spy_stats(a, b):
-    s = spy_close(); return stats([s[k] for k in sorted(s) if a <= k <= b])
-
-
 def main():
-    blk = regime_blocked(); V = variants(blk); res = {}
+    data = load(); res = {}
+    reg = {k: data[k] for k in ("SPY", "SMH")}
+    spy = {b["t"]: b["c"] for b in data["SPY"]}
     for pn, (a, b) in {**PERIODS, **{f"fold_{i+1}": f for i, f in enumerate(FOLDS)}}.items():
-        res[pn] = {"period": [a, b], "spy": spy_stats(a, b), "variants": {}}
-        for vn, kw in V.items():
-            cs, row = [], {}
+        res[pn] = {"period": [a, b], "spy": stats([spy[k] for k in sorted(spy) if a <= k <= b]), "variants": {}}
+        for vn, (pk, ok) in VARIANTS.items():
+            row, curves = {}, []
             for bk, syms in BASKETS.items():
-                c, nt = curve(syms, a, b, kw); cs.append(c)
-                row[bk] = {**stats([CAP] + [c[k] for k in sorted(c)] if c else [CAP, CAP]), "trades": nt}
-            row["both"] = stats(combine(cs, CAP))
+                r = BT.run({s: data[s] for s in syms}, {**LIVE, **pk, "symbols": syms}, a, b, CAP,
+                           regime_bars=reg, **ok)
+                eq = dict(r.equity); curves.append(eq)
+                row[bk] = {**stats([CAP] + [eq[k] for k in sorted(eq)]), "trades": len(r.trades),
+                           "blocked_days": len(r.blocked)}
+            days = sorted(set(curves[0]) | set(curves[1])); last = [CAP, CAP]; tot = [2*CAP]
+            for d in days:
+                for i, c in enumerate(curves):
+                    if d in c: last[i] = c[d]
+                tot.append(sum(last))
+            row["both"] = stats(tot)
             res[pn]["variants"][vn] = row
-            print(pn, vn, {k: round(v["sharpe"] or 0, 2) for k, v in row.items()},
-                  round(row["both"]["total_pct"], 1), round(row["both"]["max_dd_pct"], 1), flush=True)
+            print(pn, vn, round(row["both"]["total_pct"], 1), round(row["both"]["sharpe"] or 0, 2),
+                  round(row["both"]["max_dd_pct"], 1), flush=True)
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-    out = {"generated": ts, "rules": LIVE, "regime_blocked_days": len(blk), "results": res}
-    (ROOT / f"docs/btd_risk_overlay_wf_{ts}.json").write_text(json.dumps(out, indent=1))
-    L = [f"# BTD risk overlays (live rules, {ts} UTC)", "",
-         "Account = Mag-7 + Semi-7 $10k sleeves summed. Costs: 10 bps/side + TAF + CAT; stop gap-fills at open.", "",
+    (ROOT / f"docs/btd_risk_overlay_wf_{ts}.json").write_text(json.dumps({"generated": ts, "engine": "btd_event_backtest",
+                                                                           "rules": LIVE, "results": res}, indent=1))
+    L = [f"# BTD risk overlays on the parity backtester ({ts} UTC)", "",
+         "Engine utils/btd_event_backtest (same rules + schedule as live). Account = Mag-7 + Semi-7 $10k sleeves summed.", "",
          "| Period | Variant | Total | CAGR | Sharpe | Max DD | Mag7 Sharpe | Semi7 Sharpe | SPY total | SPY Sharpe | SPY DD |",
          "|" + "---|"*11]
     for pn, r in res.items():
@@ -103,7 +94,7 @@ def main():
                      f"{x['max_dd_pct']:.1f}% | {(row['mag7']['sharpe'] or 0):.2f} | {(row['semi7']['sharpe'] or 0):.2f} | "
                      f"{s['total_pct']:+.1f}% | {(s['sharpe'] or 0):.2f} | {s['max_dd_pct']:.1f}% |")
     L += ["", "30-day folds (account total %):", ""]
-    for vn in V:
+    for vn in VARIANTS:
         L.append(f"- {vn}: " + ", ".join(f"{res[f'fold_{i+1}']['variants'][vn]['both']['total_pct']:+.1f}" for i in range(len(FOLDS))))
     (ROOT / f"docs/btd_risk_overlay_wf_{ts}.md").write_text("\n".join(L) + "\n")
     print("\n".join(L))

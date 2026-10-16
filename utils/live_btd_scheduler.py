@@ -288,6 +288,14 @@ class Scheduler:
             if getattr(res, "lease", None) is not None and res.lease.ok:
                 self._last_hb = now
             ran.append(e.key)
+            if (e.kind == "post" and getattr(res, "acted", False) and self.runner.execute
+                    and os.getenv("BTD_PARITY_CHECK", "1") != "0"):
+                # v0.50.0 daily backtest-vs-live parity: read-only, best-effort, never blocks trading
+                try:
+                    from utils.btd_parity_daily import run_for_runner
+                    run_with_watchdog(lambda: run_for_runner(self.runner, cfg, day.isoformat()), 180, "parity")
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("btd scheduler: parity check failed: %s", exc)
 
         if heartbeat_due(sess, now, self._last_hb, self.heartbeat_min):
             self._last_hb = now

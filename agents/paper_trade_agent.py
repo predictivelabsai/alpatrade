@@ -7,6 +7,7 @@ strategy parameters. Logs trades to the DB.
 """
 
 import sys
+import os
 import uuid
 import time
 import logging
@@ -125,6 +126,9 @@ class PaperTradeAgent:
         # Precedence: explicit params > yaml section > schema defaults.
         resolved = resolve_paper_params(strategy, params, yaml_params, translate=False)
         position_size = resolved.get("position_size")
+
+        if strategy == "buy_the_dip" and os.getenv("BTD_LEGACY_PAPER_AGENT", "0") != "1":
+            return self._run_btd_shared(request, symbols, resolved, duration, stop_event)
 
         logger.info(f"Paper trade agent starting session {self.session_id}")
         logger.info(f"Strategy: {strategy}, Symbols: {symbols}")
@@ -302,6 +306,28 @@ class PaperTradeAgent:
 
         # Final summary
         return self._generate_summary(start_time)
+
+    def _run_btd_shared(self, request, symbols, resolved, duration, stop_event):
+        """v0.50.0: buy_the_dip paper = the live runner on paper keys (utils/btd_paper_runner),
+        so backtest / paper / live share one rules module. ``request['strategy_config']`` names a
+        strategy_configs row (same as live); otherwise the request params are mapped onto it."""
+        from utils.btd_paper_runner import PaperRunner, paper_config, run_paper
+        ps = float(resolved.get("position_size") or 0.10)
+        params = None if request.get("strategy_config") else {
+            "symbols": list(symbols), "dip": resolved.get("dip_threshold"), "tp": resolved.get("take_profit_threshold"),
+            "sl": resolved.get("stop_loss_threshold"), "min_hold": resolved.get("min_hold_days", 0),
+            "max_hold": resolved.get("hold_days"), "pos_frac": ps / 100 if ps > 1 else ps}
+        strategy = request.get("strategy_config") or f"paper:{self.session_id}"
+        db_url = os.getenv("DATABASE_URL")
+        try:
+            runner = PaperRunner(self._alpaca_api_key or os.getenv("ALPACA_PAPER_API_KEY"),
+                                 self._alpaca_secret_key or os.getenv("ALPACA_PAPER_SECRET_KEY"),
+                                 strategy=strategy, database_url=db_url)
+        except Exception as exc:  # noqa: BLE001
+            return {"error": f"paper runner: {exc}", "session_id": self.session_id}
+        out = run_paper(runner, lambda: paper_config(strategy, db_url, params), duration_s=duration,
+                        stop_event=stop_event)
+        return {"session_id": self.session_id, **out}
 
     @staticmethod
     def _interruptible_wait(seconds: float, stop_event=None) -> bool:

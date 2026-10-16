@@ -47,7 +47,7 @@ DRYRUN_TEST = "dryrun_test"      # paper dry-run harness only: never runnable li
 REQUIRED = ("symbols", "dip", "tp", "sl", "max_hold", "pos_frac")
 # execution plumbing only (not strategy choices); the user's params override each one
 NEUTRAL = {"min_hold": 0, "max_exposure": 0.0, "ref": "high20", "feed": "iex",
-           "entry_window": "15-5", "close_window": "15-2"}
+           "entry_window": "15-5", "close_window": "15-2", "regime_filter": ""}
 
 
 def flag_on(env: Optional[dict] = None) -> bool:

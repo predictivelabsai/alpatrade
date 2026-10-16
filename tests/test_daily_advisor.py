@@ -253,26 +253,19 @@ def test_fixed_paper_service_can_bind_runs_and_trades_to_an_owned_account(monkey
         lambda *_args: [{"account_id": ACCOUNT_ID, "account_name": "Paper One"}],
     )
 
-    def store_run(*_args, **kwargs):
-        observed["stored"] = kwargs
+    # v0.50.0: the paper service runs the LIVE runner on the tenant's own paper keys
+    class PaperRunner:
+        def __init__(self, key, secret, **kwargs):
+            observed["runner"] = (key, secret, kwargs)
 
-    class PaperAgent:
-        def __init__(self, **kwargs):
-            observed["agent"] = kwargs
-
-        def run(self, _request, run_id=None):
-            observed["run_id"] = run_id
-            return {"session_id": run_id, "total_trades": 0}
-
-    monkeypatch.setattr("utils.agent_storage.store_run", store_run)
-    monkeypatch.setattr("agents.paper_trade_agent.PaperTradeAgent", PaperAgent)
+    monkeypatch.setattr("utils.btd_paper_runner.PaperRunner", PaperRunner)
+    monkeypatch.setattr("utils.btd_paper_runner.run_paper", lambda r, loader, **k: {"ok": True})
+    monkeypatch.setattr("utils.live_btd_runner.setup_logging", lambda: None)
 
     assert run_paper_strategy.main() == 0
-    assert observed["stored"]["user_id"] == USER_ID
-    assert observed["stored"]["account_id"] == ACCOUNT_ID
-    assert observed["agent"]["user_id"] == USER_ID
-    assert observed["agent"]["account_id"] == ACCOUNT_ID
-    assert observed["agent"]["alpaca_api_key"] == "owned-key"
+    key, secret, kw = observed["runner"]
+    assert (key, secret) == ("owned-key", "owned-secret")
+    assert kw["strategy"] == "buy_the_dip_mag7_minhold_live"
 
 
 def test_loss_classification_follows_deterministic_precedence():
