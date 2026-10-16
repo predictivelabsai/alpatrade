@@ -229,3 +229,5 @@ eval-results/
 
 # local-only Claude workflow notes (never pushed)
 CLAUDE.local.md
+.dispatch/
+.dispatch-done
