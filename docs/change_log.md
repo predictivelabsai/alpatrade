@@ -114,6 +114,12 @@
 - **Review:** `docs/reviews/trade_menu_review.md`, prioritised findings for every Trade page (no large changes made).
 - Tests: `tests/test_referrals.py`, `tests/test_rbac_admin.py`, `tests/test_judge.py` (20 new). The full suite matches `origin/main` (the same 53 pre-existing failures, none new). Screenshots: `screenshots/referrals_admin/{invite,admin}_{mobile,desktop}.png` (390 px / 1366 px, no horizontal overflow).
 
+## Unreleased - 2026-10-12 - Docs cleanup
+
+- Docs reviewed against the current code. Moved to `docs/archive/` (git mv, history kept): the AG-UI plan and readme (`ag_ui.py` no longer exists), `improvement_plan.md`, `eval_results.md`, the July autonomy benchmarks and the July backtest / walk-forward / min-hold summaries (.md + .pdf). Links in `strategy_methodology.md` and `autonomous-agent-team-plan.md` updated.
+- Semi-7 walk-forward and live-rules reports stay in `docs/`, because `engine/leaderboard/semi7.py` and `scripts/seed_semi7_backtest.py` read them there.
+- New `docs/README.md` index. No code changes.
+
 ## v0.40.1 — 2026-10-11 — Fix since-activation P&L query
 
 - `activation_metrics` read `positions.unrealized_pl`; the column is `unrealized_pnl`. The query failed, so pages fell back to backtest figures. Verified on the prod DB: Kairi's strategy #39 now reads live, +0.00%, $670 allocation, 0 fills.
