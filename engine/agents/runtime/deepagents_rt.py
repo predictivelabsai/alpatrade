@@ -32,6 +32,25 @@ class DeepAgentsRuntime(LangGraphRuntime):
             "tools": list(spec.tools),
             "name": spec.name,
         }
+        if spec.name == "alpatrade-chat":
+            from engine.ai.deepagents import BLOCKED_TOOLS, BlockedToolMiddleware
+            from deepagents.profiles import (
+                GeneralPurposeSubagentProfile, HarnessProfile, register_harness_profile,
+            )
+
+            kwargs["middleware"] = [BlockedToolMiddleware()]
+            # Match the API policy, including disabling the unguarded default
+            # subagent so it cannot bypass the coordinator's tool restrictions.
+            model_name = getattr(model, "model_name", None) or getattr(model, "model", None)
+            if model_name:
+                provider = "anthropic" if model._llm_type == "anthropic-chat" else "openai"
+                register_harness_profile(
+                    f"{provider}:{model_name}",
+                    HarnessProfile(
+                        excluded_tools=BLOCKED_TOOLS,
+                        general_purpose_subagent=GeneralPurposeSubagentProfile(enabled=False),
+                    ),
+                )
         if spec.instructions:
             kwargs["system_prompt"] = spec.instructions
         if spec.subagents:
