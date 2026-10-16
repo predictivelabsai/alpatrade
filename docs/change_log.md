@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.47.2 — 2026-10-16 — Admin running: last live trade from runner state
+
+- `/admin/running` showed Julian's last live trade as Oct 9 because it read only `alpatrade.trades` for the primary run_id. The rows there stop on 10-09, while sleeve and recent fills were missing. "Last trade" is now the later of the trades table and the live runner state (`last_entry` / position `entry_date`, primary + sleeves).
+- Tests: `tests/test_admin_running.py::test_last_trade_uses_runner_state_when_trades_lag`.
+
 ## v0.47.1 — 2026-10-16 — Per-symbol stop exemption
 
 - New runner env `BTD_STOP_EXEMPT="SYM:YYYY-MM-DD,..."`. An exempt symbol gets no protective stop, no below-stop market sell and no open-event TP/SL orders. Only its normal max-hold time exit sells it. Each entry expires automatically after its date (inclusive), and the runner only logs it (no alert).

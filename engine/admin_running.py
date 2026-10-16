@@ -84,7 +84,7 @@ Q_HEARTBEATS = """
 SELECT runner_key, instance, host, role, mode, last_pass_at, last_acted_at, last_decision, last_detail
 FROM alpatrade.live_runner_heartbeats"""
 Q_STATE = """
-SELECT st.runner_key, st.run_id, st.lease_holder, st.lease_expires_at, st.created_at,
+SELECT st.runner_key, st.run_id, st.state, st.lease_holder, st.lease_expires_at, st.created_at,
        r.strategy, r.config, u.email, u.display_name
 FROM alpatrade.live_runner_state st
 LEFT JOIN alpatrade.runs r ON r.run_id::text = st.run_id
@@ -151,6 +151,35 @@ def _safe(execute, name, sql, params=None):
         return None
 
 
+def state_last_entry(state) -> datetime | None:
+    """Latest entry date the live runner recorded in its authoritative state (primary + sleeves:
+    ``last_entry`` and open positions' ``entry_date``). The runner keeps this current even when
+    alpatrade.trades rows lag (e.g. sleeve fills live under their own run_id)."""
+    import json as _json
+    if isinstance(state, str):
+        try: state = _json.loads(state)
+        except ValueError: return None
+    if not isinstance(state, dict): return None
+    days = []
+    for sub in [state] + list((state.get("sleeves") or {}).values()):
+        if not isinstance(sub, dict): continue
+        days += [str(v) for v in (sub.get("last_entry") or {}).values()]
+        days += [str(m.get("entry_date")) for m in (sub.get("positions") or {}).values() if isinstance(m, dict) and m.get("entry_date")]
+    best = None
+    for d in days:
+        try: dt = datetime.fromisoformat(d[:10]).replace(tzinfo=timezone.utc)
+        except ValueError: continue
+        best = dt if best is None or dt > best else best
+    return best
+
+
+def _latest(*vals):
+    vals = [v for v in vals if v is not None]
+    if not vals: return None
+    norm = [(v if getattr(v, "tzinfo", None) else v.replace(tzinfo=timezone.utc)) for v in vals]
+    return max(norm)
+
+
 def running(execute: Callable | None = None, now: datetime | None = None, include_all: bool = False) -> dict:
     """{'rows': [...], 'error': bool}. One row per activation plus operator (system) runners."""
     execute = execute or _default_execute()
@@ -174,7 +203,8 @@ def running(execute: Callable | None = None, now: datetime | None = None, includ
                      "account": a["account_ref"], "prefix": a["cid_prefix"], "allocation": a["allocation_usd"],
                      "db_status": a["status"], "status": effective_status(a["status"], hb, now),
                      "runner": runner_note(hb, now) if key else ("paper job " + str(a["job_id"])[:8] if a["job_id"] else "—"),
-                     "last_trade": tr["last_trade"] if tr else None, "trades": tr["n"] if tr else 0,
+                     "last_trade": _latest(tr["last_trade"] if tr else None, state_last_entry(st.get("state"))),
+                     "trades": tr["n"] if tr else 0,
                      "created": a["created_at"], "active": a["status"] in ACTIVE_STATES})
     for key, st in state_by_key.items():
         if key.startswith("user-btd:"):
@@ -191,7 +221,8 @@ def running(execute: Callable | None = None, now: datetime | None = None, includ
                      "name": (st.get("display_name") or "") + " (system)", "strategy": st.get("strategy") or slug,
                      "mode": "live" if "live" in slug else "paper", "account": acct, "prefix": slug,
                      "allocation": alloc, "db_status": "system", "status": "running" if alive else "stopped",
-                     "runner": runner_note(hb, now), "last_trade": tr["last_trade"] if tr else None,
+                     "runner": runner_note(hb, now),
+                     "last_trade": _latest(tr["last_trade"] if tr else None, state_last_entry(st.get("state"))),
                      "trades": tr["n"] if tr else 0, "created": st.get("created_at"), "active": alive})
     if not include_all:
         rows = [r for r in rows if r["active"]]
