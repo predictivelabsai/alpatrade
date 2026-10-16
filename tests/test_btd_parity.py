@@ -174,3 +174,55 @@ def test_regime_filter_parity(tmp_path, monkeypatch):
     assert bt.blocked, "regime filter should block some days"
     assert [x[:3] + (x[4],) for x in sorted(lt, key=key)] == [x[:3] + (x[4],) for x in sorted(btt, key=key)]
     assert not any(t[1] in bt.blocked for t in lt)
+
+
+# v0.51.0: every user-editable rule key goes through the same parity gate
+def _compare(fake, bt, r, allow_unprotected=False):
+    lt, _ = live_trades(fake)
+    btt, _ = bt_trades(bt)
+    key = lambda x: (x[1], x[0], x[4])  # noqa: E731
+    lt, btt = sorted(lt, key=key), sorted(btt, key=key)
+    assert [x[:3] + (x[4],) for x in lt] == [x[:3] + (x[4],) for x in btt]
+    for a, b in zip(lt, btt):
+        assert abs(a[3] - b[3]) < 1e-3 and abs(a[5] - b[5]) < 1e-3, (a, b)
+    assert sorted(fake.pos) == sorted(bt.open_positions)
+    eq_live = fake.cash + sum(p["qty"] * fake.cur[s] for s, p in fake.pos.items())
+    assert abs(bt.equity[-1][1] - eq_live) < 0.05
+    if not allow_unprotected:   # exit_day: the first stop can be rejected (price already below) -> alert + open sell
+        assert not [a for a in r.alerts if any("UNPROTECTED" in x for x in a[1])]
+    return lt
+
+
+@pytest.mark.parametrize("seed,extra", [
+    (11, {"stop_mode": "atr", "stop_k": 1.0, "tp_mult": 2.0}),
+    (12, {"stop_mode": "stdev", "stop_k": 1.5, "tp_mult": 0.0}),
+    (13, {"stop_timing": "exit_day", "min_hold": 2, "max_hold": 4}),
+    (14, {"vol_filter": "atr", "vol_max": 3.2}),
+    (15, {"max_exposure_pct": 30.0}),
+    (16, {"stop_mode": "atr", "stop_k": 0.8, "tp_mult": 3.0, "pos_frac": 0.3, "min_hold": 1, "max_hold": 5}),
+])
+def test_user_param_keys_parity(seed, extra, tmp_path, monkeypatch):
+    days = trading_days(date(2026, 6, 1), 70)
+    bars = synth(days, seed, SYMS)
+    P = {**PARAMS, **extra}
+    start = days[25]
+    fake, r = run_live(bars, P, days, start, 10_000.0, tmp_path, monkeypatch)
+    bt = BT.run(bars, P, start, days[-1], 10_000.0)
+    lt = _compare(fake, bt, r, allow_unprotected=extra.get("stop_timing") == "exit_day")
+    assert len(lt) >= 3, "scenario should trade"
+    base = BT.run(bars, PARAMS, start, days[-1], 10_000.0)
+    assert bt_trades(bt)[0] != bt_trades(base)[0], "the key must change behaviour in this scenario"
+
+
+def test_spy_vol_filter_and_sma_regime_parity(tmp_path, monkeypatch):
+    days = trading_days(date(2026, 6, 1), 70)
+    bars = synth(days, 17, SYMS + ["SPY"])
+    P = {**PARAMS, "vol_filter": "spy_atr", "vol_max": 2.6, "regime_filter": "SPY", "regime_mode": "sma",
+         "regime_sma": 10}
+    start = days[25]
+    fake, r = run_live(bars, P, days, start, 10_000.0, tmp_path, monkeypatch)
+    bt = BT.run({s: bars[s] for s in SYMS}, P, start, days[-1], 10_000.0, regime_bars={"SPY": bars["SPY"]})
+    assert bt.blocked, "filters should block some days"
+    reasons = set(v.split()[1] for v in bt.blocked.values())
+    _compare(fake, bt, r)
+    assert reasons, reasons

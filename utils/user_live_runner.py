@@ -47,7 +47,10 @@ DRYRUN_TEST = "dryrun_test"      # paper dry-run harness only: never runnable li
 REQUIRED = ("symbols", "dip", "tp", "sl", "max_hold", "pos_frac")
 # execution plumbing only (not strategy choices); the user's params override each one
 NEUTRAL = {"min_hold": 0, "max_exposure": 0.0, "ref": "high20", "feed": "iex",
-           "entry_window": "15-5", "close_window": "15-2", "regime_filter": ""}
+           "entry_window": "15-5", "close_window": "15-2", "regime_filter": "",
+           # v0.51.0 user-editable rule keys (btd_rules.PARAM_SPEC); defaults = the old behaviour
+           "stop_mode": "pct", "stop_k": 2.0, "tp_mult": 0.0, "stop_timing": "always", "vol_filter": "off",
+           "vol_max": 4.0, "regime_mode": "low5", "regime_sma": 200, "max_exposure_pct": 0.0}
 
 
 def flag_on(env: Optional[dict] = None) -> bool:
@@ -75,6 +78,9 @@ def user_params(raw: Dict[str, Any]) -> Dict[str, Any]:
     for k in ("dip", "tp", "sl"):          # percent units like the operator config (0.03 -> 3.0)
         if 0 < p[k] < 0.5:
             p[k] = round(p[k] * 100, 6)
+    from utils.live_btd_config import coerce_params    # v0.51.0 keys: typed + choice-checked
+    p.update(coerce_params({k: p[k] for k in ("stop_mode", "stop_k", "tp_mult", "stop_timing", "vol_filter",
+                                               "vol_max", "regime_mode", "regime_sma", "max_exposure_pct")}))
     if not (0 < p["pos_frac"] <= 1):
         raise ValueError("pos_frac must be in (0, 1]")
     if not p["symbols"]:

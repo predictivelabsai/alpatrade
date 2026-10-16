@@ -119,12 +119,18 @@ def open_sells(open_orders: List[Dict[str, Any]], sym: str) -> List[Dict[str, An
 def plan_protective_stops(tracked: Dict[str, Dict[str, Any]], positions: Dict[str, Dict[str, Any]],
                           open_orders: List[Dict[str, Any]], *, today: date, session_day: date,
                           market_open: bool, sl_pct: float, prefix: str = "btd",
-                          expect_live_stops: Optional[bool] = None) -> List[Dict[str, Any]]:
+                          expect_live_stops: Optional[bool] = None,
+                          P: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     """Positions this strategy tracks that have NO working sell order at the broker.
 
     Returns [{"sym", "body", "sl", "overdue", "skip"}]: ``overdue`` = the position should already
     have had a stop (bought before ``session_day``) -> alert; ``skip`` = reason not to place now
-    (same-day entry while the market is open: PDT guard, placed after the close)."""
+    (same-day entry while the market is open: PDT guard, placed after the close).
+
+    v0.51.0: with ``P`` each position uses the stop % fixed at its entry (meta ``sl_pct``, ATR /
+    stdev stop modes) and ``stop_timing=exit_day`` leaves positions without a stop until their
+    min-hold is met on ``session_day`` (btd_rules.stop_live, same rule as the backtester)."""
+    from utils.btd_rules import pos_pcts, stop_live
     out = []
     for sym, meta in sorted(tracked.items()):
         pos = positions.get(sym)
@@ -137,8 +143,10 @@ def plan_protective_stops(tracked: Dict[str, Dict[str, Any]], positions: Dict[st
         if entry_px <= 0:
             out.append({"sym": sym, "body": None, "sl": None, "overdue": True, "skip": "no avg_entry_price"})
             continue
-        _, sl = exit_prices(entry_px, 0.0, sl_pct)
         entry_d = date.fromisoformat(str(meta.get("entry_date") or today.isoformat()))
+        if P is not None and not stop_live(entry_d, session_day, P) and entry_d < session_day:
+            continue                                   # exit_day timing: no stop before the min-hold
+        _, sl = exit_prices(entry_px, 0.0, pos_pcts({"tp": 0.0, "sl": sl_pct}, meta)[1])
         skip = "same-day entry, stop after the close (PDT guard)" if (market_open and entry_d >= today) else None
         # alert only when a stop should be working now (pre-open / session) on an older position;
         # after the close the DAY stops have simply expired and are re-placed for the next session

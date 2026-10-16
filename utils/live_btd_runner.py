@@ -54,7 +54,8 @@ from utils.btd_rules import regime_block  # noqa: E402,F401  (v0.50.0: rules liv
 
 
 PKEYS = ("symbols", "dip", "tp", "sl", "min_hold", "max_hold", "pos_frac", "max_exposure", "ref", "feed", "regime_filter",
-         "entry_window", "close_window")
+         "entry_window", "close_window", "stop_mode", "stop_k", "tp_mult", "stop_timing", "vol_filter", "vol_max",
+         "regime_mode", "regime_sma", "max_exposure_pct")
 CACHE_META = ("acted_last", "db_dirty", "cache_written_at", "cache_instance", "db_version")
 OPEN_ST = ("new", "accepted", "pending_new", "partially_filled", "held", "accepted_for_bidding",
            "pending_replace", "pending_cancel")
@@ -642,7 +643,7 @@ class Runner:
                     plans = plan_protective_stops(state["positions"], positions, open_orders_now, today=today,
                                                   session_day=sess_day, market_open=bool(clock.get("is_open")),
                                                   sl_pct=P["sl"], prefix=PFX,
-                                                  expect_live_stops=bool(clock.get("is_open")) or pre_open)
+                                                  expect_live_stops=bool(clock.get("is_open")) or pre_open, P=P)
                 except Exception as exc:  # noqa: BLE001
                     log.error("protect: planning failed: %s", exc); return
                 problems = []
@@ -726,7 +727,7 @@ class Runner:
                             self.broker_call("DELETE", f"/v2/orders/{o['id']}")
                     left = plan_protective_stops(state["positions"], pos2, oo2, today=today, session_day=sess_day,
                                                  market_open=bool(clock.get("is_open")), sl_pct=P["sl"], prefix=PFX,
-                                                 expect_live_stops=True)
+                                                 expect_live_stops=True, P=P)
                     for pl in left:
                         if pl["sym"] in exempt or pl["skip"]: continue
                         problems.append(f"UNPROTECTED after {phase}: {pl['sym']} uncovered qty "
@@ -775,9 +776,10 @@ class Runner:
                     entry_px = float(pos.get("avg_entry_price") or 0)
                     if entry_px <= 0 and pos.get("current_price"):
                         entry_px = float(pos["current_price"]) / (1 + plpc / 100)
-                    if entry_px <= 0 and -P["sl"] < plpc < P["tp"]:
+                    tp_pct, sl_pct = R_.pos_pcts(P, meta)        # v0.51.0: fixed at entry (atr/stdev modes)
+                    if entry_px <= 0 and -sl_pct < plpc < tp_pct:
                         log.warning("%s: no avg_entry_price -> cannot price exits", sym); continue
-                    plan = plan_broker_exits(sym, pos["qty_available"], entry_px, P["tp"], P["sl"], today,
+                    plan = plan_broker_exits(sym, pos["qty_available"], entry_px, tp_pct, sl_pct, today,
                                              plpc_pct=plpc, prefix=PFX)
                     log.info("%s: held age=%dd pl=%.2f%% qty=%s entry=%.2f -> %s (TP %.2f / SL %.2f)", sym, age, plpc,
                              pos["qty_available"], entry_px, plan["reason"], plan["tp"], plan["sl"])
@@ -935,14 +937,25 @@ class Runner:
             try:
                 rs = get(f"{DATA_URL}/v2/stocks/snapshots", symbols=",".join(rf), feed=P["feed"])
                 rb = get(f"{DATA_URL}/v2/stocks/bars", symbols=",".join(rf), timeframe="1Day",
-                         start=(today - timedelta(days=15)).isoformat(), feed=P["feed"], limit=1000,
-                         adjustment="split")["bars"]
-                why = regime_block(rb, {x: float(((rs.get(x) or {}).get("latestTrade") or {}).get("p") or 0)
-                                        for x in rf}, today)
+                         start=(today - timedelta(days=R_.regime_history_days(P))).isoformat(), feed=P["feed"],
+                         limit=10000, adjustment="split")["bars"]
+                why = R_.regime_check(P, rb, {x: float(((rs.get(x) or {}).get("latestTrade") or {}).get("p") or 0)
+                                              for x in rf}, today)
             except Exception as exc:  # noqa: BLE001
                 why = f"regime data error ({exc}) -> fail closed"
             if why:
                 log.info("regime filter: %s -> no new entries this pass", why)
+                return
+        if (P.get("vol_filter") or "off") == "spy_atr":       # v0.51.0 market volatility filter
+            try:
+                vb = get(f"{DATA_URL}/v2/stocks/bars", symbols="SPY", timeframe="1Day",
+                         start=(today - timedelta(days=40)).isoformat(), feed=P["feed"], limit=1000,
+                         adjustment="split")["bars"].get("SPY", [])
+                why = R_.vol_market_block(P, vb, today)
+            except Exception as exc:  # noqa: BLE001
+                why = f"volatility data error ({exc}) -> fail closed"
+            if why:
+                log.info("volatility filter: %s -> no new entries this pass", why)
                 return
         pending_buy_val = sum(float(o.get("notional") or 0) or float(o.get("qty") or 0) * float(o.get("limit_price") or 0)
                               for o in open_orders if o["side"] == "buy")
@@ -950,7 +963,7 @@ class Runner:
         avail = min(cash, nmbp) - pending_buy_val
         if sleeve_val is None or (sleeve.is_primary and sleeve.allocation_usd is None and sleeve_val >= equity):
             # whole account (no other sleeves): exactly the pre-sleeve behaviour
-            target = R_.entry_target(equity, P)
+            target = R_.entry_target(equity, P); size_base = equity
             log.info("sizing: target/position=$%.2f (%.1f%% equity) available_cash=$%.2f exposure=$%.2f",
                      target, P["pos_frac"] * 100, avail, exposure)
         else:
@@ -963,7 +976,7 @@ class Runner:
                               for o in open_orders if o["side"] == "buy" and sleeve.owns_cid(o.get("client_order_id")))
             avail = buying_power(sleeve_val=sleeve_val, own_exposure=exposure, own_pending=own_pending,
                                  account_avail=avail)
-            target = R_.entry_target(sleeve_val, P)
+            target = R_.entry_target(sleeve_val, P); size_base = sleeve_val
             log.info("sizing [%s]: sleeve=$%.2f target/position=$%.2f (%.1f%% of sleeve) own_exposure=$%.2f "
                      "available=$%.2f (min of account cash and sleeve headroom)", sleeve.strategy_name, sleeve_val,
                      target, P["pos_frac"] * 100, exposure, avail)
@@ -989,7 +1002,11 @@ class Runner:
             if not (asset.get("tradable") and asset.get("fractionable")):
                 log.info("%s: not tradable/fractionable -> skip", sym); continue
             notional = target
-            why = R_.entry_block(notional, exposure, avail, P)
+            why = R_.vol_symbol_block(P, bars.get(sym, []), today)
+            pcts = None if why else R_.position_exit_pcts(P, bars.get(sym, []), last, today)
+            if not why and pcts is None:
+                why = f"not enough history for the {P.get('stop_mode')} stop (fail closed)"
+            why = why or R_.entry_block(notional, exposure, avail, P, base_value=size_base)
             if why:
                 log.info("%s: %s -> skip", sym, why); continue
             cid = sleeve.entry_cid(sym, today)
@@ -1002,7 +1019,7 @@ class Runner:
             avail -= notional; exposure += notional
             if EXECUTE:
                 state["positions"][sym] = {"entry_date": today.isoformat(), "notional": notional, "ref": ref,
-                                           "dip": dip, "client_id": cid}
+                                           "dip": dip, "client_id": cid, "tp_pct": pcts[0], "sl_pct": pcts[1]}
                 state.setdefault("last_entry", {})[sym] = today.isoformat()
                 R["pending"].append({"cid": cid, "side": "buy", "sym": sym})
                 persist()
