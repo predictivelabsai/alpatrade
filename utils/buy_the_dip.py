@@ -6,7 +6,7 @@ Buys when stock drops by threshold from recent high, holds for specified days or
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta, time
-from typing import Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Tuple, Optional
 import pytz
 import math
 
@@ -93,6 +93,10 @@ def _check_intraday_exit(symbol: str, trade: Dict, current_date,
 DEFAULT_SLIPPAGE_BPS = 10.0
 
 
+def _record_equity(curve, ts, eq):
+    curve.append({'timestamp': ts, 'equity': eq})
+
+
 def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: datetime,
                         initial_capital: float = 10000, position_size: float = 0.1,
                         dip_threshold: float = 0.02, hold_days: int = 2,
@@ -107,7 +111,11 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                         conservative_metrics: bool = False,
                         conservative_execution: bool = True,
                         slippage_bps: float = DEFAULT_SLIPPAGE_BPS,
-                        min_hold_days: int = 0) -> Tuple[pd.DataFrame, Dict]:
+                        min_hold_days: int = 0,
+                        max_exposure_frac: Optional[float] = None,
+                        entry_blocked: Optional[Any] = None,
+                        daily_loss_halt: Optional[float] = None,
+                        weekly_dd_halt: Optional[float] = None) -> Tuple[pd.DataFrame, Dict]:
     """
     Backtest buy-the-dip strategy
     
@@ -138,6 +146,13 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
         vol_target: If set (annualised, e.g. 0.10), scale position size inversely to
                     realised vol: size ∝ vol_target / realised_vol (capped at position_size).
                     None = fixed-fraction (default, back-compat).
+        max_exposure_frac: Risk overlay — skip an entry when open value + cost would exceed this
+                    fraction of equity (cash + open marked at the close). None = off.
+        entry_blocked: Risk overlay — set of ISO dates (or callable(date)->bool) on which no
+                    new entries are taken (e.g. SPY/SMH below their 5-day low). None = off.
+        daily_loss_halt / weekly_dd_halt: Risk overlay — no new entries on a day when equity is
+                    down >= this fraction vs the prior day's close / vs the max of the last 5
+                    closes. None = off.
         atr_exit_mult: If set (e.g. 1.5 or 2.0), compute TP/SL as ATR multiples instead
                        of fixed percentages: TP = entry + atr_exit_mult*ATR,
                        SL = entry - atr_exit_mult*ATR. None = fixed-% (default).
@@ -391,6 +406,28 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
         if not is_market_open(display_time, extended_hours=extended_hours):
             continue
 
+        # Risk overlays (all default off -> identical behaviour)
+        open_val = 0.0
+        for _s, _t in active_trades.items():
+            try:
+                open_val += _t['shares'] * float(price_data[_s].loc[current_date, 'Close'])
+            except KeyError:
+                open_val += _t['shares'] * float(price_data[_s][:current_date]['Close'].iloc[-1])
+        eq_now = available_capital + open_val
+        _d = current_date.date()
+        if entry_blocked is not None:
+            blocked = entry_blocked(_d) if callable(entry_blocked) else (_d.isoformat() in entry_blocked)
+            if blocked:
+                _record_equity(equity_curve, display_time, eq_now)
+                continue
+        _hist = [x['equity'] for x in equity_curve]
+        if daily_loss_halt and _hist and eq_now / _hist[-1] - 1 <= -daily_loss_halt:
+            _record_equity(equity_curve, display_time, eq_now)
+            continue
+        if weekly_dd_halt and _hist and eq_now / max(_hist[-5:]) - 1 <= -weekly_dd_halt:
+            _record_equity(equity_curve, display_time, eq_now)
+            continue
+
         for symbol in symbols:
             if symbol not in price_data or symbol in active_trades:
                 continue
@@ -418,6 +455,13 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                 if shares <= 0:
                     continue
 
+                if max_exposure_frac is not None:
+                    room = max_exposure_frac * eq_now - open_val
+                    if current_price * shares > room:
+                        shares = 0
+                    if shares <= 0:
+                        continue
+
                 # Check for enough capital
                 cost = current_price * shares
                 if cost > available_capital:
@@ -439,6 +483,8 @@ def backtest_buy_the_dip(symbols: List[str], start_date: datetime, end_date: dat
                     sl_price = current_price * (1 - stop_loss)
 
                 available_capital -= cost
+                if max_exposure_frac is not None:
+                    open_val += cost
 
                 active_trades[symbol] = {
                     'entry_time': (

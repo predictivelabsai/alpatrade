@@ -1,5 +1,16 @@
 # Change Log
 
+## v0.49.0 — 2026-10-16 — Live runners: stop protection hardening + risk-overlay backtest
+
+- **Whole-share GTC stops.** The protective stop for every tracked position is now split. Whole shares get ONE GTC stop (`<prefix>ps-SYM-YYYYMMDDg`), which survives the session boundary and a runner outage. The fractional remainder keeps the DAY stop (`<prefix>ps-SYM-YYYYMMDD`), re-placed every session as in v0.47.0 (Alpaca rejects GTC only for fractional qty). If Alpaca refuses the GTC, the runner retries it as DAY. Coverage is computed from uncovered qty (`uncovered_qty`): an open GTC whole-share stop plus an expired fraction re-places only the fraction. A sell order without a qty counts as full coverage, so stops never stack. The time exit and the open-event TP/SL swap already cancel `ps-` stops first, so nothing changes there.
+- **Market sell when at/below the stop in session.** At every in-session protect pass (09:31 open, hourly 10:30–15:30 ET), an uncovered position bought on an earlier day whose last price is at or under entry × (1 − sl%) is sold at market (`<prefix>x-SYM-YYYYMMDD`) after our own resting exits are cancelled. This covers gap-down opens and stops that never got placed. It never applies to same-day buys (PDT guard) or to `BTD_STOP_EXEMPT` symbols (AMD/INTC until their 10-19 time exit).
+- **Post-pass verification + alerts.** After each protect pass the runner re-reads open orders and positions. Any tracked, non-exempt, non-same-day position still uncovered is emailed as `UNPROTECTED after <phase>` to `BTD_ALERT_EMAIL`. Orphan own `ps-` stops on symbols no longer held are cancelled.
+- **Regime filter (code only, OFF).** A new param `regime_filter` (default `""`). When set to `"SPY,SMH"`, there are no new dip buys while either trades below its prior 5-session low. Missing data fails closed. It is not enabled: the walk-forward below improves it out-of-sample (2023+) but makes it clearly worse in 2016–2022 and over the full history. To enable: `python scripts/live_btd_config.py set regime_filter=SPY,SMH`.
+- **Not shipped:** 60% gross-exposure cap (worse Sharpe in every segment) and the daily −2% / weekly −4% entry halt (better in 2016–2022, worse out-of-sample 2023+).
+- **Backtest tooling.** `utils/buy_the_dip.backtest_buy_the_dip` gains optional overlays `max_exposure_frac`, `entry_blocked`, `daily_loss_halt` and `weekly_dd_halt` (all default off, identical results otherwise). The new `scripts/btd_risk_overlay_wf.py` produced `docs/btd_risk_overlay_wf_20261016T155844.{md,json}` (live rules, 10 bps/side + TAF/CAT, stop gap-fills at the open; Mag-7 + Semi-7 $10k sleeves summed).
+- Applies to every runner built on `Runner._run`: Mag-7 `btd`, Semi-7 `s7btd` and user-live runners (e.g. Kairi, activation 4).
+- Tests: `tests/test_protective_stops.py` (GTC/fraction split, coverage, below-stop sell), `tests/test_btd_risk_overlay.py`.
+
 ## v0.48.0 — 2026-10-16 — Anti-bot signup guard
 
 - **Email verification before login.** Password signups no longer get a session at signup. They see a "Check your inbox" screen with a resend button (`POST /verify/resend-email`, same answer whether or not the account exists). Password login for an unverified account shows the same screen. The `/verify` link signs the user in. Google sign-in is unchanged and still marks the email as verified.

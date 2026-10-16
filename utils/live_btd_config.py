@@ -30,6 +30,9 @@ DEFAULT_PARAMS: Dict[str, Any] = {
     "dip": 3.0, "tp": 8.0, "sl": 1.5, "min_hold": 3, "max_hold": 3,
     "pos_frac": 0.10, "max_exposure": 0.0, "ref": "high20", "feed": "iex",
     "entry_window": "15-5", "close_window": "15-2",
+    # v0.49.0 risk overlay, OFF by default: "SPY,SMH" = no new dip buys while any of these trades
+    # below its prior 5-session low (scripts/btd_risk_overlay_wf.py; enable via live_btd_config set)
+    "regime_filter": "",
 }
 
 DEFAULT_EXECUTION: Dict[str, Any] = {
@@ -41,7 +44,7 @@ DEFAULT_EXECUTION: Dict[str, Any] = {
 
 _TYPES = {"dip": float, "tp": float, "sl": float, "min_hold": int, "max_hold": int,
           "pos_frac": float, "max_exposure": float, "ref": str, "feed": str,
-          "entry_window": str, "close_window": str}
+          "entry_window": str, "close_window": str, "regime_filter": str}
 
 
 class ConfigError(ValueError):

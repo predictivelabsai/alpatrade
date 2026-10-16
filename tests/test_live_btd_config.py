@@ -148,7 +148,8 @@ def _seed_json():
 
 def test_seed_matches_hp_params_and_execution_defaults():
     params, execution = _seed_json()
-    assert coerce_params(params) == HP_PARAMS
+    # regime_filter (v0.49.0) is not in the seed: it defaults to "" (off) via DEFAULT_PARAMS
+    assert coerce_params(params) == {k: v for k, v in HP_PARAMS.items() if k != "regime_filter"}
     assert merge_execution(execution) == DEFAULT_EXECUTION
     e = execution["extended_hours_exit"]
     assert (e["discount_bps"], e["reprice_after_min"], e["max_reprices"]) == (15, 5, 2)
