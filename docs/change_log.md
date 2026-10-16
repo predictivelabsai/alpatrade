@@ -1,5 +1,14 @@
 # Change Log
 
+## v0.47.0 — 2026-10-16 — Live runners: protective stops on every position
+
+- **Root cause (stops missing since Mon 2026-10-12):** the runner only placed broker-side TP/SL at the 09:31 ET open event once a position was past its min-hold (`exit_eligible`: 3 calendar days, PDT guard). With min-hold = max-hold = 3, a position had a stop only on its time-exit day (09:31 to 15:58 ET). Until 10-12 there were always positions on day 3, so stops appeared every morning. After that all positions were new (TSLA 10-13, AMZN/MSFT/META 10-14, NVDA/GOOGL and all seven Semi-7 names 10-15), so no stop was placed. The 10-12 server handover was not the cause: the lease and open events ran on `server` every day. Semi-7 had no stops for the same reason, since all its entries date from 10-15.
+- **Fix:** every tracked position in every sleeve (Mag-7 `btd`, Semi-7 `s7btd`) and every user runner (`UserRunner`, e.g. activation 4 / `822120655`) now has a sell stop at entry × (1 − sl%), including during the min-hold. Alpaca rejects GTC stops for fractional qty, so stops are DAY orders (`<prefix>ps-<SYM>-<session date>`). The post-close event places them for the next session, and the pre-open check, the open event and hourly checks re-place them. A same-day entry gets its stop right after the close (PDT guard: no same-day round trip).
+- If the price is already below the stop, Alpaca rejects the stop. During the session the runner then submits a market sell for a position bought on an earlier day. Pre-open, it emails an alert and sells at the open.
+- The time exit (close event) cancels protective stops and operator `manual-stop-*` stops before it sells. At the open event, the TP/SL plan for a position past its min-hold first cancels a protective stop and then places the OCO and fraction stop. No two sell orders compete for the same qty.
+- New scheduler events `protect-0845` and hourly `protect-1030`…`protect-1530` ET, disabled with `BTD_PROTECT_CHECKS=0`. When a stop that should be working is missing, the runner re-places it and emails `BTD_ALERT_EMAIL` (default kaljuvee@gmail.com) through Postmark. The runner compose file now passes `POSTMARK_API_KEY` and `FROM_EMAIL`.
+- Tests: `tests/test_protective_stops.py`.
+
 ## v0.46.0 — 2026-10-16 — Admin: running strategies and user activity
 
 - New admin-only page **`/admin/running`**, linked from the top of `/admin`. Signed-out visitors are redirected to sign-in, and signed-in non-admins get **403**.
