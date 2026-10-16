@@ -28,6 +28,8 @@ from langchain_openai import ChatOpenAI
 from langchain_core.tools import StructuredTool
 from langgraph.prebuilt import create_react_agent
 
+from utils.paper_strategies import STRATEGY_NAMES
+
 SYSTEM_PROMPT = (
     "You are AlpaTrade, an AI trading assistant. "
     "You have tools to look up real stock data, news, and analyst ratings. "
@@ -37,9 +39,14 @@ SYSTEM_PROMPT = (
     "news:TSLA, trades, runs) and they will be executed automatically. "
     "You have NO tool to run a backtest, paper trade, or the full backtest→paper cycle. "
     "When a user asks for one in natural language (e.g. 'backtest AAPL', 'run a backtest on TSLA', "
-    "'paper trade this strategy'), do NOT ask for more parameters or pretend to run it — reply with the "
+    "'paper trade this strategy'), do NOT ask for more parameters or pretend to run it; reply with the "
     "exact CLI command they should type, e.g. `agent:backtest symbols:AAPL lookback:3m` (or "
     "`agent:paper duration:7d` for paper trading, `agent:full lookback:1m duration:1m` for the full cycle). "
+    f"The only supported backtest strategies are: {', '.join(STRATEGY_NAMES)}. "
+    "Never invent strategy names. You cannot create, write or save strategy code or files. "
+    "If a user asks for an unsupported strategy, say plainly that it is not supported "
+    "and suggest the closest supported strategy, explaining its limitations. "
+    "Give one command per message. "
     "For stock queries, always use the appropriate tool to get real data. "
     "When users ask for a graph or chart of a backtest run, use the show_equity_curve tool with the run_id. "
     "For stock price charts, use show_stock_chart. "
@@ -1009,6 +1016,17 @@ _STREAMING_COMMANDS = {
 }
 
 
+def _is_cli_command(msg: str) -> bool:
+    """Use the same recognition rules for single commands and pasted lines."""
+    cmd_lower = msg.strip().lower()
+    first_word = cmd_lower.split()[0] if cmd_lower.split() else ""
+    base = first_word.split(":")[0]
+    return (
+        first_word.startswith(("agent:", "alpha:", "alpaca:", "account:")) or
+        cmd_lower in _CLI_EXACT or base in _CLI_BASES
+    )
+
+
 async def _command_interceptor(msg: str, session):
     """Detect CLI commands and route to CommandProcessor. Returns markdown or None."""
     # Bind the signed-in user so Alpaca tools (positions/account) resolve
@@ -1020,16 +1038,13 @@ async def _command_interceptor(msg: str, session):
     first_word = cmd_lower.split()[0] if cmd_lower.split() else ""
     base = first_word.split(":")[0]
 
-    is_command = (
-        first_word.startswith("agent:") or
-        first_word.startswith("alpha:") or
-        first_word.startswith("alpaca:") or
-        first_word.startswith("account:") or
-        cmd_lower in _CLI_EXACT or
-        base in _CLI_BASES
-    )
-
-    if not is_command:
+    lines = [line.strip() for line in msg.splitlines() if line.strip()]
+    if len(lines) > 1:
+        # Decide before executing anything. Mixed prose must reach the model.
+        if not all(_is_cli_command(line) for line in lines):
+            return None
+        return StreamingCommand(msg, session, app_state, commands=lines)
+    if not _is_cli_command(msg):
         return None
 
     # Special case: "help" returns chat-friendly markdown (Rich tables don't work here)

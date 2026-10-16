@@ -14,6 +14,8 @@ extended/overnight session, ``ext_limit_price`` applies the bid discount and
 """
 from __future__ import annotations
 
+import os
+
 import copy
 import json
 from dataclasses import dataclass, field
@@ -28,6 +30,9 @@ DEFAULT_PARAMS: Dict[str, Any] = {
     "dip": 3.0, "tp": 8.0, "sl": 1.5, "min_hold": 3, "max_hold": 3,
     "pos_frac": 0.10, "max_exposure": 0.0, "ref": "high20", "feed": "iex",
     "entry_window": "15-5", "close_window": "15-2",
+    # v0.49.0 risk overlay, OFF by default: "SPY,SMH" = no new dip buys while any of these trades
+    # below its prior 5-session low (scripts/btd_risk_overlay_wf.py; enable via live_btd_config set)
+    "regime_filter": "",
 }
 
 DEFAULT_EXECUTION: Dict[str, Any] = {
@@ -39,7 +44,7 @@ DEFAULT_EXECUTION: Dict[str, Any] = {
 
 _TYPES = {"dip": float, "tp": float, "sl": float, "min_hold": int, "max_hold": int,
           "pos_frac": float, "max_exposure": float, "ref": str, "feed": str,
-          "entry_window": str, "close_window": str}
+          "entry_window": str, "close_window": str, "regime_filter": str}
 
 
 class ConfigError(ValueError):
@@ -130,10 +135,13 @@ def fetch_row(engine, strategy: str):
 
 
 def make_engine(database_url: str):
+    """NullPool: runners/config reads are sparse (minutes apart), so hold no idle connection."""
     from sqlalchemy import create_engine
-    return create_engine(database_url, pool_pre_ping=True, pool_size=1, max_overflow=0,
-                         connect_args={"connect_timeout": 5, "application_name": "alpatrade-live-btd-config",
-                                       "options": "-c statement_timeout=10000"})
+    from sqlalchemy.pool import NullPool
+    return create_engine(database_url, poolclass=NullPool,
+                         connect_args={"connect_timeout": 5,
+                                       "application_name": os.getenv("DB_APPLICATION_NAME", "alpatrade-live-btd-config")[:63],
+                                       "options": "-c statement_timeout=10000 -c idle_in_transaction_session_timeout=60000"})
 
 
 def resolve(strategy: str, cli: Dict[str, Any], *, database_url: Optional[str] = None,

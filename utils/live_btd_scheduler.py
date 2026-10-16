@@ -14,7 +14,9 @@ Events per trading session (ET, from the calendar; early closes shift with the c
   entry-10  close - 10 min        (15:50)
   entry-5   close - 5 min - 45 s  (15:54:15)
   close     close - 2 min - 45 s  (15:57:15, ~15:58) max-hold exits (cancel broker exits first)
-  post      close + 3 min         (16:03)  record fills + daily performance, no orders
+  post      close + 3 min         (16:03)  record fills + daily performance; protective stops for the next session
+  protect   open - 45 min (08:45) and hourly 10:30..15:30: every held position has a working stop, else
+            re-place it and email an alert (v0.47.0; BTD_PROTECT_CHECKS=0 disables the extra events)
   heartbeat every 3 min from open - 30 min to close + 5 min: lease renew only (no Alpaca calls)
 Backup / tertiary run every event 10 s / 20 s after the primary (cosmetic: the lease already
 makes them stand by while the primary's heartbeat is fresh). Entry/close times sit 45 s inside
@@ -50,7 +52,7 @@ ET = ZoneInfo("America/New_York")
 
 ROLE_OFFSET_S = {"primary": 0, "backup": 10, "tertiary": 20}
 INWARD_S = 45
-GRACE = {"open": None, "entry": timedelta(minutes=4), "post": timedelta(minutes=10)}
+GRACE = {"open": None, "entry": timedelta(minutes=4), "post": timedelta(minutes=10), "protect": timedelta(minutes=50)}
 
 
 def _f(name: str, default: float) -> float:
@@ -69,7 +71,7 @@ class Event:
 
 def session_events(session: Dict[str, Any], entry_window: str = "15-5", close_window: str = "15-2", *,
                    role: str = "primary", open_delay_min: float = 1.0, post_close_min: float = 3.0,
-                   step_min: int = 5) -> List[Event]:
+                   step_min: int = 5, protect: bool = False) -> List[Event]:
     """Event times for one calendar session ({open, close} tz-aware)."""
     off = timedelta(seconds=ROLE_OFFSET_S.get(role, 0))
     o, c = session["open"], session["close"]
@@ -85,6 +87,13 @@ def session_events(session: Dict[str, Any], entry_window: str = "15-5", close_wi
     cnear = float(close_window.split("-")[1])
     ev.append(Event(c - timedelta(minutes=cnear, seconds=INWARD_S) + off, "close", "close"))
     ev.append(Event(c + timedelta(minutes=post_close_min) + off, "post", "post"))
+    if protect:  # protective-stop checks: pre-open (open - 45 min) and hourly until close - 30 min
+        t = o - timedelta(minutes=45)
+        ev.append(Event(t + off, "protect", f"protect-{t.astimezone(ET):%H%M}"))
+        t = o + timedelta(minutes=60)
+        while t <= c - timedelta(minutes=30):
+            ev.append(Event(t + off, "protect", f"protect-{t.astimezone(ET):%H%M}"))
+            t += timedelta(minutes=60)
     return sorted(ev, key=lambda e: e.at)
 
 
@@ -212,12 +221,14 @@ def run_with_watchdog(fn: Callable[[], Any], timeout_s: float, what: str) -> Any
 class Scheduler:
     def __init__(self, runner, cache: ConfigCache, calendar=None, *, heartbeat_min: Optional[float] = None,
                  poll_s: Optional[float] = None, event_timeout_s: Optional[float] = None,
+                 protect_checks: Optional[bool] = None,
                  clock: Callable[[], datetime] = lambda: datetime.now(timezone.utc)):
         self.runner, self.cache = runner, cache
         self.calendar = calendar or AlpacaCalendar(runner.get, runner.base)
         self.heartbeat_min = heartbeat_min or _f("BTD_HEARTBEAT_MIN", 3.0)
         self.poll_s = poll_s or max(1.0, _f("BTD_SCHED_POLL_SECONDS", 5.0))
         self.event_timeout_s = event_timeout_s or _f("BTD_EVENT_TIMEOUT_SECONDS", 240.0)
+        self.protect_checks = (os.getenv("BTD_PROTECT_CHECKS", "1") != "0") if protect_checks is None else protect_checks
         self.now = clock
         self.stop = threading.Event()
         self._done: set = set()
@@ -239,7 +250,7 @@ class Scheduler:
     def events_for(self, day: date, session: Dict[str, Any], cfg: ConfigResult) -> List[Event]:
         if day not in self._events:
             self._events[day] = session_events(session, cfg.params["entry_window"], cfg.params["close_window"],
-                                               role=self.runner.role)
+                                               role=self.runner.role, protect=self.protect_checks)
         return self._events[day]
 
     # ---------------------------------------------------------------- tick

@@ -13,9 +13,7 @@ These are the same numbers as ``/dashboard`` and the daily LIVE email:
                     Without flow data it falls back to equity / start_equity − 1.
 * SPY return      = SPY / start_SPY − 1          (same period)
 * alpha           = return − SPY return
-* annualised      = simple r × 252 / d on the time-weighted return r (Julian's standing rule;
-                    same as the dashboard and the daily LIVE email; "short period" hint below
-                    63 trading days)
+* annualised      = simple return × 252 / trading days, including short records
 * compounded      = (1+r)^(252/d) − 1 (tooltip only, indicative)
 * trading days    = NYSE sessions from the start date to the snapshot date, inclusive
                     (``trading_days_between``, same as the dashboard's since-start KPI)
@@ -115,10 +113,11 @@ def metrics_from_run(run: Optional[dict], today: Optional[date] = None,
         spy_ret = (spy / start_spy - 1) * 100
         days = trading_days_between(start, d)
         ann = annualize(ret, days, min_days=1)
+        from engine.metrics import MIN_TRACK_DAYS
         out.update(
             has_data=True, as_of=d.isoformat(), trading_days=days,
             net_deposits=dep, cash_flows_ok=flows is not None,
-            annualised_short=days < 63,
+            annualised_short=days < MIN_TRACK_DAYS,
             return_pct=ret, spy_return_pct=spy_ret, alpha_pct=ret - spy_ret,
             annualised_pct=ann["simple_pct"], annualised_simple_pct=ann["simple_pct"],
             annualised_compound_pct=ann["compound_pct"],
@@ -183,27 +182,23 @@ def _bt_days(bm: dict) -> Optional[int]:
 
 
 def simple_from_cagr(cagr_pct, start, end) -> Optional[float]:
-    """Simple ×252/d annualised from a stored CAGR when the total return wasn't stored
-    (CWT ``test`` windows): total = (1+CAGR)^(d/252) − 1, then total × 252 / d."""
+    """Convert a stored CAGR to simple annualised return for its test window."""
     c, a, b = _num(cagr_pct), _day(start), _day(end)
     if c is None or not a or not b:
         return None
-    d = trading_days_between(a, b)
-    if d < 1 or c <= -100:
+    days = trading_days_between(a, b)
+    if not days or c <= -100:
         return None
-    tot = ((1 + c / 100.0) ** (d / 252.0) - 1) * 100
-    return annualize(tot, d, min_days=1)["simple_pct"]
+    total = ((1 + c / 100) ** (days / 252) - 1) * 100
+    return annualize(total, days, min_days=1)["simple_pct"]
 
 
 def backtest_metrics(strategy: dict) -> dict:
     """Figures for a ``kind='backtest'`` strategy from its stored ``backtest_metrics`` JSON
     (written by scripts/cwt_pipeline.py publish / scripts/seed_semi7_backtest.py).
 
-    Same rule as live (engine/reporting/annualize.py): headline annualised = SIMPLE
-    total return × 252 / trading days of the backtest period; alpha = simple annualised
-    strategy − simple annualised SPY over the same days. The compounded CAGR is recomputed
-    from the same total/days and only shown in the tooltip (the stored ``annualised_pct``
-    CAGR is ignored: it explodes over short windows)."""
+    Headline annualised = simple total return × 252 / trading days; alpha uses the
+    same period and rule for SPY. Stored annualised figures are ignored."""
     bm = strategy.get("backtest_metrics") or {}
     out = dict(EMPTY)
     out["is_backtest"] = True
@@ -221,7 +216,9 @@ def backtest_metrics(strategy: dict) -> dict:
         "trading_days": days, "return_pct": tot, "spy_return_pct": spy_tot,
         "alpha_pct": alpha,
         "alpha_total_pct": None if spy_tot is None else tot - spy_tot,
-        "annualised_pct": ann, "annualised_simple_pct": ann,
+        "annualised_pct": ann, "annualised_simple_pct": a["simple_pct"],
+        "annualised_short": days < 60,
+        "annualised_out_of_bounds": False,
         "annualised_cagr_pct": a["compound_pct"],
         "spy_annualised_pct": spy_ann, "spy_annualised_cagr_pct": sa.get("compound_pct"),
         "alpha_annualised_pct": alpha,
@@ -296,14 +293,20 @@ def _activation_pnl(user_id: str, prefix: str, mode: str, since) -> dict:
     from engine.auth import _get_pool
     with _get_pool().get_session() as s:
         r = s.execute(text("""
-            WITH rr AS (SELECT run_id FROM alpatrade.runs WHERE user_id = CAST(:u AS UUID) AND mode = :m
+            WITH rr AS (SELECT run_id, config FROM alpatrade.runs WHERE user_id = CAST(:u AS UUID) AND mode = :m
                           AND config->>'cid_prefix' = :p AND started_at >= :since - INTERVAL '5 minutes')
             SELECT (SELECT COALESCE(SUM(pnl), 0) FROM alpatrade.trades t JOIN rr USING (run_id)
                      WHERE t.trade_type = :m AND t.exit_price IS NOT NULL),
                    (SELECT COUNT(*) FROM alpatrade.trades t JOIN rr USING (run_id)
                      WHERE t.trade_type = :m AND t.entry_price IS NOT NULL),
                    (SELECT COALESCE(SUM(unrealized_pnl), 0) FROM alpatrade.positions p JOIN rr USING (run_id)
-                     WHERE p.status = 'open')"""),
+                     WHERE p.status = 'open'
+                       -- excluded junk securities (sql/53, engine/reporting/exclusions.py)
+                       AND NOT EXISTS (SELECT 1 FROM alpatrade.excluded_securities x
+                             WHERE upper(x.symbol) = upper(p.symbol)
+                               AND (x.scope = 'global' OR upper(x.account_ref) IN (
+                                    upper(COALESCE(rr.config->>'account_number', '')),
+                                    upper(COALESCE(rr.config->>'account_id', ''))))))"""),
                       {"u": str(user_id), "m": mode, "p": prefix, "since": since}).first()
     return {"realized": float(r[0] or 0), "fills": int(r[1] or 0), "unrealized": float(r[2] or 0)}
 
@@ -336,7 +339,7 @@ def activation_metrics(strategy: dict, today: Optional[date] = None, *, row_fn=N
             start = since.date() if hasattr(since, "date") else since
             end = today or date.today()
             td = max(int(np.busday_count(start, end)) if end > start else 0, 0)
-            ann = round(ret * 252 / td, 4) if td >= 1 and ret else 0.0
+            ann = annualize(ret, max(td, 1), min_days=1)["simple_pct"]
             spy = alpha = None
             if pnl["fills"]:
                 closes = (spy_fn or _spy_since)(start, end)
@@ -346,7 +349,7 @@ def activation_metrics(strategy: dict, today: Optional[date] = None, *, row_fn=N
             m = {**EMPTY, "has_data": True, "is_activation": True, "activation_mode": row["mode"],
                  "activation_status": row["status"], "start_date": start, "as_of": end,
                  "days_running": (end - start).days, "trading_days": td, "return_pct": ret,
-                 "annualised_pct": ann, "annualised_simple_pct": ann, "spy_return_pct": spy,
+                 "annualised_pct": ann, "annualised_short": td < 60, "spy_return_pct": spy,
                  "alpha_pct": alpha, "start_equity": alloc, "equity": alloc + total,
                  "pnl_usd": round(total, 2), "fills": pnl["fills"]}
     except Exception as exc:  # noqa: BLE001
@@ -387,26 +390,36 @@ def annualised_tip(m: dict) -> str:
     if m.get("is_activation"):
         return (f"Since you activated it ({m.get('activation_mode')}) on {fmt_day(m['start_date'])}: "
                 f"P&L ${m.get('pnl_usd', 0):,.2f} on a ${m['start_equity']:,.0f} allocation = {pct(m['return_pct'])}; "
-                f"simple ×252/{m['trading_days']} trading days = {pct(m['annualised_pct'])}. Only this "
+                f"{_ann_phrase(m)}. Only this "
                 "strategy's own fills and positions count; the account's other holdings are excluded.")
     if m.get("is_backtest"):
         if m.get("annualised_pct") is None:
             return "No backtest figures stored for this strategy."
-        return (f"Simple: total return {pct(m['return_pct'])} × 252 / {m['trading_days']} trading days "
-                f"= {pct(m['annualised_pct'])} (SPY {pct(m.get('spy_return_pct'))} → "
-                f"{pct(m.get('spy_annualised_pct'))}), {fmt_day(m['start_date'])} – {fmt_day(m['as_of'])}. "
-                f"Compounded CAGR (1+r)^(252/d)−1 = {pct(m.get('annualised_cagr_pct'))} vs SPY "
-                f"{pct(m.get('spy_annualised_cagr_pct'))} (indicative only; explodes over short windows). "
+        return (f"Simple annualised: total return {pct(m['return_pct'])} × 252 / {m['trading_days']} trading days "
+                f"= {pct(m['annualised_pct'])}/yr (SPY total {pct(m.get('spy_return_pct'))} = "
+                f"{pct(m.get('spy_annualised_pct'))}/yr), {fmt_day(m['start_date'])} – {fmt_day(m['as_of'])}. "
                 f"Daily-bar backtest, hypothetical — never traded live.")
     if m.get("annualised_pct") is None:
         return "No live track record available for this strategy yet."
     short = (f" Short period: only {m['trading_days']} trading days, so the annualised figure "
              "is very sensitive and says little about the future." if m.get("annualised_short") else "")
-    return (f"Simple r × 252 / d on the time-weighted return r = {pct(m['return_pct'])} "
-            f"(deposits/withdrawals excluded) over {m['trading_days']} trading days = "
-            f"{pct(m['annualised_pct'])}; compounded (1+r)^(252/d)−1 = "
-            f"{pct(m.get('annualised_compound_pct'))} (indicative only)."
+    return (f"Simple annualised return on time-weighted return = {pct(m['return_pct'])} × 252 "
+            f"/ {m['trading_days']} trading days (deposits/withdrawals excluded) = "
+            f"{pct(m['annualised_pct'])}."
             f"{short} Live account, session close {fmt_day(m['as_of'])}.")
+
+
+def _ann_phrase(m: dict) -> str:
+    if m.get("annualised_pct") is None:
+        return "no measured return yet"
+    return f"simple annualised ×252/{max(m['trading_days'], 1)} trading days = {pct(m['annualised_pct'])}"
+
+
+def ann_display(m: dict) -> str:
+    """Leaderboard/strategy headline: simple annualised return."""
+    if m.get("annualised_pct") is not None:
+        return pct(m["annualised_pct"])
+    return "—"
 
 
 def alpha_tip(m: dict) -> str:
@@ -417,9 +430,9 @@ def alpha_tip(m: dict) -> str:
     if m.get("is_backtest"):
         if m.get("alpha_pct") is None:
             return "No backtest figures stored for this strategy."
-        return (f"Annualised alpha (simple, ×252/trading days) = {pct(m['annualised_pct'])} − SPY "
+        return (f"Annualised alpha (simple) = {pct(m['annualised_pct'])} − SPY "
                 f"{pct(m.get('spy_annualised_pct'))} = {pct(m['alpha_pct'])} over {m['trading_days']} "
-                f"trading days; CAGR basis {pct(m.get('alpha_cagr_pct'))} "
+                f"trading days "
                 f"({fmt_day(m['start_date'])}–{fmt_day(m['as_of'])}; total return "
                 f"{pct(m['return_pct'])} vs SPY {pct(m['spy_return_pct'])}). Hypothetical — never "
                 f"traded live.")
@@ -435,6 +448,4 @@ def rank_key(m: dict):
     without figures, then backtests (by annualised return) — backtests never outrank live."""
     v = m.get("annualised_pct")
     bt = 1 if m.get("is_backtest") else 0
-    if v is None and not bt and m.get("has_data") and m.get("return_pct") is not None:
-        v = m["return_pct"]  # short live record: rank by its (non-annualised) return
     return (bt, 0, -v) if v is not None else (bt, 1, 0.0)

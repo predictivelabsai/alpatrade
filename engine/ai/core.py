@@ -4,7 +4,7 @@ AG-UI core: WebSocket-based chat with LangGraph agents.
 Streaming via LangGraph astream_events(v2) — replaces pydantic-ai + AG-UI protocol.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Callable, Dict, List, Optional, Any
 from fasthtml.common import (
     Div, Form, Hidden, Textarea, Button, Span, Script, Style, Pre, NotStr,
 )
@@ -195,10 +195,37 @@ def _enrich_result(command: str, result: str):
 class StreamingCommand:
     """Sentinel returned by the command interceptor for long-running commands."""
 
-    def __init__(self, raw_command: str, session: dict, app_state: Any):
+    def __init__(self, raw_command: str, session: dict, app_state: Any,
+                 commands: Optional[list[str]] = None) -> None:
         self.raw_command = raw_command
         self.session = session
         self.app_state = app_state
+        self.commands = commands
+        self.current_command = raw_command
+
+    async def run(
+        self, processor: Any,
+        transform: Optional[Callable[[str, str], str]] = None,
+    ) -> str:
+        """Execute a paste sequentially through the normal single-command path."""
+        if self.commands is None:
+            result = await processor.process_command(self.raw_command)
+            result = result or "Command executed."
+            return transform(self.raw_command, result) if transform else result
+
+        from engine.ai.harness import _command_interceptor
+
+        results = []
+        for index, command in enumerate(self.commands, 1):
+            self.current_command = command
+            try:
+                result = await _command_interceptor(command, self.session)
+                if isinstance(result, StreamingCommand):
+                    result = await result.run(processor, transform=transform)
+            except Exception as exc:
+                result = f"# Error\n\n```\n{exc}\n```"
+            results.append(f"## Command {index}: `{command}`\n\n{result or 'Command executed.'}")
+        return "\n\n".join(results)
 
 
 # ---------------------------------------------------------------------------
@@ -1180,12 +1207,27 @@ class AGUIThread:
         # 7. Launch command in background
         result_holder = {"value": None, "error": None, "done": False}
 
+        def append_equity(command: str, output: str) -> str:
+            cmd_first = command.strip().lower().split()[0] if command.strip() else ""
+            if cmd_first.startswith("agent:backtest") and output and "Error" not in output[:20]:
+                try:
+                    run_id_match = re.search(r'Run ID\*?\*?:?\s*`?([a-f0-9-]+)',output)
+                    if run_id_match:
+                        from utils.equity_chart import show_equity_curve
+                        eq_result = show_equity_curve(run_id=run_id_match.group(1))
+                        if "__CHART_DATA__" in eq_result:
+                            output += "\n\n" + eq_result
+                except Exception as _eq_err:
+                    logger.warning(f"Equity chart auto-append failed: {_eq_err}")
+
+            return output
+
         async def _run_command():
             try:
                 from tui.command_processor import CommandProcessor
                 user_id = session.get("user", {}).get("user_id") if session.get("user") else None
                 cp = CommandProcessor(sc.app_state, user_id=user_id)
-                result_holder["value"] = await cp.process_command(sc.raw_command)
+                result_holder["value"] = await sc.run(cp, transform=append_equity)
             except Exception as e:
                 import traceback
                 result_holder["error"] = traceback.format_exc()
@@ -1253,19 +1295,6 @@ class AGUIThread:
             final_result = f"# Error\n\n```\n{result_holder['error']}\n```"
         else:
             final_result = result_holder["value"] or "Command executed."
-
-        # Auto-append equity curve chart for backtest results
-        cmd_first = msg.strip().lower().split()[0] if msg.strip() else ""
-        if cmd_first.startswith("agent:backtest") and final_result and "Error" not in final_result[:20]:
-            try:
-                run_id_match = re.search(r'Run ID\*?\*?:?\s*`?([a-f0-9-]+)',final_result)
-                if run_id_match:
-                    from utils.equity_chart import show_equity_curve
-                    eq_result = show_equity_curve(run_id=run_id_match.group(1))
-                    if "__CHART_DATA__" in eq_result:
-                        final_result += "\n\n" + eq_result
-            except Exception as _eq_err:
-                logger.warning(f"Equity chart auto-append failed: {_eq_err}")
 
         # Replace log console with final markdown result (with enrichment)
         try:

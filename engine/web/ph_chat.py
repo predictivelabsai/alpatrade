@@ -1561,23 +1561,26 @@ async def _stream(msg: str, session) -> StreamingResponse:
                     # multi-minute grid searches (which emit nothing themselves).
                     from tui.command_processor import CommandProcessor
                     cp = CommandProcessor(result.app_state, user_id=uid)
-                    label = result.raw_command.strip().split()[0]
-                    hint = (" — backtests can take a few minutes"
-                            if label == "agent:backtest" else "")
                     started = time.monotonic()
-                    task = asyncio.ensure_future(cp.process_command(result.raw_command))
+                    task = asyncio.ensure_future(result.run(
+                        cp, transform=lambda command, output: _maybe_append_equity(
+                            command, output, user_id=uid,
+                        ),
+                    ))
                     while True:
                         try:
                             md = await asyncio.wait_for(asyncio.shield(task), timeout=3)
                             break
                         except asyncio.TimeoutError:
+                            label = result.current_command.strip().split()[0]
+                            hint = ("; backtests can take a few minutes"
+                                    if label == "agent:backtest" else "")
                             elapsed = int(time.monotonic() - started)
                             yield _sse("progress", {
                                 "message": f"Running {label}{hint}",
                                 "elapsed_seconds": elapsed,
                             })
                     md = md or "Command executed."
-                    md = _maybe_append_equity(msg, md, user_id=uid)
                 else:
                     md = result
             except Exception as e:  # noqa: BLE001

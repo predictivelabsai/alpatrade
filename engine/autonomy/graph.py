@@ -302,12 +302,25 @@ def default_pipeline(user_id: Optional[str] = None,
                     f"sharpe={s.get('sharpe_ratio','?')} trades={s.get('total_trades','?')}"
                     for s in strategies[:10]
                 ]
-                llm_note = reason(
-                    "Given these paper-trading strategies ranked by PnL, "
-                    "which 1-3 show the most robust risk-adjusted profile "
-                    "(high Sharpe, reasonable drawdown, enough trades)? "
-                    "Be concise.\n" + "\n".join(summary_lines)
-                )
+                from engine.ai import judge as _judge
+                _prompt = ("Given these paper-trading strategies ranked by PnL, "
+                           "which 1-3 show the most robust risk-adjusted profile "
+                           "(high Sharpe, reasonable drawdown, enough trades)? "
+                           "Be concise.\n" + "\n".join(summary_lines))
+                _prov, _res = _judge.decide(
+                    "\n".join(summary_lines),
+                    {f"r{i}": {"type": "score", "criteria": ["weak", "fair", "robust"],
+                               "instructions": f"Risk-adjusted robustness of strategy "
+                                               f"{s.get('strategy_slug', '?')} (Sharpe, drawdown, trade count)"}
+                     for i, s in enumerate(strategies[:10])},
+                    fallback=lambda: reason(_prompt), site="autonomy.promote")
+                if _prov == "typesafe":
+                    _scored = sorted(
+                        ((float(a.get("score") or 0), strategies[int(k[1:])].get("strategy_slug", "?"))
+                         for k, a in _res["answers"].items()), reverse=True)[:3]
+                    _res = "jev robustness: " + ", ".join(
+                        f"{slug} {['weak', 'fair', 'robust'][min(2, int(round(sc)))]}" for sc, slug in _scored)
+                llm_note = _res
                 if llm_note:
                     store.append_event(ctx.get("run_id"), f"promote reasoning: {llm_note[:200]}")
             except Exception:  # noqa: BLE001

@@ -1,4 +1,6 @@
-"""Annualised-return helpers (simple 252-day arithmetic + compounded).
+"""Annualised-return helpers. Headline everywhere = ``annualised_pct`` = CAGR, shown only
+from 60 trading days (engine.metrics). ``simple_pct`` / ``compound_pct`` are kept for
+back-compat (scripts, tooltips).
 
 simple     = r * 252 / d
 compounded = (1 + r) ** (252 / d) - 1
@@ -14,8 +16,8 @@ TRADING_DAYS_PER_YEAR = 252
 # sessions ~ 90 calendar days; below that the annualised values are None and
 # ``short_period`` is True (rendered "n/a (<90d)").
 MIN_ANNUALISE_TRADING_DAYS = 63  # short-period hint threshold only (tooltip)
-# Julian's standing rule: always show simple ×252/d from the first session (compounded only in the
-# tooltip), on the dashboard, the LIVE email and the Leaderboard alike.
+# 2026-10-12 (Julian): one definition everywhere: CAGR, n/a under 60 trading days
+# (replaces the earlier simple ×252/d headline).
 DEFAULT_MIN_DAYS = 1
 
 
@@ -89,14 +91,21 @@ def annualize(return_pct: Optional[float], trading_days: int,
               min_days: int = DEFAULT_MIN_DAYS) -> dict:
     """Return {'simple_pct','compound_pct','days','short_period'}; values None when
     d < ``min_days`` (default 63 sessions ~ 90 calendar days)."""
+    from engine.metrics import MIN_TRACK_DAYS, cagr_pct
     out = {"simple_pct": None, "compound_pct": None, "days": int(trading_days or 0),
-           "short_period": False}
+           "short_period": False, "annualised_pct": None, "return_pct": return_pct,
+           "basis": "cagr"}
+    # Headline (everywhere): CAGR, only from MIN_TRACK_DAYS (60) trading days.
+    out["annualised_pct"] = cagr_pct(return_pct, int(trading_days or 0))
+    if out["annualised_pct"] is None and return_pct is not None and trading_days:
+        out["short_period"] = int(trading_days) < MIN_TRACK_DAYS
     if return_pct is None or not trading_days or trading_days < 1:
         return out
     if trading_days < max(1, int(min_days or 1)):
         out["short_period"] = True
         return out
-    out["short_period"] = trading_days < MIN_ANNUALISE_TRADING_DAYS
+    from engine.metrics import MIN_TRACK_DAYS as _M
+    out["short_period"] = trading_days < _M
     r = float(return_pct) / 100.0
     out["simple_pct"] = r * TRADING_DAYS_PER_YEAR / trading_days * 100
     try:
@@ -108,13 +117,24 @@ def annualize(return_pct: Optional[float], trading_days: int,
 
 
 def fmt_ann(a: dict) -> str:
-    v = a.get("simple_pct")
-    if v is None:
-        return "—"
-    return f"{v:+.2f}%"
+    """Headline annualised = CAGR (n/a under 60 trading days). Shared formatter."""
+    from engine.metrics import fmt_annualised
+    return fmt_annualised(a)
 
 
 def tooltip(a: dict) -> str:
+    from engine.metrics import MIN_TRACK_DAYS
+    if a.get("annualised_pct") is None and a.get("short_period"):
+        tot = a.get("return_pct")
+        tot_s = "" if tot is None else f" Total return so far {tot:+.2f}%."
+        return (f"Not annualised: only {a.get('days')} trading days (minimum {MIN_TRACK_DAYS})."
+                + tot_s)
+    if a.get("annualised_pct") is not None:
+        since = f" since {a['start_date']}" if a.get("start_date") else ""
+        tot = a.get("return_pct")
+        tot_s = "" if tot is None else f"total {tot:+.2f}% over "
+        return (f"Annualised = CAGR (1+r)^(252/d)−1 = {a['annualised_pct']:+.2f}% "
+                f"({tot_s}{a['days']} trading days{since}).")
     if a.get("simple_pct") is None:
         if a.get("short_period"):
             return (f"Not annualised: only {a.get('days')} trading days (needs "

@@ -233,6 +233,16 @@ def analyze_with_ai(items: list[dict[str, Any]],
             and now - _analysis_cache["at"] < _ANALYSIS_TTL):
         return {**_analysis_cache["data"], "cached": True}
 
+    if model is None:
+        from engine.ai import judge
+        if judge.use_typesafe():
+            try:
+                data = analyze_with_jev(items)
+                _analysis_cache.update({"key": key, "at": now, "data": data})
+                return {**data, "cached": False}
+            except Exception as exc:  # noqa: BLE001 — fall back to Grok below
+                logging.getLogger(__name__).warning("jev sector analysis failed (%s); using Grok",
+                                                    type(exc).__name__)
     model = model or _build_model()
     digest = [{"i": index, "title": row.get("title", ""), "summary": row.get("summary", ""),
                "tickers": row.get("tickers", []), "sector": (row.get("sectors") or [None])[0]}
@@ -282,6 +292,63 @@ def analyze_with_ai(items: list[dict[str, Any]],
             "model": getattr(model, "model_name", None) or "chat-model"}
     _analysis_cache.update({"key": key, "at": now, "data": data})
     return {**data, "cached": False}
+
+
+SECTORS = ("Technology", "Healthcare", "Financials", "Industrials",
+           "Consumer Discretionary", "Consumer Staples", "Energy", "Materials",
+           "Real Estate", "Utilities", "Communication Services")
+_MOVE_LEVELS = ["under 0.5%", "0.5-1.5%", "1.5-3%", "3-6%", "over 6%"]
+_MOVE_MID = [0.25, 1.0, 2.25, 4.5, 8.0]
+_DIR = {"up": "sector likely rises on this news", "down": "sector likely falls on this news",
+        "neutral": "no material effect on this sector"}
+
+
+def jev_questions() -> dict:
+    q = {f"s{i}": {"type": "choice", "criteria": _DIR,
+                   "instructions": f"Near-term effect of this headline on the {name} sector"}
+         for i, name in enumerate(SECTORS)}
+    q["move"] = {"type": "score", "criteria": _MOVE_LEVELS,
+                 "instructions": "Expected absolute price move of the most affected sector or stock"}
+    return q
+
+
+def jev_item(answers: dict) -> dict:
+    """Map one jev answer set onto the Grok-shaped ``ai`` dict."""
+    mv = answers.get("move") or {}
+    try:
+        move = _MOVE_MID[max(0, min(len(_MOVE_MID) - 1, int(round(float(mv.get("score"))))))]
+    except (TypeError, ValueError):
+        move = None
+    impacts = []
+    for i, name in enumerate(SECTORS):
+        a = answers.get(f"s{i}") or {}
+        if a.get("choice") in ("up", "down"):
+            impacts.append({"sector": name, "direction": a["choice"], "move_pct": move,
+                            "confidence": _finite((a.get("probabilities") or {}).get(a["choice"]))})
+    impacts.sort(key=lambda x: -(x["confidence"] or 0))
+    return {"sectors": impacts[:3], "thesis": "", "tickers": []}
+
+
+def analyze_with_jev(items: list[dict[str, Any]], http=None) -> dict[str, Any]:
+    """Per-headline sector impact via TypeSafe jev (one typed call per headline, in parallel)."""
+    from concurrent.futures import ThreadPoolExecutor
+    from engine.ai.judge import typesafe_decide
+    qs = jev_questions()
+
+    def one(row):
+        state = {"headline": row.get("title", ""), "summary": row.get("summary", ""),
+                 "tickers": row.get("tickers", [])}
+        return typesafe_decide(state, qs, http=http)
+
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        results = list(ex.map(one, items))
+    enriched = []
+    for row, res in zip(items, results):
+        ai = jev_item(res["answers"])
+        ai["tickers"] = [str(t) for t in row.get("tickers", [])]
+        enriched.append({**row, "ai": ai})
+    model = (results[0]["model"] if results else "jev") + " (TypeSafe)"
+    return {"items": enriched, "sectors": _sector_board(enriched), "model": model}
 
 
 def _build_model():

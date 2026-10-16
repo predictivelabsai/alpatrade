@@ -84,6 +84,7 @@ LB_CSS = """
 .lb-audit tr.a-fail td{color:#b43b35}.lb-audit tr.a-warn td{color:#8a5a12}
 .lb-badge.pub{border-color:var(--accent);color:var(--accent)}
 .lb-badge.live{border-color:#b43b35;color:#b43b35}
+.lb-badge.my-live{border-color:#96d6ad;color:#147a4b;background:#e3f4ea;margin-left:.3rem}
 .lb-badge.bt{border-color:#7a5a12;color:#7a5a12;background:#fff7e0}
 .lb-src{display:inline-block;margin-top:.3rem;font-size:.76rem;color:var(--ink-muted);overflow-wrap:anywhere}
 .lb-src a{color:var(--accent)}
@@ -144,7 +145,7 @@ LB_CSS = """
 }
 """
 
-LB_JS = """
+LB_JS_BASE = """
 <script>
 (function(){
 var AI={grok:{q:'https://grok.com/?q=',home:'https://grok.com/',name:'Grok'}};
@@ -182,6 +183,9 @@ document.querySelectorAll('[data-md-render]').forEach(function(el){if(!window.ma
 </script>
 """
 
+from engine.web.ph_grokbot import assets as _gb_assets  # noqa: E402
+LB_JS = LB_JS_BASE + _gb_assets()
+
 _SIGNIN_MSG = "Sign in (or create a free account) to clone strategies into AlpaTrade."
 
 
@@ -209,20 +213,18 @@ def _user(session) -> Optional[dict]:
 # ── fragments ───────────────────────────────────────────────────────────────
 def _annualised_cell(m: dict, label: bool = True) -> str:
     v = m.get("annualised_pct")
-    sub = ("<span class='lb-sub'>simple, ×252/trading days</span>" if v is not None else "")
-    if m.get("is_backtest") and v is not None:
-        sub = "<span class='lb-sub'>simple, ×252/trading days</span>"
+    sub = ("<span class='lb-sub'>simple · ×252/trading days</span>" if v is not None else "")
     sub_m = sub.replace("class='lb-sub'", "class='lb-sub m'")
     return ((f"<span class='lb-l'>Annualised return</span>" if label else "")
             + f"<span class='lb-v {_cls(v)}' data-tip='{_e(lperf.annualised_tip(m))}' "
               f"title='{_e(lperf.annualised_tip(m))}'>"
-              f"{lperf.pct(v)}</span>" + sub_m)
+              f"{lperf.ann_display(m)}</span>" + sub_m)
 
 
 def _alpha_cell(m: dict, label: bool = True) -> str:
     v = m.get("alpha_pct")
     if m.get("is_backtest"):
-        sub = (f"<span class='lb-sub'>simple, ×252/trading days · {lperf.pct(m.get('annualised_pct'))} vs SPY "
+        sub = (f"<span class='lb-sub'>simple annualised · {lperf.pct(m.get('annualised_pct'))} vs SPY "
                f"{lperf.pct(m.get('spy_annualised_pct'))}</span>" if v is not None else "")
     else:
         sub = (f"<span class='lb-sub'>return {lperf.pct(m.get('return_pct'))} · SPY "
@@ -344,6 +346,8 @@ def _actions(s: dict, user: Optional[dict], *, wide_view: bool = False) -> str:
             f"<button type='button' class='lb-btn ai' onclick='lbCopy({sid},\"grok\")'>{GROK_SVG}Open in Grok</button>",
             f"<button type='button' class='lb-btn ai cp' onclick='lbCopyClip({sid})' title='Copy the full SKILL.md'>"
             f"{COPY_SVG}Copy to clipboard</button>"]
+    from engine.web.ph_grokbot import button as gb_button
+    out.append(gb_button(s, user))
     if wide_view:
         out.append(f"<a class='lb-btn wide' href='/strategies/{sid}/skill.md'>Download .md</a>")
     return "<div class='lb-actions'>" + "".join(out) + "</div>"
@@ -401,16 +405,14 @@ def _row_activate(s: dict, user: Optional[dict]) -> str:
 
 
 _METHOD_NOTE = (
-    "Annualised return = (1+r)^(252/d)−1, where r is the time-weighted return since the strategy "
-    "went live (deposits and withdrawals excluded) and d the trading days; over a short period it "
-    "is very sensitive (hover for the simple r×252/d figure). Alpha = strategy return minus "
+    "Annualised return = period return × 252 / trading days, where the period return is time-weighted "
+    "since the strategy went live (deposits and withdrawals excluded). Alpha = strategy return minus "
     "SPY's return over the same period. Figures are computed live from each strategy's AlpaTrade "
     "live run (account equity and SPY at the latest session close; tap or hover a figure for the "
     "as-of date); \"—\" means no live track record yet. Past performance over a short period says "
     "little about the future. Strategies marked Backtest are hypothetical: their figures come "
-    "from a daily-bar backtest (annualised = simple, total return × 252 / trading days of the "
-    "stated period, cash only, slippage included; alpha = that minus SPY's simple annualised "
-    "return over the same days; the compounded CAGR is in the tooltip), they were never traded live and "
+    "from a daily-bar backtest (annualised = simple return × 252 / trading days, cash only, slippage "
+    "included; alpha = that minus SPY's annualised return over the same days), they were never traded live and "
     "are listed after live strategies. Backtests use today's S&P 500 members, which flatters "
     "momentum and relative-strength rules in particular (survivorship bias). Not investment advice.")
 
@@ -619,7 +621,7 @@ def _strategy_backtest_html(s: dict, m: dict, user: Optional[dict], badges: str,
     t = m.get("test") or {}
     num = lambda v, f="{:.2f}": "—" if v is None else f.format(v)  # noqa: E731
     strip = ("<div class='lb-strip'>"
-             f"<div class='lb-kpi'><div class='k'>Annualised (simple, ×252/trading days · backtest)</div>{_annualised_cell(m, False)}"
+             f"<div class='lb-kpi'><div class='k'>Annualised (simple · backtest)</div>{_annualised_cell(m, False)}"
              f"<span class='lb-sub'>SPY {lperf.pct(m.get('spy_annualised_pct'))}</span></div>"
              f"<div class='lb-kpi'><div class='k'>Alpha vs SPY</div>{_alpha_cell(m, False)}</div>"
              f"<div class='lb-kpi'><div class='k'>Sharpe · max drawdown</div><span class='lb-v'>"
@@ -630,10 +632,9 @@ def _strategy_backtest_html(s: dict, m: dict, user: Optional[dict], badges: str,
     if t.get("annualised_pct") is not None:
         oos = (f"<p class='lb-note' style='margin-top:0'>Out-of-sample test window "
                f"{_e(lperf.fmt_day(t.get('period_start')))} – {_e(lperf.fmt_day(t.get('period_end')))}: "
-               f"annualised (simple, ×252/trading days) "
+               f"annualised (simple) "
                f"{lperf.pct(lperf.simple_from_cagr(t.get('annualised_pct'), t.get('period_start'), t.get('period_end')))}"
-               f" vs SPY {lperf.pct(lperf.simple_from_cagr(t.get('spy_annualised_pct'), t.get('period_start'), t.get('period_end')))}"
-               f" (CAGR {lperf.pct(t.get('annualised_pct'))} vs {lperf.pct(t.get('spy_annualised_pct'))}), "
+               f" vs SPY {lperf.pct(lperf.simple_from_cagr(t.get('spy_annualised_pct'), t.get('period_start'), t.get('period_end')))}, "
                f"Sharpe {num(t.get('sharpe'))}, max drawdown {lperf.pct(t.get('max_drawdown_pct'))}. "
                f"Universe: {_e(m.get('universe') or '—')}.</p>")
     warn = ("<div class='flash' style='background:#fff7e0;color:#5c4410'><b>Backtest, not a live "
@@ -665,10 +666,13 @@ def my_strategies_html(rows: list[tuple[dict, dict]], msg: str = "", error: str 
     for s, m in rows:
         sid = int(s["id"])
         pub = bool(s.get("is_public"))
+        live = ((statuses.get(sid) or {}).get("live") in ("active", "pending_runner", "paused")
+                or (s.get("kind") == "live" and bool(s.get("live_strategy_slug"))))
         items.append(
             f"<div class='lb-row' id='my-strategy-{sid}'><div class='lb-rank'>{'●' if pub else '○'}</div>"
             f"<div class='lb-name'><a href='/strategies/{sid}'>{_e(s['name'])}</a>"
             + ("<span class='lb-badge pub'>Public</span>" if pub else "<span class='lb-badge'>Private</span>")
+            + ("<span class='lb-badge my-live'>Live</span>" if live else "")
             + f"<div class='lb-desc'>{_e(s.get('description'))}</div>"
             + (controls_html(sid, statuses.get(sid), back="/strategies") if s.get("kind") != "live" else "")
             + "</div>"
@@ -689,12 +693,11 @@ def my_strategies_html(rows: list[tuple[dict, dict]], msg: str = "", error: str 
             "<button class='lb-btn danger' type='submit'>Delete</button></form></div></div>")
     head = ("<div class='lb-row lb-head'><div></div><div>Strategy</div><div>Shown as</div>"
             "<div>Annualised return</div><div>Running</div><div>Alpha vs SPY</div></div>")
-    body = "".join(items) or ("<div class='lb-empty'>No strategies yet. Clone one from the "
-                              "<a href='/leaderboard'>Leaderboard</a> or create your own.</div>")
+    body = "".join(items) or ("<div class='lb-empty'>No active paper or live strategies yet. "
+                              "Activate one from the <a href='/leaderboard'>Leaderboard</a>.</div>")
     return (f"<div class='lb'>{flash}<span class='eyebrow'>Strategies</span><h1>My strategies</h1>"
-            "<p class='lede'>Strategies you own. Private ones are only visible to you; public ones "
-            "appear on the <a href='/leaderboard'>Leaderboard</a>. Live figures appear only for "
-            "strategies linked to your own live AlpaTrade run.</p>"
+            "<p class='lede'>Your active paper and live strategies. Private ones are only visible "
+            "to you; public ones appear on the <a href='/leaderboard'>Leaderboard</a>.</p>"
             "<div class='lb-actions' style='margin:0 0 1rem'><a class='lb-btn primary' "
             "href='/strategies/new'>＋ New strategy</a><a class='lb-btn' href='/leaderboard'>Leaderboard</a></div>"
             f"<div class='lb-list'>{head}{body}</div></div><style>{ACT_CSS}</style>{LB_JS}")
@@ -732,7 +735,9 @@ def form_html(action: str, s: Optional[dict] = None, error: str = "",
 
 # ── data ────────────────────────────────────────────────────────────────────
 def public_rows() -> list[tuple[dict, dict]]:
-    rows = [(s, lperf.strategy_metrics(s)) for s in store.list_public()]
+    rows = [(s, m) for s in store.list_public()
+            if (m := lperf.strategy_metrics(s)).get("annualised_pct") is None
+            or m["annualised_pct"] >= 0]
     rows.sort(key=lambda r: (lperf.rank_key(r[1]), r[0]["id"]))
     return rows
 
@@ -804,14 +809,15 @@ def register(app, rt):
                             "spy_return_pct", "alpha_pct", "annualised_pct",
                             "annualised_compound_pct")}})
         return JSONResponse({"strategies": out, "benchmark": "SPY",
-                             "annualised": "simple: return x 252 / trading days"})
+                             "annualised": "simple: total return x 252 / trading days"})
 
     @rt("/strategies", methods=["GET"])
     def strategies_get(session, msg: str = "", error: str = ""):
         user = _user(session)
         if not user:
             return RedirectResponse("/signin", status_code=303)
-        rows = [(s, lperf.strategy_metrics(s)) for s in store.list_for_user(str(user["user_id"]))]
+        rows = [(s, lperf.strategy_metrics(s))
+                for s in store.list_activated_for_user(str(user["user_id"]))]
         from engine.leaderboard.activate import statuses
         return _render(user, "My strategies · AlpaTrade", "strategies",
                        my_strategies_html(rows, msg=msg, error=error, statuses=statuses(str(user["user_id"]))))

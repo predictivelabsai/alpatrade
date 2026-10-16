@@ -52,6 +52,7 @@ from engine.auth import (
     verify_and_consume_email_token,
     verify_and_consume_reset_token,
 )
+from engine.web import antibot
 from engine.web.ph_layout import auth_shell
 
 logger = logging.getLogger(__name__)
@@ -128,9 +129,32 @@ def _with_next(path: str, target) -> str:
     return f"{path}?next={quote(n, safe='/')}" if n else path
 
 
-def _session_login(session, user: dict) -> None:
-    """Persist the login. Only the id is stored; the record is re-fetched."""
+def _session_login(session, user: dict, method: str = "password", request=None) -> None:
+    """Persist the login. Only the id is stored; the record is re-fetched.
+
+    Also records the login (``alpatrade.user_logins``) for admin analytics;
+    tracking never blocks sign-in.
+    """
     session["user_id"] = user["user_id"]
+    try:
+        from engine.rbac import record_login
+        ip = ua = ""
+        if request is not None:
+            ip = (request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+                  or (request.client.host if request.client else ""))
+            ua = request.headers.get("user-agent", "")
+        record_login(str(user["user_id"]), method, ip, ua)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _attribute_referral(session, user: dict) -> None:
+    """Link a fresh signup to its referrer (``?ref=CODE`` kept in the session)."""
+    try:
+        from engine.referrals import link_signup
+        link_signup(str(user["user_id"]), user.get("email", ""), session.pop("ref", "") or "")
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def _send_verification_email(user: dict, request) -> None:
@@ -215,6 +239,7 @@ def _signin_page(email: str = "", error: str = "", msg: str = "", next_: str = "
         Input(id="signin-password", name="password", type="password",
               autocomplete="current-password", required=True),
         *_next_field(next_),
+        *antibot.guard_fields(),
         Button("Log in", type="submit", cls="auth-primary-btn", style="width:100%"),
         method="post", action="/signin",
     ))
@@ -241,12 +266,39 @@ def _register_page(email: str = "", error: str = "", next_: str = ""):
               autocomplete="new-password",
               placeholder="At least 8 characters", required=True),
         *_next_field(next_),
+        *antibot.guard_fields(),
         Button("Create account", type="submit", cls="auth-primary-btn", style="width:100%"),
         method="post", action="/register",
     ))
     blocks.append(P("Already have an account? ", A("Log in", href=_with_next("/signin", next_)),
                     cls="forgot-link"))
     return auth_shell(*blocks, title="AlpaTrade · Register")
+
+
+def _check_inbox_page(email: str = "", msg: str = "", error: str = ""):
+    """Shown after a password signup and when an unverified user tries to log in."""
+    blocks = [
+        H2("Check your inbox"),
+        P("We sent a verification link to ", Span(email or "your email", style="font-weight:600"),
+          ". Open it to activate your account, then log in.", cls="signin-sub"),
+        *_notice(error, msg),
+        P("The link expires in 24 hours. Unverified accounts are removed after 7 days.",
+          cls="signin-sub", style="font-size:13px"),
+        Form(
+            Input(type="hidden", name="email", value=email),
+            *antibot.guard_fields(),
+            Button("Resend verification email", type="submit", cls="auth-primary-btn",
+                   style="width:100%"),
+            method="post", action="/verify/resend-email",
+        ),
+        A("Back to sign in", href="/signin", cls="forgot-link"),
+    ]
+    return auth_shell(*blocks, title="AlpaTrade · Check your inbox")
+
+
+def _needs_verification(user: dict) -> bool:
+    """Password-only accounts must verify email before login; Google ones are verified."""
+    return not user.get("email_verified_at") and not user.get("google_id")
 
 
 def _forgot_page(error: str = "", msg: str = ""):
@@ -258,6 +310,7 @@ def _forgot_page(error: str = "", msg: str = ""):
             Label("Email", fr="forgot-email"),
             Input(id="forgot-email", name="email", type="email",
                   autocomplete="email", required=True, autofocus=True),
+            *antibot.guard_fields(),
             Button("Send reset link", type="submit", cls="auth-primary-btn", style="width:100%"),
             method="post", action="/forgot",
         ),
@@ -364,18 +417,26 @@ def register(app, rt):
         email = (form.get("email") or "").strip()
         pw = form.get("password") or ""
         nxt = safe_next(form.get("next"))
+        if antibot.check_form(form, antibot.client_ip(request)):
+            return _signin_page(email=email, error="Please wait a moment and try again.", next_=nxt)
         try:
             user = authenticate(email, pw)
         except Exception:  # noqa: BLE001
             user = None
         if not user:
             return _signin_page(email=email, error="Invalid email or password.", next_=nxt)
-        _session_login(session, user)
+        if _needs_verification(user):
+            return _check_inbox_page(email=user.get("email", email),
+                                     error="Please verify your email before logging in.")
+        _session_login(session, user, "password", request)
         return RedirectResponse(_after_auth(nxt), status_code=303)
 
     # ---- register ---------------------------------------------------------
     @rt("/register", methods=["GET"])
-    def register_get(session, error: str = "", next: str = ""):
+    def register_get(session, error: str = "", next: str = "", ref: str = ""):
+        from engine.referrals import clean_code
+        if clean_code(ref):
+            session["ref"] = clean_code(ref)
         if current_user(session):
             return RedirectResponse(_after_auth(next), status_code=303)
         return _register_page(error=error, next_=next)
@@ -387,6 +448,15 @@ def register(app, rt):
         pw = form.get("password") or ""
         dn = (form.get("display_name") or "").strip() or None
         nxt = safe_next(form.get("next"))
+        ip, ua = antibot.client_ip(request), request.headers.get("user-agent", "")
+        reason = antibot.check_form(form, ip)
+        if reason:
+            antibot.log_attempt(ip, email, ua, reason)
+            return _register_page(email=email, error="Please wait a moment and try again.", next_=nxt)
+        if antibot.rate_limited(ip):
+            antibot.log_attempt(ip, email, ua, "rate_limited")
+            return _register_page(email=email, error="Too many signups from your network. "
+                                  "Please try again later.", next_=nxt)
         if not email or not pw:
             return _register_page(email=email, error="Email and password are required.", next_=nxt)
         if len(pw) < 8:
@@ -400,14 +470,17 @@ def register(app, rt):
             return _register_page(email=email, error="Could not create account. Please try again.", next_=nxt)
         if not user:
             return _register_page(email=email, error="Could not create account. Please try again.", next_=nxt)
-        _session_login(session, user)
+        antibot.log_attempt(ip, email, ua, "created", user.get("user_id"))
+        _attribute_referral(session, user)
         try:
             from engine.web.onboarding import record_event
             record_event(user["user_id"], "registered")
         except Exception:  # noqa: BLE001
             pass
         _send_verification_email(user, request)
-        return RedirectResponse(_after_auth(nxt), status_code=303)
+        antibot.maybe_alert_admin()
+        # No session until the email is verified (the /verify link signs them in).
+        return _check_inbox_page(email=user.get("email", email))
 
     # ---- email verification -----------------------------------------------
     @rt("/verify", methods=["GET"])
@@ -423,7 +496,7 @@ def register(app, rt):
             return RedirectResponse(
                 "/dashboard?msg=Verification+link+is+invalid+or+expired",
                 status_code=303)
-        _session_login(session, {"user_id": user_id})
+        _session_login(session, {"user_id": user_id}, "verify")
         return RedirectResponse(
             "/dashboard?msg=Email+verified.+Thanks!", status_code=303)
 
@@ -439,6 +512,22 @@ def register(app, rt):
             "/dashboard?msg=Verification+email+sent.+Check+your+inbox.",
             status_code=303)
 
+    @app.post("/verify/resend-email")
+    async def verify_resend_email(request):
+        form = await request.form()
+        email = (form.get("email") or "").strip()
+        if antibot.check_form(form, antibot.client_ip(request)):
+            return _check_inbox_page(email=email, error="Please wait a moment and try again.")
+        try:
+            user = get_user_by_email(email) if email else None
+            if user and _needs_verification(user):
+                _send_verification_email(user, request)
+        except Exception as e:  # noqa: BLE001
+            logger.error("verification resend failed: %s", e)
+        # Same answer either way (no account enumeration).
+        return _check_inbox_page(email=email, msg="If that account needs verification, "
+                                 "a new link is on its way.")
+
     # ---- forgot password --------------------------------------------------
     @rt("/forgot", methods=["GET"])
     def forgot_get(session, error: str = "", msg: str = ""):
@@ -450,6 +539,8 @@ def register(app, rt):
     async def forgot_post(request):
         form = await request.form()
         email = (form.get("email") or "").strip()
+        if antibot.check_form(form, antibot.client_ip(request)):
+            return _forgot_page(error="Please wait a moment and try again.")
         if email:
             try:
                 token = create_password_reset_token(email)
@@ -554,9 +645,11 @@ def register(app, rt):
                     link_google_id(email, google_id)
                 elif not user:
                     user = create_user(email=email, google_id=google_id, display_name=name)
+                    if user:
+                        _attribute_referral(session, user)
             if not user:
                 return RedirectResponse("/signin?error=Could+not+create+account", status_code=303)
-            _session_login(session, user)
+            _session_login(session, user, "google", request)
             try:
                 from engine.web.onboarding import record_event
                 record_event(user["user_id"], "registered")

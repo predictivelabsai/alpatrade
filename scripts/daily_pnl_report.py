@@ -175,8 +175,15 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
     acct = api.get_account() or {}
     account_ok = bool(acct) and "error" not in acct
     positions = api.get_positions() or []
-    equity = _f(acct.get("equity"))
-    last_equity = _f(acct.get("last_equity")) or equity
+    # Junk / untradable securities (engine/reporting/exclusions.py): out of positions,
+    # unrealised and equity; the same MV shift on last_equity keeps day P&L jump-free.
+    from engine.reporting.exclusions import excluded_value, split_positions
+    positions, excluded = split_positions(
+        positions if isinstance(positions, list) else [],
+        (account_id, acct.get("account_number") if isinstance(acct, dict) else None))
+    ex_mv = excluded_value(excluded)
+    equity = _f(acct.get("equity")) - ex_mv
+    last_equity = (_f(acct.get("last_equity")) - ex_mv) if acct.get("last_equity") else equity
     day_pnl = equity - last_equity
     day_pct = (equity / last_equity - 1) * 100 if last_equity else 0.0
     unreal = sum(_f(p.get("unrealized_pl")) for p in positions)
@@ -189,6 +196,7 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
         hist_pair = _historical_equity(api, day)
         if hist_pair:
             hist_equity, hist_prev = hist_pair
+            hist_equity, hist_prev = hist_equity - ex_mv, hist_prev - ex_mv
             backdated_equity, equity, last_equity = hist_equity, hist_equity, hist_prev
             day_pnl = equity - last_equity
             day_pct = (equity / last_equity - 1) * 100 if last_equity else 0.0
@@ -203,7 +211,8 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
         "equity": equity, "last_equity": last_equity, "day_pnl": day_pnl, "day_pct": day_pct,
         "cash": _f(acct.get("cash")), "buying_power": _f(acct.get("buying_power")),
         "unrealized_pl": unreal, "daytrade_count": acct.get("daytrade_count"),
-        "positions": positions,
+        "positions": positions, "excluded_positions": excluded,
+        "excluded_value": ex_mv, "equity_raw": equity + ex_mv,
         "trades": trades,
         "runs": runs,
         "active_runs": active_runs(user_id=user_id, account_id=account_id,
@@ -622,7 +631,9 @@ def save_equity_snapshot(user_id: str, account_id: str, day: str,
                     unrealized_pnl = EXCLUDED.unrealized_pnl,
                     net_cash_flow = EXCLUDED.net_cash_flow, captured_at = NOW()
             """), {"uid": user_id, "aid": account_id, "day": day,
-                    "equity": data["equity"], "cash": data["cash"],
+                    # Raw broker equity is persisted; the excluded MV is applied to
+                    # both ends below so adding an exclusion never moves history.
+                    "equity": data.get("equity_raw", data["equity"]), "cash": data["cash"],
                     "buying_power": data["buying_power"],
                     "unrealized": data["unrealized_pl"], "net_flow": net_flow})
             rows = session.execute(text("""
@@ -635,7 +646,8 @@ def save_equity_snapshot(user_id: str, account_id: str, day: str,
             """), {"uid": user_id, "aid": account_id, "day": day}).fetchall()
         if not rows:
             return {}
-        current = float(data.get("equity") or rows[-1][1])
+        ex_mv = float(data.get("excluded_value") or 0.0)
+        current = float(data.get("equity_raw") or data.get("equity") or rows[-1][1])
         day_date = rows[-1][0]
         month_start = day_date.replace(day=1)
         year_start = day_date.replace(month=1, day=1)
@@ -667,8 +679,9 @@ def save_equity_snapshot(user_id: str, account_id: str, day: str,
                     baseline, source = float(subset[0][1]) - float(subset[0][2] or 0), "snapshot"
             if not baseline:
                 return None
-            pnl = current - baseline - flows
-            return {"pnl": pnl, "pct": (pnl / baseline * 100) if baseline else 0.0,
+            pnl = current - baseline - flows  # excluded MV cancels (both ends)
+            base_adj = baseline - ex_mv
+            return {"pnl": pnl, "pct": (pnl / base_adj * 100) if base_adj else 0.0,
                     "days": len(subset), "source": source}
         return {"mtd": window(month_rows, month_start), "ytd": window(rows, year_start)}
     except Exception:  # noqa: BLE001
@@ -1016,7 +1029,7 @@ def _render_equity_reconciliation(d: dict) -> str:
     prior = d.get("prior_reported_equity")
     if prior is None:
         return ""
-    digest_change = _f(d.get("equity")) - _f(prior)
+    digest_change = _f(d.get("equity_raw", d.get("equity"))) - _f(prior)  # snapshots are raw
     unexplained = digest_change - _f(d.get("day_pnl"))
     if abs(unexplained) < 0.01:
         return ""
@@ -1073,6 +1086,13 @@ def _render_agent_next_steps(d: dict) -> str:
     )
 
 
+def _excluded_note(d: dict) -> str:
+    from engine.reporting.exclusions import footnote
+    note = footnote(d.get("excluded_positions") or [])
+    return (f"<p style='font-size:11px;color:#7A867E;margin:.3rem 0'>{_e(note)}</p>"
+            if note else "")
+
+
 def render(d: dict) -> str:
     sign = "▲" if d["day_pnl"] >= 0 else "▼"
     color = "#1F5D43" if d["day_pnl"] >= 0 else "#b0653f"
@@ -1124,6 +1144,7 @@ def render(d: dict) -> str:
     <thead><tr style="background:#EFEDE4"><th>Symbol</th><th>Qty</th><th>Entry</th><th>Price</th><th>Value</th><th>Unrealised P&amp;L</th></tr></thead>
     <tbody>{rows}</tbody>
   </table>
+  {_excluded_note(d)}
   <h3>Paper trades ({len(d.get('trades', []))})</h3>
   <p style="color:#415046;font-size:13px;margin:.15rem 0 .4rem">{n_buys} buy · {n_sells} sell
      · realised P&amp;L <b style="color:{'#1F5D43' if realized >= 0 else '#b0653f'}">${realized:,.2f}</b></p>

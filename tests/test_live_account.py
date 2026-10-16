@@ -195,7 +195,9 @@ def test_live_link_table_is_only_used_by_the_readonly_view():
                # link to trade that user's own account (utils/user_live_runner.py)
                "utils/user_live_runner.py", "tests/test_user_live_runner.py",
                # Settings Check: one read-only GET /v2/account per saved key
-               "engine/key_check.py"}
+               "engine/key_check.py",
+               # Stale-account purge: EXISTS guard only (never deletes linked users)
+               "engine/web/antibot.py", "tests/test_antibot_signup.py"}
     pat = re.compile(r"user_live_broker_accounts|engine\.live_accounts|get_live_account_credentials"
                      r"|alpaca_live_readonly")
     hits = set()
@@ -280,7 +282,8 @@ def test_page_renders_summary_positions_orders_without_controls(monkeypatch):
                                                                   "email": "o@x",
                                                                   "email_verified_at": 1})
     html = to_xml(_routes()[("/live/account", "GET")](session={"user_id": "owner"}))
-    assert "885504372" in html and "$10,500.50" in html and "+$100.50" in html
+    # BNBX market value ($4.50) is excluded from equity; day P&L is unchanged.
+    assert "885504372" in html and "$10,496.00" in html and "+$100.50" in html
     assert "$1,200.25" in html and "$2,400.50" in html
     assert 'id="live-positions"' in html or "id='live-positions'" in html
     assert "AFRM" in html and "BNBX" in html and "$744.00" in html and "+3.16%" in html

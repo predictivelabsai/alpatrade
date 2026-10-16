@@ -53,7 +53,9 @@ class NewsRepository:
 
     @contextmanager
     def lock(self, job_name: str, shard_index: int):
-        conn = self.engine.connect()
+        # AUTOCOMMIT: session-level advisory locks outlive transactions; without it SQLAlchemy's
+        # autobegin left this connection "idle in transaction" for the whole worker cycle.
+        conn = self.engine.connect().execution_options(isolation_level="AUTOCOMMIT")
         key = self.lock_key(job_name, shard_index)
         acquired = bool(conn.execute(text("SELECT pg_try_advisory_lock(:key)"), {"key": key}).scalar())
         try:

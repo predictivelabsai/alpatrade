@@ -117,6 +117,21 @@ def list_for_user(user_id: str) -> list[dict]:
                  "ORDER BY s.created_at", {"uid": str(user_id)})
 
 
+def list_activated_for_user(user_id: str) -> list[dict]:
+    """Owned strategies with an active activation or a running legacy live run."""
+    if not user_id:
+        return []
+    return _rows(f"SELECT {_COLS} FROM {_FROM} WHERE s.user_id = CAST(:uid AS UUID) "
+                 "AND (EXISTS (SELECT 1 FROM alpatrade.user_strategy_activations a "
+                 "WHERE a.user_id = s.user_id AND a.user_strategy_id = s.id "
+                 "AND a.status IN ('active', 'pending_runner', 'paused', 'queued', 'running')) "
+                 "OR EXISTS (SELECT 1 FROM alpatrade.runs r WHERE r.user_id = s.user_id "
+                 "AND r.strategy_slug = s.live_strategy_slug AND r.mode = 'live' "
+                 "AND r.status = 'running' AND s.kind = 'live' "
+                 "AND COALESCE((r.config->>'test')::boolean, FALSE) = FALSE)) "
+                 "ORDER BY s.created_at", {"uid": str(user_id)})
+
+
 def get(strategy_id: int) -> Optional[dict]:
     rows = _rows(f"SELECT {_COLS} FROM {_FROM} WHERE s.id = :id", {"id": int(strategy_id)})
     return rows[0] if rows else None

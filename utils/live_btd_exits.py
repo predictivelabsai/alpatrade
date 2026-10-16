@@ -22,7 +22,10 @@ import math
 from datetime import date
 from typing import Any, Dict, List, Optional
 
-OWN_EXIT_PREFIXES = ("btdtp-", "btdsl-", "btdx-")
+OWN_EXIT_PREFIXES = ("btdtp-", "btdsl-", "btdx-", "btdps-")
+# Operator-placed emergency stops (e.g. 2026-10-16 manual fix) are treated as the runner's own
+# exits so the time exit / target logic cancels them before selling (no qty conflict).
+MANUAL_STOP_PREFIX = "manual-stop-"
 
 
 def exit_eligible(entry_date: date, today: date, min_hold_days: int) -> bool:
@@ -97,9 +100,120 @@ def fallback_full_stop(sym: str, qty: Any, sl: float, today: date, prefix: str =
 
 
 def own_open_exits(open_orders: List[Dict[str, Any]], sym: str, prefix: str = "btd") -> List[Dict[str, Any]]:
-    own = OWN_EXIT_PREFIXES if prefix == "btd" else (f"{prefix}tp-", f"{prefix}sl-", f"{prefix}x-")
+    own = OWN_EXIT_PREFIXES if prefix == "btd" else (f"{prefix}tp-", f"{prefix}sl-", f"{prefix}x-", f"{prefix}ps-")
+    own = own + (MANUAL_STOP_PREFIX,)
     return [o for o in open_orders if o.get("symbol") == sym and o.get("side") == "sell"
             and str(o.get("client_order_id") or "").startswith(own)]
+
+
+# ---------------------------------------------------------------- protective stops (v0.47.0)
+# Every open strategy position carries a broker-side stop at entry x (1 - sl%) from the session
+# after its buy until it is sold -- also during the min-hold (before v0.47.0 stops existed only
+# from the min-hold day, i.e. only on the time-exit day itself). Alpaca rejects GTC for
+# fractional stops, so these are DAY orders re-placed every session: at the post-close event
+# (queued for the next open), at a pre-open check (08:45 ET), at the open and hourly checks.
+# Same-day entries get their stop after the close (PDT guard: no same-day round trip).
+
+def protective_stop_cid(sym: str, session_day: date, prefix: str = "btd", attempt: int = 1) -> str:
+    base = f"{prefix}ps-{sym}-{session_day:%Y%m%d}"
+    return base if attempt <= 1 else f"{base}-{attempt}"
+
+
+def is_stop_only(o: Dict[str, Any]) -> bool:
+    """A plain protective stop (not an OCO / market / limit exit)."""
+    return o.get("type") == "stop" and not o.get("order_class") in ("oco", "bracket", "oto")
+
+
+def open_sells(open_orders: List[Dict[str, Any]], sym: str) -> List[Dict[str, Any]]:
+    return [o for o in open_orders if o.get("symbol") == sym and o.get("side") == "sell"]
+
+
+def plan_protective_stops(tracked: Dict[str, Dict[str, Any]], positions: Dict[str, Dict[str, Any]],
+                          open_orders: List[Dict[str, Any]], *, today: date, session_day: date,
+                          market_open: bool, sl_pct: float, prefix: str = "btd",
+                          expect_live_stops: Optional[bool] = None) -> List[Dict[str, Any]]:
+    """Positions this strategy tracks that have NO working sell order at the broker.
+
+    Returns [{"sym", "body", "sl", "overdue", "skip"}]: ``overdue`` = the position should already
+    have had a stop (bought before ``session_day``) -> alert; ``skip`` = reason not to place now
+    (same-day entry while the market is open: PDT guard, placed after the close)."""
+    out = []
+    for sym, meta in sorted(tracked.items()):
+        pos = positions.get(sym)
+        if not pos:
+            continue
+        qty = uncovered_qty(pos, open_sells(open_orders, sym))
+        if qty <= 0:
+            continue
+        entry_px = float(pos.get("avg_entry_price") or 0)
+        if entry_px <= 0:
+            out.append({"sym": sym, "body": None, "sl": None, "overdue": True, "skip": "no avg_entry_price"})
+            continue
+        _, sl = exit_prices(entry_px, 0.0, sl_pct)
+        entry_d = date.fromisoformat(str(meta.get("entry_date") or today.isoformat()))
+        skip = "same-day entry, stop after the close (PDT guard)" if (market_open and entry_d >= today) else None
+        # alert only when a stop should be working now (pre-open / session) on an older position;
+        # after the close the DAY stops have simply expired and are re-placed for the next session
+        live = market_open if expect_live_stops is None else expect_live_stops
+        overdue = bool(live and entry_d < today and not skip)
+        qs = f"{qty:.9f}".rstrip("0").rstrip(".")
+        body = stop_order(sym, qs, sl, protective_stop_cid(sym, session_day, prefix))
+        out.append({"sym": sym, "body": body, "sl": sl, "overdue": overdue, "skip": skip,
+                    "bodies": protective_stop_bodies(sym, qty, sl, session_day, prefix)})
+    return out
+
+
+def uncovered_qty(pos: Dict[str, Any], sells: List[Dict[str, Any]]) -> float:
+    """Shares of a position not yet covered by an open sell (v0.49.0). Alpaca's qty_available
+    already excludes shares held for open sells; a sell order without a qty counts as covering
+    the whole position (conservative: never stack a second sell on unknown coverage)."""
+    total = float(pos.get("qty") or 0)
+    avail = float(pos.get("qty_available") if pos.get("qty_available") not in (None, "") else total)
+    if sells:
+        if any(not o.get("qty") for o in sells):
+            return 0.0
+        covered = sum(float(o.get("qty") or 0) - float(o.get("filled_qty") or 0) for o in sells)
+        avail = min(avail, total - covered)
+    return round(avail, 9) if avail > 1e-9 else 0.0
+
+
+def protective_stop_bodies(sym: str, qty: Any, sl: float, session_day: date, prefix: str = "btd",
+                           attempt: int = 1) -> List[Dict[str, Any]]:
+    """v0.49.0: whole shares -> ONE GTC stop (survives a runner outage / the overnight session
+    boundary; Alpaca only rejects GTC for fractional qty); fractional remainder -> DAY stop,
+    re-placed every session as before. Client ids: ``<prefix>ps-SYM-YYYYMMDD[g][-n]``."""
+    whole, frac = split_qty(qty)
+    cid = protective_stop_cid(sym, session_day, prefix, attempt)
+    out: List[Dict[str, Any]] = []
+    if whole >= 1:
+        gcid = f"{prefix}ps-{sym}-{session_day:%Y%m%d}g" + ("" if attempt <= 1 else f"-{attempt}")
+        b = stop_order(sym, str(whole), sl, gcid)
+        b["time_in_force"] = "gtc"
+        out.append(b)
+    if frac:
+        out.append(stop_order(sym, f"{frac:.9f}".rstrip("0").rstrip("."), sl, cid))
+    return out
+
+
+def below_stop(pos: Dict[str, Any], sl: Optional[float]) -> bool:
+    """Last price at/under the stop level (gap-down open or a stop that never triggered)."""
+    try:
+        px = float(pos.get("current_price") or 0)
+    except (TypeError, ValueError):
+        return False
+    return bool(sl) and 0 < px <= float(sl)
+
+
+def tif_rejected(exc_text: str) -> bool:
+    """Alpaca 422 for a time_in_force it won't take on this order (fallback: DAY)."""
+    t = (exc_text or "").lower()
+    return "time_in_force" in t or "time in force" in t or "gtc" in t
+
+
+def stop_rejected_below(exc_text: str) -> bool:
+    """Alpaca's 422 when the market is already below the stop level."""
+    t = (exc_text or "").lower()
+    return "stop price must be less than current price" in t or "stop_price must be less" in t
 
 
 def order_fill(o: Dict[str, Any]) -> tuple[float, float, bool]:
@@ -110,3 +224,20 @@ def order_fill(o: Dict[str, Any]) -> tuple[float, float, bool]:
     notional = sum(float(p.get("filled_qty") or 0) * float(p.get("filled_avg_price") or 0) for p in parts)
     final = all(p.get("status") in final_st for p in parts)
     return qty, (notional / qty if qty else 0.0), final
+
+
+def stop_exemptions(spec: Optional[str], today: date) -> Dict[str, date]:
+    """BTD_STOP_EXEMPT="AMD:2026-10-19,INTC:2026-10-19" -> {sym: until} still in force today.
+    An exempt symbol gets no protective stop, no below-stop market sell and no open-event TP/SL
+    orders; only the normal max-hold time exit sells it. Entries expire automatically after
+    ``until`` (inclusive). Malformed entries are ignored."""
+    out: Dict[str, date] = {}
+    for part in (spec or "").replace(";", ",").split(","):
+        sym, _, d = part.strip().partition(":")
+        try:
+            until = date.fromisoformat(d.strip())
+        except ValueError:
+            continue
+        if sym.strip() and today <= until:
+            out[sym.strip().upper()] = until
+    return out

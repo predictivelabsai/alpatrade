@@ -108,6 +108,21 @@ def fetch_flows(client: Any, since: date) -> Optional[list[dict]]:
         return None
 
 
+def phantom_flow(prev_eq: float, equity: float, flow: float) -> bool:
+    """True when a booked deposit did not show up in equity (e.g. the paper account's
+    initial funding activity dated after its first equity point). Removing it would make
+    the segment lose >50% in one day while equity itself did not collapse, which a
+    cash-only account can't do. Such a flow is treated as already in the start equity."""
+    if prev_eq <= 0 or flow <= 0:
+        return False
+    import logging
+    hit = (equity - flow) <= 0.5 * prev_eq and equity >= 0.5 * prev_eq and flow >= 0.5 * prev_eq
+    if hit:
+        logging.getLogger("engine.metrics").warning(
+            "METRICS_GUARD phantom deposit ignored: flow %.2f vs equity %.2f (prev %.2f)", flow, equity, prev_eq)
+    return hit
+
+
 def twr_pct(start: date, start_eq: float, points: Iterable, rows: Optional[list]) -> tuple[float, float]:
     """(time-weighted return %, net deposits) from ascending [(day, equity)] session closes
     after ``start`` (whose close is ``start_eq``). Each segment's return is
@@ -118,6 +133,8 @@ def twr_pct(start: date, start_eq: float, points: Iterable, rows: Optional[list]
         if d <= start:
             continue
         f = net_flows(rows or [], prev_day, d)
+        if phantom_flow(prev_eq, float(e), f):
+            f = 0.0
         if prev_eq > 0:
             growth *= (float(e) - f) / prev_eq
         prev_eq, prev_day, dep = float(e), d, dep + f

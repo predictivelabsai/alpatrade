@@ -11,7 +11,11 @@ test-results/
 reports/
 screenshots/
 docs/
+!docs/user_guide/alpatrade_user_guide.pdf
 *.md
 !requirements.txt
 .pytest_cache/
 .mypy_cache/
+
+# Flutter mobile app (built separately, not part of the server image)
+mobile/
