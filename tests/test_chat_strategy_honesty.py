@@ -213,7 +213,7 @@ def test_web_paste_preserves_heartbeats_and_per_command_enrichment(monkeypatch, 
 @pytest.mark.parametrize("command", [
     "agent:backtest strategy:momentum STRATEGY:vix",
     "agent:backtest lookback:1m\nagent:backtest lookback:3m",
-    "runs limit:5 limit:10",
+    "agent:runs limit:5 limit:10",
 ])
 def test_duplicate_keys_return_clear_error_without_execution(monkeypatch, command):
     cp = CommandProcessor(SimpleNamespace())

@@ -105,10 +105,8 @@ class CommandProcessor:
         if not cmd_lower:
             return ""
         first = cmd_lower.split()[0]
-        if ":" in first or first in {
-            "trades", "runs", "top", "report", "pnl", "chart", "equity",
-            "news", "profile", "financials", "price", "movers", "analysts", "valuation", "load",
-        }:
+        # Other commands retain their own argument validation and usage responses.
+        if first.startswith("agent:"):
             try:
                 self._parse_kv_params(user_input.strip().split()[1:])
             except ValueError as exc:
@@ -666,10 +664,10 @@ Plotly.newPlot('chart', [trace1], {{
 
         parts = user_input.strip().split()
         subcmd = parts[0].lower()
-        params = self._parse_kv_params(parts[1:])
 
         if subcmd == "alpha:runs":
             try:
+                params = self._parse_kv_params(parts[1:])
                 limit = int(params.get("limit", "10"))
             except ValueError:
                 return "# Alpha Research\n\nUsage: `alpha:runs limit:10`"
