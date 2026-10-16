@@ -97,3 +97,14 @@ def test_admin_running_gates_and_renders(monkeypatch):
     assert r.status_code == 200 and "Running strategies (2)" in r.text and "Kairi" in r.text
     assert "db: pending_runner" in r.text and "885504372" in r.text and "Recent events" in r.text
     assert "Running strategies (3)" in c.get("/admin/running?all=1").text
+
+
+def test_last_trade_uses_runner_state_when_trades_lag():
+    from datetime import datetime, timezone
+    from engine.admin_running import state_last_entry, _latest
+    st = {"last_entry": {"TSLA": "2026-10-13"}, "positions": {"NVDA": {"entry_date": "2026-10-15"}},
+          "sleeves": {"semi": {"last_entry": {"MU": "2026-10-15"}, "positions": {}}}}
+    d = state_last_entry(st)
+    assert d == datetime(2026, 10, 15, tzinfo=timezone.utc)
+    assert _latest(datetime(2026, 10, 9, 19, 57, tzinfo=timezone.utc), d) == d
+    assert state_last_entry(None) is None and state_last_entry("not json") is None
