@@ -198,13 +198,13 @@ engine/autonomy/
   self-feeds via the scout when idle. `autonomy` **compose service** (opt-in profile, `AUTONOMY_ENABLED`
   off in prod). **Agent-eval harness** `evals/run_agent_evals.py` + `evals/autonomy_cases.json`
   (risk_policy/promotion/scout dimensions, 17/17), pure `TestPromotion`, and a CRM-style evidence
-  benchmark `docs/autonomy_benchmark_2026-07-18.md` (stage matrix 9/12, honest first-blocker + retraction
+  benchmark `docs/archive/autonomy_benchmark_2026-07-18.md` (stage matrix 9/12, honest first-blocker + retraction
   section). *Remaining before "fully live team": run `default_pipeline` end-to-end via the worker and
   thread the gate's `sized_notional` into the paper order (Phase D).*
 - **Phase D — End-to-end run + risk-sized orders. ✅ SHIPPED.** `build_paper_config` threads the gate's
   `sized_notional` → `capital_per_trade` and restricts to admitted symbols (bounded session, not 7 days);
   `run_once` executes the full pipeline synchronously. **Verified end-to-end run reached `done` with a
-  real paper session (5 trades)** — see `docs/autonomy_benchmark_2026-07-20.md` (stage matrix now 14/14
+  real paper session (5 trades)** — see `docs/archive/autonomy_benchmark_2026-07-20.md` (stage matrix now 14/14
   excl. live). Fixed the sole blocker: `pdt_tracker.check_account_pdt_status` `int(None)` crash. Nodes
   now halt honestly on phase error and skip cleanly when the backtest yields no strategy. Regression
   98/98. *Remaining (Phase E): run via the compose `autonomy` worker with a promotion-digest email, and

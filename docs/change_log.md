@@ -114,6 +114,12 @@
 - **Review:** `docs/reviews/trade_menu_review.md`, prioritised findings for every Trade page (no large changes made).
 - Tests: `tests/test_referrals.py`, `tests/test_rbac_admin.py`, `tests/test_judge.py` (20 new). The full suite matches `origin/main` (the same 53 pre-existing failures, none new). Screenshots: `screenshots/referrals_admin/{invite,admin}_{mobile,desktop}.png` (390 px / 1366 px, no horizontal overflow).
 
+## Unreleased - 2026-10-12 - Docs cleanup
+
+- Docs reviewed against the current code. Moved to `docs/archive/` (git mv, history kept): the AG-UI plan and readme (`ag_ui.py` no longer exists), `improvement_plan.md`, `eval_results.md`, the July autonomy benchmarks and the July backtest / walk-forward / min-hold summaries (.md + .pdf). Links in `strategy_methodology.md` and `autonomous-agent-team-plan.md` updated.
+- Semi-7 walk-forward and live-rules reports stay in `docs/`, because `engine/leaderboard/semi7.py` and `scripts/seed_semi7_backtest.py` read them there.
+- New `docs/README.md` index. No code changes.
+
 ## Unreleased - 2026-10-11 - Chat-assisted "connect alpaca" (feature-flagged, off by default)
 
 - **`connect alpaca` (or `/alpaca-connect`, add `live` for live too) in /app chat** walks the user through: warning that regenerating keys invalidates the old ones → Alpaca login email → Alpaca password (masked) → server-side headless Playwright login to app.alpaca.markets → authenticator 2FA code (masked) → regenerate the paper (and optionally live) key pair → validate with the existing read-only `GET /v2/account` (`validate_paper_keys` / `validate_live_keys`) → save via the existing encrypted paths (`store_alpaca_keys` as "Alpaca Paper (auto-connect)", `store_live_account`) → run the existing Settings **Check**. `cancel` aborts at any step.
