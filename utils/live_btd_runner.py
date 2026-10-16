@@ -118,9 +118,20 @@ def setup_logging() -> logging.Logger:
 
 
 def code_version() -> Optional[str]:
+    """git short sha; in containers (no .git) SOURCE_COMMIT or the pyproject version, e.g. 'v0.50.0'."""
     try:
-        return subprocess.run(["git", "-C", REPO, "rev-parse", "--short", "HEAD"], capture_output=True,
-                              text=True, timeout=5).stdout.strip() or None
+        sha = subprocess.run(["git", "-C", REPO, "rev-parse", "--short", "HEAD"], capture_output=True,
+                             text=True, timeout=5).stdout.strip()
+        if sha:
+            return sha
+    except Exception:  # noqa: BLE001
+        pass
+    if os.environ.get("SOURCE_COMMIT"):
+        return os.environ["SOURCE_COMMIT"][:12]
+    try:
+        import re as _re
+        m = _re.search(r'^version\s*=\s*"([^"]+)"', open(os.path.join(REPO, "pyproject.toml")).read(), _re.M)
+        return f"v{m.group(1)}" if m else None
     except Exception:  # noqa: BLE001
         return None
 

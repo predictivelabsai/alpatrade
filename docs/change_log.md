@@ -1,5 +1,7 @@
 # Change Log
 
+- Heartbeat code_version falls back to SOURCE_COMMIT / pyproject version (e.g. `v0.50.0`) in containers without .git.
+
 ## v0.50.0 — 2026-10-16 — One rules module for backtest, paper and live + parity gate
 
 - **`utils/btd_rules.py` is the single source of truth** for buy-the-dip decisions: dip signal (20-day high / prev close), sizing (equity or sleeve × `pos_frac`), cash-only and `max_exposure` checks, regime filter, stop/target prices, stop timing (from the session after the buy, also during the min-hold), target eligibility (min-hold), max-hold time exit, at-open TP/SL, `BTD_STOP_EXEMPT`, plus the shared market model (10 bps slippage, gap fills at the open, TAF + CAT). All of these read the same `alpatrade.strategy_configs` params. `live_btd_runner` (entries, close event, regime filter), `live_btd_exits` (prices, split, eligibility, open action) and the new backtester all call it. Live behaviour is unchanged; the parity test proves it.
