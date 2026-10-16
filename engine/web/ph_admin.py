@@ -277,6 +277,11 @@ def register(app, rt):
             return JSONResponse({"error": "forbidden"}, status_code=403)
         from engine.metrics import recent_mismatches
         mm = recent_mismatches()
-        return JSONResponse({"mismatches": mm[-50:], "count": len(mm)})
+        import os as _os
+        from utils.btd_parity_daily import recent as _parity_recent
+        parity = _parity_recent(_os.environ.get("DATABASE_URL"), 30)
+        return JSONResponse({"mismatches": mm[-50:], "count": len(mm),
+                             "btd_parity": parity, "btd_parity_divergent_days": sum(1 for r in parity if not r["ok"])},
+                            )
 
     return ["/admin", "/admin/metrics", "/admin/exclusions/add", "/admin/exclusions/delete"]

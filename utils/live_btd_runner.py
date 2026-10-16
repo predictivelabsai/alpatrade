@@ -49,18 +49,8 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENV_PATH = os.path.join(REPO, ".env")
 DATA_URL = "https://data.alpaca.markets"
 EVENTS = ("open", "entry", "close", "post")
-def regime_block(bars: Dict[str, List[Dict[str, Any]]], last: Dict[str, float], today: date,
-                 lookback: int = 5) -> Optional[str]:
-    """v0.49.0: reason to skip new entries when any index trades below its prior N-session low
-    (completed daily bars before ``today``), else None. Missing data -> block (fail closed)."""
-    for sym, px in last.items():
-        prior = [b for b in bars.get(sym, []) if str(b.get("t", ""))[:10] < today.isoformat()][-lookback:]
-        if len(prior) < lookback or not px:
-            return f"{sym}: no data for the {lookback}-day-low regime check (fail closed)"
-        low = min(float(b["l"]) for b in prior)
-        if float(px) < low:
-            return f"{sym} {float(px):.2f} < {lookback}-day low {low:.2f}"
-    return None
+import utils.btd_rules as R_  # noqa: E402
+from utils.btd_rules import regime_block  # noqa: E402,F401  (v0.50.0: rules live in utils/btd_rules)
 
 
 PKEYS = ("symbols", "dip", "tp", "sl", "min_hold", "max_hold", "pos_frac", "max_exposure", "ref", "feed", "regime_filter",
@@ -811,6 +801,8 @@ class Runner:
                     entry_d = date.fromisoformat(meta["entry_date"]); age = (today - entry_d).days
                     if age < P["max_hold"]:
                         log.info("%s: held age=%dd -> before max-hold, keep", sym, age); continue
+                    if not R_.time_exit_due(entry_d, today, P["max_hold"]) and entry_d < today:
+                        continue
                     if not (win(P["close_window"]) or a.ignore_hours):
                         log.info("%s: max-hold reached but outside the close window -> wait", sym); continue
                     if entry_d >= today:
@@ -927,7 +919,7 @@ class Runner:
         snaps = get(f"{DATA_URL}/v2/stocks/snapshots", symbols=",".join(syms), feed=P["feed"])
         bars = get(f"{DATA_URL}/v2/stocks/bars", symbols=",".join(syms), timeframe="1Day",
                    start=(today - timedelta(days=40)).isoformat(), feed=P["feed"], limit=1000, adjustment="split")["bars"]
-        rf = [x.strip().upper() for x in str(P.get("regime_filter") or "").split(",") if x.strip()]
+        rf = R_.regime_symbols(P)
         if rf:
             try:
                 rs = get(f"{DATA_URL}/v2/stocks/snapshots", symbols=",".join(rf), feed=P["feed"])
@@ -947,7 +939,7 @@ class Runner:
         avail = min(cash, nmbp) - pending_buy_val
         if sleeve_val is None or (sleeve.is_primary and sleeve.allocation_usd is None and sleeve_val >= equity):
             # whole account (no other sleeves): exactly the pre-sleeve behaviour
-            target = round(equity * P["pos_frac"], 2)
+            target = R_.entry_target(equity, P)
             log.info("sizing: target/position=$%.2f (%.1f%% equity) available_cash=$%.2f exposure=$%.2f",
                      target, P["pos_frac"] * 100, avail, exposure)
         else:
@@ -960,7 +952,7 @@ class Runner:
                               for o in open_orders if o["side"] == "buy" and sleeve.owns_cid(o.get("client_order_id")))
             avail = buying_power(sleeve_val=sleeve_val, own_exposure=exposure, own_pending=own_pending,
                                  account_avail=avail)
-            target = round(sleeve_val * P["pos_frac"], 2)
+            target = R_.entry_target(sleeve_val, P)
             log.info("sizing [%s]: sleeve=$%.2f target/position=$%.2f (%.1f%% of sleeve) own_exposure=$%.2f "
                      "available=$%.2f (min of account cash and sleeve headroom)", sleeve.strategy_name, sleeve_val,
                      target, P["pos_frac"] * 100, exposure, avail)
@@ -970,11 +962,8 @@ class Runner:
             daily = sn.get("dailyBar") or {}; prev = sn.get("prevDailyBar") or {}
             if daily.get("t", "")[:10] == today.isoformat(): prev_close = float(prev.get("c") or 0)
             else: prev_close = float(daily.get("c") or 0)
-            high20 = max([b["h"] for b in bars.get(sym, [])][-20:] or [0])
-            ref = prev_close if P["ref"] == "prev_close" else high20
-            dip = (ref - last) / ref * 100 if ref else 0
+            sig, dip, ref, high20 = R_.dip_signal(last, prev_close, [b["h"] for b in bars.get(sym, [])], P)
             dip_h = (high20 - last) / high20 * 100 if high20 else 0
-            sig = dip >= P["dip"]
             log.info("%s: last=%.2f prev_close=%.2f dip_vs_prev=%.2f%% | high20=%.2f dip_vs_high20=%.2f%% -> %s",
                      sym, last, prev_close, (prev_close - last) / prev_close * 100 if prev_close else 0,
                      high20, dip_h, "SIGNAL" if sig else "no")
@@ -989,10 +978,9 @@ class Runner:
             if not (asset.get("tradable") and asset.get("fractionable")):
                 log.info("%s: not tradable/fractionable -> skip", sym); continue
             notional = target
-            if P["max_exposure"] and exposure + notional > P["max_exposure"]:
-                log.info("%s: would exceed exposure cap $%.0f -> skip", sym, P["max_exposure"]); continue
-            if notional > avail:
-                log.info("%s: notional $%.2f > available cash $%.2f -> skip (no margin)", sym, notional, avail); continue
+            why = R_.entry_block(notional, exposure, avail, P)
+            if why:
+                log.info("%s: %s -> skip", sym, why); continue
             cid = sleeve.entry_cid(sym, today)
             busy = alpaca_symbol_busy(get, base, sym, cid)
             if busy:

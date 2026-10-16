@@ -22,30 +22,19 @@ import math
 from datetime import date
 from typing import Any, Dict, List, Optional
 
+# single source of truth for the rules (v0.50.0); re-exported for existing importers
+from utils.btd_rules import exit_eligible, exit_prices, split_qty, stop_exemptions  # noqa: F401
+
 OWN_EXIT_PREFIXES = ("btdtp-", "btdsl-", "btdx-", "btdps-")
 # Operator-placed emergency stops (e.g. 2026-10-16 manual fix) are treated as the runner's own
 # exits so the time exit / target logic cancels them before selling (no qty conflict).
 MANUAL_STOP_PREFIX = "manual-stop-"
 
 
-def exit_eligible(entry_date: date, today: date, min_hold_days: int) -> bool:
-    """Broker exits may exist only from the first ET date that is >= min-hold calendar days
-    after the buy AND strictly after the buy date (never a same-day round trip)."""
-    return entry_date < today and (today - entry_date).days >= max(0, int(min_hold_days))
 
 
-def split_qty(qty: Any) -> tuple[int, float]:
-    q = float(qty)
-    whole = int(math.floor(q + 1e-9))
-    frac = round(q - whole, 9)
-    return whole, (frac if frac > 1e-9 else 0.0)
 
 
-def exit_prices(entry_price: float, tp_pct: float, sl_pct: float) -> tuple[float, float]:
-    """TP limit rounded UP to the cent (never below the target), stop rounded DOWN."""
-    tp = math.ceil(entry_price * (1 + tp_pct / 100.0) * 100 - 1e-6) / 100
-    sl = math.floor(entry_price * (1 - sl_pct / 100.0) * 100 + 1e-6) / 100
-    return round(tp, 2), round(sl, 2)
 
 
 def cids(sym: str, today: date, prefix: str = "btd") -> Dict[str, str]:
@@ -61,11 +50,10 @@ def plan_broker_exits(sym: str, qty: Any, entry_price: float, tp_pct: float, sl_
     tp, sl = exit_prices(entry_price, tp_pct, sl_pct)
     c = cids(sym, today, prefix)
     q = float(qty)
-    if plpc_pct is not None and plpc_pct >= tp_pct:
-        return {"action": "market", "reason": f"TP {plpc_pct:.2f}% at open", "tp": tp, "sl": sl,
-                "orders": [_market(sym, qty, c["market"])]}
-    if plpc_pct is not None and plpc_pct <= -sl_pct:
-        return {"action": "market", "reason": f"SL {plpc_pct:.2f}% at open", "tp": tp, "sl": sl,
+    from utils.btd_rules import open_exit_action
+    act = open_exit_action(plpc_pct, {"tp": tp_pct, "sl": sl_pct})
+    if act:
+        return {"action": "market", "reason": f"{act.upper()} {plpc_pct:.2f}% at open", "tp": tp, "sl": sl,
                 "orders": [_market(sym, qty, c["market"])]}
     whole, frac = split_qty(q)
     orders: List[Dict[str, Any]] = []
@@ -225,19 +213,3 @@ def order_fill(o: Dict[str, Any]) -> tuple[float, float, bool]:
     final = all(p.get("status") in final_st for p in parts)
     return qty, (notional / qty if qty else 0.0), final
 
-
-def stop_exemptions(spec: Optional[str], today: date) -> Dict[str, date]:
-    """BTD_STOP_EXEMPT="AMD:2026-10-19,INTC:2026-10-19" -> {sym: until} still in force today.
-    An exempt symbol gets no protective stop, no below-stop market sell and no open-event TP/SL
-    orders; only the normal max-hold time exit sells it. Entries expire automatically after
-    ``until`` (inclusive). Malformed entries are ignored."""
-    out: Dict[str, date] = {}
-    for part in (spec or "").replace(";", ",").split(","):
-        sym, _, d = part.strip().partition(":")
-        try:
-            until = date.fromisoformat(d.strip())
-        except ValueError:
-            continue
-        if sym.strip() and today <= until:
-            out[sym.strip().upper()] = until
-    return out

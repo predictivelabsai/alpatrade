@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Paper-trade a FIXED strategy config live on the Alpaca paper account.
+"""Paper-trade a strategy config on the Alpaca paper account with the LIVE runner (v0.50.0).
+
+Since v0.50.0 this runs utils/btd_paper_runner.PaperRunner = utils/live_btd_runner.Runner on paper
+keys, reading the SAME alpatrade.strategy_configs row as live (PAPER_STRATEGY_CONFIG, default the
+operator Mag-7 config), so paper and live cannot diverge. The PAPER_DIP/TP/SL/HOLD env knobs below
+are no longer used (edit the strategy config instead).
+
 
 For *observing a specific strategy in the wild* (as opposed to the autonomy loop, which
 re-optimises each cycle). Defaults to the walk-forward/methodology-validated PDT-safe
@@ -80,88 +86,25 @@ def main() -> int:
             print("Configured tenant paper credentials could not be resolved.")
             return 2
 
-    symbols = [s.strip().upper() for s in os.getenv(
-        "PAPER_SYMBOLS", "AAPL,MSFT,GOOGL,AMZN,META,TSLA,NVDA").split(",") if s.strip()]
-    params = {
-        "dip_threshold": _env_f("PAPER_DIP", 7.0),
-        "take_profit_threshold": _env_f("PAPER_TP", 6.0),
-        "stop_loss_threshold": _env_f("PAPER_SL", 10.0),
-        "hold_days": int(_env_f("PAPER_HOLD", 20)),
-        "min_hold_days": int(_env_f("PAPER_MIN_HOLD", 3)),
-        "capital_per_trade": _env_f("PAPER_CAPITAL_PER_TRADE", 1000.0),
-    }
-    request = {
-        "strategy": "buy_the_dip", "symbols": symbols, "params": params,
-        "duration_seconds": int(_env_f("PAPER_DURATION_SECONDS", 604800)),
-        "poll_interval_seconds": int(_env_f("PAPER_POLL_SECONDS", 300)),
-        "extended_hours": False, "email_notifications": False,
-    }
-    print(f"Paper-trading buy_the_dip on {symbols}")
-    print(f"  dip {params['dip_threshold']}% / TP {params['take_profit_threshold']}% / "
-          f"SL {params['stop_loss_threshold']}% / hold {params['min_hold_days']}-{params['hold_days']}d "
-          f"(min-hold {params['min_hold_days']}d = PDT-safe) / ${params['capital_per_trade']:.0f}/trade")
-    print(f"  duration {request['duration_seconds']}s, poll {request['poll_interval_seconds']}s\n")
-
-    # Register a run so paper trades persist to alpatrade.runs/trades (avoids the FK).
-    import uuid
-    run_id = str(uuid.uuid4())
+    # v0.50.0: paper = the LIVE runner on paper keys (utils/btd_paper_runner.PaperRunner): same
+    # rules module (utils/btd_rules), same strategy_configs row, same schedule and broker orders.
+    from utils.btd_paper_runner import PaperRunner, paper_config, run_paper
+    from utils.live_btd_config import DEFAULT_STRATEGY
+    from utils.live_btd_runner import PassStop, setup_logging
+    strategy = os.getenv("PAPER_STRATEGY_CONFIG", DEFAULT_STRATEGY)
+    key, secret = (owned_keys[0], owned_keys[1]) if owned_keys else (
+        os.getenv("ALPACA_PAPER_API_KEY"), os.getenv("ALPACA_PAPER_SECRET_KEY"))
+    db_url = os.getenv("DATABASE_URL")
     try:
-        from utils.agent_storage import store_run
-        from utils.strategy_slug import build_slug
-        lookback = os.getenv("PAPER_SOURCE_LOOKBACK", "1y")
-        slug_params = {
-            "dip_threshold": params["dip_threshold"] / 100,
-            "take_profit": params["take_profit_threshold"] / 100,
-            "stop_loss": params["stop_loss_threshold"] / 100,
-            "hold_days": params["hold_days"],
-            "min_hold_days": params["min_hold_days"],
-        }
-        store_run(
-            run_id,
-            "paper",
-            strategy="buy_the_dip",
-            config={"params": params, "symbols": symbols, "lookback": lookback},
-            strategy_slug=build_slug("buy_the_dip", slug_params, lookback),
-            user_id=user_id,
-            account_id=account_id,
-        )
-    except Exception as e:  # noqa: BLE001
-        print(f"  (run registration skipped: {type(e).__name__})")
-        if user_id:
-            print("  refusing to trade because the tenant-scoped run was not persisted")
-            return 2
-
-    from agents.paper_trade_agent import PaperTradeAgent
-    from utils.agent_storage import update_run
-    if not user_id:
-        print("  note: unscoped legacy run; set PAPER_USER_ID/PAPER_ACCOUNT_ID for advisor attribution")
-
-    def _finalize(status: str, results: dict) -> None:
-        # Best-effort, like the run registration above: a storage outage must not
-        # crash the launcher (and keeps the DB-free path working in tests/CLI).
-        try:
-            update_run(run_id, status, results=results)
-        except Exception as exc:  # noqa: BLE001
-            print(f"  (run finalize skipped: {type(exc).__name__})")
-
-    try:
-        result = PaperTradeAgent(
-            user_id=user_id,
-            account_id=account_id,
-            account_name=account_name,
-            alpaca_api_key=owned_keys[0] if owned_keys else None,
-            alpaca_secret_key=owned_keys[1] if owned_keys else None,
-        ).run(request, run_id=run_id)
-        _finalize("failed" if result.get("error") else "completed", result)
-    except BaseException as exc:
-        _finalize("stopped" if isinstance(exc, KeyboardInterrupt) else "failed",
-                  {"error": str(exc)})
-        raise
-    print(f"  run_id: {run_id}")
-    print("\nSESSION SUMMARY:")
-    for k in ("session_id", "total_trades", "buy_trades", "sell_trades", "total_pnl", "final_equity"):
-        if k in result:
-            print(f"  {k}: {result[k]}")
+        runner = PaperRunner(key, secret, strategy=strategy, database_url=db_url, log=setup_logging())
+    except PassStop as exc:
+        print(f"paper runner refused: {exc.code}")
+        return 2
+    print(f"Paper-trading strategy config {strategy!r} with the live runner on the paper account"
+          f"{' ' + account_name if account_name else ''}")
+    out = run_paper(runner, lambda: paper_config(strategy, db_url),
+                    duration_s=_env_f("PAPER_DURATION_SECONDS", 10 * 365 * 86400))
+    print(out)
     return 0
 
 
