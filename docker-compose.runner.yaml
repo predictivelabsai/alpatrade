@@ -16,6 +16,7 @@ x-runner-env: &runner-env
   FROM_EMAIL: ${FROM_EMAIL:-}
   BTD_ALERT_EMAIL: ${BTD_ALERT_EMAIL:-kaljuvee@gmail.com}
   BTD_PROTECT_CHECKS: ${BTD_PROTECT_CHECKS:-1}
+  BTD_STOP_EXEMPT: ${BTD_STOP_EXEMPT:-}
   BTD_STATE_DIR: /data/alpatrade-live
   TZ: America/New_York
   PYTHONUNBUFFERED: "1"

@@ -37,7 +37,7 @@ from utils.live_btd_config import (DEFAULT_PARAMS, DEFAULT_STRATEGY, ConfigResul
                                    ext_exit_action, resolve as resolve_config)
 from utils.live_btd_exits import (cids, exit_eligible, fallback_full_stop, is_stop_only, open_sells, order_fill,
                                   own_open_exits, plan_broker_exits, plan_protective_stops, protective_stop_cid,
-                                  stop_rejected_below)
+                                  stop_exemptions, stop_rejected_below)
 from utils.live_btd_state import (LeaseResult, RunnerStateStore, adopt_runner_position, alpaca_symbol_busy,
                                   degraded_policy, merge_dirty_cache, normalize_state)
 from utils.live_btd_store import STRATEGY_NAME, STRATEGY_SLUG, LiveRecorder
@@ -605,8 +605,12 @@ class Runner:
                 except Exception as exc:  # noqa: BLE001
                     log.error("protect: planning failed: %s", exc); return
                 problems = []
+                exempt = stop_exemptions(os.environ.get("BTD_STOP_EXEMPT"), today)
                 for pl in plans:
                     sym = pl["sym"]
+                    if sym in exempt:
+                        log.info("protect: %s exempt until %s (BTD_STOP_EXEMPT, held by decision) -> no stop", sym, exempt[sym])
+                        continue
                     if pl["overdue"]:
                         problems.append(f"{sym}: open position had NO working stop ({phase})")
                     if pl["skip"]:
@@ -667,6 +671,9 @@ class Runner:
                         continue
                     if not market_ok:
                         log.info("%s: market closed -> broker exits wait for the open", sym); continue
+                    ex = stop_exemptions(os.environ.get("BTD_STOP_EXEMPT"), today)
+                    if sym in ex:
+                        log.info("%s: exempt until %s (BTD_STOP_EXEMPT) -> no TP/SL orders, time exit only", sym, ex[sym]); continue
                     mine = own_open_exits(open_orders, sym, PFX)
                     if mine and not all(is_stop_only(o) for o in mine):
                         log.info("%s: broker exits already open %s -> nothing to do", sym, [o["client_order_id"] for o in mine]); continue
