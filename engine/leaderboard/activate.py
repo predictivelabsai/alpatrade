@@ -204,8 +204,10 @@ def runner_trades_account(account_number: str) -> bool:
 def live_plan(strategy_id: int, user_id: str, allocation: Optional[float] = None,
               snapshot: Optional[Callable[[dict], dict]] = None,
               existing: Optional[Callable[[str], list]] = None,
-              runner_account: Optional[Callable[[str], bool]] = None) -> dict:
-    """Everything the confirmation page shows + validation errors (nothing is written)."""
+              runner_account: Optional[Callable[[str], bool]] = None,
+              universe_override: Optional[list] = None) -> dict:
+    """Everything the confirmation page shows + validation errors (nothing is written).
+    ``universe_override``: validate a new symbol list (param version apply, v0.51.0)."""
     from engine.live_accounts import get_live_account_credentials
     from utils.strategy_allocation import validate_allocations
     s, cfg = _owned(strategy_id, user_id)
@@ -233,7 +235,7 @@ def live_plan(strategy_id: int, user_id: str, allocation: Optional[float] = None
     rows = existing(acct)
     primary_here = (runner_account or runner_trades_account)(acct)
     prefix = cid_prefix(user_id, strategy_id)
-    uni = _universe(cfg or {})
+    uni = [str(x).upper() for x in universe_override] if universe_override is not None else _universe(cfg or {})
     proposed = [{"strategy_name": r["name"], "cid_prefix": r["cid_prefix"],
                  "allocation_usd": r.get("allocation_usd"), "is_primary": r.get("is_primary"),
                  "is_active": bool(r.get("alloc_active"))

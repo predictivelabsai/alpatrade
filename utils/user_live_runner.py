@@ -104,17 +104,31 @@ class Activation:
     mode: str = "live"
 
 
-def load_activation(engine, activation_id: int) -> Optional[Activation]:
-    from sqlalchemy import text
-    with engine.connect() as c:
-        r = c.execute(text("""
+_ACT_SQL = """
             SELECT a.id, a.user_id::text AS user_id, u.email, a.user_strategy_id, a.account_ref, a.cid_prefix,
-                   a.allocation_usd, a.status, c.params, c.execution, s.name, a.mode
+                   a.allocation_usd, a.status, {params} AS params, c.execution, s.name, a.mode
             FROM alpatrade.user_strategy_activations a
             JOIN alpatrade.users u ON u.user_id = a.user_id
             JOIN alpatrade.user_strategy_configs c ON c.user_strategy_id = a.user_strategy_id AND c.user_id = a.user_id
             JOIN alpatrade.user_strategies s ON s.id = a.user_strategy_id AND s.user_id = a.user_id
-            WHERE a.id = :i AND a.mode IN ('live', 'paper')"""), {"i": int(activation_id)}).mappings().first()
+            {join}
+            WHERE a.id = :i AND a.mode IN ('live', 'paper')"""
+# v0.51.0: an activation runs the param version applied to it (sql/56); NULL -> the config row
+_VERSIONED = dict(params="COALESCE(v.params, c.params)",
+                  join="LEFT JOIN alpatrade.strategy_param_versions v ON v.id = a.params_version_id "
+                       "AND v.user_strategy_id = a.user_strategy_id")
+_LEGACY = dict(params="c.params", join="")
+
+
+def load_activation(engine, activation_id: int) -> Optional[Activation]:
+    from sqlalchemy import text
+    from sqlalchemy.exc import ProgrammingError
+    try:
+        with engine.connect() as c:
+            r = c.execute(text(_ACT_SQL.format(**_VERSIONED)), {"i": int(activation_id)}).mappings().first()
+    except ProgrammingError:          # sql/56 not migrated yet -> the config row, as before
+        with engine.connect() as c:
+            r = c.execute(text(_ACT_SQL.format(**_LEGACY)), {"i": int(activation_id)}).mappings().first()
     if not r:
         return None
     return Activation(int(r["id"]), r["user_id"], r["email"], int(r["user_strategy_id"]), str(r["account_ref"]),
