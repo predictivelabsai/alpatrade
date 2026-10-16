@@ -86,7 +86,7 @@ def test_client_exposes_no_mutating_operations():
     for bad in ("submit", "order_create", "create_order", "cancel", "close", "replace",
                 "post", "delete", "patch", "put", "liquidate"):
         assert not any(bad in n for n in names), bad
-    src = (ROOT / "engine/brokers/alpaca_live_readonly.py").read_text()
+    src = (ROOT / "engine/brokers/alpaca_live_readonly.py").read_text(encoding="utf-8")
     for verb in (".post(", ".delete(", ".patch(", ".put(", ".request(", "TradingClient"):
         assert verb not in src, verb
     assert ro.LIVE_BASE_URL == "https://api.alpaca.markets"
@@ -196,6 +196,11 @@ def test_live_link_table_is_only_used_by_the_readonly_view():
                "utils/user_live_runner.py", "tests/test_user_live_runner.py",
                # Settings Check: one read-only GET /v2/account per saved key
                "engine/key_check.py",
+               # Assisted "connect alpaca" (ALPACA_CONNECT_ENABLED): saves the signed-in user's OWN
+               # freshly regenerated live pair only via validate_live_keys (one GET /v2/account) +
+               # store_live_account, the same helpers Settings uses; never reads stored credentials,
+               # never orders
+               "engine/alpaca_connect.py",
                # Stale-account purge: EXISTS guard only (never deletes linked users)
                "engine/web/antibot.py", "tests/test_antibot_signup.py"}
     pat = re.compile(r"user_live_broker_accounts|engine\.live_accounts|get_live_account_credentials"
@@ -203,17 +208,17 @@ def test_live_link_table_is_only_used_by_the_readonly_view():
     hits = set()
     for sub in ("engine", "utils", "agents", "verticals", "tui", "scripts", "tests"):
         for p in (ROOT / sub).rglob("*.py"):
-            if pat.search(p.read_text(errors="ignore")):
-                hits.add(str(p.relative_to(ROOT)))
+            if pat.search(p.read_text(encoding="utf-8", errors="ignore")):
+                hits.add(p.relative_to(ROOT).as_posix())
     for top in ("app.py", "api_app.py", "agui_app.py", "api.py", "web_app.py", "main.py"):
         p = ROOT / top
-        if p.exists() and pat.search(p.read_text(errors="ignore")):
+        if p.exists() and pat.search(p.read_text(encoding="utf-8", errors="ignore")):
             hits.add(top)
     hits.discard("engine/brokers/alpaca_live_readonly.py")
     hits.discard("engine/brokers/alpaca.py")  # comment only
     hits.discard("engine/auth.py")  # docstring pointer only
     assert hits <= allowed, hits - allowed
-    settings_src = (ROOT / "engine/web/ph_settings.py").read_text()
+    settings_src = (ROOT / "engine/web/ph_settings.py").read_text(encoding="utf-8")
     assert "get_live_account_credentials" not in settings_src
     assert "alpaca_live_readonly" not in settings_src
 

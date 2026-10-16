@@ -5,6 +5,14 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Assisted "connect alpaca" chat flow (engine/alpaca_connect.py) needs headless Chromium.
+# Opt-in at build time so the default image stays small: build with
+# --build-arg ALPACA_CONNECT_BROWSER=1 and set ALPACA_CONNECT_ENABLED=1 at runtime.
+ARG ALPACA_CONNECT_BROWSER=0
+RUN if [ "$ALPACA_CONNECT_BROWSER" = "1" ]; then \
+      pip install --no-cache-dir "playwright>=1.58" && python -m playwright install --with-deps chromium; \
+    fi
+
 COPY . .
 
 ENV AGUI_RELOAD=false

@@ -412,7 +412,8 @@ CHAT_JS = r"""
     var sb=$('#send-btn'); if(sb) sb.disabled=true;
     var wh=$('#welcome-hero'); if(wh) wh.style.display='none';
 
-    addBubble('user', msg);
+    addBubble('user', window._alpaSecretNext ? '•••••• (hidden)' : msg);
+    window._alpaSecretNext=false; ta.style.webkitTextSecurity=''; ta.setAttribute('autocomplete','off');
     ta.value=''; ta.style.height='';
 
     var requestedHermes=/^\s*\/hermes(?:\s|$)/i.test(msg);
@@ -460,6 +461,10 @@ CHAT_JS = r"""
               setProgress(bubble,'Using '+(p.name||'tool')+'...');
             } else if(type==='tool_end'){
               setProgress(bubble,'Tool finished; preparing answer...');
+            } else if(type==='secret_prompt'){
+              // Next message is a password / 2FA code: mask the box and the bubble.
+              window._alpaSecretNext=true;
+              var ti=$('#chat-input'); if(ti){ti.style.webkitTextSecurity='disc';ti.setAttribute('autocomplete','off');}
             } else if(type==='follow_ups'){
               renderFollowUps(bubble,p.items||[]);
             } else if(type==='error'){
@@ -1375,6 +1380,31 @@ async def _dispatch_hermes_job_command(
     )
 
 
+def _alpaca_connect_stream(uid: str, msg: str) -> StreamingResponse:
+    """Assisted Alpaca connect (ALPACA_CONNECT_ENABLED). Deliberately NOT persisted to the
+    chat transcript or in-memory history: these messages carry the Alpaca password / 2FA code."""
+    from engine import alpaca_connect as _ac
+
+    async def gen():
+        yield _sse("agent_route", {"slug": "alpaca_connect", "agent": "Connect Alpaca"})
+        reply, secret, wait = await asyncio.to_thread(_ac.step, uid, msg)
+        if wait:
+            started = time.monotonic()
+            while True:
+                s = _ac.SESSIONS.get(uid)
+                if not s or s.state in ("await_otp", "done", "error") or time.monotonic() - started > 150:
+                    break
+                yield _sse("progress", {"message": s.progress or "Working…",
+                                        "elapsed_seconds": int(time.monotonic() - started)})
+                await asyncio.sleep(1)
+            reply, secret = await asyncio.to_thread(_ac.poll, uid, 1.0)
+        if secret:
+            yield _sse("secret_prompt", {"field": secret})
+        yield _sse("token", {"text": reply})
+        yield _sse("done", {})
+    return StreamingResponse(gen(), media_type="text/event-stream")
+
+
 async def _stream(msg: str, session) -> StreamingResponse:
     """Return an SSE StreamingResponse for one user message.
 
@@ -2168,6 +2198,9 @@ def register(app, rt):
                 iter([_sse("done", {})]), media_type="text/event-stream")
         if not session.get("thread_id"):
             session["thread_id"] = str(_uuid.uuid4())
+        from engine import alpaca_connect as _ac
+        if _ac.wants(str(session.get("user_id")), msg):
+            return _alpaca_connect_stream(str(session.get("user_id")), msg)
         return await _stream(msg, session)
 
     @rt("/news")
