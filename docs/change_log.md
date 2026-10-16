@@ -1,5 +1,14 @@
 # Change Log
 
+## v0.46.0 — 2026-10-16 — Admin: running strategies and user activity
+
+- New admin-only page **`/admin/running`**, linked from the top of `/admin`. Signed-out visitors are redirected to sign-in, and signed-in non-admins get **403**.
+- **Running strategies:** one row per user activation (user, strategy, live/paper, account and order prefix, allocation, status, runner heartbeat, last live trade, created), plus operator system runners from `live_runner_state` (Julian's Mag-7 btd-scheduler on `885504372`). It shows active rows by default; `?all=1` also shows deactivated and stopped rows. Liveness comes from `alpatrade.live_runner_heartbeats`, keyed `user-btd:<account>:<prefix>[:paper]`. The page only reads this data and never changes runner code or rows.
+- **Status fix:** a `pending_runner` (or `active`) activation reads **running** when the runner heartbeat shows the lease holder acting (`act`/`renew`/`takeover`) within the last 96h. Runners stay idle outside market hours, so the window covers a long weekend. The stored DB status appears below it as "db: …". The same display rule now applies to My strategies badges and the Settings live-strategy card: activation 4 (Kairi, live `822120655`) shows Live running instead of "starting". The DB row is unchanged.
+- **User activity:** for each user it lists signup, last login, logins in the last 7 and 30 days, whether broker keys are connected, strategies and clones, and activations (total and active). A recent events feed lists logins, clones and new strategies, activations, deactivations, registrations and key connections, newest first.
+- Tables scroll horizontally inside their own containers on mobile (checked at 390px with no page overflow).
+- Tests: `tests/test_admin_running.py`.
+
 ## v0.45.0 — 2026-10-13 — Public MCP server
 
 - Added a streamable HTTP MCP endpoint at `https://alpatrade.chat/mcp` in the existing web container. Four public read-only tools list visible strategies, return a strategy summary or published skill, and expose the agent catalogue. Private strategies and negative-return entries are excluded.
