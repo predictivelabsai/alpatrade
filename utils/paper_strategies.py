@@ -32,6 +32,8 @@ STRATEGY_ALIASES = {
     "bwg": "box_wedge",
 }
 
+VALUATION_MODES = ("low_pe", "high_pe", "below_median", "peg_under_1")
+
 # Strategies supported by the paper execution loop. Valuation is backtest only.
 STRATEGY_NAMES = ("buy_the_dip", "momentum", "vix", "box_wedge")
 

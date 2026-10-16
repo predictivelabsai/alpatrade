@@ -61,6 +61,7 @@ from engine.agents.routing import agent_override
 # those directly so the routing decisions stay identical to the old app.
 import agui_app as _agui
 from engine.ai import StreamingCommand
+from utils.paper_strategies import PARAM_SCHEMA
 
 primary_agent = _agui.primary_agent
 # Compatibility alias for local helpers/tests written before the harness migration.
@@ -669,7 +670,7 @@ def _hermes_backtest_config(message: str) -> Optional[dict]:
         suffix = "d" if unit.startswith("day") else "m" if unit.startswith("month") else "y"
         lookback = f"{amount}{suffix}"
     strategy = "buy_the_dip"
-    for supported in ("buy_the_dip", "momentum", "vix", "box_wedge", "valuation"):
+    for supported in PARAM_SCHEMA:
         if supported in message.lower():
             strategy = supported
             break
@@ -702,7 +703,7 @@ def _hermes_clarification(message: str) -> Optional[tuple[str, list[str]]]:
     ))
     if actionable_backtest:
         supported = [
-            name for name in ("buy_the_dip", "momentum", "vix", "box_wedge", "valuation")
+            name for name in PARAM_SCHEMA
             if name in lowered
         ]
         symbols = [

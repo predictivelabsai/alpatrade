@@ -108,7 +108,7 @@ class CommandProcessor:
         # Other commands retain their own argument validation and usage responses.
         if first.startswith("agent:"):
             try:
-                self._parse_kv_params(user_input.strip().split()[1:])
+                self._parse_kv_params(user_input.strip().split()[1:], reject_duplicates=True)
             except ValueError as exc:
                 return f"# Invalid command\n\n{exc}"
 
@@ -740,7 +740,7 @@ Plotly.newPlot('chart', [trace1], {{
         """Dispatch agent:* commands."""
         parts = user_input.strip().split()
         subcmd = parts[0].lower()
-        params = self._parse_kv_params(parts[1:])
+        params = self._parse_kv_params(parts[1:], reject_duplicates=True)
 
         # When API_URL is set, delegate agent execution commands to API
         from utils.api_client import is_api_mode
@@ -783,13 +783,15 @@ Plotly.newPlot('chart', [trace1], {{
                 "`agent:logs`, `agent:pnl`"
             )
 
-    def _parse_kv_params(self, parts: list) -> Dict[str, str]:
+    def _parse_kv_params(self, parts: list, *,
+                         reject_duplicates: bool = False) -> Dict[str, str]:
         """Parse key:value pairs from command parts, keeping bare tokens.
 
         Bare tokens (no colon) are preserved under the reserved ``_positional``
         key so command handlers that accept positional arguments (e.g. a bare
         ticker after ``agent:backtest``) can use them instead of silently
-        dropping them.
+        dropping them. Agent commands opt into duplicate rejection; other callers
+        retain their existing last-value behaviour.
         """
         params: Dict[str, str] = {}
         positional = []
@@ -799,7 +801,7 @@ Plotly.newPlot('chart', [trace1], {{
                 key = key.lower()
                 # Reject ambiguity rather than silently using the last value,
                 # especially if a command block reaches the CLI as one input.
-                if key in params:
+                if reject_duplicates and key in params:
                     raise ValueError(
                         f"Duplicate parameter '{key}'. Use each key once per command "
                         "and put separate commands on separate lines."

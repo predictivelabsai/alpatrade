@@ -13,8 +13,7 @@ import pandas as pd
 
 from engine.feeds.fundamentals import CachedFundamentals, daily_valuation
 from utils.fees import calculate_cat_fee, calculate_finra_taf_fee
-
-MODES = ("low_pe", "high_pe", "below_median", "peg_under_1")
+from utils.paper_strategies import VALUATION_MODES as MODES
 
 
 def select_symbols(values: dict[str, dict], mode: str, top_n: int = 3) -> list[str]:

@@ -183,7 +183,8 @@ def test_provider_error_does_not_expose_token(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_cli_parsing_forwards_valuation_params(monkeypatch):
+@pytest.mark.parametrize("mode", ["low_pe", "high_pe", "below_median", "peg_under_1"])
+async def test_cli_parsing_forwards_valuation_params(monkeypatch, mode):
     from tui.command_processor import CommandProcessor
 
     captured = []
@@ -194,12 +195,11 @@ async def test_cli_parsing_forwards_valuation_params(monkeypatch):
     processor.default_symbols = ["AAPL"]
     monkeypatch.setattr(processor, "_new_orchestrator", lambda: SimpleNamespace(
         run_backtest=lambda cfg: captured.append(cfg) or {"error": "test-complete"}))
-    command = "strategy:valuation mode:low_pe symbols:AAPL,MSFT lookback:12m top_n:2 rebalance:quarterly stop_loss:0.05"
-    params = processor._parse_kv_params(command.split())
-    await processor._agent_backtest(params)
+    command = f"strategy:valuation mode:{mode} symbols:AAPL,MSFT lookback:12m top_n:2 rebalance:quarterly stop_loss:0.05"
+    await processor.process_command("agent:backtest " + command)
     assert captured[0]["strategy"] == "valuation"
     assert captured[0]["lookback"] == "12m"
-    assert captured[0]["params"] == {"mode": "low_pe", "top_n": 2, "rebalance": "quarterly", "stop_loss": 0.05}
+    assert captured[0]["params"] == {"mode": mode, "top_n": 2, "rebalance": "quarterly", "stop_loss": 0.05}
 
 
 def test_agent_grid_and_storage_handoff(monkeypatch):
