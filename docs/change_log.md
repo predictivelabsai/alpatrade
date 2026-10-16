@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.47.1 — 2026-10-16 — Per-symbol stop exemption
+
+- New runner env `BTD_STOP_EXEMPT="SYM:YYYY-MM-DD,..."`. An exempt symbol gets no protective stop, no below-stop market sell and no open-event TP/SL orders. Only its normal max-hold time exit sells it. Each entry expires automatically after its date (inclusive), and the runner only logs it (no alert).
+- Set on `alpatrade-live-runners` to `AMD:2026-10-19,INTC:2026-10-19` (account 885504372). Julian decided to hold both until the 3-day time exit (bought 2026-10-15; time exit at the close on Mon 2026-10-19).
+- Tests: `tests/test_protective_stops.py::test_stop_exemptions_expire_after_until`.
+
 ## v0.47.0 — 2026-10-16 — Live runners: protective stops on every position
 
 - **Root cause (stops missing since Mon 2026-10-12):** the runner only placed broker-side TP/SL at the 09:31 ET open event once a position was past its min-hold (`exit_eligible`: 3 calendar days, PDT guard). With min-hold = max-hold = 3, a position had a stop only on its time-exit day (09:31 to 15:58 ET). Until 10-12 there were always positions on day 3, so stops appeared every morning. After that all positions were new (TSLA 10-13, AMZN/MSFT/META 10-14, NVDA/GOOGL and all seven Semi-7 names 10-15), so no stop was placed. The 10-12 server handover was not the cause: the lease and open events ran on `server` every day. Semi-7 had no stops for the same reason, since all its entries date from 10-15.

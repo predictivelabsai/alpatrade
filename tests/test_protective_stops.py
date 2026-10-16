@@ -96,3 +96,12 @@ def test_scheduler_protect_events_pre_open_and_hourly():
     assert keys == ["protect-0845", "protect-1030", "protect-1130", "protect-1230", "protect-1330",
                     "protect-1430", "protect-1530"]
     assert not [e for e in session_events(s) if e.kind == "protect"]
+
+
+def test_stop_exemptions_expire_after_until():
+    from utils.live_btd_exits import stop_exemptions
+    spec = "AMD:2026-10-19, INTC:2026-10-19,bad,X:notadate"
+    assert set(stop_exemptions(spec, FRI)) == {"AMD", "INTC"}
+    assert set(stop_exemptions(spec, date(2026, 10, 19))) == {"AMD", "INTC"}
+    assert stop_exemptions(spec, date(2026, 10, 20)) == {}
+    assert stop_exemptions(None, FRI) == {}

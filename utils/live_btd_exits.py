@@ -175,3 +175,20 @@ def order_fill(o: Dict[str, Any]) -> tuple[float, float, bool]:
     notional = sum(float(p.get("filled_qty") or 0) * float(p.get("filled_avg_price") or 0) for p in parts)
     final = all(p.get("status") in final_st for p in parts)
     return qty, (notional / qty if qty else 0.0), final
+
+
+def stop_exemptions(spec: Optional[str], today: date) -> Dict[str, date]:
+    """BTD_STOP_EXEMPT="AMD:2026-10-19,INTC:2026-10-19" -> {sym: until} still in force today.
+    An exempt symbol gets no protective stop, no below-stop market sell and no open-event TP/SL
+    orders; only the normal max-hold time exit sells it. Entries expire automatically after
+    ``until`` (inclusive). Malformed entries are ignored."""
+    out: Dict[str, date] = {}
+    for part in (spec or "").replace(";", ",").split(","):
+        sym, _, d = part.strip().partition(":")
+        try:
+            until = date.fromisoformat(d.strip())
+        except ValueError:
+            continue
+        if sym.strip() and today <= until:
+            out[sym.strip().upper()] = until
+    return out
