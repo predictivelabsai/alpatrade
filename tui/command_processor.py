@@ -102,6 +102,15 @@ class CommandProcessor:
         Returns markdown string to display or None.
         """
         cmd_lower = user_input.strip().lower()
+        if not cmd_lower:
+            return ""
+        first = cmd_lower.split()[0]
+        # Other commands retain their own argument validation and usage responses.
+        if first.startswith("agent:"):
+            try:
+                self._parse_kv_params(user_input.strip().split()[1:])
+            except ValueError as exc:
+                return f"# Invalid command\n\n{exc}"
 
         # Basic commands
         if cmd_lower in ["help", "h", "?"]:
@@ -655,10 +664,10 @@ Plotly.newPlot('chart', [trace1], {{
 
         parts = user_input.strip().split()
         subcmd = parts[0].lower()
-        params = self._parse_kv_params(parts[1:])
 
         if subcmd == "alpha:runs":
             try:
+                params = self._parse_kv_params(parts[1:])
                 limit = int(params.get("limit", "10"))
             except ValueError:
                 return "# Alpha Research\n\nUsage: `alpha:runs limit:10`"
@@ -787,7 +796,15 @@ Plotly.newPlot('chart', [trace1], {{
         for part in parts:
             if ":" in part:
                 key, value = part.split(":", 1)
-                params[key.lower()] = value
+                key = key.lower()
+                # Reject ambiguity rather than silently using the last value,
+                # especially if a command block reaches the CLI as one input.
+                if key in params:
+                    raise ValueError(
+                        f"Duplicate parameter '{key}'. Use each key once per command "
+                        "and put separate commands on separate lines."
+                    )
+                params[key] = value
             else:
                 positional.append(part)
         if positional:
