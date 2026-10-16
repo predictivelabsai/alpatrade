@@ -198,6 +198,25 @@ class SqlRepo:
         return rows
 
 
+    def insert_proposal(self, code: str, uid: str, sid: int, base_id: int, changes: dict, note: str) -> None:
+        self._exec("INSERT INTO alpatrade.strategy_param_proposals (code, user_id, user_strategy_id, base_version_id, "
+                   "changes, note) VALUES (:c, CAST(:u AS UUID), :i, :b, CAST(:ch AS JSONB), :n)",
+                   {"c": code, "u": str(uid), "i": int(sid), "b": int(base_id), "ch": json.dumps(changes, default=str),
+                    "n": (note or "")[:300]})
+
+    def proposal(self, code: str) -> Optional[dict]:
+        rows = self._rows("SELECT *, EXTRACT(EPOCH FROM (NOW() - created_at)) AS age_s FROM "
+                          "alpatrade.strategy_param_proposals WHERE code = :c", {"c": code})
+        if rows:
+            rows[0]["changes"] = _j(rows[0]["changes"]); rows[0]["user_id"] = str(rows[0]["user_id"])
+        return rows[0] if rows else None
+
+    def use_proposal(self, code: str, vid: Optional[int]) -> bool:
+        rows = self._exec("UPDATE alpatrade.strategy_param_proposals SET used_at = NOW(), version_id = :v "
+                          "WHERE code = :c AND used_at IS NULL RETURNING code", {"c": code, "v": vid})
+        return bool(rows)
+
+
 repo: Any = SqlRepo()
 
 
@@ -462,6 +481,44 @@ def live_universe_check(sid: int, uid: str) -> Callable[[list], List[str]]:
         return [e for e in plan.get("errors") or []
                 if "universe" in e.lower() or "overlap" in e.lower() or "symbol" in e.lower()]
     return check
+
+
+# ── chat: propose -> user confirms with /confirm-params <code> ───────────────
+PROPOSAL_TTL_S = 3600
+
+
+def create_proposal(sid: int, uid: str, changes: Dict[str, Any], note: str = "") -> dict:
+    """Validate + store a pending chat proposal. {'ok', 'code', 'diff', 'diff_md', 'errors'}."""
+    import secrets
+    p = propose(sid, uid, changes)
+    if not p["ok"]:
+        return {"ok": False, "errors": p["errors"], "diff": []}
+    if not p["diff"]:
+        return {"ok": False, "errors": {"_": "these values are already the current parameters"}, "diff": []}
+    code = secrets.token_hex(3)
+    norm = {k: b for k, _a, b in p["diff"]}
+    repo.insert_proposal(code, str(uid), int(sid), p["base"]["id"], norm, note)
+    return {"ok": True, "code": code, "diff": p["diff"], "diff_md": diff_md(p["diff"]), "base_version": p["base"]["version"]}
+
+
+def confirm_proposal(code: str, uid: str) -> dict:
+    """The user's explicit confirmation: the proposal becomes a new DRAFT version."""
+    pr = repo.proposal(str(code).strip().lower())
+    if not pr or str(pr["user_id"]) != str(uid):
+        return {"ok": False, "message": "I couldn't find that proposal. Ask me again to change the parameters."}
+    if pr.get("used_at"):
+        return {"ok": False, "message": "That proposal was already saved."}
+    if float(pr.get("age_s") or 0) > PROPOSAL_TTL_S:
+        return {"ok": False, "message": "That proposal expired (1 hour). Ask me again to get a fresh one."}
+    res = create_version(int(pr["user_strategy_id"]), str(uid), pr["changes"], source="chat", note=pr.get("note") or "")
+    if not res.get("ok"):
+        return {"ok": False, "message": "The change no longer validates: " +
+                "; ".join(f"{k}: {v}" for k, v in (res.get("errors") or {}).items())}
+    v = res["version"]
+    if not repo.use_proposal(pr["code"], v["id"]):
+        return {"ok": False, "message": "That proposal was already saved."}
+    return {"ok": True, "version": v, "strategy_id": int(pr["user_strategy_id"]), "diff": res.get("diff") or [],
+            "unchanged": res.get("unchanged")}
 
 
 def admin_versions(limit: int = 300) -> List[dict]:

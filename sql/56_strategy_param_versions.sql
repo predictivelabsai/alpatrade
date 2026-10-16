@@ -40,3 +40,17 @@ CREATE INDEX IF NOT EXISTS idx_wf_runs_cache ON alpatrade.strategy_wf_runs (cach
 -- Which version an activation runs (NULL = the strategy's user_strategy_configs.params, as before).
 ALTER TABLE alpatrade.user_strategy_activations ADD COLUMN IF NOT EXISTS params_version_id INTEGER;
 ALTER TABLE alpatrade.user_strategy_activations ADD COLUMN IF NOT EXISTS params_applied_at TIMESTAMPTZ;
+
+-- Chat proposals: the agent may only PROPOSE; the user saves with "/confirm-params <code>"
+-- (handled deterministically by the chat, never by the model).
+CREATE TABLE IF NOT EXISTS alpatrade.strategy_param_proposals (
+    code              VARCHAR(12) PRIMARY KEY,
+    user_id           UUID NOT NULL,
+    user_strategy_id  INTEGER NOT NULL REFERENCES alpatrade.user_strategies(id) ON DELETE CASCADE,
+    base_version_id   INTEGER,
+    changes           JSONB NOT NULL,
+    note              VARCHAR(300),
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    used_at           TIMESTAMPTZ,
+    version_id        INTEGER
+);

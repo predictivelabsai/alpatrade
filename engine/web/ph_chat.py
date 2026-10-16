@@ -1477,6 +1477,23 @@ async def _stream(msg: str, session) -> StreamingResponse:
             yield _sse("done", {})
             return
 
+        # Parameter proposals (v0.51.0): the agent only proposes; the user's own
+        # "/confirm-params <code>" saves the new draft version. Deterministic, never the model.
+        _cp = re.match(r"^/confirm-params\s+([0-9a-f]{6})\s*$", msg.strip(), re.I)
+        if _cp:
+            yield _sse("agent_route", {"slug": "strategy-params", "agent": "Strategy parameters"})
+            reply, fups = await asyncio.to_thread(_confirm_params_reply, _cp.group(1), user_key)
+            yield _sse("token", {"text": reply})
+            if fups:
+                yield _sse("follow_ups", {"items": fups})
+            history.append({"role": "user", "content": msg})
+            history.append({"role": "assistant", "content": reply})
+            _save_chat_message(thread_id, user_key, "assistant", reply,
+                               {"agent": "Strategy parameters", "framework": "command",
+                                "dispatch": "confirm_params", "follow_ups": fups})
+            yield _sse("done", {})
+            return
+
         # Durable trading commands are deterministic: queue them before asking
         # the remote Hermes model, so job creation never waits on model planning,
         # terminal approvals, retries, or context compression.
@@ -2256,3 +2273,23 @@ def register(app, rt):
             return ph_layout.page("app", body, user=user,
                                   title="News · AlpaTrade", right_news_open=True)
         return HTMLResponse(to_xml(body))
+
+
+def _confirm_params_reply(code: str, user_key: str) -> tuple[str, list]:
+    """Save a chat-proposed parameter change as a new draft version (engine/leaderboard/params.py)."""
+    if not user_key:
+        return "Sign in to change strategy parameters.", []
+    try:
+        from engine.leaderboard import params as sp
+        res = sp.confirm_proposal(code, user_key)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("confirm params failed: %s", type(exc).__name__)
+        return "Could not save the change, please try again.", []
+    if not res.get("ok"):
+        return res.get("message") or "Could not save the change.", []
+    v, sid = res["version"], res["strategy_id"]
+    reply = (f"Saved **v{v['version']}** of strategy #{sid} as a draft:\n\n{sp.diff_md(res.get('diff') or [])}\n\n"
+             "Nothing running has changed. Next: run the walk-forward backtest, then apply it on the "
+             f"[Parameters page](/strategies/{sid}/params) (paper applies at once; live needs the walk-forward and a typed LIVE).")
+    return reply, [f"Run a walk-forward backtest of strategy #{sid} v{v['version']}",
+                   f"Show the parameters of strategy #{sid}"]
