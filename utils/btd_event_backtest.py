@@ -21,6 +21,7 @@ Input bars: {sym: [{"t": "YYYY-MM-DD", "o", "h", "l", "c"}, ...]} (sorted, split
 """
 from __future__ import annotations
 
+import bisect
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, Callable, Dict, List, Optional
@@ -72,6 +73,12 @@ def run(bars: Dict[str, List[Dict[str, Any]]], P: Dict[str, Any], start: str, en
     hist = {s: sorted(by[s]) for s in syms}
     rb = {k: [dict(b, t=_d(b["t"])) for b in v] for k, v in (regime_bars or {}).items()}
     vb = [dict(b, t=_d(b["t"])) for b in (vol_bars if vol_bars is not None else rb.get("SPY", []))]
+    # O(1) per-day lookups (walk-forward runs replay a decade): index of each date, recent windows only
+    pos_of = {s: {k: i for i, k in enumerate(hist[s])} for s in syms}
+    rb_dates = {k: [b["t"] for b in v] for k, v in rb.items()}
+    rb_close = {k: {b["t"]: float(b["c"]) for b in v} for k, v in rb.items()}
+    vb_dates = [b["t"] for b in vb]
+    need = max(R.REGIME_LOOKBACK, int(P.get("regime_sma") or 0)) + 5
     cash = float(capital if initial_cash is None else initial_cash)
     pos: Dict[str, Dict[str, Any]] = {}
     for s0, p0 in (initial_positions or {}).items():      # {sym: {qty, avg, entry}} (daily parity replay)
@@ -116,7 +123,7 @@ def run(bars: Dict[str, List[Dict[str, Any]]], P: Dict[str, Any], start: str, en
                 # The broker rejects a stop above the last price: when the FIRST stop session's
                 # previous close was already below the stop, nothing rests overnight and the runner
                 # sells the whole position with one market order at the open (one order's fees).
-                i0 = hist[s].index(d)
+                i0 = pos_of[s][d]
                 pd = hist[s][i0 - 1] if i0 > 0 else None
                 first = pd is not None and not R.stop_live(date.fromisoformat(pos[s]["entry"]), date.fromisoformat(pd), P)
                 rested = not (first and float(by[s][pd]["c"]) <= pos[s]["sl"])
@@ -150,10 +157,15 @@ def run(bars: Dict[str, List[Dict[str, Any]]], P: Dict[str, Any], start: str, en
         block = None
         rsyms = R.regime_symbols(P)
         if rsyms:
-            last = {x: next((float(b["c"]) for b in rb.get(x, []) if b["t"] == d), 0.0) for x in rsyms}
-            block = R.regime_check(P, rb, last, today)
+            last = {x: rb_close.get(x, {}).get(d, 0.0) for x in rsyms}
+            win = {}
+            for x in rsyms:
+                j = bisect.bisect_left(rb_dates.get(x, []), d)
+                win[x] = rb.get(x, [])[max(0, j - need):j]
+            block = R.regime_check(P, win, last, today)
         if not block:
-            block = R.vol_market_block(P, vb, today)
+            j = bisect.bisect_left(vb_dates, d)
+            block = R.vol_market_block(P, vb[max(0, j - 40):j], today)
         mv = sum(p["qty"] * (px_e.get(s) or p["avg"]) for s, p in pos.items())
         equity = cash + mv
         if not block and (halt_daily or halt_weekly) and res.equity:
@@ -171,7 +183,7 @@ def run(bars: Dict[str, List[Dict[str, Any]]], P: Dict[str, Any], start: str, en
                 b = bar.get(s); px = px_e.get(s)
                 if not b or not px:
                     continue
-                i = hist[s].index(d)
+                i = pos_of[s][d]
                 prev_close = float(by[s][hist[s][i - 1]]["c"]) if i > 0 else 0.0
                 highs = [float(by[s][k]["h"]) for k in hist[s][max(0, i - R.HIGH_LOOKBACK + 1):i + 1]]
                 sig, dip, ref, _ = R.dip_signal(px, prev_close, highs, P)
