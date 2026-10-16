@@ -950,7 +950,7 @@ Plotly.newPlot('chart', [trace1], {{
             pdt_protection = pdt_val.lower() not in ("false", "no", "0", "off")
 
         config = {
-            "strategy": params.get("strategy", "buy_the_dip"),
+            "strategy": canonical_strategy(params.get("strategy", "buy_the_dip")),
             "symbols": symbols,
             "lookback": params.get("lookback", "3m"),
             "initial_capital": float(params.get("capital", self.default_capital)),
@@ -959,6 +959,7 @@ Plotly.newPlot('chart', [trace1], {{
             "pdt_protection": pdt_protection,
         }
 
+        config["params"] = parse_command_params(config["strategy"], params)
         result = await asyncio.to_thread(orch.run_backtest, config)
 
         if "error" in result:
@@ -985,6 +986,11 @@ Plotly.newPlot('chart', [trace1], {{
             except Exception:  # noqa: BLE001
                 pass
 
+        from engine.web.onboarding import format_params
+        benchmark = best.get("benchmark") or {}
+        benchmark_text = (f"SPY buy-and-hold: {benchmark['total_return']:.1f}%\n\n"
+                          if benchmark.get("total_return") is not None else
+                          "SPY buy-and-hold: unavailable\n\n" if benchmark else "")
         return (
             f"# Backtest Complete\n\n"
             f"- **Run ID**: `{run_id}`\n"
@@ -999,8 +1005,8 @@ Plotly.newPlot('chart', [trace1], {{
             f"| Win Rate | {best.get('win_rate', 0):.1f}% |\n"
             f"| Total Trades | {best.get('total_trades', 0)} |\n"
             f"| Max Drawdown | {best.get('max_drawdown', 0):.2f}% |\n\n"
-            f"**Params**: dip={p.get('dip_threshold')}, "
-            f"tp={p.get('take_profit')}, hold={p.get('hold_days')}\n\n"
+            f"**Params**: {format_params(p)}\n\n"
+            f"{benchmark_text}"
             f"Press Enter to validate, or type a new command."
         )
 
@@ -1204,6 +1210,8 @@ Plotly.newPlot('chart', [trace1], {{
             "email_notifications": params.get("email", "false").lower() not in ("false", "no", "0", "off"),
             "pdt_protection": pdt_protection,
         }
+        if config["strategy"] == "valuation":
+            return "Valuation is backtest only; paper trading is not supported."
         if config["strategy"] not in PARAM_SCHEMA:
             return (f"# Unknown Strategy\n\n`{config['strategy']}` is not a paper-trading "
                     f"strategy. Supported: {', '.join(sorted(PARAM_SCHEMA))} "

@@ -42,3 +42,10 @@ general:
   check_order_status_interval: 60  # Seconds between order status checks
   polling_interval: 300  # Seconds between strategy execution checks
   storage_backend: "db"  # Options: file, db  (file stores JSON locally, db uses PostgreSQL)
+
+# Backtest only. stop_loss is a ratio: 0.05 = 5%, 0 disables it.
+valuation:
+  mode: low_pe
+  top_n: 3
+  rebalance: monthly
+  stop_loss: 0.0

@@ -27,10 +27,12 @@ from typing import Any, Dict, List, Optional
 STRATEGY_ALIASES = {
     "btd": "buy_the_dip",
     "mom": "momentum",
+    "val": "valuation",
     "vix": "vix",
     "bwg": "box_wedge",
 }
 
+# Strategies supported by the paper execution loop. Valuation is backtest only.
 STRATEGY_NAMES = ("buy_the_dip", "momentum", "vix", "box_wedge")
 
 
@@ -41,7 +43,7 @@ class PaperParam:
     kind controls parsing and ratio→percent translation:
     percent (5.0 = 5%, ratios auto-scaled), points (raw index level, never
     scaled), ratio (0-1, never scaled), days, dollars, fraction (0-1 of
-    equity), bool.
+    equity), bool, count (positive integer), text.
     """
 
     key: str
@@ -51,6 +53,12 @@ class PaperParam:
 
 
 PARAM_SCHEMA: Dict[str, List[PaperParam]] = {
+    "valuation": [
+        PaperParam("mode", "text", "low_pe"),
+        PaperParam("top_n", "count", 3),
+        PaperParam("rebalance", "text", "monthly"),
+        PaperParam("stop_loss", "ratio", 0.0),
+    ],
     "buy_the_dip": [
         PaperParam("dip_threshold", "percent", 5.0),
         PaperParam("take_profit_threshold", "percent", 1.0),
@@ -129,7 +137,7 @@ def storage_params(strategy: str, params: Optional[dict]) -> Dict[str, Any]:
     if not isinstance(params, dict):
         return out
     for key, value in params.items():
-        key = _STORAGE_KEY_ALIASES.get(key, key)
+        key = _STORAGE_KEY_ALIASES.get(key, key) if strategy != "valuation" else key
         if key == "hold_type":
             out["hold_overnight"] = str(value).strip().lower() != "eod"
         elif key in known:
@@ -149,6 +157,10 @@ def _coerce(value: Any, kind: str) -> Any:
         num = float(value)
     except (TypeError, ValueError):
         return value
+    if kind == "count":
+        if not num.is_integer() or num < 1:
+            raise ValueError("top_n must be a positive integer")
+        return int(num)
     if kind in ("days",):
         return int(num)
     return num
@@ -208,6 +220,8 @@ def strategy_command(strategy: str, params: dict,
     schema bugs surface in tests instead of silently hiding a UI CTA.
     """
     strategy = canonical_strategy(strategy)
+    if strategy == "valuation":
+        raise ValueError("Valuation is backtest only; paper trading is not supported.")
     if strategy not in PARAM_SCHEMA:
         raise ValueError(f"Unknown paper strategy: {strategy!r}")
     resolved = resolve_paper_params(strategy, params, None)

@@ -31,6 +31,31 @@ class EODHD_API:
         
         self.base_url = "https://eodhd.com/api"
     
+    def get_fundamentals(self, symbol: str, exchange: str = "US") -> dict:
+        """Fetch historical earnings without exposing token-bearing request errors."""
+        import re
+        if not re.fullmatch(r"[A-Za-z0-9^_-]+(?:\.[A-Za-z0-9_-]+)?", symbol):
+            raise ValueError("Invalid EODHD symbol")
+        ticker = symbol if "." in symbol else f"{symbol}.{exchange}"
+        try:
+            response = requests.get(
+                f"{self.base_url}/fundamentals/{ticker}",
+                params={"api_token": self.api_key, "fmt": "json"}, timeout=30,
+            )
+            response.raise_for_status()
+            payload = response.json()
+            earnings = payload.get("Earnings") if isinstance(payload, dict) else None
+            if (not isinstance(earnings, dict)
+                    or not isinstance(earnings.get("History"), dict)
+                    or not earnings["History"]):
+                raise ValueError("Missing earnings history")
+            return payload
+        except (requests.RequestException, ValueError, TypeError):
+            raise RuntimeError(
+                f"EODHD fundamentals unavailable for {ticker}; check EODHD_API_KEY "
+                "and fundamentals access. Snapshot P/E cannot be used for backtesting."
+            ) from None
+
     def get_real_time_price(self, symbol, exchange='US'):
         """
         Get real-time price for a symbol

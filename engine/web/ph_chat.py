@@ -669,11 +669,14 @@ def _hermes_backtest_config(message: str) -> Optional[dict]:
         suffix = "d" if unit.startswith("day") else "m" if unit.startswith("month") else "y"
         lookback = f"{amount}{suffix}"
     strategy = "buy_the_dip"
-    for supported in ("buy_the_dip", "momentum", "vix", "box_wedge"):
+    for supported in ("buy_the_dip", "momentum", "vix", "box_wedge", "valuation"):
         if supported in message.lower():
             strategy = supported
             break
+    from utils.paper_strategies import parse_command_params
+    tokens = dict(re.findall(r"\b([a-z_]+):([^\s]+)", lowered))
     return {
+        "params": parse_command_params(strategy, tokens),
         "lookback": lookback,
         "strategy": strategy,
         "symbols": symbols or ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"],
@@ -699,7 +702,7 @@ def _hermes_clarification(message: str) -> Optional[tuple[str, list[str]]]:
     ))
     if actionable_backtest:
         supported = [
-            name for name in ("buy_the_dip", "momentum", "vix", "box_wedge")
+            name for name in ("buy_the_dip", "momentum", "vix", "box_wedge", "valuation")
             if name in lowered
         ]
         symbols = [

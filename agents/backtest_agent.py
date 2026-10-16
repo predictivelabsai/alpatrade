@@ -48,6 +48,7 @@ LOOKBACK_PERIODS = {
     "3m": 90,
     "6m": 180,
     "1y": 365,
+    "12m": 365,
 }
 
 
@@ -223,6 +224,12 @@ class BacktestAgent:
                     include_cat_fees=include_cat_fees,
                     slippage_bps=slippage_bps,
                 )
+        elif strategy == "valuation":
+            results = self._run_valuation(
+                symbols, start_date, end_date, initial_capital, data_source,
+                run_id, request.get("params") or {}, variations,
+                slippage_bps, include_taf_fees, include_cat_fees,
+            )
         elif strategy == "momentum":
             results = self._run_momentum(
                 symbols=symbols,
@@ -386,8 +393,8 @@ class BacktestAgent:
             "total_variations": len(results),
             "best_config": best,
             "methodology": {
-                "conservative_execution": conservative_execution,
-                "portfolio_daily_metrics": conservative_metrics,
+                "conservative_execution": conservative_execution or strategy == "valuation",
+                "portfolio_daily_metrics": conservative_metrics or strategy == "valuation",
                 "slippage_bps": slippage_bps,
                 "taf_fees": include_taf_fees,
                 "cat_fees": include_cat_fees,
@@ -696,6 +703,44 @@ class BacktestAgent:
             results.append(_eval(params, idx))
 
         logger.info(f"Adaptive search: {len(results)} variations evaluated")
+        return results
+
+    def _run_valuation(self, symbols, start_date, end_date, initial_capital,
+                       data_source, run_id, overrides, variations, slippage_bps,
+                       include_taf_fees, include_cat_fees) -> List[Dict]:
+        """Sweep valuation baskets, reusing fetched prices and published EPS."""
+        import yaml
+        from utils.valuation import backtest_valuation, load_valuation_data
+        with (project_root / "config" / "parameters.yaml").open(encoding="utf-8") as handle:
+            defaults = yaml.safe_load(handle).get("valuation", {})
+        keys = ("mode", "top_n", "rebalance", "stop_loss")
+        grid = {}
+        for key in keys:
+            value = variations.get(key, overrides.get(key, defaults[key]))
+            grid[key] = value if isinstance(value, list) else [value]
+            if not grid[key]:
+                raise ValueError(f"Valuation grid parameter {key} cannot be empty.")
+        prices, values = load_valuation_data(symbols, start_date, end_date, data_source)
+        benchmark = _benchmark_return("SPY", start_date, end_date, data_source)
+        results = []
+        for index, combination in enumerate(itertools.product(*(grid[k] for k in keys))):
+            params = dict(zip(keys, combination))
+            trades, metrics = backtest_valuation(
+                prices, values, start_date, end_date, initial_capital,
+                **params, slippage_bps=slippage_bps,
+                include_taf_fees=include_taf_fees, include_cat_fees=include_cat_fees,
+            )
+            results.append({
+                "run_id": run_id, "variation_index": index,
+                "params": {**params, "symbols": list(prices)}, **metrics,
+                "trades": trades.to_dict(orient="records"),
+                "benchmark": {"symbol": "SPY", "total_return": benchmark,
+                              "excess_return": metrics["total_return"] - benchmark
+                              if benchmark is not None else None},
+                "fundamentals_method": "EODHD quarterly actual EPS, reportDate + 1 day; "
+                                       "PEG uses trailing YoY TTM growth (%), not forecasts. "
+                                       "Historical revisions/split-basis changes are not vintage-controlled.",
+            })
         return results
 
     def _run_momentum(self, symbols, start_date, end_date, initial_capital,

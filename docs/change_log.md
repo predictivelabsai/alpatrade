@@ -1,5 +1,13 @@
 # Change Log
 
+## v0.52.0 - 2026-10-16 - Publication-lagged valuation backtests
+
+- Added the grid-search `valuation` strategy (`val` slugs): low/high P/E, below-median P/E and PEG under 1, equal-weight monthly/quarterly rebalances, optional close-based stops, next-open fills, slippage and TAF/CAT fees. Results use existing tenant-scoped run, summary and trade storage; no migration.
+- Added cached EODHD quarterly earnings with publication-date availability, daily TTM EPS and P/E. PEG uses trailing YoY TTM EPS growth, not forward estimates. Missing credentials/data fail explicitly; no snapshot fallback. Historical revisions and split-basis changes are not vintage-controlled, and user-supplied universes carry survivorship bias.
+- Wired CLI parameter forwarding, schema, labels, preset, chat strategy recognition and the user guide. Valuation is backtest only and cannot be deployed to paper trading.
+- Tests: `python -m pytest tests/test_valuation_strategy.py tests/test_strategy_presets.py tests/test_paper_strategies.py tests/test_equities_routes.py -q` (72 passed, DB/network-free fakes for valuation). Affected chat checks: `python -m pytest tests/test_hermes_jobs.py tests/test_hermes_backtest_quality.py -q` (84 passed). Added the valuation test target to the main CI unit-test union.
+- Deployment: normal application release after review; requires `EODHD_API_KEY` with fundamentals access. No deployment or operational changes performed.
+
 ## v0.51.0 — 2026-10-16 — Editable strategy parameters, versions and walk-forward (UI + chat)
 
 - **New rule keys in `utils/btd_rules.py`, read the same way by the backtester, paper and live runners.**
