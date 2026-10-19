@@ -742,7 +742,7 @@ class Runner:
                 for sym, meta in list(state["positions"].items()):
                     pos = positions.get(sym)
                     if not pos: continue
-                    entry_d = date.fromisoformat(meta["entry_date"]); age = (today - entry_d).days
+                    entry_d = date.fromisoformat(meta["entry_date"]); age = R_.hold_age(entry_d, today)
                     plpc = float(pos.get("unrealized_plpc") or 0) * 100
                     if not exit_eligible(entry_d, today, P["min_hold"]):
                         if age >= P["min_hold"] and entry_d >= today:
@@ -811,7 +811,7 @@ class Runner:
                 for sym, meta in list(state["positions"].items()):
                     pos = positions.get(sym)
                     if not pos: continue
-                    entry_d = date.fromisoformat(meta["entry_date"]); age = (today - entry_d).days
+                    entry_d = date.fromisoformat(meta["entry_date"]); age = R_.hold_age(entry_d, today)
                     if age < P["max_hold"]:
                         log.info("%s: held age=%dd -> before max-hold, keep", sym, age); continue
                     if not R_.time_exit_due(entry_d, today, P["max_hold"]) and entry_d < today:

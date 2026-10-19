@@ -10,7 +10,7 @@ Nothing trades unless you pass `--live`.
 
 Strategy parameters live in the DB (`alpatrade.strategy_configs`, row
 `buy_the_dip_mag7_minhold_live`): Mag-7, dip ≥3% vs the 20-day high, TP +8%, SL −1.5%,
-min-hold = max-hold = 3 calendar days, 1/7 of equity per position, cash only. The runner only
+min-hold = max-hold = 3 NYSE trading sessions, 1/7 of equity per position, cash only. The runner only
 manages positions it opened (authoritative state in `alpatrade.live_runner_state`;
 `$BTD_STATE_DIR/state.json`, default `~/.alpatrade-live`, is a local cache only); pre-existing
 positions are ignored but block a new entry in that symbol.

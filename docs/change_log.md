@@ -1,5 +1,12 @@
 # Change Log
 
+## v0.53.0 - 2026-10-19 - Hold periods count NYSE trading sessions (parity fix)
+
+- **Bug:** min-hold, max-hold and `exit_day` stop timing counted calendar days in every path (backtester, paper and live all called `utils/btd_rules` with `(today - entry).days`). Positions bought Fri 2026-10-16 at 15:45 ET were logged as "age 3d" and sold by the max-hold rule on Mon 10-19 at 15:57 ET, after one trading session.
+- **Fix:** new `btd_rules.hold_age(entry, today)` counts the NYSE sessions after the buy date up to and including today. Weekends and full-day NYSE holidays (`engine.reporting.annualize.nyse_holidays`) are skipped, and half days count as a session. `exit_eligible`, `time_exit_due` and `stop_live` (`exit_day`) use it. So do the live/paper runner log ages. Backtest, paper and live share this one definition. Unscheduled closures (for example a national day of mourning) are not in the rule table.
+- Behaviour change: with min = max hold 3, a Friday buy now exits at the Wednesday close, not Monday. A buy before a holiday holds one extra calendar day. PARAM_SPEC help text and the docs now say "trading sessions".
+- Tests: `test_hold_age_trading_sessions` (weekend, Jul 3 2026 holiday, Thanksgiving + half day, exit_day). `test_hold_over_weekend_and_holiday_parity` covers a Friday buy and a hold across the holiday, with backtest = live Runner and every time exit exactly at max_hold sessions. The parity calendar skips NYSE holidays. The `live_btd_exits` fixtures now age positions in sessions.
+
 ## v0.52.0 - 2026-10-16 - Publication-lagged valuation backtests
 
 - Added the grid-search `valuation` strategy (`val` slugs): low/high P/E, below-median P/E and PEG under 1, equal-weight monthly/quarterly rebalances, optional close-based stops, next-open fills, slippage and TAF/CAT fees. Results use existing tenant-scoped run, summary and trade storage; no migration.

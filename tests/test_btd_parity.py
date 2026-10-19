@@ -27,9 +27,11 @@ SYMS = ["AAA", "BBB", "CCC", "DDD"]
 
 
 def trading_days(start: date, n: int):
+    """NYSE sessions (weekends and full-day holidays skipped, e.g. Fri 2026-07-03)."""
+    from engine.reporting.annualize import nyse_holidays
     out, d = [], start
     while len(out) < n:
-        if d.weekday() < 5: out.append(d.isoformat())
+        if d.weekday() < 5 and d not in nyse_holidays(d.year): out.append(d.isoformat())
         d += timedelta(days=1)
     return out
 
@@ -226,3 +228,44 @@ def test_spy_vol_filter_and_sma_regime_parity(tmp_path, monkeypatch):
     reasons = set(v.split()[1] for v in bt.blocked.values())
     _compare(fake, bt, r)
     assert reasons, reasons
+
+
+# v0.53.0: hold age = NYSE trading sessions, one definition for backtest, paper and live
+def test_hold_age_trading_sessions():
+    from utils import btd_rules as R
+    fri, mon = date(2026, 10, 16), date(2026, 10, 19)
+    assert R.hold_age(fri, fri) == 0 and R.hold_age(fri, mon) == 1        # weekend does not count
+    assert R.hold_age(fri, date(2026, 10, 21)) == 3
+    assert not R.time_exit_due(fri, mon, 3) and R.time_exit_due(fri, date(2026, 10, 21), 3)
+    assert not R.exit_eligible(fri, date(2026, 10, 20), 3) and R.exit_eligible(fri, date(2026, 10, 21), 3)
+    # holiday: Thu 2026-07-02 buy; Fri 07-03 (Jul 4 observed) closed -> Mon 07-06 is session 1
+    thu = date(2026, 7, 2)
+    assert R.hold_age(thu, date(2026, 7, 6)) == 1 and R.hold_age(thu, date(2026, 7, 8)) == 3
+    # Thanksgiving (closed) + half day Fri 11-27 counts as a session
+    assert R.hold_age(date(2026, 11, 25), date(2026, 11, 27)) == 1
+    # exit_day stop timing follows the same session count
+    P = {"stop_timing": "exit_day", "min_hold": 2}
+    assert not R.stop_live(fri, date(2026, 10, 19), P) and R.stop_live(fri, date(2026, 10, 20), P)
+
+
+@pytest.mark.parametrize("seed,extra", [
+    (22, {}),
+    (27, {"dip": 1.5, "stop_timing": "exit_day", "min_hold": 2, "max_hold": 4}),
+])
+def test_hold_over_weekend_and_holiday_parity(seed, extra, tmp_path, monkeypatch):
+    """Window spans weekends and the Jul 3 2026 holiday. Wide TP/SL -> exits are time exits only,
+    so every round trip must last exactly max_hold NYSE sessions in BOTH backtest and live."""
+    from utils import btd_rules as R
+    days = trading_days(date(2026, 5, 15), 50)
+    assert "2026-07-03" not in days
+    bars = synth(days, seed, SYMS)
+    P = {**PARAMS, "tp": 60.0, "sl": 40.0, "dip": 1.0, **extra}
+    start = days[25]
+    fake, r = run_live(bars, P, days, start, 10_000.0, tmp_path, monkeypatch)
+    bt = BT.run(bars, P, start, days[-1], 10_000.0)
+    lt = _compare(fake, bt, r, allow_unprotected=True)
+    assert len(lt) >= 3, "scenario should trade"
+    ages = {R.hold_age(date.fromisoformat(t[1]), date.fromisoformat(t[4])) for t in lt}
+    assert ages == {P["max_hold"]}, ages
+    assert any(date.fromisoformat(t[1]).weekday() == 4 for t in lt), "needs a Friday buy"
+    assert any(t[1] <= "2026-07-02" < t[4] for t in lt), "needs a hold across the holiday"
