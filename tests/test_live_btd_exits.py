@@ -35,11 +35,22 @@ class _Resp:
         return self._d
 
 
+def _sessions_ago(today, age):
+    """Latest date that is ``age`` NYSE trading sessions before ``today`` (v0.53.0 hold age)."""
+    from utils.btd_rules import hold_age
+    d = today - timedelta(days=age)
+    while hold_age(d, today) < age:
+        d -= timedelta(days=1)
+    while hold_age(d + timedelta(days=1), today) >= age and d + timedelta(days=1) < today:
+        d += timedelta(days=1)
+    return d
+
+
 def _run(tmp_path, monkeypatch, positions, *, mins_to_close=200.0, extra=(), open_orders=None):
     """positions: {sym: (entry_age_days, unrealized_plpc_pct)} -> list of dry-run sell bodies."""
     now = datetime.now(ET)
     today = now.date()
-    state = {"positions": {s: {"entry_date": (today - timedelta(days=age)).isoformat(),
+    state = {"positions": {s: {"entry_date": _sessions_ago(today, age).isoformat(),
                                "client_id": f"btd-{s}-x"} for s, (age, _) in positions.items()}}
     (tmp_path / "state.json").write_text(json.dumps(state))
     broker = [{"symbol": s, "qty": "1.5", "qty_available": "1.5", "unrealized_plpc": str(pl / 100),

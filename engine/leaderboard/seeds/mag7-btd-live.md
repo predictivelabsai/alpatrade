@@ -34,9 +34,9 @@ The Magnificent 7: AAPL, MSFT, GOOGL, AMZN, META, TSLA and NVDA. US regular-hour
 - **Cash only:** a buy is skipped if its size exceeds available cash (no margin, no leverage, no shorting). There is no extra exposure cap beyond that.
 
 ### Exits
-- **Minimum hold: 3 calendar days.** No exit orders are placed before then, so there are never same-day round trips (PDT-safe for a small account).
+- **Minimum hold: 3 NYSE trading sessions.** No exit orders are placed before then, so there are never same-day round trips (PDT-safe for a small account).
 - On the morning the minimum hold is reached (around 09:31 ET, just after the open), place broker-side exits: a **take-profit at +8%** and a **stop-loss at −1.5%** from the entry price (one-cancels-other). If the price is already beyond either level at the open, exit at market.
-- **Maximum hold: 3 calendar days.** If the position is still open between 15 and 2 minutes before that day's close, cancel the bracket and sell at market.
+- **Maximum hold: 3 NYSE trading sessions.** If the position is still open between 15 and 2 minutes before that day's close, cancel the bracket and sell at market.
 - **Extended-hours exits are enabled:** if an exit is due while the regular session is closed, sell with an extended-hours limit order at the bid minus 15 bps, reprice it every 5 minutes up to 2 times, and if it still hasn't filled, cancel it and sell at market at the next regular open.
 
 ### What makes it work (and what can break it)

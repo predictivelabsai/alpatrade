@@ -16,8 +16,8 @@ details: [`docs/live_btd_minhold.md`](live_btd_minhold.md).
 | sizing | **1/7 of equity** per position (`pos_frac 0.142857`), notional/fractional market buy, one position per symbol, cash only (≤ min(cash, non-marginable buying power)), no exposure cap |
 | take profit | **+8%** vs the average entry price |
 | stop loss | **−1.5%** vs the average entry price |
-| min hold | **3 calendar days** (ET dates): TP/SL may not act earlier |
-| max hold | **3 calendar days**: anything still held is sold in the close window (~15:58 ET) of the first session on or after day 3 |
+| min hold | **3 NYSE trading sessions** (ET dates): TP/SL may not act earlier |
+| max hold | **3 NYSE trading sessions**: anything still held is sold in the close window (~15:58 ET) of the first session on or after day 3 |
 | close window | 15:45–15:58 ET (`close_window 15-2`); the scheduler fires the max-hold exit at ~15:57–15:58 |
 | scope | the runner manages only positions it opened; pre-existing positions are ignored but block a new entry in that symbol |
 

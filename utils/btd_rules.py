@@ -12,7 +12,7 @@ ALL execution paths with the SAME params dict (``alpatrade.strategy_configs.para
 ``tests/test_btd_parity.py`` replays one price history through the backtester AND the real live
 Runner against a mocked Alpaca and fails CI on any difference in trades.
 
-Params (percent units as stored in strategy_configs): dip, tp, sl, min_hold, max_hold (calendar
+Params (percent units as stored in strategy_configs): dip, tp, sl, min_hold, max_hold (NYSE trading-session
 days), pos_frac, max_exposure ($, 0 = off), ref (high20 | prev_close), regime_filter ("" | "SPY,SMH"),
 plus the v0.51.0 user-editable keys (stop_mode/stop_k/tp_mult, stop_timing, vol_filter/vol_max,
 regime_mode/regime_sma, max_exposure_pct) documented and validated in PARAM_SPEC below.
@@ -90,10 +90,21 @@ def split_qty(qty: Any) -> Tuple[int, float]:
     return whole, (frac if frac > 1e-9 else 0.0)
 
 
+def hold_age(entry_date: date, today: date) -> int:
+    """Position age in NYSE trading sessions: sessions strictly after the buy date up to and
+    including ``today`` (weekends and full-day NYSE holidays excluded; half days count as a
+    session). Fri buy -> Mon = 1. The ONE age definition for backtest, paper and live (v0.53.0)."""
+    from datetime import timedelta
+    from engine.reporting.annualize import trading_days_between
+    if today <= entry_date:
+        return 0
+    return trading_days_between(entry_date + timedelta(days=1), today)
+
+
 def exit_eligible(entry_date: date, today: date, min_hold_days: int) -> bool:
-    """Target (OCO) exits exist only from the first ET date >= min-hold calendar days after the
-    buy AND strictly after the buy date (never a same-day round trip)."""
-    return entry_date < today and (today - entry_date).days >= max(0, int(min_hold_days))
+    """Target (OCO) exits exist only once the position is >= min-hold trading sessions old
+    AND strictly after the buy date (never a same-day round trip)."""
+    return entry_date < today and hold_age(entry_date, today) >= max(0, int(min_hold_days))
 
 
 def stop_active(entry_date: date, session_day: date) -> bool:
@@ -103,8 +114,8 @@ def stop_active(entry_date: date, session_day: date) -> bool:
 
 
 def time_exit_due(entry_date: date, today: date, max_hold_days: int) -> bool:
-    """Max-hold exit at the close window once >= max_hold calendar days old (never same day)."""
-    return entry_date < today and (today - entry_date).days >= int(max_hold_days)
+    """Max-hold exit at the close window once >= max_hold trading sessions old (never same day)."""
+    return entry_date < today and hold_age(entry_date, today) >= int(max_hold_days)
 
 
 def open_exit_action(plpc_pct: Optional[float], P: Dict[str, Any]) -> Optional[str]:
@@ -214,9 +225,9 @@ PARAM_SPEC: Dict[str, Dict[str, Any]] = {
     "max_exposure": {"type": float, "default": 0.0, "min": 0.0, "max": 10_000_000.0, "group": "Sizing",
                      "label": "Exposure cap $", "help": "No new buys above this many dollars invested. 0 = off."},
     "min_hold": {"type": int, "default": 3, "min": 0, "max": 30, "group": "Holding",
-                 "label": "Min hold (days)", "help": "Calendar days before the take-profit can fill."},
+                 "label": "Min hold (days)", "help": "Trading sessions (NYSE) before the take-profit can fill."},
     "max_hold": {"type": int, "default": 3, "min": 1, "max": 60, "group": "Holding",
-                 "label": "Max hold (days)", "help": "Sell at the close once a position is this many calendar days old."},
+                 "label": "Max hold (days)", "help": "Sell at the close once a position is this many trading sessions (NYSE) old."},
     "stop_mode": {"type": str, "default": "pct", "choices": ["pct", "atr", "stdev"], "group": "Stop & target",
                   "label": "Stop mode", "help": "pct = fixed %; atr = stop_k x ATR(14); stdev = stop_k x 20-day stdev."},
     "sl": {"type": float, "default": 1.5, "min": 0.1, "max": 50.0, "group": "Stop & target", "label": "Stop loss %",
