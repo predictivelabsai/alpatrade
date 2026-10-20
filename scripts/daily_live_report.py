@@ -819,7 +819,7 @@ def _curves_block(d: dict) -> str:
 
 
 def _ann_block(d: dict) -> str:
-    """Annualised return table: MTD / YTD / since start (CAGR, n/a under 60 trading days)."""
+    """Annualised return table: MTD / YTD / since start (CAGR for any length; noisy under 60 trading days)."""
     a = d.get("annualized") or {}
     rows = ""
     for key, label in (("since_start", "Since start"), ("mtd", "MTD"), ("ytd", "YTD")):
@@ -840,13 +840,14 @@ def _ann_block(d: dict) -> str:
                 f"<b>Annualised return (since start · {ss.get('days', 0)}d): "
                 f"<span style='color:{_col(ss['annualised_pct'])}'>{_pct(ss['annualised_pct'])}</span></b>"
                 f" <span style='font-size:12px;color:{MUTED}'>CAGR on a total of "
-                f"{_pct(ss.get('return_pct'))} (indicative only)</span></p>")
+                f"{_pct(ss.get('return_pct'))} (indicative only"
+                f"{'; short history, noisy' if ss.get('short_period') else ''})</span></p>")
     return (head + "<h3 style='font-size:13px;margin:10px 0 4px;color:#666'>Annualised by period</h3>"
             f"<table {_TABLE}><thead><tr {_TH}><th>Period</th><th>Return</th><th>Trading days</th>"
             "<th>Annualised (CAGR)</th><th>Compounded (all d)</th></tr></thead><tbody>"
             f"{rows}</tbody></table>"
             f"<p style='font-size:11px;color:{MUTED};margin:.2rem 0'>Annualised = CAGR (1+r)^(252/d)−1, "
-            "shown only from 60 trading days (n/a before). Compounded (all d) shows the same formula for any window; short windows extrapolate aggressively.</p>")
+            "shown for any length; under 60 trading days it is noisy. Compounded (all d) shows the same formula for any window; short windows extrapolate aggressively.</p>")
 
 
 def _perf_block(d: dict) -> str:

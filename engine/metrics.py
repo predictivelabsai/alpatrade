@@ -6,8 +6,9 @@ Definitions
 * **Total return**: deposit-adjusted time-weighted return over the period
   (``engine.reporting.cash_flows.twr_pct``).
 * **Annualised return = CAGR** = (1 + total)^(252 / trading_days) − 1, NYSE trading
-  days. **Not shown under ``MIN_TRACK_DAYS`` (60) trading days**: the UI shows the
-  total return plus "n/a (<60 trading days)" instead.
+  days. Always calculated, whatever the history length (2026-10-20, Julian); under
+  ``MIN_TRACK_DAYS`` (60) trading days ``short_period`` is set and the UI adds a
+  "short history, noisy" note.
 * **Live strategy return**: :func:`live_strategy_return` is the only function the
   pages use for a live runner's return/SPY/alpha (TWR from the run's daily
   snapshots + the account's cash flows, as of the last completed session).
@@ -15,7 +16,7 @@ Definitions
 Guardrails
 ----------
 :func:`sanity_issues` (annualised sign must match total, bounded magnitudes,
-CAGR only from ≥60 days) and :func:`spy_benchmark_issue` (SPY CAGR over a long
+short history only flagged) and :func:`spy_benchmark_issue` (SPY CAGR over a long
 window must look like SPY: ~5–25%/yr) return problems; :func:`guard` logs them as
 ``METRICS_GUARD`` and returns a cleaned value; :func:`check_consistency` logs
 ``METRICS_MISMATCH`` when two pages' figures for the same thing disagree.
@@ -39,7 +40,7 @@ _mismatches: list[dict] = []
 
 
 def cagr_pct(total_pct: Optional[float], trading_days: Optional[int],
-             min_days: int = MIN_TRACK_DAYS) -> Optional[float]:
+             min_days: int = 1) -> Optional[float]:
     """CAGR in % from a total return in %; None when unknown or under ``min_days``."""
     if total_pct is None or not trading_days or trading_days < max(1, min_days):
         return None
@@ -69,10 +70,12 @@ def annualised(total_pct: Optional[float], trading_days: Optional[int]) -> dict:
 def fmt_annualised(a: dict) -> str:
     v = a.get("annualised_pct")
     if v is not None:
-        return f"{v:+.2f}%"
-    if a.get("short_period"):
-        return f"n/a (<{MIN_TRACK_DAYS}d)"
+        return f"{v:+.2f}%" + ("*" if a.get("short_period") else "")
     return "—"
+
+
+SHORT_HISTORY_NOTE = (f"* Short history (<{MIN_TRACK_DAYS} trading days): annualising a short "
+                      "window extrapolates heavily, so the figure is noisy.")
 
 
 # --------------------------------------------------------------------------- guardrails
@@ -80,11 +83,11 @@ def sanity_issues(total_pct: Optional[float], ann_pct: Optional[float],
                   trading_days: Optional[int], *, sharpe: Optional[float] = None) -> list[str]:
     out: list[str] = []
     if ann_pct is not None:
-        if trading_days is not None and trading_days < MIN_TRACK_DAYS:
-            out.append(f"annualised from only {trading_days} trading days")
         if total_pct is not None and abs(total_pct) > 1e-9 and (ann_pct > 0) != (total_pct > 0):
             out.append(f"annualised sign ({ann_pct:+.2f}%) differs from total return ({total_pct:+.2f}%)")
-        if abs(ann_pct) > MAX_ABS_ANNUALISED_PCT:
+        # Short histories (< MIN_TRACK_DAYS) are always shown, flagged noisy, so the
+        # magnitude cap applies only to established track records.
+        if abs(ann_pct) > MAX_ABS_ANNUALISED_PCT and (trading_days or 0) >= MIN_TRACK_DAYS:
             out.append(f"|annualised| {ann_pct:+.1f}% exceeds {MAX_ABS_ANNUALISED_PCT:.0f}%")
         if ann_pct < -100:
             out.append(f"annualised {ann_pct:+.1f}% below -100%")
@@ -143,7 +146,7 @@ def live_strategy_return(run: Optional[dict], flows: Optional[list] = None,
     """THE live strategy figures (used by /live, /live/account since-inception, /leaderboard).
 
     Deposit-adjusted TWR from the run's start (``config.start_equity``) through the last
-    completed session in ``results.daily``, SPY over the same dates, CAGR only ≥60 days.
+    completed session in ``results.daily``, SPY over the same dates, CAGR for any length.
     """
     from engine.leaderboard.perf import metrics_from_run
     m = metrics_from_run(run, today=today, flows=flows)
