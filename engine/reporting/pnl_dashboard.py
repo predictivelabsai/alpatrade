@@ -498,6 +498,15 @@ def _one_account(user_id: str, account: dict, period: str) -> dict[str, Any]:
     deposits, flows_ok, flow_rows = _period_deposits(client, history, start, end, with_rows=True)
     period_pnl, period_pct = adjusted_pnl(equity, baseline, deposits)
     series, period_pct = _twr_period(history, flow_rows, equity, end, period_pct)
+    try:
+        from engine.reporting import strategy_breakdown as _sb
+        from engine.reporting.exclusions import excluded_symbols
+        refs = (account.get("account_number"), live.get("account_number"), account.get("account_id"))
+        strategies = _sb.for_paper(user_id, client, [r for r in refs if r], positions, start, end,
+                                   equity, excluded_symbols(refs) | {str(p.get("symbol")) for p in excluded})
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("strategy breakdown unavailable for %s: %s", account["account_id"], type(exc).__name__)
+        strategies = {"rows": [], "ok": False}
     return {
         "account_id": account["account_id"],
         "account_name": account["account_name"],
@@ -515,6 +524,7 @@ def _one_account(user_id: str, account: dict, period: str) -> dict[str, Any]:
         "contributors": contributors,
         "positions": positions,
         "excluded": excluded, "excluded_value": ex_mv,
+        "strategies": strategies,
     }
 
 
@@ -587,6 +597,16 @@ def _one_live_account(user_id: str, account: dict, period: str) -> dict[str, Any
     deposits, flows_ok, flow_rows = _period_deposits(client, history, start, end, with_rows=True)
     period_pnl, period_pct = adjusted_pnl(equity, baseline, deposits)
     series, period_pct = _twr_period(history, flow_rows, equity, end, period_pct)
+    try:
+        from engine.reporting import strategy_breakdown as _sb
+        from engine.reporting.exclusions import excluded_symbols
+        refs = (account.get("account_number"), live.get("account_number"), account.get("account_id"))
+        strategies = _sb.for_live(user_id, client, str(account.get("account_number") or live.get("account_number") or ""),
+                                  positions, start, end, equity,
+                                  excluded_symbols(refs) | {str(p.get("symbol")) for p in excluded})
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("strategy breakdown unavailable for %s: %s", account["account_id"], type(exc).__name__)
+        strategies = {"rows": [], "ok": False}
     return {
         "account_id": account["account_id"],
         "account_name": account["account_name"],
@@ -604,6 +624,7 @@ def _one_live_account(user_id: str, account: dict, period: str) -> dict[str, Any
         "contributors": contributors,
         "positions": positions,
         "excluded": excluded, "excluded_value": ex_mv,
+        "strategies": strategies,
     }
 
 

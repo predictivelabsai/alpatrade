@@ -44,6 +44,13 @@ _CSS = """
 .empty{text-align:center;padding:4rem 1rem}.empty a{display:inline-block;background:var(--accent);color:#fff;
  padding:.6rem 1rem;border-radius:.5rem;text-decoration:none}.error{color:#9b302b;background:#fff0ee;padding:.7rem;border-radius:.4rem}
 @media(max-width:820px){.metric-grid{grid-template-columns:repeat(2,1fr)}.panel-grid{grid-template-columns:1fr}}
+.strat-bd{margin-top:.8rem}.sb-wrap{overflow-x:auto}.sb-table{width:100%;border-collapse:collapse}
+.sb-table th,.sb-table td{padding:.35rem .5rem;text-align:left;border-bottom:1px solid rgba(0,0,0,.06);vertical-align:top}
+.sb-table .num{text-align:right;white-space:nowrap}
+@media(max-width:600px){.sb-table thead{display:none}.sb-table tr{display:block;border-bottom:1px solid rgba(0,0,0,.12);padding:.3rem 0}
+.sb-table td{display:flex;justify-content:space-between;gap:.6rem;border:0;padding:.18rem .2rem;text-align:right}
+.sb-table td::before{content:attr(data-l);color:#777;font-size:.78rem;text-align:left}
+.sb-table td:first-child{display:block;text-align:left}.sb-table td:first-child::before{content:none}}
 @media(max-width:480px){.metric-grid{grid-template-columns:1fr 1fr}.metric{padding:.75rem}.chart{height:285px}}
 /* ---- Live account vs SPY (linked live broker) ---- */
 .live-spy{background:#fff;border:1px solid var(--line);border-radius:.65rem;padding:1rem 1.1rem;margin:0 0 .8rem}
@@ -235,19 +242,21 @@ def _deposits_metric(data: dict, plab: str) -> str:
 
 
 def _ann_metric(data: dict, plab: str) -> str:
-    """Annualised-return KPI (CAGR; "n/a (<60d)" with the total in the tooltip)."""
+    """Annualised-return KPI (CAGR for any length; short histories get a noisy footnote)."""
     from engine.reporting.annualize import fmt_ann, tooltip
+    from engine.metrics import SHORT_HISTORY_NOTE
     a = data.get("annualized") or {}
     v = a.get("annualised_pct")
-    if v is None:
-        v = a.get("return_pct") if a.get("short_period") else None
     tone = "" if v is None else ("positive" if v >= 0 else "negative")
     tip = html.escape(tooltip(a))
     days = f" · {a.get('days', 0)}d" if v is not None else ""
     basis = "since inception" if a.get("basis") == "since_start" else plab
     return (f"<div class='metric' title='{tip}'><div class='label'>Annualised return "
             f"({basis}{days}) <span style='cursor:help'>ⓘ</span></div>"
-            f"<div class='value {tone}'>{fmt_ann(a)}</div></div>")
+            f"<div class='value {tone}'>{fmt_ann(a)}</div>"
+            + (f"<div class='label' style='font-size:11px;opacity:.75;margin-top:2px'>"
+               f"{html.escape(SHORT_HISTORY_NOTE)}</div>" if v is not None and a.get("short_period") else "")
+            + "</div>")
 
 
 def _is_live_view(data: dict, selected_id: str | None) -> bool:
@@ -432,6 +441,82 @@ def _live_orders_brief(orders: list[dict]) -> str:
         "<th class='num'>Qty</th><th>Status</th></tr></thead>"
         f"<tbody>{''.join(rows)}</tbody></table></section>"
     )
+
+
+_SB_COLORS = ("#2F6B4F", "#C79A3B", "#3B6FC7", "#B4472F", "#7A5BA8", "#888888")
+
+
+def _sb_chart(rows: list[dict]) -> str:
+    """Tiny inline-SVG cumulative realised P&L per strategy (no JS; scales on phones)."""
+    series = [(r, r.get("cum") or []) for r in rows if r.get("cum")]
+    if not series:
+        return ""
+    days = sorted({d for _, c in series for d, _ in c})
+    vals = [v for _, c in series for _, v in c] + [0.0]
+    lo, hi = min(vals), max(vals)
+    span = (hi - lo) or 1.0
+    W, H, P = 600, 160, 8
+    x = lambda d: P + (W - 2 * P) * (days.index(d) / max(1, len(days) - 1))  # noqa: E731
+    y = lambda v: H - P - (H - 2 * P) * ((v - lo) / span)  # noqa: E731
+    parts = [f"<line x1='{P}' x2='{W-P}' y1='{y(0):.1f}' y2='{y(0):.1f}' stroke='#ccc' stroke-dasharray='3 3'/>"]
+    legend = []
+    for i, (r, c) in enumerate(series):
+        col = _SB_COLORS[i % len(_SB_COLORS)]
+        pts = " ".join(f"{x(d):.1f},{y(v):.1f}" for d, v in ([[days[0], 0.0]] + c if c[0][0] != days[0] else c))
+        parts.append(f"<polyline fill='none' stroke='{col}' stroke-width='2' points='{pts}'/>")
+        legend.append(f"<span style='color:{col}'>■</span> {html.escape(r['display'])} "
+                      f"{_money(c[-1][1])}")
+    return ("<div class='sb-chart'><div class='muted' style='font-size:.78rem;margin:.6rem 0 .2rem'>"
+            f"Cumulative realised P&amp;L ({html.escape(days[0])} → {html.escape(days[-1])}, ET dates)</div>"
+            f"<svg viewBox='0 0 {W} {H}' preserveAspectRatio='none' style='width:100%;height:140px'>"
+            f"{''.join(parts)}</svg><div style='font-size:.78rem'>{' &nbsp; '.join(legend)}</div></div>")
+
+
+def _strategy_panel(data: dict, plab: str) -> str:
+    """Per-strategy breakdown table for the selected period (live and paper)."""
+    sb = data.get("strategies") or {}
+    rows = sb.get("rows") or []
+    if not rows:
+        if sb.get("ok") is False:
+            return ("<section class='panel strat-bd'><h2>Strategy breakdown</h2>"
+                    "<p class='muted'>Strategy attribution is unavailable right now.</p></section>")
+        return ""
+    body = []
+    for r in rows:
+        tone = lambda v: "positive" if v > 0 else ("negative" if v < 0 else "")  # noqa: E731
+        ret = r.get("return_pct")
+        wr = r.get("win_rate")
+        cap = r.get("capital")
+        cap_s = "—" if cap is None else (_money(cap) + ("" if r.get("allocation") is not None else " (rest)"))
+        unk = (f" <small class='muted'>(+{r['unknown_basis']} no basis)</small>"
+               if r.get("unknown_basis") else "")
+        sub = (f"<br><small class='muted'>{html.escape(r['prefix'])}- · "
+               f"{html.escape(', '.join(r['symbols']))}</small>" if r.get("prefix") else
+               "<br><small class='muted'>unattributed fills</small>")
+        body.append(
+            f"<tr><td data-l='Strategy'><b>{html.escape(r['display'])}</b>{sub}</td>"
+            f"<td class='num {tone(r['realized'])}' data-l='Realised'>{_money(r['realized'])}{unk}</td>"
+            f"<td class='num {tone(r['unrealized'])}' data-l='Unrealised'>{_money(r['unrealized'])}</td>"
+            f"<td class='num' data-l='Allocated'>{cap_s}</td>"
+            f"<td class='num {'' if ret is None else tone(ret)}' data-l='Return'>"
+            f"{'—' if ret is None else f'{ret:+.2f}%'}</td>"
+            f"<td class='num' data-l='Trades'>{r['trades']}</td>"
+            f"<td class='num' data-l='Win rate'>{'—' if wr is None else f'{wr:.0f}%'}</td>"
+            f"<td data-l='Open'>{html.escape(', '.join(r['positions'])) or '—'}</td></tr>")
+    trunc = (" Paper order history is capped at the latest 500 orders, so older cost bases may be missing."
+             if sb.get("truncated") else "")
+    return (
+        f"<section class='panel strat-bd'><h2>Strategy breakdown · {html.escape(plab)}</h2>"
+        "<div class='sb-wrap'><table class='sb-table'><thead><tr><th>Strategy</th>"
+        "<th class='num'>Realised P&amp;L</th><th class='num'>Unrealised P&amp;L</th>"
+        "<th class='num'>Allocated</th><th class='num'>Return on alloc.</th>"
+        "<th class='num'>Trades</th><th class='num'>Win rate</th><th>Open positions</th>"
+        f"</tr></thead><tbody>{''.join(body)}</tbody></table></div>{_sb_chart(rows)}"
+        "<p class='muted' style='font-size:.74rem;margin:.5rem 0 0'>Fills are attributed by "
+        "client_order_id prefix, then by the strategy's symbol universe; anything else is "
+        "<b>Other</b>. Realised = FIFO on sells filled in the period; unrealised = current open "
+        "positions; return = (realised + unrealised) / allocated capital. Trades = closing (sell) "
+        f"orders. Excluded securities (e.g. BNBX) are left out.{trunc}</p></section>")
 
 
 def _start_here(state: dict) -> str:
@@ -652,6 +737,7 @@ def _render_live(data: dict, selected_id: str | None) -> str:
         live.get("excluded") or data.get("excluded") or []))
     orders = live.get("orders") or []
     return (head + metrics + spy
+            + _strategy_panel(data, plab)
             + _positions_full(positions, footnote)
             + _live_orders_brief(orders)
             + "<p class='muted' style='font-size:.74rem;margin:1rem 0 0'>"
@@ -721,6 +807,7 @@ def _render_paper(data: dict, selected_id: str | None) -> str:
        <span class="rank-tabs"><button class="active" data-kind="paper" onclick="showRanks('paper')">Paper</button>
        <button data-kind="backtest" onclick="showRanks('backtest')">Backtest</button></span></div>
        {_rank_table(data.get('paper_rankings') or [], 'paper')}{_rank_table(data.get('backtest_rankings') or [], 'backtest')}</section></div>
+      {_strategy_panel(data, plab)}
       {_paper_runs_panel(data.get('paper_runs') or [])}
       {_positions_full(data.get('positions') or [], _ex_note(data))}
       <section class="panel" style="margin-top:.8rem"><h2>Top open-position contributors</h2>

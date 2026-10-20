@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.54.0 - 2026-10-20 - Annualised return for any history length + per-strategy breakdown
+
+- **Annualised return is always calculated** (Julian, 2026-10-20). Same method: deposit-adjusted TWR, CAGR (1+r)^(252/d)−1 on NYSE trading days. The `<60` trading-day "n/a" guard is gone from the shared functions (`engine.metrics.cagr_pct` / `fmt_annualised` / `sanity_issues`, `engine.reporting.annualize`), so the dashboard, the daily live email and the Leaderboard all show a number. Under 60 trading days the figure carries `*` and a footnote/tooltip: "Short history: annualising a short window extrapolates heavily, so the figure is noisy." The ±1000% magnitude cap now applies only to records of 60+ days; the sign and below −100% checks stay.
+- **Strategy breakdown on /dashboard (live and paper)**, new `engine/reporting/strategy_breakdown.py`. Fills are attributed by client_order_id prefix (strategy sleeves / user activations), then by the strategy symbol universe; anything else is labelled **Other**, and excluded securities (BNBX) are left out. For the selected period (MTD/YTD) each strategy shows realised P&L (FIFO over the full fill history, sells filled in the period), unrealised P&L and open positions, allocated capital and return on it, trades (closing orders) and win rate, plus a small inline-SVG cumulative realised P&L chart. On phones (<600px) the table stacks into cards. Read-only: it uses the existing broker reads (FILL activities + closed orders).
+- Tests: `tests/test_strategy_breakdown.py` (new, added to the CI union); `test_annualize.py` and `test_metrics_consistency.py` were updated for the new rule.
+
 ## v0.53.0 - 2026-10-19 - Hold periods count NYSE trading sessions (parity fix)
 
 - **Bug:** min-hold, max-hold and `exit_day` stop timing counted calendar days in every path (backtester, paper and live all called `utils/btd_rules` with `(today - entry).days`). Positions bought Fri 2026-10-16 at 15:45 ET were logged as "age 3d" and sold by the max-hold rule on Mon 10-19 at 15:57 ET, after one trading session.

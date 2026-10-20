@@ -33,11 +33,12 @@ def test_spy_check_catches_simple_annualisation():
     assert M.spy_benchmark_issue(((1 + simple / 100) ** (2516 / 252) - 1) * 100, 2516)
 
 
-def test_no_annualisation_under_min_track():
+def test_annualisation_any_length_flags_short_track():
     a = annualize(3.44, 12)
-    assert a["annualised_pct"] is None and a["short_period"]
-    assert fmt_ann(a) == "n/a (<60d)"
-    assert M.cagr_pct(3.44, 59) is None and M.cagr_pct(3.44, 60) is not None
+    assert a["annualised_pct"] is not None and a["short_period"]
+    assert fmt_ann(a).endswith("*")
+    assert M.cagr_pct(3.44, 1) is not None and M.cagr_pct(3.44, 0) is None
+    assert M.guard("t", 3.44, a["annualised_pct"], 12) == a["annualised_pct"]
 
 
 def test_annualize_headline_is_cagr():
@@ -57,7 +58,8 @@ def test_guard_rejects_the_old_minus_153():
     assert M.sanity_issues(-100.0, -153.66, 164)
     assert M.guard("t", -100.0, -153.66, 164) is None
     assert M.guard("t", 5.0, -3.0, 100) is None          # sign mismatch
-    assert M.guard("t", 5.0, 9.0, 30) is None            # under min track
+    assert M.guard("t", 5.0, 9.0, 30) == 9.0             # short track: shown (noisy note)
+    assert M.guard("t", 40.0, 5000.0, 10) == 5000.0      # short track: no magnitude cap
 
 
 # --------------------------------------------------------------- phantom deposit (root cause)

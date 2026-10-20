@@ -1,5 +1,5 @@
-"""Annualised-return helpers. Headline everywhere = ``annualised_pct`` = CAGR, shown only
-from 60 trading days (engine.metrics). ``simple_pct`` / ``compound_pct`` are kept for
+"""Annualised-return helpers. Headline everywhere = ``annualised_pct`` = CAGR, shown for
+any history length; under 60 trading days it is flagged noisy (engine.metrics). ``simple_pct`` / ``compound_pct`` are kept for
 back-compat (scripts, tooltips).
 
 simple     = r * 252 / d
@@ -95,9 +95,9 @@ def annualize(return_pct: Optional[float], trading_days: int,
     out = {"simple_pct": None, "compound_pct": None, "days": int(trading_days or 0),
            "short_period": False, "annualised_pct": None, "return_pct": return_pct,
            "basis": "cagr"}
-    # Headline (everywhere): CAGR, only from MIN_TRACK_DAYS (60) trading days.
+    # Headline (everywhere): CAGR for any history length; short_period (<60d) = noisy note.
     out["annualised_pct"] = cagr_pct(return_pct, int(trading_days or 0))
-    if out["annualised_pct"] is None and return_pct is not None and trading_days:
+    if return_pct is not None and trading_days:
         out["short_period"] = int(trading_days) < MIN_TRACK_DAYS
     if return_pct is None or not trading_days or trading_days < 1:
         return out
@@ -117,7 +117,7 @@ def annualize(return_pct: Optional[float], trading_days: int,
 
 
 def fmt_ann(a: dict) -> str:
-    """Headline annualised = CAGR (n/a under 60 trading days). Shared formatter."""
+    """Headline annualised = CAGR for any length (``*`` under 60 trading days). Shared formatter."""
     from engine.metrics import fmt_annualised
     return fmt_annualised(a)
 
@@ -133,8 +133,10 @@ def tooltip(a: dict) -> str:
         since = f" since {a['start_date']}" if a.get("start_date") else ""
         tot = a.get("return_pct")
         tot_s = "" if tot is None else f"total {tot:+.2f}% over "
+        noisy = (f" Short history (<{MIN_TRACK_DAYS} trading days): noisy, extrapolates heavily."
+                 if a.get("short_period") else "")
         return (f"Annualised = CAGR (1+r)^(252/d)−1 = {a['annualised_pct']:+.2f}% "
-                f"({tot_s}{a['days']} trading days{since}).")
+                f"({tot_s}{a['days']} trading days{since}).{noisy}")
     if a.get("simple_pct") is None:
         if a.get("short_period"):
             return (f"Not annualised: only {a.get('days')} trading days (needs "
