@@ -17,7 +17,8 @@ import requests
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from utils import live_btd_runner as lr  # noqa: E402
-from utils.live_btd_config import DEFAULT_EXECUTION, DEFAULT_PARAMS, ConfigResult  # noqa: E402
+from btd_fixtures import DEFAULT_EXECUTION, DEFAULT_PARAMS  # noqa: E402
+from utils.live_btd_config import ConfigResult  # noqa: E402
 from utils.live_btd_exits import cids, own_open_exits, plan_broker_exits  # noqa: E402
 from utils.live_btd_state import LeaseResult, adopt_runner_position  # noqa: E402
 from utils.strategy_allocation import (PRIMARY, Sleeve, buying_power, sleeve_value,  # noqa: E402

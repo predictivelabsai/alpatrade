@@ -183,7 +183,7 @@ def run_for_runner(runner, cfg, day: Optional[str] = None) -> List[Dict[str, Any
             g = gather(runner.get, runner.base, day, P, tracked, P.get("feed", "iex"))
             sleeve_eq = float(acct["equity"])
             out = compare(day, P, g["orders"], g["bars"], g["open_positions"], sleeve_eq, float(acct["cash"]),
-                          exempt_spec=os.environ.get("BTD_STOP_EXEMPT"))
+                          exempt_spec=None)        # v0.55.0: exemptions come from the DB rule set (P)
             out["strategy"] = name
             outs.append(out)
             record(runner.db_url, account, name, out)

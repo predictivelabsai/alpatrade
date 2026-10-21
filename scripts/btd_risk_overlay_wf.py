@@ -16,7 +16,7 @@ from datetime import datetime, timezone, date
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]; sys.path.insert(0, str(ROOT))
 from utils import btd_event_backtest as BT  # noqa: E402
-from utils.live_btd_config import DEFAULT_PARAMS  # noqa: E402
+from tests.btd_fixtures import DEFAULT_PARAMS  # noqa: E402
 
 BASKETS = {"semi7": ["TSM", "AVGO", "MU", "AMD", "ASML", "INTC", "AMAT"],
            "mag7": ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"]}

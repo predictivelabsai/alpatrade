@@ -4,19 +4,20 @@ import pytest
 
 import utils.user_live_runner as ulr
 from utils.live_btd_runner import PassStop, Runner, build_parser
-from utils.live_btd_config import DEFAULT_PARAMS
+from btd_fixtures import DEFAULT_EXECUTION, DEFAULT_PARAMS, USER_SEED  # noqa: E402
 
 @pytest.fixture(autouse=True)
 def _state_dir(tmp_path, monkeypatch):
     monkeypatch.setenv("BTD_STATE_DIR", str(tmp_path))     # never the real ~/.alpatrade-live
 
 
-PARAMS = {"symbols": ["XOM", "CVX"], "dip": 2.5, "tp": 6, "sl": 2, "min_hold": 2, "max_hold": 4, "pos_frac": 0.5}
+PARAMS = {**USER_SEED, "symbols": ["XOM", "CVX"], "dip": 2.5, "tp": 6, "sl": 2, "min_hold": 2, "max_hold": 4,
+          "pos_frac": 0.5}     # the user's stored row after sql/57 (no code fill-ins)
 
 
 def _act(status="active", params=None, alloc=400.0, acct="USER123"):
     return ulr.Activation(7, "u-1", "kairi@example.com", 39, acct, "u466196", alloc, status,
-                          dict(params or PARAMS), {}, "clone")
+                          dict(params or PARAMS), DEFAULT_EXECUTION, "clone")
 
 
 def _runner(monkeypatch, status="active", env=None, holder="hp", **kw):
@@ -36,7 +37,7 @@ def test_params_come_only_from_the_user():
     p = ulr.user_params(PARAMS)
     assert p["symbols"] == ["XOM", "CVX"] and p["dip"] == 2.5 and p["max_hold"] == 4 and p["pos_frac"] == 0.5
     assert p["symbols"] != DEFAULT_PARAMS["symbols"]
-    for k in ulr.REQUIRED:
+    for k in ulr.REQUIRED + ("min_hold", "session_mode", "stop_exempt", "regime_filter"):
         with pytest.raises(ValueError):
             ulr.user_params({x: v for x, v in PARAMS.items() if x != k})   # never filled from Julian's defaults
     assert ulr.user_params({**PARAMS, "dip": 0.03})["dip"] == 3.0
@@ -172,6 +173,17 @@ def test_operator_runner_recorder_default_unchanged():
 
 def test_user_params_regime_filter_passthrough():
     from utils.user_live_runner import user_params
-    base = {"symbols": "AAPL", "dip": 3, "tp": 8, "sl": 1.5, "max_hold": 5, "pos_frac": 0.2}
+    base = {**USER_SEED, "symbols": "AAPL", "dip": 3, "tp": 8, "sl": 1.5, "max_hold": 5, "pos_frac": 0.2}
     assert user_params(base)["regime_filter"] == ""
     assert user_params({**base, "regime_filter": "SPY,SMH"})["regime_filter"] == "SPY,SMH"
+
+
+def test_no_per_user_extended_hours_override():
+    """v0.55.0: the DB value decides (the forced enabled=False override is gone)."""
+    import copy
+    ex = copy.deepcopy(DEFAULT_EXECUTION); ex["extended_hours_exit"]["enabled"] = True
+    a = _act(); a.execution = ex
+    assert ulr.user_config(a).execution["extended_hours_exit"]["enabled"] is True
+    a.execution = {}
+    with pytest.raises(Exception):
+        ulr.user_config(a)          # incomplete DB row -> refused, never a code default

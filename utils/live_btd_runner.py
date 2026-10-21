@@ -33,7 +33,7 @@ from zoneinfo import ZoneInfo
 import requests
 from dotenv import dotenv_values
 
-from utils.live_btd_config import (DEFAULT_PARAMS, DEFAULT_STRATEGY, ConfigResult, exit_order,
+from utils.live_btd_config import (DEFAULT_STRATEGY, ConfigResult, exit_order,
                                    ext_exit_action, resolve as resolve_config)
 from utils.live_btd_exits import (cids, exit_eligible, fallback_full_stop, is_stop_only, open_sells, order_fill,
                                   own_open_exits, plan_broker_exits, plan_protective_stops, protective_stop_cid,
@@ -65,8 +65,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser()
     p.add_argument("--strategy", default=None,
                    help=f"alpatrade.strategy_configs name or id (default: $BTD_STRATEGY or {DEFAULT_STRATEGY})")
-    # Overrides only (testing / one-off). Precedence per key: flag > DB row > DEFAULT_PARAMS.
-    p.add_argument("--symbols", default=None, help=f"override (default {','.join(DEFAULT_PARAMS['symbols'])})")
+    # Dry-run overrides only (v0.55.0: rules are DB-only; a live pass refuses any override).
+    p.add_argument("--symbols", default=None, help="dry-run override of the DB universe")
     p.add_argument("--dip", type=float, default=None, help="override, %% below ref (default 3)")
     p.add_argument("--tp", type=float, default=None, help="override, take profit %% (default 8)")
     p.add_argument("--sl", type=float, default=None, help="override, stop loss %% (default 1.5)")
@@ -213,7 +213,10 @@ class Runner:
         return {k: getattr(self.a, k, None) for k in PKEYS}
 
     def load_config(self) -> ConfigResult:
-        cfg = resolve_config(self.strategy, self.cli_overrides(), database_url=self.db_url)
+        ov = {k: v for k, v in self.cli_overrides().items() if v is not None}
+        if ov and self.execute:
+            raise PassStop(f"rules are DB-only: --{'/--'.join(sorted(ov))} overrides are dry-run only")
+        cfg = resolve_config(self.strategy, ov, database_url=self.db_url)
         self.log_config(cfg, "loaded")
         return cfg
 
@@ -634,6 +637,78 @@ class Runner:
                 if sym not in state["positions"] and sym not in other_held:
                     log.info("%s: pre-existing/untracked position -> ignored by runner (blocks new entry)", sym)
 
+            # ---------------- EXT (v0.55.0): 24/5 checks in the post / overnight / pre sessions ----------------
+            # Every ~5 min 16:00-09:30 ET (scheduler 'ext' events). Same rules as the backtester
+            # (btd_rules.ext_*): stop breach / take-profit on a sane bid -> cancel this symbol's resting
+            # regular-hours stop and send ONE extended-hours DAY limit sell for the whole (fractional) qty;
+            # the reprice / market-at-open handling above takes it from there. full_24_5 also runs dip
+            # entries as extended-hours limit buys. Idempotent: deterministic cids per trade day and a
+            # pending-ext guard; only the lease holder acts (lease_ok / standby above).
+            if "ext" in events and not clock.get("is_open") and R_.session_of(now) != "regular" and R_.ext_stops_on(P):
+                nxt_day = datetime.fromisoformat(clock["next_open"]).astimezone(ET).date()
+                td = R_.trade_day_of(now, nxt_day)
+                sess = R_.session_of(now)
+                ex_map = R_.stop_exempt_map(P, td)
+                busy = {o["symbol"] for o in get(f"{base}/v2/orders", status="open", limit=500)
+                        if o.get("side") == "sell" and o.get("extended_hours")}      # live ext sell -> leave it
+
+                def quote(sym):
+                    q = get(f"{DATA_URL}/v2/stocks/{sym}/quotes/latest", feed=EXT.get("quote_feed") or P["feed"]).get("quote") or {}
+                    return R_.ext_usable_bid(q.get("bp"), q.get("ap"), EXT["max_spread_bps"]), float(q.get("ap") or 0)
+
+                for sym, meta in list(state["positions"].items()):
+                    pos = positions.get(sym)
+                    if not pos or sym in ex_map or sym in busy: continue
+                    entry_d = date.fromisoformat(meta["entry_date"])
+                    tp, sl = R_.exit_prices(float(pos["avg_entry_price"]), *R_.pos_pcts(P, meta))
+                    bid, _ = quote(sym)
+                    why = None
+                    if R_.stop_live(entry_d, td, P) and R_.ext_stop_breach(bid, sl):
+                        why = f"SL {sl:.2f} breached in {sess} (bid {bid})"
+                    elif R_.ext_trading_on(P) and exit_eligible(entry_d, td, P["min_hold"]) and R_.ext_tp_hit(bid, tp):
+                        why = f"TP {tp:.2f} reached in {sess} (bid {bid})"
+                    if not why:
+                        log.info("ext: %s %s bid=%s stop=%.2f tp=%.2f -> hold", sym, sess, bid, sl, tp); continue
+                    if not lease_ok(): break
+                    if not EXECUTE:
+                        log.info("ext: %s %s -> a live pass would cancel the resting stop and send an "
+                                 "extended-hours limit sell", sym, why); continue
+                    for o in own_open_exits(open_orders, sym, PFX):
+                        log.info("ext: %s cancelling resting %s before the extended-hours sell", sym, o["client_order_id"])
+                        try: self.broker_call("DELETE", f"/v2/orders/{o['id']}")
+                        except Exception as exc: log.warning("ext: cancel failed: %s", exc)  # noqa: BLE001
+                    fpos, foo = None, []
+                    for _ in range(10):
+                        fpos, foo = fresh_sell_check(sym)
+                        if fpos is None or not open_sells(foo, sym): break
+                        time.sleep(1)
+                    if fpos is None or open_sells(foo, sym):
+                        log.warning("ext: %s position gone or a sell still open -> no sell (never doubles)", sym); continue
+                    qty = fpos.get("qty_available") or fpos.get("qty")       # fractional OK in extended sessions
+                    xcid = f"{cids(sym, td, PFX)['market']}-e"
+                    body = exit_order(sym, qty, xcid, "extended", EXEC, bid)
+                    log.warning("ext: %s %s -> %s", sym, why, json.dumps(body))
+                    r0 = submit(body)
+                    if r0 == {}:
+                        log.info("ext: %s %s already used (duplicate cid) -> skip", sym, xcid); continue
+                    meta["exit_submitted"] = now.isoformat()
+                    track(xcid, sym, why, meta, {"ext": {"base_cid": xcid, "submitted_at": now.isoformat(), "reprices": 0}})
+                    persist()
+                if R_.ext_trading_on(P):
+                    stale = timedelta(minutes=float(EXT["reprice_after_min"]))
+                    for o in open_orders:               # unfilled extended-hours entry -> cancelled after one try
+                        if o.get("side") == "buy" and o.get("extended_hours") and sleeve.owns_cid(o.get("client_order_id")) \
+                                and now - datetime.fromisoformat(str(o.get("submitted_at")).replace("Z", "+00:00")) >= stale \
+                                and EXECUTE and lease_ok():
+                            log.info("ext: entry %s unfilled after %s -> cancel", o["client_order_id"], stale)
+                            self.broker_call("DELETE", f"/v2/orders/{o['id']}")
+                    if not ALLOW_ENTRIES:
+                        log.warning("ext: entries disabled this pass (DB rule set not loaded)")
+                    else:
+                        self._entries(state, R, rec, positions, open_orders, P, syms, equity, cash, nmbp, td,
+                                      lease_ok, persist, submit, sleeve=sleeve, sleeve_val=sleeve_val,
+                                      other_held=other_held, ext=EXT)
+
             # ---------------- PROTECT: every held position has a working stop (v0.47.0) ----------------
             def protect(open_orders_now, phase):
                 if not (EXECUTE and not DEGRADED): return
@@ -647,11 +722,11 @@ class Runner:
                 except Exception as exc:  # noqa: BLE001
                     log.error("protect: planning failed: %s", exc); return
                 problems = []
-                exempt = stop_exemptions(os.environ.get("BTD_STOP_EXEMPT"), today)
+                exempt = R_.stop_exempt_map(P, today)
                 for pl in plans:
                     sym = pl["sym"]
                     if sym in exempt:
-                        log.info("protect: %s exempt until %s (BTD_STOP_EXEMPT, held by decision) -> no stop", sym, exempt[sym])
+                        log.info("protect: %s exempt until %s (params.stop_exempt, held by decision) -> no stop", sym, exempt[sym])
                         continue
                     if pl["overdue"]:
                         problems.append(f"{sym}: open position had NO working stop ({phase})")
@@ -752,9 +827,9 @@ class Runner:
                         continue
                     if not market_ok:
                         log.info("%s: market closed -> broker exits wait for the open", sym); continue
-                    ex = stop_exemptions(os.environ.get("BTD_STOP_EXEMPT"), today)
+                    ex = R_.stop_exempt_map(P, today)
                     if sym in ex:
-                        log.info("%s: exempt until %s (BTD_STOP_EXEMPT) -> no TP/SL orders, time exit only", sym, ex[sym]); continue
+                        log.info("%s: exempt until %s (params.stop_exempt) -> no TP/SL orders, time exit only", sym, ex[sym]); continue
                     mine = own_open_exits(open_orders, sym, PFX)
                     if mine and not all(is_stop_only(o) for o in mine):
                         log.info("%s: broker exits already open %s -> nothing to do", sym, [o["client_order_id"] for o in mine]); continue
@@ -926,7 +1001,10 @@ class Runner:
         return res
 
     def _entries(self, state, R, rec, positions, open_orders, P, syms, equity, cash, nmbp, today,
-                 lease_ok, persist, submit, sleeve=None, sleeve_val=None, other_held=frozenset()):
+                 lease_ok, persist, submit, sleeve=None, sleeve_val=None, other_held=frozenset(), ext=None):
+        """``ext`` (v0.55.0, full_24_5): extended-session pass; ``today`` is the session's TRADE day,
+        the price is a sane quote (btd_rules.ext_usable_bid) and the order is an extended-hours DAY
+        limit buy by qty (Alpaca: limit only, no notional) at btd_rules.ext_buy_limit(ask)."""
         get, base, log, EXECUTE = self.get, self.base, self.log, self.execute
         sleeve = sleeve or Sleeve(self.strategy, PRIMARY_PREFIX, None, True)
         snaps = get(f"{DATA_URL}/v2/stocks/snapshots", symbols=",".join(syms), feed=P["feed"])
@@ -983,6 +1061,13 @@ class Runner:
         for sym in syms:
             sn = snaps.get(sym) or {}
             last = float((sn.get("latestTrade") or {}).get("p") or 0)
+            ask = 0.0
+            if ext is not None:
+                q = get(f"{DATA_URL}/v2/stocks/{sym}/quotes/latest", feed=ext.get("quote_feed") or P["feed"]).get("quote") or {}
+                last = R_.ext_usable_bid(q.get("bp"), q.get("ap"), ext["max_spread_bps"]) or 0.0
+                ask = float(q.get("ap") or 0)
+                if not last:
+                    log.info("%s: no usable extended-hours quote -> no entry check", sym); continue
             daily = sn.get("dailyBar") or {}; prev = sn.get("prevDailyBar") or {}
             if daily.get("t", "")[:10] == today.isoformat(): prev_close = float(prev.get("c") or 0)
             else: prev_close = float(daily.get("c") or 0)
@@ -1014,8 +1099,14 @@ class Runner:
             if busy:
                 log.info("%s: %s -> skip (pre-buy safety check)", sym, busy); continue
             if not lease_ok(): break
-            submit({"symbol": sym, "notional": f"{notional:.2f}", "side": "buy", "type": "market",
-                    "time_in_force": "day", "client_order_id": cid})
+            if ext is not None:
+                lim = R_.ext_buy_limit(last, float(ext["discount_bps"]))
+                submit({"symbol": sym, "qty": f"{round(notional / lim, 9):.9f}".rstrip("0").rstrip("."), "side": "buy", "type": "limit",
+                        "limit_price": f"{lim}", "time_in_force": "day", "extended_hours": True,
+                        "client_order_id": cid})
+            else:
+                submit({"symbol": sym, "notional": f"{notional:.2f}", "side": "buy", "type": "market",
+                        "time_in_force": "day", "client_order_id": cid})
             avail -= notional; exposure += notional
             if EXECUTE:
                 state["positions"][sym] = {"entry_date": today.isoformat(), "notional": notional, "ref": ref,

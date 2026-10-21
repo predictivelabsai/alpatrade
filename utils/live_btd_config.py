@@ -2,11 +2,12 @@
 
 One row in ``alpatrade.strategy_configs`` (sql/40_strategy_configs.sql) is the shared
 source of truth for every runner instance (HP primary, Mac backup, box tertiary).
-Precedence, per key:  explicit CLI flag  >  DB row  >  code defaults (``DEFAULT_PARAMS``).
+Rules are DB-only (v0.55.0): every key in REQUIRED_PARAM_KEYS must be stored in the row. CLI flags\n(dry-run testing only; the live runner refuses them) may override a stored key.
 
-If the row cannot be read (DB unreachable, table/row missing, bad JSON) the runner falls
-back to the defaults and ``ConfigResult.db_ok`` is False; the runner then disables entries
-for that live pass (never buy on unverified params). Exits still run.
+If the row cannot be read (DB unreachable, row missing/incomplete, bad JSON) ``db_ok`` is False
+and the last rule set loaded from the DB on this machine (same version) is used for exits and
+stops only; the runner sends no entries. With no snapshot at all the runner places nothing
+(the broker-side resting stops stay in place).
 
 Pure helpers for exits: ``exit_order`` builds the Alpaca order body for the regular or the
 extended/overnight session, ``ext_limit_price`` applies the bid discount and
@@ -22,36 +23,26 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-DEFAULT_STRATEGY = "buy_the_dip_mag7_minhold_live"
+DEFAULT_STRATEGY = "buy_the_dip_mag7_minhold_live"   # which ROW to load (a lookup key, not a rule)
 
-# Code defaults == the argparse defaults the runner had before configs moved to the DB.
-DEFAULT_PARAMS: Dict[str, Any] = {
-    "symbols": ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"],
-    "dip": 3.0, "tp": 8.0, "sl": 1.5, "min_hold": 3, "max_hold": 3,
-    "pos_frac": 0.10, "max_exposure": 0.0, "ref": "high20", "feed": "iex",
-    "entry_window": "15-5", "close_window": "15-2",
-    # v0.49.0 risk overlay, OFF by default: "SPY,SMH" = no new dip buys while any of these trades
-    # below its prior 5-session low (scripts/btd_risk_overlay_wf.py; enable via live_btd_config set)
-    "regime_filter": "",
-    # v0.51.0 user-editable rule keys (utils/btd_rules.PARAM_SPEC); these defaults = old behaviour
-    "stop_mode": "pct", "stop_k": 2.0, "tp_mult": 0.0, "stop_timing": "always",
-    "vol_filter": "off", "vol_max": 4.0, "regime_mode": "low5", "regime_sma": 200, "max_exposure_pct": 0.0,
-}
-
-DEFAULT_EXECUTION: Dict[str, Any] = {
-    "regular_hours_exit": {"order_type": "market", "time_in_force": "day"},
-    "extended_hours_exit": {"enabled": False, "order_type": "limit", "limit_ref": "bid",
-                            "discount_bps": 15, "reprice_after_min": 5, "max_reprices": 2,
-                            "fallback": "market_day_at_regular_open"},
-}
+# v0.55.0 (Julian 2026-10-21): rules live in the DB ONLY. These are the keys a rule set must carry;
+# there are no code defaults. sql/57_rules_db_only.sql seeded the former fallback values into the rows.
+REQUIRED_PARAM_KEYS = ("symbols", "dip", "tp", "sl", "min_hold", "max_hold", "pos_frac", "max_exposure", "ref",
+                       "feed", "entry_window", "close_window", "regime_filter", "stop_mode", "stop_k", "tp_mult",
+                       "stop_timing", "vol_filter", "vol_max", "regime_mode", "regime_sma", "max_exposure_pct",
+                       "session_mode", "stop_exempt")
+REQUIRED_EXECUTION_KEYS = {"regular_hours_exit": ("order_type", "time_in_force"),
+                           "extended_hours_exit": ("enabled", "order_type", "limit_ref", "discount_bps",
+                                                   "reprice_after_min", "max_reprices", "fallback", "max_spread_bps")}
 
 _TYPES = {"dip": float, "tp": float, "sl": float, "min_hold": int, "max_hold": int,
           "pos_frac": float, "max_exposure": float, "ref": str, "feed": str,
-          "entry_window": str, "close_window": str, "regime_filter": str,
+          "entry_window": str, "close_window": str, "regime_filter": str, "session_mode": str,
           "stop_mode": str, "stop_k": float, "tp_mult": float, "stop_timing": str, "vol_filter": str,
           "vol_max": float, "regime_mode": str, "regime_sma": int, "max_exposure_pct": float}
 _CHOICES = {"stop_mode": ("pct", "atr", "stdev"), "stop_timing": ("always", "exit_day"),
-            "vol_filter": ("off", "atr", "spy_atr"), "regime_mode": ("low5", "sma")}
+            "vol_filter": ("off", "atr", "spy_atr"), "regime_mode": ("low5", "sma"),
+            "session_mode": ("regular", "stops_24_5", "full_24_5")}
 
 
 class ConfigError(ValueError):
@@ -77,6 +68,10 @@ def coerce_params(raw: Dict[str, Any]) -> Dict[str, Any]:
             if not syms:
                 raise ConfigError("symbols is empty")
             out[k] = syms
+        elif k == "stop_exempt":
+            if not isinstance(v, (dict, str)):
+                raise ConfigError("stop_exempt must be {SYM: YYYY-MM-DD}")
+            out[k] = v
         elif k in _TYPES:
             try:
                 out[k] = _TYPES[k](v)
@@ -102,15 +97,19 @@ def coerce_params(raw: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def merge_execution(raw: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-    ex = copy.deepcopy(DEFAULT_EXECUTION)
-    for sect, vals in (raw or {}).items():
-        if isinstance(vals, dict):
-            ex.setdefault(sect, {}).update(vals)
+    """Validate the DB execution JSON. Every key in REQUIRED_EXECUTION_KEYS must be stored (no code
+    defaults since v0.55.0)."""
+    ex = copy.deepcopy(raw or {})
+    missing = [f"{sect}.{k}" for sect, keys in REQUIRED_EXECUTION_KEYS.items() for k in keys
+               if k not in (ex.get(sect) or {})]
+    if missing:
+        raise ConfigError("execution missing " + ", ".join(missing) + " (rules are DB-only; see sql/57)")
     e = ex["extended_hours_exit"]
     e["enabled"] = bool(e.get("enabled"))
     e["discount_bps"] = float(e.get("discount_bps", 15))
     e["reprice_after_min"] = float(e.get("reprice_after_min", 5))
     e["max_reprices"] = int(e.get("max_reprices", 2))
+    e["max_spread_bps"] = float(e["max_spread_bps"])
     if not 0 <= e["discount_bps"] < 1000:
         raise ConfigError(f"discount_bps out of range: {e['discount_bps']}")
     if e.get("order_type", "limit") != "limit":
@@ -188,36 +187,66 @@ def resolve(strategy: str, cli: Dict[str, Any], *, database_url: Optional[str] =
         row = None; db_params = {}; db_exec = {}
 
     cli_p = coerce_params(cli)
-    params, sources = {}, {}
-    for k, dv in DEFAULT_PARAMS.items():
-        if k in cli_p:
-            params[k], sources[k] = cli_p[k], "cli"
-        elif k in db_params:
-            params[k], sources[k] = db_params[k], "db"
-        else:
-            params[k], sources[k] = copy.deepcopy(dv), "default"
-    execution = merge_execution(db_exec)
     if row is not None:
+        missing = [k for k in REQUIRED_PARAM_KEYS if k not in db_params]
+        if missing:
+            err = f"ConfigError: strategy_configs row missing {', '.join(missing)} (rules are DB-only; run sql/57)"
+            row = None
+    if row is not None:
+        params = {k: (cli_p[k] if k in cli_p else copy.deepcopy(db_params[k])) for k in REQUIRED_PARAM_KEYS}
+        sources = {k: ("cli" if k in cli_p else "db") for k in REQUIRED_PARAM_KEYS}
+        execution = merge_execution(db_exec)
         rid, name, ver = row[0], row[1], row[4]
         src = f"db:alpatrade.strategy_configs#{rid} {name} v{ver}"
         overridden = sorted(k for k, s in sources.items() if s == "cli")
         if overridden:
             src += " + cli(" + ",".join(overridden) + ")"
-        return ConfigResult(params, execution, sources, src, True, rid, ver, name)
-    src = f"defaults (DB config unavailable: {err})"
-    if any(s == "cli" for s in sources.values()):
-        src += " + cli(" + ",".join(sorted(k for k, s in sources.items() if s == "cli")) + ")"
-    return ConfigResult(params, execution, sources, src, False, None, None, strategy, err)
+        out = ConfigResult(params, execution, sources, src, True, rid, ver, name)
+        save_last_good(strategy, out)
+        return out
+    # DB unavailable / row incomplete: FAIL SAFE. The last rule set this machine loaded from the DB
+    # (same version id) is used for exits and stops only; db_ok=False -> the runner sends no entries.
+    lg = load_last_good(strategy)
+    if lg is not None:
+        lg.db_ok = False; lg.error = err
+        lg.source = f"last-good DB snapshot v{lg.version} (DB config unavailable: {err})"
+        return lg
+    return ConfigResult({}, {}, {}, f"none (DB config unavailable: {err}; no last-good snapshot)", False,
+                        None, None, strategy, err)
+
+
+def _last_good_path(strategy: str) -> str:
+    d = os.environ.get("BTD_STATE_DIR") or os.path.join(os.path.expanduser("~"), ".alpatrade", "btd")
+    return os.path.join(d, f"config_last_good_{str(strategy).replace('/', '_')}.json")
+
+
+def save_last_good(strategy: str, cfg: "ConfigResult") -> None:
+    """Cache of the last DB-loaded rule set (NOT a source of truth: only read while the DB is down,
+    and then entries are off)."""
+    if any(v == "cli" for v in cfg.sources.values()):
+        return
+    try:
+        p = _last_good_path(strategy); os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p + ".tmp", "w") as f:
+            json.dump({"params": cfg.params, "execution": cfg.execution, "id": cfg.config_id,
+                       "version": cfg.version, "name": cfg.name}, f, default=str)
+        os.replace(p + ".tmp", p)
+    except OSError:
+        pass
+
+
+def load_last_good(strategy: str) -> Optional["ConfigResult"]:
+    try:
+        with open(_last_good_path(strategy)) as f:
+            d = json.load(f)
+        return ConfigResult(d["params"], d["execution"], {k: "last_good" for k in d["params"]}, "", False,
+                            d.get("id"), d.get("version"), d.get("name"))
+    except (OSError, ValueError, KeyError):
+        return None
 
 
 # ------------------------------------------------------------------ exit orders
-def ext_limit_price(bid: float, discount_bps: float) -> float:
-    """Limit = bid x (1 - discount). Rounded DOWN to a valid tick (>= $1: 0.01, else 0.0001)."""
-    if not bid or bid <= 0:
-        raise ValueError("no bid")
-    px = bid * (1 - discount_bps / 10_000.0)
-    tick = 0.01 if px >= 1 else 0.0001
-    return round(int(px / tick + 1e-9) * tick, 4 if tick < 0.01 else 2)
+from utils.btd_rules import ext_limit_price  # noqa: E402  (v0.55.0: the rule lives in btd_rules)
 
 
 def exit_order(sym: str, qty: Any, cid: str, session: str, execution: Dict[str, Any],
@@ -234,14 +263,4 @@ def exit_order(sym: str, qty: Any, cid: str, session: str, execution: Dict[str, 
             "extended_hours": True, "client_order_id": cid}
 
 
-def ext_exit_action(*, submitted_at: datetime, now: datetime, reprices: int, market_open: bool,
-                    execution: Dict[str, Any]) -> str:
-    """For an open extended-hours limit sell: 'fallback' (cancel -> DAY market) once the
-    regular session is open, 'reprice' every reprice_after_min while reprices < max_reprices,
-    otherwise 'wait' (for more time, or for the regular open once reprices are used up)."""
-    e = execution["extended_hours_exit"]
-    if market_open:
-        return "fallback"
-    if reprices < e["max_reprices"] and (now - submitted_at).total_seconds() >= e["reprice_after_min"] * 60:
-        return "reprice"
-    return "wait"
+from utils.btd_rules import ext_exit_action  # noqa: E402,F401  (v0.55.0: the rule lives in btd_rules)

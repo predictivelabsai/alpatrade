@@ -85,6 +85,12 @@ def _run(tmp_path, monkeypatch, positions, *, mins_to_close=200.0, extra=(), ope
     monkeypatch.setenv("ALPACA_LIVE_API_KEY", "k")
     monkeypatch.setenv("ALPACA_LIVE_SECRET_KEY", "s")
     monkeypatch.setattr(sys, "argv", [str(SCRIPT), "--any-time", "--symbols", "ZZZZ", *extra])
+    # v0.55.0: rules are DB-only -> serve the stored rule row (sql/57 values) instead of a DB
+    import utils.live_btd_config as LC
+    import utils.live_btd_runner as LRM
+    from btd_fixtures import DEFAULT_EXECUTION, DEFAULT_PARAMS
+    monkeypatch.setattr(LRM, "resolve_config", lambda strategy, cli, **k: LC.resolve(
+        strategy, cli, row_loader=lambda key: (1, str(strategy), dict(DEFAULT_PARAMS), DEFAULT_EXECUTION, 1, True)))
     sells = []
     import logging
     class H(logging.Handler):

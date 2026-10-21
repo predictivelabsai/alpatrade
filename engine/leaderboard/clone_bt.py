@@ -126,6 +126,13 @@ def upsert_config(strategy_id: int, user_id: str, template: str, params: dict, e
                   mode: str) -> None:
     ensure_schema()
     from sqlalchemy import text
+    import copy
+    from utils.btd_rules import NEW_ROW_TEMPLATE_EXECUTION, NEW_ROW_TEMPLATE_PARAMS
+    params = {**NEW_ROW_TEMPLATE_PARAMS, **(params or {})}          # v0.55.0: complete rule row in the DB
+    ex = copy.deepcopy(NEW_ROW_TEMPLATE_EXECUTION)
+    for sect, vals in (execution or {}).items():
+        if isinstance(vals, dict): ex.setdefault(sect, {}).update(vals)
+    execution = ex
     with _pool().get_session() as s:
         s.execute(text("""
             INSERT INTO alpatrade.user_strategy_configs (user_id, user_strategy_id, template, params,

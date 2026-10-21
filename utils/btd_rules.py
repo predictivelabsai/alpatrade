@@ -256,6 +256,22 @@ EDITABLE_KEYS = tuple(PARAM_SPEC)
 PARAM_GROUPS = ("Universe", "Entry", "Sizing", "Holding", "Stop & target", "Filters")
 
 
+# v0.55.0: CREATION template for a NEW per-user rule row (clone / new strategy). It is written INTO
+# the DB row when the row is created (engine/leaderboard/clone_bt.upsert_config) and is never read
+# at run time: runners, paper and the backtester only use what the row stores (DB-only rules).
+# Values == sql/57's per-user seed == the pre-v0.55 user_live_runner.NEUTRAL fill-ins.
+NEW_ROW_TEMPLATE_PARAMS: Dict[str, Any] = {
+    "min_hold": 0, "max_exposure": 0.0, "ref": "high20", "feed": "iex", "entry_window": "15-5",
+    "close_window": "15-2", "regime_filter": "", "stop_mode": "pct", "stop_k": 2.0, "tp_mult": 0.0,
+    "stop_timing": "always", "vol_filter": "off", "vol_max": 4.0, "regime_mode": "low5", "regime_sma": 200,
+    "max_exposure_pct": 0.0, "session_mode": "regular", "stop_exempt": {}}
+NEW_ROW_TEMPLATE_EXECUTION: Dict[str, Any] = {
+    "regular_hours_exit": {"order_type": "market", "time_in_force": "day"},
+    "extended_hours_exit": {"enabled": False, "order_type": "limit", "limit_ref": "bid", "discount_bps": 15,
+                            "reprice_after_min": 5, "max_reprices": 2, "fallback": "market_day_at_regular_open",
+                            "max_spread_bps": 50}}
+
+
 def param_defaults() -> Dict[str, Any]:
     return {k: (list(v["default"]) if isinstance(v["default"], list) else v["default"]) for k, v in PARAM_SPEC.items()}
 
@@ -275,7 +291,8 @@ def validate_params(raw: Dict[str, Any], *, base: Optional[Dict[str, Any]] = Non
     keys ``raw`` omits; code defaults fill the rest. Fractions for dip/tp/sl (0.03) are read as
     percent (3.0) like the user runner does. Unknown keys are kept untouched (execution plumbing
     such as feed / entry_window). Raises ParamError with every problem at once."""
-    merged = {**param_defaults(), **(base or {}), **{k: v for k, v in (raw or {}).items() if v is not None}}
+    merged = {**NEW_ROW_TEMPLATE_PARAMS, **param_defaults(), **(base or {}),
+              **{k: v for k, v in (raw or {}).items() if v is not None}}
     out: Dict[str, Any] = {k: v for k, v in merged.items() if k not in PARAM_SPEC}
     errs: Dict[str, str] = {}
     for k, spec in PARAM_SPEC.items():
@@ -462,3 +479,175 @@ def stop_live(entry_date: date, session_day: date, P: Dict[str, Any]) -> bool:
     if (P.get("stop_timing") or "always") == "exit_day":
         return exit_eligible(entry_date, session_day, int(P.get("min_hold") or 0))
     return stop_active(entry_date, session_day)
+
+
+# ================================================================ v0.55.0: 24/5 sessions
+# Julian 2026-10-21: "all trading is 24/5" behind the DB key ``session_mode`` (strategy_configs
+# params; no code default acts as truth, the migration sql/57 seeds it):
+#   regular     stops/TP/entries/time exits only in the regular session; resting stops gap-fill at
+#               the open (the pre-v0.55 behaviour)
+#   stops_24_5  as regular, plus always-on stops: a position at/below its stop in the post,
+#               overnight or pre session is sold with an extended-hours limit (ext_exit_fill)
+#   full_24_5   stops AND take-profits AND dip entries are also evaluated in post/overnight/pre
+#               sessions (every ~5 min); regime filter and hold_age use the session's TRADE DAY
+# Alpaca: extended/overnight orders must be type=limit, time_in_force=day, extended_hours=true;
+# fractional qty is allowed in all extended sessions, so one order carries the whole position.
+# The order mechanics (discount_bps, reprice_after_min, max_reprices, market at the open) come
+# from strategy_configs.execution.extended_hours_exit.
+SESSION_MODES = ("regular", "stops_24_5", "full_24_5")
+EXT_STEP_MIN = 5
+
+
+def session_of(ts_et) -> Optional[str]:
+    """'overnight' 20:00-04:00 | 'pre' 04:00-09:30 | 'regular' 09:30-16:00 | 'post' 16:00-20:00
+    (ET wall clock; holidays/early closes are the caller's calendar job)."""
+    m = ts_et.hour * 60 + ts_et.minute
+    if m < 240 or m >= 1200:
+        return "overnight"
+    if m < 570:
+        return "pre"
+    if m < 960:
+        return "regular"
+    return "post"
+
+
+def trade_day_of(ts_et, next_session_day: date) -> date:
+    """Trade day a timestamp belongs to: post belongs to today's session; overnight and pre belong
+    to the NEXT session (Alpaca treats overnight as the first session of the next trade day).
+    Used for hold_age, stop_live and the regime filter, so a same-day buy is never sold in that
+    day's post session (PDT guard)."""
+    s = session_of(ts_et)
+    if s in ("regular", "post") and ts_et.date() == next_session_day:
+        return ts_et.date()
+    if s == "post":
+        return ts_et.date()
+    return next_session_day
+
+
+def session_mode(P: Dict[str, Any]) -> str:
+    m = P.get("session_mode")
+    if m not in SESSION_MODES:
+        raise KeyError(f"session_mode missing/invalid in the DB rule set: {m!r}")
+    return m
+
+
+def ext_stops_on(P: Dict[str, Any]) -> bool:
+    return session_mode(P) in ("stops_24_5", "full_24_5")
+
+
+def ext_trading_on(P: Dict[str, Any]) -> bool:
+    return session_mode(P) == "full_24_5"
+
+
+def ext_stop_breach(bid: Optional[float], stop: float) -> bool:
+    """Extended-hours stop breach: the bid (Alpaca latest quote; backtest: 5-min bar close) is at
+    or under the stop. No bid -> no decision (never sell on a missing quote)."""
+    return bool(bid) and float(bid) > 0 and float(bid) <= float(stop)
+
+
+def ext_tp_hit(bid: Optional[float], tp: float) -> bool:
+    return bool(bid) and float(bid) > 0 and float(bid) >= float(tp)
+
+
+def ext_limit_price(bid: float, discount_bps: float) -> float:
+    """Sell limit = bid x (1 - discount), rounded DOWN to a valid tick (>= $1: 0.01, else 0.0001)."""
+    if not bid or bid <= 0:
+        raise ValueError("no bid")
+    px = bid * (1 - discount_bps / 10_000.0)
+    tick = 0.01 if px >= 1 else 0.0001
+    return round(int(px / tick + 1e-9) * tick, 4 if tick < 0.01 else 2)
+
+
+def ext_buy_limit(ask: float, premium_bps: float) -> float:
+    """Buy limit = ask x (1 + premium), rounded UP to the tick (full_24_5 entries)."""
+    if not ask or ask <= 0:
+        raise ValueError("no ask")
+    px = ask * (1 + premium_bps / 10_000.0)
+    tick = 0.01 if px >= 1 else 0.0001
+    return round(math.ceil(px / tick - 1e-9) * tick, 4 if tick < 0.01 else 2)
+
+
+def ext_exit_action(*, submitted_at, now, reprices: int, market_open: bool, execution: Dict[str, Any]) -> str:
+    """Open extended-hours limit sell: 'fallback' (cancel -> DAY market) once the regular session is
+    open, 'reprice' every reprice_after_min while reprices < max_reprices, else 'wait'. Live runner
+    and backtester both call this (v0.55.0; moved here from utils/live_btd_config)."""
+    e = execution["extended_hours_exit"]
+    if market_open:
+        return "fallback"
+    if reprices < int(e["max_reprices"]) and (now - submitted_at).total_seconds() >= float(e["reprice_after_min"]) * 60:
+        return "reprice"
+    return "wait"
+
+
+def ext_order_expired(placed_at, now) -> bool:
+    """Alpaca: an extended-hours DAY order placed in the POST session expires at 20:00 ET that day
+    (overnight/pre orders stay through the next regular + post session)."""
+    return session_of(placed_at) == "post" and (now.date() > placed_at.date() or session_of(now) == "overnight")
+
+
+def ext_sell_fill(limit: float, high: Optional[float]) -> Optional[float]:
+    """Resting sell limit fills at the limit when the next 5-min bar trades at/above it."""
+    return float(limit) if high is not None and float(high) >= float(limit) else None
+
+
+def ext_buy_fill(limit: float, low: Optional[float]) -> Optional[float]:
+    return float(limit) if low is not None and float(low) <= float(limit) else None
+
+
+def ext_exit_fill(checks: List[Tuple[Any, float, float]], E: Dict[str, Any], open_px: Optional[float]
+                  ) -> Optional[Tuple[Any, float, str]]:
+    """Convenience replay of ONE extended-hours sell from its breach check (unit tests / docs):
+    ``checks`` = [(ts, bid, next_bar_high), ...]. Limit = ext_limit_price(bid); fills at the limit if
+    the next bar's high reaches it; reprices per ext_exit_action; expiry per ext_order_expired
+    (re-placed off the new bid); else market at the regular open (open_px)."""
+    ex = {"extended_hours_exit": E}; bps = float(E["discount_bps"])
+    limit = placed = sub = None; reprices = 0
+    for ts, bid, hi in checks:
+        if limit is not None and ext_order_expired(placed, ts):
+            limit = None
+        if limit is None:
+            limit = ext_limit_price(bid, bps); placed = sub = ts; reprices = 0
+        elif ext_exit_action(submitted_at=sub, now=ts, reprices=reprices, market_open=False, execution=ex) == "reprice":
+            limit = ext_limit_price(bid, bps); reprices += 1; sub = ts
+        f = ext_sell_fill(limit, hi)
+        if f is not None:
+            return ts, f, f"ext_limit_r{reprices}"
+    return (None, float(open_px), "open_market") if (checks and open_px is not None) else None
+
+
+def ext_check_allowed(ts_et, session_days) -> bool:
+    """Checks happen only on NYSE session dates (the live scheduler follows the calendar), and the
+    20:00-24:00 overnight part only when the NEXT calendar day is a session (Alpaca runs no
+    overnight session on Friday night or before a holiday). Sunday 20:00-24:00 is not checked
+    (Sunday is not a session date); Monday 00:00-04:00 is."""
+    from datetime import timedelta
+    d = ts_et.date()
+    if d.isoformat() not in session_days:
+        return False
+    if ts_et.hour >= 20:
+        return (d + timedelta(days=1)).isoformat() in session_days
+    return True
+
+
+def ext_usable_bid(bid: Any, ask: Any, max_spread_bps: float) -> Optional[float]:
+    """A quote the extended-hours rules may act on: bid > 0, ask >= bid and spread <= max_spread_bps
+    of the mid (execution.extended_hours_exit.max_spread_bps, DB). The free 'overnight' quote feed
+    is indicative and often 15%+ wide, so without this a stop would fire on a stale/indicative bid.
+    Unusable -> None (no decision this check; the resting regular stop and open fallback remain)."""
+    try:
+        b, a = float(bid or 0), float(ask or 0)
+    except (TypeError, ValueError):
+        return None
+    if b <= 0 or a < b:
+        return None
+    mid = (a + b) / 2
+    return b if (a - b) / mid * 10_000 <= float(max_spread_bps) else None
+
+
+def stop_exempt_map(P: Dict[str, Any], today: date) -> Dict[str, date]:
+    """Exemptions from the DB rule set (params.stop_exempt = {"AMD": "2026-10-19", ...}) still in
+    force today. Replaces the BTD_STOP_EXEMPT env var (v0.55.0)."""
+    raw = P.get("stop_exempt") or {}
+    if isinstance(raw, str):
+        return stop_exemptions(raw, today)
+    return stop_exemptions(",".join(f"{k}:{v}" for k, v in raw.items()), today)

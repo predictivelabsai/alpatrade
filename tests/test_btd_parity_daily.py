@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from utils.btd_parity_daily import compare, kind_of  # noqa: E402
-from utils.live_btd_config import DEFAULT_PARAMS  # noqa: E402
+from btd_fixtures import DEFAULT_PARAMS  # noqa: E402
 
 P = {**DEFAULT_PARAMS, "symbols": ["AAA", "BBB"], "pos_frac": 0.2}
 
@@ -56,8 +56,9 @@ def test_paper_runner_is_the_live_runner_on_paper_keys(tmp_path, monkeypatch):
     from utils.live_btd_runner import Runner
     r = PaperRunner("k", "s", strategy="buy_the_dip_mag7_minhold_live", database_url=None)
     assert isinstance(r, Runner) and type(r)._run is Runner._run and r.base == PAPER_BASE
-    cfg = paper_config("x", None, {"symbols": "AAPL", "dip": 3, "tp": 8, "sl": 1.5, "min_hold": 3, "max_hold": 3,
-                                   "pos_frac": 0.142857})
+    from btd_fixtures import DEFAULT_EXECUTION as DX
+    cfg = paper_config("x", None, {**P, "symbols": "AAPL", "dip": 3, "tp": 8, "sl": 1.5, "min_hold": 3, "max_hold": 3,
+                                   "pos_frac": 0.142857, "execution": DX})
     assert cfg.db_ok and cfg.params["sl"] == 1.5 and cfg.params["regime_filter"] == ""
 
 
