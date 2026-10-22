@@ -6,7 +6,8 @@ from utils.strategy_allocation import _PREFIX_RE
 
 UID = "5eae3ba6-e402-49d0-9749-d9fc7d68af30"
 MAG7 = ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA"]
-CFG = {"template": "buy_the_dip", "params": {"symbols": MAG7, "dip": 3, "tp": 8, "sl": 1.5,
+from btd_fixtures import USER_SEED  # noqa: E402
+CFG = {"template": "buy_the_dip", "params": {**USER_SEED, "symbols": MAG7, "dip": 3, "tp": 8, "sl": 1.5,
                                               "min_hold": 3, "max_hold": 3, "pos_frac": 0.142857}}
 RUNNER_ROWS = [{"name": "buy_the_dip_mag7_minhold_live", "cid_prefix": "btd", "allocation_usd": None,
                 "is_primary": True, "config_active": True, "alloc_active": False, "params": {"symbols": MAG7}},

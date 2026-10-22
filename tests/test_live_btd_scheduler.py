@@ -15,7 +15,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from utils.live_btd_config import ConfigResult, DEFAULT_EXECUTION, DEFAULT_PARAMS  # noqa: E402
+from btd_fixtures import DEFAULT_EXECUTION, DEFAULT_PARAMS  # noqa: E402
+from utils.live_btd_config import ConfigResult  # noqa: E402
 from utils.live_btd_exits import (exit_eligible, exit_prices, order_fill, own_open_exits,  # noqa: E402
                                   plan_broker_exits, split_qty)
 from utils.live_btd_scheduler import (ConfigCache, Event, Scheduler, due_events, heartbeat_due,  # noqa: E402

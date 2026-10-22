@@ -7,6 +7,7 @@ import copy
 import logging
 import math
 import random
+import re
 import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -19,7 +20,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import utils.live_btd_runner as LR  # noqa: E402
 from btd_fake_alpaca import ET, FakeAlpaca  # noqa: E402
 from utils import btd_event_backtest as BT  # noqa: E402
-from utils.live_btd_config import DEFAULT_EXECUTION, DEFAULT_PARAMS, ConfigResult  # noqa: E402
+from btd_fixtures import DEFAULT_EXECUTION, DEFAULT_PARAMS  # noqa: E402
+from utils.live_btd_config import ConfigResult  # noqa: E402
 from utils.live_btd_scheduler import session_events  # noqa: E402
 from utils.live_btd_state import LeaseResult  # noqa: E402
 
@@ -88,7 +90,8 @@ def run_live(bars, P, days, start, cash, tmp, monkeypatch, exempt=None):
         def now(cls, tz=None): return fake.now.astimezone(tz) if tz else fake.now
     monkeypatch.setattr(LR, "datetime", _DT)
     monkeypatch.setattr(LR.time, "sleep", lambda *_: None)
-    monkeypatch.setenv("BTD_STOP_EXEMPT", exempt or "")
+    P = {**P, "stop_exempt": exempt or {}}          # v0.55.0: exemptions are DB params
+    cfg.params = P
     for d in [x for x in days if x >= start]:
         fake.set_day(d)
         dd = date.fromisoformat(d)
@@ -113,7 +116,9 @@ def live_trades(fake):
     for f in fake.fills:
         s = f["sym"]
         if f["side"] == "buy":
-            cur[s] = {"sym": s, "entry_date": f["day"], "qty": round(f["qty"], 6), "entry_px": round(f["px"], 4),
+            m = re.search(r"-(\d{8})$", f["cid"])      # entry cid carries the TRADE day (v0.55.0 ext buys)
+            ed = f"{m.group(1)[:4]}-{m.group(1)[4:6]}-{m.group(1)[6:]}" if m else f["day"]
+            cur[s] = {"sym": s, "entry_date": ed, "qty": round(f["qty"], 6), "entry_px": round(f["px"], 4),
                       "sold": 0.0, "proceeds": 0.0}
         else:
             t = cur[s]; t["sold"] += f["qty"]; t["proceeds"] += f["qty"] * f["px"]
@@ -269,3 +274,123 @@ def test_hold_over_weekend_and_holiday_parity(seed, extra, tmp_path, monkeypatch
     assert ages == {P["max_hold"]}, ages
     assert any(date.fromisoformat(t[1]).weekday() == 4 for t in lt), "needs a Friday buy"
     assert any(t[1] <= "2026-07-02" < t[4] for t in lt), "needs a hold across the holiday"
+
+
+# ================================================================ v0.55.0: 24/5 (extended sessions)
+import utils.btd_rules as RR  # noqa: E402
+from utils.live_btd_scheduler import ext_events  # noqa: E402
+
+
+def synth_ext(bars, days, seed, shock=None):
+    """5-min extended-session bars (ts = bar END, ET) bridging each close to the next open:
+    {sym: {day: [(ts, o, h, l, c), ...]}} covering 16:05 .. 09:30 next session. ``shock`` =
+    {(sym, day): pct} drops the post session of that day by pct (an after-hours breach)."""
+    rnd = random.Random(seed); out = {}
+    for s, bl in bars.items():
+        by = {b["t"]: b for b in bl}; out[s] = {}
+        for d, nd in zip(days, days[1:]):
+            c0, o1 = float(by[d]["c"]), float(by[nd]["o"])
+            t = datetime.combine(date.fromisoformat(d), datetime.min.time().replace(hour=16, minute=5), ET)
+            end = datetime.combine(date.fromisoformat(nd), datetime.min.time().replace(hour=9, minute=30), ET)
+            n = int((end - t).total_seconds() // 300) + 1
+            k = (shock or {}).get((s, d), 0.0)
+            px, rows = c0, []
+            for i in range(n):
+                frac = (i + 1) / n
+                tgt = c0 + (o1 - c0) * frac
+                if k and i < 40: tgt *= (1 - k / 100 * min(1, (i + 1) / 6))
+                o = px; px = tgt * math.exp(rnd.gauss(0, 0.002))
+                h = max(o, px) * (1 + abs(rnd.gauss(0, 0.001))); l = min(o, px) * (1 - abs(rnd.gauss(0, 0.001)))
+                rows.append((t + timedelta(minutes=5 * i), round(o, 2), round(h, 2), round(l, 2), round(px, 2)))
+            out[s][d] = rows
+    return out
+
+
+def run_live_ext(bars, xw, P, days, start, cash, tmp, monkeypatch, execution):
+    """run_live + the scheduler's 'ext' events between sessions (same Runner path as paper/live)."""
+    fake = FakeAlpaca(bars, days, cash)
+    r = FakeRunner(fake, tmp)
+    cfg = ConfigResult(params=P, execution=execution, sources={}, source="test", db_ok=True, name="parity", version=7)
+
+    class _DT(datetime):
+        @classmethod
+        def now(cls, tz=None): return fake.now.astimezone(tz) if tz else fake.now
+    monkeypatch.setattr(LR, "datetime", _DT)
+    monkeypatch.setattr(LR.time, "sleep", lambda *_: None)
+    run_days = [x for x in days if x >= start]
+    for d, nd in zip(run_days, run_days[1:] + [None]):
+        fake.set_day(d)
+        dd = date.fromisoformat(d)
+        sess = {"open": datetime.combine(dd, datetime.min.time().replace(hour=9, minute=30), ET),
+                "close": datetime.combine(dd, datetime.min.time().replace(hour=16), ET)}
+        opened = touched = False
+        for ev in session_events(sess, P["entry_window"], P["close_window"], protect=True):
+            if not opened and ev.at >= sess["open"]:
+                fake.now = sess["open"]; fake.open_print(); opened = True
+            if opened and not touched and ev.at >= sess["open"] + timedelta(minutes=30):
+                fake.intraday(); touched = True
+            fake.now = ev.at
+            res = r.run([ev.kind], cfg)
+            assert res.code in (0, None), (d, ev.key, res.code, res.reason)
+        fake.end_of_day()
+        if nd is None:
+            break
+        bars_at = {s: {b[0]: b for b in xw.get(s, {}).get(d, [])} for s in xw}
+        sched = {e.at for dd2 in (d, nd) for e in ext_events(
+            {"open": datetime.combine(date.fromisoformat(dd2), datetime.min.time().replace(hour=9, minute=30), ET),
+             "close": datetime.combine(date.fromisoformat(dd2), datetime.min.time().replace(hour=16), ET)},
+            overnight_tonight=(date.fromisoformat(dd2) + timedelta(days=1)).isoformat() in days)}
+        for ts in sorted({t for m in bars_at.values() for t in m}):
+            fake.ext_tick(ts, bars_at)
+            if ts in sched and RR.session_of(ts) != "regular":
+                res = r.run(["ext"], cfg)
+                assert res.code in (0, None), (d, ts, res.code, res.reason)
+    return fake, r
+
+
+EXT_EXEC = {**DEFAULT_EXECUTION, "extended_hours_exit": {**DEFAULT_EXECUTION["extended_hours_exit"], "enabled": True}}
+
+
+def _ext_case(seed, mode, tmp_path, monkeypatch, shock_n=6, extra=None):
+    days = trading_days(date(2026, 6, 1), 60)
+    bars = synth(days, seed, SYMS)
+    rnd = random.Random(seed + 100)
+    shock = {(rnd.choice(SYMS), rnd.choice(days[28:-2])): 4.0 for _ in range(shock_n)}
+    xw = synth_ext(bars, days, seed, shock)
+    P = {**PARAMS, "session_mode": mode, **(extra or {})}
+    start = days[25]
+    fake, r = run_live_ext(bars, xw, P, days, start, 10_000.0, tmp_path, monkeypatch, EXT_EXEC)
+    bt = BT.run(bars, P, start, days[-1], 10_000.0, ext_windows=xw, execution=EXT_EXEC, config_version=7)
+    return fake, r, bt
+
+
+@pytest.mark.parametrize("seed", [21, 22, 23])
+def test_ext_stops_parity_after_hours_breach(seed, tmp_path, monkeypatch):
+    """stops_24_5: an after-hours drop through the stop is sold in the extended session by the live
+    Runner (cancel resting stop -> ext DAY limit -> reprice -> market at the open) exactly like the
+    backtester."""
+    fake, r, bt = _ext_case(seed, "stops_24_5", tmp_path, monkeypatch)
+    lt = _compare(fake, bt, r, allow_unprotected=True)
+    assert bt.ext_exits >= 1, "scenario should include an extended-hours stop exit"
+    ext_fills = [f for f in fake.fills if f["cid"].split("-")[-1] in ("e", "r1", "r2") or "-e-" in f["cid"]]
+    assert len(ext_fills) == bt.ext_exits
+    assert bt.config_version == 7 and lt
+
+
+@pytest.mark.parametrize("seed", [31, 32])
+def test_full_24_5_parity(seed, tmp_path, monkeypatch):
+    """full_24_5: entries, take-profits, stops in post/overnight/pre sessions -- same trades."""
+    fake, r, bt = _ext_case(seed, "full_24_5", tmp_path, monkeypatch, extra={"min_hold": 1, "max_hold": 4, "tp": 3.0})
+    _compare(fake, bt, r, allow_unprotected=True)
+    assert any(t.entry_date and t.entry_px for t in bt.trades)
+
+
+def test_regular_mode_ignores_ext_bars(tmp_path, monkeypatch):
+    """session_mode=regular: identical to the pre-v0.55 replay even when ext bars are supplied."""
+    days = trading_days(date(2026, 6, 1), 60); bars = synth(days, 5, SYMS)
+    xw = synth_ext(bars, days, 5, {("AAA", days[30]): 6.0})
+    P = {**PARAMS, "session_mode": "regular"}
+    a = BT.run(bars, P, days[25], days[-1], 10_000.0, ext_windows=xw, execution=EXT_EXEC)
+    b = BT.run(bars, PARAMS, days[25], days[-1], 10_000.0)
+    assert [(t.sym, t.exit_date, t.exit_px) for t in a.trades] == [(t.sym, t.exit_date, t.exit_px) for t in b.trades]
+    assert a.ext_exits == 0

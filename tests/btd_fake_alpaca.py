@@ -99,17 +99,17 @@ class FakeAlpaca:
     def _fill(self, o, px):
         sym = o["symbol"]
         if o["side"] == "buy":
-            qty = round(float(o["notional"]) / px, 9)
+            qty = round(float(o["notional"]) / px, 9) if o.get("notional") else float(o["qty"])
             p = self.pos.setdefault(sym, {"qty": 0.0, "avg": 0.0})
             p["avg"] = (p["avg"] * p["qty"] + px * qty) / (p["qty"] + qty); p["qty"] = round(p["qty"] + qty, 9)
-            self.cash -= float(o["notional"]) + R.buy_fees(qty)
+            self.cash -= (float(o["notional"]) if o.get("notional") else qty * px) + R.buy_fees(qty)
         else:
             qty = float(o["qty"]); p = self.pos[sym]
             self.cash += qty * px - R.sell_fees(qty)
             p["qty"] = round(p["qty"] - qty, 9)
             if p["qty"] <= 1e-9: del self.pos[sym]
         o.update(status="filled", filled_qty=str(qty), filled_avg_price=str(px), filled_at=self.now.isoformat())
-        self.fills.append({"day": self.day, "sym": sym, "side": o["side"], "qty": qty, "px": px,
+        self.fills.append({"day": self.now.astimezone(ET).date().isoformat() if self.now.year > 2000 else self.day, "sym": sym, "side": o["side"], "qty": qty, "px": px,
                            "type": o["type"], "cid": o["client_order_id"]})
         sib = o.get("_oco")
         if sib is not None and sib["status"] in ("new", "accepted", "held"):
@@ -138,8 +138,11 @@ class FakeAlpaca:
              "qty": body.get("qty"), "notional": body.get("notional"), "time_in_force": body["time_in_force"],
              "stop_price": body.get("stop_price"), "limit_price": body.get("limit_price"),
              "order_class": body.get("order_class"), "status": "new", "filled_qty": "0", "filled_avg_price": None,
+             "extended_hours": bool(body.get("extended_hours")), "submitted_at": self.now.isoformat(),
              "_session": sess, "_session_ok": (lambda d, s=sess: d >= s), "legs": []}
         self.orders.append(o)
+        if body.get("extended_hours") and (body["type"] != "limit" or body["time_in_force"] not in ("day", "gtc")):
+            raise _err(422, "extended hours order must be DAY/GTC limit orders")
         if body.get("order_class") == "oco":
             o["limit_price"] = body["take_profit"]["limit_price"]
             leg = dict(o, id=f"o{next(_ids)}", client_order_id=cid + "-sl", type="stop", limit_price=None,
@@ -151,7 +154,31 @@ class FakeAlpaca:
             self._fill(o, R.slip_buy(px, self.slip) if side == "buy" else R.slip_sell(px, self.slip))
         return self._pub(o)
 
+    def ext_tick(self, ts, bars_at):
+        """One 5-min extended-hours bar ending at ``ts``: expire post-session DAY ext orders at 20:00,
+        fill resting ext limits on this bar's range (shared rules), then mark prices at the close."""
+        for o in self._open():
+            if o.get("extended_hours") and R.ext_order_expired(datetime.fromisoformat(o["submitted_at"]).astimezone(ET), ts):
+                o["status"] = "expired"
+        self.now = ts
+        for o in self._open():
+            b = bars_at.get(o["symbol"], {}).get(ts)
+            if not o.get("extended_hours") or not b:
+                continue
+            f = R.ext_sell_fill(float(o["limit_price"]), b[2]) if o["side"] == "sell" else R.ext_buy_fill(float(o["limit_price"]), b[3])
+            if f is not None: self._fill(o, f)
+        for s, m in bars_at.items():
+            if ts in m: self.cur[s] = float(m[ts][4])
+
     def call(self, method, path, body=None):
+        if method == "PATCH" and path.startswith("/v2/orders/"):      # replace (reprice)
+            oid = path.rsplit("/", 1)[1]
+            for o in self.orders:
+                if o["id"] == oid and o["status"] in ("new", "accepted", "held"):
+                    o["limit_price"] = body.get("limit_price", o["limit_price"])
+                    o["client_order_id"] = body.get("client_order_id", o["client_order_id"])
+                    return self._pub(o)
+            raise _err(422, "order not replaceable")
         if method == "DELETE" and path.startswith("/v2/orders/"):
             oid = path.rsplit("/", 1)[1]
             for o in self.orders:

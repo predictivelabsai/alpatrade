@@ -19,7 +19,7 @@ import time
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Optional
 
-from utils.live_btd_config import ConfigResult, DEFAULT_EXECUTION, DEFAULT_PARAMS, coerce_params
+from utils.live_btd_config import REQUIRED_PARAM_KEYS, ConfigResult, ConfigError, coerce_params
 from utils.live_btd_config import resolve as resolve_config
 from utils.live_btd_runner import PassStop, Runner, code_version, state_dir
 from utils.live_btd_state import RunnerStateStore
@@ -78,10 +78,15 @@ class PaperRunner(Runner):
 
 def paper_config(strategy: str, database_url: Optional[str], params: Optional[Dict[str, Any]] = None) -> ConfigResult:
     """The SAME strategy_configs row as live (by name) unless explicit params are given; explicit
-    params are validated by the same coerce_params and filled from DEFAULT_PARAMS."""
+    params (research only) must be a COMPLETE rule set incl. ``execution`` (v0.55.0: no code defaults)."""
     if params:
-        P = {**DEFAULT_PARAMS, **coerce_params(params)}
-        return ConfigResult(params=P, execution=DEFAULT_EXECUTION, sources={k: "request" for k in params},
+        params = dict(params); execution = params.pop("execution", None)
+        P = coerce_params(params)
+        missing = [k for k in REQUIRED_PARAM_KEYS if k not in P]
+        if missing or not execution:
+            raise ConfigError(f"explicit paper params incomplete: missing {', '.join(missing) or 'execution'}")
+        from utils.live_btd_config import merge_execution
+        return ConfigResult(params=P, execution=merge_execution(execution), sources={k: "request" for k in params},
                             source="request", db_ok=True, name=strategy, version=0)
     return resolve_config(strategy, {}, database_url=database_url)
 

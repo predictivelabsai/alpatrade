@@ -4,7 +4,8 @@ from datetime import date
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from utils.live_btd_runner import regime_block  # noqa: E402
-from utils.live_btd_config import DEFAULT_PARAMS, coerce_params  # noqa: E402
+from btd_fixtures import DEFAULT_PARAMS  # noqa: E402
+from utils.live_btd_config import coerce_params  # noqa: E402
 
 MON = date(2026, 10, 19)
 

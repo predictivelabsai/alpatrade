@@ -35,7 +35,7 @@ import os
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from utils.live_btd_config import DEFAULT_EXECUTION, ConfigResult, make_engine
+from utils.live_btd_config import REQUIRED_PARAM_KEYS, ConfigResult, make_engine, merge_execution
 from utils.live_btd_runner import PassStop, Runner, state_dir
 from utils.live_btd_state import LeaseResult, RunnerStateStore
 from utils.live_btd_store import STRATEGY_SLUG
@@ -45,12 +45,7 @@ FLAG = "USER_LIVE_TRADING_ENABLED"
 RUNNABLE = ("pending_runner", "active", "paused")
 DRYRUN_TEST = "dryrun_test"      # paper dry-run harness only: never runnable live, ignored by the supervisor
 REQUIRED = ("symbols", "dip", "tp", "sl", "max_hold", "pos_frac")
-# execution plumbing only (not strategy choices); the user's params override each one
-NEUTRAL = {"min_hold": 0, "max_exposure": 0.0, "ref": "high20", "feed": "iex",
-           "entry_window": "15-5", "close_window": "15-2", "regime_filter": "",
-           # v0.51.0 user-editable rule keys (btd_rules.PARAM_SPEC); defaults = the old behaviour
-           "stop_mode": "pct", "stop_k": 2.0, "tp_mult": 0.0, "stop_timing": "always", "vol_filter": "off",
-           "vol_max": 4.0, "regime_mode": "low5", "regime_sma": 200, "max_exposure_pct": 0.0}
+# v0.55.0: no NEUTRAL fill-ins; sql/57 stored them in every user config / param version.
 
 
 def flag_on(env: Optional[dict] = None) -> bool:
@@ -67,7 +62,10 @@ def user_params(raw: Dict[str, Any]) -> Dict[str, Any]:
     missing = [k for k in REQUIRED if raw.get(k) in (None, "", [])]
     if missing:
         raise ValueError(f"user strategy is missing {', '.join(missing)}")
-    p = {**NEUTRAL, **{k: raw[k] for k in NEUTRAL if raw.get(k) is not None}}
+    gone = [k for k in REQUIRED_PARAM_KEYS if k not in raw]
+    if gone:
+        raise ValueError(f"user strategy is missing {', '.join(gone)} (rules are DB-only; run sql/57)")
+    p = {k: raw[k] for k in REQUIRED_PARAM_KEYS if k not in REQUIRED}
     syms = raw["symbols"]
     if isinstance(syms, str):
         syms = [x.strip() for x in syms.split(",")]
@@ -194,11 +192,7 @@ def config_version(act: Activation) -> int:
 
 def user_config(act: Activation) -> ConfigResult:
     import copy
-    ex = copy.deepcopy(DEFAULT_EXECUTION)          # order mechanics only (market/day exits)
-    for sect, vals in (act.execution or {}).items():
-        if isinstance(vals, dict):
-            ex.setdefault(sect, {}).update(vals)
-    ex.setdefault("extended_hours_exit", {})["enabled"] = False
+    ex = merge_execution(copy.deepcopy(act.execution or {}))   # DB only; no per-user override (v0.55.0)
     p = user_params(act.params)
     return ConfigResult(params=p, execution=ex, sources={k: "user" for k in p}, source="user_strategy_configs",
                         db_ok=True, config_id=act.user_strategy_id, version=config_version(act), name=f"user:{act.cid_prefix}",

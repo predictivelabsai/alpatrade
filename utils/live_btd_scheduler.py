@@ -52,7 +52,8 @@ ET = ZoneInfo("America/New_York")
 
 ROLE_OFFSET_S = {"primary": 0, "backup": 10, "tertiary": 20}
 INWARD_S = 45
-GRACE = {"open": None, "entry": timedelta(minutes=4), "post": timedelta(minutes=10), "protect": timedelta(minutes=50)}
+GRACE = {"open": None, "entry": timedelta(minutes=4), "post": timedelta(minutes=10), "protect": timedelta(minutes=50),
+         "ext": timedelta(minutes=4)}
 
 
 def _f(name: str, default: float) -> float:
@@ -95,6 +96,28 @@ def session_events(session: Dict[str, Any], entry_window: str = "15-5", close_wi
             ev.append(Event(t + off, "protect", f"protect-{t.astimezone(ET):%H%M}"))
             t += timedelta(minutes=60)
     return sorted(ev, key=lambda e: e.at)
+
+
+def ext_events(session: Dict[str, Any], *, role: str = "primary", step_min: int = 5,
+               overnight_tonight: bool = True) -> List[Event]:
+    """v0.55.0 'ext' checks for one calendar session day (ET): 00:00-04:00 (overnight, the tail of
+    last night's session), 04:00-open (pre), close+5 min-20:00 (post) and, when the next calendar
+    day is a weekday, 20:00-24:00 (overnight). Only scheduled when the DB rule set's session_mode
+    is stops_24_5 or full_24_5. Sunday 20:00-24:00 is not covered (no session on the calendar
+    that day); Monday 00:00-04:00 is."""
+    off = timedelta(seconds=ROLE_OFFSET_S.get(role, 0))
+    o, c = session["open"].astimezone(ET), session["close"].astimezone(ET)
+    day0 = datetime.combine(o.date(), datetime.min.time(), ET)
+    spans = [(day0, o), (c + timedelta(minutes=5), day0 + timedelta(hours=20))]
+    if overnight_tonight:
+        spans.append((day0 + timedelta(hours=20), day0 + timedelta(hours=24)))
+    out: List[Event] = []
+    for a, b in spans:
+        t = a
+        while t < b:
+            out.append(Event(t + off, "ext", f"ext-{t:%H%M}"))
+            t += timedelta(minutes=step_min)
+    return out
 
 
 def grace_deadline(e: Event, session: Dict[str, Any]) -> datetime:
@@ -249,9 +272,21 @@ class Scheduler:
 
     def events_for(self, day: date, session: Dict[str, Any], cfg: ConfigResult) -> List[Event]:
         if day not in self._events:
-            self._events[day] = session_events(session, cfg.params["entry_window"], cfg.params["close_window"],
-                                               role=self.runner.role, protect=self.protect_checks)
+            ev = session_events(session, cfg.params["entry_window"], cfg.params["close_window"],
+                                role=self.runner.role, protect=self.protect_checks)
+            import utils.btd_rules as R_
+            if cfg.params.get("session_mode") and R_.ext_stops_on(cfg.params):
+                ev = sorted(ev + ext_events(session, role=self.runner.role, step_min=R_.EXT_STEP_MIN,
+                                            overnight_tonight=self._next_is_session(day)), key=lambda e: e.at)
+            self._events[day] = ev
         return self._events[day]
+
+    def _next_is_session(self, day: date) -> bool:
+        """Alpaca's overnight session runs only into a trading day (none on Fri night / holiday eves)."""
+        try:
+            return session_for(self.calendar, day + timedelta(days=1)) is not None
+        except Exception:  # noqa: BLE001
+            return day.weekday() < 4
 
     # ---------------------------------------------------------------- tick
     def tick(self, now: Optional[datetime] = None) -> List[str]:
@@ -275,6 +310,8 @@ class Scheduler:
         due, missed = due_events(events, {k[1] for k in self._done}, now, sess)
         for e in missed:
             self._done.add((day, e.key))
+            if e.kind == "ext":
+                continue        # superseded by the next 5-min check
             log.warning("btd scheduler: missed %s (due %s ET, now %s ET) -> skipped", e.key,
                         e.at.astimezone(ET).strftime("%H:%M:%S"), now.strftime("%H:%M:%S"))
         for e in due:
@@ -338,4 +375,4 @@ class Scheduler:
 
 
 __all__ = ["ConfigCache", "Event", "Scheduler", "due_events", "heartbeat_due", "needs_open_catchup",
-           "session_events"]
+           "session_events", "ext_events"]

@@ -146,6 +146,9 @@ def plan_protective_stops(tracked: Dict[str, Dict[str, Any]], positions: Dict[st
         entry_d = date.fromisoformat(str(meta.get("entry_date") or today.isoformat()))
         if P is not None and not stop_live(entry_d, session_day, P) and entry_d < session_day:
             continue                                   # exit_day timing: no stop before the min-hold
+        if not market_open and entry_d >= session_day:
+            continue                                   # v0.55.0 extended-session buy for that trade day:
+                                                       # stop from the session AFTER it (stop_active, PDT)
         _, sl = exit_prices(entry_px, 0.0, pos_pcts({"tp": 0.0, "sl": sl_pct}, meta)[1])
         skip = "same-day entry, stop after the close (PDT guard)" if (market_open and entry_d >= today) else None
         # alert only when a stop should be working now (pre-open / session) on an older position;
