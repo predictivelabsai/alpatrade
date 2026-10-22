@@ -112,6 +112,68 @@ def is_stop_only(o: Dict[str, Any]) -> bool:
     return o.get("type") == "stop" and not o.get("order_class") in ("oco", "bracket", "oto")
 
 
+def _submit_et(o: Dict[str, Any]):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    raw = o.get("submitted_at") or o.get("created_at")
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(str(raw).replace("Z", "+00:00")).astimezone(ZoneInfo("America/New_York"))
+    except ValueError:
+        return None
+
+
+def order_session_day(o: Dict[str, Any]) -> Optional[date]:
+    """The YYYYMMDD session date in a client id (``<prefix>ps-SYM-YYYYMMDD``), else None."""
+    import re
+    from datetime import datetime
+    m = re.search(r"-(\d{8})(?:\D|$)", str(o.get("client_order_id") or ""))
+    if not m:
+        return None
+    try:
+        return datetime.strptime(m.group(1), "%Y%m%d").date()
+    except ValueError:
+        return None
+
+
+def expiring_day_order(o: Dict[str, Any], session_day: Optional[date], market_open: bool,
+                       today: Optional[date] = None) -> bool:
+    """v0.52.x: after the close a prior-session DAY sell (protective / manual stop, OCO TP/SL, DAY
+    stop exit) is still 'new' at Alpaca until ~16:05 ET but dies at the close -- it is NOT cover
+    for the next session (root cause of the 2026-10-21 unprotected carried positions: the 16:03
+    post pass counted these as cover). Judged by submit time when known: submitted before
+    today's 16:00 ET close (incl. orders queued after an earlier close) = this session's order,
+    dying; submitted after today's close = queued for ``session_day``, keeps counting. Without a
+    submit time only ``ps-`` / ``manual-stop-`` ids are judged, by their session date."""
+    if market_open or session_day is None or str(o.get("time_in_force") or "").lower() != "day":
+        return False
+    t = _submit_et(o)
+    if t is not None:
+        if today is None:
+            from datetime import datetime
+            from zoneinfo import ZoneInfo
+            today = datetime.now(ZoneInfo("America/New_York")).date()
+        queued_tonight = t.date() > today or (t.date() == today and t.hour >= 16)
+        return not queued_tonight and today < session_day
+    cid = str(o.get("client_order_id") or "")
+    if not (cid.startswith(MANUAL_STOP_PREFIX) or "ps-" in cid):
+        return False
+    d = order_session_day(o)
+    return d is not None and d < session_day
+
+
+def own_stale_day_stops(open_orders: List[Dict[str, Any]], prefix: str, session_day: Optional[date],
+                        market_open: bool, today: Optional[date] = None) -> List[Dict[str, Any]]:
+    """The runner's own (``<prefix>ps-/tp-/sl-/x-``) and manual (``manual-stop-``) prior-session DAY
+    sells that the post pass cancels (they die at the close anyway) before placing the next
+    session's stops -- they still hold qty_available, so new stops would be rejected."""
+    own = (f"{prefix}ps-", f"{prefix}tp-", f"{prefix}sl-", f"{prefix}x-", MANUAL_STOP_PREFIX)
+    return [o for o in open_orders if o.get("side") == "sell"
+            and str(o.get("client_order_id") or "").startswith(own)
+            and expiring_day_order(o, session_day, market_open, today)]
+
+
 def open_sells(open_orders: List[Dict[str, Any]], sym: str) -> List[Dict[str, Any]]:
     return [o for o in open_orders if o.get("symbol") == sym and o.get("side") == "sell"]
 
@@ -136,7 +198,8 @@ def plan_protective_stops(tracked: Dict[str, Dict[str, Any]], positions: Dict[st
         pos = positions.get(sym)
         if not pos:
             continue
-        qty = uncovered_qty(pos, open_sells(open_orders, sym))
+        qty = uncovered_qty(pos, open_sells(open_orders, sym), session_day=session_day, market_open=market_open,
+                            today=today)
         if qty <= 0:
             continue
         entry_px = float(pos.get("avg_entry_price") or 0)
@@ -162,12 +225,20 @@ def plan_protective_stops(tracked: Dict[str, Dict[str, Any]], positions: Dict[st
     return out
 
 
-def uncovered_qty(pos: Dict[str, Any], sells: List[Dict[str, Any]]) -> float:
+def uncovered_qty(pos: Dict[str, Any], sells: List[Dict[str, Any]], *, session_day: Optional[date] = None,
+                  market_open: bool = True, today: Optional[date] = None) -> float:
     """Shares of a position not yet covered by an open sell (v0.49.0). Alpaca's qty_available
     already excludes shares held for open sells; a sell order without a qty counts as covering
-    the whole position (conservative: never stack a second sell on unknown coverage)."""
+    the whole position (conservative: never stack a second sell on unknown coverage).
+    After the close (``market_open`` False, ``session_day`` = next session) prior-session DAY
+    orders are ignored: they expire at the close and do not cover the next session."""
     total = float(pos.get("qty") or 0)
     avail = float(pos.get("qty_available") if pos.get("qty_available") not in (None, "") else total)
+    dying = [o for o in sells if expiring_day_order(o, session_day, market_open, today)]
+    if dying:
+        sells = [o for o in sells if o not in dying]
+        held = sum(float(o.get("qty") or 0) - float(o.get("filled_qty") or 0) for o in dying)
+        avail = min(total, avail + held)
     if sells:
         if any(not o.get("qty") for o in sells):
             return 0.0

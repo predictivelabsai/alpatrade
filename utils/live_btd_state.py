@@ -1,7 +1,7 @@
 """Authoritative state + leader lease for the live BTD runner (3-tier failover).
 
 Why: three machines can run ``scripts/live_btd_minhold.py`` against the same real-money
-Alpaca account (HP = primary, Mac.home = backup, agent Linux box = tertiary). They must
+Alpaca account (roles primary / backup / tertiary; since 2026-10-12 the Coolify server holds primary). They must
 never both trade and neither may lose track of the positions the runner owns. The
 authoritative runner state therefore lives in AlpaTrade Postgres, not in a machine-local
 file:

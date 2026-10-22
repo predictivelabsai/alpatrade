@@ -722,6 +722,31 @@ class Runner:
                 except Exception as exc:  # noqa: BLE001
                     log.error("protect: planning failed: %s", exc); return
                 problems = []
+                # v0.52.x post pass: cancel our own prior-session DAY stops (still 'new' until ~16:05 ET),
+                # confirm they are gone, THEN plan/place the next session's stops on a fresh view.
+                if not clock.get("is_open"):
+                    from utils.live_btd_exits import own_stale_day_stops
+                    stale = own_stale_day_stops(open_orders_now, PFX, sess_day, False, today)
+                    if stale and lease_ok():
+                        ids = {str(o["id"]) for o in stale if o.get("id")}
+                        for o in stale:
+                            try:
+                                log.warning("protect: cancel prior-session DAY stop %s (%s)", o.get("client_order_id"), phase)
+                                self.broker_call("DELETE", f"/v2/orders/{o['id']}")
+                            except Exception as exc:  # noqa: BLE001 - 404/422: already expired/cancelled
+                                log.info("protect: cancel %s: %s", o.get("client_order_id"), exc)
+                        left_ids = ids
+                        for _ in range(10 if EXECUTE else 0):
+                            open_orders_now = get(f"{base}/v2/orders", status="open", limit=500)
+                            left_ids = ids & {str(o.get("id")) for o in open_orders_now}
+                            if not left_ids: break
+                            time.sleep(1)
+                        if left_ids and EXECUTE:
+                            problems.append(f"prior-session DAY stops not confirmed cancelled ({phase}): {sorted(left_ids)}")
+                        positions.clear(); positions.update({x["symbol"]: x for x in get(f"{base}/v2/positions")})
+                        plans = plan_protective_stops(state["positions"], positions, open_orders_now, today=today,
+                                                      session_day=sess_day, market_open=False, sl_pct=P["sl"],
+                                                      prefix=PFX, expect_live_stops=pre_open, P=P)
                 exempt = R_.stop_exempt_map(P, today)
                 for pl in plans:
                     sym = pl["sym"]
@@ -745,7 +770,8 @@ class Runner:
                     fpos, foo = fresh_sell_check(sym)
                     if fpos is None: continue
                     from utils.live_btd_exits import uncovered_qty
-                    q = uncovered_qty(fpos, open_sells(foo, sym))
+                    q = uncovered_qty(fpos, open_sells(foo, sym), session_day=sess_day,
+                                      market_open=bool(clock.get("is_open")), today=today)
                     if q <= 0: continue
                     placed = []
                     for attempt in range(1, 6):
@@ -803,8 +829,8 @@ class Runner:
                     left = plan_protective_stops(state["positions"], pos2, oo2, today=today, session_day=sess_day,
                                                  market_open=bool(clock.get("is_open")), sl_pct=P["sl"], prefix=PFX,
                                                  expect_live_stops=True, P=P)
-                    for pl in left:
-                        if pl["sym"] in exempt or pl["skip"]: continue
+                    for pl in left:   # v0.52.x: any gap alerts, incl. the post pass (no skip after the close)
+                        if pl["sym"] in exempt or (pl["skip"] and clock.get("is_open")): continue
                         problems.append(f"UNPROTECTED after {phase}: {pl['sym']} uncovered qty "
                                         f"{(pl['body'] or {}).get('qty')} (stop {pl['sl']})")
                 except Exception as exc:  # noqa: BLE001

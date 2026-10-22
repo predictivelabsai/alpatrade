@@ -1,5 +1,5 @@
 """In-memory event scheduler for the live BTD runner — one long-running process per machine
-(HP primary, Mac backup, box tertiary). Same pattern as the report schedulers in
+(primary / backup / tertiary; the Coolify server is primary since 2026-10-12). Same pattern as the report schedulers in
 engine/autonomy/schedule.py: a poll loop (``threading.Event().wait``), Alpaca's calendar as
 the authority for holidays / early closes / DST (``scripts.daily_live_report.session_for``,
 cached per ET date, ``None`` cached for non-trading days), due checks via
@@ -88,6 +88,8 @@ def session_events(session: Dict[str, Any], entry_window: str = "15-5", close_wi
     cnear = float(close_window.split("-")[1])
     ev.append(Event(c - timedelta(minutes=cnear, seconds=INWARD_S) + off, "close", "close"))
     ev.append(Event(c + timedelta(minutes=post_close_min) + off, "post", "post"))
+    if protect:  # v0.52.x second post check (~16:20 ET): every carried position has a next-session stop
+        ev.append(Event(c + timedelta(minutes=20) + off, "protect", "protect-post"))
     if protect:  # protective-stop checks: pre-open (open - 45 min) and hourly until close - 30 min
         t = o - timedelta(minutes=45)
         ev.append(Event(t + off, "protect", f"protect-{t.astimezone(ET):%H%M}"))

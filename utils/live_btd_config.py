@@ -1,7 +1,7 @@
 """DB-backed strategy parameters + order-execution settings for the live BTD runner.
 
 One row in ``alpatrade.strategy_configs`` (sql/40_strategy_configs.sql) is the shared
-source of truth for every runner instance (HP primary, Mac backup, box tertiary).
+source of truth for every runner instance (primary / backup / tertiary; the Coolify server is primary since 2026-10-12).
 Rules are DB-only (v0.55.0): every key in REQUIRED_PARAM_KEYS must be stored in the row. CLI flags\n(dry-run testing only; the live runner refuses them) may override a stored key.
 
 If the row cannot be read (DB unreachable, row missing/incomplete, bad JSON) ``db_ok`` is False

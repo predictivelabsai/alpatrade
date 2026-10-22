@@ -1,46 +1,14 @@
 # Change Log
 
-## v0.55.0 - 2026-10-21 - 24/5 sessions (always-on stops, full 24/5 trading) + DB-only rules
+## v0.55.1 - 2026-10-22 - Stop cover after the close; report alerts from real runner state
 
-- **24/5 rule in `utils/btd_rules`** (Julian, 2026-10-21). The DB key `params.session_mode` takes `regular` (the current behaviour), `stops_24_5` or `full_24_5`.
-  - `stops_24_5`: an always-on stop. When the bid is at or below the stop in the post, overnight or pre session, the runner cancels the resting regular-hours stop and sends a DAY + limit + `extended_hours=true` sell for the whole fractional quantity, at 15 bps under the bid. It reprices after 5 min, at most twice, and sends a market order at the open as the fallback.
-  - `full_24_5`: take-profits and dip entries also run in those sessions. The regime filter and `hold_age` use the session's trade day (overnight and pre belong to the next session), so a same-day buy is never sold in that day's post session.
-  - New shared functions: `session_of`, `trade_day_of`, `ext_stop_breach`, `ext_tp_hit`, `ext_usable_bid`, `ext_limit_price`, `ext_buy_limit`, `ext_exit_action` (moved from live_btd_config), `ext_order_expired`, `ext_sell_fill`/`ext_buy_fill`, `ext_check_allowed`.
-- **Live and paper (same Runner path).** New scheduler `ext` events run every 5 min: 00:00-04:00, 04:00 to the open, close+5 min to 20:00, and 20:00-24:00 when the next day is a session. They are lease-gated (only the primary acts) and idempotent (one live ext sell per symbol, deterministic cids). Protective stops are not placed on an extended-session buy until the session after it.
-- **Backtester.** `btd_event_backtest.run(ext_windows=, execution=, config_version=)` is an event-driven replay of the same steps on Alpaca 5-min bars (SIP pre/post, BOATS overnight). `Result.config_version` and `Result.ext_exits` record what ran. New `scripts/fetch_intraday_bars.py` (cache in `data/intraday/`) and `scripts/btd_overnight_compare.py`.
-- **Rules are DB-only.** `DEFAULT_PARAMS`, `DEFAULT_EXECUTION`, the per-user `NEUTRAL` fill-ins, the forced per-user `extended_hours_exit.enabled=False` override and the `BTD_STOP_EXEMPT` env are gone. `sql/57_rules_db_only.sql` writes the values those fallbacks produced into `strategy_configs`, `user_strategy_configs` and `strategy_param_versions`, unchanged (stored values win). It adds `session_mode='regular'`, `stop_exempt={}` and `extended_hours_exit.max_spread_bps=50`.
-  - An incomplete row is refused. If the DB is unavailable, the runner uses the last rule set it loaded from the DB (same version) for exits and stops only, and sends no entries.
-  - CLI overrides are dry-run only.
-  - The inventory is in `docs/btd_24x5_sessions.md`.
-- **No live change in this release.** Every row stays `session_mode=regular` until Julian has seen the comparison below.
-- **Comparison.** $10k per sleeve, current DB rules (#1 v3, #3 v4 + sql/57 seed), 10 bps slippage + TAF/CAT.
+- **Bug (stops):** at the 16:03 ET post pass the prior-session DAY sells (protective `ps-` stops, `manual-stop-`, OCO TP/SL and `sl-` stops from the open) are still `new` at Alpaca until it expires them (~16:05 ET). `plan_protective_stops` / `uncovered_qty` counted them as cover, so carried positions got no next-session stop and sat unprotected until the 08:45 ET pre-open check (2026-10-21).
+- **Fix:** `utils/live_btd_exits.expiring_day_order` treats a DAY sell submitted before today's close as dead after the close. Orders queued after today's close still count. The judgement uses the order's `submitted_at`; when that is missing it falls back to the session date in a `ps-` / `manual-stop-` id. `uncovered_qty` ignores dying orders and adds back the qty they hold. On the post pass, `protect` cancels the runner's own and manual prior-session DAY sells (`own_stale_day_stops`), confirms they are gone, then plans and places the next-session stops on a fresh broker view. The post verification now alerts on any remaining gap. The scheduler adds a second post check, `protect-post`, at close + 20 min (16:20 ET).
+- **Bug (report):** the Daily LIVE email's "Runner did not check in during this session's entry window" warning read `runs.heartbeat_at`. Only `record_performance` on the recording instance stamps that field, so it stayed frozen at the HP's last pass (Mon 2026-10-12 09:31 ET) after the Coolify server took the lease. The 2026-10-21 email was a false alarm.
+- **Fix:** `runner_liveness` reads `live_runner_state` / `live_runner_heartbeats`, where every instance writes on each pass. It uses the lease holder's pass (or the freshest one) together with the runner's own trade records. The warning names the lease holder and no longer guesses "host asleep". The paper report no longer says "No active strategy" when a BTD paper runner holds a fresh lease (`btd_paper_runners`).
+- **New alert:** the Daily LIVE email flags runner positions carried from before the session with no protective stop covering their qty (`stop_gaps`). An open stop counts, and so does a stop that was live during the session (DAY stops expire at the close). Excluded and `params.stop_exempt` symbols are skipped.
+- Tests: `test_post_pass_ignores_prior_session_day_stops_still_new_and_plans_next_session`, `test_post_pass_judges_day_orders_by_submit_time` and `test_second_post_check_scheduled_at_1620` cover stops. The paper and live parity simulations now assert that every carried position holds a next-session sell after the DAY orders expire, and the fake Alpaca stamps `submitted_at`. The report is covered by `test_stale_run_heartbeat_but_fresh_lease_holder_is_not_flagged`, `test_carried_position_without_stop_is_flagged_and_covered_one_is_not` and `test_btd_paper_runner_with_fresh_lease_is_not_reported_idle`.
 
-| period | sleeve | variant | return | max DD | Sharpe | trades | ext exits | ext entries |
-|---|---|---|---|---|---|---|---|---|
-| 2016-01-04 to 2026-10-20 | Mag-7 | regular (current) | -2.3% | -36.3% | 0.07 | 4340 | 0 | 0 |
-| | | stops_24_5 | -19.1% | -40.5% | -0.05 | 4431 | 1131 | 0 |
-| | | full_24_5 | -45.8% | -55.6% | -0.17 | 5503 | 1937 | 3486 |
-| | Semi-7 | regular (current) | +128.5% | -43.4% | 0.47 | 5031 | 0 | 0 |
-| | | stops_24_5 | +60.7% | -47.0% | 0.32 | 5193 | 1521 (+5 at open) | 0 |
-| | | full_24_5 | -37.1% | -76.8% | -0.06 | 5859 | 2390 (+7 at open) | 3421 |
-| | SPY | buy & hold | +350.6% | -33.8% | 0.88 | | | |
-| 2024-09-17 to 2026-10-20 (incl. overnight) | Mag-7 | regular | -12.3% | -27.3% | -0.31 | 958 | 0 | 0 |
-| | | stops_24_5 | -19.2% | -33.3% | -0.68 | 982 | 266 | 0 |
-| | | full_24_5 | -26.8% | -37.0% | -0.60 | 1293 | 489 | 899 |
-| | Semi-7 | regular | +95.6% | -20.7% | 1.33 | 1121 | 0 | 0 |
-| | | stops_24_5 | +54.3% | -21.9% | 1.00 | 1194 | 460 | 0 |
-| | | full_24_5 | +23.7% | -35.5% | 0.47 | 1465 | 790 | 1073 |
-| | SPY | buy & hold | +40.2% | -18.7% | 1.11 | | | |
-
-- **Data limits.**
-  - Real-time quotes on our keys are IEX only (real-time SIP and BOATS return 403, and the free `overnight` quote is indicative and about 17% wide), so live ext coverage will be thinner than the backtest.
-  - Overnight bars exist only from 2024-09-16.
-  - Sunday 20:00-24:00 ET and 13:00-16:00 on half days are not checked.
-  - The backtest uses the bar close as the bid (no spread model).
-- **Tests.**
-  - `tests/test_btd_ext_rules.py` (new, added to the CI union).
-  - Ext parity cases in `tests/test_btd_parity.py`: an after-hours breach (3 seeds), full 24/5 (2 seeds), and regular mode ignoring ext bars.
-  - The DB-only config tests are now in `tests/test_live_btd_config.py`, including a Postgres run of sql/57. Fixtures moved to `tests/btd_fixtures.py`.
 
 ## v0.54.0 - 2026-10-20 - Annualised return for any history length + per-strategy breakdown
 

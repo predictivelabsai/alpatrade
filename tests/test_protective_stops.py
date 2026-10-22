@@ -94,7 +94,7 @@ def test_scheduler_protect_events_pre_open_and_hourly():
     s = {"open": datetime(2026, 10, 16, 9, 30, tzinfo=ET), "close": datetime(2026, 10, 16, 16, 0, tzinfo=ET)}
     keys = [e.key for e in session_events(s, protect=True) if e.kind == "protect"]
     assert keys == ["protect-0845", "protect-1030", "protect-1130", "protect-1230", "protect-1330",
-                    "protect-1430", "protect-1530"]
+                    "protect-1430", "protect-1530", "protect-post"]
     assert not [e for e in session_events(s) if e.kind == "protect"]
 
 
@@ -172,3 +172,51 @@ def test_sell_below_stop_never_doubles_when_position_gone():
     out = Runner._sell_below_stop(me, "MU", 98.5, {}, FRI, "btd", [], lambda s: (None, []), subs.append,
                                   lambda *a: None, "open")
     assert subs == [] and "gone" in out[0]
+
+
+def test_post_pass_ignores_prior_session_day_stops_still_new_and_plans_next_session():
+    """2026-10-21: at the 16:03 ET post pass the prior-session DAY stops are still 'new' (Alpaca
+    expires them ~16:05 ET) and hold qty_available -- they must not count as next-session cover."""
+    from utils.live_btd_exits import own_stale_day_stops, uncovered_qty
+    tracked = {"MSFT": {"entry_date": "2026-10-14"}, "AMD": {"entry_date": "2026-10-13"}}
+    positions = {"MSFT": pos("MSFT", "2.5", avail="0"), "AMD": pos("AMD", "3", avail="0")}
+    oo = [{"id": "1", "symbol": "MSFT", "side": "sell", "type": "stop", "qty": "2.5", "time_in_force": "day",
+           "status": "new", "client_order_id": "btdps-MSFT-20261016"},
+          {"id": "2", "symbol": "AMD", "side": "sell", "type": "stop", "qty": "3", "time_in_force": "day",
+           "status": "new", "client_order_id": "manual-stop-AMD-20261016-day"},
+          {"id": "3", "symbol": "AMD", "side": "sell", "type": "stop", "qty": "3", "time_in_force": "day",
+           "status": "new", "client_order_id": "otherps-AMD-20261016"}]
+    nxt = date(2026, 10, 19)
+    post = plan_protective_stops(tracked, positions, oo, today=FRI, session_day=nxt,
+                                 market_open=False, sl_pct=1.5, expect_live_stops=False)
+    assert sorted(p["sym"] for p in post) == ["AMD", "MSFT"]
+    assert all(p["body"]["client_order_id"].endswith("20261019") for p in post)
+    assert sorted(o["id"] for o in own_stale_day_stops(oo, "btd", nxt, False)) == ["1", "2"]
+    # during the session the same orders ARE cover; next-session / GTC orders always are
+    assert uncovered_qty(positions["MSFT"], oo[:1], session_day=FRI, market_open=True) == 0
+    new = [dict(oo[0], client_order_id="btdps-MSFT-20261019")]
+    assert uncovered_qty(positions["MSFT"], new, session_day=nxt, market_open=False) == 0
+    gtc = [dict(oo[0], time_in_force="gtc", client_order_id="btdps-MSFT-20261016g")]
+    assert uncovered_qty(positions["MSFT"], gtc, session_day=nxt, market_open=False) == 0
+
+
+def test_post_pass_judges_day_orders_by_submit_time():
+    """Live Alpaca orders carry submitted_at: an order queued after yesterday's close (for today)
+    dies at today's close; one queued after today's close is the next session's cover."""
+    from utils.live_btd_exits import expiring_day_order
+    nxt = date(2026, 10, 19)
+    base = {"symbol": "MSFT", "side": "sell", "type": "stop", "qty": "1", "time_in_force": "day",
+            "client_order_id": "btdps-MSFT-20261016"}
+    assert expiring_day_order(dict(base, submitted_at="2026-10-15T20:03:00Z"), nxt, False, FRI)
+    assert expiring_day_order(dict(base, submitted_at="2026-10-16T13:31:00Z"), nxt, False, FRI)
+    assert not expiring_day_order(dict(base, submitted_at="2026-10-16T20:03:00Z"), nxt, False, FRI)
+    assert not expiring_day_order(dict(base, submitted_at="2026-10-15T20:03:00Z"), FRI, True, FRI)
+    oco = dict(base, type="limit", order_class="oco", client_order_id="btdtp-MSFT-20261016",
+               submitted_at="2026-10-16T13:31:00Z")
+    assert expiring_day_order(oco, nxt, False, FRI)
+
+
+def test_second_post_check_scheduled_at_1620():
+    s = {"open": datetime(2026, 10, 16, 9, 30, tzinfo=ET), "close": datetime(2026, 10, 16, 16, 0, tzinfo=ET)}
+    ev = {e.key: e.at for e in session_events(s, protect=True)}
+    assert ev["protect-post"].astimezone(ET).strftime("%H:%M") == "16:20"

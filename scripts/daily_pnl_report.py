@@ -218,6 +218,7 @@ def gather(day: str | None = None, keys: tuple[str, str] | None = None,
         "active_runs": active_runs(user_id=user_id, account_id=account_id,
                                    framework=framework),
         "latest_hermes_paper_job": latest_hermes_paper_job(user_id, account_id),
+        "btd_paper_runners": btd_paper_runners(user_id),
         "agent_performance": agent_performance(
             user_id, account_id, framework, day=target_day
         ),
@@ -495,6 +496,29 @@ def active_runs(limit: int = 25, user_id: str | None = None,
             ), params)
             cols = result.keys()
             return [dict(zip(cols, row)) for row in result.fetchall()]
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def btd_paper_runners(user_id: str | None) -> list[dict]:
+    """The user's BTD paper runners that really run: lease rows ``user-btd:<uid>:<prefix>:paper``
+    whose holder passed within 96h (runners idle outside market hours). Without this a user
+    whose only paper strategy is a BTD runner got a false "No active strategy" alert."""
+    if not user_id:
+        return []
+    try:
+        from sqlalchemy import text
+        from engine.db.pool import DatabasePool
+        with DatabasePool().get_session() as session:
+            rows = session.execute(text("""
+                SELECT s.runner_key, s.lease_holder, h.host, h.last_pass_at
+                  FROM alpatrade.live_runner_state s
+                  JOIN alpatrade.live_runner_heartbeats h
+                    ON h.runner_key = s.runner_key AND h.instance = s.lease_holder
+                 WHERE s.runner_key LIKE 'user-btd:' || :uid || ':%' AND s.runner_key LIKE '%:paper'
+                   AND h.last_pass_at >= NOW() - INTERVAL '96 hours'
+            """), {"uid": str(user_id)}).mappings().all()
+        return [dict(r) for r in rows]
     except Exception:  # noqa: BLE001
         return []
 
@@ -1057,7 +1081,15 @@ def _render_agent_next_steps(d: dict) -> str:
     active = list(d.get("active_runs") or [])
     latest = d.get("latest_hermes_paper_job") or {}
     activity_alert = ""
-    if not active:
+    btd = list(d.get("btd_paper_runners") or [])
+    if not active and btd:
+        r0 = btd[0]
+        last = r0.get("last_pass_at")
+        from zoneinfo import ZoneInfo
+        last_s = last.astimezone(ZoneInfo("America/New_York")).strftime("%a %b %d %H:%M ET") if hasattr(last, "astimezone") else "—"
+        activity_alert = ("<p style='font-size:13px'>Buy-the-dip paper runner active "
+                          f"(lease holder {_e(r0.get('lease_holder'))}, last pass {_e(last_s)}).</p>")
+    elif not active:
         status = str(latest.get("status") or "").lower()
         if status == "failed":
             from engine.agents.hermes_advice import safe_failure_reason
