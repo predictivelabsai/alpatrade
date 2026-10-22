@@ -23,6 +23,7 @@ from utils import btd_event_backtest as BT  # noqa: E402
 from btd_fixtures import DEFAULT_EXECUTION, DEFAULT_PARAMS  # noqa: E402
 from utils.live_btd_config import ConfigResult  # noqa: E402
 from utils.live_btd_scheduler import session_events  # noqa: E402
+from utils.btd_rules import stop_exempt_map  # noqa: E402
 from utils.live_btd_state import LeaseResult  # noqa: E402
 
 SYMS = ["AAA", "BBB", "CCC", "DDD"]
@@ -107,6 +108,12 @@ def run_live(bars, P, days, start, cash, tmp, monkeypatch, exempt=None):
             res = r.run([ev.kind if ev.kind != "protect" else "protect"], cfg)
             assert res.code in (0, None), (d, ev.key, res.code, res.reason)
         fake.end_of_day()
+        # v0.52.x: the post pass ran while the prior-session DAY stops were still 'new'; after
+        # they expire every carried position must hold a next-session sell (stop / exit).
+        ex = set(stop_exempt_map(P, dd))
+        fake.overnight_gaps = getattr(fake, "overnight_gaps", []) + [
+            (d, s) for s, p in fake.pos.items()
+            if p["qty"] > 1e-9 and s not in ex and fake._held(s) + 1e-6 < p["qty"]]
     return fake, r
 
 
@@ -197,6 +204,7 @@ def _compare(fake, bt, r, allow_unprotected=False):
     assert abs(bt.equity[-1][1] - eq_live) < 0.05
     if not allow_unprotected:   # exit_day: the first stop can be rejected (price already below) -> alert + open sell
         assert not [a for a in r.alerts if any("UNPROTECTED" in x for x in a[1])]
+        assert not getattr(fake, "overnight_gaps", []), fake.overnight_gaps[:5]
     return lt
 
 

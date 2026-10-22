@@ -103,6 +103,7 @@ def _sleeves():
 def db(monkeypatch):
     monkeypatch.setattr(rep, "live_run", lambda uid, acct=None: RUN)
     monkeypatch.setattr(rep, "runner_trades", lambda rid: RTRADES)
+    monkeypatch.setattr(rep, "runner_liveness", lambda acct: {})
     monkeypatch.setattr(rep, "_db_ok", lambda: True)
     monkeypatch.setattr(rep, "strategy_sleeves", lambda acct: _sleeves())
     monkeypatch.setattr(rep, "spy_close", lambda day, run: 612.0)
@@ -198,8 +199,44 @@ def test_gather_friday_from_saturday(db):
 def test_missed_runner_pass_is_flagged(db, monkeypatch):
     stale = {**RUN, "heartbeat_at": datetime(2026, 9, 24, 20, 0, tzinfo=timezone.utc)}
     monkeypatch.setattr(rep, "live_run", lambda uid, acct=None: stale)
+    monkeypatch.setattr(rep, "runner_trades", lambda rid: [])
     d = rep.gather(_client(), TARGET, now=SAT)
     assert any("entry window" in w for w in d["warnings"])
+
+
+def test_stale_run_heartbeat_but_fresh_lease_holder_is_not_flagged(db, monkeypatch):
+    """2026-10-21 false alarm: runs.heartbeat_at frozen at the HP's last pass (10-12), while the
+    server holds the lease and passes every few minutes -> no 'entry window' warning."""
+    stale = {**RUN, "heartbeat_at": datetime(2026, 9, 12, 13, 31, tzinfo=timezone.utc)}
+    monkeypatch.setattr(rep, "live_run", lambda uid, acct=None: stale)
+    monkeypatch.setattr(rep, "runner_trades", lambda rid: [])
+    rows = [{"instance": "hp", "host": "julian-HP", "role": "primary", "lease_holder": "server",
+             "last_pass_at": datetime(2026, 9, 12, 16, 25, tzinfo=timezone.utc), "last_acted_at": None},
+            {"instance": "server", "host": "921df7f6a613", "role": "primary", "lease_holder": "server",
+             "last_pass_at": datetime(2026, 9, 25, 20, 4, tzinfo=timezone.utc),
+             "last_acted_at": datetime(2026, 9, 25, 20, 4, tzinfo=timezone.utc)},
+            {"instance": "mac", "host": "mac", "role": "backup", "lease_holder": "server",
+             "last_pass_at": datetime(2026, 9, 25, 20, 3, tzinfo=timezone.utc), "last_acted_at": None}]
+    live = rep.pick_liveness(rows)
+    assert live["instance"] == "server" and live["last_pass_at"].hour == 20
+    monkeypatch.setattr(rep, "runner_liveness", lambda acct: live)
+    d = rep.gather(_client(), TARGET, now=SAT)
+    assert not any("entry window" in w or "check in" in w for w in d["warnings"])
+    assert d["runner_heartbeat"] == datetime(2026, 9, 25, 20, 4, tzinfo=timezone.utc)
+
+
+def test_carried_position_without_stop_is_flagged_and_covered_one_is_not():
+    day = date(2026, 9, 25)
+    lots = [{"symbol": "MSFT", "entry_date": date(2026, 9, 22), "qty": 2.5},
+            {"symbol": "NVDA", "entry_date": date(2026, 9, 22), "qty": 1.0},
+            {"symbol": "AMD", "entry_date": date(2026, 9, 22), "qty": 1.0},
+            {"symbol": "GOOGL", "entry_date": day, "qty": 4.5}]          # same-day: no stop by design
+    oo = [{"symbol": "NVDA", "side": "sell", "type": "stop", "qty": "1"}]
+    hist = [{"symbol": "MSFT", "side": "sell", "type": "stop", "qty": "2.5", "status": "expired",
+             "submitted_at": "2026-09-24T20:03:00Z"}]                   # DAY stop live in the session
+    gaps = rep.stop_gaps(lots, oo, hist, day, set())
+    assert [g.split(":")[0] for g in gaps] == ["AMD"]
+    assert rep.stop_gaps(lots, oo, hist, day, {"AMD"}) == []
 
 
 def test_non_trading_day_short_circuits(db):

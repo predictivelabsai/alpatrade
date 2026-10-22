@@ -119,6 +119,17 @@ def test_idle_report_explains_failed_latest_hermes_job():
     assert "worker stopped" in html
 
 
+def test_btd_paper_runner_with_fresh_lease_is_not_reported_idle():
+    from datetime import datetime, timezone
+    html = report._render_agent_next_steps({
+        "active_runs": [], "agent_performance": [], "latest_hermes_paper_job": {},
+        "btd_paper_runners": [{"runner_key": "user-btd:u:ua1:paper", "lease_holder": "server",
+                               "last_pass_at": datetime(2026, 10, 21, 20, 4, tzinfo=timezone.utc)}],
+    })
+    assert "No active strategy" not in html
+    assert "lease holder server" in html and "16:04 ET" in html
+
+
 def test_render_risk_empty_without_stats():
     assert report._render_risk({}) == ""
 

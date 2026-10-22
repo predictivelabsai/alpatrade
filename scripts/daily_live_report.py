@@ -245,6 +245,73 @@ def live_run(user_id: str, account_number: str | None = None) -> dict:
         return {}
 
 
+def runner_liveness(account_number: str | None) -> dict:
+    """Who actually runs this account: the lease holder's last pass (else the freshest instance's)
+    from alpatrade.live_runner_state / live_runner_heartbeats, the tables every runner instance
+    writes on each pass. ``runs.heartbeat_at`` is only stamped by record_performance on the
+    instance that records, so it went stale when the HP stood down on 2026-10-12 (false
+    "did not check in" alert on 2026-10-21). Paper keys (``...:paper``) are excluded."""
+    if not account_number:
+        return {}
+    try:
+        from sqlalchemy import text
+        acct = str(account_number)
+        with _pool().get_session() as session:
+            rows = session.execute(text("""
+                SELECT h.runner_key, h.instance, h.host, h.role, h.last_pass_at, h.last_acted_at,
+                       s.lease_holder, s.lease_expires_at
+                  FROM alpatrade.live_runner_heartbeats h
+                  LEFT JOIN alpatrade.live_runner_state s ON s.runner_key = h.runner_key
+                 WHERE h.mode = 'live' AND h.runner_key NOT LIKE '%:paper'
+                   AND (h.runner_key LIKE '%:' || :a OR h.runner_key LIKE '%:' || :a || ':%')
+            """), {"a": acct}).mappings().all()
+        return pick_liveness([dict(r) for r in rows])
+    except Exception as exc:  # noqa: BLE001
+        log.warning("runner liveness lookup failed: %s", type(exc).__name__)
+        return {}
+
+
+def pick_liveness(rows: list[dict]) -> dict:
+    """Lease holder's heartbeat row if any, else the freshest; plus the freshest pass overall."""
+    rows = [r for r in rows if _ts(r.get("last_pass_at"))]
+    if not rows:
+        return {}
+    fresh = max(rows, key=lambda r: _ts(r["last_pass_at"]))
+    holder = [r for r in rows if r.get("lease_holder") and r.get("instance") == r.get("lease_holder")]
+    best = max(holder, key=lambda r: _ts(r["last_pass_at"])) if holder else fresh
+    return {"instance": best.get("instance"), "host": best.get("host"), "role": best.get("role"),
+            "lease_holder": best.get("lease_holder"), "last_pass_at": _ts(best["last_pass_at"]),
+            "freshest_pass_at": _ts(fresh["last_pass_at"]),
+            "last_acted_at": max((_ts(r.get("last_acted_at")) for r in rows if _ts(r.get("last_acted_at"))),
+                                 default=None)}
+
+
+def stop_gaps(runner_open: list[dict], open_orders: list[dict], session_orders: list[dict],
+              day: date, exempt: set[str]) -> list[str]:
+    """Runner positions carried from before ``day`` with no stop covering their qty: neither an
+    open sell stop now nor a sell stop that was live during the session (DAY stops expire at the
+    close, so a stop seen in the session's order history counts). Exempt symbols skipped."""
+    def stops(orders, sym):
+        return [o for o in orders or [] if o.get("symbol") == sym and o.get("side") == "sell"
+                and str(o.get("type") or o.get("order_type") or "") in ("stop", "stop_limit", "trailing_stop")]
+    out = []
+    for r in runner_open:
+        sym = str(r.get("symbol") or "")
+        if not sym or sym.upper() in exempt or not r.get("entry_date") or r["entry_date"] >= day:
+            continue
+        qty = _f(r.get("qty"))
+        cover = sum(_f(o.get("qty")) - _f(o.get("filled_qty")) for o in stops(open_orders, sym))
+        seen = [o for o in stops(session_orders, sym)
+                if str(o.get("status") or "") in ("expired", "done_for_day", "canceled", "filled", "replaced")
+                and o.get("submitted_at") and (_ts(o["submitted_at"]).astimezone(ET).date() <= day)
+                and not (o.get("expired_at") and _ts(o["expired_at"]).astimezone(ET).date() < day)]
+        seen_cover = max((_f(o.get("qty")) for o in seen), default=0.0)
+        if max(cover, seen_cover) + 1e-6 < qty:
+            out.append(f"{sym}: {qty:g} sh held with no protective stop covering it "
+                       f"(open stop qty {cover:g}) — check the runner's stop placement.")
+    return out
+
+
 def runner_trades(run_id: str | None) -> list[dict]:
     """All live trade rows the runner recorded for one run (oldest first)."""
     if not run_id:
@@ -617,14 +684,29 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
         touched = [x for x in (et, xt, _ts(t.get("created_at"))) if x]
         if any(win_start <= x <= win_end for x in touched):
             actions.append(t)
-    hb = _ts(run.get("heartbeat_at"))
+    # v0.52.x: liveness from the lease holder's heartbeat / actual passes, not runs.heartbeat_at
+    # (only the recording host stamps that; the HP's stale value raised a false alarm 2026-10-21).
+    live = runner_liveness(target.get("account_number") or acct.get("account_number"))
+    passes = [x for x in (live.get("last_pass_at"), live.get("freshest_pass_at"),
+                          _ts(run.get("heartbeat_at"))) if x]
+    passes += [x for t in rtrades for x in (_ts(t.get("created_at")),) if x]
+    hb = max(passes) if passes else None
     if run.get("run_id"):
         entry_win = sess["close"] - timedelta(minutes=15)
-        if hb is None or hb < entry_win - timedelta(minutes=5):
+        in_window = [x for x in passes if entry_win - timedelta(minutes=5) <= x]
+        if not in_window:
+            who = (f"{live.get('instance')} on {live.get('host')}" if live.get("instance") else "no runner instance")
             warnings.append(
-                "Runner did not check in during this session's entry window "
-                f"(last heartbeat {hb.astimezone(ET).strftime('%a %b %d %H:%M ET') if hb else 'never'})"
-                " — passes may have been missed (host asleep/offline?).")
+                "No runner pass recorded during this session's entry window "
+                f"(lease holder: {who}; last pass {hb.astimezone(ET).strftime('%a %b %d %H:%M ET') if hb else 'never'})"
+                " — entries may have been missed.")
+    # v0.52.x: real stop coverage for carried runner positions
+    try:
+        from utils.btd_rules import stop_exempt_map
+        exempt = set(ex_syms) | set(stop_exempt_map(cfg.get("params") or cfg, day))
+        warnings += stop_gaps(runner_open, open_orders, closed, day, exempt)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("stop coverage check failed: %s", type(exc).__name__)
 
     # Performance since the live run started vs SPY.
     perf = {}
@@ -692,7 +774,7 @@ def gather(client, target: dict, day: date | None = None, now: datetime | None =
         "long_market_value": _f(acct.get("long_market_value")),
         "positions": positions, "ignored_positions": ignored_positions, "excluded_value": ex_mv, "open_orders": open_orders, "fills": orders,
         "run": run, "perf": perf, "annualized": annualized, "curves": curves, "runner_open": runner_open, "runner_actions": actions,
-        "runner_heartbeat": hb, "signals": signals, "strategies": strategies, "warnings": warnings,
+        "runner_heartbeat": hb, "runner_liveness": live, "signals": signals, "strategies": strategies, "warnings": warnings,
         "runner_title": (", ".join(x["display"] for x in own) if own is not None else None),
         "db_ok": _db_ok(), "account_ok": True,
     }
