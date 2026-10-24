@@ -239,6 +239,13 @@ services:
       - PNL_REPORT_FREQUENCY=${PNL_REPORT_FREQUENCY:-daily}
       - PNL_REPORT_HOUR_UTC=${PNL_REPORT_HOUR_UTC:-21}
       - PNL_REPORT_TO=${PNL_REPORT_TO:-}
+      # Postmark for the web app's own mail (verification, password reset, referral invites,
+      # sign-up approval emails). These were missing here, so the web container sent nothing.
+      - POSTMARK_API_KEY=${POSTMARK_API_KEY:-}
+      - FROM_EMAIL=${FROM_EMAIL:-}
+      - TO_EMAIL=${TO_EMAIL:-}
+      # Optional override of the sign-up approver list (else alpatrade.app_settings).
+      - SIGNUP_APPROVER_EMAILS=${SIGNUP_APPROVER_EMAILS:-}
       # LangSmith tracing (docs/agent-tracing.md). Key lives in Coolify only.
       - LANGSMITH_TRACING=${LANGSMITH_TRACING:-false}
       - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}

@@ -234,6 +234,8 @@ def store_alpaca_keys(user_id: str, api_key: str, secret_key: str, account_name:
     """
     if is_live_alpaca_key(api_key):
         raise ValueError(LIVE_KEY_REFUSAL)
+    from engine.approval import require_approved
+    require_approved(user_id)  # pending / rejected accounts cannot connect keys (v0.56.0)
     from sqlalchemy import text
     pool = _get_pool()
     with pool.get_session() as session:

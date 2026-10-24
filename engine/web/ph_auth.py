@@ -148,6 +148,15 @@ def _session_login(session, user: dict, method: str = "password", request=None) 
         pass
 
 
+def _on_signup(user: dict, method: str, ip: str = "", ua: str = "") -> None:
+    """New account: stamp method/IP/UA and email the approvers (engine.approval). Never raises."""
+    try:
+        from engine.approval import on_signup
+        on_signup(user, method, ip, ua)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def _attribute_referral(session, user: dict) -> None:
     """Link a fresh signup to its referrer (``?ref=CODE`` kept in the session)."""
     try:
@@ -471,6 +480,7 @@ def register(app, rt):
         if not user:
             return _register_page(email=email, error="Could not create account. Please try again.", next_=nxt)
         antibot.log_attempt(ip, email, ua, "created", user.get("user_id"))
+        _on_signup(user, "email", ip, ua)
         _attribute_referral(session, user)
         try:
             from engine.web.onboarding import record_event
@@ -646,6 +656,8 @@ def register(app, rt):
                 elif not user:
                     user = create_user(email=email, google_id=google_id, display_name=name)
                     if user:
+                        _on_signup(user, "google", antibot.client_ip(request),
+                                   request.headers.get("user-agent", ""))
                         _attribute_referral(session, user)
             if not user:
                 return RedirectResponse("/signin?error=Could+not+create+account", status_code=303)

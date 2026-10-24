@@ -118,6 +118,11 @@ async def _voice_ws(ws: WebSocket):
         await ws.send_json({"type": "error", "message": "sign in before using voice"})
         await ws.close()
         return
+    from engine.approval import block_message
+    if (blocked := block_message(user_id)):            # pending / rejected account (v0.56.0)
+        await ws.send_json({"type": "error", "message": blocked})
+        await ws.close()
+        return
     thread_id = str(session.get("thread_id") or "")
     key = os.environ.get("XAI_API_KEY", "")
     if not key:

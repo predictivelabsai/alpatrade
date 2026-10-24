@@ -141,7 +141,8 @@ def _money(x):
         return "—"
 
 
-def render_running(data: dict, act: dict, show_all: bool, now: datetime | None = None) -> str:
+def render_running(data: dict, act: dict, show_all: bool, now: datetime | None = None,
+                   approvals_html: str = "") -> str:
     e = lambda x: html.escape(str(x if x is not None else "—"))  # noqa: E731
     rows = data.get("rows") or []
     if data.get("error"):
@@ -178,8 +179,9 @@ def render_running(data: dict, act: dict, show_all: bool, now: datetime | None =
         f"<td>{e(x['detail'])}</td></tr>" for x in ev) or "<tr><td colspan='4'>None</td></tr>")
     return (
         "<h1>Admin · running strategies &amp; user activity</h1>"
-        "<p class='adm-nav'><a href='/admin'>&larr; Analytics</a><a href='#running'>Running</a>"
-        "<a href='#users'>Users</a><a href='#events'>Events</a></p>"
+        "<p class='adm-nav'><a href='/admin'>&larr; Analytics</a><a href='#approvals'>Approvals</a>"
+        "<a href='#running'>Running</a><a href='#users'>Users</a><a href='#events'>Events</a></p>"
+        f"{approvals_html}"
         f"<p class='sub'>Generated {stamp(now)}. Status 'running' = the runner heartbeat shows the instance holding "
         "the lease and acting within the last 96h (runners idle outside market hours). 'db:' shows the stored "
         "activation status when it differs. System rows are operator runners (btd-scheduler).</p>"
@@ -220,14 +222,25 @@ def register(app, rt):
         user = _user(session)
         if not user:
             return RedirectResponse("/signin?next=/admin/running", status_code=303)
+        from engine import approval
         from engine.rbac import is_admin
-        if not is_admin(user):
+        admin = is_admin(user)
+        if not admin and not approval.can_review(user):
             from starlette.responses import HTMLResponse
             return HTMLResponse("Forbidden: admin only", status_code=403)
-        from engine import admin_running
-        show_all = request.query_params.get("all") == "1"
-        body = render_running(admin_running.running(include_all=show_all), admin_running.activity(), show_all)
-        return page("admin", Style(_CSS), Div(NotStr(body), cls="adm"),
+        from engine.web.ph_approval import CSS as _APV_CSS, render_approvals
+        flt = request.query_params.get("approvals") or "pending"
+        flt = flt if flt in (*approval.STATUSES, "all") else "pending"
+        apv = render_approvals(approval.list_users(flt), approval.counts(), flt, approval.approvers(),
+                               me=user, msg=session.pop("apv_msg", "") or "", can_edit_approvers=admin)
+        if not admin:  # approver on the list but not an admin: the approvals panel only
+            body = "<h1>Admin · sign-up approvals</h1>" + apv
+        else:
+            from engine import admin_running
+            show_all = request.query_params.get("all") == "1"
+            body = render_running(admin_running.running(include_all=show_all), admin_running.activity(),
+                                  show_all, approvals_html=apv)
+        return page("admin", Style(_CSS + _APV_CSS), Div(NotStr(body), cls="adm"),
                     user=user, title="Admin · Running · AlpaTrade", right_news=False)
 
     def _admin_or_none(session):

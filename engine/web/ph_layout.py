@@ -61,8 +61,8 @@ TILE_MARK = (
     '<polygon points="16,12.6 19.4,16 16,19.4 12.6,16" fill="#fff"/></svg>'
 )
 
-APP_VERSION = "0.50.0"
-RELEASE_DATE = "16 Oct 2026"
+APP_VERSION = "0.56.0"
+RELEASE_DATE = "24 Oct 2026"
 
 # Small inline mic glyph for the voice button.
 _MIC_SVG = (
