@@ -223,6 +223,12 @@ async def require_tenant_user(
             status_code=400,
             detail="Service requests to this endpoint must include X-User-Id",
         )
+    if user.get("auth_type") == "jwt":
+        # A pending / rejected account may hold a JWT but cannot use the API (v0.56.0).
+        from engine.approval import block_message
+        blocked = block_message(user["user_id"])
+        if blocked:
+            raise HTTPException(status_code=403, detail=blocked)
     return user
 
 # ---------------------------------------------------------------------------
@@ -529,6 +535,8 @@ async def auth_register(req: RegisterRequest):
     user = create_user(email=req.email, password=req.password, display_name=req.display_name)
     if not user:
         raise HTTPException(status_code=409, detail="Email already registered")
+    from engine.approval import on_signup   # pending until an admin approves it (v0.56.0)
+    on_signup(user, "api")
     token = create_jwt_token(user["user_id"], user["email"])
     return AuthResponse(token=token, user_id=user["user_id"], email=user["email"])
 

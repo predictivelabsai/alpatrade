@@ -102,6 +102,11 @@ ph_data_health.register(app, rt)
 ph_logging.register(app, rt)
 ph_news_scheduler.register(app, rt)
 ph_admin.register(app, rt)  # /admin (admin role, server-side)
+from engine.web import ph_approval  # noqa: E402
+ph_approval.register(app, rt)  # /pending + /admin/approvals/* (v0.56.0)
+# Pending / rejected accounts may sign in but only reach /pending and the auth pages.
+from fasthtml.common import Beforeware  # noqa: E402
+app.before.append(Beforeware(ph_approval.approval_gate))
 ph_referrals.register(app, rt)  # /invite
 ph_leaderboard.register(app, rt)  # public /leaderboard + /strategies
 from engine.web import ph_strategy_params  # noqa: E402

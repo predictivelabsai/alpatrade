@@ -157,6 +157,9 @@ def activation_status(user_id: str, sid: int) -> dict:
 def activate_paper(strategy_id: int, user_id: str,
                    enqueue: Optional[Callable[..., str]] = None) -> dict:
     """{'ok', 'message', 'job_id'?}. Queues the paper job on the user's own paper account."""
+    from engine.approval import block_message
+    if (blocked := block_message(user_id)):            # pending / rejected account (v0.56.0)
+        return {"ok": False, "not_approved": True, "message": blocked}
     from engine.leaderboard import clone_bt
     s, cfg = _owned(strategy_id, user_id)
     if not s:
@@ -265,6 +268,9 @@ def live_plan(strategy_id: int, user_id: str, allocation: Optional[float] = None
 def activate_live(strategy_id: int, user_id: str, allocation: Optional[float], confirm: str,
                   **kw) -> dict:
     """Record a confirmed, validated live activation as 'pending_runner' (no orders, no runner config)."""
+    from engine.approval import block_message
+    if (blocked := block_message(user_id)):            # pending / rejected account (v0.56.0)
+        return {"ok": False, "not_approved": True, "message": blocked, "errors": [blocked]}
     plan = live_plan(strategy_id, user_id, allocation, **kw)
     if (confirm or "").strip().upper() != "LIVE":
         plan["ok"] = False
